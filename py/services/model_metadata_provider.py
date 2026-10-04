@@ -183,6 +183,17 @@ class ModelMetadataProvider(ABC):
         """
         return None
 
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        """Fetch per-version buzz prices for a model, when the provider has them.
+
+        CivitAI publishes prices only inside its public model page payload;
+        providers that cannot read it (CivArchive, SQLite, OpenModelDB) keep the
+        default of None, which callers treat as "no price information".
+        """
+        return None
+
 class CivitaiModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses Civitai API for metadata"""
     
@@ -221,6 +232,11 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         self, version_id: int, file_id: int
     ) -> Optional[Dict[str, Any]]:
         return await self.client.get_version_file_mini(version_id, file_id)
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        return await self.client.get_model_prices(model_id)
 
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive API for metadata"""
@@ -783,6 +799,34 @@ class FallbackMetadataProvider(ModelMetadataProvider):
     def _iter_providers(self):
         return zip(self.providers, self._provider_labels)
 
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        rate_limited = False
+        for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
+            try:
+                result = await self._call_with_rate_limit(
+                    label,
+                    provider.get_model_prices,
+                    model_id,
+                )
+                if result:
+                    return result
+            except RateLimitError as exc:
+                rate_limited = True
+                logger.warning(
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
+                    label,
+                    exc.retry_after or 0,
+                )
+                continue
+            except Exception as e:
+                logger.debug("Provider %s failed for get_model_prices: %s", label, e)
+                continue
+        return None
+
     def excluding(self, labels: "frozenset[str] | set[str]") -> "FallbackMetadataProvider":
         """Return a copy of this chain without the providers named in *labels*.
 
@@ -905,6 +949,15 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
             self._provider.get_version_file_mini,
             version_id,
             file_id,
+        )
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        return await self._rate_limit_helper.run(
+            self._label,
+            self._provider.get_model_prices,
+            model_id,
         )
 
 class ModelMetadataProviderManager:

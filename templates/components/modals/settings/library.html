@@ -192,6 +192,57 @@
         {{ sm.setting_toggle('hidePaidUpdates', 'hide_paid_updates', 'settings.hidePaidUpdates.label', 'settings.hidePaidUpdates.help') }}
     </div>
 
+    <!-- Buzz Price Tracking -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.priceTracking') }}
+        <div class="settings-help-text subtle">{{ t('settings.priceTracking.help') }}</div>
+        {{ sm.setting_toggle('priceTrackingEnabled', 'price_tracking_enabled', 'settings.priceTracking.enabled', 'settings.priceTracking.enabledHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="priceAlertThresholdBuzz">
+                        {{ t('settings.priceTracking.threshold') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.thresholdHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input
+                            type="number"
+                            id="priceAlertThresholdBuzz"
+                            min="0"
+                            step="1"
+                            onblur="settingsManager.saveInputSetting('priceAlertThresholdBuzz', 'price_alert_threshold_buzz')"
+                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="priceCheckTtlHours">
+                        {{ t('settings.priceTracking.refreshHours') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.refreshHoursHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input
+                            type="number"
+                            id="priceCheckTtlHours"
+                            min="1"
+                            step="1"
+                            onblur="settingsManager.saveInputSetting('priceCheckTtlHours', 'price_check_ttl_hours')"
+                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Example Images -->
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.exampleImages') }}

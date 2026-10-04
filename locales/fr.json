@@ -201,7 +201,12 @@
             "loading": "Recherche de mises à jour pour {type}...",
             "success": "{count} mise(s) à jour trouvée(s) pour {type}",
             "none": "Tous les {type} sont à jour",
-            "error": "Échec de la vérification des mises à jour pour {type} : {message}"
+            "error": "Échec de la vérification des mises à jour pour {type} : {message}",
+            "gateEvents": {
+                "becameFree": "[TODO: Translate] {count} version(s) became free",
+                "priceDrop": "[TODO: Translate] {count} version(s) dropped below your price threshold",
+                "newGate": "[TODO: Translate] {count} version(s) are now paid"
+            }
         },
         "cleanupExampleImages": {
             "label": "Supprimer les dossiers d'exemples orphelins",
@@ -387,6 +392,7 @@
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "priorityTags": "Tags prioritaires",
             "versionScope": "Indicateurs de mise à jour",
+            "priceTracking": "[TODO: Translate] Buzz Price Tracking",
             "exampleImages": "Images d'exemple",
             "autoOrganize": "Organisation automatique",
             "metadata": "Métadonnées",
@@ -752,6 +758,16 @@
         "hidePaidUpdates": {
             "label": "Masquer les mises à jour payantes",
             "help": "Lorsque cette option est activée, les modèles n'ayant que des mises à jour payantes n'affichent pas le badge « Mise à jour disponible »"
+        },
+        "priceTracking": {
+            "label": "[TODO: Translate] Buzz Price Tracking",
+            "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
+            "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
+            "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
+            "threshold": "[TODO: Translate] Price alert threshold (Buzz)",
+            "thresholdHelp": "[TODO: Translate] Alert when a paid version costs this much or less. Use 0 to only be told when a version becomes free.",
+            "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
+            "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
         },
         "licenseIcons": {
             "useNewStyle": "Utiliser les icônes de licence mises à jour",
@@ -2008,6 +2024,11 @@
                     "earlyAccessTooltip": "Cette version nécessite actuellement l'accès anticipé CivitAI",
                     "paid": "Payant",
                     "paidTooltip": "Cette version nécessite un paiement pour être téléchargée",
+                    "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
+                    "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
+                    "priceAlertTooltip": "[TODO: Translate] {price} - below your price alert threshold",
+                    "freeNow": "[TODO: Translate] Free Now",
+                    "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
                     "ignored": "Ignorée",
                     "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version",
                     "onSiteOnly": "Uniquement sur Site",

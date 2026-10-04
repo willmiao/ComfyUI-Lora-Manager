@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -1092,3 +1093,633 @@ def test_build_record_from_remote_preserves_file_count(tmp_path):
         timestamp=2.0,
     )
     assert record.versions[0].file_count == 1
+
+
+# --- Gate-state transitions and price persistence ---------------------------
+
+
+def _remote_gated(version_id, *, price_checked_at=None, price_buzz=None):
+    return ModelVersionRecord(
+        version_id=version_id,
+        name=f"v{version_id}",
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=False,
+        should_ignore=False,
+        paid_access='{"permanent": false, "endsAt": "2026-10-10T13:10:17.404Z"}',
+        is_early_access=True,
+        early_access_ends_at="2026-10-10T13:10:17.404Z",
+        price_checked_at=price_checked_at,
+        price_buzz=price_buzz,
+    )
+
+
+def _remote_free(version_id):
+    return ModelVersionRecord(
+        version_id=version_id,
+        name=f"v{version_id}",
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=False,
+        should_ignore=False,
+    )
+
+
+def test_build_record_emits_became_free_event(tmp_path):
+    """A version whose gate lapsed produces a became_free event, keeps a lapse
+    timestamp, and drops the now-meaningless stored price."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(
+        replace(
+            _remote_gated(7, price_checked_at=100.0, price_buzz=500),
+        )
+    )
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_free(7)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    version = record.versions[0]
+    assert version.gate_lapsed_at is not None
+    assert version.price_buzz is None
+    assert version.price_checked_at is None
+    assert version.price_alert_state is False
+    assert [event["kind"] for event in record.events] == ["became_free"]
+    assert record.events[0]["versionId"] == 7
+
+
+def test_build_record_emits_new_gate_event(tmp_path):
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(_remote_free(7))
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_gated(7)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    assert [event["kind"] for event in record.events] == ["new_gate"]
+    assert record.versions[0].gate_lapsed_at is None
+
+
+def test_build_record_no_events_without_previous_snapshot(tmp_path):
+    """First sight of a model must not report every existing gate as a new one."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_gated(7), _remote_free(8)],
+        existing=None,
+        timestamp=1000.0,
+    )
+
+    assert record.events == []
+
+
+def test_build_record_keeps_lapse_marker_and_skips_ignored(tmp_path):
+    """An already-free version keeps its original lapse marker and an ignored
+    version reports nothing at all."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    lapsed = replace(_remote_free(7), gate_lapsed_at="2026-09-01T00:00:00.000Z")
+    existing = make_record(lapsed, replace(_remote_gated(8), should_ignore=True))
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_free(7), _remote_free(8)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    by_id = {version.version_id: version for version in record.versions}
+    assert by_id[7].gate_lapsed_at == "2026-09-01T00:00:00.000Z"
+    assert record.events == []
+
+
+def test_build_record_preserves_price_when_fetch_skipped(tmp_path):
+    """A refresh that did not run a price fetch (no price_checked_at) must keep the
+    stored price instead of wiping it."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(
+        replace(_remote_gated(7, price_checked_at=100.0, price_buzz=500))
+    )
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_gated(7)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    assert record.versions[0].price_buzz == 500
+    assert record.versions[0].price_checked_at == 100.0
+    assert record.events == []
+
+
+def test_build_record_applies_fresh_price(tmp_path):
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(
+        replace(_remote_gated(7, price_checked_at=100.0, price_buzz=500))
+    )
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[],
+        remote_versions=[_remote_gated(7, price_checked_at=200.0, price_buzz=250)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    assert record.versions[0].price_buzz == 250
+    assert record.versions[0].price_checked_at == 200.0
+
+
+def _legacy_version_table_sql() -> str:
+    """The model_update_versions schema before gate-lapse/price columns."""
+
+    return """
+        CREATE TABLE model_update_versions (
+            model_id INTEGER NOT NULL,
+            version_id INTEGER NOT NULL,
+            sort_index INTEGER NOT NULL DEFAULT 0,
+            name TEXT,
+            base_model TEXT,
+            released_at TEXT,
+            size_bytes INTEGER,
+            preview_url TEXT,
+            is_in_library INTEGER NOT NULL DEFAULT 0,
+            should_ignore INTEGER NOT NULL DEFAULT 0,
+            early_access_ends_at TEXT,
+            is_early_access INTEGER NOT NULL DEFAULT 0,
+            usage_control TEXT,
+            paid_access TEXT,
+            is_paid INTEGER NOT NULL DEFAULT 0,
+            file_count INTEGER,
+            PRIMARY KEY (model_id, version_id)
+        )
+    """
+
+
+def test_migration_adds_price_columns_to_legacy_db(tmp_path):
+    """Opening a database written before this feature must add the columns and keep
+    the existing rows (the migration path real users hit)."""
+
+    db_path = tmp_path / "updates.sqlite"
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE model_update_status ("
+        "model_id INTEGER PRIMARY KEY, model_type TEXT NOT NULL, "
+        "last_checked_at REAL, should_ignore_model INTEGER NOT NULL DEFAULT 0)"
+    )
+    conn.execute(_legacy_version_table_sql())
+    conn.execute(
+        "INSERT INTO model_update_status (model_id, model_type, last_checked_at) "
+        "VALUES (999, 'lora', 1.0)"
+    )
+    conn.execute(
+        "INSERT INTO model_update_versions ("
+        "model_id, version_id, is_in_library, is_early_access, paid_access, is_paid"
+        ") VALUES (999, 7, 1, 1, '{\"permanent\": false, \"endsAt\": null}', 0)"
+    )
+    conn.commit()
+    conn.close()
+
+    service = ModelUpdateService(str(db_path))
+    columns = service._get_table_columns(
+        service._connect(), "model_update_versions"
+    )
+    for column in (
+        "gate_lapsed_at",
+        "price_buzz",
+        "list_price_buzz",
+        "generation_price_buzz",
+        "accepts_blue_buzz",
+        "price_sale_ends_at",
+        "price_checked_at",
+        "price_alert_state",
+    ):
+        assert column in columns
+
+    record = service._get_record("lora", 999)
+    assert record is not None
+    assert [version.version_id for version in record.versions] == [7]
+    version = record.versions[0]
+    assert version.paid_access == '{"permanent": false, "endsAt": null}'
+    assert version.price_buzz is None
+    assert version.price_checked_at is None
+    assert version.gate_lapsed_at is None
+    assert version.accepts_blue_buzz is False
+
+
+def test_price_fields_round_trip_through_sqlite(tmp_path):
+    """Price and lapse columns survive an upsert/read cycle."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    version = replace(
+        _remote_gated(7, price_checked_at=123.5, price_buzz=500),
+        list_price_buzz=600,
+        generation_price_buzz=100,
+        accepts_blue_buzz=True,
+        price_sale_ends_at="2026-10-01T00:00:00.000Z",
+        price_alert_state=True,
+        is_in_library=True,
+        gate_lapsed_at=None,
+    )
+    service._upsert_record(make_record(version))
+
+    stored = service._get_record("lora", 999)
+    assert stored is not None
+    loaded = stored.versions[0]
+    assert loaded.price_buzz == 500
+    assert loaded.list_price_buzz == 600
+    assert loaded.generation_price_buzz == 100
+    assert loaded.accepts_blue_buzz is True
+    assert loaded.price_sale_ends_at == "2026-10-01T00:00:00.000Z"
+    assert loaded.price_checked_at == 123.5
+    assert loaded.price_alert_state is True
+
+
+# --- Optional price capture --------------------------------------------------
+
+
+class FakeSettings:
+    """Minimal stand-in for SettingsManager (only `.get` is used by these paths)."""
+
+    def __init__(self, values=None):
+        self._values = dict(values or {})
+
+    def get(self, key, default=None):
+        return self._values.get(key, default)
+
+
+class PriceProvider(DummyProvider):
+    """DummyProvider that can also serve prices."""
+
+    def __init__(self, response, *, prices=None, error=None):
+        super().__init__(response)
+        self.prices = prices
+        self.error = error
+        self.price_calls = 0
+
+    async def get_model_prices(self, model_id):
+        self.price_calls += 1
+        if self.error is not None:
+            raise self.error
+        return self.prices
+
+
+GATED_RESPONSE = {
+    "modelVersions": [
+        {
+            "id": 12,
+            "baseModel": "Pony",
+            "availability": "Public",
+            "paidAccess": {"permanent": False, "endsAt": "2999-01-01T00:00:00.000Z"},
+            "files": [],
+            "images": [],
+        }
+    ]
+}
+FREE_RESPONSE = {
+    "modelVersions": [
+        {"id": 12, "baseModel": "Pony", "availability": "Public", "files": [], "images": []}
+    ]
+}
+LOCAL_RAW_DATA = [{"civitai": {"modelId": 1, "id": 11}, "base_model": "Pony"}]
+
+PRICE_PAYLOAD = {
+    12: {
+        "price_buzz": 250,
+        "list_price_buzz": 500,
+        "generation_price_buzz": 100,
+        "accepts_blue_buzz": True,
+        "price_sale_ends_at": "2999-01-02T00:00:00.000Z",
+    }
+}
+
+
+def _price_service(tmp_path, **settings):
+    return ModelUpdateService(
+        str(tmp_path / "updates.sqlite"),
+        ttl_seconds=0,
+        settings_manager=FakeSettings(settings),
+    )
+
+
+@pytest.mark.asyncio
+async def test_price_capture_off_by_default(tmp_path):
+    service = _price_service(tmp_path)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert provider.price_calls == 0
+    assert record.versions[0].price_checked_at is None
+    assert record.versions[0].price_buzz is None
+
+
+@pytest.mark.asyncio
+async def test_price_capture_stores_prices_for_gated_versions(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert provider.price_calls == 1
+    version = next(v for v in record.versions if v.version_id == 12)
+    assert version.price_buzz == 250
+    assert version.list_price_buzz == 500
+    assert version.generation_price_buzz == 100
+    assert version.accepts_blue_buzz is True
+    assert version.price_sale_ends_at == "2999-01-02T00:00:00.000Z"
+    assert version.price_checked_at is not None
+
+
+@pytest.mark.asyncio
+async def test_price_capture_skips_ungated_models(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(FREE_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert provider.price_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_price_capture_failure_keeps_stored_price(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    await service.refresh_for_model_type(
+        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+    )
+    first = await service.get_record("lora", 1)
+    stored_checked_at = next(
+        v for v in first.versions if v.version_id == 12
+    ).price_checked_at
+    assert stored_checked_at is not None
+
+    # The page is unreadable this time (a changed gate still triggers a fetch):
+    # the price must survive untouched rather than being blanked.
+    failing = PriceProvider(
+        {
+            "modelVersions": [
+                {
+                    "id": 12,
+                    "baseModel": "Pony",
+                    "availability": "Public",
+                    "paidAccess": {
+                        "permanent": False,
+                        "endsAt": "2999-06-01T00:00:00.000Z",
+                    },
+                    "files": [],
+                    "images": [],
+                }
+            ]
+        },
+        prices=None,
+    )
+    await service.refresh_for_model_type("lora", scanner, failing)
+
+    record = await service.get_record("lora", 1)
+    version = next(v for v in record.versions if v.version_id == 12)
+    assert failing.price_calls == 1
+    assert version.price_buzz == 250
+    assert version.price_checked_at == stored_checked_at
+
+
+@pytest.mark.asyncio
+async def test_price_capture_respects_ttl(tmp_path):
+    """A second refresh with an unchanged gate and a fresh price must not refetch."""
+
+    service = _price_service(
+        tmp_path, price_tracking_enabled=True, price_check_ttl_hours=24
+    )
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert provider.price_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_price_capture_refetches_when_gate_changes(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    changed_gate = {
+        "modelVersions": [
+            {
+                "id": 12,
+                "baseModel": "Pony",
+                "availability": "Public",
+                "paidAccess": {
+                    "permanent": True,
+                    "endsAt": None,
+                },
+                "files": [],
+                "images": [],
+            }
+        ]
+    }
+    provider.response = changed_gate
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert provider.price_calls == 2
+
+
+@pytest.mark.asyncio
+async def test_price_capture_survives_provider_without_support(tmp_path):
+    """A provider that cannot serve prices must not break the refresh."""
+
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = DummyProvider(GATED_RESPONSE)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert record is not None
+    version = next(v for v in record.versions if v.version_id == 12)
+    assert version.price_buzz is None
+
+
+@pytest.mark.asyncio
+async def test_price_capture_drops_price_when_version_becomes_free(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    await service.refresh_for_model_type(
+        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+    )
+
+    await service.refresh_for_model_type("lora", scanner, PriceProvider(FREE_RESPONSE))
+    record = await service.get_record("lora", 1)
+    version = next(v for v in record.versions if v.version_id == 12)
+
+    assert version.price_buzz is None
+    assert version.price_checked_at is None
+    assert version.gate_lapsed_at is not None
+
+
+# --- Price alerts ------------------------------------------------------------
+
+
+def _gated_response(ends_at: str) -> dict:
+    """Gated response with a specific EA end.
+
+    Varying the end date between refreshes is what forces a re-fetch inside a
+    single test (a price is otherwise considered fresh for the whole TTL).
+    """
+
+    return {
+        "modelVersions": [
+            {
+                "id": 12,
+                "baseModel": "Pony",
+                "availability": "Public",
+                "paidAccess": {"permanent": False, "endsAt": ends_at},
+                "files": [],
+                "images": [],
+            }
+        ]
+    }
+
+
+def _prices(price_buzz: int) -> dict:
+    return {12: {"price_buzz": price_buzz, "list_price_buzz": price_buzz}}
+
+
+@pytest.mark.asyncio
+async def test_price_alert_state_persists_and_fires_on_crossing(tmp_path):
+    service = _price_service(
+        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=300
+    )
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    # First sight: the state is recorded (so the alerts list shows it) but nothing
+    # is announced - otherwise enabling the feature would toast every cheap
+    # version in the library at once.
+    first_refresh = await service.refresh_for_model_type(
+        "lora",
+        scanner,
+        PriceProvider(_gated_response("2999-01-01T00:00:00.000Z"), prices=_prices(250)),
+    )
+    version = next(v for v in first_refresh[1].versions if v.version_id == 12)
+    assert version.price_alert_state is True
+    assert first_refresh[1].events == []
+
+    alerts = await service.get_price_alerts("lora")
+    assert [alert["versionId"] for alert in alerts] == [12]
+    assert alerts[0]["priceBuzz"] == 250
+    assert alerts[0]["modelId"] == 1
+
+    # Price rises above the threshold: the state resets silently.
+    raised = await service.refresh_for_model_type(
+        "lora",
+        scanner,
+        PriceProvider(_gated_response("2999-02-01T00:00:00.000Z"), prices=_prices(900)),
+    )
+    assert raised[1].versions[0].price_alert_state is False
+    assert raised[1].events == []
+    assert await service.get_price_alerts("lora") == []
+
+    # …and drops back under it: now it is news.
+    dropped = await service.refresh_for_model_type(
+        "lora",
+        scanner,
+        PriceProvider(_gated_response("2999-03-01T00:00:00.000Z"), prices=_prices(200)),
+    )
+    assert dropped[1].versions[0].price_alert_state is True
+    assert [event["kind"] for event in dropped[1].events] == ["price_drop"]
+    assert dropped[1].events[0]["priceBuzz"] == 200
+    # Events are derived, never persisted: a later read reports none.
+    stored = await service.get_record("lora", 1)
+    assert stored.events == []
+    assert stored.versions[0].price_alert_state is True
+
+
+@pytest.mark.asyncio
+async def test_price_alert_not_fired_above_threshold(tmp_path):
+    service = _price_service(
+        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=100
+    )
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert record.versions[0].price_alert_state is False
+    assert record.events == []
+    assert await service.get_price_alerts("lora") == []
+
+
+@pytest.mark.asyncio
+async def test_price_alert_requires_price_tracking(tmp_path):
+    """With tracking off there are no prices, so no price alert either."""
+
+    service = _price_service(tmp_path, price_alert_threshold_buzz=100000)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert record.versions[0].price_alert_state is False
+    assert await service.get_price_alerts("lora") == []
+
+
+@pytest.mark.asyncio
+async def test_price_alerts_respect_ignores_and_model_type(tmp_path):
+    service = _price_service(
+        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=1000
+    )
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    assert len(await service.get_price_alerts("lora")) == 1
+
+    await service.set_version_should_ignore("lora", 1, 12, True)
+    assert await service.get_price_alerts("lora") == []
+    assert await service.get_price_alerts("checkpoint") == []
+
+
+@pytest.mark.asyncio
+async def test_get_price_alerts_tolerates_bad_limit(tmp_path):
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+
+    assert await service.get_price_alerts("lora", limit="not-a-number") == []

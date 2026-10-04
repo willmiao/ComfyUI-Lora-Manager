@@ -859,3 +859,65 @@ async def test_get_version_file_mini_propagates_rate_limit(downloader):
 
     with pytest.raises(RateLimitError):
         await client.get_version_file_mini(1, 2)
+
+
+async def test_get_model_prices_parses_public_page(downloader):
+    """Prices come from the page payload, read anonymously (no API key)."""
+    client = await CivitaiClient.get_instance()
+    page_html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        '{"props":{"pageProps":{"trpcState":{"json":{"queries":['
+        '{"queryKey":[["model","getById"],{"input":{"id":7}}],"state":{"data":'
+        '{"modelVersions":[{"id":42,"paidAccess":{"endsAt":null,'
+        '"timeframeDays":null,"terms":{"download":{"price":5000}},'
+        '"sale":null}}]}}}]}}}}}</script>'
+    )
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        assert method == "GET"
+        assert "/models/7" in url
+        assert use_auth is False
+        assert kwargs.get("custom_headers", {}).get("Accept") == "text/html"
+        return True, page_html
+
+    downloader.make_request = fake_make_request
+
+    result = await client.get_model_prices(7)
+
+    assert result is not None
+    assert result[42]["price_buzz"] == 5000
+
+
+async def test_get_model_prices_returns_none_on_unusable_page(downloader):
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, "<html><body>challenge</body></html>"
+
+    downloader.make_request = fake_make_request
+
+    assert await client.get_model_prices(7) is None
+
+
+async def test_get_model_prices_rejects_json_body(downloader):
+    """A JSON response is not the page; it must not be parsed as one."""
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, {"error": "nope"}
+
+    downloader.make_request = fake_make_request
+
+    assert await client.get_model_prices(7) is None
+
+
+async def test_get_model_prices_propagates_rate_limit(downloader):
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, RateLimitError("limited", retry_after=1.0)
+
+    downloader.make_request = fake_make_request
+
+    with pytest.raises(RateLimitError):
+        await client.get_model_prices(7)

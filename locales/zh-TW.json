@@ -201,7 +201,12 @@
             "loading": "正在檢查 {type} 更新...",
             "success": "找到 {count} 個 {type} 更新",
             "none": "所有 {type} 都是最新版本",
-            "error": "檢查 {type} 更新失敗：{message}"
+            "error": "檢查 {type} 更新失敗：{message}",
+            "gateEvents": {
+                "becameFree": "[TODO: Translate] {count} version(s) became free",
+                "priceDrop": "[TODO: Translate] {count} version(s) dropped below your price threshold",
+                "newGate": "[TODO: Translate] {count} version(s) are now paid"
+            }
         },
         "cleanupExampleImages": {
             "label": "清理範例圖片資料夾",
@@ -387,6 +392,7 @@
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
             "versionScope": "版本範圍",
+            "priceTracking": "[TODO: Translate] Buzz Price Tracking",
             "exampleImages": "範例圖片",
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
@@ -752,6 +758,16 @@
         "hidePaidUpdates": {
             "label": "隱藏付費更新",
             "help": "啟用後，只有付費更新的模型將不會顯示「有可用更新」徽章"
+        },
+        "priceTracking": {
+            "label": "[TODO: Translate] Buzz Price Tracking",
+            "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
+            "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
+            "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
+            "threshold": "[TODO: Translate] Price alert threshold (Buzz)",
+            "thresholdHelp": "[TODO: Translate] Alert when a paid version costs this much or less. Use 0 to only be told when a version becomes free.",
+            "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
+            "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
         },
         "licenseIcons": {
             "useNewStyle": "使用新版許可協議圖標",
@@ -2008,6 +2024,11 @@
                     "earlyAccessTooltip": "此版本目前需要 CivitAI 搶先體驗權限",
                     "paid": "付費",
                     "paidTooltip": "此版本需要付費才能下載",
+                    "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
+                    "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
+                    "priceAlertTooltip": "[TODO: Translate] {price} - below your price alert threshold",
+                    "freeNow": "[TODO: Translate] Free Now",
+                    "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
                     "ignored": "已忽略",
                     "ignoredTooltip": "此版本已關閉更新通知",
                     "onSiteOnly": "僅站內生成",

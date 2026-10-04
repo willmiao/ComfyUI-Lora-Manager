@@ -1086,6 +1086,33 @@ export class BaseModelApiClient {
         }
     }
 
+    /**
+     * Versions whose stored price currently crosses the alert threshold.
+     * Backed by the persisted alert state, so it matches the version badges.
+     * @param {{limit?: number}} [options]
+     * @returns {Promise<{alerts: Array, thresholdBuzz: number, enabled: boolean}>}
+     */
+    async getPriceAlerts({ limit = 200 } = {}) {
+        const endpoint = this.apiConfig?.endpoints?.priceAlerts;
+        if (!endpoint) {
+            return { alerts: [], thresholdBuzz: 0, enabled: false };
+        }
+
+        const response = await fetch(`${endpoint}?limit=${encodeURIComponent(limit)}`, {
+            method: 'GET'
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload?.success !== true) {
+            throw new Error(payload?.error || response.statusText || 'Failed to load price alerts');
+        }
+
+        return {
+            alerts: Array.isArray(payload.alerts) ? payload.alerts : [],
+            thresholdBuzz: payload.thresholdBuzz ?? 0,
+            enabled: payload.enabled === true
+        };
+    }
+
     async refreshUpdatesForModels(modelIds, { force = false } = {}) {
         if (!Array.isArray(modelIds) || modelIds.length === 0) {
             throw new Error('No model IDs provided');

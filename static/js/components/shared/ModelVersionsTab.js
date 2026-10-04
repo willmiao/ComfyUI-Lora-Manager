@@ -187,6 +187,53 @@ function isPaidPermanent(version) {
     return version && version.isPaid === true;
 }
 
+function isGated(version) {
+    return isEarlyAccessActive(version) || isPaidPermanent(version);
+}
+
+/**
+ * Format a Buzz price for display, or '' when the price is unknown (price
+ * tracking is opt-in, so most versions have no price at all).
+ */
+function formatBuzzPrice(value) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+        return '';
+    }
+    return `${value.toLocaleString()} Buzz`;
+}
+
+/**
+ * Tooltip for a known price: notes a sale against the list price and the Blue
+ * Buzz option, since both change what the number means to a buyer.
+ */
+function buildPriceTooltip(version, baseTooltip) {
+    const effective = formatBuzzPrice(version?.priceBuzz);
+    const segments = [baseTooltip];
+    if (!effective) {
+        return baseTooltip;
+    }
+    const list = version?.listPriceBuzz;
+    if (typeof list === 'number' && Number.isFinite(list) && list > version.priceBuzz) {
+        segments.push(
+            translate(
+                'modals.model.versions.badges.priceSaleTooltip',
+                { list: list.toLocaleString() },
+                `On sale, normally ${list.toLocaleString()} Buzz`
+            )
+        );
+    }
+    if (version?.acceptsBlueBuzz) {
+        segments.push(
+            translate(
+                'modals.model.versions.badges.priceBlueBuzzTooltip',
+                {},
+                'Can also be paid with Blue Buzz'
+            )
+        );
+    }
+    return segments.join(' · ');
+}
+
 function isDownloadAllowed(version) {
     if (!version.usageControl) {
         return true;
@@ -524,20 +571,55 @@ function renderRow(version, options) {
 
     if (isEarlyAccess) {
         badges.push(buildBadge(earlyAccessBadgeLabel, 'early-access', {
-            title: translate(
-                'modals.model.versions.badges.earlyAccessTooltip',
-                {},
-                'This version currently requires Civitai early access'
+            title: buildPriceTooltip(
+                version,
+                translate(
+                    'modals.model.versions.badges.earlyAccessTooltip',
+                    {},
+                    'This version currently requires Civitai early access'
+                )
             ),
         }));
     }
 
     if (isPaidPermanent(version)) {
         badges.push(buildBadge(paidBadgeLabel, 'paid', {
+            title: buildPriceTooltip(
+                version,
+                translate(
+                    'modals.model.versions.badges.paidTooltip',
+                    {},
+                    'This version requires payment to download'
+                )
+            ),
+        }));
+    }
+
+    // Known price for a gated version. The price is only captured when the
+    // optional price tracking is enabled, so this stays hidden otherwise.
+    const priceLabel = isGated(version) ? formatBuzzPrice(version.priceBuzz) : '';
+    if (priceLabel) {
+        const alertsEnabled = !!version.priceAlert;
+        badges.push(buildBadge(priceLabel, alertsEnabled ? 'price-alert' : 'paid', {
+            title: alertsEnabled
+                ? translate(
+                    'modals.model.versions.badges.priceAlertTooltip',
+                    { price: priceLabel },
+                    `${priceLabel} - below your price alert threshold`
+                )
+                : buildPriceTooltip(version, paidBadgeLabel),
+        }));
+    }
+
+    // A version that used to be gated and no longer is. `gateLapsedAt` is
+    // persisted, so the marker survives long after the refresh that saw it.
+    if (!isGated(version) && version.gateLapsedAt) {
+        const freeBadgeLabel = translate('modals.model.versions.badges.freeNow', {}, 'Free Now');
+        badges.push(buildBadge(freeBadgeLabel, 'success', {
             title: translate(
-                'modals.model.versions.badges.paidTooltip',
-                {},
-                'This version requires payment to download'
+                'modals.model.versions.badges.freeNowTooltip',
+                { date: formatDateLabel(version.gateLapsedAt) || '' },
+                'This version no longer requires payment'
             ),
         }));
     }

@@ -10,9 +10,11 @@ import pytest
 from py.config import config
 from py.routes.handlers.model_handlers import (
     ModelCivitaiHandler,
+    ModelHandlerSet,
     ModelManagementHandler,
     ModelUpdateHandler,
 )
+from py.routes.model_route_registrar import COMMON_ROUTE_DEFINITIONS
 from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
@@ -322,6 +324,105 @@ async def test_refresh_model_updates_filters_records_without_updates():
     assert call["force_refresh"] is False
     assert call["provider"] is not None
     assert call["target_model_ids"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_price_alerts_returns_flagged_versions():
+    """The price alert list is a GET (companion-extension friendly) and reports
+    the threshold it was computed with."""
+
+    class AlertsService:
+        def __init__(self):
+            self.calls = []
+
+        async def get_price_alerts(self, model_type, limit=200):
+            self.calls.append((model_type, limit))
+            return [{"modelId": 1, "versionId": 12, "priceBuzz": 250}]
+
+    update_service = AlertsService()
+    settings = {"price_tracking_enabled": True, "price_alert_threshold_buzz": 300}
+    handler = ModelUpdateHandler(
+        service=DummyService(SimpleNamespace(version_index={})),
+        update_service=update_service,
+        metadata_provider_selector=lambda *_: None,
+        settings_service=SimpleNamespace(get=lambda key, default=None: settings.get(key, default)),
+        logger=logging.getLogger(__name__),
+    )
+    request = SimpleNamespace(query={"limit": "50"})
+
+    response = await handler.get_price_alerts(request)  # pyright: ignore[reportArgumentType]
+
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["enabled"] is True
+    assert payload["thresholdBuzz"] == 300
+    assert payload["alerts"] == [{"modelId": 1, "versionId": 12, "priceBuzz": 250}]
+    assert update_service.calls == [("lora", 50)]
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_reports_gate_events_for_all_records():
+    """Gate transitions are reported even for records that do not qualify as
+    updates (a version already in the library that became free)."""
+
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+    record = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=11,
+                name="v11",
+                base_model=None,
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            )
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+        events=[{"versionId": 11, "kind": "became_free", "versionName": "v11", "isInLibrary": True}],
+    )
+    update_service = DummyUpdateService({1: record})
+    metadata_selector = AsyncMock(return_value=SimpleNamespace())
+
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    # The record itself does not qualify as an update...
+    assert payload["records"] == []
+    # ...but its transition is still surfaced.
+    assert payload["events"] == [
+        {
+            "modelId": 1,
+            "modelType": "lora",
+            "versionId": 11,
+            "kind": "became_free",
+            "versionName": "v11",
+            "isInLibrary": True,
+        }
+    ]
 
 
 @pytest.mark.asyncio
@@ -1077,3 +1178,51 @@ async def test_relink_civitai_surfaces_provider_unavailable_without_500():
     payload = json.loads(response.text)
     assert payload["success"] is False
     assert "CivitArchive" in payload["error"]
+
+
+def test_every_common_route_definition_resolves_to_a_handler():
+    """Guard the declarative route table against a missing mapping entry.
+
+    Adding a RouteDefinition without registering it in
+    ``ModelHandlerSet.to_route_mapping`` fails at request time with a bare
+    KeyError from the handler lookup (and only on a live server), so assert the
+    whole table resolves here instead.
+    """
+
+    class AnyHandler:
+        def __getattr__(self, _name):
+            return lambda request: None
+
+    handler_set = ModelHandlerSet(
+        page_view=AnyHandler(),
+        listing=AnyHandler(),
+        management=AnyHandler(),
+        query=AnyHandler(),
+        download=AnyHandler(),
+        civitai=AnyHandler(),
+        move=AnyHandler(),
+        auto_organize=AnyHandler(),
+        filename_template=AnyHandler(),
+        updates=AnyHandler(),
+    )
+
+    mapping = handler_set.to_route_mapping()
+    missing = [
+        definition.handler_name
+        for definition in COMMON_ROUTE_DEFINITIONS
+        if definition.handler_name not in mapping
+    ]
+
+    assert missing == []
+
+
+def test_get_price_alerts_is_registered_as_a_route():
+    """The alerts endpoint must be declared and reachable via GET."""
+
+    definition = next(
+        d
+        for d in COMMON_ROUTE_DEFINITIONS
+        if d.handler_name == "get_price_alerts"
+    )
+    assert definition.method == "GET"
+    assert definition.build_path("loras") == "/api/lm/loras/updates/price-alerts"

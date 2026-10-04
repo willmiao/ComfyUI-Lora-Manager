@@ -129,6 +129,11 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
     "version_grouping": "same_base",
+    # Buzz price tracking for paid/early-access versions. Opt-in because reading a
+    # price costs one extra (public) model-page request per gated model.
+    "price_tracking_enabled": False,
+    "price_alert_threshold_buzz": 0,  # 0 = alert on "became free" only
+    "price_check_ttl_hours": 24,
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,

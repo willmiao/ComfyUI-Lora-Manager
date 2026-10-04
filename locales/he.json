@@ -201,7 +201,12 @@
             "loading": "בודק עדכונים עבור {type}...",
             "success": "נמצאו {count} עדכונים עבור {type}",
             "none": "כל ה-{type} מעודכנים",
-            "error": "נכשל בבדיקת העדכונים עבור {type}: {message}"
+            "error": "נכשל בבדיקת העדכונים עבור {type}: {message}",
+            "gateEvents": {
+                "becameFree": "[TODO: Translate] {count} version(s) became free",
+                "priceDrop": "[TODO: Translate] {count} version(s) dropped below your price threshold",
+                "newGate": "[TODO: Translate] {count} version(s) are now paid"
+            }
         },
         "cleanupExampleImages": {
             "label": "נקה תיקיות תמונות דוגמה",
@@ -387,6 +392,7 @@
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "priorityTags": "תגיות עדיפות",
             "versionScope": "תגי עדכון",
+            "priceTracking": "[TODO: Translate] Buzz Price Tracking",
             "exampleImages": "תמונות דוגמה",
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
@@ -752,6 +758,16 @@
         "hidePaidUpdates": {
             "label": "הסתר עדכונים בתשלום",
             "help": "כשאפשרות זו מופעלת, מודלים עם עדכונים בתשלום בלבד לא יציגו את תגית 'עדכון זמין'"
+        },
+        "priceTracking": {
+            "label": "[TODO: Translate] Buzz Price Tracking",
+            "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
+            "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
+            "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
+            "threshold": "[TODO: Translate] Price alert threshold (Buzz)",
+            "thresholdHelp": "[TODO: Translate] Alert when a paid version costs this much or less. Use 0 to only be told when a version becomes free.",
+            "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
+            "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
         },
         "licenseIcons": {
             "useNewStyle": "השתמש בסמלי רישיון מעודכנים",
@@ -2008,6 +2024,11 @@
                     "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של CivitAI",
                     "paid": "בתשלום",
                     "paidTooltip": "גרסה זו דורשת תשלום כדי להוריד",
+                    "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
+                    "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
+                    "priceAlertTooltip": "[TODO: Translate] {price} - below your price alert threshold",
+                    "freeNow": "[TODO: Translate] Free Now",
+                    "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
                     "ignored": "התעלם",
                     "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו",
                     "onSiteOnly": "רק באתר",

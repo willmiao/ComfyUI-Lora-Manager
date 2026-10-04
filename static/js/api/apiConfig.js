@@ -98,6 +98,7 @@ export function getApiEndpoints(modelType) {
         modelUpdateVersions: `/api/lm/${modelType}/updates/versions`,
         ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
         ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
+        priceAlerts: `/api/lm/${modelType}/updates/price-alerts`,
 
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,

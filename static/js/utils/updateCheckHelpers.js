@@ -9,6 +9,64 @@ import { modalManager } from '../managers/ModalManager.js';
 const CHECK_UPDATES_CONFIRMATION_KEY = 'ack_check_updates_for_all_models';
 
 /**
+ * Count the gate/price transitions reported by an update refresh.
+ * @param {Array} events - `events` array from the refresh response.
+ * @returns {{becameFree: number, newGate: number, priceDrop: number, total: number}}
+ */
+export function summarizeGateEvents(events) {
+    const list = Array.isArray(events) ? events : [];
+    return {
+        becameFree: list.filter((event) => event?.kind === 'became_free').length,
+        newGate: list.filter((event) => event?.kind === 'new_gate').length,
+        priceDrop: list.filter((event) => event?.kind === 'price_drop').length,
+        total: list.length
+    };
+}
+
+/**
+ * Toast the gate/price transitions of an update refresh, if any. Kept to a single
+ * toast so a large refresh cannot bury the user in notifications.
+ * @param {Array} events
+ */
+export function showGateEventsToast(events) {
+    const { becameFree, newGate, priceDrop } = summarizeGateEvents(events);
+    if (!becameFree && !newGate && !priceDrop) {
+        return;
+    }
+
+    const parts = [];
+    if (becameFree) {
+        parts.push(
+            translate(
+                'globalContextMenu.checkModelUpdates.gateEvents.becameFree',
+                { count: becameFree },
+                `${becameFree} version(s) became free`
+            )
+        );
+    }
+    if (priceDrop) {
+        parts.push(
+            translate(
+                'globalContextMenu.checkModelUpdates.gateEvents.priceDrop',
+                { count: priceDrop },
+                `${priceDrop} version(s) dropped below your price threshold`
+            )
+        );
+    }
+    if (newGate) {
+        parts.push(
+            translate(
+                'globalContextMenu.checkModelUpdates.gateEvents.newGate',
+                { count: newGate },
+                `${newGate} version(s) are now paid`
+            )
+        );
+    }
+
+    showToast(parts.join(' · '), {}, becameFree || priceDrop ? 'success' : 'info');
+}
+
+/**
  * Perform a model update check using the shared backend endpoint.
  * @param {Object} [options]
  * @param {Function} [options.onStart] - Callback invoked before the request is sent.
@@ -84,6 +142,8 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
         } else {
             showToast('globalContextMenu.checkModelUpdates.none', { type: displayName }, 'info');
         }
+
+        showGateEventsToast(payload.events);
 
         await resetAndReload(false);
     } catch (err) {
@@ -179,6 +239,8 @@ export async function performFolderUpdateCheck(folderPath, { onComplete } = {}) 
         } else {
             showToast('sidebar.folderUpdateCheck.none', { type: displayName }, 'info');
         }
+
+        showGateEventsToast(payload.events);
 
         await resetAndReload(false);
     } catch (err) {

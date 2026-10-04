@@ -20,7 +20,8 @@ from .model_metadata_provider import (
 )
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
-from ..utils.civitai_utils import resolve_license_payload
+from ..utils.civitai_utils import build_civitai_model_page_url, resolve_license_payload
+from ..utils.civitai_page_prices import parse_model_page_prices
 from ..utils.constants import MODEL_WEIGHT_FILE_TYPES, is_empty_placeholder_hash
 
 logger = logging.getLogger(__name__)
@@ -381,6 +382,72 @@ class CivitaiClient:
             raise
         except Exception as exc:
             logger.error(f"Error fetching model versions in bulk: {exc}")
+            return None
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        """Fetch per-version buzz prices for one model from its public page.
+
+        CivitAI's public REST API deliberately omits prices, but the model page
+        embeds the site's own ``model.getById`` result (including
+        ``paidAccess.terms``) in its server-rendered payload. One request covers
+        every version of the model. Returns ``{version_id: price fields}``, an
+        empty dict when the page loads but lists no gated version, or None when
+        the page could not be read or understood — callers keep any stored price.
+
+        This is a public anonymous page fetch: no API key and no internal
+        endpoint, so a failure here must never fail the update check itself.
+        """
+
+        try:
+            normalized_id = int(model_id)
+        except (TypeError, ValueError):
+            return None
+
+        url = build_civitai_model_page_url(normalized_id, host=self._page_host())
+        if not url:
+            return None
+
+        try:
+            success, result = await self._make_request(
+                "GET",
+                url,
+                use_auth=False,
+                custom_headers={"Accept": "text/html"},
+            )
+        except RateLimitError:
+            # The shared rate-limit gate already recorded it; skip this model.
+            raise
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("Failed to fetch model page for %s: %s", model_id, exc)
+            return None
+
+        if not success or not isinstance(result, str):
+            logger.debug(
+                "No model page payload for %s (success=%s, type=%s)",
+                model_id,
+                success,
+                type(result).__name__,
+            )
+            return None
+
+        prices = parse_model_page_prices(result)
+        if prices is None:
+            logger.debug(
+                "Model page for %s carried no usable price payload", model_id
+            )
+        return prices
+
+    def _page_host(self) -> Optional[str]:
+        """Resolve the page host from the ``civitai_host`` setting."""
+
+        try:
+            from .settings_manager import get_settings_manager
+
+            settings = get_settings_manager()
+            return settings.get("civitai_host") if settings else None
+        except Exception:
             return None
 
     async def get_model_version(
