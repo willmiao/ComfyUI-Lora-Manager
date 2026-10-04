@@ -2037,7 +2037,9 @@
           "ignored": "Ignored",
           "ignoredTooltip": "Update notifications are disabled for this version",
           "onSiteOnly": "On-Site Only",
-          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI"
+          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI",
+          "priceUnavailable": "Price unavailable",
+          "priceUnavailableTooltip": "CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
         },
         "actions": {
           "download": "Download",
@@ -2408,7 +2410,8 @@
       "notInLibrary": "Not in library",
       "droppedAgo": "dropped {when}",
       "openCivitai": "Open on CivitAI",
-      "openLocal": "Open"
+      "openLocal": "Open",
+      "unavailable": "{count} paid version(s) have no readable price (mature models can only be read in a browser)"
     }
   },
   "support": {

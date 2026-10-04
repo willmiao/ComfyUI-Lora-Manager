@@ -28,7 +28,8 @@ async function fetchPriceAlerts(limit = 200) {
         alerts: Array.isArray(payload.alerts) ? payload.alerts : [],
         enabled: payload.enabled === true,
         thresholdBuzz: payload.thresholdBuzz ?? 0,
-        newestCheckedAt: payload.newestCheckedAt ?? null
+        newestCheckedAt: payload.newestCheckedAt ?? null,
+        unavailableCount: payload.unavailableCount ?? 0
     };
 }
 
@@ -112,6 +113,7 @@ export class UpdateService {
         this.priceAlertsEnabled = false;
         this.priceAlertsThreshold = 0;
         this.priceAlertsNewestCheckedAt = null;
+        this.priceAlertsUnavailableCount = 0;
         this.priceAlertsLoading = false;
         this.priceAlertSegment = 'below_threshold';
         this.unreadPriceAlertCount = 0;
@@ -404,6 +406,7 @@ export class UpdateService {
             this.priceAlertsEnabled = payload.enabled;
             this.priceAlertsThreshold = payload.thresholdBuzz;
             this.priceAlertsNewestCheckedAt = payload.newestCheckedAt;
+            this.priceAlertsUnavailableCount = payload.unavailableCount || 0;
             this.refreshUnreadPriceAlertCount();
             this.renderPriceAlerts();
             return this.priceAlerts;
@@ -467,7 +470,7 @@ export class UpdateService {
         }
         if (stale) {
             const checkedAt = this.priceAlertsNewestCheckedAt;
-            const staleText = error
+            let staleText = error
                 ? translate(
                       'update.priceAlerts.loadFailed',
                       {},
@@ -480,6 +483,15 @@ export class UpdateService {
                         `Prices last checked ${formatRelativeTime(checkedAt)}`
                     )
                   : '';
+            const unavailable = this.priceAlertsUnavailableCount;
+            if (unavailable > 0) {
+                const unavailableText = translate(
+                    'update.priceAlerts.unavailable',
+                    { count: unavailable },
+                    `${unavailable} paid version(s) have no readable price (mature models can only be read in a browser)`
+                );
+                staleText = staleText ? `${staleText} · ${unavailableText}` : unavailableText;
+            }
             stale.textContent = staleText;
             stale.classList.toggle('hidden', !staleText);
         }

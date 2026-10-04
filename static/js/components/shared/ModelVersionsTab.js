@@ -609,6 +609,20 @@ function renderRow(version, options) {
                 )
                 : buildPriceTooltip(version, paidBadgeLabel),
         }));
+    } else if (isGated(version) && version.priceAttemptedAt) {
+        // We looked and could not read a price. Staying silent would read as
+        // "free", which is the one thing this version is not.
+        badges.push(buildBadge(
+            translate('modals.model.versions.badges.priceUnavailable', {}, 'Price unavailable'),
+            'muted',
+            {
+                title: translate(
+                    'modals.model.versions.badges.priceUnavailableTooltip',
+                    {},
+                    'CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser'
+                ),
+            }
+        ));
     }
 
     // A version that used to be gated and no longer is. `gateLapsedAt` is

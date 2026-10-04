@@ -3511,6 +3511,10 @@ class ModelUpdateHandler:
             "acceptsBlueBuzz": bool(getattr(version, "accepts_blue_buzz", False)),
             "priceSaleEndsAt": getattr(version, "price_sale_ends_at", None),
             "priceCheckedAt": getattr(version, "price_checked_at", None),
+            # Set when a price fetch was attempted (success or not): a gated
+            # version with no price and an attempt marker is "unavailable",
+            # which is the honest state for mature models.
+            "priceAttemptedAt": getattr(version, "price_check_attempted_at", None),
             "priceAlert": bool(getattr(version, "price_alert_state", False)),
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),

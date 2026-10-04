@@ -283,3 +283,96 @@ describe('ModelVersionsTab download button visibility', () => {
     expect(openFileSelectionForVersion).not.toHaveBeenCalled();
   });
 });
+
+describe('ModelVersionsTab price badges', () => {
+  let getModelApiClient;
+  let fetchModelUpdateVersions;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    document.body.innerHTML = `
+      <div id="model-versions-modal">
+        <div id="versions-tab">
+          <div class="model-versions-tab"></div>
+        </div>
+      </div>
+    `;
+    ({ getModelApiClient } = await import(API_FACTORY_MODULE));
+    fetchModelUpdateVersions = vi.fn();
+    getModelApiClient.mockReturnValue({
+      fetchModelUpdateVersions,
+      fetchModelRoots: vi.fn(),
+      setModelUpdateIgnore: vi.fn(),
+      setVersionUpdateIgnore: vi.fn(),
+      deleteModel: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function rowFor(versionId) {
+    return document.querySelector(`.model-version-row[data-version-id="${versionId}"]`);
+  }
+
+  it('shows the price for a gated version whose price was captured', async () => {
+    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
+      {
+        versionId: 20,
+        name: 'Alpha',
+        isInLibrary: false,
+        shouldIgnore: false,
+        isPaid: true,
+        paidAccess: { permanent: true, endsAt: null },
+        priceBuzz: 5000,
+        listPriceBuzz: 5000,
+        priceCheckedAt: 1791039694.5,
+        priceAttemptedAt: 1791039694.5,
+      },
+    ]));
+
+    await renderVersions();
+
+    expect(rowFor(20).textContent).toContain('5,000 Buzz');
+  });
+
+  it('marks a gated version with no readable price as unavailable', async () => {
+    // The mature-model case: we looked, no host would serve the page.
+    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
+      {
+        versionId: 21,
+        name: 'Beta',
+        isInLibrary: false,
+        shouldIgnore: false,
+        isPaid: true,
+        paidAccess: { permanent: true, endsAt: null },
+        priceBuzz: null,
+        priceAttemptedAt: 1791039694.5,
+      },
+    ]));
+
+    await renderVersions();
+
+    expect(rowFor(21).textContent).toContain('Price unavailable');
+  });
+
+  it('stays quiet when the price was never looked up', async () => {
+    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
+      {
+        versionId: 22,
+        name: 'Gamma',
+        isInLibrary: false,
+        shouldIgnore: false,
+        isPaid: true,
+        paidAccess: { permanent: true, endsAt: null },
+        priceBuzz: null,
+        priceAttemptedAt: null,
+      },
+    ]));
+
+    await renderVersions();
+
+    expect(rowFor(22).textContent).not.toContain('Price unavailable');
+  });
+});

@@ -128,6 +128,10 @@ class ModelVersionRecord:
     # price rises back above the threshold. Gives the panel "dropped X ago" and
     # the unread count something to compare against.
     price_alert_since: Optional[float] = None
+    # When a price fetch was last *attempted* (success or failure). Distinguishes
+    # "never tried" from "tried and no price is readable", which is what lets the
+    # UI say "price unavailable" for mature models instead of showing nothing.
+    price_check_attempted_at: Optional[float] = None
 
 
 @dataclass
@@ -379,6 +383,7 @@ class ModelUpdateService:
             price_checked_at REAL,
             price_alert_state INTEGER NOT NULL DEFAULT 0,
             price_alert_since REAL,
+            price_check_attempted_at REAL,
             PRIMARY KEY (model_id, version_id),
             FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
         );
@@ -666,6 +671,10 @@ class ModelUpdateService:
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN price_alert_since REAL"
             ),
+            "price_check_attempted_at": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN price_check_attempted_at REAL"
+            ),
         }
 
         for column, statement in migrations.items():
@@ -779,6 +788,7 @@ class ModelUpdateService:
                 price_checked_at REAL,
                 price_alert_state INTEGER NOT NULL DEFAULT 0,
                 price_alert_since REAL,
+                price_check_attempted_at REAL,
                 PRIMARY KEY (model_id, version_id),
                 FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
             )
@@ -810,6 +820,7 @@ class ModelUpdateService:
             "price_checked_at",
             "price_alert_state",
             "price_alert_since",
+            "price_check_attempted_at",
         ]
         defaults = {
             "sort_index": "0",
@@ -834,6 +845,7 @@ class ModelUpdateService:
             "price_checked_at": "NULL",
             "price_alert_state": "0",
             "price_alert_since": "NULL",
+            "price_check_attempted_at": "NULL",
         }
 
         select_parts = []
@@ -1349,6 +1361,39 @@ class ModelUpdateService:
         if row is None or row["newest"] is None:
             return None
         return float(row["newest"])
+
+    def count_unavailable_prices(self, model_type: Optional[str] = None) -> int:
+        """Gated versions whose price we tried to read and could not.
+
+        Mostly mature models: their pages are served only by ``civitai.red``, which
+        refuses non-browser clients, while ``civitai.com`` hides them from
+        anonymous visitors. Reported so the UI can be honest instead of silent.
+        """
+
+        params: List[Any] = []
+        type_filter = ""
+        if model_type:
+            type_filter = "AND s.model_type = ?"
+            params.append(model_type)
+
+        with self._connect() as conn:
+            row = conn.execute(
+                f"""
+                SELECT COUNT(*) AS unavailable
+                FROM model_update_versions v
+                JOIN model_update_status s ON s.model_id = v.model_id
+                WHERE v.should_ignore = 0
+                  AND s.should_ignore_model = 0
+                  {type_filter}
+                  AND v.price_check_attempted_at IS NOT NULL
+                  AND v.price_buzz IS NULL
+                  AND (v.paid_access IS NOT NULL OR v.is_paid = 1 OR v.is_early_access = 1)
+                """,
+                tuple(params),
+            ).fetchone()
+        if row is None:
+            return 0
+        return int(row["unavailable"])
 
     async def _refresh_single_model(
         self,
@@ -2079,6 +2124,7 @@ class ModelUpdateService:
                 "price_checked_at": None,
                 "price_alert_state": False,
                 "price_alert_since": None,
+                "price_check_attempted_at": None,
             }
 
         if remote_version.price_checked_at is not None:
@@ -2095,6 +2141,7 @@ class ModelUpdateService:
             "price_checked_at": source.price_checked_at,
             "price_alert_state": source.price_alert_state,
             "price_alert_since": source.price_alert_since,
+            "price_check_attempted_at": source.price_check_attempted_at,
         }
 
     def _price_tracking_enabled(self) -> bool:
@@ -2186,42 +2233,60 @@ class ModelUpdateService:
         Never raises for a provider problem: price tracking is a convenience, and
         an unreadable page (or a provider that has no prices at all) must leave
         the update check exactly as it was.
+
+        A failed attempt is still recorded (``price_check_attempted_at``) so the UI
+        can distinguish "we could not read a price" from "we never looked" — that
+        is the honest state for mature models, whose pages are served only by
+        civitai.red, which refuses non-browser clients.
         """
 
         getter = getattr(metadata_provider, "get_model_prices", None)
         if not callable(getter):
             return list(versions)
 
+        attempted_at = time.time()
         try:
             prices = await getter(model_id)
         except RateLimitError:
             raise
         except Exception as exc:  # pragma: no cover - defensive
             logger.debug("Price fetch failed for model %s: %s", model_id, exc)
-            return list(versions)
+            prices = None
 
-        if not isinstance(prices, Mapping) or not prices:
-            return list(versions)
+        if not isinstance(prices, Mapping):
+            prices = {}
 
-        checked_at = time.time()
         enriched: List[ModelVersionRecord] = []
         for version in versions:
+            if not self._has_structural_gate(version):
+                enriched.append(version)
+                continue
+
             fields = prices.get(version.version_id)
-            if not isinstance(fields, Mapping):
-                # Not priced (or not understood): leave the stored values alone so
-                # the next refresh retries instead of recording a blank price.
-                enriched.append(version)
-                continue
-            recognized = {
-                key: value
-                for key, value in fields.items()
-                if key in _PRICE_FIELD_NAMES
-            }
+            recognized = (
+                {
+                    key: value
+                    for key, value in fields.items()
+                    if key in _PRICE_FIELD_NAMES
+                }
+                if isinstance(fields, Mapping)
+                else {}
+            )
             if not recognized:
-                enriched.append(version)
+                # Keep the stored price (there may be none) but remember the try, so
+                # the UI can say "unavailable" instead of showing nothing at all.
+                enriched.append(
+                    replace(version, price_check_attempted_at=attempted_at)
+                )
                 continue
+
             enriched.append(
-                replace(version, price_checked_at=checked_at, **recognized)
+                replace(
+                    version,
+                    price_checked_at=attempted_at,
+                    price_check_attempted_at=attempted_at,
+                    **recognized,
+                )
             )
         return enriched
 
@@ -2468,7 +2533,7 @@ class ModelUpdateService:
                            is_early_access, usage_control, paid_access, is_paid, file_count,
                            gate_lapsed_at, price_buzz, list_price_buzz, generation_price_buzz,
                            accepts_blue_buzz, price_sale_ends_at, price_checked_at, price_alert_state,
-                           price_alert_since
+                           price_alert_since, price_check_attempted_at
                     FROM model_update_versions
                     WHERE model_id IN ({placeholders})
                     ORDER BY model_id ASC, sort_index ASC, version_id ASC
@@ -2515,6 +2580,11 @@ class ModelUpdateService:
                     price_alert_since=(
                         float(row["price_alert_since"])
                         if row["price_alert_since"] is not None
+                        else None
+                    ),
+                    price_check_attempted_at=(
+                        float(row["price_check_attempted_at"])
+                        if row["price_check_attempted_at"] is not None
                         else None
                     ),
                 )
@@ -2582,8 +2652,8 @@ class ModelUpdateService:
                         is_early_access, usage_control, paid_access, is_paid, file_count,
                         gate_lapsed_at, price_buzz, list_price_buzz, generation_price_buzz,
                         accepts_blue_buzz, price_sale_ends_at, price_checked_at, price_alert_state,
-                        price_alert_since
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        price_alert_since, price_check_attempted_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         version.version_id,
@@ -2611,6 +2681,7 @@ class ModelUpdateService:
                         version.price_checked_at,
                         1 if version.price_alert_state else 0,
                         version.price_alert_since,
+                        version.price_check_attempted_at,
                     ),
                 )
             conn.commit()

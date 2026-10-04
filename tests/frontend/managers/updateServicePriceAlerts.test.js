@@ -203,6 +203,21 @@ describe('UpdateService price alerts panel', () => {
         expect(document.querySelectorAll('#priceAlertsList .price-alert-item')).toHaveLength(0);
     });
 
+    it('reports how many gated versions have no readable price', async () => {
+        global.fetch = vi.fn().mockResolvedValue(
+            createFetchResponse(
+                alertPayload([BELOW_THRESHOLD_ALERT], { unavailableCount: 3 })
+            )
+        );
+
+        await service.loadPriceAlerts({ force: true });
+
+        expect(service.priceAlertsUnavailableCount).toBe(3);
+        const note = document.getElementById('priceAlertsStale');
+        expect(note.classList.contains('hidden')).toBe(false);
+        expect(note.textContent).toContain('3 paid version(s) have no readable price');
+    });
+
     it('keeps the last known list when the request fails', async () => {
         global.fetch = vi
             .fn()

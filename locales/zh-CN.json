@@ -2037,7 +2037,9 @@
                     "ignored": "已忽略",
                     "ignoredTooltip": "此版本已关闭更新通知",
                     "onSiteOnly": "仅站内生成",
-                    "onSiteOnlyTooltip": "此版本仅在 CivitAI 站内可用，无法下载"
+                    "onSiteOnlyTooltip": "此版本仅在 CivitAI 站内可用，无法下载",
+                    "priceUnavailable": "[TODO: Translate] Price unavailable",
+                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
                 },
                 "actions": {
                     "download": "下载",
@@ -2408,7 +2410,8 @@
             "notInLibrary": "[TODO: Translate] Not in library",
             "droppedAgo": "[TODO: Translate] dropped {when}",
             "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open"
+            "openLocal": "[TODO: Translate] Open",
+            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)"
         }
     },
     "support": {

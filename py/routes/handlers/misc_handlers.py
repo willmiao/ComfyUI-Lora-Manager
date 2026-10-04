@@ -4384,6 +4384,7 @@ class PriceAlertsHandler:
                 None, threshold_buzz=threshold, limit=limit
             )
             newest_checked_at = update_service.newest_price_checked_at()
+            unavailable_count = update_service.count_unavailable_prices()
         except Exception as exc:
             logger.error("Failed to load price alerts: %s", exc, exc_info=True)
             return web.json_response(
@@ -4406,6 +4407,9 @@ class PriceAlertsHandler:
                 "enabled": bool(self._setting("price_tracking_enabled", False)),
                 "thresholdBuzz": threshold,
                 "newestCheckedAt": newest_checked_at,
+                # Gated versions whose price could not be read (mature models
+                # are served only by the challenged civitai.red host).
+                "unavailableCount": unavailable_count,
                 "alerts": alerts,
             }
         )

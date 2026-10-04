@@ -600,3 +600,55 @@ Verification: `pytest` 3652 passed / 7 skipped, `npm run test:js` 1444 passed, p
 standalone server run that seeded the update DB and confirmed the payload shape, the `kind`
 split, the `civitaiUrl`, and that changing `price_alert_threshold_buzz` through `POST /api/lm/settings`
 changes panel membership immediately with no refresh.
+
+### 11.10 Known limitation: mature (NSFW) model prices, and the host fallback
+
+End-to-end verification against the live site found that the page fetch was broken for a whole class
+of users: **the hosts are not interchangeable**, and the user's `civitai_host` preference was
+silently fatal.
+
+Measured with the app's own HTTP stack (aiohttp) and with httpx, browser User-Agent in both cases:
+
+| Target | civitai.com | civitai.green | civitai.red |
+| --- | --- | --- | --- |
+| Anonymously visible model page | 200, prices parse | 200, prices parse (same bytes as .com) | **403 Cloudflare challenge** |
+| Mature (NSFW) model page | 404 | 404 | **403 Cloudflare challenge** |
+
+* `civitai.red` refuses non-browser clients outright — User-Agent, `Accept-Language`, `Sec-Fetch-*`
+  and switching HTTP library all make no difference. (An earlier manual check with `curl` passed by
+  luck of TLS fingerprint, which is why this was missed: it was a false positive.)
+* A real user on `civitai_host=civitai.red` therefore captured **zero** prices
+  (`price_checked_at = 0` in their update DB) even with tracking enabled.
+* Mature models are hidden from anonymous visitors on `.com`/`.green` and only served by `.red`, so
+  **no host can currently read their price.** The public API cannot help: it trims `paidAccess` to
+  `{permanent, endsAt}` by design, and the public `mini/{id}` endpoint exposes only per-generation
+  `fees`.
+
+What P5a now does about it:
+
+* **Host fallback** (`CivitaiClient.get_model_prices`): the configured host is tried first, then the
+  others (`civitai_page_host_candidates`), first parseable payload wins. The host that worked is
+  remembered, and a host that refuses outright (403) is parked for 15 minutes — a host-wide failure
+  must not cost three requests per mature model in the library. A 404 is model-specific and does
+  **not** park the host.
+* **Honest "unavailable" state**: `price_check_attempted_at` separates "we tried and could not read
+  a price" from "we never looked". Gated versions in that state show a muted `Price unavailable`
+  badge in the versions tab, and the panel reports `unavailableCount`.
+* **Diagnostics**: a host refusal is warned once per host per TTL, and a model with no price source
+  logs the per-host reasons (404 vs challenge) instead of failing silently at debug level.
+
+Recorded options for mature models, deliberately **not** implemented:
+
+1. **Internal tRPC with the user's API key** (`modelVersion.getById` on `.red`): the route is a
+   `publicProcedure` with `requiredScope: ModelsRead`, and `isBearerAuth` satisfies
+   `acceptableOrigin`, so the user's own key would work and `.red`'s `/api` paths are not challenged.
+   Rejected as the default because the endpoint is undocumented and its own 401 message says to use
+   the public API. If ever wanted, it belongs behind an off-by-default setting.
+2. **Extension-assisted fetch**: `lm-civitai-extension` runs inside the user's browser, so it has
+   both the Cloudflare clearance and the login session needed to read mature pages. This is the only
+   route that would work without an undocumented API, but it is a cross-component design of its own.
+
+**Strengthened upstream ask:** the public API should expose the price. The argument is no longer
+"convenience" — the page route is demonstrably unreliable (one host challenges non-browser clients,
+the other two hide mature models from anonymous visitors), so a supported field is the only way for
+any third-party tool to show prices for the models where creators monetize most.

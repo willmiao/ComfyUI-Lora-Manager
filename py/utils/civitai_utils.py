@@ -41,6 +41,21 @@ def normalize_civitai_page_host(hostname: str | None) -> str:
     return DEFAULT_CIVITAI_PAGE_HOST
 
 
+def civitai_page_host_candidates(hostname: str | None = None) -> tuple[str, ...]:
+    """Ordered page hosts to try, the preferred one first.
+
+    The hosts are not interchangeable: ``civitai.red`` serves mature model pages
+    that ``civitai.com`` hides from anonymous visitors, but it also sits behind a
+    Cloudflare challenge that rejects non-browser HTTP clients outright. Trying the
+    others when the preferred host refuses a request is what keeps a user's
+    ``civitai_host`` preference from disabling page reads entirely.
+    """
+
+    preferred = normalize_civitai_page_host(hostname)
+    rest = sorted(_SUPPORTED_CIVITAI_PAGE_HOSTS - {preferred})
+    return (preferred, *rest)
+
+
 def build_civitai_model_page_url(
     model_id: str | int | None,
     version_id: str | int | None = None,

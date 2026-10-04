@@ -1884,3 +1884,74 @@ async def test_newest_price_checked_at_reports_the_latest_fetch(tmp_path):
 
     assert newest is not None
     assert newest > 0
+
+
+@pytest.mark.asyncio
+async def test_failed_price_attempt_is_recorded_as_unavailable(tmp_path):
+    """A gated version we tried to price and could not must be distinguishable
+    from one we never looked at — that is the honest "unavailable" state for
+    mature models, whose pages no host will serve anonymously."""
+
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    failing = PriceProvider(GATED_RESPONSE, prices=None)
+
+    await service.refresh_for_model_type("lora", scanner, failing)
+    record = await service.get_record("lora", 1)
+    version = next(v for v in record.versions if v.version_id == 12)
+
+    assert failing.price_calls == 1
+    assert version.price_buzz is None
+    assert version.price_checked_at is None
+    assert version.price_check_attempted_at is not None
+    assert service.count_unavailable_prices("lora") == 1
+    assert service.count_unavailable_prices("checkpoint") == 0
+    # Nothing to alert on, and no price alert state.
+    assert await service.get_price_alerts("lora") == []
+    assert version.price_alert_state is False
+
+
+@pytest.mark.asyncio
+async def test_successful_price_attempt_sets_both_markers(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    await service.refresh_for_model_type(
+        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+    )
+    record = await service.get_record("lora", 1)
+    version = next(v for v in record.versions if v.version_id == 12)
+
+    assert version.price_buzz == 250
+    assert version.price_checked_at is not None
+    assert version.price_check_attempted_at is not None
+    assert service.count_unavailable_prices("lora") == 0
+
+
+@pytest.mark.asyncio
+async def test_no_price_attempt_is_recorded_while_tracking_is_off(tmp_path):
+    service = _price_service(tmp_path)  # tracking off
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    await service.refresh_for_model_type("lora", scanner, DummyProvider(GATED_RESPONSE))
+    record = await service.get_record("lora", 1)
+
+    assert record.versions[0].price_check_attempted_at is None
+    assert service.count_unavailable_prices("lora") == 0
+
+
+@pytest.mark.asyncio
+async def test_unavailable_marker_clears_when_the_version_becomes_free(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+
+    await service.refresh_for_model_type(
+        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=None)
+    )
+    assert service.count_unavailable_prices("lora") == 1
+
+    await service.refresh_for_model_type("lora", scanner, DummyProvider(FREE_RESPONSE))
+    record = await service.get_record("lora", 1)
+
+    assert record.versions[0].price_check_attempted_at is None
+    assert service.count_unavailable_prices("lora") == 0

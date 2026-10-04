@@ -2037,7 +2037,9 @@
                     "ignored": "Ignorada",
                     "ignoredTooltip": "Las notificaciones de actualización están desactivadas para esta versión",
                     "onSiteOnly": "Solo en Sitio",
-                    "onSiteOnlyTooltip": "Esta versión solo está disponible para generación en el sitio de CivitAI"
+                    "onSiteOnlyTooltip": "Esta versión solo está disponible para generación en el sitio de CivitAI",
+                    "priceUnavailable": "[TODO: Translate] Price unavailable",
+                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
                 },
                 "actions": {
                     "download": "Descargar",
@@ -2408,7 +2410,8 @@
             "notInLibrary": "[TODO: Translate] Not in library",
             "droppedAgo": "[TODO: Translate] dropped {when}",
             "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open"
+            "openLocal": "[TODO: Translate] Open",
+            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)"
         }
     },
     "support": {

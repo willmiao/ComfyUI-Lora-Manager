@@ -2037,7 +2037,9 @@
                     "ignored": "התעלם",
                     "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו",
                     "onSiteOnly": "רק באתר",
-                    "onSiteOnlyTooltip": "גרסה זו זמינה רק ליצירה באתר CivitAI"
+                    "onSiteOnlyTooltip": "גרסה זו זמינה רק ליצירה באתר CivitAI",
+                    "priceUnavailable": "[TODO: Translate] Price unavailable",
+                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
                 },
                 "actions": {
                     "download": "הורדה",
@@ -2408,7 +2410,8 @@
             "notInLibrary": "[TODO: Translate] Not in library",
             "droppedAgo": "[TODO: Translate] dropped {when}",
             "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open"
+            "openLocal": "[TODO: Translate] Open",
+            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)"
         }
     },
     "support": {

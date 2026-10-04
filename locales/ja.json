@@ -2037,7 +2037,9 @@
                     "ignored": "無視中",
                     "ignoredTooltip": "このバージョンの更新通知は無効です",
                     "onSiteOnly": "サイト内のみ",
-                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません"
+                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません",
+                    "priceUnavailable": "[TODO: Translate] Price unavailable",
+                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
                 },
                 "actions": {
                     "download": "ダウンロード",
@@ -2408,7 +2410,8 @@
             "notInLibrary": "[TODO: Translate] Not in library",
             "droppedAgo": "[TODO: Translate] dropped {when}",
             "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open"
+            "openLocal": "[TODO: Translate] Open",
+            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)"
         }
     },
     "support": {
