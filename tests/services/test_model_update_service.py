@@ -826,6 +826,32 @@ def test_extract_single_version_paid_access_permanent(tmp_path):
     assert version.paid_access is not None
 
 
+def test_extract_single_version_paid_access_pending_end(tmp_path):
+    """A timed gate whose window end is not recorded yet
+    ({"permanent": false, "endsAt": null}) is still an active gate, so it is
+    early access with no known end date rather than a free version."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    entry = {
+        "id": 42,
+        "name": "v1 paid",
+        "availability": "Public",
+        "paidAccess": {"permanent": False, "endsAt": None},
+        "files": [],
+        "images": [],
+    }
+
+    version = service._extract_single_version(entry, index=0)
+
+    assert version is not None
+    assert version.is_early_access is True
+    assert version.is_paid is False
+    assert version.early_access_ends_at is None
+    assert version.paid_access == '{"permanent": false, "endsAt": null}'
+    assert ModelUpdateRecord._is_early_access_active(version) is True
+
+
 def test_normalize_paid_access_accepts_json_string():
     """The by-hash enrichment path may hand paidAccess to _normalize_paid_access
     as a JSON string; both the permanent and timed shapes must normalize."""
@@ -841,13 +867,20 @@ def test_normalize_paid_access_accepts_json_string():
     )
     assert timed == {"permanent": False, "endsAt": "2026-08-22T18:30:00.000Z"}
 
-    empty = ModelUpdateService._normalize_paid_access(
+    # A timed gate whose window end is not recorded yet. CivitAI only returns a
+    # non-null DTO for an ACTIVE gate (tombstones come back as null) and enforces
+    # this shape too - the model page reports canDownload: false for it - so it
+    # must be kept. Dropping it was the #1060 class of bug.
+    pending_end = ModelUpdateService._normalize_paid_access(
         '{"permanent": false, "endsAt": null}'
     )
-    assert empty is None
+    assert pending_end == {"permanent": False, "endsAt": None}
 
     malformed = ModelUpdateService._normalize_paid_access("{not json")
     assert malformed is None
+
+    # No gate keys at all is not a gate signal.
+    assert ModelUpdateService._normalize_paid_access("{}") is None
 
 
 def test_has_update_for_base_hide_paid():

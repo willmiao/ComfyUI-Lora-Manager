@@ -20,6 +20,10 @@ from .settings_manager import get_settings_manager
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.paid_access import (
+    is_early_access_deadline_active,
+    normalize_paid_access as _normalize_paid_access_payload,
+)
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 
 logger = logging.getLogger(__name__)
@@ -172,16 +176,10 @@ class ModelUpdateRecord:
         if version.is_paid and not version.early_access_ends_at:
             return False
 
-        # Phase 2: Precise check with exact end time
+        # Phase 2: Precise check with exact end time (None when the gate is timed
+        # but its window end has not been recorded yet -> treated as active below)
         if version.early_access_ends_at:
-            try:
-                ea_date = datetime.fromisoformat(
-                    version.early_access_ends_at.replace("Z", "+00:00")
-                )
-                return ea_date > datetime.now(timezone.utc)
-            except (ValueError, AttributeError):
-                # If date parsing fails, treat as active EA (conservative)
-                return True
+            return is_early_access_deadline_active(version.early_access_ends_at)
 
         # Phase 1: Basic EA flag from bulk API
         return version.is_early_access
@@ -1762,6 +1760,9 @@ class ModelUpdateService:
 
         # CivitAI's paidAccess DTO ({"permanent": bool, "endsAt": ISO|null})
         # gates versions behind a paid tier while availability stays "Public".
+        # A non-null DTO from the public API is always an ACTIVE gate: lapsed
+        # (tombstone) gates come back as null. That includes the timed gate whose
+        # end is not recorded yet, {"permanent": false, "endsAt": null}.
         paid_access = self._normalize_paid_access(entry.get("paidAccess"))
         paid_access_json = json.dumps(paid_access) if paid_access else None
         is_paid = bool(paid_access.get("permanent")) if paid_access else False
@@ -1769,7 +1770,7 @@ class ModelUpdateService:
             early_access_ends_at = _normalize_string(paid_access.get("endsAt"))
         # Only timed gates are early access; permanent paid versions are not
         # (consumers filter them via is_paid), so the stored flag stays accurate.
-        if not is_early_access and paid_access and paid_access.get("endsAt"):
+        if not is_early_access and paid_access and not paid_access.get("permanent"):
             is_early_access = True
 
         return ModelVersionRecord(
@@ -1797,24 +1798,12 @@ class ModelUpdateService:
         Accepts a dict, None, or a JSON string (as carried by the by-hash
         enrichment path) and returns ``{"permanent": bool, "endsAt": str|None}``
         or None when the input carries no paid-access signal.
+
+        Delegates to :mod:`py.utils.paid_access` so the update service and the
+        download gate cannot disagree about what counts as a gate.
         """
-        if value is None:
-            return None
-        if isinstance(value, str):
-            try:
-                parsed = json.loads(value)
-            except (TypeError, ValueError):
-                return None
-            if not isinstance(parsed, dict):
-                return None
-            value = parsed
-        if not isinstance(value, Mapping):
-            return None
-        permanent = bool(value.get("permanent"))
-        ends_at = _normalize_string(value.get("endsAt"))
-        if not permanent and ends_at is None:
-            return None
-        return {"permanent": permanent, "endsAt": ends_at}
+
+        return _normalize_paid_access_payload(value)
 
     @staticmethod
     def _extract_file_count(files) -> Optional[int]:

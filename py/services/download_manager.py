@@ -33,6 +33,13 @@ from ..utils.constants import (
     VALID_OTHER_CIVITAI_TYPES,
 )
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
+from ..utils.paid_access import (
+    is_early_access_deadline_active,
+    is_gate_active,
+    is_permanent_paid,
+    normalize_paid_access,
+    parse_civitai_timestamp,
+)
 from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import calculate_filename_for_model, sanitize_folder_name
@@ -1985,40 +1992,32 @@ class DownloadManager:
                 os.makedirs(save_dir, exist_ok=True)
 
             # Check if this is a paid or early access model
-            paid_access = version_info.get("paidAccess")
-            if isinstance(paid_access, str):
-                # Some providers (e.g. CivArchive fallback) carry the DTO as JSON text
-                try:
-                    parsed = json.loads(paid_access)
-                    paid_access = parsed if isinstance(parsed, dict) else None
-                except (TypeError, ValueError):
-                    paid_access = None
-            if not isinstance(paid_access, dict):
-                paid_access = None
-            # An empty DTO ({"permanent": false, "endsAt": null}) is not a gate
-            if paid_access and not paid_access.get("permanent") and not paid_access.get("endsAt"):
-                paid_access = None
-            if version_info.get("earlyAccessEndsAt") or paid_access:
-                permanent_paid = bool(paid_access.get("permanent")) if paid_access else False
+            # CivitAI reports a non-null paidAccess only for an ACTIVE gate, so
+            # {"permanent": false, "endsAt": null} (a timed gate whose end is not
+            # recorded yet) still counts as gated here.
+            paid_access = normalize_paid_access(version_info.get("paidAccess"))
+            legacy_ea_ends_at = version_info.get("earlyAccessEndsAt")
+            gate_active = is_gate_active(paid_access) or is_early_access_deadline_active(
+                legacy_ea_ends_at
+            )
+            if gate_active:
+                permanent_paid = is_permanent_paid(paid_access)
                 if permanent_paid:
                     early_access_msg = (
                         "This model requires payment. Please ensure you have "
                         "purchased access and are logged in to Civitai."
                     )
                 else:
-                    early_access_date = version_info.get("earlyAccessEndsAt")
+                    early_access_date = legacy_ea_ends_at
                     if not early_access_date and paid_access:
                         early_access_date = paid_access.get("endsAt")
                     if not early_access_date:
                         early_access_date = ""
                     # Convert to a readable date if possible
                     try:
-                        from datetime import datetime
-
-                        date_obj = datetime.fromisoformat(
-                            early_access_date.replace("Z", "+00:00")
-                        )
-                        formatted_date = date_obj.strftime("%Y-%m-%d")
+                        formatted_date = parse_civitai_timestamp(
+                            early_access_date
+                        ).strftime("%Y-%m-%d")
                         early_access_msg = (
                             f"This model requires payment (until {formatted_date}). "
                         )
