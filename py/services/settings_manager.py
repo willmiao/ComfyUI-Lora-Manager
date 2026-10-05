@@ -131,8 +131,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "version_grouping": "same_base",
     # Buzz price tracking for paid/early-access versions. Opt-in because reading a
     # price costs one extra (public) model-page request per gated model.
+    # Plumbing switch: reading a price costs one extra request per paid model, so
+    # it stays opt-in. Prices decorate the version list; nothing alerts on a number.
     "price_tracking_enabled": False,
-    "price_alert_threshold_buzz": 0,  # 0 = alert on "became free" only
     "price_check_ttl_hours": 24,
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],

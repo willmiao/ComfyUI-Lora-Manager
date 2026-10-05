@@ -204,7 +204,6 @@
             "error": "Échec de la vérification des mises à jour pour {type} : {message}",
             "gateEvents": {
                 "becameFree": "[TODO: Translate] {count} version(s) became free",
-                "priceDrop": "[TODO: Translate] {count} version(s) dropped below your price threshold",
                 "newGate": "[TODO: Translate] {count} version(s) are now paid"
             }
         },
@@ -234,9 +233,6 @@
         },
         "groupByModel": {
             "label": "Grouper par modèle"
-        },
-        "priceAlerts": {
-            "label": "[TODO: Translate] Price alerts"
         }
     },
     "header": {
@@ -767,8 +763,6 @@
             "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
             "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
             "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
-            "threshold": "[TODO: Translate] Price alert threshold (Buzz)",
-            "thresholdHelp": "[TODO: Translate] Alert when a paid version costs this much or less. Use 0 to only be told when a version becomes free.",
             "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
             "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
         },
@@ -945,9 +939,7 @@
                 "action": "Mises à jour",
                 "menuLabel": "Afficher les options de mise à jour",
                 "check": "Rechercher des mises à jour",
-                "checkTooltip": "La vérification peut prendre du temps.",
-                "priceAlerts": "[TODO: Translate] Price alerts",
-                "priceAlertsTooltip": "[TODO: Translate] Buzz price alerts for paid versions"
+                "checkTooltip": "La vérification peut prendre du temps."
             }
         },
         "bulkOperations": {
@@ -2031,15 +2023,13 @@
                     "paidTooltip": "Cette version nécessite un paiement pour être téléchargée",
                     "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
                     "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
-                    "priceAlertTooltip": "[TODO: Translate] {price} - below your price alert threshold",
                     "freeNow": "[TODO: Translate] Free Now",
                     "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
                     "ignored": "Ignorée",
                     "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version",
                     "onSiteOnly": "Uniquement sur Site",
                     "onSiteOnlyTooltip": "Cette version n'est disponible que pour la génération sur le site CivitAI",
-                    "priceUnavailable": "[TODO: Translate] Price unavailable",
-                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
+                    "earlyAccessTooltipUntil": "[TODO: Translate] Early access until {date}, free to download after that"
                 },
                 "actions": {
                     "download": "Télécharger",
@@ -2328,8 +2318,7 @@
         "notificationsTitle": "Notifications",
         "tabs": {
             "updates": "Mises à jour",
-            "messages": "Messages",
-            "priceAlerts": "[TODO: Translate] Price Alerts"
+            "messages": "Messages"
         },
         "updateAvailable": "Mise à jour disponible",
         "noChangelogAvailable": "Aucun journal des modifications détaillé disponible. Consultez GitHub pour plus d'informations.",
@@ -2385,34 +2374,6 @@
             "shown": "Affiché {time}",
             "dismissed": "Ignoré {time}",
             "active": "Actif"
-        },
-        "priceAlerts": {
-            "disabled": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page. Turn on price tracking to see them here.",
-            "openSettings": "[TODO: Translate] Open settings",
-            "segmentsLabel": "[TODO: Translate] Alert kind",
-            "segments": {
-                "belowThreshold": "[TODO: Translate] Under threshold",
-                "becameFree": "[TODO: Translate] Became free"
-            },
-            "thresholdLabel": "[TODO: Translate] Alert threshold: {buzz} Buzz",
-            "empty": "[TODO: Translate] Nothing is under your price threshold right now.",
-            "emptyFree": "[TODO: Translate] No version has become free yet.",
-            "loadFailed": "[TODO: Translate] Could not refresh the alerts; showing the last known list.",
-            "lastChecked": "[TODO: Translate] Prices last checked {when}",
-            "justNow": "[TODO: Translate] just now",
-            "minutesAgo": "[TODO: Translate] {count} min ago",
-            "hoursAgo": "[TODO: Translate] {count} h ago",
-            "daysAgo": "[TODO: Translate] {count} d ago",
-            "freeNow": "[TODO: Translate] Free now",
-            "blueBuzz": "[TODO: Translate] Blue Buzz OK",
-            "earlyAccessUntil": "[TODO: Translate] Early access until {date}",
-            "inLibrary": "[TODO: Translate] In library",
-            "notInLibrary": "[TODO: Translate] Not in library",
-            "droppedAgo": "[TODO: Translate] dropped {when}",
-            "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open",
-            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)",
-            "emptyZeroThreshold": "[TODO: Translate] {count} paid version(s) have a known price, but your threshold is 0 Buzz so only free versions are listed. Set a threshold in Settings - Library to catch price drops."
         }
     },
     "support": {

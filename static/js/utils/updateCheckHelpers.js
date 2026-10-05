@@ -18,7 +18,6 @@ export function summarizeGateEvents(events) {
     return {
         becameFree: list.filter((event) => event?.kind === 'became_free').length,
         newGate: list.filter((event) => event?.kind === 'new_gate').length,
-        priceDrop: list.filter((event) => event?.kind === 'price_drop').length,
         total: list.length
     };
 }
@@ -29,8 +28,8 @@ export function summarizeGateEvents(events) {
  * @param {Array} events
  */
 export function showGateEventsToast(events) {
-    const { becameFree, newGate, priceDrop } = summarizeGateEvents(events);
-    if (!becameFree && !newGate && !priceDrop) {
+    const { becameFree, newGate } = summarizeGateEvents(events);
+    if (!becameFree && !newGate) {
         return;
     }
 
@@ -44,15 +43,6 @@ export function showGateEventsToast(events) {
             )
         );
     }
-    if (priceDrop) {
-        parts.push(
-            translate(
-                'globalContextMenu.checkModelUpdates.gateEvents.priceDrop',
-                { count: priceDrop },
-                `${priceDrop} version(s) dropped below your price threshold`
-            )
-        );
-    }
     if (newGate) {
         parts.push(
             translate(
@@ -63,7 +53,7 @@ export function showGateEventsToast(events) {
         );
     }
 
-    showToast(parts.join(' · '), {}, becameFree || priceDrop ? 'success' : 'info');
+    showToast(parts.join(' · '), {}, becameFree ? 'success' : 'info');
 }
 
 /**

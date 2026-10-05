@@ -1169,11 +1169,6 @@ export class SettingsManager {
             priceTrackingEnabledCheckbox.checked = state.global.settings.price_tracking_enabled || false;
         }
 
-        const priceAlertThresholdInput = document.getElementById('priceAlertThresholdBuzz');
-        if (priceAlertThresholdInput) {
-            priceAlertThresholdInput.value = state.global.settings.price_alert_threshold_buzz ?? 0;
-        }
-
         const priceCheckTtlInput = document.getElementById('priceCheckTtlHours');
         if (priceCheckTtlInput) {
             priceCheckTtlInput.value = state.global.settings.price_check_ttl_hours ?? 24;

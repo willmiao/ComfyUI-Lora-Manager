@@ -569,65 +569,58 @@ function renderRow(version, options) {
         }));
     }
 
-    if (isEarlyAccess) {
+    // Obtainability, only where there is a decision to make: a version already in
+    // the library cannot become cheaper *for this user*, so it gets no cost badge.
+    // The download price is the only price axis that matters here — the generation
+    // fee is what CivitAI charges to generate on its own site, which a local model
+    // never incurs.
+    const priceLabel = formatBuzzPrice(version.priceBuzz);
+    if (!version.isInLibrary && isEarlyAccess) {
+        // Early access is the one state with a real countdown: "free on <date>"
+        // decides between waiting and paying.
+        const eaTime = formatEarlyAccessTime(version.earlyAccessEndsAt);
         badges.push(buildBadge(earlyAccessBadgeLabel, 'early-access', {
             title: buildPriceTooltip(
                 version,
-                translate(
-                    'modals.model.versions.badges.earlyAccessTooltip',
-                    {},
-                    'This version currently requires Civitai early access'
-                )
+                eaTime
+                    ? translate(
+                        'modals.model.versions.badges.earlyAccessTooltipUntil',
+                        { date: eaTime },
+                        `Early access until ${eaTime}`
+                    )
+                    : translate(
+                        'modals.model.versions.badges.earlyAccessTooltip',
+                        {},
+                        'This version currently requires Civitai early access'
+                    )
             ),
         }));
     }
 
-    if (isPaidPermanent(version)) {
-        badges.push(buildBadge(paidBadgeLabel, 'paid', {
-            title: buildPriceTooltip(
-                version,
-                translate(
+    if (!version.isInLibrary && isGated(version)) {
+        if (priceLabel) {
+            // The number already says "paid", so a separate Paid badge would be
+            // noise next to it.
+            badges.push(buildBadge(priceLabel, isEarlyAccess ? 'early-access' : 'paid', {
+                title: buildPriceTooltip(version, paidBadgeLabel),
+            }));
+        } else if (!isEarlyAccess) {
+            // Paid, but no readable price: the gate is certain (it comes from the
+            // public API), only the number is best-effort. Saying nothing here
+            // would read as "free", which is the one thing this version is not.
+            badges.push(buildBadge(paidBadgeLabel, 'paid', {
+                title: translate(
                     'modals.model.versions.badges.paidTooltip',
                     {},
                     'This version requires payment to download'
-                )
-            ),
-        }));
-    }
-
-    // Known price for a gated version. The price is only captured when the
-    // optional price tracking is enabled, so this stays hidden otherwise.
-    const priceLabel = isGated(version) ? formatBuzzPrice(version.priceBuzz) : '';
-    if (priceLabel) {
-        const alertsEnabled = !!version.priceAlert;
-        badges.push(buildBadge(priceLabel, alertsEnabled ? 'price-alert' : 'paid', {
-            title: alertsEnabled
-                ? translate(
-                    'modals.model.versions.badges.priceAlertTooltip',
-                    { price: priceLabel },
-                    `${priceLabel} - below your price alert threshold`
-                )
-                : buildPriceTooltip(version, paidBadgeLabel),
-        }));
-    } else if (isGated(version) && version.priceAttemptedAt) {
-        // We looked and could not read a price. Staying silent would read as
-        // "free", which is the one thing this version is not.
-        badges.push(buildBadge(
-            translate('modals.model.versions.badges.priceUnavailable', {}, 'Price unavailable'),
-            'muted',
-            {
-                title: translate(
-                    'modals.model.versions.badges.priceUnavailableTooltip',
-                    {},
-                    'CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser'
                 ),
-            }
-        ));
+            }));
+        }
     }
 
     // A version that used to be gated and no longer is. `gateLapsedAt` is
     // persisted, so the marker survives long after the refresh that saw it.
-    if (!isGated(version) && version.gateLapsedAt) {
+    if (!version.isInLibrary && !isGated(version) && version.gateLapsedAt) {
         const freeBadgeLabel = translate('modals.model.versions.badges.freeNow', {}, 'Free Now');
         badges.push(buildBadge(freeBadgeLabel, 'success', {
             title: translate(

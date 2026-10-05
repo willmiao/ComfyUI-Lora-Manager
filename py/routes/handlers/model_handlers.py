@@ -3070,46 +3070,6 @@ class ModelUpdateHandler:
             {"success": True, "record": self._serialize_record(record)}
         )
 
-    async def get_price_alerts(self, request: web.Request) -> web.Response:
-        """List gated versions whose stored price crosses the alert threshold.
-
-        Backed by the persisted alert state, so it matches the badges; the
-        threshold (and whether price tracking runs at all) comes from settings.
-        """
-
-        try:
-            limit = int(request.query.get("limit") or 200)
-        except (TypeError, ValueError):
-            limit = 200
-
-        alerts = await self._update_service.get_price_alerts(
-            self._service.model_type, limit=limit
-        )
-        threshold = 0
-        enabled = False
-        if self._settings is not None:
-            try:
-                threshold = int(
-                    self._settings.get("price_alert_threshold_buzz", 0) or 0
-                )
-            except (TypeError, ValueError):
-                threshold = 0
-            try:
-                enabled = bool(
-                    self._settings.get("price_tracking_enabled", False)
-                )
-            except Exception:
-                enabled = False
-
-        return web.json_response(
-            {
-                "success": True,
-                "enabled": enabled,
-                "thresholdBuzz": threshold,
-                "alerts": alerts,
-            }
-        )
-
     async def get_model_versions(self, request: web.Request) -> web.Response:
         model_id = self._normalize_model_id(request.match_info.get("model_id"))
         if model_id is None:
@@ -3511,11 +3471,6 @@ class ModelUpdateHandler:
             "acceptsBlueBuzz": bool(getattr(version, "accepts_blue_buzz", False)),
             "priceSaleEndsAt": getattr(version, "price_sale_ends_at", None),
             "priceCheckedAt": getattr(version, "price_checked_at", None),
-            # Set when a price fetch was attempted (success or not): a gated
-            # version with no price and an attempt marker is "unavailable",
-            # which is the honest state for mature models.
-            "priceAttemptedAt": getattr(version, "price_check_attempted_at", None),
-            "priceAlert": bool(getattr(version, "price_alert_state", False)),
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
             # Weight-file variant count (None when unknown); lets the UI hide
@@ -3678,6 +3633,5 @@ class ModelHandlerSet:
             "set_version_update_ignore": self.updates.set_version_update_ignore,
             "get_model_update_status": self.updates.get_model_update_status,
             "get_model_versions": self.updates.get_model_versions,
-            "get_price_alerts": self.updates.get_price_alerts,
             "cancel_task": self.query.cancel_task,
         }

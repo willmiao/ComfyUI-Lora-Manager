@@ -1153,9 +1153,9 @@ def test_build_record_emits_became_free_event(tmp_path):
     assert version.gate_lapsed_at is not None
     assert version.price_buzz is None
     assert version.price_checked_at is None
-    assert version.price_alert_state is False
     assert [event["kind"] for event in record.events] == ["became_free"]
     assert record.events[0]["versionId"] == 7
+    assert record.events[0]["isInLibrary"] is False
 
 
 def test_build_record_emits_new_gate_event(tmp_path):
@@ -1318,9 +1318,12 @@ def test_migration_adds_price_columns_to_legacy_db(tmp_path):
         "accepts_blue_buzz",
         "price_sale_ends_at",
         "price_checked_at",
-        "price_alert_state",
+        "price_check_attempted_at",
     ):
         assert column in columns
+    # The alert-state columns were removed together with the threshold they served.
+    assert "price_alert_state" not in columns
+    assert "price_alert_since" not in columns
 
     record = service._get_record("lora", 999)
     assert record is not None
@@ -1343,7 +1346,6 @@ def test_price_fields_round_trip_through_sqlite(tmp_path):
         generation_price_buzz=100,
         accepts_blue_buzz=True,
         price_sale_ends_at="2026-10-01T00:00:00.000Z",
-        price_alert_state=True,
         is_in_library=True,
         gate_lapsed_at=None,
     )
@@ -1358,7 +1360,7 @@ def test_price_fields_round_trip_through_sqlite(tmp_path):
     assert loaded.accepts_blue_buzz is True
     assert loaded.price_sale_ends_at == "2026-10-01T00:00:00.000Z"
     assert loaded.price_checked_at == 123.5
-    assert loaded.price_alert_state is True
+    assert loaded.price_check_attempted_at is None
 
 
 # --- Optional price capture --------------------------------------------------
@@ -1625,107 +1627,14 @@ def _prices(price_buzz: int) -> dict:
     return {12: {"price_buzz": price_buzz, "list_price_buzz": price_buzz}}
 
 
-@pytest.mark.asyncio
-async def test_price_alert_state_persists_and_fires_on_crossing(tmp_path):
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=300
-    )
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-
-    # First sight: the state is recorded (so the alerts list shows it) but nothing
-    # is announced - otherwise enabling the feature would toast every cheap
-    # version in the library at once.
-    first_refresh = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-01-01T00:00:00.000Z"), prices=_prices(250)),
-    )
-    version = next(v for v in first_refresh[1].versions if v.version_id == 12)
-    assert version.price_alert_state is True
-    assert first_refresh[1].events == []
-
-    alerts = await service.get_price_alerts("lora")
-    assert [alert["versionId"] for alert in alerts] == [12]
-    assert alerts[0]["priceBuzz"] == 250
-    assert alerts[0]["modelId"] == 1
-
-    # Price rises above the threshold: the state resets silently.
-    raised = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-02-01T00:00:00.000Z"), prices=_prices(900)),
-    )
-    assert raised[1].versions[0].price_alert_state is False
-    assert raised[1].events == []
-    assert await service.get_price_alerts("lora") == []
-
-    # …and drops back under it: now it is news.
-    dropped = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-03-01T00:00:00.000Z"), prices=_prices(200)),
-    )
-    assert dropped[1].versions[0].price_alert_state is True
-    assert [event["kind"] for event in dropped[1].events] == ["price_drop"]
-    assert dropped[1].events[0]["priceBuzz"] == 200
-    # Events are derived, never persisted: a later read reports none.
-    stored = await service.get_record("lora", 1)
-    assert stored.events == []
-    assert stored.versions[0].price_alert_state is True
 
 
-@pytest.mark.asyncio
-async def test_price_alert_not_fired_above_threshold(tmp_path):
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=100
-    )
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
-
-    await service.refresh_for_model_type("lora", scanner, provider)
-    record = await service.get_record("lora", 1)
-
-    assert record.versions[0].price_alert_state is False
-    assert record.events == []
-    assert await service.get_price_alerts("lora") == []
 
 
-@pytest.mark.asyncio
-async def test_price_alert_requires_price_tracking(tmp_path):
-    """With tracking off there are no prices, so no price alert either."""
-
-    service = _price_service(tmp_path, price_alert_threshold_buzz=100000)
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
-
-    await service.refresh_for_model_type("lora", scanner, provider)
-    record = await service.get_record("lora", 1)
-
-    assert record.versions[0].price_alert_state is False
-    assert await service.get_price_alerts("lora") == []
 
 
-@pytest.mark.asyncio
-async def test_price_alerts_respect_ignores_and_model_type(tmp_path):
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=1000
-    )
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
-
-    await service.refresh_for_model_type("lora", scanner, provider)
-    assert len(await service.get_price_alerts("lora")) == 1
-
-    await service.set_version_should_ignore("lora", 1, 12, True)
-    assert await service.get_price_alerts("lora") == []
-    assert await service.get_price_alerts("checkpoint") == []
 
 
-@pytest.mark.asyncio
-async def test_get_price_alerts_tolerates_bad_limit(tmp_path):
-    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
-
-    assert await service.get_price_alerts("lora", limit="not-a-number") == []
 
 
 # --- Price alerts panel semantics (read-time threshold, across types) ---------
@@ -1760,133 +1669,14 @@ def _free_response_for(version_id: int) -> dict:
     }
 
 
-@pytest.mark.asyncio
-async def test_price_alerts_threshold_is_compared_at_read_time(tmp_path):
-    """Changing the threshold must change panel membership without a refresh."""
-
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=300
-    )
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-    await service.refresh_for_model_type(
-        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=_prices(250))
-    )
-
-    assert len(await service.get_price_alerts("lora")) == 1
-    # The stored alert state still says "hit"...
-    stored = await service.get_record("lora", 1)
-    assert stored.versions[0].price_alert_state is True
-    # ...but a tighter threshold excludes it immediately.
-    assert await service.get_price_alerts("lora", threshold_buzz=100) == []
-    assert len(await service.get_price_alerts("lora", threshold_buzz=300)) == 1
 
 
-@pytest.mark.asyncio
-async def test_price_alerts_span_all_model_types(tmp_path):
-    """model_type=None is what the global panel uses: one list, all types."""
-
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=1000
-    )
-    lora_scanner = DummyScanner([{"civitai": {"modelId": 1, "id": 11}}])
-    checkpoint_scanner = DummyScanner([{"civitai": {"modelId": 2, "id": 21}}])
-
-    await service.refresh_for_model_type(
-        "lora",
-        lora_scanner,
-        PriceProvider(_gated_response_for(12, "2999-01-01T00:00:00.000Z"), prices=_prices(250)),
-    )
-    await service.refresh_for_model_type(
-        "checkpoint",
-        checkpoint_scanner,
-        PriceProvider(
-            _gated_response_for(22, "2999-01-01T00:00:00.000Z"),
-            prices={22: {"price_buzz": 100}},
-        ),
-    )
-
-    everything = await service.get_price_alerts()
-    assert {(a["modelType"], a["modelId"], a["versionId"]) for a in everything} == {
-        ("lora", 1, 12),
-        ("checkpoint", 2, 22),
-    }
-    # Cheapest first.
-    assert [a["priceBuzz"] for a in everything] == [100, 250]
-
-    assert [a["modelType"] for a in await service.get_price_alerts("checkpoint")] == [
-        "checkpoint"
-    ]
 
 
-@pytest.mark.asyncio
-async def test_price_alert_since_tracks_the_crossing_and_clears(tmp_path):
-    service = _price_service(
-        tmp_path, price_tracking_enabled=True, price_alert_threshold_buzz=300
-    )
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-
-    first = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-01-01T00:00:00.000Z"), prices=_prices(250)),
-    )
-    since = first[1].versions[0].price_alert_since
-    assert since is not None
-
-    # Still under the threshold: the original crossing time is preserved.
-    second = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-02-01T00:00:00.000Z"), prices=_prices(200)),
-    )
-    assert second[1].versions[0].price_alert_since == since
-    stored = await service.get_record("lora", 1)
-    assert stored.versions[0].price_alert_since == since
-
-    # Back above it: cleared, and the row leaves the panel.
-    third = await service.refresh_for_model_type(
-        "lora",
-        scanner,
-        PriceProvider(_gated_response("2999-03-01T00:00:00.000Z"), prices=_prices(900)),
-    )
-    assert third[1].versions[0].price_alert_since is None
-    assert await service.get_price_alerts("lora") == []
 
 
-@pytest.mark.asyncio
-async def test_price_alerts_report_became_free_without_price_tracking(tmp_path):
-    """Gate transitions need no price data, so the "became free" half of the panel
-    works even while price tracking is switched off."""
-
-    service = _price_service(tmp_path)  # tracking off
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-
-    await service.refresh_for_model_type("lora", scanner, DummyProvider(GATED_RESPONSE))
-    assert await service.get_price_alerts("lora") == []
-
-    await service.refresh_for_model_type("lora", scanner, DummyProvider(FREE_RESPONSE))
-    alerts = await service.get_price_alerts("lora")
-
-    assert [alert["kind"] for alert in alerts] == ["became_free"]
-    assert alerts[0]["priceBuzz"] is None
-    assert alerts[0]["gateLapsedAt"] is not None
-    assert alerts[0]["versionId"] == 12
 
 
-@pytest.mark.asyncio
-async def test_newest_price_checked_at_reports_the_latest_fetch(tmp_path):
-    service = _price_service(tmp_path, price_tracking_enabled=True)
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-
-    assert service.newest_price_checked_at() is None
-
-    await service.refresh_for_model_type(
-        "lora", scanner, PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
-    )
-    newest = service.newest_price_checked_at()
-
-    assert newest is not None
-    assert newest > 0
 
 
 @pytest.mark.asyncio
@@ -1907,11 +1697,6 @@ async def test_failed_price_attempt_is_recorded_as_unavailable(tmp_path):
     assert version.price_buzz is None
     assert version.price_checked_at is None
     assert version.price_check_attempted_at is not None
-    assert service.count_unavailable_prices("lora") == 1
-    assert service.count_unavailable_prices("checkpoint") == 0
-    # Nothing to alert on, and no price alert state.
-    assert await service.get_price_alerts("lora") == []
-    assert version.price_alert_state is False
 
 
 @pytest.mark.asyncio
@@ -1928,7 +1713,6 @@ async def test_successful_price_attempt_sets_both_markers(tmp_path):
     assert version.price_buzz == 250
     assert version.price_checked_at is not None
     assert version.price_check_attempted_at is not None
-    assert service.count_unavailable_prices("lora") == 0
 
 
 @pytest.mark.asyncio
@@ -1940,7 +1724,6 @@ async def test_no_price_attempt_is_recorded_while_tracking_is_off(tmp_path):
     record = await service.get_record("lora", 1)
 
     assert record.versions[0].price_check_attempted_at is None
-    assert service.count_unavailable_prices("lora") == 0
 
 
 @pytest.mark.asyncio
@@ -1951,13 +1734,11 @@ async def test_unavailable_marker_clears_when_the_version_becomes_free(tmp_path)
     await service.refresh_for_model_type(
         "lora", scanner, PriceProvider(GATED_RESPONSE, prices=None)
     )
-    assert service.count_unavailable_prices("lora") == 1
 
     await service.refresh_for_model_type("lora", scanner, DummyProvider(FREE_RESPONSE))
     record = await service.get_record("lora", 1)
 
     assert record.versions[0].price_check_attempted_at is None
-    assert service.count_unavailable_prices("lora") == 0
 
 
 def _long_ttl_service(tmp_path, **settings):
@@ -2020,21 +1801,8 @@ async def test_failed_price_attempt_is_not_retried_within_the_ttl(tmp_path):
     await service.refresh_for_model_type("lora", scanner, provider)
 
     assert provider.price_calls == 1
-    assert service.count_unavailable_prices("lora") == 1
 
 
-@pytest.mark.asyncio
-async def test_priced_count_reports_known_prices(tmp_path):
-    service = _price_service(tmp_path, price_tracking_enabled=True)
-    scanner = DummyScanner(LOCAL_RAW_DATA)
-    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
-
-    assert service.count_priced_versions("lora") == 0
-
-    await service.refresh_for_model_type("lora", scanner, provider)
-
-    assert service.count_priced_versions("lora") == 1
-    assert service.count_priced_versions("checkpoint") == 0
 
 
 @pytest.mark.asyncio
@@ -2051,3 +1819,85 @@ async def test_forced_refresh_reprices_within_the_ttl(tmp_path):
     )
 
     assert provider.price_calls == 2
+
+
+# --- Ownership scoping and the removed threshold -----------------------------
+
+
+def test_gate_event_is_suppressed_for_a_version_the_user_owns(tmp_path):
+    """A version already on disk cannot become cheaper *for this user*, so it must
+    not produce an event. More than half of a real library's gated versions are
+    owned, so this is the common case, not an edge case."""
+
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(replace(_remote_gated(7), is_in_library=True))
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[7],
+        remote_versions=[_remote_free(7)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    assert record.events == []
+    # The lapse itself is still recorded - it is the *notification* that is
+    # pointless for a version the user already has.
+    assert record.versions[0].gate_lapsed_at is not None
+
+
+def test_new_gate_event_is_suppressed_for_a_version_the_user_owns(tmp_path):
+    service = ModelUpdateService(str(tmp_path / "updates.sqlite"))
+    existing = make_record(replace(_remote_free(7), is_in_library=True))
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[7],
+        remote_versions=[_remote_gated(7)],
+        existing=existing,
+        timestamp=1000.0,
+    )
+
+    assert record.events == []
+
+
+def test_threshold_setting_is_gone_from_the_defaults():
+    """The redesign removed the numeric threshold: every obtainability decision is
+    categorical (wait / pay / skip), so no number is stored or compared."""
+
+    from py.services.settings_manager import DEFAULT_SETTINGS
+
+    assert "price_alert_threshold_buzz" not in DEFAULT_SETTINGS
+    assert "price_tracking_enabled" in DEFAULT_SETTINGS
+    assert "price_check_ttl_hours" in DEFAULT_SETTINGS
+
+
+def test_obsolete_alert_columns_are_dropped_from_a_development_database(tmp_path):
+    """A database created while the feature was unreleased still carries the two
+    alert-state columns; opening it must drop them rather than leave dead schema."""
+
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+    with service._connect() as conn:
+        conn.execute(
+            "ALTER TABLE model_update_versions "
+            "ADD COLUMN price_alert_state INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.execute(
+            "ALTER TABLE model_update_versions ADD COLUMN price_alert_since REAL"
+        )
+        conn.commit()
+        assert "price_alert_state" in service._get_table_columns(
+            conn, "model_update_versions"
+        )
+
+    # A fresh service instance runs the migration on open.
+    reopened = ModelUpdateService(str(db_path))
+    columns = reopened._get_table_columns(
+        reopened._connect(), "model_update_versions"
+    )
+
+    assert "price_alert_state" not in columns
+    assert "price_alert_since" not in columns

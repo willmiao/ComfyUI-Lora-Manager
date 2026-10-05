@@ -121,13 +121,6 @@ class ModelVersionRecord:
     accepts_blue_buzz: bool = False
     price_sale_ends_at: Optional[str] = None
     price_checked_at: Optional[float] = None
-    # Last computed "price alert threshold hit" state, used to detect the edge
-    # (0 -> 1) that fires a one-shot price_drop event.
-    price_alert_state: bool = False
-    # When the alert state last flipped to True (POSIX seconds); cleared when the
-    # price rises back above the threshold. Gives the panel "dropped X ago" and
-    # the unread count something to compare against.
-    price_alert_since: Optional[float] = None
     # When a price fetch was last *attempted* (success or failure). Distinguishes
     # "never tried" from "tried and no price is readable", which is what lets the
     # UI say "price unavailable" for mature models instead of showing nothing.
@@ -145,9 +138,9 @@ class ModelUpdateRecord:
     should_ignore_model: bool
     # Gate-state and price transitions observed during the refresh that produced
     # this record. Derived, never persisted: a record read back from SQLite has an
-    # empty list. Each entry is {"versionId", "kind", "versionName",
-    # "isInLibrary", "priceBuzz"?} with kind in
-    # {"new_gate", "became_free", "price_drop"}.
+    # empty list. Each entry is {"versionId", "kind", "versionName", "isInLibrary"}
+    # with kind in {"new_gate", "became_free"}. Only versions the user does not
+    # have produce events.
     events: List[Dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -381,8 +374,6 @@ class ModelUpdateService:
             accepts_blue_buzz INTEGER NOT NULL DEFAULT 0,
             price_sale_ends_at TEXT,
             price_checked_at REAL,
-            price_alert_state INTEGER NOT NULL DEFAULT 0,
-            price_alert_since REAL,
             price_check_attempted_at REAL,
             PRIMARY KEY (model_id, version_id),
             FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
@@ -663,14 +654,6 @@ class ModelUpdateService:
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN price_checked_at REAL"
             ),
-            "price_alert_state": (
-                "ALTER TABLE model_update_versions "
-                "ADD COLUMN price_alert_state INTEGER NOT NULL DEFAULT 0"
-            ),
-            "price_alert_since": (
-                "ALTER TABLE model_update_versions "
-                "ADD COLUMN price_alert_since REAL"
-            ),
             "price_check_attempted_at": (
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN price_check_attempted_at REAL"
@@ -680,6 +663,21 @@ class ModelUpdateService:
         for column, statement in migrations.items():
             if column not in version_columns:
                 conn.execute(statement)
+
+        # Columns this feature carried while it was still in development. They are
+        # gone from the schema, so only a database created by an unreleased build
+        # can still have them; for everyone else this is a no-op. `DROP COLUMN`
+        # needs SQLite 3.35+, hence the guard.
+        for obsolete in ("price_alert_state", "price_alert_since"):
+            if obsolete not in version_columns:
+                continue
+            try:
+                conn.execute(
+                    f"ALTER TABLE model_update_versions DROP COLUMN {obsolete}"
+                )
+                logger.info("Dropped obsolete column %s", obsolete)
+            except sqlite3.OperationalError as exc:  # pragma: no cover - old SQLite
+                logger.debug("Could not drop obsolete column %s: %s", obsolete, exc)
 
         # Refresh column metadata after applying additive migrations.
         version_columns = self._get_table_columns(conn, "model_update_versions")
@@ -786,8 +784,6 @@ class ModelUpdateService:
                 accepts_blue_buzz INTEGER NOT NULL DEFAULT 0,
                 price_sale_ends_at TEXT,
                 price_checked_at REAL,
-                price_alert_state INTEGER NOT NULL DEFAULT 0,
-                price_alert_since REAL,
                 price_check_attempted_at REAL,
                 PRIMARY KEY (model_id, version_id),
                 FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
@@ -818,8 +814,6 @@ class ModelUpdateService:
             "accepts_blue_buzz",
             "price_sale_ends_at",
             "price_checked_at",
-            "price_alert_state",
-            "price_alert_since",
             "price_check_attempted_at",
         ]
         defaults = {
@@ -843,8 +837,6 @@ class ModelUpdateService:
             "accepts_blue_buzz": "0",
             "price_sale_ends_at": "NULL",
             "price_checked_at": "NULL",
-            "price_alert_state": "0",
-            "price_alert_since": "NULL",
             "price_check_attempted_at": "NULL",
         }
 
@@ -1225,205 +1217,6 @@ class ModelUpdateService:
 
         async with self._lock:
             return self._get_records_bulk(model_type, normalized_ids)
-
-    async def get_price_alerts(
-        self,
-        model_type: Optional[str] = None,
-        *,
-        threshold_buzz: Optional[int] = None,
-        limit: int = 200,
-    ) -> List[Dict[str, Any]]:
-        """Return the versions worth alerting on, for one type or for all of them.
-
-        The threshold is compared **at read time** rather than reading the persisted
-        ``price_alert_state``: otherwise editing the threshold in the panel would
-        not take effect until the next refresh. ``price_alert_state`` stays the
-        source of the one-shot toast edge.
-
-        Two kinds are returned in one list:
-
-        * ``below_threshold`` — gated versions whose effective price is at or below
-          the threshold (only possible when price capture has run);
-        * ``became_free`` — versions whose gate lapsed, which needs no price data at
-          all, so they are reported even while price tracking is switched off.
-
-        ``model_type=None`` covers every type, which is what the global alerts panel
-        wants; the update DB is shared across types, so that is still one query.
-        """
-
-        try:
-            normalized_limit = max(1, min(int(limit), 1000))
-        except (TypeError, ValueError):
-            normalized_limit = 200
-
-        if threshold_buzz is None:
-            threshold = self._price_alert_threshold_buzz()
-        else:
-            try:
-                threshold = max(0, int(threshold_buzz))
-            except (TypeError, ValueError):
-                threshold = self._price_alert_threshold_buzz()
-
-        params: List[Any] = []
-        type_filter = ""
-        if model_type:
-            type_filter = "AND s.model_type = ?"
-            params.append(model_type)
-        params.append(threshold)
-        params.append(normalized_limit)
-
-        with self._connect() as conn:
-            rows = conn.execute(
-                f"""
-                SELECT v.model_id,
-                       v.version_id,
-                       v.name,
-                       v.price_buzz,
-                       v.list_price_buzz,
-                       v.accepts_blue_buzz,
-                       v.price_sale_ends_at,
-                       v.price_checked_at,
-                       v.price_alert_since,
-                       v.gate_lapsed_at,
-                       v.is_in_library,
-                       v.early_access_ends_at,
-                       v.paid_access,
-                       v.is_paid,
-                       v.is_early_access,
-                       s.model_type
-                FROM model_update_versions v
-                JOIN model_update_status s ON s.model_id = v.model_id
-                WHERE v.should_ignore = 0
-                  AND s.should_ignore_model = 0
-                  {type_filter}
-                  AND (
-                        (v.price_buzz IS NOT NULL AND v.price_buzz <= ?)
-                     OR (v.gate_lapsed_at IS NOT NULL
-                         AND v.paid_access IS NULL
-                         AND v.is_paid = 0
-                         AND v.is_early_access = 0)
-                  )
-                ORDER BY (v.price_buzz IS NULL) ASC,
-                         v.price_buzz ASC,
-                         v.gate_lapsed_at DESC,
-                         v.model_id ASC,
-                         v.version_id ASC
-                LIMIT ?
-                """,
-                tuple(params),
-            ).fetchall()
-
-        alerts: List[Dict[str, Any]] = []
-        for row in rows:
-            price_buzz = _normalize_int(row["price_buzz"])
-            below_threshold = price_buzz is not None and price_buzz <= threshold
-            alerts.append(
-                {
-                    "modelId": int(row["model_id"]),
-                    "modelType": row["model_type"],
-                    "versionId": int(row["version_id"]),
-                    "versionName": row["name"],
-                    "kind": "below_threshold" if below_threshold else "became_free",
-                    "priceBuzz": price_buzz if below_threshold else None,
-                    "listPriceBuzz": (
-                        _normalize_int(row["list_price_buzz"])
-                        if below_threshold
-                        else None
-                    ),
-                    "acceptsBlueBuzz": bool(row["accepts_blue_buzz"]),
-                    "priceSaleEndsAt": row["price_sale_ends_at"],
-                    "priceCheckedAt": (
-                        float(row["price_checked_at"])
-                        if row["price_checked_at"] is not None
-                        else None
-                    ),
-                    "priceAlertSince": (
-                        float(row["price_alert_since"])
-                        if row["price_alert_since"] is not None
-                        else None
-                    ),
-                    "gateLapsedAt": row["gate_lapsed_at"],
-                    "isInLibrary": bool(row["is_in_library"]),
-                    "earlyAccessEndsAt": row["early_access_ends_at"],
-                    "isPaid": bool(row["is_paid"]),
-                    "isEarlyAccess": bool(row["is_early_access"]),
-                }
-            )
-        return alerts
-
-    def newest_price_checked_at(self) -> Optional[float]:
-        """Newest successful price fetch across the tracked versions."""
-
-        with self._connect() as conn:
-            row = conn.execute(
-                "SELECT MAX(price_checked_at) AS newest FROM model_update_versions"
-            ).fetchone()
-        if row is None or row["newest"] is None:
-            return None
-        return float(row["newest"])
-
-    def count_priced_versions(self, model_type: Optional[str] = None) -> int:
-        """Versions with a known price, for the panel's empty state.
-
-        Without it, a user whose threshold is 0 sees "nothing is under your price
-        threshold" while dozens of paid versions already have a price.
-        """
-
-        params: List[Any] = []
-        type_filter = ""
-        if model_type:
-            type_filter = "AND s.model_type = ?"
-            params.append(model_type)
-
-        with self._connect() as conn:
-            row = conn.execute(
-                f"""
-                SELECT COUNT(*) AS priced
-                FROM model_update_versions v
-                JOIN model_update_status s ON s.model_id = v.model_id
-                WHERE v.should_ignore = 0
-                  AND s.should_ignore_model = 0
-                  {type_filter}
-                  AND v.price_buzz IS NOT NULL
-                """,
-                tuple(params),
-            ).fetchone()
-        if row is None:
-            return 0
-        return int(row["priced"])
-
-    def count_unavailable_prices(self, model_type: Optional[str] = None) -> int:
-        """Gated versions whose price we tried to read and could not.
-
-        Mostly mature models: their pages are served only by ``civitai.red``, which
-        refuses non-browser clients, while ``civitai.com`` hides them from
-        anonymous visitors. Reported so the UI can be honest instead of silent.
-        """
-
-        params: List[Any] = []
-        type_filter = ""
-        if model_type:
-            type_filter = "AND s.model_type = ?"
-            params.append(model_type)
-
-        with self._connect() as conn:
-            row = conn.execute(
-                f"""
-                SELECT COUNT(*) AS unavailable
-                FROM model_update_versions v
-                JOIN model_update_status s ON s.model_id = v.model_id
-                WHERE v.should_ignore = 0
-                  AND s.should_ignore_model = 0
-                  {type_filter}
-                  AND v.price_check_attempted_at IS NOT NULL
-                  AND v.price_buzz IS NULL
-                  AND (v.paid_access IS NOT NULL OR v.is_paid = 1 OR v.is_early_access = 1)
-                """,
-                tuple(params),
-            ).fetchone()
-        if row is None:
-            return 0
-        return int(row["unavailable"])
 
     async def _refresh_single_model(
         self,
@@ -2027,23 +1820,15 @@ class ModelUpdateService:
             price_fields = self._price_fields_for(
                 remote_version, existing_version, is_gated=is_gated
             )
-            price_fields["price_alert_state"] = self._evaluate_price_alert(
-                price_fields.get("price_buzz")
-            )
-            # `price_alert_since` records when the alert last started, so the panel
-            # can say "dropped 3 days ago" and count what is new since the user
-            # last looked. A still-standing alert keeps its original timestamp; a
-            # price back above the threshold clears it.
-            if not price_fields["price_alert_state"]:
-                price_fields["price_alert_since"] = None
-            elif existing_version is not None and existing_version.price_alert_state:
-                price_fields["price_alert_since"] = existing_version.price_alert_since
-            else:
-                price_fields["price_alert_since"] = timestamp
 
+            # Only the edge fires, and only for a version the user does not have:
+            # a version already on disk cannot become cheaper *for them*, and a
+            # version that stays gated must not re-announce itself every refresh.
+            in_library = version_id in effective_local_set
             if (
                 existing_version is not None
                 and not should_ignore
+                and not in_library
                 and was_gated != is_gated
             ):
                 events.append(
@@ -2051,25 +1836,7 @@ class ModelUpdateService:
                         "versionId": version_id,
                         "kind": "new_gate" if is_gated else "became_free",
                         "versionName": remote_version.name,
-                        "isInLibrary": version_id in effective_local_set,
-                    }
-                )
-
-            # Only the edge fires: a version that keeps sitting under the threshold
-            # must not re-announce itself on every refresh.
-            if (
-                existing_version is not None
-                and not should_ignore
-                and price_fields["price_alert_state"]
-                and not existing_version.price_alert_state
-            ):
-                events.append(
-                    {
-                        "versionId": version_id,
-                        "kind": "price_drop",
-                        "versionName": remote_version.name,
-                        "isInLibrary": version_id in effective_local_set,
-                        "priceBuzz": price_fields.get("price_buzz"),
+                        "isInLibrary": False,
                     }
                 )
 
@@ -2174,8 +1941,6 @@ class ModelUpdateService:
                 "accepts_blue_buzz": False,
                 "price_sale_ends_at": None,
                 "price_checked_at": None,
-                "price_alert_state": False,
-                "price_alert_since": None,
                 "price_check_attempted_at": None,
             }
 
@@ -2191,8 +1956,6 @@ class ModelUpdateService:
             "accepts_blue_buzz": source.accepts_blue_buzz,
             "price_sale_ends_at": source.price_sale_ends_at,
             "price_checked_at": source.price_checked_at,
-            "price_alert_state": source.price_alert_state,
-            "price_alert_since": source.price_alert_since,
             "price_check_attempted_at": source.price_check_attempted_at,
         }
 
@@ -2203,28 +1966,6 @@ class ModelUpdateService:
             return bool(self._settings.get("price_tracking_enabled", False))
         except Exception:
             return False
-
-    def _price_alert_threshold_buzz(self) -> int:
-        """Buzz threshold for a price alert; 0 means "free only"."""
-
-        try:
-            value = int(self._settings.get("price_alert_threshold_buzz", 0) or 0)
-        except (TypeError, ValueError):
-            return 0
-        return max(0, value)
-
-    def _evaluate_price_alert(self, price_buzz: Optional[int]) -> bool:
-        """Whether a version's price crosses the user's alert threshold.
-
-        Free versions never carry a price, so a threshold of 0 alerts only via the
-        ``became_free`` event — which is exactly the "or free" half of the request.
-        """
-
-        if not self._price_tracking_enabled():
-            return False
-        if price_buzz is None:
-            return False
-        return price_buzz <= self._price_alert_threshold_buzz()
 
     def _price_check_ttl_seconds(self) -> float:
         try:
@@ -2595,8 +2336,8 @@ class ModelUpdateService:
                            size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
                            is_early_access, usage_control, paid_access, is_paid, file_count,
                            gate_lapsed_at, price_buzz, list_price_buzz, generation_price_buzz,
-                           accepts_blue_buzz, price_sale_ends_at, price_checked_at, price_alert_state,
-                           price_alert_since, price_check_attempted_at
+                           accepts_blue_buzz, price_sale_ends_at, price_checked_at,
+                           price_check_attempted_at
                     FROM model_update_versions
                     WHERE model_id IN ({placeholders})
                     ORDER BY model_id ASC, sort_index ASC, version_id ASC
@@ -2637,12 +2378,6 @@ class ModelUpdateService:
                     price_checked_at=(
                         float(row["price_checked_at"])
                         if row["price_checked_at"] is not None
-                        else None
-                    ),
-                    price_alert_state=bool(row["price_alert_state"]),
-                    price_alert_since=(
-                        float(row["price_alert_since"])
-                        if row["price_alert_since"] is not None
                         else None
                     ),
                     price_check_attempted_at=(
@@ -2714,9 +2449,9 @@ class ModelUpdateService:
                         size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
                         is_early_access, usage_control, paid_access, is_paid, file_count,
                         gate_lapsed_at, price_buzz, list_price_buzz, generation_price_buzz,
-                        accepts_blue_buzz, price_sale_ends_at, price_checked_at, price_alert_state,
-                        price_alert_since, price_check_attempted_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        accepts_blue_buzz, price_sale_ends_at, price_checked_at,
+                        price_check_attempted_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         version.version_id,
@@ -2742,8 +2477,6 @@ class ModelUpdateService:
                         1 if version.accepts_blue_buzz else 0,
                         version.price_sale_ends_at,
                         version.price_checked_at,
-                        1 if version.price_alert_state else 0,
-                        version.price_alert_since,
                         version.price_check_attempted_at,
                     ),
                 )

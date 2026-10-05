@@ -204,7 +204,6 @@
             "error": "{type} 업데이트 확인 실패: {message}",
             "gateEvents": {
                 "becameFree": "[TODO: Translate] {count} version(s) became free",
-                "priceDrop": "[TODO: Translate] {count} version(s) dropped below your price threshold",
                 "newGate": "[TODO: Translate] {count} version(s) are now paid"
             }
         },
@@ -234,9 +233,6 @@
         },
         "groupByModel": {
             "label": "모델별 그룹화"
-        },
-        "priceAlerts": {
-            "label": "[TODO: Translate] Price alerts"
         }
     },
     "header": {
@@ -767,8 +763,6 @@
             "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
             "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
             "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
-            "threshold": "[TODO: Translate] Price alert threshold (Buzz)",
-            "thresholdHelp": "[TODO: Translate] Alert when a paid version costs this much or less. Use 0 to only be told when a version becomes free.",
             "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
             "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
         },
@@ -945,9 +939,7 @@
                 "action": "업데이트",
                 "menuLabel": "업데이트 옵션 표시",
                 "check": "업데이트 확인",
-                "checkTooltip": "업데이트 확인에는 시간이 걸릴 수 있습니다.",
-                "priceAlerts": "[TODO: Translate] Price alerts",
-                "priceAlertsTooltip": "[TODO: Translate] Buzz price alerts for paid versions"
+                "checkTooltip": "업데이트 확인에는 시간이 걸릴 수 있습니다."
             }
         },
         "bulkOperations": {
@@ -2031,15 +2023,13 @@
                     "paidTooltip": "이 버전은 다운로드하려면 결제가 필요합니다",
                     "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
                     "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
-                    "priceAlertTooltip": "[TODO: Translate] {price} - below your price alert threshold",
                     "freeNow": "[TODO: Translate] Free Now",
                     "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
                     "ignored": "무시됨",
                     "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다",
                     "onSiteOnly": "사이트 내 전용",
                     "onSiteOnlyTooltip": "이 버전은 CivitAI 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
-                    "priceUnavailable": "[TODO: Translate] Price unavailable",
-                    "priceUnavailableTooltip": "[TODO: Translate] CivitAI does not publish this price in its public API, and mature model pages can only be read in a browser"
+                    "earlyAccessTooltipUntil": "[TODO: Translate] Early access until {date}, free to download after that"
                 },
                 "actions": {
                     "download": "다운로드",
@@ -2328,8 +2318,7 @@
         "notificationsTitle": "알림 센터",
         "tabs": {
             "updates": "업데이트",
-            "messages": "메시지",
-            "priceAlerts": "[TODO: Translate] Price Alerts"
+            "messages": "메시지"
         },
         "updateAvailable": "업데이트 사용 가능",
         "noChangelogAvailable": "상세한 변경 로그가 없습니다. 더 많은 정보는 GitHub를 확인하세요.",
@@ -2385,34 +2374,6 @@
             "shown": "{time}에 표시",
             "dismissed": "{time}에 닫힘",
             "active": "활성"
-        },
-        "priceAlerts": {
-            "disabled": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page. Turn on price tracking to see them here.",
-            "openSettings": "[TODO: Translate] Open settings",
-            "segmentsLabel": "[TODO: Translate] Alert kind",
-            "segments": {
-                "belowThreshold": "[TODO: Translate] Under threshold",
-                "becameFree": "[TODO: Translate] Became free"
-            },
-            "thresholdLabel": "[TODO: Translate] Alert threshold: {buzz} Buzz",
-            "empty": "[TODO: Translate] Nothing is under your price threshold right now.",
-            "emptyFree": "[TODO: Translate] No version has become free yet.",
-            "loadFailed": "[TODO: Translate] Could not refresh the alerts; showing the last known list.",
-            "lastChecked": "[TODO: Translate] Prices last checked {when}",
-            "justNow": "[TODO: Translate] just now",
-            "minutesAgo": "[TODO: Translate] {count} min ago",
-            "hoursAgo": "[TODO: Translate] {count} h ago",
-            "daysAgo": "[TODO: Translate] {count} d ago",
-            "freeNow": "[TODO: Translate] Free now",
-            "blueBuzz": "[TODO: Translate] Blue Buzz OK",
-            "earlyAccessUntil": "[TODO: Translate] Early access until {date}",
-            "inLibrary": "[TODO: Translate] In library",
-            "notInLibrary": "[TODO: Translate] Not in library",
-            "droppedAgo": "[TODO: Translate] dropped {when}",
-            "openCivitai": "[TODO: Translate] Open on CivitAI",
-            "openLocal": "[TODO: Translate] Open",
-            "unavailable": "[TODO: Translate] {count} paid version(s) have no readable price (mature models can only be read in a browser)",
-            "emptyZeroThreshold": "[TODO: Translate] {count} paid version(s) have a known price, but your threshold is 0 Buzz so only free versions are listed. Set a threshold in Settings - Library to catch price drops."
         }
     },
     "support": {

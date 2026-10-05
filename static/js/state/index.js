@@ -58,7 +58,6 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     hide_early_access_updates: false,
     hide_paid_updates: false,
     price_tracking_enabled: false,
-    price_alert_threshold_buzz: 0,
     price_check_ttl_hours: 24,
     auto_organize_exclusions: [],
     metadata_refresh_skip_paths: [],

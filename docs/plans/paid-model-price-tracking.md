@@ -683,3 +683,132 @@ The empty state is now threshold-aware, using a new `pricedCount` in the payload
 is 0 and prices are known, it says how many paid versions have a price and where to set a threshold.
 The read-time threshold comparison means changing it takes effect immediately — no re-check needed
 (measured on a copy of that instance's DB: 0 Buzz -> 0 alerts, 100 -> 44, 500 -> 48, 5000 -> 51).
+
+## 12. Redesign (locked): obtainability of versions you do not own
+
+### 12.1 Why the P5a model was wrong
+
+The owner could not tell, from the UI alone, what "Buzz Price Tracking" enables, what the
+"Price alert threshold" number means, or what "Price Alerts" is alerting about. That is not a copy
+problem: the implementation exposed **our mechanism** (a page scrape) and **our SQL predicates**
+(`price_buzz <= ?`, `gate_lapsed_at IS NOT NULL`) as the user's concepts. Two concrete defects came
+out of the same root:
+
+* **The alert population included versions the user already owns.** Neither the event generator nor
+  the panel query filtered on `is_in_library` (the payload even carried `isInLibrary`). In the
+  owner's library **28 of 52 gated versions were already downloaded** — more than half of the
+  "alerts" were about things already on disk. A version you own cannot become cheaper *for you*.
+* **A filtered list in a notification surface.** "Price Alerts" was a state list whose contents were
+  entirely decided by a number stored in Settings, so an empty panel had three indistinguishable
+  causes (tracking off / threshold 0 / genuinely nothing), and it read as a broken feature.
+
+Two measurements shaped the correction:
+
+* **Permanent prices dominate** (87 permanent vs 3 timed gates in a 600-model sample), so "wait for a
+  price drop" is a low-frequency proposition, while "wait for early access to end" is high-frequency
+  and deterministic.
+* **Prices cluster at the floor** (44 of the owner's 52 priced versions are 100 Buzz), so
+  "price <= N" carries little information; the real distinction is *free / soon free / paid*.
+
+Also corrected during the discussion: the **generation fee** is the cost of generating *on the
+CivitAI site*. A locally downloaded model generated in ComfyUI has no such fee, so for this tool it
+is not a price axis at all (42 of the owner's 52 gated versions carry one — displaying it would
+mislead on 80% of paid rows). It is not displayed today and must stay that way.
+
+### 12.2 The corrected information model
+
+The unit is the **version**, and the boundary is **ownership**: information exists only where a
+decision exists.
+
+| State of a version **not in the library** | The user's decision | What is shown |
+| --- | --- | --- |
+| Downloadable for free | download or not | nothing special (the download action already says it) |
+| Early access, free on D, buyable for N | **wait until D / pay N now** | `N Buzz - free on D` |
+| Early access, free on D, not buyable | wait | `free on D` |
+| Permanently paid, price known (N) | buy or skip | `N Buzz` |
+| Permanently paid, price unknown | buy or skip, price unknown | `Paid` (no number) |
+| **In the library** | none | **nothing** |
+
+The numeric threshold has no place in this table: every decision is categorical (wait / pay / skip),
+not numeric.
+
+### 12.3 Locked decisions
+
+* **D1 - No independent surface.** Obtainability is an attribute of the existing update surfaces:
+  the model card's update badge, the grid's "models with updates" filter, the post-check toast, and
+  the model modal's version list. No new bell tab.
+* **D2 - No numeric threshold anywhere.** The setting, the comparison, and the tests around it go.
+* **D3 - Only versions that are not in the library** produce events or badges (`is_in_library = 0`),
+  enforced in both the event generator and any query.
+* **D4 - Owned versions show no download price** (and carry no alert state).
+* **D5 - The generation fee is never displayed.**
+* **D6 - Models outside the library are out of scope.** Their decision moment is the download/browse
+  flow; that is a recorded follow-up, not a background feed (the update service only knows local
+  models, and there is no follow mechanism to build on).
+* **D7 - The plumbing stays**: page fetch, host fallback, attempt markers, both TTLs, storage,
+  parser, `gate_lapsed_at`, and the price columns.
+
+### 12.4 What happens to what shipped in P5a
+
+| Piece | Fate |
+| --- | --- |
+| `GET /api/lm/price-alerts`, `GET /api/lm/{prefix}/updates/price-alerts`, `PriceAlertsHandler` | **removed** - no surface consumes them; events reach the UI through the refresh response |
+| `get_price_alerts`, `newest_price_checked_at`, `count_priced_versions`, `count_unavailable_prices` | **removed** (threshold comparison and the panel's counters) |
+| `price_alert_threshold_buzz` (settings, `_price_alert_threshold_buzz`) | **removed** |
+| `price_alert_since` | **stop writing**; the column stays (SQLite drops need a table rebuild) and is marked deprecated |
+| `price_alert_state` | **kept** - it is the one-shot edge for the "became free" toast |
+| Bell tab, panel markup, `.price-alerts*` CSS, `UpdateService` panel code, watermark, the two entry points (controls dropdown, global context menu), their locales | **removed** |
+| Version badges | **reworked** to the 12.2 table, ownership-scoped |
+| "Price unavailable" badge | **replaced** by `Paid` (the gate is known from the public API; only the number is best-effort, and that is our plumbing, not the user's problem) |
+| `priceAttemptedAt` in the version payload | **removed** from the payload (kept internally for the price-TTL retry policy) |
+| The "became free" toast | **kept**, reworded, ownership-scoped |
+
+### 12.5 Tasks
+
+**P6a - the core correction (no new surface).**
+Backend: ownership-scope the event generator; remove the threshold, the alert query, the counters,
+the two routes and the handler; stop writing `price_alert_since`. Frontend: rework the version
+badges to the 12.2 table; delete the panel, tab, entry points, watermark and their locales; reword
+the toast. Tests: replace the panel/alert suites with a badge-state matrix and ownership-scoping
+tests; assert the removed routes are gone.
+
+**P6b - obtainability in the update surfaces.**
+Per-model obtainability summary in the model list payload (next to `hasUpdate`) so the card badge can
+say `Update - 500 Buzz` / `Update - free on Oct 15`; toast copy that counts the free ones
+("3 models have updates, 1 is now free").
+
+**P6c - deferred (recorded, not planned).** A price-drop event (rare by measurement); obtainability
+in the download/browse flow for models outside the library (D6).
+
+### 12.6 Verification
+
+Unit tests for the state matrix and the ownership filter; a sandbox run against a **copy** of the
+owner's real update DB, where the population must shrink from 52 gated versions to the **24 that are
+not in the library**, with the owned ones showing nothing.
+
+### 12.7 What shipped (P6a)
+
+* The two alert-state columns are **gone from the schema** (not merely unused): the dataclass,
+  `_SCHEMA`, the additive migration table, the primary-key rebuild's column list and defaults, the
+  bulk `SELECT`, the row mapping and the `INSERT`. A database created by an unreleased build still
+  has them, so `_apply_migrations` drops them with a native `ALTER TABLE ... DROP COLUMN` (SQLite
+  3.35+, guarded) and logs it; for everyone else it is a no-op.
+* `price_alert_threshold_buzz`, `_price_alert_threshold_buzz`, `_evaluate_price_alert`, the
+  threshold-crossing event, `get_price_alerts`, `newest_price_checked_at`,
+  `count_priced_versions`, `count_unavailable_prices`, both alert routes, `PriceAlertsHandler`, its
+  handler-set slot, its route mapping entry and the service-registry adapter field it needed: all
+  removed.
+* Gate events (and only gate events) are emitted, and only for versions the user does not have -
+  `isInLibrary` is now the filter rather than a field in the payload.
+* Version badges follow the 12.2 table: cost information only for versions not in the library, the
+  price replaces the redundant `Paid` badge when it is known, `Paid` appears without a number when
+  it is not, and `Price unavailable` is gone (the gate is certain; only the number is best-effort).
+* The bell tab, panel markup, panel CSS, the controls-dropdown and global-context-menu entries, the
+  unread watermark and their locales are removed; the toast keeps its gate transitions and drops the
+  price-drop line. The setting is now framed as plumbing ("Show download prices for paid versions")
+  and keeps only the enable flag and the refresh interval.
+
+Verified: `pytest` 3653 passed / 7 skipped, `npm run test:js` 1444 passed. Against a copy of the
+owner's real database the population is 52 gated versions -> **28 owned (now silent) + 24 that the
+feature is actually about**; the drop migration logged twice and left no `price_alert_*` column, and
+both removed endpoints return 404.

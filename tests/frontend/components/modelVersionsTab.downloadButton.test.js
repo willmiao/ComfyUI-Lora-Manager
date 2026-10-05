@@ -284,7 +284,7 @@ describe('ModelVersionsTab download button visibility', () => {
   });
 });
 
-describe('ModelVersionsTab price badges', () => {
+describe('ModelVersionsTab obtainability badges', () => {
   let getModelApiClient;
   let fetchModelUpdateVersions;
 
@@ -316,63 +316,83 @@ describe('ModelVersionsTab price badges', () => {
     return document.querySelector(`.model-version-row[data-version-id="${versionId}"]`);
   }
 
-  it('shows the price for a gated version whose price was captured', async () => {
+  function renderOne(version) {
     fetchModelUpdateVersions.mockResolvedValue(buildRecord([
       {
-        versionId: 20,
-        name: 'Alpha',
+        versionId: 1,
+        name: 'v1',
         isInLibrary: false,
         shouldIgnore: false,
-        isPaid: true,
-        paidAccess: { permanent: true, endsAt: null },
-        priceBuzz: 5000,
-        listPriceBuzz: 5000,
-        priceCheckedAt: 1791039694.5,
-        priceAttemptedAt: 1791039694.5,
+        ...version,
       },
     ]));
+    return renderVersions();
+  }
 
-    await renderVersions();
+  const PAID_GATE = { permanent: true, endsAt: null };
 
-    expect(rowFor(20).textContent).toContain('5,000 Buzz');
+  it('shows the download price for a paid version the user does not have', async () => {
+    await renderOne({ isPaid: true, paidAccess: PAID_GATE, priceBuzz: 5000 });
+
+    expect(rowFor(1).textContent).toContain('5,000 Buzz');
   });
 
-  it('marks a gated version with no readable price as unavailable', async () => {
-    // The mature-model case: we looked, no host would serve the page.
-    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
-      {
-        versionId: 21,
-        name: 'Beta',
-        isInLibrary: false,
-        shouldIgnore: false,
-        isPaid: true,
-        paidAccess: { permanent: true, endsAt: null },
-        priceBuzz: null,
-        priceAttemptedAt: 1791039694.5,
-      },
-    ]));
+  it('says Paid without a number when the price could not be read', async () => {
+    // The gate is certain (it comes from the public API); only the number is
+    // best-effort, and that is our plumbing rather than the user's problem.
+    await renderOne({ isPaid: true, paidAccess: PAID_GATE, priceBuzz: null });
 
-    await renderVersions();
-
-    expect(rowFor(21).textContent).toContain('Price unavailable');
+    expect(rowFor(1).textContent).toContain('Paid');
+    expect(rowFor(1).textContent).not.toContain('Buzz');
   });
 
-  it('stays quiet when the price was never looked up', async () => {
-    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
-      {
-        versionId: 22,
-        name: 'Gamma',
-        isInLibrary: false,
-        shouldIgnore: false,
-        isPaid: true,
-        paidAccess: { permanent: true, endsAt: null },
-        priceBuzz: null,
-        priceAttemptedAt: null,
-      },
-    ]));
+  it('shows the early access countdown alongside the price', async () => {
+    await renderOne({
+      isEarlyAccess: true,
+      earlyAccessEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+      paidAccess: { permanent: false, endsAt: '2999-01-01T00:00:00.000Z' },
+      priceBuzz: 500,
+    });
 
-    await renderVersions();
+    const text = rowFor(1).textContent;
+    expect(text).toContain('Early Access');
+    expect(text).toContain('500 Buzz');
+  });
 
-    expect(rowFor(22).textContent).not.toContain('Price unavailable');
+  it('shows nothing about cost for a version already in the library', async () => {
+    // A version on disk cannot become cheaper *for this user*.
+    await renderOne({
+      isInLibrary: true,
+      isPaid: true,
+      paidAccess: PAID_GATE,
+      priceBuzz: 5000,
+      gateLapsedAt: '2026-09-28T00:00:00.000Z',
+    });
+
+    const text = rowFor(1).textContent;
+    expect(text).not.toContain('Buzz');
+    expect(text).not.toContain('Paid');
+    expect(text).not.toContain('Free Now');
+    expect(text).toContain('In Library');
+  });
+
+  it('marks a version that became free and is not in the library', async () => {
+    await renderOne({
+      isInLibrary: false,
+      isPaid: false,
+      priceBuzz: null,
+      gateLapsedAt: '2026-09-28T00:00:00.000Z',
+    });
+
+    expect(rowFor(1).textContent).toContain('Free Now');
+  });
+
+  it('shows nothing at all for a plain free version', async () => {
+    await renderOne({ isInLibrary: false, isPaid: false, priceBuzz: null });
+
+    const text = rowFor(1).textContent;
+    expect(text).not.toContain('Buzz');
+    expect(text).not.toContain('Paid');
+    expect(text).not.toContain('Free Now');
   });
 });

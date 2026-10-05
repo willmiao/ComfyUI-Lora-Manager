@@ -4,7 +4,6 @@ import { getStorageItem, setStorageItem, removeStorageItem, getSessionItem, setS
 import { showToast, openCivitaiByMetadata, isTypingContext } from '../../utils/uiHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
-import { openPriceAlertsPanel } from '../../managers/UpdateService.js';
 import { sidebarManager } from '../SidebarManager.js';
 import { initSortDropdown, applySortToSelect, randomizeSortValue } from './SortDropdown.js';
 
@@ -254,17 +253,6 @@ export class PageControls {
             checkUpdatesOption.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 await this.handleCheckModelUpdates(e.currentTarget);
-            });
-        }
-
-        // Opens the notification bell on the price alerts tab (same action as the
-        // global context menu entry).
-        const priceAlertsOption = document.getElementById('priceAlertsMenuItem');
-        if (priceAlertsOption) {
-            priceAlertsOption.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.querySelector('.dropdown-group.active')?.classList.remove('active');
-                openPriceAlertsPanel();
             });
         }
 

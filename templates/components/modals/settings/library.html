@@ -200,28 +200,6 @@
         <div class="setting-item">
             <div class="setting-row">
                 <div class="setting-info">
-                    <label for="priceAlertThresholdBuzz">
-                        {{ t('settings.priceTracking.threshold') }}
-                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.thresholdHelp') }}"></i>
-                    </label>
-                </div>
-                <div class="setting-control">
-                    <div class="text-input-wrapper">
-                        <input
-                            type="number"
-                            id="priceAlertThresholdBuzz"
-                            min="0"
-                            step="1"
-                            onblur="settingsManager.saveInputSetting('priceAlertThresholdBuzz', 'price_alert_threshold_buzz')"
-                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="setting-item">
-            <div class="setting-row">
-                <div class="setting-info">
                     <label for="priceCheckTtlHours">
                         {{ t('settings.priceTracking.refreshHours') }}
                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.refreshHoursHelp') }}"></i>

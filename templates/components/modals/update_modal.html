@@ -15,10 +15,6 @@
                 <span>{{ t('update.tabs.messages') }}</span>
                 <span class="notification-tab-badge" id="bannerTabBadge"></span>
             </button>
-            <button type="button" class="notification-tab" id="priceAlertsTab" role="tab" aria-selected="false" aria-controls="priceAlertsPanel" tabindex="-1" data-notification-tab="priceAlerts">
-                <span>{{ t('update.tabs.priceAlerts') }}</span>
-                <span class="notification-tab-badge" id="priceAlertsTabBadge"></span>
-            </button>
         </div>
         <div class="notification-panels">
             <div class="notification-panel active" id="updatesPanel" role="tabpanel" aria-labelledby="updatesTab" aria-hidden="false" tabindex="0" data-notification-panel="updates">
@@ -96,34 +92,6 @@
                     <h3>{{ t('update.banners.recent') }}</h3>
                     <p class="banner-history-empty" id="bannerHistoryEmpty" data-i18n="update.banners.empty">{{ t('update.banners.empty') }}</p>
                     <ul class="banner-history-list" id="bannerHistoryList"></ul>
-                </div>
-            </div>
-            <div class="notification-panel" id="priceAlertsPanel" role="tabpanel" aria-labelledby="priceAlertsTab" aria-hidden="true" tabindex="-1" data-notification-panel="priceAlerts">
-                <div class="price-alerts">
-                    <!-- Shown while price tracking is off: the panel still lists
-                         versions that became free, but says why prices are missing. -->
-                    <div class="price-alerts-disabled hidden" id="priceAlertsDisabled">
-                        <p class="price-alerts-disabled-text">{{ t('update.priceAlerts.disabled') }}</p>
-                        <button type="button" class="price-alerts-settings-btn" id="priceAlertsSettingsBtn">
-                            <i class="fas fa-sliders-h"></i> {{ t('update.priceAlerts.openSettings') }}
-                        </button>
-                    </div>
-
-                    <div class="price-alerts-toolbar">
-                        <div class="price-alerts-segments" role="tablist" aria-label="{{ t('update.priceAlerts.segmentsLabel') }}">
-                            <button type="button" class="price-alerts-segment active" data-price-alert-segment="below_threshold" role="tab" aria-selected="true">
-                                {{ t('update.priceAlerts.segments.belowThreshold') }}
-                            </button>
-                            <button type="button" class="price-alerts-segment" data-price-alert-segment="became_free" role="tab" aria-selected="false">
-                                {{ t('update.priceAlerts.segments.becameFree') }}
-                            </button>
-                        </div>
-                        <span class="price-alerts-threshold" id="priceAlertsThreshold"></span>
-                    </div>
-
-                    <p class="price-alerts-note hidden" id="priceAlertsStale"></p>
-                    <p class="price-alerts-empty" id="priceAlertsEmpty">{{ t('update.priceAlerts.empty') }}</p>
-                    <ul class="price-alerts-list" id="priceAlertsList"></ul>
                 </div>
             </div>
         </div>

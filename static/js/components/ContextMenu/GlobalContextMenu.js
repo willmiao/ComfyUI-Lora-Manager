@@ -4,7 +4,6 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
-import { openPriceAlertsPanel, updateService } from '../../managers/UpdateService.js';
 import { rematchModalManager } from '../../managers/RematchModalManager.js';
 import { showRematchSummary } from '../RematchSummaryModal.js';
 
@@ -28,23 +27,12 @@ export class GlobalContextMenu extends BaseContextMenu {
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
         const rematchRecipesItem = this.menu.querySelector('[data-action="rematch-recipes"]');
         const groupByModelItem = this.menu.querySelector('[data-action="toggle-group-by-model"]');
-        const priceAlertsItem = this.menu.querySelector('[data-action="price-alerts"]');
         const groupByModelCheck = groupByModelItem?.querySelector('.check-indicator');
 
         // Update check indicator for group-by-model
         if (groupByModelCheck) {
             const isEnabled = !!state.global.settings.group_by_model;
             groupByModelCheck.style.display = isEnabled ? 'block' : 'none';
-        }
-
-        // Append the unread count when it is already known (loaded once on init,
-        // and only when price tracking is on), so the label stays a plain label
-        // for everyone else.
-        const priceAlertsLabel = priceAlertsItem?.querySelector('#globalPriceAlertsLabel');
-        if (priceAlertsLabel) {
-            const unread = updateService?.getUnreadPriceAlertCount?.() || 0;
-            const base = translate('globalContextMenu.priceAlerts.label', {}, 'Price alerts');
-            priceAlertsLabel.textContent = unread > 0 ? `${base} (${unread})` : base;
         }
 
         if (isRecipesPage) {
@@ -54,7 +42,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.add('hidden');
             excludedModelsItem?.classList.add('hidden');
             groupByModelItem?.classList.add('hidden');
-            priceAlertsItem?.classList.add('hidden');
             rematchRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
@@ -63,7 +50,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.remove('hidden');
             excludedModelsItem?.classList.remove('hidden');
             groupByModelItem?.classList.remove('hidden');
-            priceAlertsItem?.classList.remove('hidden');
             rematchRecipesItem?.classList.add('hidden');
         }
 
@@ -102,9 +88,6 @@ export class GlobalContextMenu extends BaseContextMenu {
                 this.checkModelUpdates(menuItem).catch((error) => {
                     console.error('Failed to check model updates:', error);
                 });
-                break;
-            case 'price-alerts':
-                openPriceAlertsPanel();
                 break;
             case 'fetch-missing-licenses':
                 this.fetchMissingLicenses(menuItem).catch((error) => {

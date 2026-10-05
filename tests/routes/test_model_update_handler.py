@@ -326,39 +326,6 @@ async def test_refresh_model_updates_filters_records_without_updates():
     assert call["target_model_ids"] is None
 
 
-@pytest.mark.asyncio
-async def test_get_price_alerts_returns_flagged_versions():
-    """The price alert list is a GET (companion-extension friendly) and reports
-    the threshold it was computed with."""
-
-    class AlertsService:
-        def __init__(self):
-            self.calls = []
-
-        async def get_price_alerts(self, model_type, limit=200):
-            self.calls.append((model_type, limit))
-            return [{"modelId": 1, "versionId": 12, "priceBuzz": 250}]
-
-    update_service = AlertsService()
-    settings = {"price_tracking_enabled": True, "price_alert_threshold_buzz": 300}
-    handler = ModelUpdateHandler(
-        service=DummyService(SimpleNamespace(version_index={})),
-        update_service=update_service,
-        metadata_provider_selector=lambda *_: None,
-        settings_service=SimpleNamespace(get=lambda key, default=None: settings.get(key, default)),
-        logger=logging.getLogger(__name__),
-    )
-    request = SimpleNamespace(query={"limit": "50"})
-
-    response = await handler.get_price_alerts(request)  # pyright: ignore[reportArgumentType]
-
-    assert response.status == 200
-    payload = json.loads(response.text)
-    assert payload["success"] is True
-    assert payload["enabled"] is True
-    assert payload["thresholdBuzz"] == 300
-    assert payload["alerts"] == [{"modelId": 1, "versionId": 12, "priceBuzz": 250}]
-    assert update_service.calls == [("lora", 50)]
 
 
 @pytest.mark.asyncio
@@ -1216,13 +1183,12 @@ def test_every_common_route_definition_resolves_to_a_handler():
     assert missing == []
 
 
-def test_get_price_alerts_is_registered_as_a_route():
-    """The alerts endpoint must be declared and reachable via GET."""
+def test_price_alert_endpoints_are_not_registered():
+    """The redesign dropped the standalone alerts surface: obtainability rides on
+    the update surfaces, so no per-type alert route may remain."""
 
-    definition = next(
-        d
-        for d in COMMON_ROUTE_DEFINITIONS
-        if d.handler_name == "get_price_alerts"
-    )
-    assert definition.method == "GET"
-    assert definition.build_path("loras") == "/api/lm/loras/updates/price-alerts"
+    assert [
+        definition.path_template
+        for definition in COMMON_ROUTE_DEFINITIONS
+        if "price-alert" in definition.path_template
+    ] == []
