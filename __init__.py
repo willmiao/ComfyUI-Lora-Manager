@@ -24,7 +24,6 @@ try:  # pragma: no cover - import fallback for pytest collection
 except (
     ImportError
 ):  # pragma: no cover - allows running under pytest without package install
-    import importlib
     import pathlib
     import sys
 
@@ -32,47 +31,33 @@ except (
     if str(package_root) not in sys.path:
         sys.path.append(str(package_root))
 
-    PromptLM = importlib.import_module("py.nodes.prompt").PromptLM
-    TextLM = importlib.import_module("py.nodes.text").TextLM
-    LoraManager = importlib.import_module("py.lora_manager").LoraManager
-    LoraLoaderLM = importlib.import_module("py.nodes.lora_loader").LoraLoaderLM
-    LoraTextLoaderLM = importlib.import_module("py.nodes.lora_loader").LoraTextLoaderLM
-    CheckpointLoaderLM = importlib.import_module(
-        "py.nodes.checkpoint_loader"
-    ).CheckpointLoaderLM
-    UNETLoaderLM = importlib.import_module("py.nodes.unet_loader").UNETLoaderLM
-    TriggerWordToggleLM = importlib.import_module(
-        "py.nodes.trigger_word_toggle"
-    ).TriggerWordToggleLM
-    LoraStackerLM = importlib.import_module("py.nodes.lora_stacker").LoraStackerLM
-    LoraStackCombinerLM = importlib.import_module(
-        "py.nodes.lora_stack_combiner"
-    ).LoraStackCombinerLM
-    SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
-    DebugMetadataLM = importlib.import_module("py.nodes.debug_metadata").DebugMetadataLM
-    WanVideoLoraSelectLM = importlib.import_module(
-        "py.nodes.wanvideo_lora_select"
-    ).WanVideoLoraSelectLM
-    WanVideoLoraTextSelectLM = importlib.import_module(
-        "py.nodes.wanvideo_lora_select_from_text"
-    ).WanVideoLoraTextSelectLM
-    LoraPoolLM = importlib.import_module("py.nodes.lora_pool").LoraPoolLM
-    LoraRandomizerLM = importlib.import_module(
-        "py.nodes.lora_randomizer"
-    ).LoraRandomizerLM
-    LoraCyclerLM = importlib.import_module("py.nodes.lora_cycler").LoraCyclerLM
-    LoraInfoLM = importlib.import_module("py.nodes.lora_info").LoraInfoLM
-    LoraSyntaxToPath = importlib.import_module(
-        "py.nodes.lora_syntax_to_path"
-    ).LoraSyntaxToPath
-    CreateHookLoraLM = importlib.import_module(
-        "py.nodes.create_hook_lora"
-    ).CreateHookLoraLM
-    MetadataOverwriteLM = importlib.import_module(
-        "py.nodes.metadata_overwrite"
-    ).MetadataOverwriteLM
-    LoadImageMetadataLM = importlib.import_module("py.nodes.load_image_metadata").LoadImageMetadataLM
-    init_metadata_collector = importlib.import_module("py.metadata_collector").init
+    # pytest collects this file as a top-level module: its Package collector walks
+    # up from tests/ while __init__.py exists, so the repo root becomes a package
+    # node and this file is imported without one. Relative imports cannot resolve
+    # there, so pull the same objects through the top-level "py" package that the
+    # sys.path entry above makes importable.
+    from py.lora_manager import LoraManager
+    from py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
+    from py.nodes.checkpoint_loader import CheckpointLoaderLM
+    from py.nodes.unet_loader import UNETLoaderLM
+    from py.nodes.trigger_word_toggle import TriggerWordToggleLM
+    from py.nodes.prompt import PromptLM
+    from py.nodes.text import TextLM
+    from py.nodes.lora_stacker import LoraStackerLM
+    from py.nodes.lora_stack_combiner import LoraStackCombinerLM
+    from py.nodes.save_image import SaveImageLM
+    from py.nodes.debug_metadata import DebugMetadataLM
+    from py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
+    from py.nodes.wanvideo_lora_select_from_text import WanVideoLoraTextSelectLM
+    from py.nodes.lora_pool import LoraPoolLM
+    from py.nodes.lora_randomizer import LoraRandomizerLM
+    from py.nodes.lora_cycler import LoraCyclerLM
+    from py.nodes.lora_info import LoraInfoLM
+    from py.nodes.lora_syntax_to_path import LoraSyntaxToPath
+    from py.nodes.create_hook_lora import CreateHookLoraLM
+    from py.nodes.load_image_metadata import LoadImageMetadataLM
+    from py.nodes.metadata_overwrite import MetadataOverwriteLM
+    from py.metadata_collector import init as init_metadata_collector
 
 NODE_CLASS_MAPPINGS = {
     PromptLM.NAME: PromptLM,
@@ -107,12 +92,10 @@ try:
     # Auto-build in development, warn only if fails
     check_and_build_vue_widgets(auto_build=True, warn_only=True)
 except ImportError:
-    # Fallback for pytest
-    import importlib
+    # Fallback for pytest (see the note in the import block above): go through the
+    # top-level "py" package, which that block has already put on sys.path.
+    from py.vue_widget_builder import check_and_build_vue_widgets
 
-    check_and_build_vue_widgets = importlib.import_module(
-        "py.vue_widget_builder"
-    ).check_and_build_vue_widgets
     check_and_build_vue_widgets(auto_build=True, warn_only=True)
 except Exception as e:
     import logging
