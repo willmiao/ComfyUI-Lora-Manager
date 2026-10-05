@@ -1116,6 +1116,12 @@ export class SettingsManager {
             cardInfoDisplaySelect.value = state.global.settings.card_info_display || 'always';
         }
 
+        // Set showcase layout setting
+        const showcaseLayoutSelect = document.getElementById('showcaseLayout');
+        if (showcaseLayoutSelect) {
+            showcaseLayoutSelect.value = state.global.settings.showcase_layout || 'gallery';
+        }
+
         // Set model card footer action
         const modelCardFooterActionSelect = document.getElementById('modelCardFooterAction');
         if (modelCardFooterActionSelect) {

@@ -530,6 +530,12 @@
                 "hover": "滑鼠懸停顯示"
             },
             "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕",
+            "showcaseLayout": "範例圖片版面",
+            "showcaseLayoutHelp": "選擇範例圖片在模型彈窗中的顯示方式：一次一張的圖庫，或傳統的垂直清單。",
+            "showcaseLayoutOptions": {
+                "gallery": "圖庫",
+                "vertical": "垂直清單"
+            },
             "showVersionOnCard": "在卡片上顯示版本",
             "showVersionOnCardHelp": "在模型卡片上顯示或隱藏版本名稱",
             "modelCardFooterAction": "模型卡片按鈕操作",
@@ -1989,7 +1995,9 @@
                 "nsfwMature": "成熟內容",
                 "nsfwR": "R 級內容",
                 "nsfwX": "X 級內容",
-                "nsfwXxx": "XXX 級內容"
+                "nsfwXxx": "XXX 級內容",
+                "layoutGallery": "圖庫檢視",
+                "layoutList": "清單檢視"
             },
             "versions": {
                 "heading": "模型版本",

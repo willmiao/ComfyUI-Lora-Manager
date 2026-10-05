@@ -4,9 +4,11 @@
  *
  * The showcase starts collapsed as a slim indicator bar ("Show N examples"),
  * so opening the modal never triggers remote image fetches. Expanding reveals
- * a gallery: a single main viewer with prev/next controls, a horizontal
- * thumbnail strip for overview/random access, and an always-visible import
- * entry — no scrolling through a vertical stack of full-width examples.
+ * the layout chosen by the `showcase_layout` setting: either a gallery (a
+ * single main viewer with prev/next controls, a horizontal thumbnail strip
+ * for overview/random access, and an always-visible import entry) or the
+ * classic vertical list (every example stacked full-width, see
+ * VerticalListView.js). A segmented toggle in the toolbar switches layouts.
  */
 import { showToast } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
@@ -20,8 +22,8 @@ import {
     initMediaControlHandlers,
     positionAllMediaControls
 } from './MediaUtils.js';
-import { generateMetadataPanel } from './MetadataPanel.js';
-import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
+import { renderShowcaseMediaItem, findLocalFile } from './MediaRenderers.js';
+import { renderVerticalList, initVerticalList } from './VerticalListView.js';
 import { getShowcaseUrl, getDisplayUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
 import { openMediaViewer, isMediaViewerOpen } from '../MediaViewer.js';
 import { escapeAttribute } from '../utils.js';
@@ -118,12 +120,45 @@ function renderPreviewThumb(previewUrl) {
 }
 
 /**
- * Render showcase content: collapsed indicator bar by default, gallery
- * (main viewer + thumbnail strip + import entry) when expanded
+ * Active showcase layout ('gallery' | 'vertical') from the persisted setting;
+ * unknown/missing values fall back to the gallery
+ * @returns {string}
+ */
+function getShowcaseLayout() {
+    return state.settings.showcase_layout === 'vertical' ? 'vertical' : 'gallery';
+}
+
+/**
+ * Render the segmented gallery/list layout toggle
+ * @param {string} layout - Active layout ('gallery' | 'vertical')
+ * @returns {string} HTML for the toggle
+ */
+function renderLayoutToggle(layout) {
+    const galleryLabel = translate('modals.model.showcase.layoutGallery', {}, 'Gallery view');
+    const listLabel = translate('modals.model.showcase.layoutList', {}, 'List view');
+    return `
+        <div class="showcase-layout-toggle" role="group">
+            <button type="button" class="layout-toggle-btn${layout === 'gallery' ? ' active' : ''}"
+                    data-showcase-layout="gallery" title="${galleryLabel}"
+                    aria-pressed="${layout === 'gallery'}">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button type="button" class="layout-toggle-btn${layout === 'vertical' ? ' active' : ''}"
+                    data-showcase-layout="vertical" title="${listLabel}"
+                    aria-pressed="${layout === 'vertical'}">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * Render showcase content: collapsed indicator bar by default, the active
+ * layout (gallery or vertical list) when expanded
  * @param {Array} images - Array of images/videos to show
  * @param {Array} exampleFiles - Local example files
  * @param {string} previewUrl - Model preview URL for the collapsed indicator bar
- * @param {boolean} expanded - Whether to render the full gallery (loads remote media)
+ * @param {boolean} expanded - Whether to render the full showcase (loads remote media)
  * @returns {string} HTML content
  */
 export function renderShowcaseContent(images, exampleFiles = [], previewUrl = '', expanded = false) {
@@ -189,6 +224,8 @@ export function renderShowcaseContent(images, exampleFiles = [], previewUrl = ''
                 ${renderImportInterface(false)}
             </div>` : '';
 
+    const layout = getShowcaseLayout();
+
     // Collapsed resting state: a slim indicator bar only — remote examples are
     // not rendered (and therefore not fetched) until the user expands.
     if (!expanded) {
@@ -201,10 +238,31 @@ export function renderShowcaseContent(images, exampleFiles = [], previewUrl = ''
                     <i class="fas fa-chevron-down"></i> ${translate('modals.model.showcase.showCount', { count }, `${showText} (${count})`)}
                 </button>
                 ${hiddenNotification}
+                ${renderLayoutToggle(layout)}
                 <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
                     <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
                 </button>
             </div>
+            ${importZone}
+        </div>
+        `;
+    }
+
+    // Vertical list layout: every example stacked full-width
+    if (layout === 'vertical') {
+        return `
+        <div class="showcase-gallery showcase-vertical">
+            <div class="gallery-toolbar">
+                ${hiddenNotification}
+                <button class="gallery-show-btn" id="galleryShowBtn">
+                    <i class="fas fa-chevron-up"></i> ${translate('modals.model.showcase.hideExamples', {}, 'Hide examples')}
+                </button>
+                ${renderLayoutToggle(layout)}
+                <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
+                    <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
+                </button>
+            </div>
+            ${renderVerticalList(filteredImages, exampleFiles)}
             ${importZone}
         </div>
         `;
@@ -222,6 +280,7 @@ export function renderShowcaseContent(images, exampleFiles = [], previewUrl = ''
                 <button class="gallery-show-btn" id="galleryShowBtn">
                     <i class="fas fa-chevron-up"></i> ${translate('modals.model.showcase.hideExamples', {}, 'Hide examples')}
                 </button>
+                ${renderLayoutToggle(layout)}
                 <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
                     <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
                 </button>
@@ -300,150 +359,15 @@ function renderThumbnail(img, index, exampleFiles) {
 }
 
 /**
- * Render the active media item in the main viewer
+ * Render the active media item in the main viewer (display-optimized URL,
+ * wrapper sized by its container — see MediaRenderers.js)
  * @param {Object} img - Image/video metadata
  * @param {number} index - Index in the array
  * @param {Array} exampleFiles - Local files
  * @returns {string} HTML for the media item
  */
 function renderMediaItem(img, index, exampleFiles) {
-    // Find matching file in our list of actual files
-    let localFile = findLocalFile(img, index, exampleFiles);
-
-    // Get original remote URL
-    const originalRemoteUrl = img.url || '';
-
-    // Determine media type for optimization
-    const isVideo = localFile ? localFile.is_video :
-                  originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
-    const mediaType = isVideo ? 'video' : 'image';
-
-    // Optimize CivitAI URLs for in-modal display (images capped at width=2400;
-    // the full-size media viewer uses getShowcaseUrl separately)
-    const remoteUrl = getDisplayUrl(originalRemoteUrl, mediaType);
-
-    const localUrl = localFile ? localFile.path : '';
-
-    // Extract CivitAI image ID from CDN URL for import status check
-    const cdnImageId = (img.url || '').match(/\/(\d+)\.(?:jpeg|jpg|png|webp|gif)(?:\?|#|$)/)?.[1] || '';
-
-    // Check if media should be blurred
-    const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
-    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
-    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
-
-    // Determine NSFW warning text based on level
-    let nsfwText = translate('modals.model.showcase.nsfwMature', {}, 'Mature Content');
-    if (nsfwLevel >= NSFW_LEVELS.XXX) {
-        nsfwText = translate('modals.model.showcase.nsfwXxx', {}, 'XXX-rated Content');
-    } else if (nsfwLevel >= NSFW_LEVELS.X) {
-        nsfwText = translate('modals.model.showcase.nsfwX', {}, 'X-rated Content');
-    } else if (nsfwLevel >= NSFW_LEVELS.R) {
-        nsfwText = translate('modals.model.showcase.nsfwR', {}, 'R-rated Content');
-    }
-
-    // Extract metadata from the image
-    const meta = img.meta || {};
-    const prompt = meta.prompt || '';
-    const negativePrompt = meta.negative_prompt || meta.negativePrompt || '';
-    const size = meta.Size || `${img.width}x${img.height}`;
-    const seed = meta.seed || '';
-    const model = meta.Model || '';
-    const steps = meta.steps || '';
-    const sampler = meta.sampler || '';
-    const cfgScale = meta.cfg_scale || meta.cfgScale || '';
-    const clipSkip = meta.clip_skip || meta.clipSkip || '';
-
-    // Check if we have any meaningful generation parameters
-    const hasParams = seed || model || steps || sampler || cfgScale || clipSkip;
-    const hasPrompts = prompt || negativePrompt;
-
-    // Create metadata panel content
-    const metadataPanel = generateMetadataPanel(
-        hasParams, hasPrompts,
-        prompt, negativePrompt,
-        size, seed, model, steps, sampler, cfgScale, clipSkip
-    );
-
-    // Determine if this is a custom image (has id property)
-    const isCustomImage = Boolean(typeof img.id === 'string' && img.id);
-
-    const hasGenMeta = img.hasMeta || (img.meta && (img.meta.prompt || img.meta.seed || img.meta.resources));
-
-    // Create the media control buttons HTML
-    const mediaControlsHtml = `
-        <div class="media-controls">
-            <button class="media-control-btn set-preview-btn" title="Set as preview">
-                <i class="fas fa-image"></i>
-            </button>
-            ${hasGenMeta ? `
-            <button class="media-control-btn create-recipe-btn"
-                    title="Create As Recipe"
-                    data-image-meta="${encodeURIComponent(JSON.stringify(img.meta || {}))}"
-                    data-image-url="${img.url || ''}"
-                    data-image-nsfw="${img.nsfwLevel ?? ''}"
-                    data-image-id="${cdnImageId}"
-                    data-img-id="${img.id || ''}"
-                    data-local-path="${localFile ? localFile.path : ''}">
-                <i class="fas fa-book-open"></i>
-            </button>
-            ` : ''}
-            <button class="media-control-btn set-nsfw-btn"
-                    title="Set content rating"
-                    data-media-index="${index}"
-                    data-media-source="${isCustomImage ? 'custom' : 'civitai'}"
-                    data-media-id="${img.id || ''}">
-                <i class="fas fa-exclamation-triangle"></i>
-            </button>
-            <button class="media-control-btn example-delete-btn ${!isCustomImage ? 'disabled' : ''}"
-                    title="${isCustomImage ? 'Delete this example' : 'Only custom images can be deleted'}"
-                    data-short-id="${img.id || ''}"
-                    ${!isCustomImage ? 'aria-disabled="true"' : ''}>
-                <i class="fas fa-trash-alt"></i>
-                <i class="fas fa-check confirm-icon"></i>
-            </button>
-        </div>
-    `;
-
-    // Generate the appropriate wrapper based on media type
-    if (isVideo) {
-        return generateVideoWrapper(
-            img, shouldBlur, nsfwText, metadataPanel,
-            localUrl, remoteUrl, mediaControlsHtml
-        );
-    }
-
-    return generateImageWrapper(
-        img, shouldBlur, nsfwText, metadataPanel,
-        localUrl, remoteUrl, mediaControlsHtml
-    );
-}
-
-/**
- * Find the matching local file for an image
- * @param {Object} img - Image metadata
- * @param {number} index - Image index
- * @param {Array} exampleFiles - Array of local files
- * @returns {Object|null} Matching local file or null
- */
-function findLocalFile(img, index, exampleFiles) {
-    if (!exampleFiles || exampleFiles.length === 0) return null;
-
-    let localFile = null;
-
-    if (typeof img.id === 'string' && img.id) {
-        // This is a custom image, find by custom_<id>
-        const customPrefix = `custom_${img.id}`;
-        localFile = exampleFiles.find(file => file.name.startsWith(customPrefix));
-    } else {
-        // This is a regular image from civitai, find by index
-        localFile = exampleFiles.find(file => {
-            const match = file.name.match(/image_(\d+)\./);
-            return match && parseInt(match[1]) === index;
-        });
-    }
-
-    return localFile;
+    return renderShowcaseMediaItem(img, index, exampleFiles);
 }
 
 // URLs already warmed in the HTTP cache, so repeat navigations and re-renders
@@ -845,10 +769,12 @@ function isTypingTarget(target) {
 }
 
 // '[' / ']' switch examples while the gallery is expanded. ArrowLeft/Right
-// stay reserved for model-level navigation (ModelModal), and the full-size
-// media viewer owns its keys while open.
+// stay reserved for model-level navigation (ModelModal), the full-size
+// media viewer owns its keys while open, and the vertical list has no
+// active-item concept to navigate.
 document.addEventListener('keydown', (event) => {
     if (event.key !== '[' && event.key !== ']') return;
+    if (getShowcaseLayout() !== 'gallery') return;
     if (!galleryState.expanded || galleryState.images.length < 2) return;
     if (isTypingTarget(event.target)) return;
     if (isMediaViewerOpen()) return;
@@ -893,20 +819,55 @@ function initStripVideoLazyLoading(gallery) {
 }
 
 /**
+ * Switch the showcase layout (gallery | vertical list), persist the setting
+ * immediately and re-render in place
+ * @param {string} layout - Target layout
+ */
+async function setShowcaseLayout(layout) {
+    if (layout !== 'gallery' && layout !== 'vertical') return;
+    if (layout === getShowcaseLayout()) return;
+
+    // Components reach the settings manager through the global set by
+    // core.js (importing it here would create a module cycle)
+    const sm = window.settingsManager;
+    if (sm) {
+        try {
+            await sm.saveSetting('showcase_layout', layout);
+        } catch (error) {
+            console.error('Failed to save showcase layout setting:', error);
+            return; // Keep the current layout when the save fails
+        }
+    } else {
+        state.settings.showcase_layout = layout;
+    }
+
+    rerenderGallery(galleryState.expanded);
+}
+
+/**
  * Initialize all gallery interactions
  * @param {HTMLElement} gallery - The .showcase-gallery element
  */
 export function initShowcaseContent(gallery) {
     if (!gallery) return;
 
-    // While expanded the thumbnail strip occupies the modal's bottom-right
-    // corner; hide the back-to-top button there (Hide examples is the
-    // equivalent "return to top" affordance)
-    gallery.closest('.modal-content')?.classList.toggle('showcase-expanded', galleryState.expanded);
+    // Gallery layout only: while expanded the thumbnail strip occupies the
+    // modal's bottom-right corner; hide the back-to-top button there (Hide
+    // examples is the equivalent "return to top" affordance). The vertical
+    // list has no strip and is exactly where the button is needed most.
+    const hideBackToTop = galleryState.expanded && getShowcaseLayout() === 'gallery';
+    gallery.closest('.modal-content')?.classList.toggle('showcase-expanded', hideBackToTop);
 
     // Toolbar: show/hide toggle (expanding renders the gallery and starts remote loads)
     gallery.querySelector('#galleryShowBtn')?.addEventListener('click', () => {
         rerenderGallery(!galleryState.expanded);
+    });
+
+    // Segmented layout toggle (gallery / vertical list)
+    gallery.querySelectorAll('[data-showcase-layout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setShowcaseLayout(btn.dataset.showcaseLayout);
+        });
     });
 
     // Same expansion via mouse wheel near the bottom of the modal
@@ -947,7 +908,7 @@ export function initShowcaseContent(gallery) {
         handleExampleDeleted(e.detail?.shortId);
     });
 
-    // Main viewer interactions (only exists in the expanded state)
+    // Main viewer interactions (only exists in the expanded gallery layout)
     const container = gallery.querySelector('.main-media-container');
     if (container && galleryState.expanded) {
         initMainMediaInteractions(container);
@@ -958,6 +919,11 @@ export function initShowcaseContent(gallery) {
         prefetchAdjacentMedia();
         // Video thumbnails start at preload="none"; enable them on visibility
         initStripVideoLazyLoading(gallery);
+    }
+
+    // Vertical list interactions (only exists in the expanded vertical layout)
+    if (gallery.querySelector('.vertical-list-container') && galleryState.expanded) {
+        initVerticalList(gallery, galleryState.images, galleryState.exampleFiles);
     }
 
     // Reposition controls on window resize

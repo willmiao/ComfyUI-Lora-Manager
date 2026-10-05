@@ -530,6 +530,12 @@
         "hover": "Reveal on Hover"
       },
       "cardInfoDisplayHelp": "Choose when to display model information and action buttons",
+      "showcaseLayout": "Showcase Layout",
+      "showcaseLayoutHelp": "Choose how example images are displayed in the model modal: a one-at-a-time gallery or the classic vertical list.",
+      "showcaseLayoutOptions": {
+        "gallery": "Gallery",
+        "vertical": "Vertical List"
+      },
       "showVersionOnCard": "Show Version on Card",
       "showVersionOnCardHelp": "Show or hide the version name on model cards",
       "modelCardFooterAction": "Model Card Button Action",
@@ -1989,7 +1995,9 @@
         "nsfwMature": "Mature Content",
         "nsfwR": "R-rated Content",
         "nsfwX": "X-rated Content",
-        "nsfwXxx": "XXX-rated Content"
+        "nsfwXxx": "XXX-rated Content",
+        "layoutGallery": "Gallery view",
+        "layoutList": "List view"
       },
       "versions": {
         "heading": "Model versions",

@@ -530,6 +530,12 @@
                 "hover": "ホバー時に表示"
             },
             "cardInfoDisplayHelp": "モデル情報とアクションボタンの表示タイミングを選択",
+            "showcaseLayout": "ショーケースのレイアウト",
+            "showcaseLayoutHelp": "モデルモーダルでの例画像の表示方法を選択：1枚ずつ表示するギャラリー、または従来の縦並びリスト。",
+            "showcaseLayoutOptions": {
+                "gallery": "ギャラリー",
+                "vertical": "縦並びリスト"
+            },
             "showVersionOnCard": "カードにバージョンを表示",
             "showVersionOnCardHelp": "モデルカード上のバージョン名の表示/非表示を切り替えます",
             "modelCardFooterAction": "モデルカードボタンのアクション",
@@ -1989,7 +1995,9 @@
                 "nsfwMature": "成人向けコンテンツ",
                 "nsfwR": "R指定コンテンツ",
                 "nsfwX": "X指定コンテンツ",
-                "nsfwXxx": "XXX指定コンテンツ"
+                "nsfwXxx": "XXX指定コンテンツ",
+                "layoutGallery": "ギャラリー表示",
+                "layoutList": "リスト表示"
             },
             "versions": {
                 "heading": "モデルバージョン",

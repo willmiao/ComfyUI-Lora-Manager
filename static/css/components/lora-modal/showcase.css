@@ -297,6 +297,64 @@
   margin-top: 0;
 }
 
+/* Segmented layout toggle (gallery / vertical list), shown in the collapsed
+   indicator bar and in each layout's toolbar */
+.showcase-layout-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-xs);
+  overflow: hidden;
+}
+
+.showcase-layout-toggle .layout-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  background: var(--card-bg);
+  border: none;
+  color: var(--text-color);
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.showcase-layout-toggle .layout-toggle-btn + .layout-toggle-btn {
+  border-left: 1px solid var(--border-color);
+}
+
+.showcase-layout-toggle .layout-toggle-btn:hover {
+  color: var(--lora-accent);
+}
+
+.showcase-layout-toggle .layout-toggle-btn.active {
+  background: var(--lora-accent);
+  color: var(--lora-text);
+}
+
+/* Vertical list layout (showcase_layout = vertical): every example stacked
+   full-width. Each .media-wrapper carries an inline padding-bottom aspect
+   ratio, so the column is stable before any media loads; the media is
+   absolutely positioned into that box (revived legacy carousel styles,
+   scoped under .showcase-vertical to avoid clashing with the gallery) */
+.showcase-vertical .vertical-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.showcase-vertical .media-wrapper img,
+.showcase-vertical .media-wrapper video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
 .media-wrapper {
   position: relative;
   width: 100%;
