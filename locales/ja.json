@@ -201,7 +201,11 @@
             "loading": "{type} のアップデートを確認中...",
             "success": "{type} のアップデートが {count} 件見つかりました",
             "none": "すべての {type} は最新です",
-            "error": "{type} のアップデート確認に失敗しました: {message}"
+            "error": "{type} のアップデート確認に失敗しました: {message}",
+            "gateEvents": {
+                "becameFree": "未ダウンロードの {count} バージョンが無料になりました",
+                "newGate": "{count} バージョンが有料になりました"
+            }
         },
         "cleanupExampleImages": {
             "label": "例画像フォルダをクリーンアップ",
@@ -387,6 +391,7 @@
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "priorityTags": "優先タグ",
             "versionScope": "アップデートフラグ",
+            "priceTracking": "Buzz ダウンロード価格",
             "exampleImages": "例画像",
             "autoOrganize": "自動整理",
             "metadata": "メタデータ",
@@ -758,6 +763,13 @@
         "hidePaidUpdates": {
             "label": "有料更新を非表示",
             "help": "有効にすると、有料の更新のみがあるモデルには「更新あり」バッジが表示されません"
+        },
+        "priceTracking": {
+            "help": "CivitAI の公開 API はダウンロード価格を提供していないため、モデルページから読み取ります。有料モデルごとに 1 回の追加リクエストが発生し、以下の間隔で更新されます。価格は未ダウンロードのバージョンにのみ表示されます。",
+            "enabled": "有料バージョンのダウンロード価格を表示",
+            "enabledHelp": "モデルページからダウンロード価格を読み取り、有料バージョンと早期アクセスバージョンの費用と早期アクセスの終了時期を表示します",
+            "refreshHours": "価格の更新間隔（時間）",
+            "refreshHoursHelp": "保存された価格が再読み取りまで有効な期間"
         },
         "licenseIcons": {
             "useNewStyle": "更新されたライセンスアイコンを使用",
@@ -2016,10 +2028,15 @@
                     "earlyAccessTooltip": "このバージョンは現在 CivitAI の早期アクセスが必要です",
                     "paid": "有料",
                     "paidTooltip": "このバージョンのダウンロードには支払いが必要です",
+                    "priceSaleTooltip": "セール中、通常 {list} Buzz",
+                    "priceBlueBuzzTooltip": "Blue Buzz でも支払えます",
+                    "freeNow": "無料化",
+                    "freeNowTooltip": "このバージョンは支払いが不要になりました",
                     "ignored": "無視中",
                     "ignoredTooltip": "このバージョンの更新通知は無効です",
                     "onSiteOnly": "サイト内のみ",
-                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません"
+                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません",
+                    "earlyAccessTooltipUntil": "{date} まで早期アクセス、以降は無料でダウンロードできます"
                 },
                 "actions": {
                     "download": "ダウンロード",

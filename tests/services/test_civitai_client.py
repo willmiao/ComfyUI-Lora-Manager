@@ -1,4 +1,5 @@
 import copy
+import pathlib
 from unittest.mock import AsyncMock
 
 import pytest
@@ -859,3 +860,166 @@ async def test_get_version_file_mini_propagates_rate_limit(downloader):
 
     with pytest.raises(RateLimitError):
         await client.get_version_file_mini(1, 2)
+
+
+async def test_get_model_prices_parses_public_page(downloader):
+    """Prices come from the page payload, read anonymously (no API key)."""
+    client = await CivitaiClient.get_instance()
+    page_html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        '{"props":{"pageProps":{"trpcState":{"json":{"queries":['
+        '{"queryKey":[["model","getById"],{"input":{"id":7}}],"state":{"data":'
+        '{"modelVersions":[{"id":42,"paidAccess":{"endsAt":null,'
+        '"timeframeDays":null,"terms":{"download":{"price":5000}},'
+        '"sale":null}}]}}}]}}}}}</script>'
+    )
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        assert method == "GET"
+        assert "/models/7" in url
+        assert use_auth is False
+        assert kwargs.get("custom_headers", {}).get("Accept") == "text/html"
+        return True, page_html
+
+    downloader.make_request = fake_make_request
+
+    result = await client.get_model_prices(7)
+
+    assert result is not None
+    assert result[42]["price_buzz"] == 5000
+
+
+async def test_get_model_prices_returns_none_on_unusable_page(downloader):
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, "<html><body>challenge</body></html>"
+
+    downloader.make_request = fake_make_request
+
+    assert await client.get_model_prices(7) is None
+
+
+async def test_get_model_prices_rejects_json_body(downloader):
+    """A JSON response is not the page; it must not be parsed as one."""
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, {"error": "nope"}
+
+    downloader.make_request = fake_make_request
+
+    assert await client.get_model_prices(7) is None
+
+
+async def test_get_model_prices_propagates_rate_limit(downloader):
+    client = await CivitaiClient.get_instance()
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, RateLimitError("limited", retry_after=1.0)
+
+    downloader.make_request = fake_make_request
+
+    with pytest.raises(RateLimitError):
+        await client.get_model_prices(7)
+
+
+# --- Model page host fallback -------------------------------------------------
+
+_PAGE_FIXTURE = (
+    pathlib.Path(__file__).resolve().parents[1]
+    / "utils"
+    / "fixtures"
+    / "civitai_model_page_paid.html"
+)
+
+
+def _page_html() -> str:
+    return _PAGE_FIXTURE.read_text(encoding="utf-8")
+
+
+async def test_get_model_prices_falls_back_when_the_preferred_host_refuses(
+    downloader, monkeypatch
+):
+    """civitai.red refuses non-browser clients (Cloudflare); the price must still
+    be readable from a host that answers. This is the user-visible bug: with
+    civitai_host=civitai.red every fetch used to fail."""
+
+    client = await CivitaiClient.get_instance()
+    monkeypatch.setattr(client, "_page_host", lambda: "civitai.red")
+    seen = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        seen.append(url)
+        if "civitai.red" in url:
+            return False, "Access forbidden"
+        return True, _page_html()
+
+    downloader.make_request = fake_make_request
+
+    result = await client.get_model_prices(4242)
+
+    assert result is not None
+    assert result[1001]["price_buzz"] == 5000
+    assert seen[0].startswith("https://civitai.red/")
+    assert any("civitai.com" in url for url in seen)
+    # The working host is remembered and the refusing one is parked.
+    assert client._page_host_preference == "civitai.com"
+    assert "civitai.red" in client._page_host_blocked
+
+
+async def test_get_model_prices_reuses_the_working_host(downloader, monkeypatch):
+    client = await CivitaiClient.get_instance()
+    monkeypatch.setattr(client, "_page_host", lambda: "civitai.red")
+    calls = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        calls.append(url)
+        if "civitai.red" in url:
+            return False, "Access forbidden"
+        return True, _page_html()
+
+    downloader.make_request = fake_make_request
+
+    await client.get_model_prices(4242)
+    calls.clear()
+    await client.get_model_prices(4242)
+
+    # Second time around the parked host is not retried.
+    assert calls and all("civitai.red" not in url for url in calls)
+
+
+async def test_get_model_prices_returns_none_when_no_host_can_serve(downloader, monkeypatch):
+    """Mature models: 404 on civitai.com/green, challenge on civitai.red."""
+
+    client = await CivitaiClient.get_instance()
+    monkeypatch.setattr(client, "_page_host", lambda: "civitai.com")
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        if "civitai.red" in url:
+            return False, "Access forbidden"
+        return False, "Resource not found"
+
+    downloader.make_request = fake_make_request
+
+    assert await client.get_model_prices(2981320) is None
+
+
+async def test_get_model_prices_does_not_park_a_host_on_404(downloader, monkeypatch):
+    """A 404 is model-specific (mature content hidden anonymously), not a reason
+    to stop using the host for other models."""
+
+    client = await CivitaiClient.get_instance()
+    monkeypatch.setattr(client, "_page_host", lambda: "civitai.com")
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        if "civitai.com" in url:
+            return False, "Resource not found"
+        return False, "Access forbidden"
+
+    downloader.make_request = fake_make_request
+
+    await client.get_model_prices(1)
+
+    assert "civitai.com" not in client._page_host_blocked
+    assert "civitai.red" in client._page_host_blocked

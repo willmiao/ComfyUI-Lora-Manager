@@ -201,7 +201,11 @@
             "loading": "Buscando actualizaciones de {type}...",
             "success": "Se encontraron {count} actualización(es) para {type}",
             "none": "Todos los {type} están actualizados",
-            "error": "Error al buscar actualizaciones de {type}: {message}"
+            "error": "Error al buscar actualizaciones de {type}: {message}",
+            "gateEvents": {
+                "becameFree": "{count} versión(es) que no tienes se han vuelto gratuitas",
+                "newGate": "{count} versión(es) ahora son de pago"
+            }
         },
         "cleanupExampleImages": {
             "label": "Limpiar carpetas de imágenes de ejemplo",
@@ -387,6 +391,7 @@
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "priorityTags": "Etiquetas prioritarias",
             "versionScope": "Indicadores de actualización",
+            "priceTracking": "Precios de descarga en Buzz",
             "exampleImages": "Imágenes de ejemplo",
             "autoOrganize": "Organización automática",
             "metadata": "Metadatos",
@@ -758,6 +763,13 @@
         "hidePaidUpdates": {
             "label": "Ocultar actualizaciones de pago",
             "help": "Cuando está activado, los modelos que solo tienen actualizaciones de pago no mostrarán la insignia de 'Actualización disponible'"
+        },
+        "priceTracking": {
+            "help": "La API pública de CivitAI no publica los precios de descarga, así que se leen de la página del modelo: una petición adicional por modelo de pago, actualizada según el intervalo de abajo. Los precios se muestran solo en las versiones que aún no tienes.",
+            "enabled": "Mostrar los precios de descarga de las versiones de pago",
+            "enabledHelp": "Lee el precio de descarga de la página del modelo para mostrar cuánto cuestan las versiones de pago y de acceso temprano, y cuándo termina el acceso temprano",
+            "refreshHours": "Intervalo de actualización de precios (horas)",
+            "refreshHoursHelp": "Cuánto tiempo sigue vigente un precio guardado antes de volver a leerse"
         },
         "licenseIcons": {
             "useNewStyle": "Usar iconos de licencia actualizados",
@@ -2016,10 +2028,15 @@
                     "earlyAccessTooltip": "Esta versión requiere actualmente acceso temprano de CivitAI",
                     "paid": "De pago",
                     "paidTooltip": "Esta versión requiere pago para descargarse",
+                    "priceSaleTooltip": "En oferta, normalmente {list} Buzz",
+                    "priceBlueBuzzTooltip": "También se puede pagar con Blue Buzz",
+                    "freeNow": "Ahora gratis",
+                    "freeNowTooltip": "Esta versión ya no requiere pago",
                     "ignored": "Ignorada",
                     "ignoredTooltip": "Las notificaciones de actualización están desactivadas para esta versión",
                     "onSiteOnly": "Solo en Sitio",
-                    "onSiteOnlyTooltip": "Esta versión solo está disponible para generación en el sitio de CivitAI"
+                    "onSiteOnlyTooltip": "Esta versión solo está disponible para generación en el sitio de CivitAI",
+                    "earlyAccessTooltipUntil": "Acceso temprano hasta el {date}, descarga gratuita después"
                 },
                 "actions": {
                     "download": "Descargar",

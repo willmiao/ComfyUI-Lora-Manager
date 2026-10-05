@@ -187,6 +187,53 @@ function isPaidPermanent(version) {
     return version && version.isPaid === true;
 }
 
+function isGated(version) {
+    return isEarlyAccessActive(version) || isPaidPermanent(version);
+}
+
+/**
+ * Format a Buzz price for display, or '' when the price is unknown (price
+ * tracking is opt-in, so most versions have no price at all).
+ */
+function formatBuzzPrice(value) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+        return '';
+    }
+    return `${value.toLocaleString()} Buzz`;
+}
+
+/**
+ * Tooltip for a known price: notes a sale against the list price and the Blue
+ * Buzz option, since both change what the number means to a buyer.
+ */
+function buildPriceTooltip(version, baseTooltip) {
+    const effective = formatBuzzPrice(version?.priceBuzz);
+    const segments = [baseTooltip];
+    if (!effective) {
+        return baseTooltip;
+    }
+    const list = version?.listPriceBuzz;
+    if (typeof list === 'number' && Number.isFinite(list) && list > version.priceBuzz) {
+        segments.push(
+            translate(
+                'modals.model.versions.badges.priceSaleTooltip',
+                { list: list.toLocaleString() },
+                `On sale, normally ${list.toLocaleString()} Buzz`
+            )
+        );
+    }
+    if (version?.acceptsBlueBuzz) {
+        segments.push(
+            translate(
+                'modals.model.versions.badges.priceBlueBuzzTooltip',
+                {},
+                'Can also be paid with Blue Buzz'
+            )
+        );
+    }
+    return segments.join(' · ');
+}
+
 function isDownloadAllowed(version) {
     if (!version.usageControl) {
         return true;
@@ -522,22 +569,64 @@ function renderRow(version, options) {
         }));
     }
 
-    if (isEarlyAccess) {
+    // Obtainability, only where there is a decision to make: a version already in
+    // the library cannot become cheaper *for this user*, so it gets no cost badge.
+    // The download price is the only price axis that matters here — the generation
+    // fee is what CivitAI charges to generate on its own site, which a local model
+    // never incurs.
+    const priceLabel = formatBuzzPrice(version.priceBuzz);
+    if (!version.isInLibrary && isEarlyAccess) {
+        // Early access is the one state with a real countdown: "free on <date>"
+        // decides between waiting and paying.
+        const eaTime = formatEarlyAccessTime(version.earlyAccessEndsAt);
         badges.push(buildBadge(earlyAccessBadgeLabel, 'early-access', {
-            title: translate(
-                'modals.model.versions.badges.earlyAccessTooltip',
-                {},
-                'This version currently requires Civitai early access'
+            title: buildPriceTooltip(
+                version,
+                eaTime
+                    ? translate(
+                        'modals.model.versions.badges.earlyAccessTooltipUntil',
+                        { date: eaTime },
+                        `Early access until ${eaTime}`
+                    )
+                    : translate(
+                        'modals.model.versions.badges.earlyAccessTooltip',
+                        {},
+                        'This version currently requires Civitai early access'
+                    )
             ),
         }));
     }
 
-    if (isPaidPermanent(version)) {
-        badges.push(buildBadge(paidBadgeLabel, 'paid', {
+    if (!version.isInLibrary && isGated(version)) {
+        if (priceLabel) {
+            // The number already says "paid", so a separate Paid badge would be
+            // noise next to it.
+            badges.push(buildBadge(priceLabel, isEarlyAccess ? 'early-access' : 'paid', {
+                title: buildPriceTooltip(version, paidBadgeLabel),
+            }));
+        } else if (!isEarlyAccess) {
+            // Paid, but no readable price: the gate is certain (it comes from the
+            // public API), only the number is best-effort. Saying nothing here
+            // would read as "free", which is the one thing this version is not.
+            badges.push(buildBadge(paidBadgeLabel, 'paid', {
+                title: translate(
+                    'modals.model.versions.badges.paidTooltip',
+                    {},
+                    'This version requires payment to download'
+                ),
+            }));
+        }
+    }
+
+    // A version that used to be gated and no longer is. `gateLapsedAt` is
+    // persisted, so the marker survives long after the refresh that saw it.
+    if (!version.isInLibrary && !isGated(version) && version.gateLapsedAt) {
+        const freeBadgeLabel = translate('modals.model.versions.badges.freeNow', {}, 'Free Now');
+        badges.push(buildBadge(freeBadgeLabel, 'success', {
             title: translate(
-                'modals.model.versions.badges.paidTooltip',
-                {},
-                'This version requires payment to download'
+                'modals.model.versions.badges.freeNowTooltip',
+                { date: formatDateLabel(version.gateLapsedAt) || '' },
+                'This version no longer requires payment'
             ),
         }));
     }

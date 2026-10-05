@@ -201,7 +201,11 @@
             "loading": "正在檢查 {type} 更新...",
             "success": "找到 {count} 個 {type} 更新",
             "none": "所有 {type} 都是最新版本",
-            "error": "檢查 {type} 更新失敗：{message}"
+            "error": "檢查 {type} 更新失敗：{message}",
+            "gateEvents": {
+                "becameFree": "{count} 個您未擁有的版本已免費",
+                "newGate": "{count} 個版本已變為付費"
+            }
         },
         "cleanupExampleImages": {
             "label": "清理範例圖片資料夾",
@@ -387,6 +391,7 @@
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
             "versionScope": "版本範圍",
+            "priceTracking": "Buzz 下載價格",
             "exampleImages": "範例圖片",
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
@@ -758,6 +763,13 @@
         "hidePaidUpdates": {
             "label": "隱藏付費更新",
             "help": "啟用後，只有付費更新的模型將不會顯示「有可用更新」徽章"
+        },
+        "priceTracking": {
+            "help": "CivitAI 的公開 API 不提供下載價格，因此價格從模型頁面讀取 —— 每個付費模型多一次請求，並依下方間隔重新整理。價格只顯示在您尚未擁有的版本上。",
+            "enabled": "顯示付費版本的下載價格",
+            "enabledHelp": "從模型頁面讀取下載價格，讓付費與搶先體驗版本顯示所需費用，以及搶先體驗的結束時間",
+            "refreshHours": "價格重新整理間隔（小時）",
+            "refreshHoursHelp": "已儲存的價格在重新讀取前保持有效的時長"
         },
         "licenseIcons": {
             "useNewStyle": "使用新版許可協議圖標",
@@ -2016,10 +2028,15 @@
                     "earlyAccessTooltip": "此版本目前需要 CivitAI 搶先體驗權限",
                     "paid": "付費",
                     "paidTooltip": "此版本需要付費才能下載",
+                    "priceSaleTooltip": "特價中，原價 {list} Buzz",
+                    "priceBlueBuzzTooltip": "也可以使用 Blue Buzz 支付",
+                    "freeNow": "現已免費",
+                    "freeNowTooltip": "此版本已不再需要付費",
                     "ignored": "已忽略",
                     "ignoredTooltip": "此版本已關閉更新通知",
                     "onSiteOnly": "僅站內生成",
-                    "onSiteOnlyTooltip": "此版本僅在 CivitAI 站內可用，無法下載"
+                    "onSiteOnlyTooltip": "此版本僅在 CivitAI 站內可用，無法下載",
+                    "earlyAccessTooltipUntil": "搶先體驗至 {date}，之後可免費下載"
                 },
                 "actions": {
                     "download": "下載",

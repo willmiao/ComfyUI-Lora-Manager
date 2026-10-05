@@ -201,7 +201,11 @@
       "loading": "Checking for {type} updates...",
       "success": "Found {count} update(s) for {type}s",
       "none": "All {type}s are up to date",
-      "error": "Failed to check for {type} updates: {message}"
+      "error": "Failed to check for {type} updates: {message}",
+      "gateEvents": {
+        "becameFree": "{count} version(s) you do not have became free",
+        "newGate": "{count} version(s) are now paid"
+      }
     },
     "cleanupExampleImages": {
       "label": "Clean up example image folders",
@@ -387,6 +391,7 @@
       "downloadPathTemplates": "Download Path Templates",
       "priorityTags": "Priority Tags",
       "versionScope": "Version Scope",
+      "priceTracking": "Buzz Download Prices",
       "exampleImages": "Example Images",
       "autoOrganize": "Auto-organize",
       "metadata": "Metadata",
@@ -758,6 +763,13 @@
     "hidePaidUpdates": {
       "label": "Hide Paid Updates",
       "help": "When enabled, models with only paid updates will not show 'Update available' badge"
+    },
+    "priceTracking": {
+      "help": "CivitAI does not publish download prices in its public API, so they are read from the model page - one extra request per paid model, refreshed on the interval below. Prices are shown on versions you do not have yet.",
+      "enabled": "Show download prices for paid versions",
+      "enabledHelp": "Reads the download price from the model page so paid and early access versions show what they cost, and when early access ends",
+      "refreshHours": "Price refresh interval (hours)",
+      "refreshHoursHelp": "How long a stored price stays fresh before it is read again"
     },
     "licenseIcons": {
       "useNewStyle": "Use updated license icons",
@@ -2016,10 +2028,15 @@
           "earlyAccessTooltip": "This version currently requires CivitAI early access",
           "paid": "Paid",
           "paidTooltip": "This version requires payment to download",
+          "priceSaleTooltip": "On sale, normally {list} Buzz",
+          "priceBlueBuzzTooltip": "Can also be paid with Blue Buzz",
+          "freeNow": "Free Now",
+          "freeNowTooltip": "This version no longer requires payment",
           "ignored": "Ignored",
           "ignoredTooltip": "Update notifications are disabled for this version",
           "onSiteOnly": "On-Site Only",
-          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI"
+          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI",
+          "earlyAccessTooltipUntil": "Early access until {date}, free to download after that"
         },
         "actions": {
           "download": "Download",

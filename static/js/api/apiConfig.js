@@ -99,6 +99,9 @@ export function getApiEndpoints(modelType) {
         ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
         ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
 
+        // Price alerts are app-wide (all model types in one query), so they are
+        // not part of this per-type endpoint map; see UpdateService.js.
+
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,
         setPreviewFromUrl: `/api/lm/${modelType}/set-preview-from-url`,

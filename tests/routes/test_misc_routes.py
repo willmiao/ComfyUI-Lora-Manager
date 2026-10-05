@@ -6,7 +6,7 @@ import subprocess
 import zipfile
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 from aiohttp import web
@@ -16,6 +16,7 @@ from py.routes.handlers import misc_handlers
 from py.routes.handlers.misc_handlers import (
     BackupHandler,
     DoctorHandler,
+    MiscHandlerSet,
     FileSystemHandler,
     HealthCheckHandler,
     LoraCodeHandler,
@@ -2865,3 +2866,66 @@ async def test_sidecar_migration_handler_relocate_root_requires_old_root():
     assert response.status == 400
     assert "old_root" in payload["error"]
     assert use_case.calls == []
+
+
+# --- Global price alerts panel endpoint -------------------------------------
+
+
+class _AnyHandler:
+    def __getattr__(self, _name):
+        return lambda request: None
+
+
+def _stub_misc_handler_set(**overrides) -> MiscHandlerSet:
+    names = (
+        "health",
+        "settings",
+        "usage_stats",
+        "lora_code",
+        "trained_words",
+        "model_examples",
+        "node_registry",
+        "model_library",
+        "metadata_archive",
+        "backup",
+        "filesystem",
+        "custom_words",
+        "wildcards",
+        "supporters",
+        "doctor",
+        "example_workflows",
+        "base_model",
+        "model_source_handler",
+        "agent_handler",
+        "download_routing",
+        "sidecar_migration",
+    )
+    handlers = {name: _AnyHandler() for name in names}
+    handlers.update(overrides)
+    return MiscHandlerSet(**handlers)
+
+
+def test_every_misc_route_definition_resolves_to_a_handler():
+    """A route added to the table without a mapping entry 500s only on a live
+    server, so assert the whole table resolves here."""
+
+    mapping = _stub_misc_handler_set().to_route_mapping()
+
+    assert [
+        definition.handler_name
+        for definition in MISC_ROUTE_DEFINITIONS
+        if definition.handler_name not in mapping
+    ] == []
+
+
+def test_price_alert_endpoints_are_gone():
+    """The redesign removed the standalone alerts surface: obtainability is an
+    attribute of the update surfaces, so no route may serve an alert list."""
+
+    leftovers = [
+        definition
+        for definition in MISC_ROUTE_DEFINITIONS
+        if "price-alert" in definition.path or "price_alert" in definition.handler_name
+    ]
+
+    assert leftovers == []

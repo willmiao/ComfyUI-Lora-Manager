@@ -283,3 +283,116 @@ describe('ModelVersionsTab download button visibility', () => {
     expect(openFileSelectionForVersion).not.toHaveBeenCalled();
   });
 });
+
+describe('ModelVersionsTab obtainability badges', () => {
+  let getModelApiClient;
+  let fetchModelUpdateVersions;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    document.body.innerHTML = `
+      <div id="model-versions-modal">
+        <div id="versions-tab">
+          <div class="model-versions-tab"></div>
+        </div>
+      </div>
+    `;
+    ({ getModelApiClient } = await import(API_FACTORY_MODULE));
+    fetchModelUpdateVersions = vi.fn();
+    getModelApiClient.mockReturnValue({
+      fetchModelUpdateVersions,
+      fetchModelRoots: vi.fn(),
+      setModelUpdateIgnore: vi.fn(),
+      setVersionUpdateIgnore: vi.fn(),
+      deleteModel: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function rowFor(versionId) {
+    return document.querySelector(`.model-version-row[data-version-id="${versionId}"]`);
+  }
+
+  function renderOne(version) {
+    fetchModelUpdateVersions.mockResolvedValue(buildRecord([
+      {
+        versionId: 1,
+        name: 'v1',
+        isInLibrary: false,
+        shouldIgnore: false,
+        ...version,
+      },
+    ]));
+    return renderVersions();
+  }
+
+  const PAID_GATE = { permanent: true, endsAt: null };
+
+  it('shows the download price for a paid version the user does not have', async () => {
+    await renderOne({ isPaid: true, paidAccess: PAID_GATE, priceBuzz: 5000 });
+
+    expect(rowFor(1).textContent).toContain('5,000 Buzz');
+  });
+
+  it('says Paid without a number when the price could not be read', async () => {
+    // The gate is certain (it comes from the public API); only the number is
+    // best-effort, and that is our plumbing rather than the user's problem.
+    await renderOne({ isPaid: true, paidAccess: PAID_GATE, priceBuzz: null });
+
+    expect(rowFor(1).textContent).toContain('Paid');
+    expect(rowFor(1).textContent).not.toContain('Buzz');
+  });
+
+  it('shows the early access countdown alongside the price', async () => {
+    await renderOne({
+      isEarlyAccess: true,
+      earlyAccessEndsAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+      paidAccess: { permanent: false, endsAt: '2999-01-01T00:00:00.000Z' },
+      priceBuzz: 500,
+    });
+
+    const text = rowFor(1).textContent;
+    expect(text).toContain('Early Access');
+    expect(text).toContain('500 Buzz');
+  });
+
+  it('shows nothing about cost for a version already in the library', async () => {
+    // A version on disk cannot become cheaper *for this user*.
+    await renderOne({
+      isInLibrary: true,
+      isPaid: true,
+      paidAccess: PAID_GATE,
+      priceBuzz: 5000,
+      gateLapsedAt: '2026-09-28T00:00:00.000Z',
+    });
+
+    const text = rowFor(1).textContent;
+    expect(text).not.toContain('Buzz');
+    expect(text).not.toContain('Paid');
+    expect(text).not.toContain('Free Now');
+    expect(text).toContain('In Library');
+  });
+
+  it('marks a version that became free and is not in the library', async () => {
+    await renderOne({
+      isInLibrary: false,
+      isPaid: false,
+      priceBuzz: null,
+      gateLapsedAt: '2026-09-28T00:00:00.000Z',
+    });
+
+    expect(rowFor(1).textContent).toContain('Free Now');
+  });
+
+  it('shows nothing at all for a plain free version', async () => {
+    await renderOne({ isInLibrary: false, isPaid: false, priceBuzz: null });
+
+    const text = rowFor(1).textContent;
+    expect(text).not.toContain('Buzz');
+    expect(text).not.toContain('Paid');
+    expect(text).not.toContain('Free Now');
+  });
+});

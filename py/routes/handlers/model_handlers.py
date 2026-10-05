@@ -50,6 +50,7 @@ from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
+from ...utils.paid_access import is_early_access_deadline_active
 from ...utils.sidecar_paths import get_metadata_path
 from ...utils.url_utils import relative_root_prefix
 
@@ -2941,6 +2942,20 @@ class ModelUpdateHandler:
 
         same_base_scope = self._uses_same_base_update_scope()
 
+        # Gate/price transitions are reported for every refreshed model, not only
+        # for the ones that qualify as updates: "this version became free" matters
+        # for a version the user already has, which never shows up as an update.
+        events = []
+        for record in records.values():
+            for event in getattr(record, "events", None) or []:
+                events.append(
+                    {
+                        "modelId": record.model_id,
+                        "modelType": record.model_type,
+                        **event,
+                    }
+                )
+
         serialized_records = []
         for record in records.values():
             has_update_fn = getattr(record, "has_update", None)
@@ -2962,6 +2977,7 @@ class ModelUpdateHandler:
             {
                 "success": True,
                 "records": serialized_records,
+                "events": events,
             }
         )
 
@@ -3391,6 +3407,7 @@ class ModelUpdateHandler:
                 hide_early_access=hide_early_access,
                 hide_paid=hide_paid,
             ),
+            "events": list(getattr(record, "events", None) or []),
             "versions": [
                 self._serialize_version(version, context.get(version.version_id))
                 for version in record.versions
@@ -3414,16 +3431,11 @@ class ModelUpdateHandler:
         if getattr(version, "is_paid", False) and not version.early_access_ends_at:
             is_early_access = False
         elif version.early_access_ends_at:
-            try:
-                from datetime import datetime, timezone
-
-                ea_date = datetime.fromisoformat(
-                    version.early_access_ends_at.replace("Z", "+00:00")
-                )
-                is_early_access = ea_date > datetime.now(timezone.utc)
-            except (ValueError, AttributeError):
-                # If date parsing fails, treat as active EA (conservative)
-                is_early_access = True
+            # Shared with the update service and the download gate so the badge,
+            # the update filter and the download warning cannot disagree.
+            is_early_access = is_early_access_deadline_active(
+                version.early_access_ends_at
+            )
         elif getattr(version, "is_early_access", False):
             # Fallback to basic EA flag from bulk API
             is_early_access = True
@@ -3450,6 +3462,15 @@ class ModelUpdateHandler:
             "usageControl": version.usage_control,
             "isPaid": bool(getattr(version, "is_paid", False)),
             "paidAccess": paid_access_payload,
+            # Set when a version that used to be gated became free, so the UI can
+            # keep showing "Free" long after the transition.
+            "gateLapsedAt": getattr(version, "gate_lapsed_at", None),
+            "priceBuzz": getattr(version, "price_buzz", None),
+            "listPriceBuzz": getattr(version, "list_price_buzz", None),
+            "generationPriceBuzz": getattr(version, "generation_price_buzz", None),
+            "acceptsBlueBuzz": bool(getattr(version, "accepts_blue_buzz", False)),
+            "priceSaleEndsAt": getattr(version, "price_sale_ends_at", None),
+            "priceCheckedAt": getattr(version, "price_checked_at", None),
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
             # Weight-file variant count (None when unknown); lets the UI hide

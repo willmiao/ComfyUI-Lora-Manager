@@ -139,6 +139,17 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `.showcaseLayoutOptions.gallery` / `.vertical`, `modals.model.showcase.layoutGallery` /
 > `.layoutList`). All 9 locales are translated (terminology in §2, "Showcase layout
 > feature"), so the "no remaining placeholders" claim holds again.
+> **Status (2026-10, Buzz download prices):** the paid/early-access obtainability feature added
+> 13 keys — the two `globalContextMenu.checkModelUpdates.gateEvents.*` counts, five
+> `modals.model.versions.badges.*` (sale, Blue Buzz, "free now" and its tooltip, and the early
+> access end-date tooltip) and the six `settings.priceTracking.*` strings — plus the section
+> header. All 13 are now translated in all 9 locales. **Buzz** and **Blue Buzz** stay as-is
+> everywhere (CivitAI currency names, R3). Two source fixes came with the pass: the unused
+> `settings.priceTracking.label` key was removed (no template renders it; the toggle uses
+> `enabled`/`enabledHelp`) and `settings.sections.priceTracking` was reworded to
+> "Buzz Download Prices" so the header matches what the feature does (prices are displayed;
+> nothing is tracked for alerts). Register follows each file's existing norm: 你 (zh-CN),
+> 您 (zh-TW), Sie (de), tú (es), вы (ru). No remaining `[TODO: Translate]` placeholders.
 
 ---
 

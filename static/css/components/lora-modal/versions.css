@@ -460,6 +460,20 @@
     border-color: color-mix(in oklch, #845EF7 45%, transparent);
 }
 
+/* Price alert badge - green tone (#37B24D) for a price under the user's threshold */
+.version-badge-price-alert {
+    background: color-mix(in oklch, #37B24D 25%, transparent);
+    color: #2B8A3E;
+    border-color: color-mix(in oklch, #37B24D 55%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+
+[data-theme="dark"] .version-badge-price-alert {
+    background: color-mix(in oklch, #37B24D 20%, transparent);
+    color: #69DB7C;
+    border-color: color-mix(in oklch, #37B24D 45%, transparent);
+}
+
 .version-meta-ea {
     color: #E67700;
     font-weight: 600;
