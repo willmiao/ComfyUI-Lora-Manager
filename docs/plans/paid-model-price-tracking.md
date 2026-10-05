@@ -283,7 +283,7 @@ extension is GET-only per `AGENTS.md`):
 
 - [ ] Short feature note in the repo docs; keep this plan's data-source rationale in a code comment
       (public page read, no auth or origin spoofing, no internal API).
-- [ ] Draft the upstream request: add a price field to the public `paidAccess` DTO. Point out the
+- [x] Draft the upstream request: add a price field to the public `paidAccess` DTO (§13). Point out the
       asymmetry — writes already go through the official v1 endpoint
       (`~/code/civitai/src/pages/api/v1/model-versions/early-access.ts`, sharing
       `updateModelVersionPaidAccessSchema`) while reads withhold it deliberately. If it lands, the
@@ -839,3 +839,104 @@ where every row has exactly one subject. The only model-level fact worth conside
 - "1 of 3 updates becomes free on Oct 15" - because a deadline can change what the user does *before*
 opening the model; it is rare in practice (4 unexpired early access versions across 3 models in that
 library), so it is optional polish rather than part of the correction.
+
+## 13. Upstream API request (draft)
+
+Target: a GitHub issue on `civitai/civitai`, titled with that repo's convention
+(`[API Feature Request] ...`). No existing issue asks for this (searched `paidAccess`, "download
+price", "buzz price API", and every open `[API Feature Request]`).
+
+The ask is small on the CivitAI side, and that is the strongest part of the argument: the row the
+public DTO is built from already carries the prices, and the sale resolution already exists.
+
+* `toPublicPaidAccessDto(row)` (`src/server/services/paid-access.service.ts:649`) receives a
+  `PaidAccessRow` that already has `terms: PaidAccessTerms` and `sales?: ModelVersionSaleWindow[]`
+  (`packages/civitai-buzz/src/paid-access.ts:132`), and returns only
+  `{ permanent, endsAt }` (`PublicPaidAccessDto`, line 643).
+* `discountedTerms(terms, sales, now)` (line 426) already resolves what a buyer pays during a sale.
+* The write path already accepts prices: `/api/v1/model-versions/early-access` validates
+  `updateModelVersionPaidAccessSchema`, whose `paidAccess.terms` is `modelVersionTermsSchema`
+  (`{ download, generation, acceptsBlueBuzz }`).
+
+So the reads withhold exactly what the writes accept, from a row that already has it.
+
+---
+
+**Title:** `[API Feature Request] Expose the Buzz download price of paid / early-access versions`
+
+**Body:**
+
+### Ask
+
+Please include the gate's **terms** (the Buzz prices) in the public `paidAccess` DTO, so a client can
+show what a paid or early-access version costs — not just that it is gated.
+
+### What the API returns today
+
+`GET /api/v1/models?ids=646411` → version `1249246`:
+
+```json
+"availability": "Public",
+"paidAccess": { "permanent": true, "endsAt": null }
+```
+
+`GET /api/v1/model-versions/1249246` → the same `paidAccess`, plus `usageControl: "Download"` and
+`licensingFee: null`. So a client can tell *that* a version is paywalled and *when* an early-access
+window ends (`paidAccess.endsAt`), but never *how much* it costs.
+
+For the same version, the model page's own payload carries:
+
+```json
+{ "downloadPrice": 100, "generationPrice": 50, "acceptsBlueBuzz": false, "sale": null }
+```
+
+### Why reading the page is not a substitute
+
+We currently parse that payload from the model page, anonymously. It does not work reliably:
+
+* `civitai.red` model pages answer non-browser HTTP clients with a Cloudflare challenge
+  (HTTP 403, "Just a moment...", for any User-Agent — tested with `aiohttp` and `httpx`).
+* `civitai.com` and `civitai.green` return 404 for mature models to anonymous visitors.
+* Therefore for mature models there is **no readable price source at all** for a third-party tool —
+  and those are the models where creators monetize most.
+
+### The change looks small on your side
+
+`toPublicPaidAccessDto` already receives a row that carries the terms:
+
+```ts
+export type PaidAccessRow = { …, terms: PaidAccessTerms, sales?: ModelVersionSaleWindow[] };
+export type PublicPaidAccessDto = { permanent: boolean; endsAt: Date | null };
+export function toPublicPaidAccessDto(row) {
+  if (!row || !isPaidAccessActive(row)) return null;
+  return { permanent: row.timeframeDays == null, endsAt: row.endsAt };   // terms dropped here
+}
+```
+
+`discountedTerms(terms, sales, now)` already computes what a buyer pays while a sale is live, and the
+write path already accepts the same terms via `updateModelVersionPaidAccessSchema`. A field such as:
+
+```json
+"paidAccess": {
+  "permanent": true, "endsAt": null,
+  "terms": { "download": { "price": 100 }, "generation": { "price": 50 }, "acceptsBlueBuzz": false },
+  "sale": { "downloadPrice": 80, "endsAt": "2026-10-20T00:00:00.000Z" }
+}
+```
+
+on `GET /api/v1/models` and `GET /api/v1/model-versions/{id}` would be enough. If exposing prices to
+anonymous callers is undesirable, returning them only for authenticated requests
+(`Authorization: Bearer <user key>`) is fine too — it would also cover mature models, which is where
+the gap hurts.
+
+To be explicit: this is **read-only display pricing**. Nothing here touches the purchase flow, which
+stays on the site; we only link to it.
+
+### Why it matters
+
+ComfyUI LoRA Manager is a local model manager with a Civitai integration. Its users' question in the
+Buzz economy is *"do I wait for this to become free, or pay now?"* Today the tool can answer the
+first half (early-access end dates come from `paidAccess.endsAt`, which works and is appreciated) but
+not the second: the price, whether a sale is live, and whether Blue Buzz is accepted are exactly what
+change that decision. Without a supported field, every third-party tool either scrapes an
+unreliable page or gives up on mature models.
