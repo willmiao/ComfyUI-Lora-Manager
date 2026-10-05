@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, cast
 
 from py.nodes.prompt import PromptLM
@@ -61,6 +62,29 @@ def test_text_lm_input_types_expose_input_only_seed():
     assert seed_type == "INT"
     assert seed_options["forceInput"] is True
     assert "wildcard generation" in cast(Any, seed_options)["tooltip"]
+
+
+def test_prompt_lm_input_types_resolve_dynamic_trigger_words_slots():
+    optional = PromptLM.INPUT_TYPES()["optional"]
+
+    assert "trigger_words1" in optional
+    assert optional["trigger_words1"][0] == "STRING"
+
+    assert "trigger_words4" in optional
+    trigger_type, trigger_options = optional["trigger_words4"]
+    assert trigger_type == "STRING"
+    assert cast(Any, trigger_options)["forceInput"] is True
+
+    # Dynamic slots resolve on demand without becoming real entries.
+    assert "trigger_words4" not in dict(optional)
+
+
+def test_prompt_lm_input_types_serialize_only_static_slots():
+    """ComfyUI's /object_info route json.dumps INPUT_TYPES() directly."""
+    payload = json.loads(json.dumps(PromptLM.INPUT_TYPES()))
+
+    assert set(payload["optional"]) == {"seed", "trigger_words1"}
+    assert payload["optional"]["trigger_words1"][0] == "STRING"
 
 
 def test_text_lm_is_changed_forces_rerun_without_seed_when_text_is_dynamic():

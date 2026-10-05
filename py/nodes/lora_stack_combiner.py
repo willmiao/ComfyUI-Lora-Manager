@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import re
 from typing import Any
 
@@ -22,20 +21,29 @@ def _stack_slot_number(name: str) -> int:
     return 1 if letter == "a" else 2
 
 
-class _LoraStackOptionalInputs:
-    """Lookup that preserves explicit optional inputs and dynamic lora_stack slots."""
+class _LoraStackOptionalInputs(dict):
+    """Optional-input mapping that also resolves dynamically added stack slots.
+
+    Inheriting ``dict`` keeps ``INPUT_TYPES()`` JSON-serializable for ComfyUI's
+    ``/object_info`` route: it serializes the stored entries, exactly as the plain
+    dict did before. The overridden ``__contains__``/``__getitem__`` let the
+    execution side resolve ``lora_stack3``-style inputs the frontend adds on
+    demand. This replaces the previous ``inspect.stack()`` check for the
+    ``get_input_info`` caller, which the registry security scan reports as
+    anti-debugging.
+    """
 
     def __init__(self, explicit_inputs: dict[str, tuple[str, dict[str, Any]]]) -> None:
-        self._explicit_inputs = explicit_inputs
+        super().__init__(explicit_inputs)
 
     def __contains__(self, item: object) -> bool:
         if not isinstance(item, str):
             return False
-        return item in self._explicit_inputs or _is_stack_input(item)
+        return super().__contains__(item) or _is_stack_input(item)
 
     def __getitem__(self, key: str) -> tuple[str, dict[str, Any]]:
-        if key in self._explicit_inputs:
-            return self._explicit_inputs[key]
+        if super().__contains__(key):
+            return super().__getitem__(key)
         if _is_stack_input(key):
             return (
                 "LORA_STACK",
@@ -71,13 +79,9 @@ class LoraStackCombinerLM:
             ),
         }
 
-        stack = inspect.stack()
-        if len(stack) > 2 and stack[2].function == "get_input_info":
-            optional_inputs = _LoraStackOptionalInputs(optional_inputs)  # pyright: ignore[reportAssignmentType]
-
         return {
             "required": {},
-            "optional": optional_inputs,
+            "optional": _LoraStackOptionalInputs(optional_inputs),
         }
 
     RETURN_TYPES = ("LORA_STACK",)
