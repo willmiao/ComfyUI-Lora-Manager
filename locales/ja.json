@@ -2022,7 +2022,7 @@
                     "paidTooltip": "このバージョンのダウンロードには支払いが必要です",
                     "priceSaleTooltip": "セール中、通常 {list} Buzz",
                     "priceBlueBuzzTooltip": "Blue Buzz でも支払えます",
-                    "freeNow": "無料になりました",
+                    "freeNow": "無料化",
                     "freeNowTooltip": "このバージョンは支払いが不要になりました",
                     "ignored": "無視中",
                     "ignoredTooltip": "このバージョンの更新通知は無効です",
