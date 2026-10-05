@@ -844,6 +844,9 @@ library), so it is optional polish rather than part of the correction.
 
 ### 13.1 The request as filed (send this)
 
+**Filed:** [civitai/civitai#5384](https://github.com/civitai/civitai/issues/5384) (2026-10-05, as
+`willmiao`).
+
 **Title:** `[API Feature Request] Expose Buzz prices for paid / early-access model versions`
 
 **Body:**
