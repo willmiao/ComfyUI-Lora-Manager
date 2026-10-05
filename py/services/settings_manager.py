@@ -121,6 +121,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "display_density": "default",
     "recipes_layout": "grid",
     "card_info_display": "always",
+    "showcase_layout": "gallery",
     "include_trigger_words": False,
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),

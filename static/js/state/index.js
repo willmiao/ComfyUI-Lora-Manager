@@ -47,6 +47,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     display_density: 'default',
     recipes_layout: 'grid',
     card_info_display: 'always',
+    showcase_layout: 'gallery',
     model_name_display: 'model_name',
     lora_syntax_format: 'legacy',
     model_card_footer_action: 'example_images',

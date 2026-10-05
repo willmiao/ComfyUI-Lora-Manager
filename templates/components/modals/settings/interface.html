@@ -87,6 +87,11 @@
             ('hover', 'settings.layoutSettings.cardInfoDisplayOptions.hover'),
         ], 'settings.layoutSettings.cardInfoDisplayHelp') }}
 
+        {{ sm.setting_select('showcaseLayout', 'showcase_layout', 'settings.layoutSettings.showcaseLayout', [
+            ('gallery', 'settings.layoutSettings.showcaseLayoutOptions.gallery'),
+            ('vertical', 'settings.layoutSettings.showcaseLayoutOptions.vertical'),
+        ], 'settings.layoutSettings.showcaseLayoutHelp') }}
+
         <div class="setting-item">
             <div class="setting-row">
                 <div class="setting-info">
