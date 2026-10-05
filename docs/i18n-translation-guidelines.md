@@ -133,6 +133,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > now always on. All 9 locales are translated (terminology in §2, "Civitai ids feature"),
 > so the "no remaining placeholders" claim holds again.
 
+> **Status (2026-10, showcase layout option):** the model modal's example images became
+> switchable between the on-demand gallery and the classic vertical list (issue #1136),
+> adding 6 keys (`settings.layoutSettings.showcaseLayout`, `.showcaseLayoutHelp`,
+> `.showcaseLayoutOptions.gallery` / `.vertical`, `modals.model.showcase.layoutGallery` /
+> `.layoutList`). All 9 locales are translated (terminology in §2, "Showcase layout
+> feature"), so the "no remaining placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -628,6 +635,28 @@ verbatim (R9). The copy/copied strings reuse each locale's existing clipboard pa
 
 Hebrew uses its established מזהה ("identifier") noun instead of Latin `ID` in these
 labels, matching `recipes.*.copyId` (העתק מזהה מתכון).
+
+### Showcase layout feature (gallery / vertical list toggle)
+
+The model modal's example images can switch between a one-at-a-time **gallery** and the
+classic **vertical list**, via a Settings select (`settings.layoutSettings.showcaseLayout*`,
+mirroring the `recipesLayout*` select shape) and an in-modal segmented toggle whose two
+icon buttons are labelled by `modals.model.showcase.layoutGallery` / `.layoutList`
+(kept short — they are icon-button tooltips).
+
+"Showcase Layout" is rendered as the **example-images layout** in most locales (the
+section's user-facing content), reusing each locale's fixed "example images" noun
+(`modelCardFooterActionOptions.exampleImages`); ja keeps its established ショーケース
+loanword instead. The `layoutList` tooltip reuses the fixed "list view" noun from the
+folder-sidebar row (above), so it stays byte-consistent with `sidebar.listView` where
+that form fits a tooltip (ru shortens both toggle labels to bare «Галерея» / «Список»).
+
+| Term | Rendering |
+|---|---|
+| showcase layout (settings label) | zh-CN 示例图片布局 · zh-TW 範例圖片版面 · ja ショーケースのレイアウト · ko 예시 이미지 레이아웃 · fr Disposition des images d'exemple · de Beispielbilder-Layout · es Diseño de imágenes de ejemplo · ru Макет примеров изображений · he פריסת תמונות דוגמה |
+| example images | zh-CN 示例图片 · zh-TW 範例圖片 · ja 例画像 · ko 예시 이미지 · fr images d'exemple · de Beispielbilder · es imágenes de ejemplo · ru примеры изображений · he תמונות דוגמה |
+| gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
+| gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
 
 ---
 

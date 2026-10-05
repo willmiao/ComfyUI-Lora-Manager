@@ -525,6 +525,12 @@
                 "hover": "호버 시 표시"
             },
             "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요",
+            "showcaseLayout": "예시 이미지 레이아웃",
+            "showcaseLayoutHelp": "모델 모달에서 예시 이미지의 표시 방식을 선택하세요: 한 번에 하나씩 보여주는 갤러리 또는 기존 세로 목록.",
+            "showcaseLayoutOptions": {
+                "gallery": "갤러리",
+                "vertical": "세로 목록"
+            },
             "showVersionOnCard": "카드에 버전 표시",
             "showVersionOnCardHelp": "모델 카드에 버전 이름 표시 여부를 전환합니다",
             "modelCardFooterAction": "모델 카드 버튼 동작",
@@ -1977,7 +1983,9 @@
                 "nsfwMature": "성인 콘텐츠",
                 "nsfwR": "R등급 콘텐츠",
                 "nsfwX": "X등급 콘텐츠",
-                "nsfwXxx": "XXX등급 콘텐츠"
+                "nsfwXxx": "XXX등급 콘텐츠",
+                "layoutGallery": "갤러리 보기",
+                "layoutList": "목록 보기"
             },
             "versions": {
                 "heading": "모델 버전",

@@ -525,6 +525,12 @@
                 "hover": "Mostrar al pasar el ratón"
             },
             "cardInfoDisplayHelp": "Elige cuándo mostrar información del modelo y botones de acción",
+            "showcaseLayout": "Diseño de imágenes de ejemplo",
+            "showcaseLayoutHelp": "Elige cómo se muestran las imágenes de ejemplo en el modal del modelo: una galería que las muestra de una en una o la clásica lista vertical.",
+            "showcaseLayoutOptions": {
+                "gallery": "Galería",
+                "vertical": "Lista vertical"
+            },
             "showVersionOnCard": "Mostrar versión en la tarjeta",
             "showVersionOnCardHelp": "Mostrar u ocultar el nombre de versión en las tarjetas de modelo",
             "modelCardFooterAction": "Acción del botón de tarjeta de modelo",
@@ -1977,7 +1983,9 @@
                 "nsfwMature": "Contenido para adultos",
                 "nsfwR": "Contenido clasificación R",
                 "nsfwX": "Contenido clasificación X",
-                "nsfwXxx": "Contenido clasificación XXX"
+                "nsfwXxx": "Contenido clasificación XXX",
+                "layoutGallery": "Vista de galería",
+                "layoutList": "Vista de lista"
             },
             "versions": {
                 "heading": "Versiones del modelo",
