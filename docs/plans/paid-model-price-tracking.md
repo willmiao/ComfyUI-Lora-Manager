@@ -812,3 +812,30 @@ Verified: `pytest` 3653 passed / 7 skipped, `npm run test:js` 1444 passed. Again
 owner's real database the population is 52 gated versions -> **28 owned (now silent) + 24 that the
 feature is actually about**; the drop migration logged twice and left no `price_alert_*` column, and
 both removed endpoints return 404.
+
+### 12.8 Correction to P6b: the model card cannot carry a price
+
+P6b proposed annotating the model card's update badge with `Update - 500 Buzz` /
+`Update - free on Oct 15`. The owner objected that the badge represents a **model** already in the
+library while the update is a set of versions, each with its own price and its own early access end
+date. The objection is correct, and the data is blunt about it:
+
+* Live model `958009` has **37 gated versions across 6 price points** (1111, 2220, 4440, 8880,
+  88800, 888888); model `153568` has two gated versions at 600 and 4000.
+* In the owner's own library, model `647926` has two early access versions with **two different end
+  dates**.
+
+So a single price or date on the card would be fabricated, not summarised. It looked plausible only
+because that library is uniform (44 of its 52 priced versions sit at the 100 Buzz floor) - an
+artefact of floor pricing, not a guarantee.
+
+What is well defined at model level, by construction: counts ("3 updates"), the earliest upcoming
+free date (a minimum over the set), a minimum price ("from 100 Buzz", well defined but misleading
+when the cheap version is an old one), and uniformity statements only when they are true. "The price
+is X" is not among them.
+
+Revised scope: the card badge stays a plain update indicator, and **prices stay in the version list**,
+where every row has exactly one subject. The only model-level fact worth considering is the deadline
+- "1 of 3 updates becomes free on Oct 15" - because a deadline can change what the user does *before*
+opening the model; it is rare in practice (4 unexpired early access versions across 3 models in that
+library), so it is optional polish rather than part of the correction.
