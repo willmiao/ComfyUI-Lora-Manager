@@ -203,8 +203,8 @@
             "none": "Все {type} актуальны",
             "error": "Не удалось проверить обновления для {type}: {message}",
             "gateEvents": {
-                "becameFree": "[TODO: Translate] {count} version(s) became free",
-                "newGate": "[TODO: Translate] {count} version(s) are now paid"
+                "becameFree": "{count} версий, которых у вас нет, стали бесплатными",
+                "newGate": "{count} версий стали платными"
             }
         },
         "cleanupExampleImages": {
@@ -391,7 +391,7 @@
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "priorityTags": "Приоритетные теги",
             "versionScope": "Метки обновлений",
-            "priceTracking": "[TODO: Translate] Buzz Price Tracking",
+            "priceTracking": "Цены за скачивание в Buzz",
             "exampleImages": "Примеры изображений",
             "autoOrganize": "Автоорганизация",
             "metadata": "Метаданные",
@@ -759,12 +759,11 @@
             "help": "Если включено, у моделей, для которых доступны только платные обновления, не будет отображаться значок «Доступно обновление»"
         },
         "priceTracking": {
-            "label": "[TODO: Translate] Buzz Price Tracking",
-            "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
-            "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
-            "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
-            "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
-            "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
+            "help": "Публичный API CivitAI не публикует цены за скачивание, поэтому они читаются со страницы модели — один дополнительный запрос на каждую платную модель, обновление с интервалом ниже. Цены показываются только для версий, которых у вас ещё нет.",
+            "enabled": "Показывать цены за скачивание платных версий",
+            "enabledHelp": "Читает цену за скачивание со страницы модели, чтобы платные версии и версии с ранним доступом показывали стоимость и дату окончания раннего доступа",
+            "refreshHours": "Интервал обновления цен (часы)",
+            "refreshHoursHelp": "Сколько хранится цена, прежде чем её прочитают снова"
         },
         "licenseIcons": {
             "useNewStyle": "Использовать обновлённые значки лицензии",
@@ -2021,15 +2020,15 @@
                     "earlyAccessTooltip": "Для этой версии сейчас требуется ранний доступ CivitAI",
                     "paid": "Платная",
                     "paidTooltip": "Скачивание этой версии платное",
-                    "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
-                    "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
-                    "freeNow": "[TODO: Translate] Free Now",
-                    "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
+                    "priceSaleTooltip": "Со скидкой, обычно {list} Buzz",
+                    "priceBlueBuzzTooltip": "Можно также оплатить Blue Buzz",
+                    "freeNow": "Теперь бесплатно",
+                    "freeNowTooltip": "Эта версия больше не требует оплаты",
                     "ignored": "Игнорируется",
                     "ignoredTooltip": "Уведомления об обновлениях для этой версии отключены",
                     "onSiteOnly": "Только на Сайте",
                     "onSiteOnlyTooltip": "Эта версия доступна только для генерации на сайте CivitAI",
-                    "earlyAccessTooltipUntil": "[TODO: Translate] Early access until {date}, free to download after that"
+                    "earlyAccessTooltipUntil": "Ранний доступ до {date}, после этого скачивание бесплатно"
                 },
                 "actions": {
                     "download": "Скачать",

@@ -203,8 +203,8 @@
             "none": "모든 {type}가 최신 상태입니다",
             "error": "{type} 업데이트 확인 실패: {message}",
             "gateEvents": {
-                "becameFree": "[TODO: Translate] {count} version(s) became free",
-                "newGate": "[TODO: Translate] {count} version(s) are now paid"
+                "becameFree": "보유하지 않은 버전 {count}개가 무료가 되었습니다",
+                "newGate": "버전 {count}개가 유료로 전환되었습니다"
             }
         },
         "cleanupExampleImages": {
@@ -391,7 +391,7 @@
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "priorityTags": "우선순위 태그",
             "versionScope": "업데이트 표시",
-            "priceTracking": "[TODO: Translate] Buzz Price Tracking",
+            "priceTracking": "Buzz 다운로드 가격",
             "exampleImages": "예시 이미지",
             "autoOrganize": "자동 정리",
             "metadata": "메타데이터",
@@ -759,12 +759,11 @@
             "help": "활성화하면 유료 업데이트만 있는 모델에 '업데이트 가능' 배지가 표시되지 않습니다"
         },
         "priceTracking": {
-            "label": "[TODO: Translate] Buzz Price Tracking",
-            "help": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page - one extra request per paid model, refreshed on the interval below. Requires an update check to pick up changes.",
-            "enabled": "[TODO: Translate] Track Buzz prices for paid versions",
-            "enabledHelp": "[TODO: Translate] Show the price on paid and early access versions, and alert when a price drops below your threshold",
-            "refreshHours": "[TODO: Translate] Price refresh interval (hours)",
-            "refreshHoursHelp": "[TODO: Translate] How long a stored price stays fresh before it is fetched again"
+            "help": "CivitAI 공개 API는 다운로드 가격을 제공하지 않으므로 모델 페이지에서 읽어옵니다. 유료 모델마다 요청이 한 번씩 추가되며, 아래 간격에 따라 갱신됩니다. 가격은 아직 보유하지 않은 버전에만 표시됩니다.",
+            "enabled": "유료 버전의 다운로드 가격 표시",
+            "enabledHelp": "모델 페이지에서 다운로드 가격을 읽어 유료 및 얼리 액세스 버전의 비용과 얼리 액세스 종료 시점을 표시합니다",
+            "refreshHours": "가격 갱신 간격(시간)",
+            "refreshHoursHelp": "저장된 가격을 다시 읽기 전까지 유지하는 기간"
         },
         "licenseIcons": {
             "useNewStyle": "업데이트된 라이선스 아이콘 사용",
@@ -2021,15 +2020,15 @@
                     "earlyAccessTooltip": "이 버전은 현재 CivitAI 얼리 액세스가 필요합니다",
                     "paid": "유료",
                     "paidTooltip": "이 버전은 다운로드하려면 결제가 필요합니다",
-                    "priceSaleTooltip": "[TODO: Translate] On sale, normally {list} Buzz",
-                    "priceBlueBuzzTooltip": "[TODO: Translate] Can also be paid with Blue Buzz",
-                    "freeNow": "[TODO: Translate] Free Now",
-                    "freeNowTooltip": "[TODO: Translate] This version no longer requires payment",
+                    "priceSaleTooltip": "할인 중, 원래 {list} Buzz",
+                    "priceBlueBuzzTooltip": "Blue Buzz로도 결제할 수 있습니다",
+                    "freeNow": "지금 무료",
+                    "freeNowTooltip": "이 버전은 더 이상 결제가 필요하지 않습니다",
                     "ignored": "무시됨",
                     "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다",
                     "onSiteOnly": "사이트 내 전용",
                     "onSiteOnlyTooltip": "이 버전은 CivitAI 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
-                    "earlyAccessTooltipUntil": "[TODO: Translate] Early access until {date}, free to download after that"
+                    "earlyAccessTooltipUntil": "{date}까지 얼리 액세스, 이후 무료로 다운로드할 수 있습니다"
                 },
                 "actions": {
                     "download": "다운로드",

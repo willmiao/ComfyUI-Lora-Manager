@@ -391,7 +391,7 @@
       "downloadPathTemplates": "Download Path Templates",
       "priorityTags": "Priority Tags",
       "versionScope": "Version Scope",
-      "priceTracking": "Buzz Price Tracking",
+      "priceTracking": "Buzz Download Prices",
       "exampleImages": "Example Images",
       "autoOrganize": "Auto-organize",
       "metadata": "Metadata",
@@ -759,7 +759,6 @@
       "help": "When enabled, models with only paid updates will not show 'Update available' badge"
     },
     "priceTracking": {
-      "label": "Buzz Download Prices",
       "help": "CivitAI does not publish download prices in its public API, so they are read from the model page - one extra request per paid model, refreshed on the interval below. Prices are shown on versions you do not have yet.",
       "enabled": "Show download prices for paid versions",
       "enabledHelp": "Reads the download price from the model page so paid and early access versions show what they cost, and when early access ends",
