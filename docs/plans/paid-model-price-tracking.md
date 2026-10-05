@@ -840,103 +840,72 @@ where every row has exactly one subject. The only model-level fact worth conside
 opening the model; it is rare in practice (4 unexpired early access versions across 3 models in that
 library), so it is optional polish rather than part of the correction.
 
-## 13. Upstream API request (draft)
+## 13. Upstream API request
 
-Target: a GitHub issue on `civitai/civitai`, titled with that repo's convention
-(`[API Feature Request] ...`). No existing issue asks for this (searched `paidAccess`, "download
-price", "buzz price API", and every open `[API Feature Request]`).
+### 13.1 The request as filed (send this)
 
-The ask is small on the CivitAI side, and that is the strongest part of the argument: the row the
-public DTO is built from already carries the prices, and the sale resolution already exists.
-
-* `toPublicPaidAccessDto(row)` (`src/server/services/paid-access.service.ts:649`) receives a
-  `PaidAccessRow` that already has `terms: PaidAccessTerms` and `sales?: ModelVersionSaleWindow[]`
-  (`packages/civitai-buzz/src/paid-access.ts:132`), and returns only
-  `{ permanent, endsAt }` (`PublicPaidAccessDto`, line 643).
-* `discountedTerms(terms, sales, now)` (line 426) already resolves what a buyer pays during a sale.
-* The write path already accepts prices: `/api/v1/model-versions/early-access` validates
-  `updateModelVersionPaidAccessSchema`, whose `paidAccess.terms` is `modelVersionTermsSchema`
-  (`{ download, generation, acceptsBlueBuzz }`).
-
-So the reads withhold exactly what the writes accept, from a row that already has it.
-
----
-
-**Title:** `[API Feature Request] Expose the Buzz download price of paid / early-access versions`
+**Title:** `[API Feature Request] Expose Buzz prices for paid / early-access model versions`
 
 **Body:**
 
-### Ask
+> **Ask:** include the Buzz price in the public `paidAccess` DTO - the download price, whether a
+> sale is currently discounting it, and whether Blue Buzz is accepted.
+>
+> **Why:** the API already tells a client *that* a version is gated and *when* early access ends
+> (`paidAccess: { permanent, endsAt }`), but not what it costs. In the Buzz economy that is the
+> other half of the question users are asking: wait for it to become free, or pay now? A live sale
+> or Blue Buzz support is often what decides it.
+>
+> With the price exposed, an integration like ComfyUI LoRA Manager can show "100 Buzz - free on
+> Oct 11" on a version and tell users when a paid version becomes free, instead of sending them to
+> the website to check.
+>
+> Public or authenticated-only - whichever you prefer.
 
-Please include the gate's **terms** (the Buzz prices) in the public `paidAccess` DTO, so a client can
-show what a paid or early-access version costs — not just that it is gated.
+Filing notes: a new issue on `civitai/civitai`, using that repo's `[API Feature Request]` title
+convention. No existing issue asks for this (searched `paidAccess`, "download price",
+"buzz price API", and every open `[API Feature Request]`).
 
-### What the API returns today
+### 13.2 Internal notes (do NOT paste into the issue)
 
-`GET /api/v1/models?ids=646411` → version `1249246`:
+Kept here because it is what makes the request cheap to grant - but telling a maintainer how to
+implement their own service reads as presumptuous, and volunteering how we read prices today is
+our business, not theirs. Both were in the first draft and were cut.
 
-```json
-"availability": "Public",
-"paidAccess": { "permanent": true, "endsAt": null }
-```
+* `toPublicPaidAccessDto` (`src/server/services/paid-access.service.ts:649`) already receives a
+  `PaidAccessRow` carrying `terms: PaidAccessTerms` and `sales?: ModelVersionSaleWindow[]`
+  (`packages/civitai-buzz/src/paid-access.ts:132`) and returns only `{ permanent, endsAt }`.
+* `discountedTerms(terms, sales, now)` (line 426) already resolves what a buyer pays during a sale.
+* The write path already accepts the same terms: `/api/v1/model-versions/early-access` validates
+  `updateModelVersionPaidAccessSchema`, whose `paidAccess.terms` is `modelVersionTermsSchema`.
+* So the reads withhold exactly what the writes accept, from a row that already holds it.
 
-`GET /api/v1/model-versions/1249246` → the same `paidAccess`, plus `usageControl: "Download"` and
-`licensingFee: null`. So a client can tell *that* a version is paywalled and *when* an early-access
-window ends (`paidAccess.endsAt`), but never *how much* it costs.
+Evidence gathered for our own records (also not for the issue):
 
-For the same version, the model page's own payload carries:
+| Check | Result |
+| --- | --- |
+| `GET /api/v1/models?ids=646411` | version `1249246` -> `paidAccess: {permanent: true, endsAt: null}`, no price |
+| `GET /api/v1/model-versions/1249246` | same, plus `usageControl: "Download"`, `licensingFee: null` |
+| Same version on the model page | `downloadPrice 100`, `generationPrice 50`, `acceptsBlueBuzz false` |
+| `civitai.red` model pages | Cloudflare challenge (403 for any User-Agent; aiohttp and httpx alike) |
+| `civitai.com` / `civitai.green`, mature models | 404 to anonymous visitors, so no readable price source |
 
-```json
-{ "downloadPrice": 100, "generationPrice": 50, "acceptsBlueBuzz": false, "sale": null }
-```
+### 13.3 Why the request is written that way
 
-### Why reading the page is not a substitute
-
-We currently parse that payload from the model page, anonymously. It does not work reliably:
-
-* `civitai.red` model pages answer non-browser HTTP clients with a Cloudflare challenge
-  (HTTP 403, "Just a moment...", for any User-Agent — tested with `aiohttp` and `httpx`).
-* `civitai.com` and `civitai.green` return 404 for mature models to anonymous visitors.
-* Therefore for mature models there is **no readable price source at all** for a third-party tool —
-  and those are the models where creators monetize most.
-
-### The change looks small on your side
-
-`toPublicPaidAccessDto` already receives a row that carries the terms:
-
-```ts
-export type PaidAccessRow = { …, terms: PaidAccessTerms, sales?: ModelVersionSaleWindow[] };
-export type PublicPaidAccessDto = { permanent: boolean; endsAt: Date | null };
-export function toPublicPaidAccessDto(row) {
-  if (!row || !isPaidAccessActive(row)) return null;
-  return { permanent: row.timeframeDays == null, endsAt: row.endsAt };   // terms dropped here
-}
-```
-
-`discountedTerms(terms, sales, now)` already computes what a buyer pays while a sale is live, and the
-write path already accepts the same terms via `updateModelVersionPaidAccessSchema`. A field such as:
-
-```json
-"paidAccess": {
-  "permanent": true, "endsAt": null,
-  "terms": { "download": { "price": 100 }, "generation": { "price": 50 }, "acceptsBlueBuzz": false },
-  "sale": { "downloadPrice": 80, "endsAt": "2026-10-20T00:00:00.000Z" }
-}
-```
-
-on `GET /api/v1/models` and `GET /api/v1/model-versions/{id}` would be enough. If exposing prices to
-anonymous callers is undesirable, returning them only for authenticated requests
-(`Authorization: Bearer <user key>`) is fine too — it would also cover mature models, which is where
-the gap hurts.
-
-To be explicit: this is **read-only display pricing**. Nothing here touches the purchase flow, which
-stays on the site; we only link to it.
-
-### Why it matters
-
-ComfyUI LoRA Manager is a local model manager with a Civitai integration. Its users' question in the
-Buzz economy is *"do I wait for this to become free, or pay now?"* Today the tool can answer the
-first half (early-access end dates come from `paidAccess.endsAt`, which works and is appreciated) but
-not the second: the price, whether a sale is live, and whether Blue Buzz is accepted are exactly what
-change that decision. Without a supported field, every third-party tool either scrapes an
-unreliable page or gives up on mature models.
+* **Lead with the ask and the need; stop.** A maintainer triages on the first lines; the rest is
+  only read if the ask survives.
+* **No implementation guidance.** They know their service. A "here is your one-line change"
+  section invites either irritation or a correction, and it can be wrong: withholding prices may be
+  a deliberate product decision (the code comment says pricing belongs to the purchase flow), so the
+  request has to argue for the *need*, not the diff.
+* **No mention of how we read prices today.** It is an internal approach, it shifts the thread from
+  the feature to our behaviour, and it invites a "please don't do that" that has nothing to do with
+  the ask.
+* **One scope concession, one clause** ("public or authenticated-only"): it removes the most likely
+  objection without prescribing anything.
+* **One precedent clause** ("you already expose whether a version is gated and when early access
+  ends"): it makes the price look like the natural companion of what is already public.
+* **One credibility clause** (naming ComfyUI LoRA Manager as a real integration): it separates the
+  request from a one-off user wish.
+* Target length: ~130 words. Longer drafts read as a specification, which is the failure mode this
+  section exists to prevent.
