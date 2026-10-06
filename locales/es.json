@@ -1409,9 +1409,16 @@
             "notEmptyMessage": "Esta carpeta aún contiene modelos. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "notEmptyMessageCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "notEmptyMessageExcluded": "Esta carpeta aún contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca. Anula su exclusión en «Gestionar modelos excluidos» y elimínalos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
+            "missingTitle": "Carpeta no encontrada",
+            "missingMessage": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "symlinkTitle": "La carpeta es un enlace simbólico",
+            "symlinkMessage": "Todas las copias de esta carpeta son enlaces simbólicos; elimina el enlace o su destino fuera de LoRA Manager.",
             "busyTitle": "Todavía hay una eliminación pendiente",
             "checking": "Comprobando el contenido de la carpeta...",
-            "confirm": "Eliminar carpeta"
+            "confirm": "Eliminar carpeta",
+            "confirmMulti": "Eliminar {count} carpetas",
+            "deleting": "Eliminando...",
+            "keptNote": "Las copias no marcadas mantienen esta carpeta en la barra lateral."
         },
         "deleteFolderResult": {
             "success": "Carpeta \"{name}\" eliminada",
@@ -1422,7 +1429,10 @@
             "notEmptyWithCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Actualiza la barra lateral e inténtalo de nuevo.",
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "La eliminación de carpetas no es compatible con esta página",
-            "noRoot": "No hay ninguna raíz de modelo configurada"
+            "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "symlink": "Esta carpeta es un enlace simbólico; no se puede eliminar desde la barra lateral.",
+            "successMulti": "Carpeta \"{name}\" eliminada de {count} raíces de modelo",
+            "partial": "Se eliminaron {count} de {total} copias — {failed} no se pudieron eliminar. Actualiza la barra lateral e inténtalo de nuevo."
         },
         "renameFolder": "Cambiar nombre de la carpeta",
         "renameFolderResult": {
@@ -1431,7 +1441,25 @@
             "targetExists": "Ya existe una carpeta con ese nombre aquí",
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "El cambio de nombre de carpetas no es compatible con esta página",
-            "noRoot": "No hay ninguna raíz de modelo configurada"
+            "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "symlink": "Esta carpeta es un enlace simbólico; no se puede cambiar el nombre desde la barra lateral."
+        },
+        "folderRoot": {
+            "chooseTitle": "Esta carpeta existe en más de una raíz de modelo",
+            "symlinkOption": "enlace simbólico",
+            "rootsHint": "Selecciona las raíces de modelo desde las que eliminar esta carpeta:",
+            "checkingStatus": "comprobando...",
+            "okStatus": "sin modelos",
+            "notEmptyStatus": "contiene {count} archivo(s) de modelo — elimínalos o muévelos primero",
+            "notEmptyExcludedStatus": "contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca",
+            "busyStatus": "todavía hay una eliminación pendiente",
+            "missingStatus": "ya no existe en el disco",
+            "symlinkStatus": "enlace simbólico — no se puede eliminar aquí",
+            "unknownStatus": "no se pudo comprobar",
+            "deletedStatus": "eliminada"
+        },
+        "folderResult": {
+            "unresolved": "No se pudo determinar qué raíz de modelo contiene esta carpeta. Actualiza la barra lateral e inténtalo de nuevo."
         },
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",

@@ -42,6 +42,12 @@
     animation: modalFadeIn 0.2s ease-out;
 }
 
+/* The label grows to "Delete N folders" when several roots are ticked; a fixed
+   floor keeps the centred action row from sliding sideways on every toggle. */
+#deleteFolderModal .delete-btn {
+    min-width: 150px;
+}
+
 /* The folder delete confirm button is held disabled while the folder contents
    are checked against the backend, so it must not look clickable. */
 #deleteFolderModal .delete-btn:disabled {
@@ -99,4 +105,98 @@
     word-break: break-all;
     text-align: left;
     line-height: 1.5;
+}
+
+/* Root list for a folder that exists under several library roots: one checkbox
+   per copy, since "the folder" in a merged tree is all of them. Each row carries
+   its own guard verdict, so a copy that cannot be removed says why instead of
+   silently dropping out of the list. */
+.delete-folder-roots:empty {
+    display: none;
+}
+
+.folder-root-picker {
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2);
+    margin: var(--space-2) 0;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.folder-root-picker-title {
+    color: var(--text-color);
+    font-size: 0.9em;
+    margin-bottom: var(--space-1, 4px);
+}
+
+.folder-root-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 0;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+.folder-root-option.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.folder-root-option input[type="checkbox"] {
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+/* Path over status, so a row keeps its height when the verdict replaces
+   "checking..." — the modal must not move while it is being read. */
+.folder-root-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.folder-root-path {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    word-break: break-all;
+}
+
+.folder-root-status {
+    font-size: 0.78em;
+    opacity: 0.75;
+    min-height: 1.2em;
+    line-height: 1.2;
+}
+
+.folder-root-status.blocked {
+    color: var(--lora-error);
+    opacity: 0.95;
+}
+
+/* Says what the unchecked copies mean. The line is always in the DOM with its
+   height reserved, so warning about them cannot resize the modal mid-click. */
+.folder-root-kept-note {
+    min-height: 1.2em;
+    margin-top: 4px;
+    font-size: 0.78em;
+    line-height: 1.2;
+    opacity: 0.85;
+    color: var(--lora-warning, var(--lora-error));
+}
+
+/* Rename row: same choice, inline. Kept narrow so the row still reads as one
+   editable line in the sidebar tree. */
+.sidebar-folder-root-select {
+    flex: 0 0 auto;
+    max-width: 45%;
+    font-size: 0.8em;
+    background: var(--lora-surface);
+    color: var(--text-color);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
 }

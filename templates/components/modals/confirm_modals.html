@@ -112,13 +112,19 @@
 </div>
 
 <!-- Sidebar Folder Delete Confirmation Modal -->
-<!-- Shared by two states: 'confirm' (model-free folder) and 'blocked' (the
-     subtree still holds models, so a cascade delete is refused). -->
+<!-- Shared by five states: 'confirm' (model-free folder), 'blocked' (the
+     subtree still holds models, so a cascade delete is refused), 'busy' (a
+     staged delete is still pending), 'missing' (the directory is gone from
+     disk) and 'symlink' (every copy is a symbolic link). The roots container
+     holds the checkbox list shown when the same relative folder exists under
+     several library roots: each copy is guarded on its own and the ticked ones
+     are all deleted, since only the absolute paths tell those copies apart. -->
 <div id="deleteFolderModal" class="modal delete-modal">
     <div class="modal-content delete-modal-content">
         <h2 data-role="title">{{ t('sidebar.deleteFolderModal.title') }}</h2>
         <p class="delete-message" data-role="message">{{ t('sidebar.deleteFolderModal.message') }}</p>
         <div class="delete-model-info" data-role="info"></div>
+        <div class="delete-folder-roots" data-role="roots"></div>
         <div class="modal-actions">
             <button class="cancel-btn" data-action="cancel-delete-folder">{{ t('common.actions.cancel') }}</button>
             <button class="delete-btn" data-action="confirm-delete-folder">{{ t('sidebar.deleteFolderModal.confirm') }}</button>

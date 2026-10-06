@@ -159,6 +159,27 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > holds again. The same pass scoped the client-side ETA to the current stage in
 > `static/js/api/baseModelApi.js`; no other locale string changed.
 
+> **Status (2026-10, multi-root folder resolution):** the folder sidebar used to turn a tree
+> node into a path by prefixing the *default* model root, so a folder living under another root
+> failed to delete ("Folder no longer exists") and a same-named folder in another root could be
+> the one that got hit. Folder operations now resolve a node through the backend
+> (`GET /api/lm/{prefix}/resolve-folder`) and act on the directories that really exist. When
+> several roots hold the folder, the delete modal lists **one checkbox row per copy** — each row
+> carries its own guard verdict, every deletable copy is ticked by default, and a copy that
+> still holds models (or is a symbolic link) is unticked, disabled and explained instead of
+> silently dropped. Deleting a subset leaves the node in the sidebar, because the folder list is
+> a union over the model roots; `deleteFolderModal.keptNote` warns about that before the click.
+> The scanner bookkeeping is root-aware for the same reason: deleting one copy no longer hides
+> the node until the next scan, and no longer purges the model cards of its same-named twin in
+> another root (rename keeps the twin's records untouched too). That added 26 keys —
+> `sidebar.deleteFolderModal.{missingTitle,missingMessage,symlinkTitle,symlinkMessage,confirmMulti,deleting,keptNote}`,
+> `sidebar.deleteFolderResult.{missing,symlink,successMulti,partial}`,
+> `sidebar.renameFolderResult.{missing,symlink}`, the 12 `sidebar.folderRoot.*`
+> chooser/status strings and `sidebar.folderResult.unresolved` — all translated in all 9
+> locales (terminology below). The `en.json` wording was normalized to the established **model
+> root** noun while translating (`library root` → `model root`, R5); the count-bearing
+> `successMulti` uses the singular `success` key when only one copy was removed.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -498,6 +519,30 @@ The `{name}` / `{count}` / `{excluded}` / `{message}` tokens in `sidebar.createF
 placeholders. The keys carrying `{count}` are `successWithFiles`, `notEmptyMessageCount`,
 `notEmptyMessageExcluded` and `notEmptyWithCount`; `notEmptyMessageExcluded` is the only key
 carrying `{excluded}`.
+
+#### Multi-root folder operations (resolution, copies, symlinks)
+
+The sidebar's folder tree is a union over the model roots, so a relative folder can stand for
+several directories at once. Copy is called **copy** (one directory per root), never "version"
+or "instance"; a directory the backend refuses to touch is called out as a **symbolic link**,
+and a per-row verdict reads **no models** when the copy is deletable:
+
+| Term | Rendering |
+|---|---|
+| copy (one directory per root holding the same relative folder) | zh-CN 副本 · zh-TW 副本 · ja コピー · ko 복사본 · fr copie · de Kopie · es copia · ru копия · he עותק |
+| symbolic link | zh-CN 符号链接 · zh-TW 符號連結 · ja シンボリックリンク · ko 심볼릭 링크 · fr lien symbolique · de symbolischer Link · es enlace simbólico · ru символическая ссылка · he קישור סמלי |
+| unchecked (row / note wording) | zh-CN 未勾选 · zh-TW 未勾選 · ja チェックを外した · ko 선택하지 않은 · fr non cochée · de nicht angehakt · es no marcada · ru неотмеченная · he שלא סומן |
+| "no models" (row verdict) | zh-CN 无模型 · zh-TW 無模型 · ja モデルなし · ko 모델 없음 · fr aucun modèle · de keine Modelle · es sin modelos · ru моделей нет · he אין מודלים |
+| model root — plural ("more than one model root", "from {count} model roots") | zh-CN 模型根目录（多个模型根目录）· zh-TW 模型根目錄（多個模型根目錄）· ja モデルルート（複数のモデルルート）· ko 모델 루트（여러 모델 루트）· fr racine de modèle (plusieurs racines de modèle) · de Modell-Stammverzeichnis (mehrere Modell-Stammverzeichnisse) · es raíz de modelo (más de una raíz de modelo) · ru корневая папка моделей (несколько корневых папок моделей) · he שורש מודלים (יותר משורש מודלים אחד) |
+
+`{count}` / `{total}` / `{failed}` / `{excluded}` / `{name}` are verbatim §1-R2 placeholders in
+`deleteFolderModal.confirmMulti`, `deleteFolderResult.successMulti` / `.partial` and
+`folderRoot.notEmptyStatus` / `.notEmptyExcludedStatus`. The row verdicts are **fragments, not
+sentences**: they sit under a path inside the chooser box, so no locale capitalizes them or adds
+a period (`de` keeps its lowercase start, `fr` too). `folderRoot.rootsHint` ends with each
+locale's colon (`：` for CJK, ASCII elsewhere). `partial` reuses the locale's "N of M" shape and
+keeps the `—` before the failed count; `successMulti` keeps the locale's plain
+`deleteFolderResult.success` verb and appends the root count.
 
 ### Settings Organization tab
 

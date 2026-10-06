@@ -1409,9 +1409,16 @@
             "notEmptyMessage": "該資料夾中仍有模型，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
             "notEmptyMessageCount": "該資料夾中仍有 {count} 個模型檔案，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
             "notEmptyMessageExcluded": "該資料夾中仍有 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除。請先在「管理已排除的模型」中取消排除並刪除它們 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "missingTitle": "未找到資料夾",
+            "missingMessage": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlinkTitle": "資料夾是符號連結",
+            "symlinkMessage": "該資料夾的每一份副本都是符號連結；請在 LoRA Manager 之外刪除該連結或其指向的目標。",
             "busyTitle": "仍有刪除操作待處理",
             "checking": "正在檢查資料夾內容...",
-            "confirm": "刪除資料夾"
+            "confirm": "刪除資料夾",
+            "confirmMulti": "刪除 {count} 個資料夾",
+            "deleting": "正在刪除...",
+            "keptNote": "未勾選的副本會讓該資料夾繼續顯示在側邊欄中。"
         },
         "deleteFolderResult": {
             "success": "已刪除資料夾 \"{name}\"",
@@ -1422,7 +1429,10 @@
             "notEmptyWithCount": "該資料夾中仍有 {count} 個模型檔案。請重新整理側邊欄後再試。",
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援刪除資料夾",
-            "noRoot": "未設定模型根目錄"
+            "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlink": "該資料夾是符號連結，無法從側邊欄中刪除。",
+            "successMulti": "已從 {count} 個模型根目錄中刪除資料夾 \"{name}\"",
+            "partial": "已刪除 {total} 份副本中的 {count} 份 —— {failed} 份無法刪除。請重新整理側邊欄後再試。"
         },
         "renameFolder": "重新命名資料夾",
         "renameFolderResult": {
@@ -1431,7 +1441,25 @@
             "targetExists": "此處已存在同名資料夾",
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援重新命名資料夾",
-            "noRoot": "未設定模型根目錄"
+            "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlink": "該資料夾是符號連結，無法從側邊欄中重新命名。"
+        },
+        "folderRoot": {
+            "chooseTitle": "該資料夾存在於多個模型根目錄中",
+            "symlinkOption": "符號連結",
+            "rootsHint": "選擇要從中刪除該資料夾的模型根目錄：",
+            "checkingStatus": "正在檢查...",
+            "okStatus": "無模型",
+            "notEmptyStatus": "包含 {count} 個模型檔案 —— 請先刪除或移出這些模型",
+            "notEmptyExcludedStatus": "包含 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除",
+            "busyStatus": "仍有刪除操作待處理",
+            "missingStatus": "磁碟上已不存在",
+            "symlinkStatus": "符號連結 —— 無法在此刪除",
+            "unknownStatus": "無法檢查",
+            "deletedStatus": "已刪除"
+        },
+        "folderResult": {
+            "unresolved": "無法確定該資料夾位於哪個模型根目錄。請重新整理側邊欄後再試。"
         },
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",

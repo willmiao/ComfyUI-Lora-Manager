@@ -61,6 +61,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/{prefix}/scan", "scan_models"),
     RouteDefinition("GET", "/api/lm/{prefix}/roots", "get_model_roots"),
     RouteDefinition("GET", "/api/lm/{prefix}/folders", "get_folders"),
+    RouteDefinition("GET", "/api/lm/{prefix}/resolve-folder", "resolve_folder"),
     RouteDefinition("GET", "/api/lm/{prefix}/folder-tree", "get_folder_tree"),
     RouteDefinition(
         "GET", "/api/lm/{prefix}/unified-folder-tree", "get_unified_folder_tree"

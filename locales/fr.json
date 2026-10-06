@@ -1409,9 +1409,16 @@
             "notEmptyMessage": "Ce dossier contient encore des modèles. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "notEmptyMessageCount": "Ce dossier contient encore {count} fichier(s) de modèle. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "notEmptyMessageExcluded": "Ce dossier contient encore {count} fichier(s) de modèle, dont {excluded} sont exclus de la bibliothèque. Annulez leur exclusion dans « Gérer les modèles exclus » et supprimez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "missingTitle": "Dossier introuvable",
+            "missingMessage": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "symlinkTitle": "Le dossier est un lien symbolique",
+            "symlinkMessage": "Toutes les copies de ce dossier sont des liens symboliques ; supprimez le lien ou sa cible en dehors de LoRA Manager.",
             "busyTitle": "Une suppression est encore en attente",
             "checking": "Vérification du contenu du dossier...",
-            "confirm": "Supprimer le dossier"
+            "confirm": "Supprimer le dossier",
+            "confirmMulti": "Supprimer {count} dossiers",
+            "deleting": "Suppression...",
+            "keptNote": "Les copies non cochées maintiennent ce dossier dans la barre latérale."
         },
         "deleteFolderResult": {
             "success": "Dossier \"{name}\" supprimé",
@@ -1422,7 +1429,10 @@
             "notEmptyWithCount": "Ce dossier contient encore {count} fichier(s) de modèle. Actualisez la barre latérale et réessayez.",
             "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
             "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
-            "noRoot": "Aucune racine de modèle n’est configurée"
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être supprimé depuis la barre latérale.",
+            "successMulti": "Dossier \"{name}\" supprimé de {count} racines de modèle",
+            "partial": "{count} copie(s) sur {total} supprimée(s) — {failed} en échec. Actualisez la barre latérale et réessayez."
         },
         "renameFolder": "Renommer le dossier",
         "renameFolderResult": {
@@ -1431,7 +1441,25 @@
             "targetExists": "Un dossier portant ce nom existe déjà ici",
             "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
             "unsupported": "Le renommage de dossiers n’est pas pris en charge sur cette page",
-            "noRoot": "Aucune racine de modèle n’est configurée"
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être renommé depuis la barre latérale."
+        },
+        "folderRoot": {
+            "chooseTitle": "Ce dossier existe dans plusieurs racines de modèle",
+            "symlinkOption": "lien symbolique",
+            "rootsHint": "Sélectionnez les racines de modèle d’où supprimer ce dossier :",
+            "checkingStatus": "vérification...",
+            "okStatus": "aucun modèle",
+            "notEmptyStatus": "contient {count} fichier(s) de modèle — supprimez-les ou déplacez-les d’abord",
+            "notEmptyExcludedStatus": "contient {count} fichier(s) de modèle, dont {excluded} exclus de la bibliothèque",
+            "busyStatus": "une suppression est encore en attente",
+            "missingStatus": "n’existe plus sur le disque",
+            "symlinkStatus": "lien symbolique — impossible à supprimer ici",
+            "unknownStatus": "vérification impossible",
+            "deletedStatus": "supprimé"
+        },
+        "folderResult": {
+            "unresolved": "Impossible de déterminer quelle racine de modèle contient ce dossier. Actualisez la barre latérale et réessayez."
         },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",

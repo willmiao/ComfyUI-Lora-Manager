@@ -561,6 +561,85 @@ class ModelMoveService:
                 return rel.replace(os.sep, "/")
         return ""
 
+    def resolve_folder(self, folder: str) -> Dict[str, Any]:
+        """Map a library-relative folder onto the directories it stands for.
+
+        The unified folder tree merges every model root into a single
+        relative-path namespace, so a tree node does not carry the root it came
+        from: the same relative folder can exist under several roots, or under
+        one that is not the default root. Folder operations take an absolute
+        business path, so a caller holding only the rendered node must ask which
+        directories it maps to instead of assuming a root — assuming one is how
+        deleting a folder that sits right there fails with "Folder no longer
+        exists", or, when a same-named folder exists in another root, silently
+        acts on that other directory.
+
+        Args:
+            folder: Library-relative folder path (``a/b``; backslashes are
+                accepted). Absolute paths are rejected — a caller that already
+                holds an absolute business path does not need this.
+
+        Returns:
+            Dictionary with the success flag, the normalized relative folder and
+            ``candidates``: one entry per model root that holds the directory on
+            disk (``folder_path``/``root``/``is_symlink``), in scanner root
+            order. An empty list means the directory exists under no root.
+        """
+        try:
+            relative = self._normalize_relative_folder(folder)
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+
+        candidates: List[Dict[str, Any]] = []
+        for root in self.scanner.get_model_roots():
+            abs_root = os.path.abspath(root)
+            candidate = os.path.abspath(os.path.join(abs_root, relative))
+            # normpath already collapsed any "." / ".." segment; the
+            # containment check is belt-and-braces, not traversal defence.
+            if candidate != abs_root and not candidate.startswith(abs_root + os.sep):
+                continue
+            if not os.path.isdir(candidate):
+                continue
+            candidates.append(
+                {
+                    "folder_path": candidate.replace(os.sep, "/"),
+                    "root": abs_root.replace(os.sep, "/"),
+                    "is_symlink": os.path.islink(candidate),
+                }
+            )
+
+        return {
+            "success": True,
+            "folder": relative.replace(os.sep, "/"),
+            "candidates": candidates,
+        }
+
+    @staticmethod
+    def _normalize_relative_folder(folder: str) -> str:
+        """Normalize a library-relative folder path, raising ``ValueError``.
+
+        Absolute paths (POSIX, drive-letter or UNC) and paths that climb out of
+        the library root are refused: both mean the caller is confused about
+        which space it is working in, and guessing would be worse than an error.
+        """
+        raw = str(folder or "").strip()
+        if not raw:
+            raise ValueError("Folder path is required")
+
+        normalized = raw.replace("\\", "/")
+        if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+            raise ValueError("Folder path must be relative to a library root")
+
+        normalized = os.path.normpath(normalized)
+        if (
+            normalized == ".."
+            or normalized.startswith("../")
+            or normalized.startswith(".." + os.sep)
+        ):
+            raise ValueError("Folder path must stay inside the library root")
+
+        return normalized
+
     async def delete_folder(self, folder_path: str, dry_run: bool = False) -> Dict[str, Any]:
         """Delete a model-free directory inside the model library roots.
 
@@ -598,7 +677,13 @@ class ModelMoveService:
                     "error": "Symlinked folders cannot be deleted",
                 }
             if not os.path.isdir(absolute_path):
-                return {"success": False, "error": "Folder no longer exists"}
+                # `missing` is its own code so the sidebar can tell "this node's
+                # directory is gone, refresh" apart from a failed operation.
+                return {
+                    "success": False,
+                    "code": "missing",
+                    "error": "Folder no longer exists",
+                }
 
             if self._is_model_root(absolute_path):
                 return {
@@ -679,7 +764,7 @@ class ModelMoveService:
                         except OSError:  # pragma: no cover - best-effort cleanup
                             pass
 
-            await self._forget_folder(relative_folder)
+            await self._forget_folder(relative_folder, absolute_path)
 
             return {
                 "success": True,
@@ -789,13 +874,20 @@ class ModelMoveService:
             return set()
         return {_normalize_match_path(path) for path in paths if path}
 
-    async def _forget_folder(self, relative_folder: str) -> None:
-        """Drop a removed directory from the scanner's folder/cache records."""
+    async def _forget_folder(
+        self, relative_folder: str, absolute_path: Optional[str] = None
+    ) -> None:
+        """Drop a removed directory from the scanner's folder/cache records.
+
+        ``absolute_path`` is what the caller actually deleted: the scanner needs
+        it to purge the right model cards, because the same relative folder can
+        exist under several roots.
+        """
         if not relative_folder:
             return
         remove_known_folder = getattr(self.scanner, "remove_known_folder", None)
         if callable(remove_known_folder):
-            await remove_known_folder(relative_folder)
+            await remove_known_folder(relative_folder, absolute_path)
 
     async def rename_folder(self, folder_path: str, new_name: str) -> Dict[str, Any]:
         """Rename a directory inside the model library roots.
@@ -836,7 +928,13 @@ class ModelMoveService:
                     "error": "Symlinked folders cannot be renamed",
                 }
             if not os.path.isdir(absolute_path):
-                return {"success": False, "error": "Folder no longer exists"}
+                # `missing` is its own code so the sidebar can tell "this node's
+                # directory is gone, refresh" apart from a failed operation.
+                return {
+                    "success": False,
+                    "code": "missing",
+                    "error": "Folder no longer exists",
+                }
 
             if self._is_model_root(absolute_path):
                 return {

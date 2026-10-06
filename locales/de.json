@@ -1409,9 +1409,16 @@
             "notEmptyMessage": "Dieser Ordner enthält noch Modelle. Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
             "notEmptyMessageCount": "Dieser Ordner enthält noch {count} Modelldatei(en). Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
             "notEmptyMessageExcluded": "Dieser Ordner enthält noch {count} Modelldatei(en), davon {excluded} von der Bibliothek ausgeschlossen. Heben Sie den Ausschluss unter „Ausgeschlossene Modelle verwalten“ auf und löschen Sie sie zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
+            "missingTitle": "Ordner nicht gefunden",
+            "missingMessage": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlinkTitle": "Ordner ist ein symbolischer Link",
+            "symlinkMessage": "Alle Kopien dieses Ordners sind symbolische Links; entfernen Sie den Link oder sein Ziel außerhalb von LoRA Manager.",
             "busyTitle": "Eine Löschung steht noch aus",
             "checking": "Ordnerinhalt wird geprüft...",
-            "confirm": "Ordner löschen"
+            "confirm": "Ordner löschen",
+            "confirmMulti": "{count} Ordner löschen",
+            "deleting": "Wird gelöscht...",
+            "keptNote": "Nicht angehakte Kopien lassen diesen Ordner in der Seitenleiste bestehen."
         },
         "deleteFolderResult": {
             "success": "Ordner \"{name}\" gelöscht",
@@ -1422,7 +1429,10 @@
             "notEmptyWithCount": "Dieser Ordner enthält noch {count} Modelldatei(en). Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Löschen von Ordnern wird auf dieser Seite nicht unterstützt",
-            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlink": "Dieser Ordner ist ein symbolischer Link; er kann nicht über die Seitenleiste gelöscht werden.",
+            "successMulti": "Ordner \"{name}\" aus {count} Modell-Stammverzeichnissen gelöscht",
+            "partial": "{count} von {total} Kopien gelöscht — {failed} konnten nicht gelöscht werden. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         },
         "renameFolder": "Ordner umbenennen",
         "renameFolderResult": {
@@ -1431,7 +1441,25 @@
             "targetExists": "Ein Ordner mit diesem Namen ist hier bereits vorhanden",
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Umbenennen von Ordnern wird auf dieser Seite nicht unterstützt",
-            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlink": "Dieser Ordner ist ein symbolischer Link; er kann nicht über die Seitenleiste umbenannt werden."
+        },
+        "folderRoot": {
+            "chooseTitle": "Dieser Ordner existiert in mehreren Modell-Stammverzeichnissen",
+            "symlinkOption": "symbolischer Link",
+            "rootsHint": "Wählen Sie die Modell-Stammverzeichnisse, aus denen dieser Ordner gelöscht werden soll:",
+            "checkingStatus": "wird geprüft...",
+            "okStatus": "keine Modelle",
+            "notEmptyStatus": "enthält {count} Modelldatei(en) — löschen oder verschieben Sie diese zuerst",
+            "notEmptyExcludedStatus": "enthält {count} Modelldatei(en), davon {excluded} von der Bibliothek ausgeschlossen",
+            "busyStatus": "eine Löschung steht noch aus",
+            "missingStatus": "existiert nicht mehr auf dem Datenträger",
+            "symlinkStatus": "symbolischer Link — hier nicht löschbar",
+            "unknownStatus": "konnte nicht geprüft werden",
+            "deletedStatus": "gelöscht"
+        },
+        "folderResult": {
+            "unresolved": "Es konnte nicht ermittelt werden, welches Modell-Stammverzeichnis diesen Ordner enthält. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         },
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",

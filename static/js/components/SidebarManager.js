@@ -50,7 +50,14 @@ export class SidebarManager {
         this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
         this._renameFolderPath = null;
         this._renameFolderNode = null;
+        // Absolute path the pending delete will hit, and the node it came from:
+        // the tree path is relative to *some* root, so only the resolved
+        // absolute path may be handed to the delete API.
         this._pendingDeleteFolderPath = null;
+        this._pendingDeleteFolderRelative = null;
+        this._deleteFolderCandidates = [];
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
         this._deleteFolderModalWired = false;
         // Bumped on every modal open/close so a late dry-run answer can never
         // repaint a modal the user has already dismissed or retargeted.
@@ -717,9 +724,7 @@ export class SidebarManager {
         }
 
         try {
-            const rootsData = await this.apiClient.fetchModelRoots();
-            const roots = rootsData?.roots || [];
-            const root = this._resolveDefaultRoot(roots);
+            const root = await this._createFolderRoot(parentPath);
             if (!root) {
                 showToast('sidebar.createFolderResult.noRoot', {}, 'error');
                 return false;
@@ -759,15 +764,135 @@ export class SidebarManager {
             return '';
         }
 
-        const singularName = this.apiClient?.apiConfig?.config?.singularName;
-        const defaultRoot = singularName
-            ? state.global?.settings?.[`default_${singularName}_root`]
-            : '';
+        const defaultRoot = this._configuredDefaultRoot();
         if (defaultRoot && roots.includes(defaultRoot)) {
             return defaultRoot;
         }
 
         return roots[0];
+    }
+
+    /** The library's configured default root (may be empty or not a known root). */
+    _configuredDefaultRoot() {
+        const singularName = this.apiClient?.apiConfig?.config?.singularName;
+        if (!singularName) return '';
+        return state.global?.settings?.[`default_${singularName}_root`] || '';
+    }
+
+    /**
+     * Map a tree-relative folder onto the concrete directories it stands for.
+     *
+     * The unified tree merges every model root into one relative-path
+     * namespace, so a node does not carry the root it came from: the same
+     * relative folder can exist under several roots, or only under one that is
+     * not the default root. Folder operations take an absolute business path,
+     * so they ask the backend which directories the node maps to instead of
+     * prefixing a root (which is how a folder sitting right there used to fail
+     * with "Folder no longer exists", and how a same-named folder in another
+     * root could be the one that got deleted).
+     *
+     * @returns {Promise<{candidates: Array<object>, defaultRoot: string}>}
+     *   Candidates are ordered with the default root first; an empty list means
+     *   no root holds the directory on disk (a stale tree node).
+     * @throws {Error} When the folder cannot be resolved *and* the library has
+     *   several roots — guessing between them is exactly the bug this avoids.
+     */
+    async _resolveFolderCandidates(relativePath) {
+        const defaultRoot = this._configuredDefaultRoot();
+
+        if (typeof this.apiClient.resolveFolder === 'function') {
+            try {
+                const response = await this.apiClient.resolveFolder(relativePath);
+                return {
+                    candidates: this._orderCandidates(
+                        Array.isArray(response?.candidates) ? response.candidates : [],
+                        defaultRoot
+                    ),
+                    defaultRoot,
+                };
+            } catch (error) {
+                // Fall through to the root-prefix fallback below, which is only
+                // trustworthy while a single root is configured.
+                console.error('[SidebarManager] Failed to resolve the folder path:', error);
+            }
+        }
+
+        const rootsData = await this.apiClient.fetchModelRoots();
+        const roots = rootsData?.roots || [];
+        if (roots.length > 1) {
+            const error = new Error('Unable to determine which model root holds this folder');
+            error.code = 'unresolved';
+            throw error;
+        }
+
+        const root = this._resolveDefaultRoot(roots);
+        if (!root) return { candidates: [], defaultRoot };
+
+        // Single root (or no resolver at all): the prefix is unambiguous, but
+        // it is an assumption — the backend still decides on disk.
+        return {
+            candidates: [{
+                folder_path: this.combineRootAndRelativePath(root, relativePath),
+                root,
+                is_symlink: false,
+                assumed: true,
+            }],
+            defaultRoot,
+        };
+    }
+
+    /** Order candidates with the default root first, keeping the rest stable. */
+    _orderCandidates(candidates, defaultRoot) {
+        if (!defaultRoot) return [...candidates];
+        return [...candidates].sort((a, b) => {
+            const aPreferred = a?.root === defaultRoot ? 0 : 1;
+            const bPreferred = b?.root === defaultRoot ? 0 : 1;
+            return aPreferred - bPreferred;
+        });
+    }
+
+    /**
+     * The candidate an operation preselects: the default root's copy when it has
+     * one, otherwise the first. Symlinked candidates are never preselected —
+     * folder operations refuse them.
+     */
+    _preferredCandidate(candidates, defaultRoot) {
+        const selectable = (candidates || []).filter((candidate) => !candidate?.is_symlink);
+        if (selectable.length === 0) return null;
+        const preferredRoot = defaultRoot || this._configuredDefaultRoot();
+        return selectable.find((candidate) => candidate.root === preferredRoot) || selectable[0];
+    }
+
+    async _resolveFolderCandidatesSafe(relativePath) {
+        try {
+            return await this._resolveFolderCandidates(relativePath);
+        } catch (error) {
+            console.error('[SidebarManager] Folder resolution failed:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Root a new folder is created under.
+     *
+     * A folder created inside an existing node belongs next to it, so the
+     * parent's own root wins when the parent resolves to exactly one directory.
+     * Everything else (root-level creation, an ambiguous or unreadable parent)
+     * keeps the old behaviour: the library's configured default root.
+     */
+    async _createFolderRoot(parentPath) {
+        if (parentPath) {
+            const resolution = await this._resolveFolderCandidatesSafe(parentPath);
+            const selectable = (resolution?.candidates || []).filter(
+                (candidate) => !candidate.is_symlink
+            );
+            if (selectable.length === 1) {
+                return selectable[0].root;
+            }
+        }
+
+        const rootsData = await this.apiClient.fetchModelRoots();
+        return this._resolveDefaultRoot(rootsData?.roots || []);
     }
 
     handleCreateFolderCancel() {
@@ -782,8 +907,13 @@ export class SidebarManager {
      * Mirrors the create-folder inline row (Enter confirms, Escape/blur
      * cancels) but is inserted where the node sits and hides that node while
      * editing, so the tree does not jump.
+     *
+     * The node is relative to the merged tree, so the directories it stands for
+     * are resolved first: a folder that exists under several roots gets a root
+     * picker in the row (renaming the wrong copy is worse than asking), while
+     * the ordinary single-root node keeps the plain input.
      */
-    showRenameFolderInput(path) {
+    async showRenameFolderInput(path) {
         if (!path) return;
 
         this.hideRenameFolderInput();
@@ -794,7 +924,25 @@ export class SidebarManager {
         const node = this._findFolderNodeElement(folderTree, path);
         if (!node) return;
 
-        const row = this._buildRenameFolderRow(this._folderLeafName(path));
+        const resolution = await this._resolveFolderCandidatesSafe(path);
+        // The tree may have re-rendered while the resolver was in flight.
+        if (!node.isConnected) return;
+
+        const candidates = resolution?.candidates || [];
+        if (candidates.length === 0) {
+            showToast('sidebar.renameFolderResult.missing', {}, 'warning');
+            return;
+        }
+
+        const selected = this._preferredCandidate(candidates, resolution?.defaultRoot);
+        if (!selected) {
+            showToast('sidebar.renameFolderResult.symlink', {}, 'warning');
+            return;
+        }
+
+        const row = this._buildRenameFolderRow(
+            this._folderLeafName(path), candidates, selected.folder_path
+        );
         node.parentElement.insertBefore(row, node);
         node.style.display = 'none';
 
@@ -823,7 +971,7 @@ export class SidebarManager {
         });
     }
 
-    _buildRenameFolderRow(currentName) {
+    _buildRenameFolderRow(currentName, candidates = [], selectedPath = '') {
         const isListMode = this.displayMode === 'list';
         const row = document.createElement('div');
         row.id = 'sidebarRenameFolderInput';
@@ -839,9 +987,39 @@ export class SidebarManager {
                        class="sidebar-create-folder-input sidebar-rename-folder-input"
                        aria-label="${escapeAttribute(translate('sidebar.renameFolder', {}, 'Rename folder'))}"
                        value="${escapeAttribute(currentName)}" />
+                ${this._folderRootSelectHtml(candidates, selectedPath)}
             </div>
         `;
         return row;
+    }
+
+    /**
+     * Root picker markup for an ambiguous folder, or '' when there is nothing to
+     * choose (single candidate) — a `<select>` only appears when the same
+     * relative folder exists under more than one root.
+     */
+    _folderRootSelectHtml(candidates, selectedPath) {
+        if (!candidates || candidates.length < 2) return '';
+
+        const options = candidates.map((candidate) => {
+            const selected = candidate.folder_path === selectedPath ? ' selected' : '';
+            // A symlinked directory cannot be renamed or deleted here, but it
+            // still explains why the node exists at all.
+            const disabled = candidate.is_symlink ? ' disabled' : '';
+            const suffix = candidate.is_symlink
+                ? ` (${translate('sidebar.folderRoot.symlinkOption', {}, 'symbolic link')})`
+                : '';
+            return `<option value="${escapeAttribute(candidate.folder_path)}"${selected}${disabled}>`
+                + `${escapeHtml(candidate.folder_path + suffix)}</option>`;
+        }).join('');
+
+        return `
+            <select class="sidebar-folder-root-select"
+                    title="${escapeAttribute(translate('sidebar.folderRoot.chooseTitle', {}, 'This folder exists in more than one model root'))}"
+                    aria-label="${escapeAttribute(translate('sidebar.folderRoot.chooseTitle', {}, 'This folder exists in more than one model root'))}">
+                ${options}
+            </select>
+        `;
     }
 
     _findFolderNodeElement(folderTree, path) {
@@ -877,11 +1055,16 @@ export class SidebarManager {
     }
 
     async handleRenameFolderSubmit() {
-        const input = document.querySelector('#sidebarRenameFolderInput .sidebar-rename-folder-input');
+        const row = document.getElementById('sidebarRenameFolderInput');
+        const input = row?.querySelector('.sidebar-rename-folder-input');
         const path = this._renameFolderPath;
         if (!input || !path) {
             return;
         }
+
+        // Read the root picker (present only for an ambiguous node) before the
+        // row is removed: it holds the copy the user chose to rename.
+        const selectedPath = row.querySelector('.sidebar-folder-root-select')?.value || null;
 
         const newName = input.value.trim();
         if (!newName) {
@@ -900,26 +1083,37 @@ export class SidebarManager {
             return;
         }
 
-        await this._renameFolder(path, newName);
+        await this._renameFolder(path, newName, selectedPath);
     }
 
-    async _renameFolder(relativePath, newName) {
+    async _renameFolder(relativePath, newName, absolutePath = null) {
         if (!this._supportsFolderManagement() || typeof this.apiClient.renameFolder !== 'function') {
             showToast('sidebar.renameFolderResult.unsupported', {}, 'error');
             return false;
         }
 
         try {
-            const rootsData = await this.apiClient.fetchModelRoots();
-            const roots = rootsData?.roots || [];
-            const root = this._resolveDefaultRoot(roots);
-            if (!root) {
-                showToast('sidebar.renameFolderResult.noRoot', {}, 'error');
-                return false;
+            let target = absolutePath;
+            if (!target) {
+                const resolution = await this._resolveFolderCandidates(relativePath);
+                const selected = this._preferredCandidate(
+                    resolution?.candidates, resolution?.defaultRoot
+                );
+                if (!selected) {
+                    const empty = (resolution?.candidates || []).length === 0;
+                    showToast(
+                        empty
+                            ? 'sidebar.renameFolderResult.missing'
+                            : 'sidebar.renameFolderResult.symlink',
+                        {},
+                        'warning'
+                    );
+                    return false;
+                }
+                target = selected.folder_path;
             }
 
-            const absolutePath = this.combineRootAndRelativePath(root, relativePath);
-            const result = await this.apiClient.renameFolder(absolutePath, newName);
+            const result = await this.apiClient.renameFolder(target, newName);
 
             // Carry the user's place across the rename: the persisted
             // selection and the expanded set would otherwise point at a folder
@@ -937,6 +1131,10 @@ export class SidebarManager {
                 showToast('sidebar.renameFolderResult.targetExists', {}, 'warning');
             } else if (error?.code === 'busy') {
                 showToast('sidebar.renameFolderResult.busy', {}, 'warning');
+            } else if (error?.code === 'missing') {
+                showToast('sidebar.renameFolderResult.missing', {}, 'warning');
+            } else if (error?.code === 'unresolved') {
+                showToast('sidebar.folderResult.unresolved', {}, 'error');
             } else {
                 showToast(
                     'sidebar.renameFolderResult.failed',
@@ -985,13 +1183,15 @@ export class SidebarManager {
     /**
      * Open the folder delete modal for *path*.
      *
-     * The models-only set that dims empty nodes is only a prediction: it is
-     * built from the scanned, non-excluded models, while the delete guard walks
-     * the folder on disk and refuses on any weight file — excluded ones
-     * included. So the modal opens on the prediction for an instant answer and
-     * is then corrected by a dry run of the very delete the user is about to
-     * confirm, which is the only way the button can never contradict the
-     * backend (see `_verifyFolderContents`).
+     * Two things are settled before the user can confirm. The node is first
+     * resolved to the directories it actually stands for: the tree merges every
+     * model root, so "delete this node" must not be answered with a path
+     * fabricated from the default root (see `_resolveFolderCandidates`). The
+     * models-only set that dims empty nodes is then corrected by a dry run of
+     * the very delete being confirmed: it is built from scanned, non-excluded
+     * models, while the backend walks the folder on disk and refuses on any
+     * weight file — excluded ones included. When several roots hold the folder,
+     * the modal offers each directory and re-checks the one the user picks.
      */
     async showDeleteFolderModal(path) {
         const modal = document.getElementById('deleteFolderModal');
@@ -1013,6 +1213,10 @@ export class SidebarManager {
             }
             : { state: 'confirm' };
 
+        this._pendingDeleteFolderRelative = path;
+        this._pendingDeleteFolderPath = null;
+        this._deleteFolderCandidates = [];
+
         const probePending = this._supportsFolderManagement()
             && typeof this.apiClient.deleteFolder === 'function';
 
@@ -1025,16 +1229,522 @@ export class SidebarManager {
 
         if (!probePending) return;
 
-        await this._verifyFolderContents(path, token, prediction);
+        await this._resolveDeleteFolderTarget(path, token, prediction);
+    }
+
+    /**
+     * Resolve the node, then check the directory the delete would hit.
+     *
+     * Resolution failing (an older client, a request error) keeps the previous
+     * behaviour: the tree prediction is shown and the real delete reports its
+     * own error. A library with several roots never falls back to guessing one
+     * — that guess is the bug this path exists to remove.
+     */
+    async _resolveDeleteFolderTarget(relativePath, token, prediction) {
+        const resolution = await this._resolveFolderCandidatesSafe(relativePath);
+        if (token !== this._deleteFolderProbeToken) return;
+
+        if (!resolution) {
+            this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
+            return;
+        }
+
+        const candidates = resolution.candidates || [];
+        this._deleteFolderCandidates = candidates;
+
+        if (candidates.length === 0) {
+            this._renderDeleteFolderModal(relativePath, 'missing', {});
+            return;
+        }
+
+        if (candidates.length > 1) {
+            // The node stands for several directories: offer them as a list the
+            // user can narrow down, instead of silently picking one.
+            await this._openMultiRootDelete(relativePath, candidates, token);
+            return;
+        }
+
+        if (candidates[0].is_symlink) {
+            // The backend refuses symlinked directories; asking it anyway would
+            // come back as a codeless error and repaint a confirm button.
+            this._renderDeleteFolderModal(relativePath, 'symlink', {});
+            return;
+        }
+
+        await this._probeDeleteFolder(relativePath, candidates[0], token, prediction);
+    }
+
+    /**
+     * Dry-run the delete against one resolved directory and paint the verdict.
+     *
+     * The dry run is authoritative: it walks the folder on disk and applies the
+     * same guard the real delete uses, so it catches everything the sidebar
+     * prediction cannot know — excluded models, weight files no scanner indexes
+     * (a lora folder holding only a `.gguf`, say) and files added after the
+     * last scan. A check that fails for any other reason falls back to the
+     * prediction, leaving the real delete to report its own error.
+     */
+    async _probeDeleteFolder(relativePath, candidate, token, prediction) {
+        const absolutePath = candidate.folder_path;
+        this._pendingDeleteFolderPath = absolutePath;
+
+        const options = { selectedPath: absolutePath };
+
+        try {
+            await this.apiClient.deleteFolder(absolutePath, { dryRun: true });
+            if (token !== this._deleteFolderProbeToken) return;
+            this._renderDeleteFolderModal(relativePath, 'confirm', options);
+        } catch (error) {
+            if (token !== this._deleteFolderProbeToken) return;
+            if (error?.code === 'not_empty') {
+                this._renderDeleteFolderModal(relativePath, 'blocked', {
+                    ...this._notEmptyBlocker(error?.manifest),
+                    ...options,
+                });
+            } else if (error?.code === 'busy') {
+                this._renderDeleteFolderModal(relativePath, 'busy', options);
+            } else if (error?.code === 'missing') {
+                this._renderDeleteFolderModal(relativePath, 'missing', {});
+            } else {
+                this._renderDeleteFolderModal(relativePath, prediction.state, {
+                    ...prediction,
+                    ...options,
+                });
+            }
+        }
+    }
+
+    /**
+     * Open the multi-root form of the modal: one checkbox per directory the node
+     * stands for, each checked by default and each checked against the backend
+     * on its own.
+     *
+     * Deleting "the folder" in a merged tree means deleting every copy the user
+     * keeps selected — picking exactly one was an artefact of the single-target
+     * API, not of what the tree shows. The rows are built once and only their
+     * status text is updated afterwards: re-rendering the list on every click
+     * made the modal jump and stole the focus of the checkbox being clicked.
+     */
+    async _openMultiRootDelete(relativePath, candidates, token) {
+        this._deleteFolderCandidates = candidates.map((candidate) => ({
+            ...candidate,
+            // A symlinked copy cannot be removed from here, so it starts
+            // unselected; everything else is selected because the node the user
+            // right-clicked represents all of them.
+            checked: !candidate.is_symlink,
+            status: candidate.is_symlink ? 'symlink' : 'checking',
+            modelCount: 0,
+            excludedCount: 0,
+        }));
+
+        this._renderMultiRootDeleteModal(relativePath);
+
+        await Promise.all(this._deleteFolderCandidates.map(
+            (entry) => this._probeDeleteCandidateRow(entry, token)
+        ));
+
+        if (token !== this._deleteFolderProbeToken) return;
+        this._refreshDeleteFolderConfirm();
+    }
+
+    /** Paint the modal shell for an ambiguous node; rows carry the detail. */
+    _renderMultiRootDeleteModal(relativePath) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const info = modal.querySelector('[data-role="info"]');
+        const roots = modal.querySelector('[data-role="roots"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+
+        this._pendingDeleteFolderPath = null;
+
+        // The modal-level text stays generic: what differs between the copies is
+        // per-row, and swapping these strings around was half of the jumping.
+        title.textContent = translate('sidebar.deleteFolderModal.title', {}, 'Delete folder?');
+        message.textContent = translate(
+            'sidebar.deleteFolderModal.message', {},
+            'The folder and everything inside it will be permanently removed from disk.'
+        );
+        // The relative path is the node the user acted on; every absolute path
+        // lives on its row below, so none of them is singled out as "the" one.
+        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(relativePath)}`;
+        info.innerHTML = pathLine;
+
+        if (roots) {
+            roots.replaceChildren(this._buildDeleteFolderRootList());
+        }
+
+        confirmBtn.style.display = '';
+        confirmBtn.disabled = true;
+        modal.dataset.state = 'multi';
+    }
+
+    /**
+     * Build the checkbox list once per modal open and remember the nodes so the
+     * probes can update a row without touching its neighbours.
+     */
+    _buildDeleteFolderRootList() {
+        const list = document.createElement('div');
+        list.className = 'folder-root-picker';
+
+        const heading = document.createElement('div');
+        heading.className = 'folder-root-picker-title';
+        heading.textContent = translate(
+            'sidebar.folderRoot.rootsHint', {},
+            'Select the model roots to delete this folder from:'
+        );
+        list.appendChild(heading);
+
+        this._deleteFolderRootRows = new Map();
+
+        for (const entry of this._deleteFolderCandidates) {
+            const row = document.createElement('label');
+            row.className = 'folder-root-option';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'deleteFolderRoot';
+            checkbox.value = entry.folder_path;
+            checkbox.checked = entry.checked;
+
+            const body = document.createElement('span');
+            body.className = 'folder-root-body';
+
+            const path = document.createElement('span');
+            path.className = 'folder-root-path';
+            path.textContent = entry.folder_path;
+
+            const status = document.createElement('span');
+            status.className = 'folder-root-status';
+
+            body.append(path, status);
+            row.append(checkbox, body);
+            list.appendChild(row);
+
+            this._deleteFolderRootRows.set(entry.folder_path, { row, checkbox, status });
+        }
+
+        // Always present (reserved height) so warning about the unchecked copies
+        // does not resize the modal the moment a box is clicked.
+        const keptNote = document.createElement('div');
+        keptNote.className = 'folder-root-kept-note';
+        list.appendChild(keptNote);
+        this._deleteFolderKeptNote = keptNote;
+
+        for (const entry of this._deleteFolderCandidates) {
+            this._updateDeleteFolderRow(entry);
+        }
+
+        return list;
+    }
+
+    /**
+     * Check one copy against the delete guard and record the verdict on its row.
+     *
+     * This is the same dry run the single-target modal does, so the checkbox a
+     * user can tick is never one the backend would refuse.
+     */
+    async _probeDeleteCandidateRow(entry, token) {
+        try {
+            await this.apiClient.deleteFolder(entry.folder_path, { dryRun: true });
+            if (token !== this._deleteFolderProbeToken) return;
+            entry.status = 'ok';
+        } catch (error) {
+            if (token !== this._deleteFolderProbeToken) return;
+            if (error?.code === 'not_empty') {
+                entry.status = 'not_empty';
+                entry.modelCount = Number(error?.manifest?.model_count) || 0;
+                entry.excludedCount = Number(error?.manifest?.excluded_model_count) || 0;
+                entry.checked = false;
+            } else if (error?.code === 'busy') {
+                entry.status = 'busy';
+                entry.checked = false;
+            } else if (error?.code === 'missing') {
+                entry.status = 'missing';
+                entry.checked = false;
+            } else {
+                // Unknown failure: keep it selected and let the real delete
+                // report its own error, exactly like the single-target probe.
+                entry.status = 'unknown';
+            }
+        }
+
+        this._updateDeleteFolderRow(entry);
+    }
+
+    /** Repaint one row in place (never rebuild it — that is what jumped). */
+    _updateDeleteFolderRow(entry) {
+        const nodes = this._deleteFolderRootRows?.get(entry.folder_path);
+        if (!nodes) return;
+
+        const selectable = this._isCandidateDeletable(entry);
+        nodes.row.classList.toggle('disabled', !selectable);
+        nodes.checkbox.disabled = !selectable;
+        nodes.checkbox.checked = entry.checked;
+        nodes.status.textContent = this._deleteFolderRowStatus(entry);
+        nodes.status.classList.toggle('blocked', entry.status === 'not_empty');
+    }
+
+    /** Whether a probed copy may be selected for deletion. */
+    _isCandidateDeletable(entry) {
+        return entry.status === 'ok' || entry.status === 'unknown' || entry.status === 'checking';
+    }
+
+    _deleteFolderRowStatus(entry) {
+        switch (entry.status) {
+            case 'checking':
+                return translate('sidebar.folderRoot.checkingStatus', {}, 'checking...');
+            case 'not_empty':
+                return entry.excludedCount > 0
+                    ? translate(
+                        'sidebar.folderRoot.notEmptyExcludedStatus',
+                        { count: entry.modelCount, excluded: entry.excludedCount },
+                        `contains ${entry.modelCount} model file(s), ${entry.excludedCount} of them excluded from the library`
+                    )
+                    : translate(
+                        'sidebar.folderRoot.notEmptyStatus',
+                        { count: entry.modelCount },
+                        `contains ${entry.modelCount} model file(s) — delete or move them first`
+                    );
+            case 'busy':
+                return translate('sidebar.folderRoot.busyStatus', {}, 'a deletion is still pending');
+            case 'missing':
+                return translate('sidebar.folderRoot.missingStatus', {}, 'no longer exists on disk');
+            case 'symlink':
+                return translate(
+                    'sidebar.folderRoot.symlinkStatus', {},
+                    'symbolic link — cannot be deleted here'
+                );
+            case 'unknown':
+                return translate('sidebar.folderRoot.unknownStatus', {}, 'could not be checked');
+            case 'deleted':
+                return translate('sidebar.folderRoot.deletedStatus', {}, 'deleted');
+            default:
+                return translate('sidebar.folderRoot.okStatus', {}, 'no models');
+        }
+    }
+
+    /** Toggle one copy's checkbox; nothing is re-rendered. */
+    _toggleDeleteFolderCandidate(absolutePath, checked) {
+        const entry = (this._deleteFolderCandidates || [])
+            .find((candidate) => candidate.folder_path === absolutePath);
+        if (!entry || !this._isCandidateDeletable(entry)) return;
+
+        entry.checked = checked;
+        this._refreshDeleteFolderConfirm();
+    }
+
+    /**
+     * Reflect the current selection on the confirm button, and explain the dead
+     * end when nothing can be removed at all.
+     */
+    _refreshDeleteFolderConfirm() {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+        const candidates = this._deleteFolderCandidates || [];
+
+        const pending = candidates.some((entry) => entry.status === 'checking');
+        const deletable = candidates.filter((entry) => this._isCandidateDeletable(entry));
+        const selected = deletable.filter((entry) => entry.checked);
+        const blocked = candidates.filter((entry) => entry.status === 'not_empty');
+
+        if (this._deleteFolderKeptNote) {
+            // Deleting a subset leaves the sidebar node in place (the other root
+            // still holds the folder), which is the surprise this warns about.
+            this._deleteFolderKeptNote.textContent = selected.length < deletable.length
+                ? translate(
+                    'sidebar.deleteFolderModal.keptNote', {},
+                    'Unchecked copies keep this folder in the sidebar.'
+                )
+                : '';
+        }
+
+        if (!pending && deletable.length === 0) {
+            // Not one copy can be removed: say why, using the blocking rows.
+            title.textContent = translate(
+                'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
+            );
+            message.textContent = blocked.length > 0
+                ? translate(
+                    'sidebar.deleteFolderModal.notEmptyMessage', {},
+                    'This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.'
+                )
+                : translate(
+                    'sidebar.deleteFolderModal.missingMessage', {},
+                    'This folder no longer exists on disk. Refresh the sidebar and try again.'
+                );
+            confirmBtn.style.display = 'none';
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        title.textContent = translate('sidebar.deleteFolderModal.title', {}, 'Delete folder?');
+        message.textContent = translate(
+            'sidebar.deleteFolderModal.message', {},
+            'The folder and everything inside it will be permanently removed from disk.'
+        );
+        confirmBtn.style.display = '';
+        confirmBtn.disabled = pending || selected.length === 0;
+        confirmBtn.textContent = selected.length > 1
+            ? translate(
+                'sidebar.deleteFolderModal.confirmMulti',
+                { count: selected.length },
+                `Delete ${selected.length} folders`
+            )
+            : translate('sidebar.deleteFolderModal.confirm', {}, 'Delete folder');
+    }
+
+    /**
+     * Delete every selected copy, then report once.
+     *
+     * Each copy keeps its own guard: a copy that grew models since the check is
+     * refused by the backend and counted as a failure rather than taking the
+     * successful ones down with it.
+     */
+    async _deleteCheckedDeleteFolders(relativePath) {
+        const targets = (this._deleteFolderCandidates || [])
+            .filter((entry) => entry.checked && this._isCandidateDeletable(entry))
+            .map((entry) => ({ path: entry.folder_path, entry }));
+        if (targets.length === 0) return false;
+
+        const confirmBtn = document.querySelector(
+            '#deleteFolderModal [data-action="confirm-delete-folder"]'
+        );
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = translate(
+                'sidebar.deleteFolderModal.deleting', {}, 'Deleting...'
+            );
+        }
+
+        const deleted = [];
+        const failed = [];
+        for (const target of targets) {
+            try {
+                const result = await this.apiClient.deleteFolder(target.path);
+                deleted.push({ path: target.path, result });
+                this._markDeleteFolderRowDone(target.entry);
+            } catch (error) {
+                console.error('[SidebarManager] Error deleting folder:', target.path, error);
+                failed.push({ path: target.path, error });
+            }
+        }
+
+        this.hideDeleteFolderModal();
+
+        // Drop the node (and its subtree) from the persisted expand state
+        // before refreshing, otherwise stale keys accumulate forever.
+        this._forgetRemovedFolder(relativePath);
+        await this.refresh();
+
+        if (deleted.length === 0) {
+            this._reportDeleteFolderFailure(failed[0]?.error);
+            return false;
+        }
+
+        if (failed.length > 0) {
+            showToast(
+                'sidebar.deleteFolderResult.partial',
+                { count: deleted.length, total: targets.length, failed: failed.length },
+                'warning'
+            );
+            return true;
+        }
+
+        this._reportFoldersDeleted(relativePath, deleted);
+        return true;
+    }
+
+    _markDeleteFolderRowDone(entry) {
+        entry.checked = false;
+        entry.status = 'deleted';
+        this._updateDeleteFolderRow(entry);
+    }
+
+    /** One toast for a multi-copy delete, with an undo that restores every copy. */
+    _reportFoldersDeleted(relativePath, deleted) {
+        const restorable = deleted.every((entry) => entry.result?.restorable);
+
+        if (restorable) {
+            showActionToast(
+                deleted.length > 1
+                    ? 'sidebar.deleteFolderResult.successMulti'
+                    : 'sidebar.deleteFolderResult.success',
+                deleted.length > 1
+                    ? { name: relativePath, count: deleted.length }
+                    : { name: relativePath },
+                'success',
+                {
+                    actionText: translate('toast.undo.action', {}, 'Undo'),
+                    // The undo recreates every directory that was removed.
+                    onAction: () => this._restoreDeletedFolder(
+                        deleted.map((entry) => entry.path), relativePath
+                    ),
+                }
+            );
+            return;
+        }
+
+        const items = deleted.reduce(
+            (total, entry) => total + (entry.result?.file_count || 0) + (entry.result?.dir_count || 0),
+            0
+        );
+        showToast(
+            'sidebar.deleteFolderResult.successWithFiles',
+            { name: relativePath, count: items },
+            'success'
+        );
+    }
+
+    /** Shared failure reporting for one or many refused copies. */
+    _reportDeleteFolderFailure(error) {
+        if (error?.code === 'not_empty') {
+            // The dry run normally catches this before the user can confirm;
+            // reaching here means the folder changed in between.
+            const modelCount = Number(error?.manifest?.model_count) || 0;
+            if (modelCount > 0) {
+                showToast(
+                    'sidebar.deleteFolderResult.notEmptyWithCount',
+                    { count: modelCount },
+                    'warning'
+                );
+            } else {
+                showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+            }
+        } else if (error?.code === 'busy') {
+            showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
+        } else if (error?.code === 'missing') {
+            showToast('sidebar.deleteFolderResult.missing', {}, 'warning');
+        } else if (error?.code === 'unresolved') {
+            showToast('sidebar.folderResult.unresolved', {}, 'error');
+        } else {
+            showToast(
+                'sidebar.deleteFolderResult.failed',
+                { message: error?.message || 'Unknown error' },
+                'error'
+            );
+        }
     }
 
     /**
      * Paint one state of the folder delete modal.
      *
      * `state` is 'confirm' (deletion may proceed), 'blocked' (models would be
-     * cascaded over, which the backend refuses) or 'busy' (a staged delete is
-     * still pending inside the folder). `checking` keeps the confirm button
-     * disabled while the authoritative server-side check runs.
+     * cascaded over, which the backend refuses), 'busy' (a staged delete is
+     * still pending inside the folder), 'missing' (no root holds the node's
+     * directory any more) or 'symlink' (every copy is a symbolic link, which the
+     * backend refuses to remove). `checking` keeps the confirm button disabled
+     * while the authoritative server-side check runs.
+     *
+     * This is the single-target form, used when the node maps to at most one
+     * directory; an ambiguous node renders the multi-root list instead (see
+     * `_renderMultiRootDeleteModal`).
      */
     _renderDeleteFolderModal(path, state, options = {}) {
         const modal = document.getElementById('deleteFolderModal');
@@ -1043,14 +1753,24 @@ export class SidebarManager {
         const title = modal.querySelector('[data-role="title"]');
         const message = modal.querySelector('[data-role="message"]');
         const info = modal.querySelector('[data-role="info"]');
+        const roots = modal.querySelector('[data-role="roots"]');
         const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
         const checking = Boolean(options.checking);
+        const selectedPath = options.selectedPath || '';
 
-        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(path)}`;
+        const displayPath = selectedPath || path;
+        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(displayPath)}`;
         const extraLines = [];
 
+        // Anything the chooser owned is stale once this form is painted.
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
+        if (roots) roots.replaceChildren();
+
         if (state === 'confirm') {
-            this._pendingDeleteFolderPath = path;
+            // Only a resolved directory may be deleted: without one the
+            // confirmation goes back through resolution in `_deleteFolder`.
+            this._pendingDeleteFolderPath = selectedPath || null;
             title.textContent = translate(
                 'sidebar.deleteFolderModal.title', {}, 'Delete folder?'
             );
@@ -1067,6 +1787,9 @@ export class SidebarManager {
             }
             confirmBtn.style.display = '';
             confirmBtn.disabled = checking;
+            confirmBtn.textContent = translate(
+                'sidebar.deleteFolderModal.confirm', {}, 'Delete folder'
+            );
         } else {
             this._pendingDeleteFolderPath = null;
             if (state === 'busy') {
@@ -1076,6 +1799,22 @@ export class SidebarManager {
                 message.textContent = translate(
                     'sidebar.deleteFolderResult.busy', {},
                     'A deletion is still pending inside this folder. Wait for the undo window to expire.'
+                );
+            } else if (state === 'missing') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.missingTitle', {}, 'Folder not found'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.missingMessage', {},
+                    'This folder no longer exists on disk. Refresh the sidebar and try again.'
+                );
+            } else if (state === 'symlink') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.symlinkTitle', {}, 'Folder is a symbolic link'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.symlinkMessage', {},
+                    'Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.'
                 );
             } else {
                 title.textContent = translate(
@@ -1093,6 +1832,7 @@ export class SidebarManager {
         }
 
         if (checking) {
+
             extraLines.push(escapeHtml(translate(
                 'sidebar.deleteFolderModal.checking', {}, 'Checking the folder contents...'
             )));
@@ -1100,49 +1840,6 @@ export class SidebarManager {
 
         info.innerHTML = [pathLine, ...extraLines].join('<br>');
         modal.dataset.state = state;
-    }
-
-    /**
-     * Ask the backend what deleting *relativePath* would actually remove.
-     *
-     * The dry run is authoritative: it walks the folder on disk and applies the
-     * same guard the real delete uses, so it catches everything the sidebar
-     * prediction cannot know — excluded models, weight files no scanner indexes
-     * (a lora folder holding only a `.gguf`, say) and files added after the
-     * last scan. A check that fails for any other reason falls back to the
-     * prediction, leaving the real delete to report its own error.
-     */
-    async _verifyFolderContents(relativePath, token, prediction) {
-        let resolved = null;
-        try {
-            resolved = await this._resolveFolderAbsolutePath(relativePath);
-        } catch (error) {
-            console.error('[SidebarManager] Failed to resolve the folder path:', error);
-        }
-
-        if (token !== this._deleteFolderProbeToken) return;
-
-        if (!resolved) {
-            this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
-            return;
-        }
-
-        try {
-            await this.apiClient.deleteFolder(resolved.absolutePath, { dryRun: true });
-            if (token !== this._deleteFolderProbeToken) return;
-            this._renderDeleteFolderModal(relativePath, 'confirm');
-        } catch (error) {
-            if (token !== this._deleteFolderProbeToken) return;
-            if (error?.code === 'not_empty') {
-                this._renderDeleteFolderModal(
-                    relativePath, 'blocked', this._notEmptyBlocker(error?.manifest)
-                );
-            } else if (error?.code === 'busy') {
-                this._renderDeleteFolderModal(relativePath, 'busy');
-            } else {
-                this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
-            }
-        }
     }
 
     /**
@@ -1177,24 +1874,12 @@ export class SidebarManager {
         };
     }
 
-    /**
-     * Resolve a tree-relative folder path to the absolute business path the
-     * folder APIs expect, or null when no model root is configured.
-     */
-    async _resolveFolderAbsolutePath(relativePath) {
-        const rootsData = await this.apiClient.fetchModelRoots();
-        const roots = rootsData?.roots || [];
-        const root = this._resolveDefaultRoot(roots);
-        if (!root) return null;
-
-        return {
-            root,
-            absolutePath: this.combineRootAndRelativePath(root, relativePath),
-        };
-    }
-
     hideDeleteFolderModal() {
         this._pendingDeleteFolderPath = null;
+        this._pendingDeleteFolderRelative = null;
+        this._deleteFolderCandidates = [];
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
         // Retire any in-flight check so a late answer cannot repaint a modal
         // the user already dismissed.
         this._deleteFolderProbeToken += 1;
@@ -1202,28 +1887,53 @@ export class SidebarManager {
     }
 
     async handleDeleteFolderConfirm() {
-        const path = this._pendingDeleteFolderPath;
+        const relativePath = this._pendingDeleteFolderRelative;
+        const multiRoot = (this._deleteFolderCandidates || []).length > 1;
+        if (multiRoot) {
+            // The selection lives on the rows, so the multi-copy path reads it
+            // before the modal state is cleared.
+            return this._deleteCheckedDeleteFolders(relativePath);
+        }
+
+        const absolutePath = this._pendingDeleteFolderPath;
         this.hideDeleteFolderModal();
 
-        if (!path) return false;
+        if (!relativePath) return false;
 
-        return this._deleteFolder(path);
+        // The absolute path is absent when the target could not be resolved
+        // before confirming (older client, failed request); `_deleteFolder`
+        // then resolves it itself rather than trusting a fabricated root.
+        return this._deleteFolder(relativePath, absolutePath);
     }
 
-    async _deleteFolder(relativePath) {
+    async _deleteFolder(relativePath, absolutePath = null) {
         if (!this._supportsFolderManagement() || typeof this.apiClient.deleteFolder !== 'function') {
             showToast('sidebar.deleteFolderResult.unsupported', {}, 'error');
             return false;
         }
 
         try {
-            const resolved = await this._resolveFolderAbsolutePath(relativePath);
-            if (!resolved) {
-                showToast('sidebar.deleteFolderResult.noRoot', {}, 'error');
-                return false;
+            let target = absolutePath;
+            if (!target) {
+                const resolution = await this._resolveFolderCandidates(relativePath);
+                const selected = this._preferredCandidate(
+                    resolution?.candidates, resolution?.defaultRoot
+                );
+                if (!selected) {
+                    const empty = (resolution?.candidates || []).length === 0;
+                    showToast(
+                        empty
+                            ? 'sidebar.deleteFolderResult.missing'
+                            : 'sidebar.deleteFolderResult.symlink',
+                        {},
+                        'warning'
+                    );
+                    return false;
+                }
+                target = selected.folder_path;
             }
 
-            const result = await this.apiClient.deleteFolder(resolved.absolutePath);
+            const result = await this.apiClient.deleteFolder(target);
 
             // Drop the node (and its subtree) from the persisted expand state
             // before refreshing, otherwise stale keys accumulate forever. A
@@ -1240,7 +1950,9 @@ export class SidebarManager {
                 // the same 20s undo affordance the model delete flow uses.
                 showActionToast('sidebar.deleteFolderResult.success', { name }, 'success', {
                     actionText: translate('toast.undo.action', {}, 'Undo'),
-                    onAction: () => this._restoreDeletedFolder(resolved.absolutePath, relativePath),
+                    // The undo recreates the very directory that was removed, so
+                    // it has to carry the resolved path — not a root guess.
+                    onAction: () => this._restoreDeletedFolder(target, relativePath),
                 });
             } else {
                 showToast(
@@ -1253,35 +1965,23 @@ export class SidebarManager {
             return true;
         } catch (error) {
             console.error('[SidebarManager] Error deleting folder:', error);
-            if (error?.code === 'not_empty') {
-                // The dry run normally catches this before the user can
-                // confirm; reaching here means the folder changed in between.
-                const modelCount = Number(error?.manifest?.model_count) || 0;
-                if (modelCount > 0) {
-                    showToast(
-                        'sidebar.deleteFolderResult.notEmptyWithCount',
-                        { count: modelCount },
-                        'warning'
-                    );
-                } else {
-                    showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
-                }
-            } else if (error?.code === 'busy') {
-                showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
-            } else {
-                showToast(
-                    'sidebar.deleteFolderResult.failed',
-                    { message: error?.message || 'Unknown error' },
-                    'error'
-                );
-            }
+            this._reportDeleteFolderFailure(error);
             return false;
         }
     }
 
+    /**
+     * Recreate removed directories through the create-folder API.
+     *
+     * Accepts one path or the list a multi-copy delete removed, so the undo of
+     * a multi-root delete restores every directory it took.
+     */
     async _restoreDeletedFolder(absolutePath, relativePath) {
+        const paths = Array.isArray(absolutePath) ? absolutePath : [absolutePath];
         try {
-            await this.apiClient.createFolder(absolutePath);
+            for (const path of paths) {
+                await this.apiClient.createFolder(path);
+            }
             this._forgetRemovedFolder(relativePath);
             await this.refresh();
             showToast('sidebar.deleteFolderResult.restored', {}, 'success');
@@ -1324,6 +2024,17 @@ export class SidebarManager {
             } else if (action === 'confirm-delete-folder') {
                 this.handleDeleteFolderConfirm();
             }
+        });
+
+        // Ticking a root adds that copy to the pending delete. Nothing is
+        // re-rendered here: the row the user just clicked keeps its focus, and
+        // the modal keeps its height.
+        modal.addEventListener('change', (event) => {
+            const input = event.target instanceof Element
+                ? event.target.closest('input[name="deleteFolderRoot"]')
+                : null;
+            if (!input) return;
+            this._toggleDeleteFolderCandidate(input.value, input.checked);
         });
 
         this._deleteFolderModalWired = true;
@@ -1968,7 +2679,7 @@ export class SidebarManager {
                 this.showCreateFolderInput(path);
                 break;
             case 'rename-folder':
-                this.showRenameFolderInput(path);
+                await this.showRenameFolderInput(path);
                 break;
             case 'delete-folder':
                 this.showDeleteFolderModal(path);

@@ -1409,9 +1409,16 @@
             "notEmptyMessage": "该文件夹中仍有模型，请先删除或移出这些模型 —— 删除文件夹不会级联删除模型文件。",
             "notEmptyMessageCount": "该文件夹中仍有 {count} 个模型文件，请先删除或移出这些模型 —— 删除文件夹不会级联删除模型文件。",
             "notEmptyMessageExcluded": "该文件夹中仍有 {count} 个模型文件，其中 {excluded} 个已从模型库中排除。请先在“管理已排除的模型”中取消排除并删除它们 —— 删除文件夹不会级联删除模型文件。",
+            "missingTitle": "未找到文件夹",
+            "missingMessage": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
+            "symlinkTitle": "文件夹是符号链接",
+            "symlinkMessage": "该文件夹的每一份副本都是符号链接；请在 LoRA Manager 之外删除该链接或其指向的目标。",
             "busyTitle": "仍有删除操作待处理",
             "checking": "正在检查文件夹内容...",
-            "confirm": "删除文件夹"
+            "confirm": "删除文件夹",
+            "confirmMulti": "删除 {count} 个文件夹",
+            "deleting": "正在删除...",
+            "keptNote": "未勾选的副本会让该文件夹继续显示在侧边栏中。"
         },
         "deleteFolderResult": {
             "success": "已删除文件夹 \"{name}\"",
@@ -1422,7 +1429,10 @@
             "notEmptyWithCount": "该文件夹中仍有 {count} 个模型文件。请刷新侧边栏后重试。",
             "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
             "unsupported": "此页面不支持删除文件夹",
-            "noRoot": "未配置模型根目录"
+            "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
+            "symlink": "该文件夹是符号链接，无法从侧边栏中删除。",
+            "successMulti": "已从 {count} 个模型根目录中删除文件夹 \"{name}\"",
+            "partial": "已删除 {total} 份副本中的 {count} 份 —— {failed} 份无法删除。请刷新侧边栏后重试。"
         },
         "renameFolder": "重命名文件夹",
         "renameFolderResult": {
@@ -1431,7 +1441,25 @@
             "targetExists": "此处已存在同名文件夹",
             "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
             "unsupported": "此页面不支持重命名文件夹",
-            "noRoot": "未配置模型根目录"
+            "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
+            "symlink": "该文件夹是符号链接，无法从侧边栏中重命名。"
+        },
+        "folderRoot": {
+            "chooseTitle": "该文件夹存在于多个模型根目录中",
+            "symlinkOption": "符号链接",
+            "rootsHint": "选择要从中删除该文件夹的模型根目录：",
+            "checkingStatus": "正在检查...",
+            "okStatus": "无模型",
+            "notEmptyStatus": "包含 {count} 个模型文件 —— 请先删除或移出这些模型",
+            "notEmptyExcludedStatus": "包含 {count} 个模型文件，其中 {excluded} 个已从模型库中排除",
+            "busyStatus": "仍有删除操作待处理",
+            "missingStatus": "磁盘上已不存在",
+            "symlinkStatus": "符号链接 —— 无法在此删除",
+            "unknownStatus": "无法检查",
+            "deletedStatus": "已删除"
+        },
+        "folderResult": {
+            "unresolved": "无法确定该文件夹位于哪个模型根目录。请刷新侧边栏后重试。"
         },
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",

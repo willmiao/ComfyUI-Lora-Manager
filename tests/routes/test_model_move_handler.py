@@ -12,6 +12,7 @@ class FakeMoveService:
         self.received_path = None
         self.received_dry_run = None
         self.received_new_name = None
+        self.received_folder = None
 
     async def create_folder(self, folder_path):
         self.received_path = folder_path
@@ -27,6 +28,10 @@ class FakeMoveService:
         self.received_new_name = new_name
         return self._result
 
+    def resolve_folder(self, folder):
+        self.received_folder = folder
+        return self._result
+
 
 class FakeRequest:
     def __init__(self, payload):
@@ -34,6 +39,13 @@ class FakeRequest:
 
     async def json(self):
         return self._payload
+
+
+class FakeQueryRequest:
+    """Request stand-in exposing only the query string."""
+
+    def __init__(self, query):
+        self.query = query
 
 
 def _make_handler(result):
@@ -142,6 +154,43 @@ async def test_delete_folder_forwards_dry_run():
 
 
 @pytest.mark.asyncio
+async def test_resolve_folder_returns_the_matching_roots():
+    handler, service = _make_handler(
+        {
+            "success": True,
+            "folder": "recipes",
+            "candidates": [
+                {
+                    "folder_path": "/library/recipes",
+                    "root": "/library",
+                    "is_symlink": False,
+                }
+            ],
+        }
+    )
+
+    response = await handler.resolve_folder(FakeQueryRequest({"folder": "recipes"}))
+
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["candidates"][0]["folder_path"] == "/library/recipes"
+    assert service.received_folder == "recipes"
+
+
+@pytest.mark.asyncio
+async def test_resolve_folder_maps_a_refused_path_to_400():
+    handler, _service = _make_handler(
+        {"success": False, "error": "Folder path is required"}
+    )
+
+    response = await handler.resolve_folder(FakeQueryRequest({}))
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
+
+
+@pytest.mark.asyncio
 async def test_delete_folder_missing_path():
     handler, service = _make_handler({"success": True})
 
@@ -204,6 +253,20 @@ async def test_delete_folder_containment_failure_maps_to_400():
     payload = json.loads(response.text)
     assert payload["success"] is False
     assert "outside configured library" in payload["error"]
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_reports_a_vanished_directory_as_missing():
+    handler, _service = _make_handler(
+        {"success": False, "code": "missing", "error": "Folder no longer exists"}
+    )
+
+    response = await handler.delete_folder(
+        FakeRequest({"folder_path": "/library/gone"})
+    )
+
+    assert response.status == 400
+    assert json.loads(response.text)["code"] == "missing"
 
 
 @pytest.mark.asyncio

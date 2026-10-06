@@ -901,3 +901,54 @@ def test_download_model_returns_skipped_success(mock_service, download_manager_s
             await client.close()
 
     asyncio.run(scenario())
+
+
+def test_resolve_folder_answers_with_the_root_that_holds_the_directory(
+    mock_service, mock_scanner, tmp_path: Path
+):
+    """The route the sidebar needs to stop guessing a root for a tree node.
+
+    The unified folder tree merges every model root into one relative-path
+    namespace, so "recipes" below must resolve to the root that actually has it
+    even though another root is configured as the library default.
+    """
+
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "recipes").mkdir(parents=True)
+    extra.mkdir()
+    mock_scanner.get_model_roots = lambda: [str(primary), str(extra)]
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get(
+                "/api/lm/test-models/resolve-folder", params={"folder": "recipes"}
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert payload["folder"] == "recipes"
+            assert payload["candidates"] == [
+                {
+                    "folder_path": str(primary / "recipes"),
+                    "root": str(primary),
+                    "is_symlink": False,
+                }
+            ]
+
+            stale = await client.get(
+                "/api/lm/test-models/resolve-folder", params={"folder": "gone"}
+            )
+            assert (await stale.json())["candidates"] == []
+
+            refused = await client.get(
+                "/api/lm/test-models/resolve-folder",
+                params={"folder": str(primary / "recipes")},
+            )
+            assert refused.status == 400
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())

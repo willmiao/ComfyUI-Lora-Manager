@@ -86,6 +86,10 @@ export function getApiEndpoints(modelType) {
         createFolder: `/api/lm/${modelType}/create-folder`,
         deleteFolder: `/api/lm/${modelType}/delete-folder`,
         renameFolder: `/api/lm/${modelType}/rename-folder`,
+        // Resolves a tree-relative folder onto the root(s) that hold it: the
+        // unified folder tree merges every root, so a node does not carry its
+        // own absolute path.
+        resolveFolder: `/api/lm/${modelType}/resolve-folder`,
 
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,

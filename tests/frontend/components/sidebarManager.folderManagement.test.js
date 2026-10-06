@@ -50,6 +50,17 @@ function createApiClient(overrides = {}) {
     fetchUnifiedFolderTree: vi.fn().mockResolvedValue({ tree: { full: {}, empty: {} } }),
     fetchModelFolders: vi.fn().mockResolvedValue({ folders: ['', 'full'] }),
     fetchModelRoots: vi.fn().mockResolvedValue({ roots: ['/models/loras'] }),
+    // Mirrors the backend resolver: a single-root library answers with the one
+    // directory the relative folder maps to.
+    resolveFolder: vi.fn((folder) => Promise.resolve({
+      success: true,
+      folder,
+      candidates: [{
+        folder_path: `/models/loras/${folder}`,
+        root: '/models/loras',
+        is_symlink: false,
+      }],
+    })),
     createFolder: vi.fn().mockResolvedValue({ success: true, folder: 'new-folder', created: true }),
     deleteFolder: vi.fn().mockResolvedValue({
       success: true,
@@ -451,6 +462,33 @@ describe('SidebarManager folder creation', () => {
     expect(manager.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('creates inside the parent root even when it is not the default root', async () => {
+    const apiClient = createApiClient({
+      fetchModelRoots: vi.fn().mockResolvedValue({
+        roots: ['/models/loras', '/models/extra'],
+      }),
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'recipes',
+        candidates: [{
+          folder_path: '/models/loras/recipes',
+          root: '/models/loras',
+          is_symlink: false,
+        }],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    state.global.settings = { default_lora_root: '/models/extra' };
+
+    const success = await manager._createFolder('recipes/presets', 'recipes');
+
+    // A new folder belongs next to the node it was created from; only a
+    // root-level creation falls back to the configured default root.
+    expect(success).toBe(true);
+    expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/recipes/presets');
+  });
+
   it('re-enables empty folders when creating while the preference is off', async () => {
     const apiClient = createApiClient();
     const manager = createManager(apiClient);
@@ -613,6 +651,7 @@ describe('SidebarManager folder deletion', () => {
         <h2 data-role="title"></h2>
         <p class="delete-message" data-role="message"></p>
         <div class="delete-model-info" data-role="info"></div>
+        <div class="delete-folder-roots" data-role="roots"></div>
         <div class="modal-actions">
           <button class="cancel-btn" data-action="cancel-delete-folder">Cancel</button>
           <button class="delete-btn" data-action="confirm-delete-folder">Delete folder</button>
@@ -622,6 +661,14 @@ describe('SidebarManager folder deletion', () => {
 
   function confirmBtn() {
     return document.querySelector('#deleteFolderModal [data-action="confirm-delete-folder"]');
+  }
+
+  function rootChoices() {
+    return [...document.querySelectorAll('#deleteFolderModal input[name="deleteFolderRoot"]')];
+  }
+
+  function keptNote() {
+    return document.querySelector('#deleteFolderModal .folder-root-kept-note');
   }
 
   beforeEach(() => {
@@ -642,10 +689,14 @@ describe('SidebarManager folder deletion', () => {
     expect(modal.dataset.state).toBe('confirm');
     expect(confirmBtn().style.display).toBe('');
     expect(confirmBtn().disabled).toBe(false);
-    expect(manager._pendingDeleteFolderPath).toBe('empty');
+    // The pending target is the resolved directory, never the bare tree path:
+    // the tree path is relative to a root this node may not even live under.
+    expect(manager._pendingDeleteFolderRelative).toBe('empty');
+    expect(manager._pendingDeleteFolderPath).toBe('/models/loras/empty');
     expect(modalManager.showModal).toHaveBeenCalledWith('deleteFolderModal');
     // The prediction is confirmed against the real guard before the user can
     // act on it.
+    expect(apiClient.resolveFolder).toHaveBeenCalledWith('empty');
     expect(apiClient.deleteFolder).toHaveBeenCalledWith(
       '/models/loras/empty', { dryRun: true }
     );
@@ -746,7 +797,7 @@ describe('SidebarManager folder deletion', () => {
   it('keeps the confirm button disabled until the check settles', async () => {
     let release;
     const apiClient = createApiClient({
-      fetchModelRoots: vi.fn(() => new Promise((resolve) => { release = resolve; })),
+      resolveFolder: vi.fn(() => new Promise((resolve) => { release = resolve; })),
     });
     const manager = createManager(apiClient);
     manager.nonEmptyFolders = new Set(['', 'full']);
@@ -754,7 +805,15 @@ describe('SidebarManager folder deletion', () => {
     const pending = manager.showDeleteFolderModal('empty');
     expect(confirmBtn().disabled).toBe(true);
 
-    release({ roots: ['/models/loras'] });
+    release({
+      success: true,
+      folder: 'empty',
+      candidates: [{
+        folder_path: '/models/loras/empty',
+        root: '/models/loras',
+        is_symlink: false,
+      }],
+    });
     await pending;
 
     expect(confirmBtn().disabled).toBe(false);
@@ -920,13 +979,386 @@ describe('SidebarManager folder deletion', () => {
   it('routes the modal buttons to cancel and confirm', () => {
     const manager = createManager(createApiClient());
     manager._deleteFolder = vi.fn().mockResolvedValue(true);
-    manager._pendingDeleteFolderPath = 'empty';
+    manager._pendingDeleteFolderRelative = 'empty';
+    manager._pendingDeleteFolderPath = '/models/loras/empty';
     manager._wireDeleteFolderModal();
 
     confirmBtn().dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(modalManager.closeModal).toHaveBeenCalledWith('deleteFolderModal');
-    expect(manager._deleteFolder).toHaveBeenCalledWith('empty');
+    expect(manager._deleteFolder).toHaveBeenCalledWith('empty', '/models/loras/empty');
+  });
+
+  it('deletes the directory the node actually lives in, not the default root one', async () => {
+    // The reported bug: the node exists under the primary root while
+    // default_lora_root points at the extra root, so prefixing the default root
+    // produced a path that did not exist and the delete always failed.
+    const apiClient = createApiClient({
+      fetchModelRoots: vi.fn().mockResolvedValue({
+        roots: ['/models/loras', '/models/extra'],
+      }),
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'recipes',
+        candidates: [{
+          folder_path: '/models/loras/recipes',
+          root: '/models/loras',
+          is_symlink: false,
+        }],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    state.global.settings = { default_lora_root: '/models/extra' };
+
+    await manager.showDeleteFolderModal('recipes');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('confirm');
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith(
+      '/models/loras/recipes', { dryRun: true }
+    );
+    // The absolute path is shown, so the modal names the directory it targets.
+    expect(modal.querySelector('[data-role="info"]').textContent)
+      .toContain('/models/loras/recipes');
+
+    await manager.handleDeleteFolderConfirm();
+
+    expect(apiClient.deleteFolder).toHaveBeenLastCalledWith('/models/loras/recipes');
+  });
+
+  it('lists every root holding the folder as a checked row, and deletes only the ticked ones', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'Pony',
+        candidates: [
+          { folder_path: '/models/extra/Pony', root: '/models/extra', is_symlink: false },
+          { folder_path: '/models/loras/Pony', root: '/models/loras', is_symlink: false },
+        ],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    state.global.settings = { default_lora_root: '/models/extra' };
+
+    await manager.showDeleteFolderModal('Pony');
+
+    const modal = document.getElementById('deleteFolderModal');
+    const choices = rootChoices();
+    expect(choices.map((input) => input.value)).toEqual([
+      '/models/extra/Pony',
+      '/models/loras/Pony',
+    ]);
+    // Both copies are selected up front: the node stands for all of them, and
+    // deleting it one root at a time was the complaint.
+    expect(choices.map((input) => input.checked)).toEqual([true, true]);
+    expect(choices.every((input) => input.type === 'checkbox')).toBe(true);
+    expect(choices.every((input) => input.disabled === false)).toBe(true);
+    expect(confirmBtn().textContent).toContain('2');
+    // Each copy carries its own verdict instead of one shared claim.
+    expect(modal.querySelectorAll('.folder-root-status')).toHaveLength(2);
+    expect([...modal.querySelectorAll('.folder-root-status')].map((el) => el.textContent))
+      .toEqual(['no models', 'no models']);
+    // The absolute paths live on the rows, so the header does not single one out.
+    expect(modal.querySelector('[data-role="info"]').textContent).not.toContain('/models/');
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/extra/Pony', { dryRun: true });
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/loras/Pony', { dryRun: true });
+
+    // Unticking one copy keeps the other, and does not rebuild the list.
+    const firstRow = choices[0];
+    const secondRow = choices[1];
+    expect(keptNote().textContent).toBe('');
+    choices[1].checked = false;
+    choices[1].dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(rootChoices()[0]).toBe(firstRow);
+    expect(rootChoices()[1]).toBe(secondRow);
+    expect(rootChoices().map((input) => input.checked)).toEqual([true, false]);
+    expect(confirmBtn().textContent).not.toContain('2');
+    // The node stays in the sidebar while another root holds the folder, so the
+    // modal says so before the user commits.
+    expect(keptNote().textContent).toBe('Unchecked copies keep this folder in the sidebar.');
+
+    // Unticking everything just disables the button: the user emptied the
+    // selection, the folders are not "blocked".
+    choices[0].checked = false;
+    choices[0].dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(confirmBtn().disabled).toBe(true);
+    expect(confirmBtn().style.display).toBe('');
+    expect(modal.querySelector('[data-role="title"]').textContent).toBe('Delete folder?');
+
+    choices[0].checked = true;
+    choices[0].dispatchEvent(new Event('change', { bubbles: true }));
+    expect(confirmBtn().disabled).toBe(false);
+    // Re-ticking the copy clears the warning again...
+    choices[1].checked = true;
+    choices[1].dispatchEvent(new Event('change', { bubbles: true }));
+    expect(keptNote().textContent).toBe('');
+    // ... and the copy is left alone for the rest of the test.
+    choices[1].checked = false;
+    choices[1].dispatchEvent(new Event('change', { bubbles: true }));
+
+    await manager.handleDeleteFolderConfirm();
+
+    // Real deletes: only the ticked copy, and both dry runs are distinct calls.
+    expect(apiClient.deleteFolder).toHaveBeenLastCalledWith('/models/extra/Pony');
+    expect(apiClient.deleteFolder).not.toHaveBeenCalledWith('/models/loras/Pony');
+    expect(manager.refresh).toHaveBeenCalledTimes(1);
+    // A single removed copy keeps the singular wording (no "from 1 roots"), but
+    // the toast stays a plain success: the sidebar node's fate is disk truth.
+    expect(showActionToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.success',
+      { name: 'Pony' },
+      'success',
+      expect.any(Object)
+    );
+  });
+
+  it('restores only the deleted copy when a kept copy survives the undo', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'test',
+        candidates: [
+          { folder_path: '/models/loras/test', root: '/models/loras', is_symlink: false },
+          { folder_path: '/models/extra/test', root: '/models/extra', is_symlink: false },
+        ],
+      }),
+      deleteFolder: vi.fn().mockResolvedValue({ success: true, folder: 'test', restorable: true }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager.showDeleteFolderModal('test');
+    const choices = rootChoices();
+    choices[1].checked = false;
+    choices[1].dispatchEvent(new Event('change', { bubbles: true }));
+
+    await manager.handleDeleteFolderConfirm();
+
+    const undo = showActionToast.mock.calls[0][3].onAction;
+    await undo();
+
+    expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/test');
+    expect(apiClient.createFolder).not.toHaveBeenCalledWith('/models/extra/test');
+  });
+
+  it('unchecks and explains a copy that still holds models', async () => {
+    const conflict = Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 2, excluded_model_count: 0 },
+    });
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'Pony',
+        candidates: [
+          { folder_path: '/models/extra/Pony', root: '/models/extra', is_symlink: false },
+          { folder_path: '/models/loras/Pony', root: '/models/loras', is_symlink: false },
+        ],
+      }),
+      deleteFolder: vi.fn((path, options) => (
+        path === '/models/loras/Pony' && options?.dryRun
+          ? Promise.reject(conflict)
+          : Promise.resolve({ success: true, folder: 'Pony', restorable: true })
+      )),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager.showDeleteFolderModal('Pony');
+
+    const choices = rootChoices();
+    expect(choices.map((input) => input.checked)).toEqual([true, false]);
+    expect(choices[1].disabled).toBe(true);
+    const statuses = [...document.querySelectorAll('#deleteFolderModal .folder-root-status')];
+    expect(statuses[0].textContent).toBe('no models');
+    expect(statuses[1].textContent).toContain('2 model file(s)');
+    expect(statuses[1].classList.contains('blocked')).toBe(true);
+    expect(confirmBtn().disabled).toBe(false);
+
+    await manager.handleDeleteFolderConfirm();
+
+    // The clean copy is deleted; the blocked one is never asked for a real delete.
+    expect(apiClient.deleteFolder).toHaveBeenLastCalledWith('/models/extra/Pony');
+    expect(apiClient.deleteFolder).not.toHaveBeenCalledWith('/models/loras/Pony');
+  });
+
+  it('blocks the whole modal when no copy can be deleted', async () => {
+    const conflict = Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 1, excluded_model_count: 0 },
+    });
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'Pony',
+        candidates: [
+          { folder_path: '/models/extra/Pony', root: '/models/extra', is_symlink: false },
+          { folder_path: '/models/loras/Pony', root: '/models/loras', is_symlink: false },
+        ],
+      }),
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+
+    await manager.showDeleteFolderModal('Pony');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(confirmBtn().style.display).toBe('none');
+    expect(modal.querySelector('[data-role="title"]').textContent).toBe('Folder is not empty');
+    expect(rootChoices().every((input) => input.disabled)).toBe(true);
+  });
+
+  it('deletes every ticked copy in one action and restores them all on undo', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'test',
+        candidates: [
+          { folder_path: '/models/loras/test', root: '/models/loras', is_symlink: false },
+          { folder_path: '/models/extra/test', root: '/models/extra', is_symlink: false },
+        ],
+      }),
+      deleteFolder: vi.fn().mockResolvedValue({ success: true, folder: 'test', restorable: true }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager.showDeleteFolderModal('test');
+    await manager.handleDeleteFolderConfirm();
+
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/loras/test');
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/extra/test');
+    expect(showActionToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.successMulti',
+      { name: 'test', count: 2 },
+      'success',
+      expect.any(Object)
+    );
+
+    const undo = showActionToast.mock.calls[0][3].onAction;
+    await undo();
+
+    expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/test');
+    expect(apiClient.createFolder).toHaveBeenCalledWith('/models/extra/test');
+  });
+
+  it('reports the copies it managed to delete when one of them fails', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'test',
+        candidates: [
+          { folder_path: '/models/loras/test', root: '/models/loras', is_symlink: false },
+          { folder_path: '/models/extra/test', root: '/models/extra', is_symlink: false },
+        ],
+      }),
+      deleteFolder: vi.fn((path, options) => {
+        if (options?.dryRun) return Promise.resolve({ success: true });
+        if (path === '/models/extra/test') {
+          return Promise.reject(Object.assign(new Error('gone'), { code: 'missing' }));
+        }
+        return Promise.resolve({ success: true, folder: 'test', restorable: true });
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager.showDeleteFolderModal('test');
+    const success = await manager.handleDeleteFolderConfirm();
+
+    expect(success).toBe(true);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.partial',
+      { count: 1, total: 2, failed: 1 },
+      'warning'
+    );
+    expect(manager.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a stale tree node as missing instead of fabricating a path', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true, folder: 'removed', candidates: [],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('removed');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('missing');
+    expect(confirmBtn().style.display).toBe('none');
+    expect(manager._pendingDeleteFolderPath).toBeNull();
+    expect(apiClient.deleteFolder).not.toHaveBeenCalled();
+  });
+
+  it('refuses a node whose every copy is a symbolic link', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'linked',
+        candidates: [
+          { folder_path: '/models/loras/linked', root: '/models/loras', is_symlink: true },
+        ],
+      }),
+    });
+    const manager = createManager(apiClient);
+
+    await manager.showDeleteFolderModal('linked');
+
+    expect(document.getElementById('deleteFolderModal').dataset.state).toBe('symlink');
+    expect(confirmBtn().style.display).toBe('none');
+    expect(apiClient.deleteFolder).not.toHaveBeenCalled();
+  });
+
+  it('does not guess a root when the resolver fails on a multi-root library', async () => {
+    const apiClient = createApiClient({
+      fetchModelRoots: vi.fn().mockResolvedValue({
+        roots: ['/models/loras', '/models/extra'],
+      }),
+      resolveFolder: vi.fn().mockRejectedValue(new Error('boom')),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('Pony');
+
+    expect(success).toBe(false);
+    expect(apiClient.deleteFolder).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('sidebar.folderResult.unresolved', {}, 'error');
+  });
+
+  it('keeps the single-root fallback for clients without the resolver', async () => {
+    const apiClient = createApiClient({ resolveFolder: undefined });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('empty');
+
+    expect(success).toBe(true);
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/loras/empty');
+  });
+
+  it('reports a folder that vanished between the check and the confirm', async () => {
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(
+        Object.assign(new Error('Folder no longer exists'), { code: 'missing' })
+      ),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('empty');
+
+    expect(success).toBe(false);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.missing', {}, 'warning'
+    );
   });
 
   it('routes the context-menu action to the delete modal', () => {
@@ -969,12 +1401,12 @@ describe('SidebarManager folder rename', () => {
     return document.querySelector('#sidebarRenameFolderInput .sidebar-rename-folder-input');
   }
 
-  it('turns the node into a prefilled inline row in tree mode', () => {
+  it('turns the node into a prefilled inline row in tree mode', async () => {
     const manager = createManager(createApiClient());
     manager.treeData = { characters: { anime: {} } };
     manager.renderTree();
 
-    manager.showRenameFolderInput('characters/anime');
+    await manager.showRenameFolderInput('characters/anime');
 
     const row = document.getElementById('sidebarRenameFolderInput');
     expect(row).not.toBeNull();
@@ -986,12 +1418,12 @@ describe('SidebarManager folder rename', () => {
     expect(manager._renameFolderPath).toBe('characters/anime');
   });
 
-  it('inserts the row in place in list mode', () => {
+  it('inserts the row in place in list mode', async () => {
     const manager = createManager(createApiClient(), { displayMode: 'list' });
     manager.foldersList = ['characters', 'characters/anime'];
     manager.renderFolderList();
 
-    manager.showRenameFolderInput('characters/anime');
+    await manager.showRenameFolderInput('characters/anime');
 
     const row = document.getElementById('sidebarRenameFolderInput');
     expect(row.querySelector('.sidebar-node-content')).not.toBeNull();
@@ -999,12 +1431,12 @@ describe('SidebarManager folder rename', () => {
     expect(row.nextElementSibling).toBe(item);
   });
 
-  it('restores the node when the edit is canceled', () => {
+  it('restores the node when the edit is canceled', async () => {
     const manager = createManager(createApiClient());
     manager.treeData = { characters: { anime: {} } };
     manager.renderTree();
 
-    manager.showRenameFolderInput('characters/anime');
+    await manager.showRenameFolderInput('characters/anime');
     manager.handleRenameFolderCancel();
 
     expect(document.getElementById('sidebarRenameFolderInput')).toBeNull();
@@ -1054,7 +1486,7 @@ describe('SidebarManager folder rename', () => {
     manager.treeData = { characters: { anime: {} } };
     manager.renderTree();
 
-    manager.showRenameFolderInput('characters/anime');
+    await manager.showRenameFolderInput('characters/anime');
     renameInput().value = 'anime';
     await manager.handleRenameFolderSubmit();
 
@@ -1068,7 +1500,7 @@ describe('SidebarManager folder rename', () => {
     manager.treeData = { characters: { anime: {} } };
     manager.renderTree();
 
-    manager.showRenameFolderInput('characters/anime');
+    await manager.showRenameFolderInput('characters/anime');
     renameInput().value = 'bad/name';
     await manager.handleRenameFolderSubmit();
 
@@ -1100,6 +1532,97 @@ describe('SidebarManager folder rename', () => {
     manager._performFolderAction('rename-folder', 'characters/anime');
 
     expect(manager.showRenameFolderInput).toHaveBeenCalledWith('characters/anime');
+  });
+
+  it('renames the directory the node actually lives in', async () => {
+    // Same trap as the delete flow: the node is under the primary root while
+    // the configured default root is another one.
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'recipes',
+        candidates: [{
+          folder_path: '/models/loras/recipes',
+          root: '/models/loras',
+          is_symlink: false,
+        }],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    state.global.settings = { default_lora_root: '/models/extra' };
+
+    const success = await manager._renameFolder('recipes', 'presets');
+
+    expect(success).toBe(true);
+    expect(apiClient.renameFolder).toHaveBeenCalledWith('/models/loras/recipes', 'presets');
+  });
+
+  it('lets the user pick the copy to rename when several roots hold the folder', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'Pony',
+        candidates: [
+          { folder_path: '/models/extra/Pony', root: '/models/extra', is_symlink: false },
+          { folder_path: '/models/loras/Pony', root: '/models/loras', is_symlink: false },
+        ],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    state.global.settings = { default_lora_root: '/models/extra' };
+    manager.treeData = { Pony: {} };
+    manager.renderTree();
+
+    await manager.showRenameFolderInput('Pony');
+
+    const picker = document.querySelector('#sidebarRenameFolderInput .sidebar-folder-root-select');
+    expect([...picker.options].map((option) => option.value)).toEqual([
+      '/models/extra/Pony',
+      '/models/loras/Pony',
+    ]);
+    // The default root's copy is preselected, the other one stays reachable.
+    expect(picker.value).toBe('/models/extra/Pony');
+
+    picker.value = '/models/loras/Pony';
+    renameInput().value = 'PonyV6';
+    await manager.handleRenameFolderSubmit();
+
+    expect(apiClient.renameFolder).toHaveBeenCalledWith('/models/loras/Pony', 'PonyV6');
+  });
+
+  it('reports a stale node instead of opening the rename row', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true, folder: 'gone', candidates: [],
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.treeData = { gone: {} };
+    manager.renderTree();
+
+    await manager.showRenameFolderInput('gone');
+
+    expect(document.getElementById('sidebarRenameFolderInput')).toBeNull();
+    expect(showToast).toHaveBeenCalledWith('sidebar.renameFolderResult.missing', {}, 'warning');
+  });
+
+  it('does not guess a root when the resolver fails on a multi-root library', async () => {
+    const apiClient = createApiClient({
+      fetchModelRoots: vi.fn().mockResolvedValue({
+        roots: ['/models/loras', '/models/extra'],
+      }),
+      resolveFolder: vi.fn().mockRejectedValue(new Error('boom')),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._renameFolder('Pony', 'PonyV6');
+
+    expect(success).toBe(false);
+    expect(apiClient.renameFolder).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('sidebar.folderResult.unresolved', {}, 'error');
   });
 
   it('hides the rename entry when folder management is unsupported', () => {

@@ -1426,6 +1426,34 @@ export class BaseModelApiClient {
         return result;
     }
 
+    /**
+     * Resolve a library-relative folder onto the directories it stands for.
+     *
+     * The unified folder tree merges every model root into one relative-path
+     * namespace, so a tree node cannot be turned into a business path by
+     * prefixing a root: the same relative folder may live under several roots,
+     * or only under one that is not the default root. Callers that hold a node
+     * ask here first; the answer is what the folder APIs must be given.
+     *
+     * @param {string} folderPath Library-relative folder path (e.g. `a/b`)
+     * @returns {Promise<{folder: string, candidates: Array<{folder_path: string, root: string, is_symlink: boolean}>}>}
+     *   `candidates` is empty when no root holds the directory on disk.
+     */
+    async resolveFolder(folderPath) {
+        const params = new URLSearchParams({ folder: folderPath });
+        const response = await fetch(`${this.apiConfig.endpoints.resolveFolder}?${params}`);
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to resolve folder`);
+            error.code = result.code || null;
+            throw error;
+        }
+
+        return result;
+    }
+
     async fetchUnifiedFolderTree(options = {}) {
         try {
             const { includeEmpty = false } = options;

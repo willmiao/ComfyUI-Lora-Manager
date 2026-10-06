@@ -2513,6 +2513,22 @@ class ModelMoveHandler:
             self._logger.error("Error creating folder: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def resolve_folder(self, request: web.Request) -> web.Response:
+        """Resolve a library-relative folder onto the roots that hold it.
+
+        The unified folder tree is a merged relative-path namespace, so the
+        client cannot tell which root a node came from; this is what lets the
+        sidebar act on the directory the user actually sees.
+        """
+        try:
+            folder = request.query.get("folder", "")
+            result = self._move_service.resolve_folder(folder)
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error resolving folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def delete_folder(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -3614,6 +3630,7 @@ class ModelHandlerSet:
             "move_model": self.move.move_model,
             "move_models_bulk": self.move.move_models_bulk,
             "create_folder": self.move.create_folder,
+            "resolve_folder": self.move.resolve_folder,
             "delete_folder": self.move.delete_folder,
             "rename_folder": self.move.rename_folder,
             "auto_organize_models": self.auto_organize.auto_organize_models,
