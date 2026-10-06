@@ -1965,7 +1965,9 @@ class ModelScanner:
             await self._persist_current_cache()
             self.bump_cache_version()
 
-    async def remove_known_folder(self, folder: str) -> None:
+    async def remove_known_folder(
+        self, folder: str, absolute_path: Optional[str] = None
+    ) -> None:
         """Forget a folder (and its subtree) that no longer exists on disk.
 
         Counterpart of :meth:`add_known_folder`, called after a directory is
@@ -1974,11 +1976,18 @@ class ModelScanner:
         full rescan. Ancestors are kept on purpose: every recorded ancestor
         exists on disk in its own right, so only the removed subtree is dropped.
 
-        Cache entries that referenced the now-missing directory are purged as
-        well, which keeps a stale (phantom) model card from surviving the
-        deletion. When ``all_folders`` has not been recorded yet (legacy
-        snapshot) only the cache purge runs — the scheduled backfill walk
-        rebuilds the folder list from disk.
+        The recorded folder list is a *union over the model roots*, so an entry
+        is dropped only when no root still holds that directory: deleting
+        ``<rootA>/test`` must not hide a ``test`` that ``<rootB>`` still has,
+        which made the node vanish on the next tree load and reappear after the
+        next scan. The cache purge is keyed on the removed directory's absolute
+        path when the caller knows it (``absolute_path``); without that, a
+        folder deleted in one root would evict the model cards of its
+        same-named twin in another root.
+
+        When ``all_folders`` has not been recorded yet (legacy snapshot) only
+        the cache purge runs — the scheduled backfill walk rebuilds the folder
+        list from disk.
         """
         normalized = folder.replace("\\", "/").strip("/")
         if not normalized:
@@ -1992,20 +2001,23 @@ class ModelScanner:
         folders_changed = False
         recorded = getattr(cache, "all_folders", None)
         if recorded is not None:
+            removed = [
+                entry
+                for entry in recorded
+                if entry == normalized or entry.startswith(prefix)
+            ]
+            still_present = await self._folders_present_on_disk(removed)
             updated = [
                 entry
                 for entry in recorded
-                if entry != normalized and not entry.startswith(prefix)
+                if entry in still_present
+                or (entry != normalized and not entry.startswith(prefix))
             ]
             if updated != list(recorded):
                 cache.all_folders = updated
                 folders_changed = True
 
-        stale_paths = [
-            item.get("file_path")
-            for item in (cache.raw_data or [])
-            if self._folder_within(item.get("folder", ""), normalized)
-        ]
+        stale_paths = self._folder_cache_purge_paths(cache, normalized, absolute_path)
         if stale_paths:
             # The purge persists the cache — including the already updated
             # all_folders list — and bumps the version itself.
@@ -2016,6 +2028,63 @@ class ModelScanner:
             await self._persist_current_cache()
 
         self.bump_cache_version()
+
+    def _folder_cache_purge_paths(
+        self, cache: "ModelCache", normalized: str, absolute_path: Optional[str]
+    ) -> List[str]:
+        """Cache entries that removing *normalized* invalidates.
+
+        With an absolute path the purge is exact: only models that lived inside
+        the removed directory. Without one (legacy caller) the relative folder is
+        the only handle available, which over-purges same-named folders in other
+        roots and is therefore a fallback rather than the norm.
+        """
+        if absolute_path:
+            prefix = f"{str(absolute_path).replace(chr(92), '/').rstrip('/')}/"
+            return [
+                item.get("file_path")
+                for item in (cache.raw_data or [])
+                if str(item.get("file_path", "")).replace(chr(92), "/").startswith(prefix)
+            ]
+
+        return [
+            item.get("file_path")
+            for item in (cache.raw_data or [])
+            if self._folder_within(item.get("folder", ""), normalized)
+        ]
+
+    async def _folders_present_on_disk(self, folders: Sequence[str]) -> Set[str]:
+        """Subset of *folders* that at least one model root still holds.
+
+        Folder records are relative, so "does this folder still exist?" is a
+        question about every root at once. The check is stat-only and runs off
+        the event loop because model roots can live on slow network shares.
+        Stand-in scanners without roots report nothing, which preserves the
+        caller's previous behaviour.
+        """
+        candidates = [folder for folder in folders if folder]
+        if not candidates:
+            return set()
+
+        try:
+            roots = self.get_model_roots()
+        except NotImplementedError:
+            return set()
+        if not roots:
+            return set()
+
+        return await asyncio.to_thread(self._folders_present_sync, candidates, roots)
+
+    @staticmethod
+    def _folders_present_sync(folders: Sequence[str], roots: Sequence[str]) -> Set[str]:
+        present: Set[str] = set()
+        for folder in folders:
+            for root in roots:
+                if os.path.isdir(os.path.join(root, folder)):
+                    present.add(folder)
+                    break
+        return present
+
 
     @staticmethod
     def _folder_within(candidate: str, target: str) -> bool:
@@ -2103,6 +2172,17 @@ class ModelScanner:
                 ),
                 key=lambda entry: entry.lower(),
             )
+            # The recorded list is a union over the roots, and a same-named
+            # folder in another root keeps the old name. Those entries still
+            # exist on disk under the old relative path, so re-adding them is
+            # what stops the rename from hiding the other root's twin.
+            survivors = await self._folders_present_on_disk([
+                entry
+                for entry in recorded
+                if entry == previous or entry.startswith(old_rel_prefix)
+            ])
+            if survivors:
+                rekeyed = sorted(set(rekeyed) | survivors, key=lambda entry: entry.lower())
             if rekeyed != list(recorded):
                 cache.all_folders = rekeyed
                 changed = True
@@ -2119,13 +2199,20 @@ class ModelScanner:
 
         touched: List[Dict[str, Any]] = []
         for item in cache.raw_data or []:
+            old_file_path = item.get("file_path", "")
+            normalized_old_path = str(old_file_path).replace(chr(92), "/")
+            # Only records physically inside the renamed directory. Matching on
+            # the relative folder alone would also re-key the same-named folder
+            # in another root, whose files never moved.
+            if old_file_path and not normalized_old_path.startswith(old_abs_prefix):
+                continue
+
             folder_value = item.get("folder", "") or self._calculate_folder(
                 item.get("file_path", "")
             )
             if not self._folder_within(folder_value, previous):
                 continue
 
-            old_file_path = item.get("file_path", "")
             if old_file_path:
                 cache.remove_from_version_index(item)
                 item["file_path"] = self._rekey_path(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import sqlite3
 import threading
 import time
@@ -144,6 +145,17 @@ def _stub_service_registry_getters(monkeypatch) -> None:
     monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", _none)
     monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _none)
     monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", _none)
+
+
+class TwoRootScanner(DummyScanner):
+    """Scanner whose library spans two roots (primary + extra folder paths)."""
+
+    def __init__(self, primary: Path, extra: Path):
+        super().__init__(primary)
+        self._extra_root = str(extra)
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root, self._extra_root]
 
 
 def _create_files(root: Path) -> tuple[Path, Path, Path]:
@@ -1568,12 +1580,16 @@ async def test_add_known_folder_ignores_empty_input(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_remove_known_folder_drops_subtree_and_keeps_ancestors(tmp_path: Path):
     _create_files(tmp_path)
+    (tmp_path / "nested" / "deep" / "leaf").mkdir(parents=True)
     scanner = DummyScanner(tmp_path)
     await scanner._initialize_cache()
     cache = await scanner.get_cached_data()
     await scanner.add_known_folder("nested/deep/leaf")
+    assert "nested/deep" in cache.all_folders
 
-    await scanner.remove_known_folder("nested/deep")
+    # The delete the call reports has happened on disk.
+    shutil.rmtree(tmp_path / "nested" / "deep")
+    await scanner.remove_known_folder("nested/deep", str(tmp_path / "nested" / "deep"))
 
     assert "nested/deep" not in cache.all_folders
     assert "nested/deep/leaf" not in cache.all_folders
@@ -1589,13 +1605,110 @@ async def test_remove_known_folder_purges_stale_cache_entries(tmp_path: Path):
     cache = await scanner.get_cached_data()
     assert "nested" in cache.folders
 
-    await scanner.remove_known_folder("nested")
+    shutil.rmtree(tmp_path / "nested")
+    await scanner.remove_known_folder("nested", str(tmp_path / "nested"))
 
     assert "nested" not in cache.all_folders
     assert "nested" not in cache.folders
     assert _normalize_path(second) not in {
         item["file_path"] for item in cache.raw_data
     }
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_legacy_call_prunes_the_entry_and_over_purges(
+    tmp_path: Path,
+):
+    # Callers that only know the relative folder keep the old purge behaviour:
+    # it matches by folder name, so a surviving twin in another root loses its
+    # model cards until the next scan. That is exactly why the delete flow hands
+    # over the removed directory's absolute path.
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "shared").mkdir(parents=True)
+    (extra / "shared").mkdir(parents=True)
+    twin_model = extra / "shared" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    (primary / "shared").rmdir()
+
+    await scanner.remove_known_folder("shared")
+
+    # The entry itself is disk-verified even on this path: the twin keeps it.
+    assert "shared" in cache.all_folders
+    # ... while the purge, lacking a path, cannot tell the copies apart.
+    assert _normalize_path(twin_model) not in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_keeps_a_twin_another_root_still_holds(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "test").mkdir(parents=True)
+    (extra / "test").mkdir(parents=True)
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "test" in cache.all_folders
+
+    # The user deleted the primary copy through the sidebar.
+    (primary / "test").rmdir()
+    await scanner.remove_known_folder("test", str(primary / "test"))
+
+    # The merged folder list is a union: the node stays while any root holds it,
+    # so it can no longer vanish and reappear on the next scan.
+    assert "test" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_drops_the_entry_once_no_root_holds_it(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "test").mkdir(parents=True)
+    (extra / "test").mkdir(parents=True)
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "test" in cache.all_folders
+
+    (primary / "test").rmdir()
+    (extra / "test").rmdir()
+    await scanner.remove_known_folder("test", str(primary / "test"))
+
+    assert "test" not in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_purges_only_the_deleted_root_cards(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "shared").mkdir(parents=True)
+    (extra / "shared").mkdir(parents=True)
+    twin_model = extra / "shared" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert _normalize_path(twin_model) in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+    # Empty copy in the primary root goes away.
+    (primary / "shared").rmdir()
+    await scanner.remove_known_folder("shared", str(primary / "shared"))
+
+    # Purging by the removed directory, not by its relative name: the twin's
+    # model card must survive in the other root.
+    assert _normalize_path(twin_model) in {
+        item["file_path"] for item in cache.raw_data
+    }
+    assert "shared" in cache.folders
 
 
 @pytest.mark.asyncio
@@ -1625,6 +1738,41 @@ async def test_remove_known_folder_ignores_empty_input(tmp_path: Path):
     await scanner.remove_known_folder("/")
 
     assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_keeps_a_twin_in_another_root(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "characters").mkdir(parents=True)
+    (extra / "characters").mkdir(parents=True)
+    twin_model = extra / "characters" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    twin_entry = next(
+        item for item in cache.raw_data
+        if item["file_path"] == _normalize_path(twin_model)
+    )
+
+    old_abs = _normalize_path(primary / "characters")
+    new_abs = _normalize_path(primary / "anime")
+    os.rename(primary / "characters", primary / "anime")
+
+    await scanner.rename_known_folder(
+        "characters", "anime", previous_path=old_abs, new_path=new_abs
+    )
+
+    # The renamed root contributes the new name; the other root still owns the
+    # old one, so both stay in the merged list.
+    assert "anime" in cache.all_folders
+    assert "characters" in cache.all_folders
+    # And the twin's records are untouched: its files never moved.
+    assert twin_entry["folder"] == "characters"
+    assert twin_entry["file_path"] == _normalize_path(twin_model)
+    assert "characters" in cache.folders
 
 
 @pytest.mark.asyncio
