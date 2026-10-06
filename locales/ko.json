@@ -74,7 +74,7 @@
                 "minutes": "약 {minutes}분 남음",
                 "hours": "약 {hours}시간 {minutes}분 남음"
             },
-            "walkFiles": "[TODO: Translate] {count} files"
+            "walkFiles": "파일 {count}개"
         }
     },
     "onboarding": {

@@ -74,7 +74,7 @@
                 "minutes": "Quedan ~{minutes} min",
                 "hours": "Quedan ~{hours} h {minutes} min"
             },
-            "walkFiles": "[TODO: Translate] {count} files"
+            "walkFiles": "{count} archivos"
         }
     },
     "onboarding": {

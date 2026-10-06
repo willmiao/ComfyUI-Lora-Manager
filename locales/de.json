@@ -74,7 +74,7 @@
                 "minutes": "~{minutes} Min. verbleibend",
                 "hours": "~{hours} Std. {minutes} Min. verbleibend"
             },
-            "walkFiles": "[TODO: Translate] {count} files"
+            "walkFiles": "{count} Dateien"
         }
     },
     "onboarding": {

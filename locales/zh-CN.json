@@ -74,7 +74,7 @@
                 "minutes": "剩余约 {minutes} 分钟",
                 "hours": "剩余约 {hours} 小时 {minutes} 分钟"
             },
-            "walkFiles": "[TODO: Translate] {count} files"
+            "walkFiles": "{count} 个文件"
         }
     },
     "onboarding": {

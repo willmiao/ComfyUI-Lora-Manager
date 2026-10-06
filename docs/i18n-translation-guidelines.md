@@ -151,6 +151,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > nothing is tracked for alerts). Register follows each file's existing norm: 你 (zh-CN),
 > 您 (zh-TW), Sie (de), tú (es), вы (ru). No remaining `[TODO: Translate]` placeholders.
 
+> **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
+> walk per model root (which roots are being checked, how many model files have been seen, and
+> an ETA) and splits the progress bar into walk (0-50 %) and new-file (50-99 %) phases, which
+> added the single `common.scanProgress.walkFiles` fragment. All 9 locales are translated
+> (renderings in §2, "Scan progress (walk phase)"), so the "no remaining placeholders" claim
+> holds again. The same pass scoped the client-side ETA to the current stage in
+> `static/js/api/baseModelApi.js`; no other locale string changed.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -668,6 +676,27 @@ that form fits a tooltip (ru shortens both toggle labels to bare «Галере�
 | example images | zh-CN 示例图片 · zh-TW 範例圖片 · ja 例画像 · ko 예시 이미지 · fr images d'exemple · de Beispielbilder · es imágenes de ejemplo · ru примеры изображений · he תמונות דוגמה |
 | gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
 | gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
+
+### Scan progress (walk phase)
+
+The manual Refresh dialog renders its status line from `common.scanProgress.*`. During the
+reconcile walk the backend does not know the real file count yet (counting *is* the walk), so
+the client shows the roots being walked plus a running count instead of a `processed/total`
+ratio: `Checking for changes... G:, Y: (12,345 files) | ~3 min remaining`. The bar covers
+0-50 % for the walk and 50-99 % for the new-file pass.
+
+| Term | Rendering |
+|---|---|
+| `walkFiles` ("{count} files") | zh-CN {count} 个文件 · zh-TW {count} 個檔案 · ja {count} 件のファイル · ko 파일 {count}개 · fr {count} fichiers · de {count} Dateien · es {count} archivos · ru {count} файл(ов) · he {count} קבצים |
+
+`walkFiles` is a **fragment, not a sentence**: the root labels, the `(` `)`, the ` | ` before
+the ETA and the ETA text itself all come from `static/js/api/baseModelApi.js`, so no locale
+carries punctuation here (the ASCII parentheses match the sibling `stages.process_models`
+count, `(5/10)`). `{count}` is substituted with an already-formatted number
+(`toLocaleString()`), so no locale adds its own digit grouping. "files" means the **model
+files the walk looked at**, not every file on disk — the noun mirrors each locale's
+`stages.count_models` rendering, and `ru` uses the `файл(ов)` form because the count ticks
+live and can be any number (`notEmptyMessageCount` precedent).
 
 ---
 

@@ -74,7 +74,7 @@
                 "minutes": "残り約 {minutes} 分",
                 "hours": "残り約 {hours} 時間 {minutes} 分"
             },
-            "walkFiles": "[TODO: Translate] {count} files"
+            "walkFiles": "{count} 件のファイル"
         }
     },
     "onboarding": {
