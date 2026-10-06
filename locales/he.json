@@ -73,7 +73,8 @@
                 "lessThanMinute": "נותרה פחות מדקה",
                 "minutes": "נותרו ~{minutes} דקות",
                 "hours": "נותרו ~{hours} שעות ו-{minutes} דקות"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

@@ -16,7 +16,13 @@ import pytest
 from py.services import model_scanner
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
-from py.services.model_scanner import CacheBuildResult, ModelScanner
+from py.services.model_scanner import (
+    CacheBuildResult,
+    ModelScanner,
+    _ReconcileWalkTracker,
+    _count_cached_entries_per_root,
+    _group_roots_by_device,
+)
 from py.services.pending_delete_service import (
     PENDING_DELETE_DIR_NAME,
     PENDING_DELETE_TTL_SECONDS,
@@ -2049,3 +2055,304 @@ async def test_reconcile_cache_broadcasts_error(tmp_path: Path, monkeypatch):
     assert messages[0]["status"] == "started"
     assert messages[-1]["status"] == "error"
     assert messages[-1]["error"] == "walk failed"
+
+
+# --- reconcile walk: device grouping, parallel workers, walk progress -------
+
+
+def test_reconcile_walk_tracker_reports_weighted_progress():
+    tracker = _ReconcileWalkTracker(["/mnt/g", "/mnt/y"], {"/mnt/g": 100, "/mnt/y": 0})
+
+    snapshot = tracker.snapshot()
+    assert snapshot is not None
+    assert snapshot["progress"] == 0
+    assert snapshot["files_seen"] == 0
+    assert snapshot["roots_total"] == 2
+    assert snapshot["roots_done"] == 0
+    assert snapshot["active_roots"] == []
+    # No files seen yet: the total never drops below what was walked.
+    assert snapshot["total"] == 100
+
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 50)
+    snapshot = tracker.snapshot()
+    # Half of the 100-weight root, out of 101 total weight -> 24.75% of 50.
+    assert snapshot["progress"] == 24
+    assert snapshot["files_seen"] == 50
+    assert snapshot["active_roots"] == ["g"]
+    assert snapshot["current_name"] == "g"
+
+    # A root with no cached entries contributes one weight unit and only counts
+    # once it is finished.
+    tracker.finish_root("/mnt/g")
+    tracker.start_root("/mnt/y")
+    tracker.report("/mnt/y", 10)
+    snapshot = tracker.snapshot()
+    assert snapshot["roots_done"] == 1
+    assert snapshot["progress"] == int((100 / 101) * 50)
+    assert snapshot["active_roots"] == ["y"]
+
+    tracker.finish_root("/mnt/y")
+    snapshot = tracker.snapshot()
+    assert snapshot["progress"] == 50
+    assert snapshot["roots_done"] == 2
+    assert snapshot["files_seen"] == 60
+    # The estimate is the cached entry count, so it also covers new files.
+    assert snapshot["total"] == 100
+
+    # A library that grew past the estimate raises the reported total instead of
+    # overshooting it (the client ETA divides by it).
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 150)
+    assert tracker.snapshot()["total"] == 160
+
+    assert _ReconcileWalkTracker([], {}).snapshot() is None
+
+
+def test_reconcile_walk_tracker_snapshot_is_json_serializable():
+    """The snapshot goes straight into a WebSocket payload."""
+    tracker = _ReconcileWalkTracker(["/mnt/g"], {"/mnt/g": 2})
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 1)
+
+    snapshot = tracker.snapshot()
+    assert snapshot is not None
+    assert json.loads(json.dumps(snapshot)) == snapshot
+
+
+def test_group_roots_by_device_keeps_configured_order(tmp_path: Path, monkeypatch):
+    device_by_root = {"a": "dev1", "b": "dev1", "c": "dev2"}
+    monkeypatch.setattr(
+        model_scanner, "_root_device_key", lambda root: device_by_root[root]
+    )
+
+    assert _group_roots_by_device(["a", "b", "c"]) == [["a", "b"], ["c"]]
+
+    monkeypatch.undo()
+
+    # Real layout: roots under one temp dir share a device and stay sequential.
+    first = tmp_path / "one"
+    second = tmp_path / "two"
+    third = tmp_path / "three"
+    for path in (first, second, third):
+        path.mkdir()
+    assert _group_roots_by_device([str(first), str(second), str(third)]) == [
+        [str(first), str(second), str(third)]
+    ]
+
+
+def test_count_cached_entries_per_root_uses_longest_prefix():
+    counts = _count_cached_entries_per_root(
+        {
+            "/m/loras/a.txt",
+            "/m/loras/sub/b.txt",
+            "/m/loras2/c.txt",
+            "/somewhere/else/d.txt",
+        },
+        ["/m/loras", "/m/loras2"],
+    )
+
+    assert counts == {"/m/loras": 2, "/m/loras2": 1}
+
+
+@pytest.mark.asyncio
+async def test_reconcile_case_fold_fallback_is_indexed_not_linear(
+    tmp_path: Path, monkeypatch
+):
+    """The Windows case fallback must resolve through a lower-cased index built
+    once, not by scanning every cached path per miss (was O(files x cached))."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    for name in ("one", "two", "three"):
+        (root / f"{name}.txt").write_text(name, encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    # Rewrite the cached paths to a case variant that does not exist on disk:
+    # the realpath alias index cannot match it, so only the case-fold fallback
+    # can keep these entries.
+    for item in scanner._cache.raw_data:
+        stem = os.path.splitext(os.path.basename(item["file_path"]))[0]
+        item["file_name"] = stem.upper()
+        item["file_path"] = _normalize_path(root / f"{stem.upper()}.TXT")
+
+    monkeypatch.setattr(model_scanner, "_CASE_INSENSITIVE_PATHS", True)
+
+    builds = 0
+    real_build = model_scanner._build_casefold_index
+
+    def _counting_build(cached_paths):
+        nonlocal builds
+        builds += 1
+        return real_build(cached_paths)
+
+    monkeypatch.setattr(model_scanner, "_build_casefold_index", _counting_build)
+
+    processed: List[str] = []
+
+    async def _record_process(file_path, root_path, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert {item["file_path"] for item in cache.raw_data} == {
+        _normalize_path(root / "ONE.TXT"),
+        _normalize_path(root / "TWO.TXT"),
+        _normalize_path(root / "THREE.TXT"),
+    }
+    assert processed == []
+    assert builds == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_walks_different_devices_in_parallel(tmp_path: Path, monkeypatch):
+    """Roots on different devices are walked concurrently, and their results are
+    still merged in configured root order (not completion order)."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    monkeypatch.setattr(
+        model_scanner,
+        "_root_device_key",
+        lambda root: "dev-a" if str(root) == str(root_a) else "dev-b",
+    )
+
+    barrier = threading.Barrier(2, timeout=5)
+    overlap_violations: List[str] = []
+    real_walk = os.walk
+
+    def _walk_with_barrier(path, *args, **kwargs):
+        def _generate():
+            first = True
+            for entry in real_walk(path, *args, **kwargs):
+                if first:
+                    first = False
+                    try:
+                        barrier.wait()
+                    except threading.BrokenBarrierError:
+                        overlap_violations.append(str(path))
+                    if str(path) == str(root_a):
+                        # Root A is first in configured order but finishes last.
+                        time.sleep(0.05)
+                yield entry
+
+        return _generate()
+
+    monkeypatch.setattr(model_scanner.os, "walk", _walk_with_barrier)
+
+    new_a = root_a / "a_new.txt"
+    new_a.write_text("a", encoding="utf-8")
+    new_b = root_b / "b_new.txt"
+    new_b.write_text("b", encoding="utf-8")
+
+    processed: List[str] = []
+
+    async def _record_process(file_path, root_path, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    assert overlap_violations == [], "roots on different devices were not walked concurrently"
+    assert processed == [
+        _normalize_path(new_a),
+        _normalize_path(new_b),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_walk_broadcasts_per_root_progress(tmp_path: Path, monkeypatch):
+    root = tmp_path / "loras"
+    root.mkdir()
+    for i in range(4):
+        sub = root / f"dir{i}"
+        sub.mkdir()
+        (sub / "one.txt").write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+    monkeypatch.setattr(model_scanner, "_WALK_PROGRESS_INTERVAL_SECONDS", 0.01)
+
+    real_walk = os.walk
+
+    def _slow_walk(path, *args, **kwargs):
+        def _generate():
+            for entry in real_walk(path, *args, **kwargs):
+                time.sleep(0.05)
+                yield entry
+
+        return _generate()
+
+    monkeypatch.setattr(model_scanner.os, "walk", _slow_walk)
+
+    await scanner._reconcile_cache()
+
+    walk_messages = [
+        message
+        for message in ws_stub.broadcasts
+        if message["stage"] == "reconcile_scan" and message["status"] == "processing"
+    ]
+    # More than the final snapshot => the monitor ticked during the walk.
+    assert len(walk_messages) >= 2
+
+    # Intermediate ticks name the root being walked.
+    assert any(message["active_roots"] == ["loras"] for message in walk_messages)
+
+    final = walk_messages[-1]
+    assert final["files_seen"] == 4
+    assert final["processed"] == final["files_seen"]
+    assert final["total"] >= final["files_seen"]
+    assert final["roots_total"] == 1
+    assert final["roots_done"] == 1
+    assert final["active_roots"] == []
+    assert final["current_name"] == "loras"
+    assert 0 < final["progress"] <= 50
+    assert final["full_rebuild"] is False
+    assert walk_messages[0]["progress"] <= final["progress"]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_prunes_entries_of_an_offline_root(tmp_path: Path):
+    """A root that is gone (drive switched off) is skipped by the walk, so its
+    cached entries are reported as missing. Locked in because it is the
+    documented consequence of refreshing with a drive powered down."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+    file_a = root_a / "a0.txt"
+    file_a.write_text("a", encoding="utf-8")
+    file_b = root_b / "b0.txt"
+    file_b.write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+    assert len(scanner._cache.raw_data) == 2
+
+    root_b.rename(tmp_path / "b_offline")
+
+    await scanner._reconcile_cache()
+
+    remaining = {item["file_path"] for item in scanner._cache.raw_data}
+    assert remaining == {_normalize_path(file_a)}
+    assert scanner._hash_index.get_path("hash-b0") is None
+    assert scanner._hash_index.get_path("hash-a0") == _normalize_path(file_a)

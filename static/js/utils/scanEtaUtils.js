@@ -22,7 +22,7 @@ export function formatScanRemainingTime(remainingMs) {
  * Create an ETA tracker for scan progress. Uses an exponential moving
  * average (0.7/0.3) over the observed per-file processing time, mirroring
  * the estimator in components/initialization.js.
- * @returns {{ update: (processed: number, total: number) => (string|null) }}
+ * @returns {{ update: (processed: number, total: number) => (string|null), reset: () => void }}
  */
 export function createScanEtaTracker() {
     let startTime = null;
@@ -56,6 +56,16 @@ export function createScanEtaTracker() {
                 return translate('initialization.estimatingTime', {}, 'Estimating time...');
             }
             return formatScanRemainingTime((total - lastProcessed) * averageMsPerFile);
+        },
+
+        /**
+         * Drop all samples. Call when the scan moves to another stage: the
+         * per-file rate of one stage says nothing about the next one.
+         */
+        reset() {
+            startTime = null;
+            lastProcessed = 0;
+            averageMsPerFile = null;
         }
     };
 }

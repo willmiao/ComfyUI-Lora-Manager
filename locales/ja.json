@@ -73,7 +73,8 @@
                 "lessThanMinute": "残り1分未満",
                 "minutes": "残り約 {minutes} 分",
                 "hours": "残り約 {hours} 時間 {minutes} 分"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

@@ -73,7 +73,8 @@
                 "lessThanMinute": "Weniger als eine Minute verbleibend",
                 "minutes": "~{minutes} Min. verbleibend",
                 "hours": "~{hours} Std. {minutes} Min. verbleibend"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

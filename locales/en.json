@@ -73,7 +73,8 @@
         "lessThanMinute": "Less than a minute remaining",
         "minutes": "~{minutes} min remaining",
         "hours": "~{hours} hr {minutes} min remaining"
-      }
+      },
+      "walkFiles": "{count} files"
     }
   },
   "onboarding": {

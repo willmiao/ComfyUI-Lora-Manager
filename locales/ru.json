@@ -73,7 +73,8 @@
                 "lessThanMinute": "Осталось меньше минуты",
                 "minutes": "Осталось ~{minutes} мин",
                 "hours": "Осталось ~{hours} ч {minutes} мин"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

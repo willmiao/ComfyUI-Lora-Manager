@@ -304,6 +304,94 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     await promise;
   });
 
+  it('shows the walked roots and file count during the reconcile walk', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise, socket } = await startRefresh(client);
+
+    socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage: 'reconcile_scan',
+      model_type: 'lora',
+      pageType: 'loras',
+      full_rebuild: false,
+      progress: 12,
+      processed: 1234,
+      total: 2000,
+      files_seen: 1234,
+      roots_total: 3,
+      roots_done: 0,
+      active_roots: ['G:', 'Y:'],
+      current_name: 'G:',
+    });
+
+    expect(setProgressMock).toHaveBeenCalledWith(12);
+    const walkStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(walkStatus).toContain('G:, Y:');
+    expect(walkStatus).toContain('1,234 files');
+    // No processed/total ratio: the real file count is unknown mid-walk.
+    expect(walkStatus).not.toContain('(1234/2000)');
+    expect(walkStatus).toContain('Estimating time...');
+
+    // Walk finished: no ETA once the counters meet the estimate.
+    socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage: 'reconcile_scan',
+      model_type: 'lora',
+      full_rebuild: false,
+      progress: 50,
+      processed: 2000,
+      total: 2000,
+      files_seen: 2000,
+      active_roots: [],
+      current_name: 'Y:',
+    });
+
+    const finalWalkStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(finalWalkStatus).toContain('2,000 files');
+    expect(finalWalkStatus).not.toContain('Estimating time...');
+
+    fetchControl.resolveOk();
+    await promise;
+  });
+
+  it('drops the ETA samples when the scan moves to another stage', async () => {
+    const fetchControl = mockFetchPending();
+    let now = 1000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+
+    const client = await createClient();
+    const { promise, socket } = await startRefresh(client);
+
+    const emit = (stage, processed, total, extra = {}) => socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage,
+      model_type: 'lora',
+      full_rebuild: false,
+      progress: 50,
+      processed,
+      total,
+      ...extra,
+    });
+
+    emit('process_models', 1, 10);
+    now = 101000;
+    emit('process_models', 2, 10);
+    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('~7 min remaining');
+
+    // Same counters on the walk stage: without the reset the old per-file rate
+    // (50s/file for 2 files) would be reused and produce a huge ETA.
+    now = 102000;
+    emit('reconcile_scan', 2, 100, { files_seen: 2, active_roots: ['G:'] });
+    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('Estimating time...');
+
+    fetchControl.resolveOk();
+    await promise;
+  });
+
   it('shows the cancelled toast when the server reports cancellation', async () => {
     const fetchControl = mockFetchPending();
     const client = await createClient();

@@ -73,7 +73,8 @@
                 "lessThanMinute": "Queda menos de un minuto",
                 "minutes": "Quedan ~{minutes} min",
                 "hours": "Quedan ~{hours} h {minutes} min"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

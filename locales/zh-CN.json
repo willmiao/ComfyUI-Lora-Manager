@@ -73,7 +73,8 @@
                 "lessThanMinute": "剩余时间不到一分钟",
                 "minutes": "剩余约 {minutes} 分钟",
                 "hours": "剩余约 {hours} 小时 {minutes} 分钟"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {

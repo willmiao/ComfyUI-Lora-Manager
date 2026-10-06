@@ -532,17 +532,48 @@ export class BaseModelApiClient {
         );
         const etaTracker = createScanEtaTracker();
         let ws = null;
+        let lastProgressStage = null;
 
         const handleScanProgress = (data) => {
             if (typeof data.progress === 'number') {
                 state.loadingManager.setProgress(data.progress);
+            }
+            // The per-file rate of one stage says nothing about the next one:
+            // the walk phase counts files while the new-file pass processes
+            // them, so a carried-over average would produce a nonsense ETA.
+            if (data.stage && data.stage !== lastProgressStage) {
+                lastProgressStage = data.stage;
+                etaTracker.reset();
             }
             let statusText = translate(
                 `common.scanProgress.stages.${data.stage}`,
                 { total: data.total },
                 data.stage || ''
             );
-            if (data.status === 'processing' && data.total > 0) {
+            if (data.status === 'processing' && data.stage === 'reconcile_scan') {
+                // Walk phase: the real file count is only known once the walk
+                // finishes, so report the files checked so far and the roots
+                // being walked instead of a processed/total ratio.
+                const filesSeen = Number(data.files_seen) || 0;
+                if (filesSeen > 0) {
+                    const roots = Array.isArray(data.active_roots)
+                        ? data.active_roots.filter(Boolean)
+                        : [];
+                    const formattedFiles = filesSeen.toLocaleString();
+                    const filesText = translate(
+                        'common.scanProgress.walkFiles',
+                        { count: formattedFiles },
+                        `${formattedFiles} files`
+                    );
+                    statusText += roots.length
+                        ? ` ${roots.join(', ')} (${filesText})`
+                        : ` (${filesText})`;
+                    const etaText = etaTracker.update(data.processed, data.total);
+                    if (etaText) {
+                        statusText += ` | ${etaText}`;
+                    }
+                }
+            } else if (data.status === 'processing' && data.total > 0) {
                 statusText += ` (${data.processed}/${data.total})`;
                 if (data.current_name) {
                     statusText += ` ${data.current_name}`;

@@ -73,7 +73,8 @@
                 "lessThanMinute": "남은 시간 1분 미만",
                 "minutes": "약 {minutes}분 남음",
                 "hours": "약 {hours}시간 {minutes}분 남음"
-            }
+            },
+            "walkFiles": "[TODO: Translate] {count} files"
         }
     },
     "onboarding": {
