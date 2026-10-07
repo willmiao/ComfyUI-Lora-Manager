@@ -1482,6 +1482,10 @@
             "success": "이 폴더에서 {type}s에 대한 {count}개 업데이트를 찾았습니다",
             "none": "이 폴더의 모든 {type}s가 최신 상태입니다",
             "error": "폴더의 {type} 업데이트 확인 실패: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

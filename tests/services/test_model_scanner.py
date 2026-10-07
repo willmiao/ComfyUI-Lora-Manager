@@ -2610,6 +2610,46 @@ async def test_reconcile_folder_scope_keeps_folder_tree_outside_scope(tmp_path: 
 
 
 @pytest.mark.asyncio
+async def test_reconcile_folder_scope_covers_every_root_holding_it(tmp_path: Path):
+    """The sidebar's unified tree has no root identity: a folder scope means
+    "this relative folder under every root that holds it"."""
+    primary = tmp_path / "primary"
+    usb = tmp_path / "usb"
+    for root in (primary, usb):
+        (root / "pack").mkdir(parents=True)
+        (root / "other").mkdir()
+        (root / "other" / "keep.txt").write_text("k", encoding="utf-8")
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    (usb / "pack" / "b.txt").write_text("b", encoding="utf-8")
+    # Only the primary root holds this folder; the usb copy is gone.
+    (primary / "only-primary").mkdir()
+    (primary / "only-primary" / "c.txt").write_text("c", encoding="utf-8")
+    (usb / "only-primary").mkdir()
+
+    scanner = MultiRootDummyScanner([primary, usb])
+    await scanner._initialize_cache()
+
+    (usb / "pack" / "b.txt").unlink()
+    (primary / "only-primary" / "c.txt").unlink()
+    (primary / "pack" / "new.txt").write_text("n", encoding="utf-8")
+
+    summary = await scanner._reconcile_cache(scope=ReconcileScope(folder="pack"))
+
+    assert summary is not None
+    assert summary["scope_label"] == "pack"
+    assert summary["added"] == 1
+    assert summary["removed"] == 1
+    paths = {item["file_path"] for item in scanner._cache.raw_data}
+    # Both copies of the scoped folder were walked...
+    assert _normalize_path(primary / "pack" / "new.txt") in paths
+    assert _normalize_path(usb / "pack" / "b.txt") not in paths
+    # ...and nothing outside it was touched, including the folder that only one
+    # root holds.
+    assert _normalize_path(usb / "other" / "keep.txt") in paths
+    assert _normalize_path(primary / "only-primary" / "c.txt") in paths
+
+
+@pytest.mark.asyncio
 async def test_reconcile_keeps_entries_under_unreadable_dir(tmp_path: Path, monkeypatch):
     """A directory os.walk cannot enter (permissions, I/O error, offline
     junction) keeps its cached entries instead of losing them."""

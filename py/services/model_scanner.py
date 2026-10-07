@@ -2083,6 +2083,9 @@ class ModelScanner:
                 'removed': total_removed,
                 'repaired': total_repaired,
                 'scanned_roots': [all_labels.get(root, root) for root in roots],
+                # A folder scope is named by the folder the user clicked, not by
+                # the roots it happens to live under.
+                'scope_label': scope_folder or '',
                 'skipped_roots': skipped_roots,
                 'unavailable_paths': unreachable.payload(),
                 'unavailable_paths_total': unreachable.count(),

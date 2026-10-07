@@ -16,6 +16,33 @@ from ..services.pending_delete_service import PENDING_DELETE_DIR_NAME
 logger = logging.getLogger(__name__)
 
 
+def normalize_relative_folder(folder: str) -> str:
+    """Normalize a library-relative folder path, raising ``ValueError``.
+
+    Absolute paths (POSIX, drive-letter or UNC) and paths that climb out of the
+    library root are refused: both mean the caller is confused about which space
+    it is working in, and guessing would be worse than an error. Shared by the
+    folder operations and the scoped scan endpoint so both reject the same input.
+    """
+    raw = str(folder or "").strip()
+    if not raw:
+        raise ValueError("Folder path is required")
+
+    normalized = raw.replace("\\", "/")
+    if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+        raise ValueError("Folder path must be relative to a library root")
+
+    normalized = os.path.normpath(normalized)
+    if (
+        normalized == ".."
+        or normalized.startswith("../")
+        or normalized.startswith(".." + os.sep)
+    ):
+        raise ValueError("Folder path must stay inside the library root")
+
+    return normalized
+
+
 def _normalize_match_path(path: Any) -> str:
     """Normalize a path for set membership tests.
 
@@ -616,29 +643,8 @@ class ModelMoveService:
 
     @staticmethod
     def _normalize_relative_folder(folder: str) -> str:
-        """Normalize a library-relative folder path, raising ``ValueError``.
-
-        Absolute paths (POSIX, drive-letter or UNC) and paths that climb out of
-        the library root are refused: both mean the caller is confused about
-        which space it is working in, and guessing would be worse than an error.
-        """
-        raw = str(folder or "").strip()
-        if not raw:
-            raise ValueError("Folder path is required")
-
-        normalized = raw.replace("\\", "/")
-        if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
-            raise ValueError("Folder path must be relative to a library root")
-
-        normalized = os.path.normpath(normalized)
-        if (
-            normalized == ".."
-            or normalized.startswith("../")
-            or normalized.startswith(".." + os.sep)
-        ):
-            raise ValueError("Folder path must stay inside the library root")
-
-        return normalized
+        """Normalize a library-relative folder path, raising ``ValueError``."""
+        return normalize_relative_folder(folder)
 
     async def delete_folder(self, folder_path: str, dry_run: bool = False) -> Dict[str, Any]:
         """Delete a model-free directory inside the model library roots.

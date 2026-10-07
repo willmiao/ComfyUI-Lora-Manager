@@ -2588,7 +2588,7 @@ export class SidebarManager {
         // collapsed afterwards so such a page shows the update check alone
         // instead of dangling separators.
         const supportsFolderManagement = this._supportsFolderManagement();
-        for (const action of ['create-subfolder', 'rename-folder', 'delete-folder']) {
+        for (const action of ['scan-folder', 'create-subfolder', 'rename-folder', 'delete-folder']) {
             const item = menu.querySelector(`[data-action="${action}"]`);
             if (item) {
                 item.style.display = supportsFolderManagement ? '' : 'none';
@@ -2684,6 +2684,9 @@ export class SidebarManager {
             case 'delete-folder':
                 this.showDeleteFolderModal(path);
                 break;
+            case 'scan-folder':
+                await this.scanFolder(path);
+                break;
             case 'check-folder-updates':
                 try {
                     await performFolderUpdateCheck(path);
@@ -2694,6 +2697,31 @@ export class SidebarManager {
             default:
                 console.warn('Unknown folder action:', action);
         }
+    }
+
+    /**
+     * Scan the clicked folder (and its subtree) only.
+     *
+     * The sidebar tree is a merged relative-path namespace, so the scan is
+     * addressed by the relative folder and the backend walks that path under
+     * every root that holds it — the same resolution the folder operations use.
+     * Nothing outside the folder is re-read or removed, which is what makes this
+     * safe to use while another drive is switched off.
+     */
+    async scanFolder(relativePath) {
+        const resolution = await this._resolveFolderCandidatesSafe(relativePath);
+        if (!resolution || resolution.candidates.length === 0) {
+            showToast('sidebar.scanFolderResult.missing', {}, 'warning');
+            return;
+        }
+
+        const controls = this.pageControls || this.lastPageControls;
+        if (!controls || typeof controls.refreshModels !== 'function') {
+            console.error('[SidebarManager] No page controls registered for a folder scan');
+            return;
+        }
+
+        await controls.refreshModels(false, { folder: relativePath });
     }
 
     handleBreadcrumbClick(event) {

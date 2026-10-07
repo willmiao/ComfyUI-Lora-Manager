@@ -1482,6 +1482,10 @@
             "success": "{count} mise(s) à jour trouvée(s) pour les {type}s dans ce dossier",
             "none": "Tous les {type}s dans ce dossier sont à jour",
             "error": "Échec de la vérification des mises à jour {type} dans ce dossier : {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

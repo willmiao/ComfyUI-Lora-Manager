@@ -511,9 +511,10 @@ export class BaseModelApiClient {
         }
     }
 
-    async refreshModels(fullRebuild = false, { roots = null } = {}) {
+    async refreshModels(fullRebuild = false, { roots = null, folder = null } = {}) {
         const abortController = new AbortController();
         const scopeRoots = Array.isArray(roots) ? roots.filter(Boolean) : [];
+        const scopeFolder = typeof folder === 'string' && folder ? folder : null;
         const displayName = this.apiConfig.config.displayName;
         const singularName = this.apiConfig.config.singularName;
         const actionText = translate(
@@ -604,6 +605,9 @@ export class BaseModelApiClient {
             for (const root of scopeRoots) {
                 url.searchParams.append('roots', root);
             }
+            if (scopeFolder) {
+                url.searchParams.append('folder', scopeFolder);
+            }
 
             const response = await fetch(url, { signal: abortController.signal });
 
@@ -619,7 +623,7 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
 
-            this._showRefreshSummary(data, actionText, scopeRoots);
+            this._showRefreshSummary(data, actionText, scopeRoots, scopeFolder);
         } catch (error) {
             if (error.name === 'AbortError') {
                 showToast('toast.api.operationCancelled', {}, 'info');
@@ -646,12 +650,15 @@ export class BaseModelApiClient {
      * @param {string} actionText - Localized "Refresh" / "Full rebuild"
      * @param {Array<string>} scopeRoots - Roots the scan was restricted to
      */
-    _showRefreshSummary(summary, actionText, scopeRoots = []) {
+    _showRefreshSummary(summary, actionText, scopeRoots = [], scopeFolder = null) {
         const payload = summary || {};
         const scannedRoots = Array.isArray(payload.scanned_roots) ? payload.scanned_roots : [];
-        const scopeLabel = scannedRoots.length ? scannedRoots.join(', ') : '';
+        // A folder scan is named by the folder the user clicked; a root scan by
+        // the roots it walked.
+        const scopeLabel = payload.scope_label
+            || (scannedRoots.length ? scannedRoots.join(', ') : '');
 
-        if (scopeRoots.length && scopeLabel) {
+        if ((scopeRoots.length || scopeFolder) && scopeLabel) {
             showToast(
                 'toast.api.refreshCompleteScoped',
                 {

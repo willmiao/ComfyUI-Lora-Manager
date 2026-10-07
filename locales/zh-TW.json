@@ -1482,6 +1482,10 @@
             "success": "在此資料夾中找到 {count} 個{type}更新",
             "none": "此資料夾中的所有{type}都是最新版本",
             "error": "檢查資料夾{type}更新失敗: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

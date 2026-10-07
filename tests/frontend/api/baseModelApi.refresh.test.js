@@ -436,6 +436,43 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     );
   });
 
+  it('requests a folder scan without a root', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'success' }),
+    });
+
+    const client = await createClient();
+    await client.refreshModels(false, { folder: 'pack/sub' });
+
+    const [url] = global.fetch.mock.calls[0];
+    // The backend walks this relative path under every root that holds it.
+    expect(url.searchParams.get('folder')).toBe('pack/sub');
+    expect(url.searchParams.getAll('roots')).toEqual([]);
+  });
+
+  it('names a folder scan by the folder, not by the roots it walked', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client, false, { folder: 'pack' });
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scope_label: 'pack',
+      scanned_roots: ['a/loras', 'usb/loras'],
+      added: 3,
+      removed: 0,
+      kept_unreachable: 0,
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      { scope: 'pack', added: 3, removed: 0 },
+      'success'
+    );
+  });
+
   it('keeps the generic completion toast for a full-library scan', async () => {
     const fetchControl = mockFetchPending();
     const client = await createClient();

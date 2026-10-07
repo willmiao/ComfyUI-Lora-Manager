@@ -1482,6 +1482,10 @@
             "success": "נמצאו {count} עדכון/ים עבור {type}s בתיקייה זו",
             "none": "כל ה-{type}s בתיקייה זו מעודכנים",
             "error": "נכשל בבדיקת עדכוני {type} בתיקייה: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

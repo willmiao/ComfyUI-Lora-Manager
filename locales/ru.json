@@ -1482,6 +1482,10 @@
             "success": "Найдено {count} обновление(й) для {type}s в этой папке",
             "none": "Все {type}s в этой папке актуальны",
             "error": "Не удалось проверить папку на наличие обновлений {type}: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

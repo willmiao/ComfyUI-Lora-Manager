@@ -562,7 +562,7 @@ export class PageControls {
      * Refresh models list
      * @param {boolean} fullRebuild - Whether to perform a full rebuild
      */
-    async refreshModels(fullRebuild = false, { roots = null } = {}) {
+    async refreshModels(fullRebuild = false, { roots = null, folder = null } = {}) {
         if (!this.api) {
             console.error('API methods not registered');
             return;
@@ -572,10 +572,14 @@ export class PageControls {
         // model counts definitely did.
         this._scanScopeDetails = null;
         const scopedRoots = Array.isArray(roots) ? roots.filter(Boolean) : [];
+        const scopedFolder = typeof folder === 'string' && folder ? folder : null;
 
         try {
-            if (scopedRoots.length) {
-                await this.api.refreshModels(fullRebuild, { roots: scopedRoots });
+            if (scopedRoots.length || scopedFolder) {
+                await this.api.refreshModels(fullRebuild, {
+                    ...(scopedRoots.length ? { roots: scopedRoots } : {}),
+                    ...(scopedFolder ? { folder: scopedFolder } : {}),
+                });
             } else {
                 await this.api.refreshModels(fullRebuild);
             }

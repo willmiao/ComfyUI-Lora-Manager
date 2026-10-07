@@ -25,7 +25,10 @@ from ...services.connectivity_guard import (
     is_expected_offline_error,
 )
 from ...services.metadata_sync_service import MetadataSyncService
-from ...services.model_file_service import ModelMoveService
+from ...services.model_file_service import (
+    ModelMoveService,
+    normalize_relative_folder,
+)
 from ...services.model_scanner import ReconcileScope
 from ...services.preview_asset_service import PreviewAssetService
 from ...services.service_registry import ServiceRegistry
@@ -1143,7 +1146,8 @@ class ModelQueryHandler:
             requested_roots = [
                 value for value in request.query.getall("roots", []) if value
             ]
-            if requested_roots and full_rebuild:
+            raw_folder = (request.query.get("folder") or "").strip()
+            if (requested_roots or raw_folder) and full_rebuild:
                 return web.json_response(
                     {
                         "error": "Scoped scans are not supported with "
@@ -1152,7 +1156,13 @@ class ModelQueryHandler:
                     status=400,
                 )
 
-            scope = None
+            folder = None
+            if raw_folder:
+                try:
+                    folder = normalize_relative_folder(raw_folder)
+                except ValueError as exc:
+                    return web.json_response({"error": str(exc)}, status=400)
+
             if requested_roots:
                 configured = self._service.get_model_roots()
                 unknown = [root for root in requested_roots if root not in configured]
@@ -1160,7 +1170,15 @@ class ModelQueryHandler:
                     return web.json_response(
                         {"error": "Unknown model root(s)", "roots": unknown}, status=400
                     )
-                scope = ReconcileScope(roots=tuple(requested_roots))
+
+            # `folder` alone means "this relative folder in every root that has
+            # it" — the sidebar's unified tree carries no root identity.
+            scope = None
+            if requested_roots or folder:
+                scope = ReconcileScope(
+                    roots=tuple(requested_roots) if requested_roots else None,
+                    folder=folder,
+                )
 
             summary = await self._service.scan_models(
                 force_refresh=True, rebuild_cache=full_rebuild, scope=scope

@@ -2,9 +2,10 @@
 
 **Issue:** [#1108](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1108) — scan a single
 folder/root instead of the whole library.
-**Status:** **P1 implemented** (2026-10-07, uncommitted working tree). P2 (folder scope, Wave 5)
-is not implemented. Supersedes the earlier draft's per-root *status panel* and persisted
-*unreachable-subtree* state (both dropped, see "Must NOT have").
+**Status:** **P1 and P2 implemented** (2026-10-07). P1 shipped in `470d85cc` (translations in
+`bd184559`); P2 (folder scope + the sidebar entry) is in the working tree. Supersedes the earlier
+draft's per-root *status panel* and persisted *unreachable-subtree* state (both dropped, see
+"Must NOT have").
 
 Implementation notes / deviations from the draft below:
 
@@ -90,14 +91,20 @@ and in the exact pruning predicate; both get explicit tests.
 - i18n keys in `locales/en.json` + `python scripts/sync_translation_keys.py`.
 - pytest + vitest coverage for every item above.
 
-### Must have (P2, optional follow-up)
+### Must have (P2, implemented)
 
 - `folder=<rel>` parameter: walk `<root>/<rel>` for every reachable root that contains it (the
   sidebar's unified tree has no root identity, so "this folder" means "this relative path in all
-  roots"), prune only inside that prefix.
+  roots"), prune only inside that prefix. Validation reuses `normalize_relative_folder()` (extracted
+  from `ModelMoveService` so the folder operations and the scan endpoint reject the same input:
+  absolute paths, drive letters, `..` climbing). The summary carries `scope_label` = the folder, so
+  the toast names the folder the user clicked rather than the roots it happens to live under.
 - Sidebar folder context menu entry "Scan this folder" (`templates/components/context_menu.html`
   `#sidebarFolderContextMenu`, above `check-folder-updates`; update
-  `tests/frontend/regression/sidebarFolderContextMenu.test.js` expectations).
+  `tests/frontend/regression/sidebarFolderContextMenu.test.js` expectations). The entry is gated
+  like the other folder operations and resolves the folder through the existing
+  `_resolveFolderCandidates()` before scanning, so a folder no root holds any more explains itself
+  instead of scanning nothing. It shares `check-folder-updates`'s divider (both are refresh-ish).
 
 ### Must NOT have (guardrails)
 
@@ -250,11 +257,19 @@ and in the exact pruning predicate; both get explicit tests.
     (`LM_WALK_DELAY_S`-style `sitecustomize` hook) to eyeball the scoped progress line, the offline
     row and the toast — the user verifies by eye.
 
-### Wave 5 — P2 (folder scope), only if approved
+### Wave 5 — P2 (folder scope) — done
 
-14. `folder=<rel>` in the scan endpoint + `_ReconcileScope.folder`, the sidebar menu entry, the
+14. `folder=<rel>` in the scan endpoint + `ReconcileScope.folder`, the sidebar menu entry, the
     context-menu regression test update, and the "folder in several roots" semantics (scan every
     reachable root that has the relative path; report per root).
+    * `normalize_relative_folder()` extracted to module scope in `model_file_service.py` (the
+      private static method now delegates) and reused by the scan handler.
+    * `scanFolder()` in `SidebarManager` reuses `_resolveFolderCandidatesSafe()` and delegates to the
+      host page controls, which pass `{ folder }` through `registerAPI`'s argument-forwarding
+      `refreshModels`.
+    * Verified live: `folder=pack000` on the three-root sandbox walks drive-G and drive-Y, reports
+      `scope_label=pack000`, keeps drive-Z's 6 entries under that folder (`kept_unreachable=6`) and
+      leaves all 420 models cached.
 
 ## Known limitations (accepted)
 
@@ -275,9 +290,15 @@ and in the exact pruning predicate; both get explicit tests.
 
 ## Verification checklist
 
-- [ ] `pytest -q` green, `npx vitest run` green, `npm run test:vue` green.
-- [ ] `python scripts/sync_translation_keys.py --dry-run` reports no pending changes.
-- [ ] Sandbox: 2 roots, one offline → scoped scan of the online root reports `added`, keeps the
-      offline root's models, and the grid/sidebar still show them.
-- [ ] Sandbox: preview of an offline root's model returns 404 and the DB keeps `preview_url`.
+- [x] `pytest -q` green (3704 passed, 7 skipped), `npx vitest run` green (1495 passed),
+      `npm run test:vue` green (96 passed).
+- [x] `python scripts/sync_translation_keys.py --dry-run` reports no pending changes.
+- [x] Sandbox: 3 roots, one offline → scoped scan of one root walks only it; a full refresh keeps
+      the offline root's models (`kept_unreachable=60`) and the grid still shows all 420.
+- [x] Sandbox: folder scope (`folder=pack000`) walks the two reachable roots, labels the scan by the
+      folder and keeps the offline root's 6 entries under it.
+- [ ] Sandbox: preview of an offline root's model returns 404 and the DB keeps `preview_url`
+      (test-locked; not eyeballed in the sandbox because the demo models have no previews).
 - [ ] Release note wording agreed for the behaviour change (decision 1).
+- [ ] The 2 new sidebar keys (`sidebar.scanFolder`, `sidebar.scanFolderResult.missing`) are
+      `[TODO: Translate]` placeholders pending the feature owner's go-ahead.

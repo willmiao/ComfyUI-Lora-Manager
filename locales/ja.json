@@ -1482,6 +1482,10 @@
             "success": "このフォルダの{type}sに{count}件のアップデートが見つかりました",
             "none": "このフォルダのすべての{type}sは最新です",
             "error": "フォルダの{type}アップデート確認に失敗しました: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {

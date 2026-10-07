@@ -308,6 +308,65 @@ async def test_scan_models_rejects_roots_with_full_rebuild():
 
 
 @pytest.mark.asyncio
+async def test_scan_models_accepts_folder_param():
+    service = ScopedScanService(roots=["/mnt/a", "/mnt/b"], summary=SUMMARY)
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.scan_models(
+        SimpleNamespace(query=QueryParams({"folder": "pack\\sub"}))
+    )
+
+    assert response.status == 200
+    assert service.received_scope is not None
+    # Backslashes are normalized and no root is pinned: the backend walks this
+    # relative folder under every root that holds it.
+    assert service.received_scope.folder == "pack/sub"
+    assert service.received_scope.roots is None
+
+
+@pytest.mark.asyncio
+async def test_scan_models_rejects_absolute_folder():
+    service = ScopedScanService(roots=["/mnt/a"], summary=SUMMARY)
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    for folder in ("/mnt/a/pack", "../pack", "C:/models/pack"):
+        response = await handler.scan_models(
+            SimpleNamespace(query=QueryParams({"folder": folder}))
+        )
+        assert response.status == 400, folder
+        assert "error" in json.loads(response.text)
+
+    assert service.received_scope == "not-called"
+
+
+@pytest.mark.asyncio
+async def test_scan_models_rejects_folder_with_full_rebuild():
+    service = ScopedScanService(roots=["/mnt/a"], summary=SUMMARY)
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.scan_models(
+        SimpleNamespace(query=QueryParams({"folder": "pack", "full_rebuild": "true"}))
+    )
+
+    assert response.status == 400
+    assert service.received_scope == "not-called"
+
+
+@pytest.mark.asyncio
+async def test_scan_models_combines_folder_and_roots():
+    service = ScopedScanService(roots=["/mnt/a", "/mnt/b"], summary=SUMMARY)
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.scan_models(
+        SimpleNamespace(query=QueryParams({"folder": "pack", "roots": ["/mnt/b"]}))
+    )
+
+    assert response.status == 200
+    assert service.received_scope.folder == "pack"
+    assert service.received_scope.roots == ("/mnt/b",)
+
+
+@pytest.mark.asyncio
 async def test_get_model_roots_reports_details():
     service = ScopedScanService(roots=["/mnt/a", "/mnt/b"])
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))

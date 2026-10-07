@@ -210,6 +210,9 @@
      dividers are collapsed by SidebarManager when a group is hidden on the
      current page (recipes keep only the update check). -->
 <div id="sidebarFolderContextMenu" class="context-menu">
+    <div class="context-menu-item" data-action="scan-folder">
+        <i class="fas fa-sync"></i> <span>{{ t('sidebar.scanFolder') }}</span>
+    </div>
     <div class="context-menu-item" data-action="check-folder-updates">
         <i class="fas fa-bell"></i> <span>{{ t('sidebar.folderUpdateCheck.label') }}</span>
     </div>

@@ -1482,6 +1482,10 @@
       "success": "Found {count} update(s) for {type}s in this folder",
       "none": "All {type}s in this folder are up to date",
       "error": "Failed to check folder for {type} updates: {message}"
+    },
+    "scanFolder": "Scan this folder",
+    "scanFolderResult": {
+      "missing": "This folder no longer exists on disk. Refresh the sidebar and try again."
     }
   },
   "statistics": {

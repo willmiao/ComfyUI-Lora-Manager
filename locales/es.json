@@ -1482,6 +1482,10 @@
             "success": "Se encontraron {count} actualización(es) para {type}s en esta carpeta",
             "none": "Todos los {type}s en esta carpeta están actualizados",
             "error": "Error al buscar actualizaciones de {type} en la carpeta: {message}"
+        },
+        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolderResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
         }
     },
     "statistics": {
