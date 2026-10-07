@@ -2130,7 +2130,7 @@
             "statSuccess": "Erfolgreich",
             "statFailed": "Fehlgeschlagen",
             "statSkipped": "Übersprungen",
-            "statOffline": "[TODO: Translate] Drive Offline",
+            "statOffline": "Laufwerk offline",
             "statTotal": "Gesamt geprüft",
             "statDuration": "Dauer",
             "successMessage": "Alle {count} {type}s erfolgreich aktualisiert!",

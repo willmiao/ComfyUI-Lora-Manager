@@ -2130,7 +2130,7 @@
             "statSuccess": "Успешно",
             "statFailed": "Ошибка",
             "statSkipped": "Пропущено",
-            "statOffline": "[TODO: Translate] Drive Offline",
+            "statOffline": "Диск недоступен",
             "statTotal": "Всего проверено",
             "statDuration": "Длительность",
             "successMessage": "Все {count} {type}s успешно обновлены",
