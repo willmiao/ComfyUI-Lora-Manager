@@ -905,3 +905,66 @@ def test_save_paths_removes_stale_empty_default_when_comfyui_exists(
     assert name == "comfyui"
     assert payload["activate"] is True
     assert fake_settings.active_library == "comfyui"
+
+
+def test_save_paths_keeps_configured_root_of_a_switched_off_drive(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """A root whose directory is missing right now must stay in the library.
+
+    `upsert_library(folder_paths=...)` replaces the stored paths, so persisting
+    the existence-filtered live list would erase a drive that happened to be
+    switched off when ComfyUI started. A path the host no longer configures must
+    still be dropped.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    switched_off = str(tmp_path / "drive-Z" / "loras")
+    removed_by_user = str(tmp_path / "old-location" / "loras")
+    # The host still configures the switched-off drive; it no longer configures
+    # the old location (that one only survives in the stored library paths).
+    folder_paths["loras"] = [switched_off, readable]
+
+    class FakeSettingsService:
+        active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
+
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {
+                        "loras": [removed_by_user, readable],
+                        "checkpoints": [],
+                        "unet": [],
+                        "embeddings": [],
+                    },
+                    "default_lora_root": switched_off,
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def get_active_library_name(self):
+            return self.active_library
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_instance = config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    # The switched-off drive keeps its configured path...
+    assert switched_off.replace("\\", "/") in persisted
+    assert readable.replace("\\", "/") in persisted
+    # ...the path the host really dropped is gone...
+    assert removed_by_user.replace("\\", "/") not in persisted
+    # ...and the live list still only holds what is readable right now.
+    assert config_instance.loras_roots == [readable.replace("\\", "/")]
+    # The user's default root survives because it is merely unavailable.
+    assert fake_settings.payload["default_lora_root"] == switched_off.replace("\\", "/")
