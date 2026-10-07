@@ -1416,6 +1416,8 @@
             "missingMessage": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
             "symlinkTitle": "資料夾是符號連結",
             "symlinkMessage": "該資料夾的每一份副本都是符號連結；請在 LoRA Manager 之外刪除該連結或其指向的目標。",
+            "protectedTitle": "資料夾受保護",
+            "protectedMessage": "此資料夾存放著配方庫，無法在 LoRA Manager 中刪除。",
             "busyTitle": "仍有刪除操作待處理",
             "checking": "正在檢查資料夾內容...",
             "confirm": "刪除資料夾",
@@ -1458,6 +1460,7 @@
             "busyStatus": "仍有刪除操作待處理",
             "missingStatus": "磁碟上已不存在",
             "symlinkStatus": "符號連結 —— 無法在此刪除",
+            "protectedStatus": "存放配方庫 —— 無法在此刪除",
             "unknownStatus": "無法檢查",
             "deletedStatus": "已刪除"
         },

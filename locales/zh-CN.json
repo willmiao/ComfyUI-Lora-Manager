@@ -1416,6 +1416,8 @@
             "missingMessage": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
             "symlinkTitle": "文件夹是符号链接",
             "symlinkMessage": "该文件夹的每一份副本都是符号链接；请在 LoRA Manager 之外删除该链接或其指向的目标。",
+            "protectedTitle": "文件夹受保护",
+            "protectedMessage": "此文件夹存放着配方库，无法在 LoRA Manager 中删除。",
             "busyTitle": "仍有删除操作待处理",
             "checking": "正在检查文件夹内容...",
             "confirm": "删除文件夹",
@@ -1458,6 +1460,7 @@
             "busyStatus": "仍有删除操作待处理",
             "missingStatus": "磁盘上已不存在",
             "symlinkStatus": "符号链接 —— 无法在此删除",
+            "protectedStatus": "存放配方库 —— 无法在此删除",
             "unknownStatus": "无法检查",
             "deletedStatus": "已删除"
         },

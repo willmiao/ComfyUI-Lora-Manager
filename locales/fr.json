@@ -1416,6 +1416,8 @@
             "missingMessage": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
             "symlinkTitle": "Le dossier est un lien symbolique",
             "symlinkMessage": "Toutes les copies de ce dossier sont des liens symboliques ; supprimez le lien ou sa cible en dehors de LoRA Manager.",
+            "protectedTitle": "Dossier protégé",
+            "protectedMessage": "Ce dossier contient la bibliothèque de Recipes et ne peut pas être supprimé depuis LoRA Manager.",
             "busyTitle": "Une suppression est encore en attente",
             "checking": "Vérification du contenu du dossier...",
             "confirm": "Supprimer le dossier",
@@ -1458,6 +1460,7 @@
             "busyStatus": "une suppression est encore en attente",
             "missingStatus": "n’existe plus sur le disque",
             "symlinkStatus": "lien symbolique — impossible à supprimer ici",
+            "protectedStatus": "contient la bibliothèque de Recipes — impossible à supprimer ici",
             "unknownStatus": "vérification impossible",
             "deletedStatus": "supprimé"
         },

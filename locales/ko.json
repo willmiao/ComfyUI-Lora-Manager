@@ -1416,6 +1416,8 @@
             "missingMessage": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
             "symlinkTitle": "폴더가 심볼릭 링크입니다",
             "symlinkMessage": "이 폴더의 모든 복사본이 심볼릭 링크입니다. LoRA Manager 외부에서 링크 또는 그 대상을 삭제하세요.",
+            "protectedTitle": "보호된 폴더",
+            "protectedMessage": "이 폴더에는 레시피 라이브러리가 저장되어 있으므로 LoRA Manager에서 삭제할 수 없습니다.",
             "busyTitle": "대기 중인 삭제 작업이 있습니다",
             "checking": "폴더 내용을 확인하는 중...",
             "confirm": "폴더 삭제",
@@ -1458,6 +1460,7 @@
             "busyStatus": "대기 중인 삭제 작업이 있습니다",
             "missingStatus": "디스크에 존재하지 않습니다",
             "symlinkStatus": "심볼릭 링크 —— 여기에서는 삭제할 수 없습니다",
+            "protectedStatus": "레시피 라이브러리 보관 중 —— 여기에서는 삭제할 수 없습니다",
             "unknownStatus": "확인할 수 없습니다",
             "deletedStatus": "삭제됨"
         },

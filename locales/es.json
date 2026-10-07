@@ -1416,6 +1416,8 @@
             "missingMessage": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
             "symlinkTitle": "La carpeta es un enlace simbólico",
             "symlinkMessage": "Todas las copias de esta carpeta son enlaces simbólicos; elimina el enlace o su destino fuera de LoRA Manager.",
+            "protectedTitle": "Carpeta protegida",
+            "protectedMessage": "Esta carpeta contiene la biblioteca de recetas y no se puede eliminar desde LoRA Manager.",
             "busyTitle": "Todavía hay una eliminación pendiente",
             "checking": "Comprobando el contenido de la carpeta...",
             "confirm": "Eliminar carpeta",
@@ -1458,6 +1460,7 @@
             "busyStatus": "todavía hay una eliminación pendiente",
             "missingStatus": "ya no existe en el disco",
             "symlinkStatus": "enlace simbólico — no se puede eliminar aquí",
+            "protectedStatus": "contiene la biblioteca de recetas — no se puede eliminar aquí",
             "unknownStatus": "no se pudo comprobar",
             "deletedStatus": "eliminada"
         },

@@ -159,6 +159,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (`sidebar.scanFolder`, `sidebar.scanFolderResult.missing`), translated in a second pass, so the
 > "no remaining placeholders" claim holds again.
 
+> **Status (2026-10, recipes folder protection):** the recipes storage directory (the first
+> lora root's `recipes/` by default) is now excluded from the folder sidebar and refused by the
+> folder delete/rename endpoints, adding 3 keys (`sidebar.deleteFolderModal.protectedTitle` /
+> `.protectedMessage`, `sidebar.folderRoot.protectedStatus`). All 9 locales are translated
+> (terminology in §2, "Folder sidebar feature" — the `recipe library` row), so the "no
+> remaining placeholders" claim holds again.
+
 > **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
 > walk per model root (which roots are being checked, how many model files have been seen, and
 > an ETA) and splits the progress bar into walk (0-50 %) and new-file (50-99 %) phases, which
@@ -539,6 +546,7 @@ and a per-row verdict reads **no models** when the copy is deletable:
 |---|---|
 | copy (one directory per root holding the same relative folder) | zh-CN 副本 · zh-TW 副本 · ja コピー · ko 복사본 · fr copie · de Kopie · es copia · ru копия · he עותק |
 | symbolic link | zh-CN 符号链接 · zh-TW 符號連結 · ja シンボリックリンク · ko 심볼릭 링크 · fr lien symbolique · de symbolischer Link · es enlace simbólico · ru символическая ссылка · he קישור סמלי |
+| recipe library (the protected `recipes/` storage dir) | zh-CN 配方库 · zh-TW 配方庫 · ja レシピライブラリ · ko 레시피 라이브러리 · fr bibliothèque de Recipes · de Rezept-Bibliothek · es biblioteca de recetas · ru библиотека рецептов · he ספריית המתכונים — the Recipe noun follows §1-R4 per locale; `protectedStatus` is a row verdict (fragment, no capitalization/period, keeps the locale's `—`/`——` dash style of the sibling `symlinkStatus`) |
 | unchecked (row / note wording) | zh-CN 未勾选 · zh-TW 未勾選 · ja チェックを外した · ko 선택하지 않은 · fr non cochée · de nicht angehakt · es no marcada · ru неотмеченная · he שלא סומן |
 | "no models" (row verdict) | zh-CN 无模型 · zh-TW 無模型 · ja モデルなし · ko 모델 없음 · fr aucun modèle · de keine Modelle · es sin modelos · ru моделей нет · he אין מודלים |
 | model root — plural ("more than one model root", "from {count} model roots") | zh-CN 模型根目录（多个模型根目录）· zh-TW 模型根目錄（多個模型根目錄）· ja モデルルート（複数のモデルルート）· ko 모델 루트（여러 모델 루트）· fr racine de modèle (plusieurs racines de modèle) · de Modell-Stammverzeichnis (mehrere Modell-Stammverzeichnisse) · es raíz de modelo (más de una raíz de modelo) · ru корневая папка моделей (несколько корневых папок моделей) · he שורש מודלים (יותר משורש מודלים אחד) |

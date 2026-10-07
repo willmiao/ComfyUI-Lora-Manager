@@ -1416,6 +1416,8 @@
             "missingMessage": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
             "symlinkTitle": "Ordner ist ein symbolischer Link",
             "symlinkMessage": "Alle Kopien dieses Ordners sind symbolische Links; entfernen Sie den Link oder sein Ziel außerhalb von LoRA Manager.",
+            "protectedTitle": "Ordner ist geschützt",
+            "protectedMessage": "Dieser Ordner enthält die Rezept-Bibliothek und kann nicht aus LoRA Manager heraus gelöscht werden.",
             "busyTitle": "Eine Löschung steht noch aus",
             "checking": "Ordnerinhalt wird geprüft...",
             "confirm": "Ordner löschen",
@@ -1458,6 +1460,7 @@
             "busyStatus": "eine Löschung steht noch aus",
             "missingStatus": "existiert nicht mehr auf dem Datenträger",
             "symlinkStatus": "symbolischer Link — hier nicht löschbar",
+            "protectedStatus": "enthält die Rezept-Bibliothek — hier nicht löschbar",
             "unknownStatus": "konnte nicht geprüft werden",
             "deletedStatus": "gelöscht"
         },

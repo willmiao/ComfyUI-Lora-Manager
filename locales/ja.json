@@ -1416,6 +1416,8 @@
             "missingMessage": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
             "symlinkTitle": "フォルダがシンボリックリンクです",
             "symlinkMessage": "このフォルダのすべてのコピーがシンボリックリンクです。LoRA Manager の外でリンクまたはそのリンク先を削除してください。",
+            "protectedTitle": "フォルダは保護されています",
+            "protectedMessage": "このフォルダにはレシピライブラリが保存されているため、LoRA Manager から削除できません。",
             "busyTitle": "保留中の削除があります",
             "checking": "フォルダの内容を確認しています...",
             "confirm": "フォルダを削除",
@@ -1458,6 +1460,7 @@
             "busyStatus": "保留中の削除があります",
             "missingStatus": "ディスク上に存在しません",
             "symlinkStatus": "シンボリックリンク —— ここからは削除できません",
+            "protectedStatus": "レシピライブラリを保存 —— ここからは削除できません",
             "unknownStatus": "確認できませんでした",
             "deletedStatus": "削除しました"
         },
