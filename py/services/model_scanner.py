@@ -21,6 +21,10 @@ from ..utils.sidecar_paths import (
     resolve_centralized_dir_for_dir,
 )
 from ..utils.civitai_utils import resolve_license_info
+from ..utils.recipes_paths import (
+    get_effective_recipes_dir,
+    normalized_recipes_dir_key,
+)
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
 from .model_lifecycle_service import delete_model_artifacts, _require_path_in_library_roots
@@ -70,6 +74,11 @@ def _is_excluded_dir(name: str) -> bool:
 def _is_hidden_relative_path(rel_path: str) -> bool:
     """Return True when any segment of a relative path is a hidden directory."""
     return any(part.startswith(".") for part in rel_path.replace(os.sep, "/").split("/"))
+
+
+def _dir_entry_key(parent: str, name: str) -> str:
+    """normcase+abspath key for a directory entry, for reserved-dir checks."""
+    return os.path.normcase(os.path.abspath(os.path.join(parent, name)))
 
 
 def _file_name_stem(file_path: str) -> str:
@@ -577,6 +586,9 @@ def _walk_root_for_reconcile(
     stale_seen: Set[str] = set()
     files_since_report = 0
     walk_start = walk_path or root_path
+    # The recipe library sits inside a lora root by default; it is a reserved
+    # directory, never a model folder, so the walk must not descend into it.
+    recipes_dir_key = normalized_recipes_dir_key()
 
     def _on_walk_error(error: OSError) -> None:
         """Record a directory the walk could not enter (offline/denied)."""
@@ -599,7 +611,11 @@ def _walk_root_for_reconcile(
     for root, dirnames, files in os.walk(
         walk_start, followlinks=True, onerror=_on_walk_error
     ):
-        dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not _is_excluded_dir(d) and _dir_entry_key(root, d) != recipes_dir_key
+        ]
 
         real_root = os.path.realpath(root)
         if not dir_claims.claim(real_root):
@@ -1451,17 +1467,20 @@ class ModelScanner:
         await self._sync_download_history(snapshot.raw_data, source='scan')
     def _count_model_files(self) -> int:
         """Count all model files with supported extensions in all roots
-        
+
         Returns:
             int: Total number of model files found
         """
         total_files = 0
         visited_real_paths = set()
-        
+        # The recipe library holds no model files; skip it so the progress
+        # estimate matches what the scan itself will walk.
+        recipes_dir_key = normalized_recipes_dir_key()
+
         for root_path in self.get_model_roots():
             if not os.path.exists(root_path):
                 continue
-                
+
             def count_recursive(path):
                 nonlocal total_files
                 try:
@@ -1469,7 +1488,7 @@ class ModelScanner:
                     if real_path in visited_real_paths:
                         return
                     visited_real_paths.add(real_path)
-                    
+
                     with os.scandir(path) as it:
                         for entry in it:
                             try:
@@ -1479,6 +1498,8 @@ class ModelScanner:
                                         total_files += 1
                                 elif entry.is_dir(follow_symlinks=True):
                                     if _is_excluded_dir(entry.name):
+                                        continue
+                                    if _dir_entry_key(path, entry.name) == recipes_dir_key:
                                         continue
                                     count_recursive(entry.path)
                             except Exception as e:
@@ -2407,7 +2428,48 @@ class ModelScanner:
         else:
             self._schedule_all_folders_backfill()
 
+        reserved = self._recipes_folder_rel_paths()
+        if reserved:
+            folders = {
+                folder
+                for folder in folders
+                if not any(
+                    folder.casefold() == rel or folder.casefold().startswith(rel + "/")
+                    for rel in reserved
+                )
+            }
+
         return sorted(folders, key=lambda x: x.lower())
+
+    def _recipes_folder_rel_paths(self) -> Set[str]:
+        """Casefolded library-relative names of the recipes dir, per root.
+
+        The recipe library sits inside a lora root by default; it is a
+        reserved directory, never a model folder. The scan walks no longer
+        record it, but snapshots persisted before that exclusion still carry
+        it, so readers filter it out here.
+        """
+        try:
+            recipes_dir = get_effective_recipes_dir()
+        except Exception:  # pragma: no cover - defensive
+            return set()
+        if not recipes_dir:
+            return set()
+
+        recipes_abs = os.path.abspath(recipes_dir)
+        recipes_key = os.path.normcase(recipes_abs)
+        reserved: Set[str] = set()
+        for root in self.get_model_roots():
+            root_abs = os.path.abspath(root)
+            root_key = os.path.normcase(root_abs)
+            if recipes_key != root_key and not recipes_key.startswith(
+                root_key + os.sep
+            ):
+                continue
+            rel = os.path.relpath(recipes_abs, root_abs).replace(os.sep, "/")
+            if rel and rel != ".":
+                reserved.add(rel.casefold())
+        return reserved
 
     async def add_known_folder(self, folder: str) -> None:
         """Record a folder (and its parents) in the known folder list.
@@ -2894,17 +2956,25 @@ class ModelScanner:
         """Enumerate every directory under the model roots, live from disk.
 
         Runs in a worker thread. Hidden directories (any segment starting
-        with '.') and the pending-delete staging dir are excluded.
+        with '.'), the pending-delete staging dir and the recipes storage
+        dir are excluded.
         """
         discovered: Set[str] = set()
         visited_real_paths: Set[str] = set()
+        # The recipe library is a reserved directory (see the reconcile walk).
+        recipes_dir_key = normalized_recipes_dir_key()
 
         for root_path in self.get_model_roots():
             if not os.path.exists(root_path):
                 continue
 
             for root, dirnames, _files in os.walk(root_path, followlinks=True):
-                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
+                dirnames[:] = [
+                    d
+                    for d in dirnames
+                    if not _is_excluded_dir(d)
+                    and _dir_entry_key(root, d) != recipes_dir_key
+                ]
                 # realpath is used only for symlink dedup, never for the
                 # recorded path (business paths stay unresolved).
                 real_root = os.path.realpath(root)
@@ -3256,6 +3326,10 @@ class ModelScanner:
         processed_real_files: Set[str] = set()
         visited_real_dirs: Set[str] = set()
         discovered_folders: Set[str] = set()
+        # The recipe library sits inside a lora root by default; it is a
+        # reserved directory, never a model folder, so the scan must not
+        # descend into it.
+        recipes_dir_key = normalized_recipes_dir_key()
 
         async def handle_progress(current_name: str = '') -> None:
             if progress_callback is None:
@@ -3333,6 +3407,11 @@ class ModelScanner:
                                 return
                         elif entry.is_dir(follow_symlinks=True):
                             if _is_excluded_dir(entry.name):
+                                continue
+                            if (
+                                _dir_entry_key(current_path, entry.name)
+                                == recipes_dir_key
+                            ):
                                 continue
                             # Record every directory (including empty ones) so
                             # the folder tree can be served without a live walk.

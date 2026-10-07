@@ -1301,6 +1301,8 @@ export class SidebarManager {
                     ...this._notEmptyBlocker(error?.manifest),
                     ...options,
                 });
+            } else if (error?.code === 'protected') {
+                this._renderDeleteFolderModal(relativePath, 'protected', options);
             } else if (error?.code === 'busy') {
                 this._renderDeleteFolderModal(relativePath, 'busy', options);
             } else if (error?.code === 'missing') {
@@ -1458,6 +1460,9 @@ export class SidebarManager {
                 entry.modelCount = Number(error?.manifest?.model_count) || 0;
                 entry.excludedCount = Number(error?.manifest?.excluded_model_count) || 0;
                 entry.checked = false;
+            } else if (error?.code === 'protected') {
+                entry.status = 'protected';
+                entry.checked = false;
             } else if (error?.code === 'busy') {
                 entry.status = 'busy';
                 entry.checked = false;
@@ -1484,7 +1489,10 @@ export class SidebarManager {
         nodes.checkbox.disabled = !selectable;
         nodes.checkbox.checked = entry.checked;
         nodes.status.textContent = this._deleteFolderRowStatus(entry);
-        nodes.status.classList.toggle('blocked', entry.status === 'not_empty');
+        nodes.status.classList.toggle(
+            'blocked',
+            entry.status === 'not_empty' || entry.status === 'protected'
+        );
     }
 
     /** Whether a probed copy may be selected for deletion. */
@@ -1512,6 +1520,11 @@ export class SidebarManager {
                 return translate('sidebar.folderRoot.busyStatus', {}, 'a deletion is still pending');
             case 'missing':
                 return translate('sidebar.folderRoot.missingStatus', {}, 'no longer exists on disk');
+            case 'protected':
+                return translate(
+                    'sidebar.folderRoot.protectedStatus', {},
+                    'holds the recipe library — cannot be deleted here'
+                );
             case 'symlink':
                 return translate(
                     'sidebar.folderRoot.symlinkStatus', {},
@@ -1738,9 +1751,10 @@ export class SidebarManager {
      * `state` is 'confirm' (deletion may proceed), 'blocked' (models would be
      * cascaded over, which the backend refuses), 'busy' (a staged delete is
      * still pending inside the folder), 'missing' (no root holds the node's
-     * directory any more) or 'symlink' (every copy is a symbolic link, which the
-     * backend refuses to remove). `checking` keeps the confirm button disabled
-     * while the authoritative server-side check runs.
+     * directory any more), 'symlink' (every copy is a symbolic link, which the
+     * backend refuses to remove) or 'protected' (the folder holds the recipe
+     * library, which the backend refuses to remove). `checking` keeps the
+     * confirm button disabled while the authoritative server-side check runs.
      *
      * This is the single-target form, used when the node maps to at most one
      * directory; an ambiguous node renders the multi-root list instead (see
@@ -1815,6 +1829,14 @@ export class SidebarManager {
                 message.textContent = translate(
                     'sidebar.deleteFolderModal.symlinkMessage', {},
                     'Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.'
+                );
+            } else if (state === 'protected') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.protectedTitle', {}, 'Folder is protected'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.protectedMessage', {},
+                    'This folder holds the recipe library and cannot be deleted from LoRA Manager.'
                 );
             } else {
                 title.textContent = translate(

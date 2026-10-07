@@ -1416,6 +1416,8 @@
       "missingMessage": "This folder no longer exists on disk. Refresh the sidebar and try again.",
       "symlinkTitle": "Folder is a symbolic link",
       "symlinkMessage": "Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.",
+      "protectedTitle": "Folder is protected",
+      "protectedMessage": "This folder holds the recipe library and cannot be deleted from LoRA Manager.",
       "busyTitle": "A deletion is still pending",
       "checking": "Checking the folder contents...",
       "confirm": "Delete folder",
@@ -1458,6 +1460,7 @@
       "busyStatus": "a deletion is still pending",
       "missingStatus": "no longer exists on disk",
       "symlinkStatus": "symbolic link — cannot be deleted here",
+      "protectedStatus": "holds the recipe library — cannot be deleted here",
       "unknownStatus": "could not be checked",
       "deletedStatus": "deleted"
     },

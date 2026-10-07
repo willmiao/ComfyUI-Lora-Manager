@@ -628,3 +628,86 @@ async def test_rename_folder_requires_path(tmp_path: Path):
     result = await service.rename_folder("", "renamed")
 
     assert result["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_refuses_the_recipes_dir(tmp_path: Path, monkeypatch):
+    """The default recipes dir lives in the first lora root and holds no model
+    weight files, so the model_count check alone would let it be wiped."""
+    from py.config import config
+
+    monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    target = tmp_path / "recipes"
+    target.mkdir()
+    recipe_file = target / "abc123.recipe.json"
+    recipe_file.write_text("{}", encoding="utf-8")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is False
+    assert result["code"] == "protected"
+    assert recipe_file.exists()
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_refuses_an_ancestor_of_the_recipes_dir(
+    tmp_path: Path, monkeypatch
+):
+    """Deleting a parent of the recipes dir wipes the library just the same."""
+    from py.services.settings_manager import get_settings_manager
+
+    recipes_dir = tmp_path / "data" / "recipes"
+    recipes_dir.mkdir(parents=True)
+    manager = get_settings_manager()
+    monkeypatch.setitem(manager.settings, "recipes_path", str(recipes_dir))
+
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(tmp_path / "data"))
+
+    assert result["success"] is False
+    assert result["code"] == "protected"
+    assert recipes_dir.is_dir()
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_allows_normal_folders_next_to_the_recipes_dir(
+    tmp_path: Path, monkeypatch
+):
+    from py.config import config
+
+    monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
+    (tmp_path / "recipes").mkdir()
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    target = tmp_path / "recipes_backup"
+    target.mkdir()
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is True
+    assert not target.exists()
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_refuses_the_recipes_dir(tmp_path: Path, monkeypatch):
+    from py.config import config
+
+    monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    target = tmp_path / "recipes"
+    target.mkdir()
+
+    result = await service.rename_folder(str(target), "recipes2")
+
+    assert result["success"] is False
+    assert result["code"] == "protected"
+    assert target.is_dir()
+    assert scanner.renamed_folders == []

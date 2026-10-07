@@ -794,6 +794,21 @@ describe('SidebarManager folder deletion', () => {
     expect(confirmBtn().style.display).toBe('none');
   });
 
+  it('blocks the delete when the folder holds the recipe library', async () => {
+    const protectedError = Object.assign(new Error('recipe library'), { code: 'protected' });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(protectedError),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('empty');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('protected');
+    expect(confirmBtn().style.display).toBe('none');
+  });
+
   it('keeps the confirm button disabled until the check settles', async () => {
     let release;
     const apiClient = createApiClient({

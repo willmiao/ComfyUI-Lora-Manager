@@ -2859,3 +2859,93 @@ def test_root_display_labels_dedupe_by_parent_segments(monkeypatch):
     label = _root_display_labels([long_root])[long_root]
     assert len(label) <= 40
     assert label.endswith("loras")
+
+
+@pytest.mark.asyncio
+async def test_scan_excludes_recipes_dir_from_all_folders(tmp_path: Path, monkeypatch):
+    """The default recipes dir lives under the first lora root; it is a
+    reserved directory and must never appear in the folder tree."""
+    _create_files(tmp_path)
+    recipes = tmp_path / "recipes"
+    (recipes / "sub").mkdir(parents=True)
+    # A stray weight file inside the recipes dir is not indexed either.
+    (recipes / "stray.txt").write_text("stray", encoding="utf-8")
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    assert not any("/recipes/" in item["file_path"] for item in cache.raw_data)
+    all_folders = await scanner.get_all_folders()
+    assert "recipes" not in all_folders
+    assert "recipes/sub" not in all_folders
+
+
+@pytest.mark.asyncio
+async def test_all_folders_backfill_excludes_recipes_dir(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    (tmp_path / "recipes").mkdir()
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    await scanner.get_all_folders()
+    for _ in range(200):
+        if not scanner._all_folders_backfill_running:
+            break
+        await asyncio.sleep(0.01)
+
+    assert scanner._all_folders_backfill_running is False
+    assert cache.all_folders is not None
+    assert "recipes" not in cache.all_folders
+    assert "nested" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_filters_recipes_dir_from_legacy_snapshots(
+    tmp_path: Path, monkeypatch
+):
+    """Snapshots persisted before the walk exclusion still carry the recipes
+    dir; readers filter it out until the next scan rewrites the list."""
+    _create_files(tmp_path)
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = sorted(
+        set(cache.all_folders or []) | {"recipes", "recipes/sub"},
+        key=lambda value: value.lower(),
+    )
+
+    all_folders = await scanner.get_all_folders()
+
+    assert "recipes" not in all_folders
+    assert "recipes/sub" not in all_folders
+    assert "nested" in all_folders
+
+
+def test_reconcile_walk_skips_the_recipes_dir(tmp_path: Path, monkeypatch):
+    (tmp_path / "recipes" / "sub").mkdir(parents=True)
+    (tmp_path / "keep").mkdir()
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    result = model_scanner._walk_root_for_reconcile(
+        root_path=str(tmp_path),
+        file_extensions={".txt"},
+        cached_paths=set(),
+        path_to_item={},
+        lookups=model_scanner._CachedPathLookups(set()),
+        dir_claims=model_scanner._RealDirClaims(),
+        excluded_models=set(),
+        is_cancelled=lambda: False,
+        report_progress=lambda _files_seen: None,
+    )
+
+    assert "keep" in result.discovered_folders
+    assert "recipes" not in result.discovered_folders
+    assert "recipes/sub" not in result.discovered_folders

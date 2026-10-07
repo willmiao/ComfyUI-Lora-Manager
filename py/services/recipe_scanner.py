@@ -2676,23 +2676,11 @@ class RecipeScanner:
     @property
     def recipes_dir(self) -> str:
         """Get path to recipes directory"""
-        from .settings_manager import get_settings_manager
+        from ..utils.recipes_paths import get_effective_recipes_dir
 
-        custom_recipes_dir = get_settings_manager().get("recipes_path", "")
-        if isinstance(custom_recipes_dir, str) and custom_recipes_dir.strip():
-            recipes_dir = os.path.abspath(
-                os.path.normpath(os.path.expanduser(custom_recipes_dir.strip()))
-            )
+        recipes_dir = get_effective_recipes_dir()
+        if recipes_dir:
             os.makedirs(recipes_dir, exist_ok=True)
-            return recipes_dir
-
-        if not config.loras_roots:
-            return ""
-
-        # config.loras_roots already sorted case-insensitively, use the first one
-        recipes_dir = os.path.join(config.loras_roots[0], "recipes")
-        os.makedirs(recipes_dir, exist_ok=True)
-
         return recipes_dir
 
     async def get_cached_data(self, force_refresh: bool = False) -> RecipeCache:

@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE, MODEL_FILE_EXTENSIONS
+from ..utils.recipes_paths import path_is_or_contains_recipes_dir
 from ..utils.sidecar_paths import is_centralized, resolve_centralized_dir_for_dir
 from ..services.settings_manager import get_settings_manager
 from ..services.model_lifecycle_service import _require_path_in_library_roots
@@ -697,6 +698,19 @@ class ModelMoveService:
                     "error": "The library root itself cannot be deleted",
                 }
 
+            if path_is_or_contains_recipes_dir(absolute_path):
+                # The recipes dir holds no model weight files, so the
+                # model_count check below cannot protect it — but removing it
+                # wipes the user's recipe library.
+                return {
+                    "success": False,
+                    "code": "protected",
+                    "error": (
+                        "This folder holds the recipe library and cannot be "
+                        "deleted from here"
+                    ),
+                }
+
             manifest = self._collect_folder_manifest(absolute_path)
 
             if manifest["pending_delete_job"]:
@@ -946,6 +960,18 @@ class ModelMoveService:
                 return {
                     "success": False,
                     "error": "The library root itself cannot be renamed",
+                }
+
+            if path_is_or_contains_recipes_dir(absolute_path):
+                # Renaming the recipes dir (or an ancestor) strands the recipe
+                # library: the scanner keeps looking at the configured path.
+                return {
+                    "success": False,
+                    "code": "protected",
+                    "error": (
+                        "This folder holds the recipe library and cannot be "
+                        "renamed from here"
+                    ),
                 }
 
             previous_relative = self._calculate_relative_folder(absolute_path)
