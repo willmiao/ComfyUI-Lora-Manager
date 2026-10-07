@@ -14,7 +14,7 @@ from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
 from ..utils.sidecar_paths import get_metadata_path
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
-from .errors import RateLimitError
+from .errors import MetadataPersistError, RateLimitError
 from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
 from .model_sources import get_source_platform, has_external_source
 
@@ -231,7 +231,16 @@ class MetadataSyncService:
             metadata_path, local_metadata, civitai_metadata.get("images", [])
         )
 
-        await self._metadata_manager.save_metadata(metadata_path, local_metadata)
+        saved = await self._metadata_manager.save_metadata(metadata_path, local_metadata)
+        if not saved:
+            # A swallowed write failure would update the cache while the
+            # durable sidecar never lands (e.g. the drive went offline), and
+            # the model would be skipped by every later fetch as "already
+            # fetched". Fail loudly instead so the caller reports the item
+            # and it stays eligible for the next run.
+            raise MetadataPersistError(
+                f"Failed to write metadata sidecar: {metadata_path}"
+            )
         return local_metadata
 
     async def fetch_and_update_model(

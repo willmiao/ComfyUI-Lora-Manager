@@ -45,6 +45,12 @@ class ResourceNotFoundError(RuntimeError):
     pass
 
 
+class MetadataPersistError(RuntimeError):
+    """Raised when the metadata sidecar cannot be written to disk."""
+
+    pass
+
+
 class LLMNotConfiguredError(RuntimeError):
     """Raised when an LLM-dependent operation is attempted but no provider is configured."""
 

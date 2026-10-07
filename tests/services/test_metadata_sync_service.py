@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
-from py.services.errors import RateLimitError
+from py.services.errors import MetadataPersistError, RateLimitError
 from py.services.metadata_sync_service import MetadataSyncService, _merge_ordered_unique
 
 
@@ -283,6 +283,56 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     for key in ("allowNoCredit", "allowCommercialUse", "allowDerivatives", "allowDifferentLicense"):
         assert key not in persisted_payload
     update_cache.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_raises_when_sidecar_write_fails():
+    """A failed sidecar write must surface instead of being swallowed."""
+    helpers = build_service()
+    helpers.metadata_manager.save_metadata.return_value = False
+
+    with pytest.raises(MetadataPersistError):
+        await helpers.service.update_model_metadata(
+            "path/to/model.metadata.json",
+            {"civitai": {}, "model_name": "Local"},
+            {"source": "api", "model": {"name": "Remote"}, "images": []},
+            helpers.default_provider,
+        )
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_reports_sidecar_write_failure(tmp_path):
+    """Fetch fails the item (and leaves the cache untouched) when the sidecar
+    cannot be written, so the model stays eligible for the next run."""
+    helpers = build_service()
+    helpers.metadata_manager.save_metadata.return_value = False
+
+    civitai_payload = {
+        "source": "api",
+        "model": {"name": "Remote", "description": "", "tags": ["tag"]},
+        "images": [],
+        "baseModel": "sdxl",
+    }
+    helpers.default_provider.get_model_by_hash.return_value = (civitai_payload, None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="abc",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False
+    assert "sidecar" in (error or "")
+    update_cache.assert_not_awaited()
 
 
 @pytest.mark.asyncio

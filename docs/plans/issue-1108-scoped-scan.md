@@ -364,8 +364,9 @@ differs per mode and that matters:
   unioned rather than replaced whenever the scan did not verify every root); the next full refresh
   drops them.
 - `root_details[].reachable` is a live `os.path.exists()` per root, so a root that disappears
-  mid-session shows as offline; a root that was already gone at startup is filtered out by
-  `Config` and therefore absent from the list.
+  mid-session shows as offline; a root that was already gone at startup is still listed thanks
+  to Wave 6 (`available: false`, cached count), and `/roots` re-admits it once the directory
+  is back.
 
 ## Verification checklist
 
