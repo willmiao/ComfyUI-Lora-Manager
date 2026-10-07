@@ -798,6 +798,16 @@ class Config:
         except Exception as e:
             logger.error(f"Error scanning links in {root}: {e}")
 
+    def iter_path_mappings(self) -> List[Tuple[str, str]]:
+        """Return the known ``(physical target, virtual link)`` symlink pairs.
+
+        Only symlinks directly under a model root are tracked (see
+        :meth:`_scan_symbolic_links`), so callers must treat this as a partial
+        view of the on-disk link layout — enough to notice that a linked drive
+        went away, not enough to resolve nested links.
+        """
+        return list(self._path_mappings.items())
+
     def add_path_mapping(self, link_path: str, target_path: str):
         """Add a symbolic link path mapping
         target_path: actual target path

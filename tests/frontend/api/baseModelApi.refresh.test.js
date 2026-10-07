@@ -153,8 +153,8 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     };
   }
 
-  async function startRefresh(client, fullRebuild = false) {
-    const promise = client.refreshModels(fullRebuild);
+  async function startRefresh(client, fullRebuild = false, options = {}) {
+    const promise = client.refreshModels(fullRebuild, options);
     await vi.waitFor(() => {
       expect(FakeWebSocket.instances.length).toBe(1);
     });
@@ -390,6 +390,75 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
 
     fetchControl.resolveOk();
     await promise;
+  });
+
+  it('requests a scoped scan when roots are passed', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'success' }),
+    });
+
+    const client = await createClient();
+    await client.refreshModels(false, { roots: ['/mnt/a/loras', '/mnt/b/loras'] });
+
+    const [url] = global.fetch.mock.calls[0];
+    expect(url.searchParams.getAll('roots')).toEqual(['/mnt/a/loras', '/mnt/b/loras']);
+    expect(url.searchParams.get('full_rebuild')).toBe('false');
+  });
+
+  it('reports the scoped scan summary and the entries kept unreachable', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client, false, { roots: ['/mnt/a/loras'] });
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scanned_roots: ['a/loras'],
+      added: 2,
+      removed: 1,
+      kept_unreachable: 5,
+      unavailable_paths: [
+        { path: '/mnt/g/loras', reason: 'root_unreachable', kept: 5 },
+      ],
+      skipped_roots: [{ path: '/mnt/g/loras', label: 'g/loras' }],
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      { scope: 'a/loras', added: 2, removed: 1 },
+      'success'
+    );
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshKeptUnreachable',
+      { count: '5', paths: 'g/loras' },
+      'info'
+    );
+  });
+
+  it('keeps the generic completion toast for a full-library scan', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client);
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scanned_roots: ['a/loras', 'b/loras'],
+      added: 0,
+      removed: 0,
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshComplete',
+      { action: 'Refresh' },
+      'success'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      expect.anything(),
+      expect.anything()
+    );
   });
 
   it('shows the cancelled toast when the server reports cancellation', async () => {

@@ -73,6 +73,12 @@
                     <div class="dropdown-item" data-action="full-rebuild" title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.fullTooltip', default='Rebuild cache - full rescan of all recipe files') }}{% else %}{{ t('loras.controls.refresh.fullTooltip') }}{% endif %}">
                         <i class="fas fa-tools"></i> <span>{% if page_id == 'recipes' %}{{ t('loras.controls.refresh.full', default='Rebuild Cache') }}{% else %}{{ t('loras.controls.refresh.full') }}{% endif %}</span>
                     </div>
+                    {% if page_id != 'recipes' %}
+                    <!-- Per-root scan scope, filled by PageControls.loadScanScopeMenu() -->
+                    <div class="dropdown-separator"></div>
+                    <div class="dropdown-section-title">{{ t('loras.controls.refresh.scopeSection') }}</div>
+                    <div id="refreshScopeMenu" class="dropdown-scope-list"></div>
+                    {% endif %}
                 </div>
             </div>
             

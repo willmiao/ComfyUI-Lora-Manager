@@ -114,13 +114,84 @@ def _new_file_pass_progress(processed: int, total: int) -> int:
     return _WALK_PROGRESS_SHARE + min(49, int(ratio * 49))
 
 
-def _root_display_label(root: str) -> str:
-    """Short label identifying a model root in progress messages."""
-    drive, _tail = os.path.splitdrive(root)
-    if drive:
-        return drive
-    normalized = root.rstrip("/\\")
-    return os.path.basename(normalized) or root
+# Maximum length of a root label in progress messages and menus; the full path
+# always stays available in the tooltip.
+_ROOT_LABEL_MAX_LENGTH = 40
+
+
+def _truncate_label(label: str, limit: int = _ROOT_LABEL_MAX_LENGTH) -> str:
+    """Middle-truncate an over-long label."""
+    if len(label) <= limit:
+        return label
+    keep = max(limit - 3, 1)
+    head = (keep + 1) // 2
+    tail = keep - head
+    if not tail:
+        return f"{label[:head]}..."
+    return f"{label[:head]}...{label[-tail:]}"
+
+
+def _root_path_parts(root: str) -> Tuple[str, List[str]]:
+    """Split a root into its drive prefix (Windows) and its path segments."""
+    drive, tail = os.path.splitdrive(root)
+    normalized = tail.replace("\\", "/").strip("/")
+    return drive, [part for part in normalized.split("/") if part]
+
+
+def _root_display_labels(roots: Sequence[str]) -> Dict[str, str]:
+    """Return a unique, human-friendly label for every root in the set.
+
+    The label starts as the last path segment (prefixed with the drive letter on
+    Windows, e.g. ``G: loras``) and grows leftwards with **real parent path
+    segments** until it is unique inside the set (``usb/loras`` vs
+    ``ssd/loras``). Roots that still render identically (Windows case variants,
+    a duplicated config entry) get a deterministic numeric suffix.
+
+    Labels are a property of the whole set, so they are computed from the sorted
+    root list: the same configuration always yields the same labels, whatever
+    order the roots are walked in.
+    """
+    if not roots:
+        return {}
+
+    parts_by_root = {root: _root_path_parts(root) for root in roots}
+    depth = {root: (1 if parts_by_root[root][1] else 0) for root in roots}
+
+    def _render(root: str) -> str:
+        drive, parts = parts_by_root[root]
+        if not parts:
+            return drive or root
+        take = max(min(depth[root], len(parts)), 1)
+        tail = "/".join(parts[len(parts) - take:])
+        return f"{drive} {tail}" if drive else tail
+
+    # Grow the depth of colliding labels until they can be told apart.
+    while True:
+        groups: Dict[str, List[str]] = {}
+        for root in roots:
+            groups.setdefault(_render(root), []).append(root)
+        colliding = [group for group in groups.values() if len(group) > 1]
+        if not colliding:
+            break
+        grew = False
+        for group in colliding:
+            for root in group:
+                if depth[root] < len(parts_by_root[root][1]):
+                    depth[root] += 1
+                    grew = True
+        if not grew:
+            break
+
+    labels = {root: _render(root) for root in roots}
+    fallback: Dict[str, List[str]] = {}
+    for root in sorted(roots):
+        fallback.setdefault(labels[root], []).append(root)
+    for label, group in fallback.items():
+        if len(group) > 1:
+            for index, root in enumerate(group, start=1):
+                labels[root] = f"{label} ({index})"
+
+    return {root: _truncate_label(label) for root, label in labels.items()}
 
 
 def _normalized_root_prefix(root: str) -> str:
@@ -131,32 +202,134 @@ def _normalized_root_prefix(root: str) -> str:
     return prefix.lower() if _CASE_INSENSITIVE_PATHS else prefix
 
 
-def _count_cached_entries_per_root(
-    cached_paths: Set[str], roots: Sequence[str]
-) -> Dict[str, int]:
-    """Attribute cached entries to model roots (longest prefix wins).
+def _path_matches_prefix(path: str, prefix: str) -> bool:
+    """Match a cached business path against a normalized scope prefix."""
+    candidate = path.lower() if _CASE_INSENSITIVE_PATHS else path
+    return candidate.startswith(prefix)
 
+
+def _scope_prefix(root: str, folder: Optional[str] = None) -> str:
+    """Normalized prefix covering a root, or a folder inside that root."""
+    prefix = _normalized_root_prefix(root)
+    if folder:
+        relative = folder.replace("\\", "/").strip("/")
+        if relative:
+            if _CASE_INSENSITIVE_PATHS:
+                relative = relative.lower()
+            prefix = f"{prefix}{relative}/"
+    return prefix
+
+
+def _scope_walk_path(root: str, folder: Optional[str] = None) -> str:
+    """Filesystem path a scoped walk starts at (the root itself when unscoped)."""
+    if not folder:
+        return root
+    relative = folder.replace("\\", "/").strip("/")
+    if not relative:
+        return root
+    return os.path.join(root, *relative.split("/"))
+
+
+@dataclass(frozen=True)
+class ReconcileScope:
+    """Restrict a reconcile to some of the configured roots and/or a folder.
+
+    ``roots=None`` means "every configured root". ``folder`` is a root-relative
+    folder in forward-slash form and applies to each root in the scope.
+    """
+
+    roots: Optional[Tuple[str, ...]] = None
+    folder: Optional[str] = None
+
+
+class _UnreachablePaths:
+    """Prefixes this reconcile could not read; their entries are never pruned.
+
+    Populated from three sources: a configured root that is not reachable, a
+    directory ``os.walk`` failed to enter (permissions, I/O error, a Windows
+    junction to an offline drive), and a known first-level symlink whose target
+    is not a directory. Cached entries under these prefixes are reported instead
+    of removed, so switching a drive off can no longer wipe its models.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._prefixes: List[str] = []
+        self._details: Dict[str, Dict[str, Any]] = {}
+
+    def add(self, path: str, reason: str) -> None:
+        prefix = _normalized_root_prefix(path)
+        with self._lock:
+            if prefix in self._details:
+                return
+            self._details[prefix] = {
+                'path': path.replace(os.sep, '/'),
+                'reason': reason,
+                'kept': 0,
+            }
+            self._prefixes.append(prefix)
+
+    def match(self, cached_path: str) -> Optional[str]:
+        """Return the prefix covering ``cached_path``, if any."""
+        for prefix in self._prefixes:
+            if _path_matches_prefix(cached_path, prefix):
+                return prefix
+        return None
+
+    def record_kept(self, prefix: str, amount: int = 1) -> None:
+        detail = self._details.get(prefix)
+        if detail is not None:
+            detail['kept'] += amount
+
+    def total_kept(self) -> int:
+        return sum(detail['kept'] for detail in self._details.values())
+
+    def count(self) -> int:
+        return len(self._details)
+
+    def has_entries(self) -> bool:
+        return bool(self._details)
+
+    def payload(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """Most affected prefixes first, capped for the progress payload."""
+        entries = sorted(
+            self._details.values(), key=lambda detail: detail['kept'], reverse=True
+        )
+        return [dict(entry) for entry in entries[:limit]]
+
+
+def _count_cached_entries_for_prefixes(
+    cached_paths: Set[str], prefixes: Sequence[Tuple[str, str]]
+) -> Dict[str, int]:
+    """Count cached entries per ``(key, normalized prefix)`` pair.
+
+    Longest prefix wins, so a folder scope counts only the entries inside it.
     Used as the walk-workload weight for progress reporting: the walk itself is
     what discovers the real file count, so the cached entry count is the only
     estimate available up front.
     """
-    counts: Dict[str, int] = {root: 0 for root in roots}
-    if not roots:
+    counts: Dict[str, int] = {key: 0 for key, _prefix in prefixes}
+    if not prefixes:
         return counts
 
-    prefixes = sorted(
-        ((_normalized_root_prefix(root), root) for root in roots),
-        key=lambda item: len(item[0]),
-        reverse=True,
-    )
+    ordered = sorted(prefixes, key=lambda item: len(item[1]), reverse=True)
     case_insensitive = _CASE_INSENSITIVE_PATHS
     for path in cached_paths:
         candidate = path.lower() if case_insensitive else path
-        for prefix, root in prefixes:
+        for key, prefix in ordered:
             if candidate.startswith(prefix):
-                counts[root] += 1
+                counts[key] += 1
                 break
     return counts
+
+
+def _count_cached_entries_per_root(
+    cached_paths: Set[str], roots: Sequence[str]
+) -> Dict[str, int]:
+    """Attribute cached entries to model roots (longest prefix wins)."""
+    return _count_cached_entries_for_prefixes(
+        cached_paths, [(root, _normalized_root_prefix(root)) for root in roots]
+    )
 
 
 def _root_device_key(root: str) -> str:
@@ -273,10 +446,19 @@ class _ReconcileWalkTracker:
     they finish.
     """
 
-    def __init__(self, roots: Sequence[str], expected: Mapping[str, int]) -> None:
+    def __init__(
+        self,
+        roots: Sequence[str],
+        expected: Mapping[str, int],
+        labels: Optional[Mapping[str, str]] = None,
+    ) -> None:
         self._lock = threading.Lock()
         self._roots: List[str] = list(roots)
-        self._labels = {root: _root_display_label(root) for root in self._roots}
+        # Callers that already labelled the full configured root set pass those
+        # labels in, so the progress line and the refresh menu never disagree on
+        # how a root is named.
+        resolved = dict(labels) if labels else _root_display_labels(self._roots)
+        self._labels = {root: resolved.get(root) or root for root in self._roots}
         self._expected = {
             root: max(int(expected.get(root, 0) or 0), 0) for root in self._roots
         }
@@ -373,8 +555,14 @@ def _walk_root_for_reconcile(
     excluded_models: Set[str],
     is_cancelled: Callable[[], bool],
     report_progress: Callable[[int], None],
+    walk_path: Optional[str] = None,
+    unreachable: Optional[_UnreachablePaths] = None,
 ) -> _RootWalkResult:
     """Walk one model root and classify every model file found.
+
+    ``walk_path`` defaults to the root itself; a folder scope starts the walk
+    deeper but still resolves ``folder``/``file_path`` against ``root_path`` so
+    cache entries keep their library-relative shape.
 
     Runs synchronously (worker thread) and never mutates scanner state: all
     cache updates happen on the event loop once every root has been walked.
@@ -382,6 +570,13 @@ def _walk_root_for_reconcile(
     result = _RootWalkResult(root_path=root_path)
     stale_seen: Set[str] = set()
     files_since_report = 0
+    walk_start = walk_path or root_path
+
+    def _on_walk_error(error: OSError) -> None:
+        """Record a directory the walk could not enter (offline/denied)."""
+        filename = getattr(error, 'filename', None)
+        if filename and unreachable is not None:
+            unreachable.add(str(filename), 'unreadable_dir')
 
     def mark_stale_if_needed(cached_path: str) -> None:
         """Queue a cached path for file_name repair when it drifted."""
@@ -395,7 +590,9 @@ def _walk_root_for_reconcile(
         stale_seen.add(cached_path)
         result.stale_paths.append(cached_path)
 
-    for root, dirnames, files in os.walk(root_path, followlinks=True):
+    for root, dirnames, files in os.walk(
+        walk_start, followlinks=True, onerror=_on_walk_error
+    ):
         dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
 
         real_root = os.path.realpath(root)
@@ -554,6 +751,8 @@ class ModelScanner:
         self._defer_persist_depth = 0
         self._deferred_persist_pending = False
         self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
+        # Summary of the last incremental reconcile (see last_reconcile_summary)
+        self._last_reconcile_summary: Optional[Dict[str, Any]] = None
         # Guard against concurrent all-folders backfill walks (cold fallback
         # for persisted snapshots that predate folder recording).
         self._all_folders_backfill_running = False
@@ -1334,12 +1533,19 @@ class ModelScanner:
             asyncio.set_event_loop(None)
             loop.close()
 
-    async def get_cached_data(self, force_refresh: bool = False, rebuild_cache: bool = False) -> ModelCache:
+    async def get_cached_data(
+        self,
+        force_refresh: bool = False,
+        rebuild_cache: bool = False,
+        scope: Optional[ReconcileScope] = None,
+    ) -> ModelCache:
         """Get cached model data, refresh if needed
         
         Args:
             force_refresh: Whether to refresh the cache
             rebuild_cache: Whether to completely rebuild the cache
+            scope: Restrict an incremental reconcile to some roots / a folder
+                (ignored by a full rebuild, which always walks everything)
         """
         # If cache is not initialized, return an empty cache
         # Actual initialization should be done via initialize_in_background
@@ -1353,11 +1559,54 @@ class ModelScanner:
         # If force refresh is requested, initialize the cache directly
         if force_refresh:
             if rebuild_cache:
+                self._last_reconcile_summary = None
                 await self._initialize_cache()
             else:
-                await self._reconcile_cache()
+                self._last_reconcile_summary = await self._reconcile_cache(scope=scope)
         
         return cast(ModelCache, self._cache)
+
+    @property
+    def last_reconcile_summary(self) -> Optional[Dict[str, Any]]:
+        """Summary of the most recent incremental reconcile (None otherwise).
+
+        Carries the counts the refresh toast reports (added / removed /
+        repaired) plus the scan scope and the paths that were left untouched
+        because they were unreachable.
+        """
+        return self._last_reconcile_summary
+
+    def describe_model_roots(self) -> List[Dict[str, Any]]:
+        """Describe the configured roots for the refresh scope menu.
+
+        ``models`` is the cached entry count per root (the same attribution the
+        walk-progress weights use) and ``reachable`` is a live filesystem check,
+        so a switched-off drive shows as offline without touching the cache.
+        """
+        roots: List[str] = []
+        seen: Set[str] = set()
+        for root in self.get_model_roots():
+            if not root or root in seen:
+                continue
+            seen.add(root)
+            roots.append(root)
+
+        labels = _root_display_labels(roots)
+        cached_paths = (
+            {item.get('file_path', '') for item in self._cache.raw_data}
+            if self._cache is not None
+            else set()
+        )
+        counts = _count_cached_entries_per_root(cached_paths, roots)
+        return [
+            {
+                'path': root.replace(os.sep, '/'),
+                'label': labels[root],
+                'reachable': os.path.exists(root),
+                'models': counts.get(root, 0),
+            }
+            for root in roots
+        ]
 
     async def _initialize_cache(self) -> None:
         """Initialize or refresh the cache"""
@@ -1450,8 +1699,15 @@ class ModelScanner:
         finally:
             self._is_initializing = False # Unset flag
 
-    async def _reconcile_cache(self) -> None:
-        """Fast cache reconciliation - only process differences between cache and filesystem"""
+    async def _reconcile_cache(self, scope: Optional[ReconcileScope] = None) -> Optional[Dict[str, Any]]:
+        """Fast cache reconciliation - only process differences between cache and filesystem.
+
+        ``scope`` restricts the reconcile to some of the configured roots and/or
+        a folder inside them: entries outside the scope are neither re-read nor
+        removed, so scanning one drive can never touch another. Paths the walk
+        could not read are kept and reported instead of being treated as
+        deleted. Returns a summary of the run (also broadcast to the UI).
+        """
         self.reset_cancellation()
         self._is_initializing = True # Set flag for reconciliation duration
         try:
@@ -1465,30 +1721,69 @@ class ModelScanner:
             cached_paths = {item['file_path'] for item in self._cache.raw_data}
             path_to_item = {item['file_path']: item for item in self._cache.raw_data}
 
-            # Every configured root that is currently reachable. A root that is
-            # missing (drive switched off, unmounted share) is skipped, so its
-            # cached entries are reported as missing below.
-            roots: List[str] = []
+            # Snapshot the configured roots once for this phase: scope
+            # resolution, reachability, symlink relevance and the new-file pass
+            # all read from this list.
+            configured_roots: List[str] = []
             seen_roots: Set[str] = set()
             for root_path in self.get_model_roots():
                 if not root_path or root_path in seen_roots:
                     continue
-                if not os.path.exists(root_path):
-                    continue
                 seen_roots.add(root_path)
+                configured_roots.append(root_path)
+
+            all_labels = _root_display_labels(configured_roots)
+            scope_roots = [
+                root for root in configured_roots
+                if scope is None or scope.roots is None or root in scope.roots
+            ]
+            scope_folder = scope.folder if scope is not None else None
+
+            # A configured root that is not reachable (drive switched off,
+            # unmounted share) is skipped instead of being treated as deleted.
+            unreachable = _UnreachablePaths()
+            roots: List[str] = []
+            skipped_roots: List[Dict[str, Any]] = []
+            for root_path in scope_roots:
+                if not os.path.exists(root_path):
+                    unreachable.add(root_path, 'root_unreachable')
+                    skipped_roots.append({
+                        'path': root_path.replace(os.sep, '/'),
+                        'label': all_labels.get(root_path, root_path),
+                        'reason': 'root_unreachable',
+                    })
+                    continue
                 roots.append(root_path)
+
+            self._collect_offline_symlink_prefixes(roots, unreachable)
+
+            # Scope prefixes come from every root the caller asked for (even the
+            # unreachable ones) so their entries are recognised as "in scope but
+            # unreadable" and reported instead of silently disappearing.
+            scope_prefixes = [
+                (root, _scope_prefix(root, scope_folder)) for root in scope_roots
+            ]
+            walk_prefixes = [
+                (root, _scope_prefix(root, scope_folder)) for root in roots
+            ]
 
             # Roots on different devices are walked by parallel workers (a cold
             # or slow drive then no longer serializes the others); roots sharing
             # a device stay sequential so directory claims remain deterministic.
             tracker = _ReconcileWalkTracker(
-                roots, _count_cached_entries_per_root(cached_paths, roots)
+                roots,
+                _count_cached_entries_for_prefixes(cached_paths, walk_prefixes),
+                labels={root: all_labels.get(root, root) for root in roots},
             )
             walk_results = await self._walk_roots_for_reconcile(
                 roots=roots,
+                walk_targets={
+                    root: _scope_walk_path(root, scope_folder) for root in roots
+                },
                 tracker=tracker,
                 cached_paths=cached_paths,
                 path_to_item=path_to_item,
+                unreachable=unreachable,
             )
 
             # Final walk snapshot: the bar reaches the walk share, then the
@@ -1675,8 +1970,21 @@ class ModelScanner:
                             exc,
                         )
 
-            # Find missing files (in cache but not in filesystem)
-            missing_files = cached_paths - found_paths
+            # Find missing files (in cache but not in filesystem). Only paths
+            # inside this scan's scope are candidates, and paths the walk could
+            # not read are kept and reported instead of being removed.
+            missing_files: Set[str] = set()
+            for path in cached_paths - found_paths:
+                if not any(
+                    _path_matches_prefix(path, prefix)
+                    for _root, prefix in scope_prefixes
+                ):
+                    continue
+                unreachable_prefix = unreachable.match(path)
+                if unreachable_prefix is not None:
+                    unreachable.record_kept(unreachable_prefix)
+                    continue
+                missing_files.add(path)
             total_removed = 0
             
             if missing_files:
@@ -1732,13 +2040,28 @@ class ModelScanner:
                     self._cache.raw_data = list(reversed(deduped))
                     total_removed += dedup_removed
             
-            # The walk above visited every directory, so refresh the recorded
-            # folder list (including empty folders) even when no model files
-            # changed — e.g. an empty folder was created or removed externally.
+            # The walk above visited every directory *in scope*, so refresh the
+            # recorded folder list (including empty folders) when nothing was
+            # left unverified — e.g. an empty folder was created or removed
+            # externally. A scoped scan, or one with unreadable paths, can only
+            # add to the list: dropping folders this walk never looked at would
+            # empty the sidebar for every drive that was not scanned.
             sorted_discovered = sorted(discovered_folders, key=lambda x: x.lower())
-            folders_changed = self._cache.all_folders != sorted_discovered
+            fully_verified = (
+                len(roots) == len(configured_roots)
+                and scope_folder is None
+                and not unreachable.has_entries()
+            )
+            if fully_verified:
+                merged_folders = sorted_discovered
+            else:
+                merged_folders = sorted(
+                    set(self._cache.all_folders or []) | set(sorted_discovered),
+                    key=lambda x: x.lower(),
+                )
+            folders_changed = self._cache.all_folders != merged_folders
             if folders_changed:
-                self._cache.all_folders = sorted_discovered
+                self._cache.all_folders = merged_folders
 
             # Resort cache if changes were made
             if total_added > 0 or total_removed > 0:
@@ -1755,16 +2078,33 @@ class ModelScanner:
             elif folders_changed:
                 await self._persist_current_cache()
                 
+            summary: Dict[str, Any] = {
+                'added': total_added,
+                'removed': total_removed,
+                'repaired': total_repaired,
+                'scanned_roots': [all_labels.get(root, root) for root in roots],
+                'skipped_roots': skipped_roots,
+                'unavailable_paths': unreachable.payload(),
+                'unavailable_paths_total': unreachable.count(),
+                'kept_unreachable': unreachable.total_kept(),
+            }
             logger.info(
                 f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in "
                 f"{time.time() - start_time:.2f} seconds. Added {total_added}, "
                 f"removed {total_removed}, repaired {total_repaired} models."
+                + (
+                    f" Skipped {len(skipped_roots)} unreachable root(s), kept "
+                    f"{summary['kept_unreachable']} model(s) under unreadable paths."
+                    if skipped_roots or unreachable.has_entries()
+                    else ""
+                )
             )
             await self._broadcast_scan_progress(
                 'completed', 'process_new', 100, False,
-                added=total_added, removed=total_removed,
                 elapsed_seconds=time.time() - start_time,
+                **summary,
             )
+            return summary
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
             await self._broadcast_scan_progress(
@@ -1779,9 +2119,11 @@ class ModelScanner:
         self,
         *,
         roots: List[str],
+        walk_targets: Mapping[str, str],
         tracker: _ReconcileWalkTracker,
         cached_paths: Set[str],
         path_to_item: Mapping[str, Dict[str, Any]],
+        unreachable: _UnreachablePaths,
     ) -> List[_RootWalkResult]:
         """Walk every root off the event loop and return results in root order.
 
@@ -1810,6 +2152,8 @@ class ModelScanner:
                     dir_claims,
                     excluded_models,
                     path_to_item,
+                    walk_targets,
+                    unreachable,
                 )
                 for group in _group_roots_by_device(roots)
             ]
@@ -1837,6 +2181,8 @@ class ModelScanner:
         dir_claims: _RealDirClaims,
         excluded_models: Set[str],
         path_to_item: Mapping[str, Dict[str, Any]],
+        walk_targets: Mapping[str, str],
+        unreachable: _UnreachablePaths,
     ) -> List[_RootWalkResult]:
         """Walk the roots of one device sequentially (worker-thread entry point)."""
         results: List[_RootWalkResult] = []
@@ -1852,6 +2198,7 @@ class ModelScanner:
             try:
                 result = _walk_root_for_reconcile(
                     root_path=root_path,
+                    walk_path=walk_targets.get(root_path, root_path),
                     file_extensions=self.file_extensions,
                     cached_paths=lookups.cached_paths,
                     path_to_item=path_to_item,
@@ -1860,6 +2207,7 @@ class ModelScanner:
                     excluded_models=excluded_models,
                     is_cancelled=self.is_cancelled,
                     report_progress=report_progress,
+                    unreachable=unreachable,
                 )
             finally:
                 tracker.finish_root(root_path)
@@ -1868,6 +2216,41 @@ class ModelScanner:
             if result.cancelled:
                 break
         return results
+
+    def _collect_offline_symlink_prefixes(
+        self, roots: Sequence[str], unreachable: _UnreachablePaths
+    ) -> None:
+        """Flag known first-level symlinks whose target is not a directory.
+
+        ``config`` deliberately tracks only symlinks directly under a root (see
+        ``Config._scan_symbolic_links``), so this costs one ``isdir`` per known
+        mapping and covers "the linked drive is switched off" for the layouts the
+        scanner already knows about. Nested symlinks stay out of scope.
+        """
+        try:
+            mappings = config.iter_path_mappings()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "%s Scanner: symlink map unavailable: %s",
+                self.model_type.capitalize(),
+                exc,
+            )
+            return
+        if not mappings or not roots:
+            return
+
+        root_prefixes = [_normalized_root_prefix(root) for root in roots]
+        for target, link in mappings:
+            link_prefix = _normalized_root_prefix(link)
+            if not any(
+                link_prefix == root_prefix
+                or _path_matches_prefix(link_prefix, root_prefix)
+                for root_prefix in root_prefixes
+            ):
+                continue
+            if os.path.isdir(target):
+                continue
+            unreachable.add(link, 'symlink_target_offline')
 
     async def _monitor_walk_progress(self, tracker: _ReconcileWalkTracker) -> None:
         """Broadcast walk progress while the root workers are running."""

@@ -918,7 +918,10 @@
             "refresh": {
                 "title": "モデルリストを更新",
                 "full": "キャッシュを再構築",
-                "fullTooltip": "メタデータファイルから全モデル情報を再読み込みします。リストが古いと感じるときや手動編集後に使用してください。"
+                "fullTooltip": "メタデータファイルから全モデル情報を再読み込みします。リストが古いと感じるときや手動編集後に使用してください。",
+                "scopeSection": "[TODO: Translate] Scan one folder",
+                "rootOffline": "[TODO: Translate] Offline",
+                "rootModels": "[TODO: Translate] {count} models"
             },
             "fetch": {
                 "title": "CivitAIからメタデータを取得",
@@ -2804,7 +2807,10 @@
             "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
             "moveFailed": "アイテムを移動できませんでした: {message}",
             "copiedToClipboard": "クリップボードにコピーしました",
-            "downloadStarted": "ダウンロードを開始しました"
+            "downloadStarted": "ダウンロードを開始しました",
+            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
+            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
+            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
         },
         "agent": {
             "llmNotConfigured": "AIプロバイダーが設定されていません。設定 → AIプロバイダーで有効にしてください。",

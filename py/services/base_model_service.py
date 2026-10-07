@@ -27,6 +27,7 @@ from ..utils.civitai_utils import build_civitai_model_page_url
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from .model_scanner import ReconcileScope
     from .model_update_service import ModelUpdateService
 
 
@@ -936,12 +937,25 @@ class BaseModelService(ABC):
         return self.scanner.get_hash_by_path(file_path)
 
     async def scan_models(
-        self, force_refresh: bool = False, rebuild_cache: bool = False
-    ):
-        """Trigger model scanning"""
-        return await self.scanner.get_cached_data(
-            force_refresh=force_refresh, rebuild_cache=rebuild_cache
+        self,
+        force_refresh: bool = False,
+        rebuild_cache: bool = False,
+        scope: Optional["ReconcileScope"] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Trigger model scanning, optionally restricted to a scope.
+
+        Returns the reconcile summary (added / removed / repaired / skipped
+        roots / kept entries) for incremental scans, ``None`` for a full
+        rebuild.
+        """
+        await self.scanner.get_cached_data(
+            force_refresh=force_refresh, rebuild_cache=rebuild_cache, scope=scope
         )
+        return self.scanner.last_reconcile_summary
+
+    def describe_model_roots(self) -> List[Dict[str, Any]]:
+        """Describe configured roots (label / reachability / cached count)."""
+        return self.scanner.describe_model_roots()
 
     async def get_model_info_by_name(self, name: str):
         """Get model information by name"""

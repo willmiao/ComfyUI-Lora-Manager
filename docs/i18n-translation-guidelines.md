@@ -151,6 +151,12 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > nothing is tracked for alerts). Register follows each file's existing norm: 你 (zh-CN),
 > 您 (zh-TW), Sie (de), tú (es), вы (ru). No remaining `[TODO: Translate]` placeholders.
 
+> **Status (2026-10, scoped scan):** the Refresh dropdown gained a per-root scope section
+> (`loras.controls.refresh.scopeSection` / `.rootOffline` / `.rootModels`) and the scan result
+> toasts (`toast.api.refreshCompleteScoped`, `.refreshKeptUnreachable`, `.scanRootUnreachable`),
+> 6 keys in total. They are `[TODO: Translate]` placeholders in the other 9 locales for now —
+> the feature owner has not asked for this pass yet.
+
 > **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
 > walk per model root (which roots are being checked, how many model files have been seen, and
 > an ETA) and splits the progress bar into walk (0-50 %) and new-file (50-99 %) phases, which

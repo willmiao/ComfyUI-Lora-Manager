@@ -918,7 +918,10 @@
       "refresh": {
         "title": "Refresh model list",
         "full": "Rebuild Cache",
-        "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits."
+        "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits.",
+        "scopeSection": "Scan one folder",
+        "rootOffline": "Offline",
+        "rootModels": "{count} models"
       },
       "fetch": {
         "title": "Fetch metadata from CivitAI",
@@ -2804,7 +2807,10 @@
       "exampleImagesDownloadFailed": "Failed to download example images: {message}",
       "moveFailed": "Failed to move item: {message}",
       "copiedToClipboard": "Copied to clipboard",
-      "downloadStarted": "Download started"
+      "downloadStarted": "Download started",
+      "refreshCompleteScoped": "Scanned {scope}: {added} new, {removed} removed",
+      "refreshKeptUnreachable": "{count} models kept: {paths} not reachable",
+      "scanRootUnreachable": "{scope} is not reachable right now. Nothing was changed."
     },
     "agent": {
       "llmNotConfigured": "AI provider not configured. Enable it in Settings → AI Provider.",

@@ -511,8 +511,9 @@ export class BaseModelApiClient {
         }
     }
 
-    async refreshModels(fullRebuild = false) {
+    async refreshModels(fullRebuild = false, { roots = null } = {}) {
         const abortController = new AbortController();
+        const scopeRoots = Array.isArray(roots) ? roots.filter(Boolean) : [];
         const displayName = this.apiConfig.config.displayName;
         const singularName = this.apiConfig.config.singularName;
         const actionText = translate(
@@ -600,6 +601,9 @@ export class BaseModelApiClient {
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
+            for (const root of scopeRoots) {
+                url.searchParams.append('roots', root);
+            }
 
             const response = await fetch(url, { signal: abortController.signal });
 
@@ -615,7 +619,7 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
 
-            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
+            this._showRefreshSummary(data, actionText, scopeRoots);
         } catch (error) {
             if (error.name === 'AbortError') {
                 showToast('toast.api.operationCancelled', {}, 'info');
@@ -629,6 +633,59 @@ export class BaseModelApiClient {
             }
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
+        }
+    }
+
+    /**
+     * Report what a finished scan did.
+     *
+     * A scoped scan names the folder it scanned and how many models changed; a
+     * scan that could not read part of its scope says so instead of silently
+     * looking like "nothing found" (the entries are kept, not deleted).
+     * @param {Object} summary - Scan response payload
+     * @param {string} actionText - Localized "Refresh" / "Full rebuild"
+     * @param {Array<string>} scopeRoots - Roots the scan was restricted to
+     */
+    _showRefreshSummary(summary, actionText, scopeRoots = []) {
+        const payload = summary || {};
+        const scannedRoots = Array.isArray(payload.scanned_roots) ? payload.scanned_roots : [];
+        const scopeLabel = scannedRoots.length ? scannedRoots.join(', ') : '';
+
+        if (scopeRoots.length && scopeLabel) {
+            showToast(
+                'toast.api.refreshCompleteScoped',
+                {
+                    scope: scopeLabel,
+                    added: Number(payload.added || 0),
+                    removed: Number(payload.removed || 0),
+                },
+                'success'
+            );
+        } else {
+            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
+        }
+
+        const keptCount = Number(payload.kept_unreachable || 0);
+        if (keptCount > 0) {
+            const unavailable = Array.isArray(payload.unavailable_paths)
+                ? payload.unavailable_paths
+                : [];
+            const skipped = Array.isArray(payload.skipped_roots) ? payload.skipped_roots : [];
+            // Skipped roots already carry a short label; the remaining
+            // unreadable folders only have a path.
+            const names = (
+                skipped.length
+                    ? skipped.map(entry => entry?.label || entry?.path)
+                    : unavailable.map(entry => entry?.path)
+            ).filter(Boolean);
+            showToast(
+                'toast.api.refreshKeptUnreachable',
+                {
+                    count: keptCount.toLocaleString(),
+                    paths: names.slice(0, 3).join(', ') || '—',
+                },
+                'info'
+            );
         }
     }
 

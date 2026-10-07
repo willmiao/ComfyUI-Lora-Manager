@@ -918,7 +918,10 @@
             "refresh": {
                 "title": "重新整理模型列表",
                 "full": "重建快取",
-                "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。"
+                "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。",
+                "scopeSection": "[TODO: Translate] Scan one folder",
+                "rootOffline": "[TODO: Translate] Offline",
+                "rootModels": "[TODO: Translate] {count} models"
             },
             "fetch": {
                 "title": "從 CivitAI 取得 metadata",
@@ -2804,7 +2807,10 @@
             "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
             "moveFailed": "移動項目失敗：{message}",
             "copiedToClipboard": "已複製到剪貼簿",
-            "downloadStarted": "下載已開始"
+            "downloadStarted": "下載已開始",
+            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
+            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
+            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
         },
         "agent": {
             "llmNotConfigured": "AI 提供者尚未設定。請在 設定 → AI 提供者 中進行設定。",

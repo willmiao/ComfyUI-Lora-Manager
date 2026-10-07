@@ -918,7 +918,10 @@
             "refresh": {
                 "title": "רענן רשימת מודלים",
                 "full": "בניית מטמון מחדש",
-                "fullTooltip": "טוען מחדש את כל פרטי המודלים מקבצי המטא-נתונים – לשימוש אם הספרייה נראית לא מעודכנת או לאחר עריכות ידניות."
+                "fullTooltip": "טוען מחדש את כל פרטי המודלים מקבצי המטא-נתונים – לשימוש אם הספרייה נראית לא מעודכנת או לאחר עריכות ידניות.",
+                "scopeSection": "[TODO: Translate] Scan one folder",
+                "rootOffline": "[TODO: Translate] Offline",
+                "rootModels": "[TODO: Translate] {count} models"
             },
             "fetch": {
                 "title": "אחזר מטא-נתונים מ-CivitAI",
@@ -2804,7 +2807,10 @@
             "exampleImagesDownloadFailed": "הורדת תמונות הדוגמה נכשלה: {message}",
             "moveFailed": "לא ניתן היה להעביר את הפריט: {message}",
             "copiedToClipboard": "הועתק ללוח",
-            "downloadStarted": "ההורדה החלה"
+            "downloadStarted": "ההורדה החלה",
+            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
+            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
+            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
         },
         "agent": {
             "llmNotConfigured": "ספק AI לא הוגדר. הפעל אותו בהגדרות → ספק AI.",

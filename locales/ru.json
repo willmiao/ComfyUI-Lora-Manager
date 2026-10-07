@@ -918,7 +918,10 @@
             "refresh": {
                 "title": "Обновить список моделей",
                 "full": "Перестроить кэш",
-                "fullTooltip": "Перечитывает все данные моделей из файлов метаданных — используйте, если библиотека выглядит устаревшей или после ручных правок."
+                "fullTooltip": "Перечитывает все данные моделей из файлов метаданных — используйте, если библиотека выглядит устаревшей или после ручных правок.",
+                "scopeSection": "[TODO: Translate] Scan one folder",
+                "rootOffline": "[TODO: Translate] Offline",
+                "rootModels": "[TODO: Translate] {count} models"
             },
             "fetch": {
                 "title": "Получить метаданные с CivitAI",
@@ -2804,7 +2807,10 @@
             "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
             "moveFailed": "Не удалось переместить элемент: {message}",
             "copiedToClipboard": "Скопировано в буфер обмена",
-            "downloadStarted": "Загрузка начата"
+            "downloadStarted": "Загрузка начата",
+            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
+            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
+            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
         },
         "agent": {
             "llmNotConfigured": "Поставщик ИИ не настроен. Включите его в Настройки → Поставщик ИИ.",

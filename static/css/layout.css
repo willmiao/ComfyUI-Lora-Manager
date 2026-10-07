@@ -700,3 +700,48 @@ body.sticky-controls .sticky-topbar {
         padding: 10px 0;
     }
 }
+
+/* Refresh dropdown: per-root scan scope (issue #1108). The list can hold one
+   entry per configured model root, so it scrolls instead of growing past the
+   viewport. Offline roots stay clickable (clicking explains the state) and are
+   only visually de-emphasised — unlike .dropdown-item.disabled, which swallows
+   the click via pointer-events: none. */
+.dropdown-separator {
+    height: 1px;
+    margin: 5px 0;
+    background-color: var(--border-color);
+}
+
+.dropdown-section-title {
+    padding: 4px 15px 2px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+.dropdown-scope-list {
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+.scan-root-item.is-offline {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.scan-root-label {
+    margin-right: 12px;
+}
+
+.scan-root-count,
+.scan-root-offline {
+    float: right;
+    margin-left: 16px;
+    font-size: 0.9em;
+    opacity: 0.7;
+}
+
+.scan-root-item.is-offline .scan-root-offline {
+    opacity: 0.9;
+}

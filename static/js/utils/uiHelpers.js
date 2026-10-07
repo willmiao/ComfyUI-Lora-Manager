@@ -139,9 +139,14 @@ export async function copyToClipboard(text, successMessage = null) {
  * @param {string} type - Toast type (info/success/warning/error)
  * @returns {HTMLElement} The toast element (not yet attached to the DOM)
  */
+// Only these carry styling (icon + accent border). An unknown type is coerced
+// to `info` instead of ending up as a bare `.toast` box — a wrong argument
+// order at a call site used to leak the message itself into the class list.
+const TOAST_TYPES = new Set(['info', 'success', 'warning', 'error', 'copy']);
+
 function createToastElement(message, type) {
   const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
+  toast.className = `toast toast-${TOAST_TYPES.has(type) ? type : 'info'}`;
   toast.textContent = message;
   return toast;
 }

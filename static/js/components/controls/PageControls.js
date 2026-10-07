@@ -5,7 +5,9 @@ import { showToast, openCivitaiByMetadata, isTypingContext } from '../../utils/u
 import { eventManager } from '../../utils/EventManager.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { initSortDropdown, applySortToSelect, randomizeSortValue } from './SortDropdown.js';
+import { renderScanScopeMenu, resolveScanScopeTarget } from './ScanScopeMenu.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -82,7 +84,18 @@ export class PageControls {
      * @param {Object} api - API methods for the page
      */
     registerAPI(api) {
-        this.api = api;
+        this.api = {
+            ...api,
+            // These two are identical for every page and must stay in sync with
+            // the scan API: the refresh scope menu reads the root list, and a
+            // scoped refresh has to pass `roots` through. They are defined here
+            // rather than in each page facade so a page cannot silently drop
+            // them (which is exactly how the scope menu ended up empty).
+            fetchModelRoots: async () => getModelApiClient().fetchModelRoots(),
+            // Forward the exact arguments: an unscoped refresh must keep calling
+            // the client with a single argument.
+            refreshModels: async (...args) => getModelApiClient().refreshModels(...args),
+        };
         console.log(`API methods registered for ${this.pageType} page`);
         
         // Initialize sidebar manager after API is registered
@@ -233,7 +246,10 @@ export class PageControls {
                 });
                 
                 // Toggle current dropdown
-                dropdownGroup.classList.toggle('active');
+                const isOpen = dropdownGroup.classList.toggle('active');
+                if (isOpen) {
+                    this.loadScanScopeMenu();
+                }
             });
         });
         
@@ -244,6 +260,21 @@ export class PageControls {
                 e.stopPropagation();
                 this.refreshModels(true);
                 // Close the dropdown
+                document.querySelector('.dropdown-group.active')?.classList.remove('active');
+            });
+        }
+
+        // Per-root scan rows are rendered dynamically, so they are wired by
+        // delegation instead of a direct querySelector per item.
+        const scopeMenu = document.getElementById('refreshScopeMenu');
+        if (scopeMenu) {
+            scopeMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('[data-action="scan-root"]');
+                if (!item) {
+                    return;
+                }
+                e.stopPropagation();
+                this.handleScanRootSelection(item);
                 document.querySelector('.dropdown-group.active')?.classList.remove('active');
             });
         }
@@ -264,6 +295,55 @@ export class PageControls {
                 });
             }
         });
+    }
+
+    /**
+     * Render the per-root scan entries of the refresh dropdown.
+     *
+     * Roots come from the backend (label, model count, reachability) so the menu
+     * always names a root exactly like the scan progress line does. The list is
+     * cached until the next scan finishes.
+     */
+    async loadScanScopeMenu() {
+        const menu = document.getElementById('refreshScopeMenu');
+        if (!menu || typeof this.api?.fetchModelRoots !== 'function') {
+            return;
+        }
+
+        if (this._scanScopeDetails) {
+            this.renderScanScopeMenu(this._scanScopeDetails);
+            return;
+        }
+        if (this._scanScopeLoading) {
+            return;
+        }
+
+        this._scanScopeLoading = true;
+        try {
+            const payload = await this.api.fetchModelRoots();
+            const details = Array.isArray(payload?.root_details) ? payload.root_details : [];
+            this._scanScopeDetails = details;
+            renderScanScopeMenu(menu, details);
+        } catch (error) {
+            console.error('Error loading model roots:', error);
+            menu.innerHTML = '';
+        } finally {
+            this._scanScopeLoading = false;
+        }
+    }
+
+    handleScanRootSelection(item) {
+        const { rootPath, label, offline } = resolveScanScopeTarget(item);
+        if (!rootPath) {
+            return;
+        }
+        if (offline) {
+            // showToast(key, params, type): the sentence must NOT be passed here,
+            // it used to land in the `type` slot and produced an unstyled toast.
+            showToast('toast.api.scanRootUnreachable', { scope: label }, 'info');
+            return;
+        }
+        this.refreshModels(false, { roots: [rootPath] });
     }
 
     async handleCheckModelUpdates(menuItem) {
@@ -482,14 +562,23 @@ export class PageControls {
      * Refresh models list
      * @param {boolean} fullRebuild - Whether to perform a full rebuild
      */
-    async refreshModels(fullRebuild = false) {
+    async refreshModels(fullRebuild = false, { roots = null } = {}) {
         if (!this.api) {
             console.error('API methods not registered');
             return;
         }
 
+        // Root labels / reachability may have changed with the scan, and the
+        // model counts definitely did.
+        this._scanScopeDetails = null;
+        const scopedRoots = Array.isArray(roots) ? roots.filter(Boolean) : [];
+
         try {
-            await this.api.refreshModels(fullRebuild);
+            if (scopedRoots.length) {
+                await this.api.refreshModels(fullRebuild, { roots: scopedRoots });
+            } else {
+                await this.api.refreshModels(fullRebuild);
+            }
             
             // Refresh sidebar after rebuild
             if (this.sidebarManager) {

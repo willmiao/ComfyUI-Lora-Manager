@@ -918,7 +918,10 @@
             "refresh": {
                 "title": "Actualiser la liste des modèles",
                 "full": "Reconstruire le cache",
-                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers de métadonnées — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
+                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers de métadonnées — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles.",
+                "scopeSection": "[TODO: Translate] Scan one folder",
+                "rootOffline": "[TODO: Translate] Offline",
+                "rootModels": "[TODO: Translate] {count} models"
             },
             "fetch": {
                 "title": "Récupérer les métadonnées depuis CivitAI",
@@ -2804,7 +2807,10 @@
             "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}",
             "moveFailed": "Échec du déplacement de l'élément : {message}",
             "copiedToClipboard": "Copié dans le presse-papiers",
-            "downloadStarted": "Téléchargement démarré"
+            "downloadStarted": "Téléchargement démarré",
+            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
+            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
+            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
         },
         "agent": {
             "llmNotConfigured": "Fournisseur d'IA non configuré. Activez-le dans Paramètres → Fournisseur d'IA.",

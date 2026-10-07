@@ -31,9 +31,6 @@ export class OtherControls extends PageControls {
                 return await resetAndReload(updateFolders);
             },
 
-            refreshModels: async (fullRebuild = false) => {
-                return await getModelApiClient().refreshModels(fullRebuild);
-            },
 
             // Add fetch from Civitai functionality for other models
             fetchFromCivitai: async () => {
