@@ -919,9 +919,9 @@
                 "title": "Modelliste aktualisieren",
                 "full": "Cache neu aufbauen",
                 "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen.",
-                "scopeSection": "[TODO: Translate] Scan one folder",
-                "rootOffline": "[TODO: Translate] Offline",
-                "rootModels": "[TODO: Translate] {count} models"
+                "scopeSection": "Nur einen Ordner scannen",
+                "rootOffline": "Offline",
+                "rootModels": "{count} Modelle"
             },
             "fetch": {
                 "title": "Metadaten von CivitAI abrufen",
@@ -2808,9 +2808,9 @@
             "moveFailed": "Element konnte nicht verschoben werden: {message}",
             "copiedToClipboard": "In die Zwischenablage kopiert",
             "downloadStarted": "Download gestartet",
-            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
-            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
-            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
+            "refreshCompleteScoped": "{scope} gescannt: {added} neu, {removed} entfernt",
+            "refreshKeptUnreachable": "{count} Modelle beibehalten: {paths} nicht erreichbar",
+            "scanRootUnreachable": "{scope} ist derzeit nicht erreichbar. Es wurde nichts geändert."
         },
         "agent": {
             "llmNotConfigured": "KI-Anbieter nicht konfiguriert. Aktivieren Sie ihn unter Einstellungen → KI-Anbieter.",

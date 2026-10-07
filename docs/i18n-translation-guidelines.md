@@ -154,8 +154,8 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > **Status (2026-10, scoped scan):** the Refresh dropdown gained a per-root scope section
 > (`loras.controls.refresh.scopeSection` / `.rootOffline` / `.rootModels`) and the scan result
 > toasts (`toast.api.refreshCompleteScoped`, `.refreshKeptUnreachable`, `.scanRootUnreachable`),
-> 6 keys in total. They are `[TODO: Translate]` placeholders in the other 9 locales for now —
-> the feature owner has not asked for this pass yet.
+> 6 keys in total, translated in all 9 locales in the same pass (renderings in §2, "Scoped scan
+> and root availability"), so the "no remaining placeholders" claim holds again.
 
 > **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
 > walk per model root (which roots are being checked, how many model files have been seen, and
@@ -727,6 +727,27 @@ that form fits a tooltip (ru shortens both toggle labels to bare «Галере�
 | example images | zh-CN 示例图片 · zh-TW 範例圖片 · ja 例画像 · ko 예시 이미지 · fr images d'exemple · de Beispielbilder · es imágenes de ejemplo · ru примеры изображений · he תמונות דוגמה |
 | gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
 | gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
+
+### Scoped scan and root availability
+
+A refresh can be restricted to one model root (the Refresh ▾ menu) or one folder (the sidebar
+context menu). The menu labels a root and reports whether it can be read at all; the result
+toasts report what the scan changed and what it deliberately left alone because a path could not
+be read (an unreachable drive is no longer treated as deleted).
+
+| Term | Rendering |
+|---|---|
+| `scopeSection` ("Scan one folder") | zh-CN 只扫描一个文件夹 · zh-TW 只掃描一個資料夾 · ja フォルダを 1 つだけスキャン · ko 폴더 하나만 스캔 · fr Analyser un seul dossier · de Nur einen Ordner scannen · es Escanear solo una carpeta · ru Сканировать только одну папку · he סרוק תיקייה אחת בלבד |
+| `rootOffline` ("Offline") | zh-CN 离线 · zh-TW 離線 · ja オフライン · ko 오프라인 · fr Hors ligne · de Offline · es Sin conexión · ru Недоступен · he לא זמין |
+| `rootModels` ("{count} models") | zh-CN {count} 个模型 · zh-TW {count} 個模型 · ja {count} 個のモデル · ko 모델 {count}개 · fr {count} modèles · de {count} Modelle · es {count} modelos · ru {count} модел(ей) · he {count} מודלים |
+| `refreshCompleteScoped` ("Scanned {scope}: {added} new, {removed} removed") | zh-CN 已扫描 {scope}：新增 {added}，移除 {removed} · zh-TW 已掃描 {scope}：新增 {added}，移除 {removed} · ja {scope} をスキャンしました：新規 {added} 件、削除 {removed} 件 · ko {scope} 스캔 완료: 새 모델 {added}개, 제거 {removed}개 · fr {scope} analysé : {added} nouveau(x), {removed} supprimé(s) · de {scope} gescannt: {added} neu, {removed} entfernt · es {scope} escaneado: {added} nuevo(s), {removed} eliminado(s) · ru {scope}: просканировано — новых {added}, удалено {removed} · he {scope} נסרק: {added} חדשים, {removed} הוסרו |
+| `refreshKeptUnreachable` ("{count} models kept: {paths} not reachable") | zh-CN 已保留 {count} 个模型：{paths} 当前不可访问 · zh-TW 已保留 {count} 個模型：{paths} 目前無法存取 · ja {count} 個のモデルを保持しました：{paths} にアクセスできません · ko 모델 {count}개 유지됨: {paths}에 접근할 수 없음 · fr {count} modèles conservés : {paths} inaccessible(s) · de {count} Modelle beibehalten: {paths} nicht erreichbar · es {count} modelos conservados: {paths} no accesible(s) · ru Сохранено моделей: {count} — {paths} недоступны · he נשמרו {count} מודלים: {paths} אינם זמינים |
+| `scanRootUnreachable` ("{scope} is not reachable right now. Nothing was changed.") | zh-CN {scope} 当前不可访问，未做任何改动。 · zh-TW {scope} 目前無法存取，未做任何變更。 · ja {scope} に現在アクセスできません。変更は行われていません。 · ko {scope}에 현재 접근할 수 없습니다. 변경된 내용은 없습니다. · fr {scope} est actuellement inaccessible. Aucune modification n’a été apportée. · de {scope} ist derzeit nicht erreichbar. Es wurde nichts geändert. · es {scope} no es accesible ahora mismo. No se ha cambiado nada. · ru {scope} сейчас недоступен. Изменений не внесено. · he {scope} אינו זמין כעת. לא בוצעו שינויים. |
+
+`{scope}` is a root label (`G: loras`) or a folder path, `{paths}` is a comma-joined list capped
+at three entries, and both counts arrive pre-formatted. "Offline" describes a configured root
+whose directory cannot be read right now (drive switched off, unmounted share) — it is a state of
+the *root*, never a property of the models inside it, which stay in the library.
 
 ### Scan progress (walk phase)
 

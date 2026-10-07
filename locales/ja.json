@@ -919,9 +919,9 @@
                 "title": "モデルリストを更新",
                 "full": "キャッシュを再構築",
                 "fullTooltip": "メタデータファイルから全モデル情報を再読み込みします。リストが古いと感じるときや手動編集後に使用してください。",
-                "scopeSection": "[TODO: Translate] Scan one folder",
-                "rootOffline": "[TODO: Translate] Offline",
-                "rootModels": "[TODO: Translate] {count} models"
+                "scopeSection": "フォルダを 1 つだけスキャン",
+                "rootOffline": "オフライン",
+                "rootModels": "{count} 個のモデル"
             },
             "fetch": {
                 "title": "CivitAIからメタデータを取得",
@@ -2808,9 +2808,9 @@
             "moveFailed": "アイテムを移動できませんでした: {message}",
             "copiedToClipboard": "クリップボードにコピーしました",
             "downloadStarted": "ダウンロードを開始しました",
-            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
-            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
-            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
+            "refreshCompleteScoped": "{scope} をスキャンしました：新規 {added} 件、削除 {removed} 件",
+            "refreshKeptUnreachable": "{count} 個のモデルを保持しました：{paths} にアクセスできません",
+            "scanRootUnreachable": "{scope} に現在アクセスできません。変更は行われていません。"
         },
         "agent": {
             "llmNotConfigured": "AIプロバイダーが設定されていません。設定 → AIプロバイダーで有効にしてください。",

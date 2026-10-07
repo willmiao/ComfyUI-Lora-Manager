@@ -919,9 +919,9 @@
                 "title": "Actualizar lista de modelos",
                 "full": "Reconstruir caché",
                 "fullTooltip": "Vuelve a cargar todos los detalles desde los archivos de metadatos; úsalo si la biblioteca parece desactualizada o tras ediciones manuales.",
-                "scopeSection": "[TODO: Translate] Scan one folder",
-                "rootOffline": "[TODO: Translate] Offline",
-                "rootModels": "[TODO: Translate] {count} models"
+                "scopeSection": "Escanear solo una carpeta",
+                "rootOffline": "Sin conexión",
+                "rootModels": "{count} modelos"
             },
             "fetch": {
                 "title": "Obtener metadatos de CivitAI",
@@ -2808,9 +2808,9 @@
             "moveFailed": "No se pudo mover el elemento: {message}",
             "copiedToClipboard": "Copiado al portapapeles",
             "downloadStarted": "Descarga iniciada",
-            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
-            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
-            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
+            "refreshCompleteScoped": "{scope} escaneado: {added} nuevo(s), {removed} eliminado(s)",
+            "refreshKeptUnreachable": "{count} modelos conservados: {paths} no accesible(s)",
+            "scanRootUnreachable": "{scope} no es accesible ahora mismo. No se ha cambiado nada."
         },
         "agent": {
             "llmNotConfigured": "Proveedor de IA no configurado. Actívelo en Configuración → Proveedor de IA.",

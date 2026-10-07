@@ -919,9 +919,9 @@
                 "title": "刷新模型列表",
                 "full": "重建缓存",
                 "fullTooltip": "从元数据文件重新加载所有模型信息；用于列表过时或手动编辑后。",
-                "scopeSection": "[TODO: Translate] Scan one folder",
-                "rootOffline": "[TODO: Translate] Offline",
-                "rootModels": "[TODO: Translate] {count} models"
+                "scopeSection": "只扫描一个文件夹",
+                "rootOffline": "离线",
+                "rootModels": "{count} 个模型"
             },
             "fetch": {
                 "title": "从 CivitAI 获取元数据",
@@ -2808,9 +2808,9 @@
             "moveFailed": "移动条目失败：{message}",
             "copiedToClipboard": "已复制到剪贴板",
             "downloadStarted": "下载已开始",
-            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
-            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
-            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
+            "refreshCompleteScoped": "已扫描 {scope}：新增 {added}，移除 {removed}",
+            "refreshKeptUnreachable": "已保留 {count} 个模型：{paths} 当前不可访问",
+            "scanRootUnreachable": "{scope} 当前不可访问，未做任何改动。"
         },
         "agent": {
             "llmNotConfigured": "AI 提供商未配置。请在 设置 → AI 提供商 中进行配置。",

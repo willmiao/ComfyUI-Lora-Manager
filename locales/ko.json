@@ -919,9 +919,9 @@
                 "title": "모델 목록 새로고침",
                 "full": "캐시 재구성",
                 "fullTooltip": "메타데이터 파일에서 모든 모델 정보를 다시 불러옵니다. 라이브러리가 오래되어 보이거나 수동 수정 후에 사용하세요.",
-                "scopeSection": "[TODO: Translate] Scan one folder",
-                "rootOffline": "[TODO: Translate] Offline",
-                "rootModels": "[TODO: Translate] {count} models"
+                "scopeSection": "폴더 하나만 스캔",
+                "rootOffline": "오프라인",
+                "rootModels": "모델 {count}개"
             },
             "fetch": {
                 "title": "CivitAI에서 메타데이터 가져오기",
@@ -2808,9 +2808,9 @@
             "moveFailed": "항목을 이동하지 못했습니다: {message}",
             "copiedToClipboard": "클립보드에 복사됨",
             "downloadStarted": "다운로드 시작됨",
-            "refreshCompleteScoped": "[TODO: Translate] Scanned {scope}: {added} new, {removed} removed",
-            "refreshKeptUnreachable": "[TODO: Translate] {count} models kept: {paths} not reachable",
-            "scanRootUnreachable": "[TODO: Translate] {scope} is not reachable right now. Nothing was changed."
+            "refreshCompleteScoped": "{scope} 스캔 완료: 새 모델 {added}개, 제거 {removed}개",
+            "refreshKeptUnreachable": "모델 {count}개 유지됨: {paths}에 접근할 수 없음",
+            "scanRootUnreachable": "{scope}에 현재 접근할 수 없습니다. 변경된 내용은 없습니다."
         },
         "agent": {
             "llmNotConfigured": "AI 제공자가 설정되지 않았습니다. 설정 → AI 제공자에서 활성화하세요.",
