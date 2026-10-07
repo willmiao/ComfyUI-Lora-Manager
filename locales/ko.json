@@ -1483,9 +1483,9 @@
             "none": "이 폴더의 모든 {type}s가 최신 상태입니다",
             "error": "폴더의 {type} 업데이트 확인 실패: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "이 폴더 스캔",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요."
         }
     },
     "statistics": {

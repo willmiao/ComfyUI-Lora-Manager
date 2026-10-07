@@ -1483,9 +1483,9 @@
             "none": "このフォルダのすべての{type}sは最新です",
             "error": "フォルダの{type}アップデート確認に失敗しました: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "このフォルダをスキャン",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。"
         }
     },
     "statistics": {

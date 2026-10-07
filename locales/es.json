@@ -1483,9 +1483,9 @@
             "none": "Todos los {type}s en esta carpeta están actualizados",
             "error": "Error al buscar actualizaciones de {type} en la carpeta: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "Escanear esta carpeta",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo."
         }
     },
     "statistics": {

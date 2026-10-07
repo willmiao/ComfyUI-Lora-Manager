@@ -1483,9 +1483,9 @@
             "none": "Все {type}s в этой папке актуальны",
             "error": "Не удалось проверить папку на наличие обновлений {type}: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "Сканировать эту папку",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "Эта папка больше не существует на диске. Обновите боковую панель и повторите попытку."
         }
     },
     "statistics": {

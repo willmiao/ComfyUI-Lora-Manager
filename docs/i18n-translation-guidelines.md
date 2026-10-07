@@ -155,7 +155,9 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (`loras.controls.refresh.scopeSection` / `.rootOffline` / `.rootModels`) and the scan result
 > toasts (`toast.api.refreshCompleteScoped`, `.refreshKeptUnreachable`, `.scanRootUnreachable`),
 > 6 keys in total, translated in all 9 locales in the same pass (renderings in §2, "Scoped scan
-> and root availability"), so the "no remaining placeholders" claim holds again.
+> and root availability"). The sidebar's folder-level follow-up added 2 more
+> (`sidebar.scanFolder`, `sidebar.scanFolderResult.missing`), translated in a second pass, so the
+> "no remaining placeholders" claim holds again.
 
 > **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
 > walk per model root (which roots are being checked, how many model files have been seen, and
@@ -743,6 +745,9 @@ be read (an unreachable drive is no longer treated as deleted).
 | `refreshCompleteScoped` ("Scanned {scope}: {added} new, {removed} removed") | zh-CN 已扫描 {scope}：新增 {added}，移除 {removed} · zh-TW 已掃描 {scope}：新增 {added}，移除 {removed} · ja {scope} をスキャンしました：新規 {added} 件、削除 {removed} 件 · ko {scope} 스캔 완료: 새 모델 {added}개, 제거 {removed}개 · fr {scope} analysé : {added} nouveau(x), {removed} supprimé(s) · de {scope} gescannt: {added} neu, {removed} entfernt · es {scope} escaneado: {added} nuevo(s), {removed} eliminado(s) · ru {scope}: просканировано — новых {added}, удалено {removed} · he {scope} נסרק: {added} חדשים, {removed} הוסרו |
 | `refreshKeptUnreachable` ("{count} models kept: {paths} not reachable") | zh-CN 已保留 {count} 个模型：{paths} 当前不可访问 · zh-TW 已保留 {count} 個模型：{paths} 目前無法存取 · ja {count} 個のモデルを保持しました：{paths} にアクセスできません · ko 모델 {count}개 유지됨: {paths}에 접근할 수 없음 · fr {count} modèles conservés : {paths} inaccessible(s) · de {count} Modelle beibehalten: {paths} nicht erreichbar · es {count} modelos conservados: {paths} no accesible(s) · ru Сохранено моделей: {count} — {paths} недоступны · he נשמרו {count} מודלים: {paths} אינם זמינים |
 | `scanRootUnreachable` ("{scope} is not reachable right now. Nothing was changed.") | zh-CN {scope} 当前不可访问，未做任何改动。 · zh-TW {scope} 目前無法存取，未做任何變更。 · ja {scope} に現在アクセスできません。変更は行われていません。 · ko {scope}에 현재 접근할 수 없습니다. 변경된 내용은 없습니다. · fr {scope} est actuellement inaccessible. Aucune modification n’a été apportée. · de {scope} ist derzeit nicht erreichbar. Es wurde nichts geändert. · es {scope} no es accesible ahora mismo. No se ha cambiado nada. · ru {scope} сейчас недоступен. Изменений не внесено. · he {scope} אינו זמין כעת. לא בוצעו שינויים. |
+
+| `sidebar.scanFolder` ("Scan this folder") | zh-CN 扫描此文件夹 · zh-TW 掃描此資料夾 · ja このフォルダをスキャン · ko 이 폴더 스캔 · fr Analyser ce dossier · de Diesen Ordner scannen · es Escanear esta carpeta · ru Сканировать эту папку · he סרוק תיקייה זו |
+| `sidebar.scanFolderResult.missing` | identical to `sidebar.renameFolderResult.missing` / `deleteFolderResult.missing` in every locale (the folder vanished between the menu opening and the click) — reuse that rendering rather than writing a third variant |
 
 `{scope}` is a root label (`G: loras`) or a folder path, `{paths}` is a comma-joined list capped
 at three entries, and both counts arrive pre-formatted. "Offline" describes a configured root

@@ -1483,9 +1483,9 @@
             "none": "כל ה-{type}s בתיקייה זו מעודכנים",
             "error": "נכשל בבדיקת עדכוני {type} בתיקייה: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "סרוק תיקייה זו",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב."
         }
     },
     "statistics": {

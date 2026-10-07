@@ -1483,9 +1483,9 @@
             "none": "Alle {type}s in diesem Ordner sind aktuell",
             "error": "Fehler beim Prüfen des Ordners auf {type}-Updates: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "Diesen Ordner scannen",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         }
     },
     "statistics": {

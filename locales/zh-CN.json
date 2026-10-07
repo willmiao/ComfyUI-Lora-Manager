@@ -1483,9 +1483,9 @@
             "none": "此文件夹中的所有{type}都是最新版本",
             "error": "检查文件夹{type}更新失败: {message}"
         },
-        "scanFolder": "[TODO: Translate] Scan this folder",
+        "scanFolder": "扫描此文件夹",
         "scanFolderResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again."
+            "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。"
         }
     },
     "statistics": {
