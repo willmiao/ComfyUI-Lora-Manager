@@ -2130,6 +2130,7 @@
       "statSuccess": "Success",
       "statFailed": "Failed",
       "statSkipped": "Skipped",
+      "statOffline": "Drive Offline",
       "statTotal": "Total Scanned",
       "statDuration": "Duration",
       "successMessage": "All {count} {type}s updated successfully!",

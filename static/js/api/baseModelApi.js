@@ -898,7 +898,9 @@ export class BaseModelApiClient {
     }
 
     _showFailureDetailsModal(data) {
-        const { failures = [], success, processed, total, failure_count, skipped_count, elapsed_seconds } = data;
+        const { failures = [], success, processed, total, failure_count, skipped_count, elapsed_seconds, offline_skipped = 0, offline_roots = [] } = data;
+
+        const offlineRootNames = offline_roots.map((root) => root.label || root.path || String(root)).join(', ');
 
         // Build failure list HTML
         const failureRows = failures.map((f, i) =>
@@ -935,6 +937,13 @@ export class BaseModelApiClient {
                                 <span class="stat-card-value">${skipped_count}</span>
                             </div>
                         </div>
+                        ${offline_skipped > 0 ? `
+                        <div class="stat-card stat-card-offline" title="${this._escapeHtml(offlineRootNames)}">
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statOffline', {}, 'Drive Offline')}</span>
+                                <span class="stat-card-value">${offline_skipped}</span>
+                            </div>
+                        </div>` : ''}
                         <div class="stat-card stat-card-total">
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statTotal', {}, 'Total Scanned')}</span>

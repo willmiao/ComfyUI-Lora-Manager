@@ -2130,6 +2130,7 @@
             "statSuccess": "成功",
             "statFailed": "失敗",
             "statSkipped": "已跳過",
+            "statOffline": "[TODO: Translate] Drive Offline",
             "statTotal": "總計掃描",
             "statDuration": "耗時",
             "successMessage": "全部 {count} 個 {type} 更新成功！",

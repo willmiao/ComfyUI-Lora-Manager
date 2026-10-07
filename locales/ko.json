@@ -2130,6 +2130,7 @@
             "statSuccess": "성공",
             "statFailed": "실패",
             "statSkipped": "건너뜀",
+            "statOffline": "[TODO: Translate] Drive Offline",
             "statTotal": "총 스캔",
             "statDuration": "소요 시간",
             "successMessage": "모든 {count}개 {type}이(가) 성공적으로 업데이트되었습니다",

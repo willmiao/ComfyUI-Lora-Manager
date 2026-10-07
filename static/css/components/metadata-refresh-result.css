@@ -55,6 +55,10 @@
     border-left-color: var(--color-warning);
 }
 
+.stat-card-offline {
+    border-left-color: var(--text-secondary);
+}
+
 .stat-card-total {
     border-left-color: var(--lora-border);
 }

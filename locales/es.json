@@ -2130,6 +2130,7 @@
             "statSuccess": "Éxito",
             "statFailed": "Fallido",
             "statSkipped": "Omitido",
+            "statOffline": "[TODO: Translate] Drive Offline",
             "statTotal": "Total escaneado",
             "statDuration": "Duración",
             "successMessage": "¡Todos los {count} {type}s actualizados correctamente!",
