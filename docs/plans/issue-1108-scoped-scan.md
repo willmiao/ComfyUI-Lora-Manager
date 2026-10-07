@@ -2,9 +2,9 @@
 
 **Issue:** [#1108](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1108) — scan a single
 folder/root instead of the whole library.
-**Status:** **P1 and P2 implemented** (2026-10-07). P1 shipped in `470d85cc` (translations in
-`bd184559`); P2 (folder scope + the sidebar entry) is in the working tree. Supersedes the earlier
-draft's per-root *status panel* and persisted *unreachable-subtree* state (both dropped, see
+**Status:** **P1, P2 and Wave 6 implemented** (2026-10-07). P1 shipped in `470d85cc` (translations
+in `bd184559`), P2 in `12930ce7` (translations in `0941f992`). Supersedes the earlier draft's
+per-root *status panel* and persisted *unreachable-subtree* state (both dropped, see
 "Must NOT have").
 
 Implementation notes / deviations from the draft below:
@@ -270,6 +270,85 @@ and in the exact pruning predicate; both get explicit tests.
     * Verified live: `folder=pack000` on the three-root sandbox walks drive-G and drive-Y, reports
       `scope_label=pack000`, keeps drive-Z's 6 entries under that folder (`kept_unreachable=6`) and
       leaves all 420 models cached.
+
+## Wave 6 — configured vs currently available roots (approved follow-up)
+
+The P1/P2 work exposed an asymmetry: `Config._dedupe_existing_paths()` drops roots whose directory
+does not exist **at the moment the root list is built** (startup, or applying a library snapshot),
+so a drive that is switched off while LM starts is not "an offline root" — it is not a root at all.
+Consequences, all verified on the sandbox:
+
+* `/roots` does not list it, so the Refresh ▾ menu shows no row for it in either state;
+* a full refresh reports nothing (`kept_unreachable: 0`, no toast) even though its cached entries
+  are kept — they survive only because they fall outside every configured root prefix;
+* plugging the drive back in does not bring the row back: the in-memory list is not re-validated;
+* **plugin mode only:** `Config.save_folder_paths_to_settings()` (called from `Config.__init__`)
+  persists `target_folder_paths["loras"] = list(self.loras_roots)` through
+  `upsert_library(folder_paths=...)`, which **replaces** the library's paths. Starting ComfyUI with
+  a drive switched off therefore *erases that path from `settings.json`* — a configuration loss,
+  not just a display gap. Extra paths are unaffected (that call reuses the stored
+  `extra_folder_paths`), and the same pattern applies to checkpoints/unet/embeddings/other-model
+  primary paths.
+
+### Must have
+
+1. **Never erase an unavailable root from the library config.** `Config` records the *configured*
+   (existence-unfiltered) primary paths per model type while building the live lists, and
+   `save_folder_paths_to_settings()` persists those instead of the filtered ones.
+   `_resolve_valid_default_root()` receives the configured paths in `allowed_paths` too, so a
+   `default_*_root` that sits on a switched-off drive is not "repaired" away.
+2. **Report configured-but-unavailable roots.** `Config.configured_roots_for(model_type)` feeds
+   `ModelScanner.describe_model_roots()`, which appends them with `available: false`, a live
+   `reachable` and their cached entry count — so the Refresh ▾ menu has a row in **both** states
+   (greyed while the directory is missing, normal and clickable once it is back). The reconcile
+   summary reports them as `skipped_roots` / `unavailable_paths` with reason `root_unavailable` and
+   counts their cached entries in `kept_unreachable`, which is what makes the "N models kept" toast
+   appear in the startup-offline case.
+3. **Admit them again, append-only.** `Config.admit_configured_roots()` re-runs the per-type
+   prepare helpers against the configured paths and **appends** what exists now
+   (plus the checkpoint/unet/other side maps) to the live lists, then refreshes the preview
+   allowlist. Called from `/roots` and `/scan`, so a drive plugged in mid-session can be scanned
+   without restarting. Appending (never re-sorting) keeps `loras_roots[0]` — which derives the
+   recipes directory and the usage-stats file location — stable for the whole session.
+
+### Must NOT have
+
+* NO removal of a root from the live lists mid-session (that is what would let a later settings
+  save persist a reduced configuration, and it would move `*_roots[0]`).
+* NO change to the scan/prune scope: a root that is still unavailable stays out of scope, so its
+  entries remain "kept because out of scope" exactly as today.
+* NO persisted unavailable-state, no DB schema change, no per-entry filesystem probe.
+
+### Where "configured" comes from
+
+`Config` records the existence-unfiltered paths while building the live lists, but the *source*
+differs per mode and that matters:
+
+* **Plugin mode:** `folder_paths.get_folder_paths()` is ComfyUI's own list, unfiltered — a path the
+  user removed there must be forgotten, one that is merely missing must be kept. The host list wins.
+* **Standalone mode:** `standalone.MockFolderPaths.get_folder_paths()` already filters
+  `os.path.exists` out of `settings.json`, so the host list cannot answer "what did the user
+  configure". The active **library snapshot** (`libraries[<active>].folder_paths`, falling back to
+  the top-level `folder_paths`) is the record, and it wins there.
+  (`_remember_library_configured_paths()` implements the split.)
+
+### Verification
+
+* Config: a configured path that does not exist is still written back by
+  `save_folder_paths_to_settings()`; a path the host no longer configures is still dropped.
+* Promotion: create the directory after the lists were built → `admit_configured_roots()` adds it
+  **at the end**, keeps every existing root in place, and adds nothing twice.
+* Scanner: `describe_model_roots()` reports the missing root (`available: false`, cached count);
+  a full refresh lists it in `skipped_roots`/`unavailable_paths` and keeps its entries; `/scan`
+  with that root works once the directory is back.
+* Sandbox, drive-Z gone **before** startup: `/roots` reports `drive-Z` with
+  `reachable=false available=false models=60`; a full refresh returns
+  `skipped_roots=[drive-Z root_unavailable]`, `unavailable_paths=[{... kept: 60}]`,
+  `kept_unreachable=60` and leaves all 432 models cached. *(Both measured; before this wave the
+  menu had no row and the refresh reported nothing.)*
+* Sandbox, drive renamed back **while the server runs**: `/roots` admits it
+  (`available=true reachable=true`) and `GET /scan?roots=<drive-Z>` walks it
+  (`scanned_roots=['drive-Z']`, 0 added / 0 removed) — no restart required. *(Measured.)*
 
 ## Known limitations (accepted)
 

@@ -213,21 +213,43 @@ class ScopedScanService:
 
     model_type = "lora"
 
-    def __init__(self, roots=None, summary=None, cancelled=False):
+    def __init__(self, roots=None, summary=None, cancelled=False, unavailable=None):
         self._roots = list(roots or [])
+        self._unavailable = list(unavailable or [])
         self._summary = summary
         self.cancelled = cancelled
         self.scanner = SimpleNamespace(is_cancelled=lambda: self.cancelled)
         self.received_scope = "not-called"
         self.received_rebuild = None
+        self.root_refreshes = 0
 
     def get_model_roots(self):
         return list(self._roots)
 
+    def refresh_model_roots(self):
+        """Mimic the scanner admitting roots that became readable again."""
+        self.root_refreshes += 1
+        return []
+
     def describe_model_roots(self):
         return [
-            {"path": root, "label": root.rsplit("/", 1)[-1], "reachable": True, "models": 7}
+            {
+                "path": root,
+                "label": root.rsplit("/", 1)[-1],
+                "reachable": True,
+                "available": True,
+                "models": 7,
+            }
             for root in self._roots
+        ] + [
+            {
+                "path": root,
+                "label": root.rsplit("/", 1)[-1],
+                "reachable": False,
+                "available": False,
+                "models": 3,
+            }
+            for root in self._unavailable
         ]
 
     async def scan_models(self, force_refresh=False, rebuild_cache=False, scope=None):
@@ -265,6 +287,8 @@ async def test_scan_models_accepts_roots_param():
     assert service.received_scope is not None
     assert service.received_scope.roots == ("/mnt/a",)
     assert service.received_rebuild is False
+    # A drive plugged in after startup is admitted before the roots are validated.
+    assert service.root_refreshes == 1
 
 
 @pytest.mark.asyncio
@@ -305,6 +329,28 @@ async def test_scan_models_rejects_roots_with_full_rebuild():
 
     assert response.status == 400
     assert service.received_scope == "not-called"
+
+
+@pytest.mark.asyncio
+async def test_get_model_roots_reports_configured_but_unavailable_roots():
+    """Wave 6: a root whose directory was missing at startup is still reported."""
+    service = ScopedScanService(
+        roots=["/mnt/a"], unavailable=["/mnt/drive-Z/loras"]
+    )
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_model_roots(SimpleNamespace(query=QueryParams({})))
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["roots"] == ["/mnt/a"]
+    details = {entry["path"]: entry for entry in payload["root_details"]}
+    assert details["/mnt/a"]["available"] is True
+    assert details["/mnt/drive-Z/loras"]["available"] is False
+    assert details["/mnt/drive-Z/loras"]["reachable"] is False
+    assert details["/mnt/drive-Z/loras"]["models"] == 3
+    # Describing the roots admits anything that became readable again.
+    assert service.root_refreshes == 1
 
 
 @pytest.mark.asyncio

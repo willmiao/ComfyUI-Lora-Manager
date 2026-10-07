@@ -2649,6 +2649,112 @@ async def test_reconcile_folder_scope_covers_every_root_holding_it(tmp_path: Pat
     assert _normalize_path(primary / "only-primary" / "c.txt") in paths
 
 
+async def _startup_filtered_scanner(tmp_path: Path, monkeypatch, configured_missing: Path):
+    """Scanner whose live root list lacks a root that the config still holds.
+
+    Models the startup case: the directory did not exist when the live list was
+    built (drive switched off), so `Config` filtered it out while its cached
+    entries are still there.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    configured_missing.mkdir(parents=True)
+    (configured_missing / "pack").mkdir()
+    (configured_missing / "pack" / "b.txt").write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary, configured_missing])
+    await scanner._initialize_cache()
+    # The drive goes away before the process starts, as far as the live list is
+    # concerned: keep the roots the filter would have kept.
+    shutil.rmtree(configured_missing)
+    scanner._roots = [str(primary)]
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [str(primary), str(configured_missing)],
+    )
+    return scanner, primary, configured_missing
+
+
+@pytest.mark.asyncio
+async def test_describe_model_roots_reports_unavailable_configured_root(
+    tmp_path: Path, monkeypatch
+):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+
+    described = scanner.describe_model_roots()
+
+    assert [entry["path"] for entry in described] == [
+        _normalize_path(primary),
+        _normalize_path(missing),
+    ]
+    available, unavailable = described
+    assert available["reachable"] is True
+    assert available["available"] is True
+    # The missing root is reported with its cached count so the refresh menu can
+    # offer it as an offline row instead of hiding it until a restart.
+    assert unavailable["reachable"] is False
+    assert unavailable["available"] is False
+    assert unavailable["models"] == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_reports_root_filtered_out_at_startup(tmp_path: Path, monkeypatch):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, _primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+    kept_path = _normalize_path(missing / "pack" / "b.txt")
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    # Nothing is added or removed...
+    assert summary["added"] == 0
+    assert summary["removed"] == 0
+    # ...but the switched-off root is no longer silent: it is reported with the
+    # entries that were kept for it.
+    assert summary["skipped_roots"] == [
+        {
+            "path": _normalize_path(missing),
+            "label": missing.name,
+            "reason": "root_unavailable",
+        }
+    ]
+    assert summary["kept_unreachable"] == 1
+    assert summary["unavailable_paths"] == [
+        {"path": _normalize_path(missing), "reason": "root_unavailable", "kept": 1}
+    ]
+    assert kept_path in {item["file_path"] for item in scanner._cache.raw_data}
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_stays_quiet_about_filtered_out_roots(tmp_path: Path, monkeypatch):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+
+    summary = await scanner._reconcile_cache(
+        scope=ReconcileScope(roots=(str(primary),))
+    )
+
+    assert summary is not None
+    # The caller asked for one root: a root it did not ask about is not its
+    # business, but its entries are still kept.
+    assert summary["scanned_roots"] == [primary.name]
+    assert "root_unavailable" not in {
+        entry["reason"] for entry in summary["skipped_roots"]
+    }
+    assert _normalize_path(missing / "pack" / "b.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+
+
 @pytest.mark.asyncio
 async def test_reconcile_keeps_entries_under_unreadable_dir(tmp_path: Path, monkeypatch):
     """A directory os.walk cannot enter (permissions, I/O error, offline

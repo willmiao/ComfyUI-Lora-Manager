@@ -1163,6 +1163,11 @@ class ModelQueryHandler:
                 except ValueError as exc:
                     return web.json_response({"error": str(exc)}, status=400)
 
+            # A drive that was plugged in after startup must be scannable without
+            # a restart, and callers that never open the Refresh menu (the browser
+            # extension) have no other chance to admit it.
+            self._service.refresh_model_roots()
+
             if requested_roots:
                 configured = self._service.get_model_roots()
                 unknown = [root for root in requested_roots if root not in configured]
@@ -1206,6 +1211,9 @@ class ModelQueryHandler:
 
     async def get_model_roots(self, request: web.Request) -> web.Response:
         try:
+            # A drive plugged in after startup is admitted here, so the menu shows
+            # it as a normal row instead of "unavailable" until the next restart.
+            self._service.refresh_model_roots()
             roots = self._service.get_model_roots()
             try:
                 root_details = self._service.describe_model_roots()

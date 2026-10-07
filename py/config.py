@@ -1679,6 +1679,105 @@ class Config:
         """
         return list((getattr(self, "_configured_root_paths", None) or {}).get(model_type, []))
 
+    def admit_configured_roots(self) -> List[str]:
+        """Append configured roots that became readable again, never removing any.
+
+        The live lists are built once at startup (and when a library snapshot is
+        applied), so a drive plugged in later is invisible until the process is
+        restarted. Re-running the per-type prepare helpers against the configured
+        paths and appending only the new entries is what makes "plug the drive
+        in, scan it" work without a restart. Nothing is ever dropped or
+        re-ordered — see ``_append_new_paths`` for why order matters.
+
+        Returns the paths that were admitted by this call.
+        """
+        admitted: List[str] = []
+
+        def _extend(current, candidates) -> List[str]:
+            merged = _append_new_paths(list(current or []), candidates)
+            admitted.extend(
+                path for path in merged if path not in (current or [])
+            )
+            return merged
+
+        try:
+            lora_configured = self.configured_roots_for("lora")
+            if lora_configured:
+                self.loras_roots = _extend(
+                    self.loras_roots, self._prepare_lora_paths(lora_configured)
+                )
+
+            checkpoint_configured = self.configured_roots_for("checkpoint")
+            unet_configured = self.configured_roots_for("unet")
+            if checkpoint_configured or unet_configured:
+                (
+                    all_roots,
+                    checkpoint_roots,
+                    unet_roots,
+                ) = self._prepare_checkpoint_paths(
+                    checkpoint_configured, unet_configured
+                )
+                self.base_models_roots = _extend(self.base_models_roots, all_roots)
+                self.checkpoints_roots = _extend(self.checkpoints_roots, checkpoint_roots)
+                self.unet_roots = _extend(self.unet_roots, unet_roots)
+
+            embedding_configured = self.configured_roots_for("embedding")
+            if embedding_configured:
+                self.embeddings_roots = _extend(
+                    self.embeddings_roots,
+                    self._prepare_embedding_paths(embedding_configured),
+                )
+
+            other_configured = self.configured_roots_for("other")
+            if other_configured:
+                (
+                    other_roots,
+                    other_subtypes,
+                    other_per_key,
+                ) = self._prepare_other_paths(
+                    {
+                        key: [
+                            path
+                            for path in self._configured_other_paths_for_key(key)
+                        ]
+                        for key in self._get_enabled_other_folder_keys()
+                    }
+                )
+                self.other_roots = _extend(self.other_roots, other_roots)
+                for root, sub_type in other_subtypes.items():
+                    self.other_root_subtypes.setdefault(root, sub_type)
+                for key, roots in other_per_key.items():
+                    self.other_folder_roots[key] = _append_new_paths(
+                        self.other_folder_roots.get(key, []), roots
+                    )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Failed to admit configured roots: %s", exc)
+            return admitted
+
+        if admitted:
+            logger.info(
+                "Admitted %d previously unavailable model root(s): %s",
+                len(admitted),
+                ", ".join(admitted),
+            )
+            try:
+                # Previews of the newly admitted drive must be servable again.
+                self.refresh_preview_roots()
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.debug("Failed to refresh preview roots: %s", exc)
+        return admitted
+
+    def _configured_other_paths_for_key(self, key: str) -> List[str]:
+        """Configured other-model paths for one folder_paths key (may not exist)."""
+        try:
+            return [
+                path.strip()
+                for path in folder_paths.get_folder_paths(key) or []
+                if isinstance(path, str) and path.strip()
+            ]
+        except Exception:
+            return []
+
     def refresh_other_roots(self) -> None:
         """Rebuild other-model roots after the management toggles changed.
 

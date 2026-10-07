@@ -257,7 +257,13 @@ class _UnreachablePaths:
         self._prefixes: List[str] = []
         self._details: Dict[str, Dict[str, Any]] = {}
 
-    def add(self, path: str, reason: str) -> None:
+    def add(self, path: str, reason: str, kept: int = 0) -> None:
+        """Register an unreadable prefix.
+
+        ``kept`` seeds the count for a root whose entries never reach the prune
+        phase because they are outside the scan scope entirely (a configured root
+        that was not even part of the live root list).
+        """
         prefix = _normalized_root_prefix(path)
         with self._lock:
             if prefix in self._details:
@@ -265,7 +271,7 @@ class _UnreachablePaths:
             self._details[prefix] = {
                 'path': path.replace(os.sep, '/'),
                 'reason': reason,
-                'kept': 0,
+                'kept': kept,
             }
             self._prefixes.append(prefix)
 
@@ -1576,6 +1582,44 @@ class ModelScanner:
         """
         return self._last_reconcile_summary
 
+    def get_configured_model_roots(self) -> List[str]:
+        """Roots the user configured for this type, including unavailable ones.
+
+        ``get_model_roots()` answers "what can be walked right now"; this answers
+        "what did the user configure", which is what the refresh menu reports and
+        what must survive a switched-off drive.
+        """
+        try:
+            from ..config import config
+        except Exception:  # pragma: no cover - import guard
+            return []
+
+        # The checkpoint page scans two configured keys.
+        keys = ('checkpoint', 'unet') if self.model_type == 'checkpoint' else (self.model_type,)
+        roots: List[str] = []
+        seen: Set[str] = set()
+        for key in keys:
+            for root in config.configured_roots_for(key):
+                if root and root not in seen:
+                    seen.add(root)
+                    roots.append(root)
+        return roots
+
+    def refresh_model_roots(self) -> List[str]:
+        """Admit configured roots whose directory is readable again.
+
+        Append-only and idempotent: a drive plugged in while the process runs
+        becomes scannable without a restart. Called before describing the roots
+        (`/roots`) and before a scan, so both see the same list.
+        """
+        try:
+            from ..config import config
+
+            return config.admit_configured_roots()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Failed to refresh model roots: %s", exc)
+            return []
+
     def describe_model_roots(self) -> List[Dict[str, Any]]:
         """Describe the configured roots for the refresh scope menu.
 
@@ -1591,21 +1635,30 @@ class ModelScanner:
             seen.add(root)
             roots.append(root)
 
-        labels = _root_display_labels(roots)
+        # Configured roots that are missing from the live list: their directory
+        # did not exist when it was built (a drive switched off at startup).
+        # They are reported so the menu offers a row in both states instead of
+        # hiding the root until the process is restarted.
+        unavailable = [
+            root for root in self.get_configured_model_roots() if root not in seen
+        ]
+
+        labels = _root_display_labels(roots + unavailable)
         cached_paths = (
             {item.get('file_path', '') for item in self._cache.raw_data}
             if self._cache is not None
             else set()
         )
-        counts = _count_cached_entries_per_root(cached_paths, roots)
+        counts = _count_cached_entries_per_root(cached_paths, roots + unavailable)
         return [
             {
                 'path': root.replace(os.sep, '/'),
                 'label': labels[root],
                 'reachable': os.path.exists(root),
+                'available': root in seen,
                 'models': counts.get(root, 0),
             }
-            for root in roots
+            for root in roots + unavailable
         ]
 
     async def _initialize_cache(self) -> None:
@@ -1732,7 +1785,17 @@ class ModelScanner:
                 seen_roots.add(root_path)
                 configured_roots.append(root_path)
 
-            all_labels = _root_display_labels(configured_roots)
+            # Configured roots that never made it into the live list (their
+            # directory was missing when it was built). They are outside the scan
+            # scope entirely — which is exactly why their cached entries survive
+            # — so they only need reporting, and their labels must not collide
+            # with the live ones.
+            configured_only = [
+                root for root in self.get_configured_model_roots()
+                if root and root not in seen_roots
+            ]
+
+            all_labels = _root_display_labels(configured_roots + configured_only)
             scope_roots = [
                 root for root in configured_roots
                 if scope is None or scope.roots is None or root in scope.roots
@@ -1754,6 +1817,29 @@ class ModelScanner:
                     })
                     continue
                 roots.append(root_path)
+
+            # Report the roots that were filtered out of the live list, so a
+            # switched-off drive no longer keeps its models in silence. A scoped
+            # scan stays quiet about them: with explicit roots the caller asked
+            # for specific ones, and for a folder only the roots that actually
+            # hold cached entries of that folder are relevant.
+            if configured_only and (scope is None or scope.roots is None):
+                folder_candidates = [
+                    (root, _scope_prefix(root, scope_folder)) for root in configured_only
+                ]
+                folder_counts = _count_cached_entries_for_prefixes(
+                    cached_paths, folder_candidates
+                )
+                for root_path, _prefix in folder_candidates:
+                    kept = folder_counts.get(root_path, 0)
+                    if scope_folder is not None and not kept:
+                        continue
+                    unreachable.add(root_path, 'root_unavailable', kept=kept)
+                    skipped_roots.append({
+                        'path': root_path.replace(os.sep, '/'),
+                        'label': all_labels.get(root_path, root_path),
+                        'reason': 'root_unavailable',
+                    })
 
             self._collect_offline_symlink_prefixes(roots, unreachable)
 

@@ -954,8 +954,16 @@ class BaseModelService(ABC):
         return self.scanner.last_reconcile_summary
 
     def describe_model_roots(self) -> List[Dict[str, Any]]:
-        """Describe configured roots (label / reachability / cached count)."""
+        """Describe configured roots (label / reachability / cached count).
+
+        Pure read: callers that want a drive which was plugged in after startup to
+        appear as a normal row call :meth:`refresh_model_roots` first.
+        """
         return self.scanner.describe_model_roots()
+
+    def refresh_model_roots(self) -> List[str]:
+        """Admit configured roots that became readable again (append-only)."""
+        return self.scanner.refresh_model_roots()
 
     async def get_model_info_by_name(self, name: str):
         """Get model information by name"""
