@@ -70,8 +70,11 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
 
 # Hosts a model download may hit (metadata + file transfer). The pre-flight
 # cooldown gate consults the RateLimitCoordinator for these before a download
-# occupies a concurrency slot.
-DOWNLOAD_PREFLIGHT_HOSTS = ("civitai.com", "civitai.red", "civarchive.com")
+# occupies a concurrency slot. civarchive.com is only gated for downloads
+# whose source is CivArchive: a cooldown armed by background metadata fetches
+# must not block plain CivitAI downloads.
+DOWNLOAD_PREFLIGHT_HOSTS = ("civitai.com", "civitai.red")
+DOWNLOAD_PREFLIGHT_HOSTS_CIVARCHIVE = DOWNLOAD_PREFLIGHT_HOSTS + ("civarchive.com",)
 
 # Fallback retry_after when neither the vendor nor the coordinator can supply
 # a number (matches the Retry-After parsing default in downloader.py).
@@ -258,19 +261,30 @@ class DownloadManager:
         hostname = urlparse(url).hostname
         return hostname.lower() if hostname else "unknown"
 
-    async def _preflight_rate_limit_error(self) -> Optional[DownloadRateLimitError]:
+    async def _preflight_rate_limit_error(
+        self, source: str | None = None
+    ) -> Optional[DownloadRateLimitError]:
         """Fail fast when a download target host is in a rate-limit cooldown.
 
         Consults the RateLimitCoordinator's per-host cooldown state for the
-        hosts a model download may hit. Runs BEFORE the concurrency semaphore
+        hosts this download may hit. Runs BEFORE the concurrency semaphore
         is acquired so queued items never occupy a slot during a 429 episode.
         Deliberately non-blocking: the caller is expected to pace itself (the
         companion extension auto-pauses on the structured 429 response).
+
+        civarchive.com is only consulted when ``source == "civarchive"`` —
+        other downloads never touch it, so a cooldown armed there (typically
+        by bulk metadata fetches) must not block them.
         """
+        hosts = (
+            DOWNLOAD_PREFLIGHT_HOSTS_CIVARCHIVE
+            if source == "civarchive"
+            else DOWNLOAD_PREFLIGHT_HOSTS
+        )
         coordinator = await RateLimitCoordinator.get_instance()
         worst_host: Optional[str] = None
         worst_remaining = 0.0
-        for host in DOWNLOAD_PREFLIGHT_HOSTS:
+        for host in hosts:
             remaining = coordinator.remaining_seconds(host)
             if remaining > worst_remaining:
                 worst_host = host
@@ -678,7 +692,7 @@ class DownloadManager:
 
         # Pre-flight cooldown gate: fail fast (without holding a semaphore
         # slot) when a target host is still cooling down from an earlier 429.
-        preflight_error = await self._preflight_rate_limit_error()
+        preflight_error = await self._preflight_rate_limit_error(source)
         if preflight_error is not None:
             logger.info(
                 "Download %s skipped: %s", task_id, preflight_error

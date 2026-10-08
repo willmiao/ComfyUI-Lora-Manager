@@ -1969,7 +1969,7 @@ def _prepare_tracked_download(manager, download_id, status="downloading"):
     manager._pause_events[download_id] = DownloadStreamControl()
 
 
-async def _run_download(manager, download_id, tmp_path):
+async def _run_download(manager, download_id, tmp_path, source=None):
     return await manager._download_with_semaphore(
         download_id,
         1,
@@ -1978,7 +1978,7 @@ async def _run_download(manager, download_id, tmp_path):
         "",
         None,
         False,
-        None,
+        source,
         None,
         False,
     )
@@ -2061,6 +2061,59 @@ async def test_preflight_gate_blocks_when_host_in_cooldown(
     # The concurrency slot was never occupied by the gated download.
     await asyncio.wait_for(manager._download_semaphore.acquire(), timeout=0.1)
     manager._download_semaphore.release()
+
+
+@pytest.mark.asyncio
+async def test_preflight_gate_ignores_civarchive_cooldown_for_civitai_downloads(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """A civarchive.com cooldown (armed e.g. by bulk metadata fetches) must
+    not block a plain CivitAI download that never touches that host."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+
+    download_id = "dl-civarchive-cooldown"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id, status="waiting")
+
+    execute = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(manager, "_execute_original_download", execute)
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert execute.await_count == 1
+    assert result["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_preflight_gate_blocks_civarchive_source_during_civarchive_cooldown(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """Downloads explicitly sourced from CivArchive still gate on its cooldown."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+
+    download_id = "dl-civarchive-source"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id, status="waiting")
+
+    execute = AsyncMock(
+        side_effect=AssertionError("download must not start during cooldown")
+    )
+    monkeypatch.setattr(manager, "_execute_original_download", execute)
+
+    result = await _run_download(manager, download_id, tmp_path, source="civarchive")
+
+    assert execute.await_count == 0
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert "civarchive.com" in result["error"]
 
 
 @pytest.mark.asyncio
