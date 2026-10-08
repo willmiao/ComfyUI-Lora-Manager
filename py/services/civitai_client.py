@@ -329,8 +329,19 @@ class CivitaiClient:
                     "name": result.get("name", ""),
                 }
             message = self._extract_error_message(result)
-            if message and "not found" in message.lower():
-                raise ResourceNotFoundError(f"Resource not found for model {model_id}")
+            if message and (
+                "not found" in message.lower()
+                or message.lower().startswith("no model with id ")
+            ):
+                raise ResourceNotFoundError(
+                    f"Civitai model {model_id} was not found. Check the original "
+                    "Civitai link: use the model ID from /models/<id>, not a "
+                    "version ID from ?modelVersionId=<id> or "
+                    "/api/download/models/<id>. If the model ID is correct, "
+                    "the model may have been removed or made inaccessible. "
+                    "If the page opens only when logged in, check the Civitai "
+                    "API key in LoRA Manager settings."
+                )
             if is_expected_offline_error(message):
                 logger.info("Civitai request skipped: %s", OFFLINE_FRIENDLY_MESSAGE)
                 return None
@@ -347,7 +358,7 @@ class CivitaiClient:
         except RateLimitError:
             raise
         except ResourceNotFoundError as exc:
-            logger.info("Model %s is no longer available on Civitai: %s", model_id, exc)
+            logger.info("Civitai model lookup failed: %s", exc)
             raise
         except Exception as e:
             logger.error("Error fetching model versions: %s", e, exc_info=True)
