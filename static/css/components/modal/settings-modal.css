@@ -695,7 +695,15 @@
     margin-top: var(--space-1);
 }
 
+/* Rule rows have 4 children (chip, summary toggle, root select, actions);
+   override the 3-column .mapping-controls grid so the chip keeps its
+   natural width and the actions stay on the same row. */
+.download-root-rule-controls {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+}
+
 .download-root-rule-match-chip {
+    justify-self: start;
     flex-shrink: 0;
     padding: 2px 8px;
     border-radius: var(--border-radius-xs);
