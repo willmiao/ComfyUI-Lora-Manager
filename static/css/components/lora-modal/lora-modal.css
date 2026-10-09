@@ -349,6 +349,34 @@
     font-size: 0.9em;
 }
 
+.file-path-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.file-path-wrapper .file-path {
+    flex: 1;
+    min-width: 0;
+    word-break: break-all;
+}
+
+.location-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--lora-accent);
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: var(--border-radius-xs);
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.location-action-btn:hover {
+    opacity: 1;
+    background: rgba(66, 153, 225, 0.1);
+}
+
 .file-path[data-action="open-file-location"] {
     cursor: pointer;
     text-decoration: underline;

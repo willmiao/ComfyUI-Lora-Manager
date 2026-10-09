@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "Auf Hugging Face ansehen",
                 "viewCreatorProfile": "Ersteller-Profil anzeigen",
                 "openFileLocation": "Dateispeicherort öffnen",
+                "openSidecarLocation": "Metadaten-Speicherort öffnen",
                 "sendToWorkflow": "An ComfyUI senden",
                 "sendToWorkflowText": "An ComfyUI senden",
                 "copyHash": "Hash kopieren",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "Dateispeicherort erfolgreich geöffnet",
                 "failed": "Fehler beim Öffnen des Dateispeicherorts",
+                "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
+                "clipboardFallback": "Pfad: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Metadaten-Speicherort erfolgreich geöffnet",
+                "failed": "Fehler beim Öffnen des Metadaten-Speicherorts",
                 "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
                 "clipboardFallback": "Pfad: {{path}}"
             },

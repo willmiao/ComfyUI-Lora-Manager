@@ -365,6 +365,16 @@ export async function showModelModal(model, modelType) {
     };
     const escapedFilePathAttr = escapeAttribute(modelWithFullData.file_path || '');
     const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
+    // Centralized sidecar storage moves .metadata.json into a mirror tree, so
+    // the model path link can no longer reveal it — offer a dedicated entry
+    // only in that mode (alongside mode keeps sidecars next to the model).
+    const sidecarLocationButton = state.global.settings.sidecar_storage_mode === 'centralized'
+        ? `<button class="location-action-btn" title="${translate('modals.model.actions.openSidecarLocation', {}, 'Open metadata location')}"
+                data-action="open-sidecar-location"
+                data-filepath="${escapedFilePathAttr}">
+                <i class="fas fa-file-alt"></i>
+            </button>`
+        : '';
     // De-emphasized hash display: a borderless full-width footnote line below
     // the info grid — sha256 middle-truncated (first 10 + last 6), autov3 in
     // full (12 chars); the full value is copied via data-hash. Civitai model /
@@ -697,11 +707,14 @@ export async function showModelModal(model, modelType) {
                         <div class="info-item">
                             <div class="location-wrapper">
                                 <label>${translate('modals.model.metadata.location', {}, 'Location')}</label>
-                                <span class="file-path" title="${translate('modals.model.actions.openFileLocation', {}, 'Open file location')}"
-                                    data-action="open-file-location"
-                                    data-filepath="${escapedFilePathAttr}">
-                                    ${escapedFolderPath}
-                                </span>
+                                <div class="file-path-wrapper">
+                                    <span class="file-path" title="${translate('modals.model.actions.openFileLocation', {}, 'Open file location')}"
+                                        data-action="open-file-location"
+                                        data-filepath="${escapedFilePathAttr}">
+                                        ${escapedFolderPath}
+                                    </span>
+                                    ${sidecarLocationButton}
+                                </div>
                             </div>
                         </div>
                         <div class="info-item base-size">
@@ -1012,6 +1025,12 @@ function setupEventHandlers(filePath, modelType) {
                 const filePath = target.dataset.filepath || getModalFilePath();
                 if (filePath) {
                     openFileLocation(filePath);
+                }
+                break;
+            case 'open-sidecar-location':
+                const sidecarModelPath = target.dataset.filepath || getModalFilePath();
+                if (sidecarModelPath) {
+                    openSidecarLocation(sidecarModelPath);
                 }
                 break;
             case 'nav-prev':
@@ -1409,6 +1428,37 @@ async function openFileLocation(filePath) {
         }
     } catch (err) {
         showToast('modals.model.openFileLocation.failed', {}, 'error');
+    }
+}
+
+/**
+ * Call backend to open the model's .metadata.json sidecar location
+ * @param {string} filePath model file path (backend derives the sidecar path)
+ */
+async function openSidecarLocation(filePath) {
+    try {
+        const resp = await fetch('/api/lm/models/open-sidecar-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 'file_path': filePath })
+        });
+        if (!resp.ok) throw new Error('Failed to open sidecar location');
+
+        const data = await resp.json();
+
+        if (data.mode === 'clipboard' && data.path) {
+            try {
+                await navigator.clipboard.writeText(data.path);
+                showToast('modals.model.openSidecarLocation.copied', { path: data.path }, 'success');
+            } catch (clipboardErr) {
+                console.warn('Clipboard API not available:', clipboardErr);
+                showToast('modals.model.openSidecarLocation.clipboardFallback', { path: data.path }, 'info');
+            }
+        } else {
+            showToast('modals.model.openSidecarLocation.success', {}, 'success');
+        }
+    } catch (err) {
+        showToast('modals.model.openSidecarLocation.failed', {}, 'error');
     }
 }
 

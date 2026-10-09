@@ -195,6 +195,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > root** noun while translating (`library root` → `model root`, R5); the count-bearing
 > `successMulti` uses the singular `success` key when only one copy was removed.
 
+> **Status (2026-10, model-modal sidecar location):** the model modal's Location row gained
+> an inline "open metadata location" icon button (rendered only in centralized sidecar
+> storage mode), adding 5 keys (`modals.model.actions.openSidecarLocation` and the 4
+> `modals.model.openSidecarLocation.*` toasts). The renderings mirror each locale's sibling
+> `openFileLocation` block verbatim with the §5 "metadata" noun swapped in, so no new
+> terminology was introduced. All 9 locales are translated, so the "no remaining
+> placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)

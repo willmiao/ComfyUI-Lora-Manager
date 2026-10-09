@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "Ver en Hugging Face",
                 "viewCreatorProfile": "Ver perfil del creador",
                 "openFileLocation": "Abrir ubicación del archivo",
+                "openSidecarLocation": "Abrir ubicación de los metadatos",
                 "sendToWorkflow": "Enviar a ComfyUI",
                 "sendToWorkflowText": "Enviar a ComfyUI",
                 "copyHash": "Copiar hash",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "Ubicación del archivo abierta exitosamente",
                 "failed": "Error al abrir la ubicación del archivo",
+                "copied": "Ruta copiada al portapapeles: {{path}}",
+                "clipboardFallback": "Ruta: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Ubicación de los metadatos abierta exitosamente",
+                "failed": "Error al abrir la ubicación de los metadatos",
                 "copied": "Ruta copiada al portapapeles: {{path}}",
                 "clipboardFallback": "Ruta: {{path}}"
             },

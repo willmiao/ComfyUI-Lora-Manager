@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "Hugging Face에서 보기",
                 "viewCreatorProfile": "제작자 프로필 보기",
                 "openFileLocation": "파일 위치 열기",
+                "openSidecarLocation": "메타데이터 위치 열기",
                 "sendToWorkflow": "ComfyUI로 보내기",
                 "sendToWorkflowText": "ComfyUI로 보내기",
                 "copyHash": "해시 복사",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "파일 위치가 성공적으로 열렸습니다",
                 "failed": "파일 위치 열기에 실패했습니다",
+                "copied": "경로가 클립보드에 복사되었습니다: {{path}}",
+                "clipboardFallback": "경로: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "메타데이터 위치가 성공적으로 열렸습니다",
+                "failed": "메타데이터 위치 열기에 실패했습니다",
                 "copied": "경로가 클립보드에 복사되었습니다: {{path}}",
                 "clipboardFallback": "경로: {{path}}"
             },

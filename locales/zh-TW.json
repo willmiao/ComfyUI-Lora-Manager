@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "在 Hugging Face 查看",
                 "viewCreatorProfile": "查看創作者個人檔案",
                 "openFileLocation": "開啟檔案位置",
+                "openSidecarLocation": "開啟中繼資料位置",
                 "sendToWorkflow": "傳送到 ComfyUI",
                 "sendToWorkflowText": "傳送到 ComfyUI",
                 "copyHash": "複製雜湊值",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "檔案位置已成功開啟",
                 "failed": "開啟檔案位置失敗",
+                "copied": "路徑已複製到剪貼簿：{{path}}",
+                "clipboardFallback": "路徑：{{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "中繼資料位置已成功開啟",
+                "failed": "開啟中繼資料位置失敗",
                 "copied": "路徑已複製到剪貼簿：{{path}}",
                 "clipboardFallback": "路徑：{{path}}"
             },

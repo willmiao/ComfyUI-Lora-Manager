@@ -1892,6 +1892,7 @@
         "viewOnHuggingFaceText": "View on Hugging Face",
         "viewCreatorProfile": "View Creator Profile",
         "openFileLocation": "Open File Location",
+        "openSidecarLocation": "Open metadata location",
         "sendToWorkflow": "Send to ComfyUI",
         "sendToWorkflowText": "Send to ComfyUI",
         "copyHash": "Copy hash",
@@ -1902,6 +1903,12 @@
       "openFileLocation": {
         "success": "File location opened successfully",
         "failed": "Failed to open file location",
+        "copied": "Path copied to clipboard: {{path}}",
+        "clipboardFallback": "Path: {{path}}"
+      },
+      "openSidecarLocation": {
+        "success": "Metadata location opened successfully",
+        "failed": "Failed to open metadata location",
         "copied": "Path copied to clipboard: {{path}}",
         "clipboardFallback": "Path: {{path}}"
       },

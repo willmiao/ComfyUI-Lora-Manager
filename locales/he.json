@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "צפייה ב-Hugging Face",
                 "viewCreatorProfile": "הצג פרופיל יוצר",
                 "openFileLocation": "פתח מיקום קובץ",
+                "openSidecarLocation": "פתח מיקום מטא-נתונים",
                 "sendToWorkflow": "שלח ל-ComfyUI",
                 "sendToWorkflowText": "שלח ל-ComfyUI",
                 "copyHash": "העתק hash",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
                 "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "מיקום המטא-נתונים נפתח בהצלחה",
+                "failed": "פתיחת מיקום המטא-נתונים נכשלה",
                 "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
                 "clipboardFallback": "נתיב: {{path}}"
             },

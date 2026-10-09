@@ -1892,6 +1892,7 @@
                 "viewOnHuggingFaceText": "Открыть Hugging Face",
                 "viewCreatorProfile": "Посмотреть профиль создателя",
                 "openFileLocation": "Открыть расположение файла",
+                "openSidecarLocation": "Открыть расположение метаданных",
                 "sendToWorkflow": "Отправить в ComfyUI",
                 "sendToWorkflowText": "Отправить в ComfyUI",
                 "copyHash": "Копировать хеш",
@@ -1902,6 +1903,12 @@
             "openFileLocation": {
                 "success": "Расположение файла успешно открыто",
                 "failed": "Не удалось открыть расположение файла",
+                "copied": "Путь скопирован в буфер обмена: {{path}}",
+                "clipboardFallback": "Путь: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Расположение метаданных успешно открыто",
+                "failed": "Не удалось открыть расположение метаданных",
                 "copied": "Путь скопирован в буфер обмена: {{path}}",
                 "clipboardFallback": "Путь: {{path}}"
             },

@@ -911,6 +911,151 @@ async def test_open_file_location_headless_returns_clipboard_mode(tmp_path, monk
     assert run_calls == []
 
 
+def _patch_linux_desktop(monkeypatch):
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+
+@pytest.mark.asyncio
+async def test_open_model_sidecar_location_reveals_metadata_file(tmp_path, monkeypatch):
+    """Centralized mode: the resolved .metadata.json is revealed selected,
+    even though it lives in the mirror tree rather than next to the model."""
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+    metadata_file = tmp_path / "mirror" / "model.metadata.json"
+    metadata_file.parent.mkdir(parents=True)
+    metadata_file.write_text("{}", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+    _patch_linux_desktop(monkeypatch)
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_metadata_path",
+        lambda path: str(metadata_file),
+    )
+
+    run_calls = []
+    popen_calls = []
+    monkeypatch.setattr(
+        subprocess, "run", lambda *args, **kwargs: run_calls.append(args[0]) or SimpleNamespace(returncode=0)
+    )
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_model_sidecar_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(metadata_file)
+    assert len(run_calls) == 1
+    assert any("model.metadata.json" in arg for arg in run_calls[0])
+    assert popen_calls == []
+
+
+@pytest.mark.asyncio
+async def test_open_model_sidecar_location_falls_back_to_sidecar_dir(tmp_path, monkeypatch):
+    """When the sidecar has not been written yet, open the sidecar directory
+    itself instead of reporting an error."""
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+    sidecar_dir = tmp_path / "mirror"
+    sidecar_dir.mkdir()
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+    _patch_linux_desktop(monkeypatch)
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_metadata_path",
+        lambda path: str(sidecar_dir / "model.metadata.json"),
+    )
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_sidecar_dir",
+        lambda path: str(sidecar_dir),
+    )
+
+    popen_calls = []
+    monkeypatch.setattr(
+        subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args[0])
+    )
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_model_sidecar_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(sidecar_dir)
+    assert popen_calls == [["xdg-open", str(sidecar_dir)]]
+
+
+@pytest.mark.asyncio
+async def test_open_model_sidecar_location_missing_sidecar_returns_404(tmp_path, monkeypatch):
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+    missing_dir = tmp_path / "missing"
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_metadata_path",
+        lambda path: str(missing_dir / "model.metadata.json"),
+    )
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_sidecar_dir",
+        lambda path: str(missing_dir),
+    )
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_model_sidecar_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 404
+    assert payload["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_open_model_sidecar_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+    metadata_file = tmp_path / "mirror" / "model.metadata.json"
+    metadata_file.parent.mkdir(parents=True)
+    metadata_file.write_text("{}", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+    monkeypatch.setattr(
+        "py.routes.handlers.misc_handlers.get_metadata_path",
+        lambda path: str(metadata_file),
+    )
+
+    popen_calls = []
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_model_sidecar_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["mode"] == "clipboard"
+    assert payload["path"] == str(metadata_file)
+    assert popen_calls == []
+
+
+@pytest.mark.asyncio
+async def test_open_model_sidecar_location_validates_input(tmp_path):
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    response = await handler.open_model_sidecar_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    assert response.status == 400
+
+    request = FakeRequest(json_data={"file_path": str(tmp_path / "missing.safetensors")})
+    response = await handler.open_model_sidecar_location(request)  # pyright: ignore[reportArgumentType]
+    assert response.status == 404
+
+
 class RecordingRouter:
     def __init__(self):
         self.calls = []
