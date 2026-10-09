@@ -810,6 +810,107 @@ async def test_open_wildcards_location_creates_and_opens_directory(tmp_path, mon
     assert calls == [["xdg-open", str(wildcards_dir)]]
 
 
+@pytest.mark.asyncio
+async def test_open_file_location_linux_selects_via_dbus(tmp_path, monkeypatch):
+    """On a Linux desktop the handler should ask the freedesktop FileManager1
+    DBus service to open the folder with the file selected."""
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    run_calls = []
+    popen_calls = []
+
+    def fake_run(args, **kwargs):
+        run_calls.append(args)
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_file_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert len(run_calls) == 1
+    dbus_cmd = run_calls[0]
+    assert dbus_cmd[0] == "dbus-send"
+    assert any(
+        arg.startswith("array:string:file://") and "model.safetensors" in arg
+        for arg in dbus_cmd
+    )
+    assert popen_calls == []
+
+
+@pytest.mark.asyncio
+async def test_open_file_location_linux_falls_back_to_xdg_open(tmp_path, monkeypatch):
+    """When the FileManager1 DBus interface is unavailable, fall back to
+    opening the containing folder with xdg-open."""
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    popen_calls = []
+
+    monkeypatch.setattr(
+        subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=1)
+    )
+    monkeypatch.setattr(
+        subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args[0])
+    )
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_file_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert popen_calls == [["xdg-open", str(tmp_path)]]
+
+
+@pytest.mark.asyncio
+async def test_open_file_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
+    """Without a GUI session there is no file manager to open; the handler
+    must hand the path to the browser instead of failing silently."""
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("x", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    popen_calls = []
+    run_calls = []
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: run_calls.append(args))
+
+    request = FakeRequest(json_data={"file_path": str(model_file)})
+    response = await handler.open_file_location(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["mode"] == "clipboard"
+    assert payload["path"] == str(model_file)
+    assert popen_calls == []
+    assert run_calls == []
+
+
 class RecordingRouter:
     def __init__(self):
         self.calls = []

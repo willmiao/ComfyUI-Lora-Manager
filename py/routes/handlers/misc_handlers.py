@@ -23,6 +23,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from urllib.parse import quote
 from typing import Any, Awaitable, Callable, Dict, Mapping, Protocol, Sequence
 
 from aiohttp import web
@@ -437,6 +438,35 @@ def _wsl_to_windows_path(wsl_path: str) -> str | None:
 def _has_gui_display() -> bool:
     """Check whether a GUI session is reachable for xdg-open."""
     return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def _select_in_linux_file_manager(file_path: str) -> bool:
+    """Reveal ``file_path`` selected in the desktop file manager.
+
+    Uses the freedesktop ``org.freedesktop.FileManager1.ShowItems`` DBus
+    interface, which is supported by GNOME Files (Nautilus), KDE Dolphin,
+    Nemo, Caja, and recent Thunar.  Returns ``False`` when the interface is
+    unavailable so the caller can fall back to plain ``xdg-open``.
+    """
+    uri = "file://" + quote(file_path)
+    try:
+        result = subprocess.run(
+            [
+                "dbus-send",
+                "--session",
+                "--print-reply",
+                "--dest=org.freedesktop.FileManager1",
+                "/org/freedesktop/FileManager1",
+                "org.freedesktop.FileManager1.ShowItems",
+                f"array:string:{uri}",
+                "string:",
+            ],
+            capture_output=True,
+            timeout=5,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return False
+    return result.returncode == 0
 
 
 class PromptServerProtocol(Protocol):
@@ -3512,8 +3542,22 @@ class FileSystemHandler:
                 elif sys.platform == "darwin":
                     subprocess.Popen(["open", "-R", file_path])
                 else:
-                    folder = os.path.dirname(file_path)
-                    subprocess.Popen(["xdg-open", folder])
+                    if not _has_gui_display():
+                        # Headless/SSH session: no file manager to open, so
+                        # hand the path to the browser for copying instead
+                        # of reporting a success that never happened.
+                        return web.json_response(
+                            {
+                                "success": True,
+                                "message": "Headless session: path available for copying",
+                                "path": file_path,
+                                "mode": "clipboard",
+                            }
+                        )
+                    selected = _select_in_linux_file_manager(file_path)
+                    if not selected:
+                        folder = os.path.dirname(file_path)
+                        subprocess.Popen(["xdg-open", folder])
 
             return web.json_response(
                 {
