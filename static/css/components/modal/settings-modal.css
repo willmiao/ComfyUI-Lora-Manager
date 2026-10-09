@@ -686,6 +686,11 @@
     padding: 4px 0;
 }
 
+.download-root-rule-default-hint {
+    padding-top: 0;
+    overflow-wrap: anywhere;
+}
+
 .download-root-rule-panel {
     margin-top: var(--space-1);
 }

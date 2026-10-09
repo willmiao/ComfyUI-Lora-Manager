@@ -499,6 +499,8 @@
             "title": "[TODO: Translate] Download Root Rules",
             "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
             "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
+            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
+            "defaultSuffix": "[TODO: Translate] default",
             "addRule": "[TODO: Translate] Add rule",
             "removeRule": "[TODO: Translate] Remove rule",
             "moveUp": "[TODO: Translate] Move up",

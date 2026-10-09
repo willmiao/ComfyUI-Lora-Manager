@@ -499,6 +499,8 @@
       "title": "Download Root Rules",
       "help": "Route downloads to a different root folder based on the model's base model.",
       "description": "Rules are checked in order. First match wins; unmatched downloads use the default root.",
+      "defaultHint": "Default: {root} — unmatched downloads go here",
+      "defaultSuffix": "default",
       "addRule": "Add rule",
       "removeRule": "Remove rule",
       "moveUp": "Move up",

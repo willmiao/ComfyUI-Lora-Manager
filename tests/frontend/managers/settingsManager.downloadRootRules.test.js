@@ -325,3 +325,107 @@ describe('SettingsManager download root rules', () => {
         }
     });
 });
+
+describe('SettingsManager download root rules default-root cue', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        vi.clearAllMocks();
+        state.global.settings = {
+            download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
+        };
+    });
+
+    const defaultHintFor = (typeIndex) =>
+        document.querySelectorAll('.download-root-rule-group')[typeIndex]
+            .querySelector('.download-root-rule-default-hint');
+
+    it('renders a default hint under the group header when a default root is set', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.default_lora_root = '/models/loras-main';
+        const manager = createManager();
+
+        manager.renderDownloadRootRules();
+
+        expect(defaultHintFor(0).textContent)
+            .toBe('Default: /models/loras-main — unmatched downloads go here');
+    });
+
+    it('omits the default hint when the type has no roots or no default root', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.default_lora_root = '';
+        state.global.settings.default_embedding_root = '/models/embeddings';
+        const manager = createManager();
+
+        manager.renderDownloadRootRules();
+
+        // loras: default root is empty -> no hint
+        expect(defaultHintFor(0)).toBeNull();
+        // embeddings: no roots configured -> noRoots hint only, no default hint
+        expect(defaultHintFor(3)).toBeNull();
+    });
+
+    it('marks the default root option with a (default) suffix but keeps the plain value', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.default_lora_root = '/models/lora-archive';
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: '/models/loras-main' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+
+        manager.renderDownloadRootRules();
+
+        const options = groupRows('loras')[0].querySelectorAll('select.download-root-rule-root option');
+        expect([...options].map((o) => o.value)).toEqual(['/models/loras-main', '/models/lora-archive']);
+        expect([...options].map((o) => o.textContent)).toEqual([
+            '/models/loras-main',
+            '/models/lora-archive (default)',
+        ]);
+    });
+
+    it('compares roots loosely: separators, trailing slashes and case are ignored', () => {
+        const manager = createManager();
+
+        expect(manager.isDownloadRootRuleDefaultRoot('C:\\Models\\Loras\\', 'c:/models/loras')).toBe(true);
+        expect(manager.isDownloadRootRuleDefaultRoot('/a/b/', '/a/b')).toBe(true);
+        expect(manager.isDownloadRootRuleDefaultRoot('/a/b', '/a/c')).toBe(false);
+        expect(manager.isDownloadRootRuleDefaultRoot('/a/b', '')).toBe(false);
+    });
+
+    it('does not render groups before the roots have been fetched', () => {
+        appendDownloadRootRulesUi();
+        const manager = createManager();
+        manager.downloadRootRuleRoots = null;
+
+        manager.renderDownloadRootRules();
+
+        expect(document.querySelectorAll('.download-root-rule-group')).toHaveLength(0);
+    });
+
+    it('changing a default root select re-renders the rules editor with the new default', async () => {
+        appendDownloadRootRulesUi();
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            '<select id="defaultLoraRoot"><option value="/models/loras-main">a</option><option value="/models/lora-archive" selected>b</option></select>'
+        );
+        state.global.settings.default_lora_root = '/models/loras-main';
+        const manager = createManager();
+        manager.applyFrontendSettings = vi.fn();
+        // Mimic the real saveSetting, which writes the value into state.
+        manager.saveSetting = vi.fn().mockImplementation(async (key, value) => {
+            state.global.settings[key] = value;
+        });
+
+        manager.renderDownloadRootRules();
+        expect(defaultHintFor(0).textContent)
+            .toBe('Default: /models/loras-main — unmatched downloads go here');
+
+        await manager.saveSelectSetting('defaultLoraRoot', 'default_lora_root');
+
+        expect(manager.saveSetting).toHaveBeenCalledWith('default_lora_root', '/models/lora-archive');
+        expect(defaultHintFor(0).textContent)
+            .toBe('Default: /models/lora-archive — unmatched downloads go here');
+    });
+});

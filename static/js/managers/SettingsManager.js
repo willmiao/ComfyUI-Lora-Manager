@@ -59,6 +59,20 @@ const DOWNLOAD_ROOT_RULE_ROOT_ENDPOINTS = {
     embeddings: '/api/lm/embeddings/roots',
 };
 
+// Rule type -> the settings key holding that type's default download root.
+const DOWNLOAD_ROOT_RULE_DEFAULT_ROOT_SETTINGS = {
+    loras: 'default_lora_root',
+    checkpoints: 'default_checkpoint_root',
+    unet: 'default_unet_root',
+    embeddings: 'default_embedding_root',
+};
+
+// Setting keys whose change must refresh the download root rules editor
+// (it shows which root is the default for each type).
+const DOWNLOAD_ROOT_RULE_DEFAULT_SETTING_KEYS = new Set(
+    Object.values(DOWNLOAD_ROOT_RULE_DEFAULT_ROOT_SETTINGS)
+);
+
 export class SettingsManager {
     constructor() {
         this.initialized = false;
@@ -3257,6 +3271,12 @@ export class SettingsManager {
             // Apply frontend settings immediately
             this.applyFrontendSettings();
 
+            // The download root rules editor marks each type's default root;
+            // refresh it when a default root select changes.
+            if (DOWNLOAD_ROOT_RULE_DEFAULT_SETTING_KEYS.has(settingKey)) {
+                this.renderDownloadRootRules();
+            }
+
             // Recalculate layout when display density changes
             if (settingKey === 'display_density' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
@@ -4469,13 +4489,31 @@ export class SettingsManager {
 
     renderDownloadRootRules() {
         const container = document.getElementById('downloadRootRulesContainer');
-        if (!container) {
+        if (!container || !this.downloadRootRuleRoots) {
             return;
         }
         container.innerHTML = '';
         DOWNLOAD_ROOT_RULE_TYPES.forEach((typeKey) => {
             container.appendChild(this.buildDownloadRootRuleGroup(typeKey));
         });
+    }
+
+    getDownloadRootRuleDefaultRoot(typeKey) {
+        const settingKey = DOWNLOAD_ROOT_RULE_DEFAULT_ROOT_SETTINGS[typeKey];
+        const value = settingKey ? state.global.settings[settingKey] : '';
+        return typeof value === 'string' ? value.trim() : '';
+    }
+
+    // Loose display-only comparison: separator, trailing slash and case
+    // differences must not hide the "(default)" cue.
+    isDownloadRootRuleDefaultRoot(root, defaultRoot) {
+        const normalize = (value) => String(value || '')
+            .replace(/\\/g, '/')
+            .replace(/\/+$/, '')
+            .toLowerCase();
+        const normalizedRoot = normalize(root);
+        const normalizedDefault = normalize(defaultRoot);
+        return !!normalizedRoot && !!normalizedDefault && normalizedRoot === normalizedDefault;
     }
 
     buildDownloadRootRuleGroup(typeKey) {
@@ -4494,6 +4532,18 @@ export class SettingsManager {
             hint.textContent = translate('settings.downloadRootRules.noRoots', {}, 'No roots configured for this model type.');
             group.appendChild(hint);
             return group;
+        }
+
+        const defaultRoot = this.getDownloadRootRuleDefaultRoot(typeKey);
+        if (defaultRoot) {
+            const defaultHint = document.createElement('div');
+            defaultHint.className = 'download-root-rules-hint download-root-rule-default-hint';
+            defaultHint.textContent = translate(
+                'settings.downloadRootRules.defaultHint',
+                { root: defaultRoot },
+                `Default: ${defaultRoot} — unmatched downloads go here`
+            );
+            group.appendChild(defaultHint);
         }
 
         const rules = this.getDownloadRootRules()[typeKey];
@@ -4548,10 +4598,13 @@ export class SettingsManager {
 
         const rootSelect = document.createElement('select');
         rootSelect.className = 'base-model-select download-root-rule-root';
+        const defaultRoot = this.getDownloadRootRuleDefaultRoot(typeKey);
         roots.forEach((root) => {
             const option = document.createElement('option');
             option.value = root;
-            option.textContent = root;
+            option.textContent = this.isDownloadRootRuleDefaultRoot(root, defaultRoot)
+                ? `${root} (${translate('settings.downloadRootRules.defaultSuffix', {}, 'default')})`
+                : root;
             rootSelect.appendChild(option);
         });
         if (roots.includes(rule.root)) {
