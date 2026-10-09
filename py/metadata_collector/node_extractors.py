@@ -584,6 +584,20 @@ class ConditioningCombineExtractor(NodeMetadataExtractor):
         )
 
 
+def _get_model_link_source(metadata, node_id):
+    """Return the upstream node id feeding this node's MODEL input link."""
+    prompt = metadata.get("current_prompt")
+    original_prompt = getattr(prompt, "original_prompt", None)
+    if not original_prompt or node_id not in original_prompt:
+        return None
+    node_inputs = original_prompt[node_id].get("inputs", {})
+    for key in ("MODEL", "model"):
+        link = node_inputs.get(key)
+        if isinstance(link, list) and link:
+            return str(link[0])
+    return None
+
+
 class SetNodeExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -591,6 +605,20 @@ class SetNodeExtractor(NodeMetadataExtractor):
             return
 
         variable_name = _get_node_variable_name(metadata, node_id, inputs)
+
+        # Record MODEL passthrough as a variable reference so trace_model_path
+        # can follow the matching GetNode back to the real loader — Set/Get
+        # links are virtual and absent from the API prompt.
+        if variable_name:
+            source_node_id = _get_model_link_source(metadata, node_id)
+            if source_node_id is not None:
+                metadata.setdefault(MODELS, {})[node_id] = {
+                    "type": "model_variable",
+                    "variable_name": variable_name,
+                    "source_node_id": source_node_id,
+                    "node_id": node_id,
+                }
+
         conditioning = inputs.get("CONDITIONING")
         if conditioning is None:
             conditioning = inputs.get("conditioning")

@@ -7,7 +7,7 @@ from .constants import IMAGES
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER, OVERWRITE
-from .node_extractors import NODE_EXTRACTORS
+from .node_extractors import NODE_EXTRACTORS, _get_variable_name
 
 logger = logging.getLogger(__name__)
 
@@ -356,8 +356,18 @@ class MetadataProcessor:
                     # Handle pipe nodes like FromBasicPipe by following the pipeline
                     next_input_name = "basic_pipe"
                 else:
-                    # Dead end - no model input to follow
-                    return None
+                    # No direct model input to follow. GetNode (KJNodes) links
+                    # are virtual and absent from the API prompt — resolve the
+                    # variable reference back to the SetNode's MODEL source
+                    # before giving up.
+                    resolved_id = MetadataProcessor._resolve_model_variable_source(
+                        metadata, prompt, current_node_id
+                    )
+                    if resolved_id is None:
+                        return None
+                    current_node_id = resolved_id
+                    depth += 1
+                    continue
             
             # Get connected node
             input_val = inputs[next_input_name]
@@ -369,6 +379,57 @@ class MetadataProcessor:
             depth += 1
             
         return None
+
+    @staticmethod
+    def _resolve_model_variable_source(metadata, prompt, node_id):
+        """Resolve a GetNode-style virtual reference to its MODEL source node.
+
+        SetNodeExtractor records ``model_variable`` entries (variable name →
+        source node id) when a SetNode carrying a MODEL link executes, and
+        GetNodeExtractor records the variable name each GetNode reads. When
+        both are available, the virtual Set/Get link can be followed just like
+        a real connection.
+        """
+        if not prompt or not getattr(prompt, "original_prompt", None):
+            return None
+        if node_id not in prompt.original_prompt:
+            return None
+
+        # Variable name read by this node: prefer the runtime record,
+        # fall back to the prompt inputs.
+        variable_name = None
+        prompt_info = metadata.get(PROMPTS, {}).get(node_id)
+        if isinstance(prompt_info, dict):
+            variable_name = prompt_info.get("variable_name")
+        if not variable_name:
+            node_inputs = prompt.original_prompt[node_id].get("inputs", {})
+            variable_name = _get_variable_name(node_inputs)
+        if not variable_name:
+            return None
+
+        candidates = [
+            info
+            for info in metadata.get(MODELS, {}).values()
+            if isinstance(info, dict)
+            and info.get("type") == "model_variable"
+            and info.get("variable_name") == variable_name
+            and info.get("source_node_id")
+        ]
+        if not candidates:
+            return None
+
+        # KJNodes semantics: when several SetNodes share a variable name,
+        # the last one to execute wins.
+        execution_order = metadata.get("execution_order") or []
+
+        def _order(info):
+            try:
+                return execution_order.index(info.get("node_id"))
+            except ValueError:
+                return -1
+
+        best = max(candidates, key=_order)
+        return best.get("source_node_id")
 
     @staticmethod
     def find_primary_checkpoint(metadata, downstream_id=None, primary_sampler_id=None):
