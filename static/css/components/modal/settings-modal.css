@@ -697,8 +697,9 @@
 
 /* Rule rows have 4 children (chip, summary toggle, root select, actions);
    override the 3-column .mapping-controls grid so the chip keeps its
-   natural width and the actions stay on the same row. */
-.download-root-rule-controls {
+   natural width and the actions stay on the same row. The compound
+   selector wins over .mapping-controls regardless of source order. */
+.mapping-controls.download-root-rule-controls {
     grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
 }
 
