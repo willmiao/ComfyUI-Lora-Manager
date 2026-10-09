@@ -1,5 +1,10 @@
 # Library Switching and Preview Routes
 
+> **Deprecated:** Multi-library support (and therefore library switching) is
+> deprecated and will be removed in an upcoming release. The dynamic preview
+> route described here will remain — it also serves single-library
+> installations.
+
 Library switching no longer requires restarting the backend. The preview
 thumbnails shown in the UI are now served through a dynamic endpoint that
 resolves files against the folders registered for the active library at request

@@ -555,8 +555,8 @@
       "cardBlurAmountHelp": "Adjust the blur intensity of the header and footer overlays on model and recipe cards (0 = no blur, 20 = maximum blur)."
     },
     "folderSettings": {
-      "activeLibrary": "Active Library",
-      "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+      "activeLibrary": "Active Library (Deprecated)",
+      "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page. Deprecated: multi-library support will be removed in an upcoming release. Multiple folder roots within a single library remain fully supported.",
       "loadingLibraries": "Loading libraries...",
       "noLibraries": "No libraries configured",
       "defaultLoraRoot": "LoRA Root",

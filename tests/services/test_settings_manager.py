@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import json
+import logging
 import os
 from concurrent.futures import Future
 
@@ -131,6 +132,58 @@ def test_existing_folder_paths_seed_default_library(tmp_path, monkeypatch):
     assert libraries["default"]["folder_paths"]["embeddings"] == [str(embedding_dir)]
 
     assert manager.get_startup_messages() == []
+
+
+def test_multi_library_configuration_triggers_deprecation_warning(
+    tmp_path, monkeypatch, caplog
+):
+    initial = {
+        "libraries": {
+            "default": {"folder_paths": {"loras": ["/loras-a"]}},
+            "archive": {"folder_paths": {"loras": ["/loras-b"]}},
+        },
+        "active_library": "default",
+    }
+
+    with caplog.at_level(logging.WARNING, logger="py.services.settings_manager"):
+        manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    assert any(
+        "Multi-library support is deprecated" in record.getMessage()
+        for record in caplog.records
+    )
+    deprecation = [
+        message
+        for message in manager.get_startup_messages()
+        if message["code"] == "multi-library-deprecated"
+    ]
+    assert len(deprecation) == 1
+    assert deprecation[0]["severity"] == "warning"
+    assert deprecation[0]["dismissible"] is True
+    assert "archive" in deprecation[0]["message"]
+
+
+def test_single_library_configuration_has_no_deprecation_warning(
+    tmp_path, monkeypatch, caplog
+):
+    initial = {
+        "libraries": {
+            "default": {"folder_paths": {"loras": ["/loras-a"]}},
+        },
+        "active_library": "default",
+    }
+
+    with caplog.at_level(logging.WARNING, logger="py.services.settings_manager"):
+        manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    assert not any(
+        "Multi-library support is deprecated" in record.getMessage()
+        for record in caplog.records
+    )
+    assert not any(
+        message["code"] == "multi-library-deprecated"
+        for message in manager.get_startup_messages()
+    )
 
 
 def test_environment_variable_overrides_settings(tmp_path, monkeypatch):

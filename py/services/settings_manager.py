@@ -583,6 +583,39 @@ class SettingsManager:
         if changed and initial_bootstrap:
             self._needs_initial_save = True
 
+        self._warn_if_multi_library()
+
+    def _warn_if_multi_library(self) -> None:
+        """Surface a deprecation notice when more than one library is configured."""
+        libraries = self.settings.get("libraries", {})
+        if not isinstance(libraries, Mapping) or len(libraries) <= 1:
+            return
+
+        names = ", ".join(sorted(str(name) for name in libraries))
+        logger.warning(
+            "Multi-library support is deprecated and will be removed in an "
+            "upcoming release. Detected %d libraries in settings.json (%s). "
+            "Multiple folder roots within a single library remain fully "
+            "supported; please consolidate your libraries into one.",
+            len(libraries),
+            names,
+        )
+        self._add_startup_message(
+            code="multi-library-deprecated",
+            title="Multi-library support is deprecated",
+            message=(
+                f"This installation has {len(libraries)} libraries configured in "
+                f"settings.json ({names}). Multi-library support is deprecated and "
+                "will be removed in an upcoming release; at that point all "
+                "libraries' folder paths will be merged into a single library. "
+                "Multiple folder roots within a single library remain fully "
+                "supported, so consider consolidating into one library now."
+            ),
+            severity="warning",
+            actions=self._default_settings_actions(),
+            dismissible=True,
+        )
+
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
         libraries = self.settings.get("libraries", {})
@@ -2381,34 +2414,6 @@ class SettingsManager:
 
         if was_active:
             self._notify_library_change(self.settings["active_library"])
-
-    def update_active_library_paths(
-        self,
-        folder_paths: Mapping[str, Iterable[str]],
-        *,
-        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
-        default_lora_root: Optional[str] = None,
-        default_checkpoint_root: Optional[str] = None,
-        default_unet_root: Optional[str] = None,
-        default_embedding_root: Optional[str] = None,
-        default_other_roots: Optional[Mapping[str, str]] = None,
-        recipes_path: Optional[str] = None,
-    ) -> None:
-        """Update folder paths for the active library."""
-
-        active_name = self.get_active_library_name()
-        self.upsert_library(
-            active_name,
-            folder_paths=folder_paths,
-            extra_folder_paths=extra_folder_paths,
-            default_lora_root=default_lora_root,
-            default_checkpoint_root=default_checkpoint_root,
-            default_unet_root=default_unet_root,
-            default_embedding_root=default_embedding_root,
-            default_other_roots=default_other_roots,
-            recipes_path=recipes_path,
-            activate=True,
-        )
 
     def _notify_library_change(self, library_name: str) -> None:
         """Notify dependent services that the active library changed."""
