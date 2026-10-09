@@ -4573,13 +4573,21 @@ export class SettingsManager {
             group.appendChild(this.buildDownloadRootRuleRow(typeKey, draft, rules.length, true, roots));
         }
 
-        const addBtn = document.createElement('button');
-        addBtn.type = 'button';
-        addBtn.className = 'add-mapping-btn';
-        addBtn.disabled = !!draft;
-        addBtn.innerHTML = `<i class="fas fa-plus"></i><span>${translate('settings.downloadRootRules.addRule', {}, 'Add rule')}</span>`;
-        addBtn.addEventListener('click', () => this.addDownloadRootRule(typeKey));
-        group.appendChild(addBtn);
+        const addRow = document.createElement('div');
+        addRow.className = 'download-root-rule-add-row';
+        [
+            ['base_model', 'settings.downloadRootRules.addBaseModelRule', 'Base model rule'],
+            ['tag', 'settings.downloadRootRules.addTagRule', 'Tag rule'],
+        ].forEach(([matchType, i18nKey, fallback]) => {
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'add-mapping-btn';
+            addBtn.disabled = !!draft;
+            addBtn.innerHTML = `<i class="fas fa-plus"></i><span>${translate(i18nKey, {}, fallback)}</span>`;
+            addBtn.addEventListener('click', () => this.addDownloadRootRule(typeKey, matchType));
+            addRow.appendChild(addBtn);
+        });
+        group.appendChild(addRow);
 
         return group;
     }
@@ -4596,37 +4604,34 @@ export class SettingsManager {
         const controls = document.createElement('div');
         controls.className = 'mapping-controls download-root-rule-controls';
 
-        const matchTypeSelect = document.createElement('select');
-        matchTypeSelect.className = 'download-root-rule-match-type';
-        [
-            ['base_model', 'settings.downloadRootRules.matchTypes.baseModel', 'Base model'],
-            ['tag', 'settings.downloadRootRules.matchTypes.tag', 'Tag'],
-        ].forEach(([value, i18nKey, fallback]) => {
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = translate(i18nKey, {}, fallback);
-            matchTypeSelect.appendChild(option);
-        });
-        matchTypeSelect.value = rule.match_type === 'tag' ? 'tag' : 'base_model';
-        matchTypeSelect.addEventListener('change', () => {
-            this.setDownloadRootRuleMatchType(typeKey, index, matchTypeSelect.value, isDraft);
-        });
-        controls.appendChild(matchTypeSelect);
+        // Static match-type chip: the type is fixed at creation time (the
+        // two per-group add buttons); changing type means recreating the rule.
+        const isTagRule = rule.match_type === 'tag';
+        const chip = document.createElement('span');
+        chip.className = `download-root-rule-match-chip${isTagRule ? ' is-tag' : ''}`;
+        chip.textContent = isTagRule
+            ? translate('settings.downloadRootRules.matchTypeChips.tag', {}, 'Tag')
+            : translate('settings.downloadRootRules.matchTypeChips.baseModel', {}, 'BM');
+        chip.title = isTagRule
+            ? translate('settings.downloadRootRules.matchTypes.tag', {}, 'Tag')
+            : translate('settings.downloadRootRules.matchTypes.baseModel', {}, 'Base model');
+        controls.appendChild(chip);
 
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = 'secondary-btn base-model-skip-toggle download-root-rule-toggle';
         toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        toggle.title = isOpen
+            ? translate('settings.downloadSkipBaseModels.actions.collapse', {}, 'Collapse')
+            : translate('settings.downloadSkipBaseModels.actions.edit', {}, 'Edit');
         const summary = document.createElement('span');
         summary.className = 'download-root-rule-summary';
         this.renderDownloadRootRuleSummary(summary, rule);
-        const toggleLabel = document.createElement('span');
-        toggleLabel.className = 'base-model-skip-toggle-label';
-        toggleLabel.textContent = isOpen
-            ? translate('settings.downloadSkipBaseModels.actions.collapse', {}, 'Collapse')
-            : translate('settings.downloadSkipBaseModels.actions.edit', {}, 'Edit');
+        const chevron = document.createElement('i');
+        chevron.className = 'fas fa-chevron-down download-root-rule-chevron';
+        chevron.setAttribute('aria-hidden', 'true');
         toggle.appendChild(summary);
-        toggle.appendChild(toggleLabel);
+        toggle.appendChild(chevron);
         toggle.addEventListener('click', () => this.toggleDownloadRootRulePanel(typeKey, index));
         controls.appendChild(toggle);
 
@@ -4636,15 +4641,21 @@ export class SettingsManager {
         roots.forEach((root) => {
             const option = document.createElement('option');
             option.value = root;
+            // Middle-truncate long paths for display; the option value keeps
+            // the full path and the select title shows the selected one.
+            const displayRoot = this.truncateMiddlePath(root);
             option.textContent = this.isDownloadRootRuleDefaultRoot(root, defaultRoot)
-                ? `${root} (${translate('settings.downloadRootRules.defaultSuffix', {}, 'default')})`
-                : root;
+                ? `${displayRoot} (${translate('settings.downloadRootRules.defaultSuffix', {}, 'default')})`
+                : displayRoot;
+            option.title = root;
             rootSelect.appendChild(option);
         });
         if (roots.includes(rule.root)) {
             rootSelect.value = rule.root;
         }
+        rootSelect.title = rootSelect.value;
         rootSelect.addEventListener('change', () => {
+            rootSelect.title = rootSelect.value;
             this.updateDownloadRootRuleRoot(typeKey, index, rootSelect.value, isDraft);
         });
         controls.appendChild(rootSelect);
@@ -4747,34 +4758,6 @@ export class SettingsManager {
             });
     }
 
-    setDownloadRootRuleMatchType(typeKey, index, matchType, isDraft) {
-        if (matchType !== 'base_model' && matchType !== 'tag') {
-            return;
-        }
-        if (isDraft) {
-            const draft = this.downloadRootRuleDrafts[typeKey];
-            if (!draft || draft.match_type === matchType) {
-                return;
-            }
-            draft.match_type = matchType;
-            this.renderDownloadRootRules();
-            return;
-        }
-        const rules = this.getDownloadRootRules();
-        const rule = rules[typeKey][index];
-        if (!rule || rule.match_type === matchType) {
-            return;
-        }
-        // Keep the match entries when switching: tags are free text, and
-        // non-whitelist leftovers in a base_model rule are filtered by the
-        // backend normalization on save.
-        rule.match_type = matchType;
-        this.downloadRootRuleOpenPanels.clear();
-        this.downloadRootRuleSearches = {};
-        this.renderDownloadRootRules();
-        this.persistDownloadRootRules();
-    }
-
     commitDownloadRootRuleTags(typeKey, index, rawValue, isDraft) {
         const tags = this.parseDownloadRootRuleTags(rawValue);
         if (isDraft) {
@@ -4825,29 +4808,35 @@ export class SettingsManager {
         this.persistDownloadRootRules();
     }
 
+    // Middle-truncate a long path for compact display, preserving both ends
+    // (the tail is what actually disambiguates sibling roots).
+    truncateMiddlePath(path, head = 24, tail = 16) {
+        const text = String(path || '');
+        if (text.length <= head + tail + 1) {
+            return text;
+        }
+        return `${text.slice(0, head)}…${text.slice(-tail)}`;
+    }
+
     renderDownloadRootRuleSummary(summaryEl, rule) {
         const match = Array.isArray(rule?.match) ? rule.match : [];
-        if (rule?.match_type === 'tag' && match.length) {
-            summaryEl.textContent = translate(
-                'settings.downloadRootRules.summary.tags',
-                { tags: match.join(', ') },
-                `tags: ${match.join(', ')}`
-            );
-            return;
-        }
         if (!match.length) {
-            summaryEl.textContent = translate('settings.downloadSkipBaseModels.summary.none', {}, 'None selected');
+            // Only drafts can be empty; persisted rules always have matches.
+            summaryEl.textContent = rule?.match_type === 'tag'
+                ? translate('settings.downloadRootRules.summary.enterTags', {}, 'Enter tags…')
+                : translate('settings.downloadRootRules.summary.selectBaseModels', {}, 'Select base models…');
             return;
         }
         if (match.length <= 2) {
             summaryEl.textContent = match.join(', ');
             return;
         }
-        summaryEl.textContent = translate(
-            'settings.downloadSkipBaseModels.summary.count',
-            { count: match.length },
-            `${match.length} selected`
+        const more = translate(
+            'settings.downloadRootRules.summary.more',
+            { count: match.length - 2 },
+            `+${match.length - 2} more`
         );
+        summaryEl.textContent = `${match.slice(0, 2).join(', ')}, ${more}`;
     }
 
     renderDownloadRootRuleBaseModelList(listEl, typeKey, index, isDraft, summaryEl) {
@@ -4899,13 +4888,13 @@ export class SettingsManager {
         }
     }
 
-    addDownloadRootRule(typeKey) {
+    addDownloadRootRule(typeKey, matchType = 'base_model') {
         if (this.downloadRootRuleDrafts[typeKey]) {
             return;
         }
         const roots = this.downloadRootRuleRoots?.[typeKey] || [];
         this.downloadRootRuleDrafts[typeKey] = {
-            match_type: 'base_model',
+            match_type: matchType === 'tag' ? 'tag' : 'base_model',
             match: [],
             root: roots[0] || '',
         };

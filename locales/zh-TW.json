@@ -501,7 +501,8 @@
             "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
             "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
             "defaultSuffix": "[TODO: Translate] default",
-            "addRule": "[TODO: Translate] Add rule",
+            "addBaseModelRule": "[TODO: Translate] Base model rule",
+            "addTagRule": "[TODO: Translate] Tag rule",
             "removeRule": "[TODO: Translate] Remove rule",
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
@@ -510,9 +511,15 @@
                 "baseModel": "[TODO: Translate] Base model",
                 "tag": "[TODO: Translate] Tag"
             },
+            "matchTypeChips": {
+                "baseModel": "[TODO: Translate] BM",
+                "tag": "[TODO: Translate] Tag"
+            },
             "tagPlaceholder": "[TODO: Translate] character, style, realistic",
             "summary": {
-                "tags": "[TODO: Translate] tags: {tags}"
+                "selectBaseModels": "[TODO: Translate] Select base models…",
+                "enterTags": "[TODO: Translate] Enter tags…",
+                "more": "[TODO: Translate] +{count} more"
             },
             "types": {
                 "loras": "[TODO: Translate] LoRA",

@@ -497,11 +497,12 @@
     },
     "downloadRootRules": {
       "title": "Download Root Rules",
-      "help": "Route downloads to a different root folder based on the model's base model.",
+      "help": "Route downloads to a different root folder based on the model's base model or tags.",
       "description": "Rules are checked in order. First match wins; unmatched downloads use the default root.",
       "defaultHint": "Default: {root} — unmatched downloads go here",
       "defaultSuffix": "default",
-      "addRule": "Add rule",
+      "addBaseModelRule": "Base model rule",
+      "addTagRule": "Tag rule",
       "removeRule": "Remove rule",
       "moveUp": "Move up",
       "moveDown": "Move down",
@@ -510,9 +511,15 @@
         "baseModel": "Base model",
         "tag": "Tag"
       },
+      "matchTypeChips": {
+        "baseModel": "BM",
+        "tag": "Tag"
+      },
       "tagPlaceholder": "character, style, realistic",
       "summary": {
-        "tags": "tags: {tags}"
+        "selectBaseModels": "Select base models…",
+        "enterTags": "Enter tags…",
+        "more": "+{count} more"
       },
       "types": {
         "loras": "LoRA",

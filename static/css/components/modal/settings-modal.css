@@ -695,21 +695,44 @@
     margin-top: var(--space-1);
 }
 
-.download-root-rule-match-type {
-    padding: 6px 10px;
+.download-root-rule-match-chip {
+    flex-shrink: 0;
+    padding: 2px 8px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
     color: var(--text-color);
-    font-size: 0.9em;
-    height: 32px;
-    flex-shrink: 0;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.8;
+    align-self: center;
+    cursor: default;
 }
 
-.download-root-rule-match-type:focus {
+.download-root-rule-match-chip.is-tag {
     border-color: var(--lora-accent);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    color: var(--lora-accent);
+}
+
+.download-root-rule-chevron {
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: transform 0.15s ease;
+}
+
+.download-root-rule-toggle[aria-expanded="true"] .download-root-rule-chevron {
+    transform: rotate(180deg);
+}
+
+.download-root-rule-add-row {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.download-root-rule-add-row .add-mapping-btn {
+    flex: 1;
 }
 
 .download-root-rule-tag-input {

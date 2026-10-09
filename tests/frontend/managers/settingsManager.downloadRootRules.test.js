@@ -457,7 +457,7 @@ describe('SettingsManager download root rules tag matching', () => {
         ]);
     });
 
-    it('renders a tag rule with the match-type select, summary and tag input', () => {
+    it('renders a tag rule with a static type chip, summary and tag input', () => {
         appendDownloadRootRulesUi();
         state.global.settings.download_root_rules = {
             loras: [{ match_type: 'tag', match: ['character', 'style'], root: '/models/lora-archive' }],
@@ -470,16 +470,20 @@ describe('SettingsManager download root rules tag matching', () => {
         manager.renderDownloadRootRules();
 
         const row = groupRows('loras')[0];
-        expect(row.querySelector('.download-root-rule-match-type').value).toBe('tag');
+        // The match type is fixed at creation: a chip, not a dropdown.
+        const chip = row.querySelector('.download-root-rule-match-chip');
+        expect(chip.textContent).toBe('Tag');
+        expect(chip.title).toBe('Tag');
+        expect(row.querySelector('.download-root-rule-match-type')).toBeNull();
         expect(row.querySelector('.download-root-rule-summary').textContent)
-            .toBe('tags: character, style');
+            .toBe('character, style');
         expect(row.querySelector('.download-root-rule-tag-input').value)
             .toBe('character, style');
         // No base model checkbox list for tag rules
         expect(row.querySelector('.base-model-skip-list')).toBeNull();
     });
 
-    it('switching a persisted rule to tag persists immediately and keeps the match list', async () => {
+    it('renders a base model rule chip with the full name as tooltip', () => {
         appendDownloadRootRulesUi();
         state.global.settings.download_root_rules = {
             loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: '/models/lora-archive' }],
@@ -488,33 +492,20 @@ describe('SettingsManager download root rules tag matching', () => {
             embeddings: [],
         };
         const manager = createManager();
+
         manager.renderDownloadRootRules();
 
-        const select = groupRows('loras')[0].querySelector('.download-root-rule-match-type');
-        select.value = 'tag';
-        select.dispatchEvent(new Event('change'));
-        await vi.waitFor(() => {
-            expect(manager.saveSetting).toHaveBeenCalled();
-        });
-
-        expect(manager.saveSetting).toHaveBeenCalledWith('download_root_rules', {
-            loras: [{ match_type: 'tag', match: ['Flux.1 D'], root: '/models/lora-archive' }],
-            checkpoints: [],
-            unet: [],
-            embeddings: [],
-        });
-        expect(groupRows('loras')[0].querySelector('.download-root-rule-tag-input')).not.toBeNull();
+        const chip = groupRows('loras')[0].querySelector('.download-root-rule-match-chip');
+        expect(chip.textContent).toBe('BM');
+        expect(chip.title).toBe('Base model');
     });
 
-    it('a draft switched to tag promotes on the first committed tag input', async () => {
+    it('a tag draft promotes on the first committed tag input', async () => {
         appendDownloadRootRulesUi();
         const manager = createManager();
         manager.renderDownloadRootRules();
 
-        manager.addDownloadRootRule('loras');
-        const select = groupRows('loras')[0].querySelector('.download-root-rule-match-type');
-        select.value = 'tag';
-        select.dispatchEvent(new Event('change'));
+        manager.addDownloadRootRule('loras', 'tag');
 
         // Still a draft: nothing persisted yet
         expect(manager.saveSetting).not.toHaveBeenCalled();
@@ -586,5 +577,170 @@ describe('SettingsManager download root rules tag matching', () => {
             unet: [],
             embeddings: [],
         });
+    });
+});
+
+
+describe('SettingsManager download root rules row layout', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        vi.clearAllMocks();
+        state.global.settings = {
+            download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
+        };
+    });
+
+    it('offers separate add buttons for base model and tag rules', () => {
+        appendDownloadRootRulesUi();
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        const buttons = document.querySelectorAll('.download-root-rule-group')[0]
+            .querySelectorAll('.download-root-rule-add-row .add-mapping-btn');
+        expect(buttons).toHaveLength(2);
+        expect(buttons[0].textContent).toContain('Base model rule');
+        expect(buttons[1].textContent).toContain('Tag rule');
+
+        buttons[1].click();
+        expect(manager.downloadRootRuleDrafts.loras.match_type).toBe('tag');
+
+        // While a draft exists both buttons are disabled
+        const disabledButtons = document.querySelectorAll('.download-root-rule-group')[0]
+            .querySelectorAll('.download-root-rule-add-row .add-mapping-btn');
+        expect([...disabledButtons].every((btn) => btn.disabled)).toBe(true);
+    });
+
+    it('base model add button creates a base_model draft', () => {
+        appendDownloadRootRulesUi();
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        document.querySelectorAll('.download-root-rule-group')[0]
+            .querySelectorAll('.download-root-rule-add-row .add-mapping-btn')[0]
+            .click();
+
+        expect(manager.downloadRootRuleDrafts.loras.match_type).toBe('base_model');
+        expect(groupRows('loras')[0].querySelector('.download-root-rule-match-chip').textContent)
+            .toBe('BM');
+    });
+
+    it('the summary toggle uses a chevron icon with accessible title and aria state', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: '/models/loras-main' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        const toggle = groupRows('loras')[0].querySelector('.download-root-rule-toggle');
+        expect(toggle.querySelector('.download-root-rule-chevron')).not.toBeNull();
+        expect(toggle.querySelector('.base-model-skip-toggle-label')).toBeNull();
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(toggle.title).toBe('Edit');
+
+        toggle.click();
+
+        const reopened = groupRows('loras')[0].querySelector('.download-root-rule-toggle');
+        expect(reopened.getAttribute('aria-expanded')).toBe('true');
+        expect(reopened.title).toBe('Collapse');
+    });
+
+    it('truncateMiddlePath keeps short paths intact and ellipsizes long ones', () => {
+        const manager = createManager();
+
+        expect(manager.truncateMiddlePath('/models/loras')).toBe('/models/loras');
+
+        const long = '/models/library/very/deeply/nested/folder/structure/loras';
+        const truncated = manager.truncateMiddlePath(long);
+        expect(truncated.startsWith(long.slice(0, 24))).toBe(true);
+        expect(truncated.endsWith(long.slice(-16))).toBe(true);
+        expect(truncated).toContain('…');
+        expect(truncated.length).toBe(24 + 1 + 16);
+    });
+
+    it('truncates long root paths in the dropdown but keeps full values and titles', () => {
+        appendDownloadRootRulesUi();
+        const longRoot = '/models/library/very/deeply/nested/folder/structure/loras';
+        const manager = createManager();
+        manager.downloadRootRuleRoots = {
+            loras: [longRoot],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: longRoot }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+
+        manager.renderDownloadRootRules();
+
+        const rootSelect = groupRows('loras')[0].querySelector('select.download-root-rule-root');
+        expect(rootSelect.options[0].value).toBe(longRoot);
+        expect(rootSelect.options[0].title).toBe(longRoot);
+        expect(rootSelect.options[0].textContent).toBe(manager.truncateMiddlePath(longRoot));
+        expect(rootSelect.title).toBe(longRoot);
+    });
+
+    it('keeps the (default) suffix after the truncated path', () => {
+        appendDownloadRootRulesUi();
+        const longRoot = '/models/library/very/deeply/nested/folder/structure/loras';
+        const manager = createManager();
+        manager.downloadRootRuleRoots = {
+            loras: [longRoot],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        state.global.settings.default_lora_root = longRoot;
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: longRoot }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+
+        manager.renderDownloadRootRules();
+
+        const option = groupRows('loras')[0]
+            .querySelector('select.download-root-rule-root').options[0];
+        expect(option.textContent).toBe(`${manager.truncateMiddlePath(longRoot)} (default)`);
+    });
+
+    it('shows actionable placeholder summaries for empty drafts', () => {
+        appendDownloadRootRulesUi();
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        manager.addDownloadRootRule('loras', 'base_model');
+        expect(groupRows('loras')[0].querySelector('.download-root-rule-summary').textContent)
+            .toBe('Select base models…');
+
+        manager.removeDownloadRootRule('loras', 0, true);
+        manager.addDownloadRootRule('loras', 'tag');
+        expect(groupRows('loras')[0].querySelector('.download-root-rule-summary').textContent)
+            .toBe('Enter tags…');
+    });
+
+    it('summarizes more than two matches as first two plus a count', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [
+                { match_type: 'base_model', match: ['Flux.1 D', 'Wan Video', 'Pony', 'SDXL 1.0'], root: '/models/loras-main' },
+            ],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        expect(groupRows('loras')[0].querySelector('.download-root-rule-summary').textContent)
+            .toBe('Flux.1 D, Wan Video, +2 more');
     });
 });
