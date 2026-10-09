@@ -1503,17 +1503,17 @@ class DownloadManager:
         rule_key: str,
         base_model: str,
         default_root: str,
+        tags=None,
     ) -> str:
         """Apply download_root_rules for the final model type's folder key.
 
         ``rule_key`` is a folder_paths key ("loras"/"checkpoints"/"unet"/
         "embeddings") — a checkpoint download routed to the unet roots
-        consults the "unet" rules.
+        consults the "unet" rules. ``tags`` are the model's CivitAI tags,
+        used by rules with ``match_type == "tag"``.
         """
-        if not isinstance(base_model, str) or not base_model:
-            return default_root
         rules = get_settings_manager().get_download_root_rules().get(rule_key)
-        return resolve_download_root(rules, base_model, default_root)
+        return resolve_download_root(rules, base_model, default_root, tags=tags)
 
     async def _resolve_download_target_path(
         self,
@@ -1792,6 +1792,15 @@ class DownloadManager:
 
             excluded_base_models = get_settings_manager().get_download_skip_base_models()
             base_model_value = version_info.get("baseModel", "")
+            # Model-level CivitAI tags, used by download_root_rules with
+            # match_type "tag" (same source as _calculate_relative_path's
+            # {first_tag} placeholder).
+            model_info = version_info.get("model")
+            model_tags = (
+                model_info.get("tags") or []
+                if isinstance(model_info, dict)
+                else []
+            )
             if (
                 isinstance(base_model_value, str)
                 and base_model_value in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
@@ -1936,7 +1945,7 @@ class DownloadManager:
                                 "error": error_msg,
                             }
                         save_dir = self._resolve_rule_routed_root(
-                            rule_key, base_model_value, default_path
+                            rule_key, base_model_value, default_path, tags=model_tags
                         )
                     elif model_type == "lora":
                         default_path = settings_manager.get("default_lora_root")
@@ -1946,7 +1955,7 @@ class DownloadManager:
                                 "error": "Default lora root path not set in settings",
                             }
                         save_dir = self._resolve_rule_routed_root(
-                            "loras", base_model_value, default_path
+                            "loras", base_model_value, default_path, tags=model_tags
                         )
                     elif model_type == "embedding":
                         default_path = settings_manager.get("default_embedding_root")
@@ -1956,7 +1965,7 @@ class DownloadManager:
                                 "error": "Default embedding root path not set in settings",
                             }
                         save_dir = self._resolve_rule_routed_root(
-                            "embeddings", base_model_value, default_path
+                            "embeddings", base_model_value, default_path, tags=model_tags
                         )
                     elif model_type == "other":
                         other_sub_type = resolve_other_download_sub_type(

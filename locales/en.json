@@ -506,6 +506,14 @@
       "moveUp": "Move up",
       "moveDown": "Move down",
       "noRoots": "No roots configured for this model type.",
+      "matchTypes": {
+        "baseModel": "Base model",
+        "tag": "Tag"
+      },
+      "tagPlaceholder": "character, style, realistic",
+      "summary": {
+        "tags": "tags: {tags}"
+      },
       "types": {
         "loras": "LoRA",
         "checkpoints": "Checkpoint",
@@ -1645,6 +1653,10 @@
       "routingOverride": {
         "label": "Destination type:",
         "tooltip": "Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+      },
+      "routedByRule": {
+        "baseModel": "Routed by rule: base model \"{value}\"",
+        "tag": "Routed by rule: tag \"{value}\""
       },
       "targetFolderPath": "Target Folder Path:",
       "browseFolders": "Browse Folders:",

@@ -303,16 +303,33 @@ export class SettingsManager {
                 if (!rule || typeof rule !== 'object') {
                     return;
                 }
+                const matchType = rule.match_type === 'tag' ? 'tag'
+                    : rule.match_type === 'base_model' ? 'base_model'
+                    : null;
+                if (!matchType) {
+                    return;
+                }
+                const seen = new Set();
                 const match = Array.isArray(rule.match)
-                    ? [...new Set(rule.match
-                        .filter((model) => typeof model === 'string' && model.trim())
-                        .map((model) => model.trim()))]
+                    ? rule.match
+                        .filter((entry) => typeof entry === 'string' && entry.trim())
+                        .map((entry) => entry.trim())
+                        .filter((entry) => {
+                            // Tags dedupe case-insensitively; base models are
+                            // whitelist values with stable casing.
+                            const dedupeKey = matchType === 'tag' ? entry.toLowerCase() : entry;
+                            if (seen.has(dedupeKey)) {
+                                return false;
+                            }
+                            seen.add(dedupeKey);
+                            return true;
+                        })
                     : [];
                 const root = typeof rule.root === 'string' ? rule.root.trim() : '';
                 if (!match.length || !root) {
                     return;
                 }
-                normalized[typeKey].push({ match_type: 'base_model', match, root });
+                normalized[typeKey].push({ match_type: matchType, match, root });
             });
         });
         return normalized;
@@ -4579,13 +4596,30 @@ export class SettingsManager {
         const controls = document.createElement('div');
         controls.className = 'mapping-controls download-root-rule-controls';
 
+        const matchTypeSelect = document.createElement('select');
+        matchTypeSelect.className = 'download-root-rule-match-type';
+        [
+            ['base_model', 'settings.downloadRootRules.matchTypes.baseModel', 'Base model'],
+            ['tag', 'settings.downloadRootRules.matchTypes.tag', 'Tag'],
+        ].forEach(([value, i18nKey, fallback]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = translate(i18nKey, {}, fallback);
+            matchTypeSelect.appendChild(option);
+        });
+        matchTypeSelect.value = rule.match_type === 'tag' ? 'tag' : 'base_model';
+        matchTypeSelect.addEventListener('change', () => {
+            this.setDownloadRootRuleMatchType(typeKey, index, matchTypeSelect.value, isDraft);
+        });
+        controls.appendChild(matchTypeSelect);
+
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = 'secondary-btn base-model-skip-toggle download-root-rule-toggle';
         toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         const summary = document.createElement('span');
         summary.className = 'download-root-rule-summary';
-        this.renderDownloadRootRuleSummary(summary, rule.match);
+        this.renderDownloadRootRuleSummary(summary, rule);
         const toggleLabel = document.createElement('span');
         toggleLabel.className = 'base-model-skip-toggle-label';
         toggleLabel.textContent = isOpen
@@ -4650,30 +4684,157 @@ export class SettingsManager {
         panel.className = 'base-model-skip-panel download-root-rule-panel';
         panel.hidden = !isOpen;
 
-        const toolbar = document.createElement('div');
-        toolbar.className = 'base-model-skip-toolbar';
-        const search = document.createElement('input');
-        search.type = 'text';
-        search.className = 'base-model-skip-search';
-        search.placeholder = translate('settings.downloadSkipBaseModels.searchPlaceholder', {}, 'Filter base models...');
-        search.value = this.downloadRootRuleSearches[panelKey] || '';
-        toolbar.appendChild(search);
-        panel.appendChild(toolbar);
+        if (rule.match_type === 'tag') {
+            // Tag rules edit a free-text comma-separated list instead of the
+            // base model checkbox list. Commits on blur / Enter.
+            const tagInput = document.createElement('input');
+            tagInput.type = 'text';
+            tagInput.className = 'download-root-rule-tag-input';
+            tagInput.placeholder = translate(
+                'settings.downloadRootRules.tagPlaceholder', {}, 'character, style, realistic'
+            );
+            tagInput.value = rule.match.join(', ');
+            tagInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    tagInput.blur();
+                }
+            });
+            tagInput.addEventListener('blur', () => {
+                this.commitDownloadRootRuleTags(typeKey, index, tagInput.value, isDraft);
+            });
+            panel.appendChild(tagInput);
+        } else {
+            const toolbar = document.createElement('div');
+            toolbar.className = 'base-model-skip-toolbar';
+            const search = document.createElement('input');
+            search.type = 'text';
+            search.className = 'base-model-skip-search';
+            search.placeholder = translate('settings.downloadSkipBaseModels.searchPlaceholder', {}, 'Filter base models...');
+            search.value = this.downloadRootRuleSearches[panelKey] || '';
+            toolbar.appendChild(search);
+            panel.appendChild(toolbar);
 
-        const list = document.createElement('div');
-        list.className = 'base-model-skip-list';
-        panel.appendChild(list);
-        search.addEventListener('input', () => {
-            this.downloadRootRuleSearches[panelKey] = search.value;
+            const list = document.createElement('div');
+            list.className = 'base-model-skip-list';
+            panel.appendChild(list);
+            search.addEventListener('input', () => {
+                this.downloadRootRuleSearches[panelKey] = search.value;
+                this.renderDownloadRootRuleBaseModelList(list, typeKey, index, isDraft, summary);
+            });
             this.renderDownloadRootRuleBaseModelList(list, typeKey, index, isDraft, summary);
-        });
-        this.renderDownloadRootRuleBaseModelList(list, typeKey, index, isDraft, summary);
+        }
 
         row.appendChild(panel);
         return row;
     }
 
-    renderDownloadRootRuleSummary(summaryEl, match) {
+    parseDownloadRootRuleTags(rawValue) {
+        const seen = new Set();
+        return String(rawValue || '')
+            .split(',')
+            .map((part) => part.trim())
+            .filter((part) => {
+                if (!part) {
+                    return false;
+                }
+                const dedupeKey = part.toLowerCase();
+                if (seen.has(dedupeKey)) {
+                    return false;
+                }
+                seen.add(dedupeKey);
+                return true;
+            });
+    }
+
+    setDownloadRootRuleMatchType(typeKey, index, matchType, isDraft) {
+        if (matchType !== 'base_model' && matchType !== 'tag') {
+            return;
+        }
+        if (isDraft) {
+            const draft = this.downloadRootRuleDrafts[typeKey];
+            if (!draft || draft.match_type === matchType) {
+                return;
+            }
+            draft.match_type = matchType;
+            this.renderDownloadRootRules();
+            return;
+        }
+        const rules = this.getDownloadRootRules();
+        const rule = rules[typeKey][index];
+        if (!rule || rule.match_type === matchType) {
+            return;
+        }
+        // Keep the match entries when switching: tags are free text, and
+        // non-whitelist leftovers in a base_model rule are filtered by the
+        // backend normalization on save.
+        rule.match_type = matchType;
+        this.downloadRootRuleOpenPanels.clear();
+        this.downloadRootRuleSearches = {};
+        this.renderDownloadRootRules();
+        this.persistDownloadRootRules();
+    }
+
+    commitDownloadRootRuleTags(typeKey, index, rawValue, isDraft) {
+        const tags = this.parseDownloadRootRuleTags(rawValue);
+        if (isDraft) {
+            const draft = this.downloadRootRuleDrafts[typeKey];
+            if (!draft) {
+                return;
+            }
+            if (!tags.length) {
+                // Nothing committed yet; keep the draft for later editing.
+                return;
+            }
+            // First committed tag list promotes the draft to a persisted
+            // rule (mirrors the first base model checkbox selection).
+            const rules = this.getDownloadRootRules();
+            rules[typeKey].push({
+                match_type: 'tag',
+                match: tags,
+                root: draft.root,
+            });
+            delete this.downloadRootRuleDrafts[typeKey];
+            this.downloadRootRuleOpenPanels.delete(`${typeKey}:${index}`);
+            this.downloadRootRuleOpenPanels.add(`${typeKey}:${rules[typeKey].length - 1}`);
+            this.renderDownloadRootRules();
+            this.persistDownloadRootRules();
+            return;
+        }
+
+        const rules = this.getDownloadRootRules();
+        const rule = rules[typeKey][index];
+        if (!rule) {
+            return;
+        }
+        if (!tags.length) {
+            // A rule without matches can never hit; drop it (same as
+            // unchecking the last base model of a rule).
+            rules[typeKey].splice(index, 1);
+            this.downloadRootRuleOpenPanels.clear();
+            this.downloadRootRuleSearches = {};
+            this.renderDownloadRootRules();
+            this.persistDownloadRootRules();
+            return;
+        }
+        if (JSON.stringify(rule.match) === JSON.stringify(tags)) {
+            return;
+        }
+        rule.match = tags;
+        this.renderDownloadRootRules();
+        this.persistDownloadRootRules();
+    }
+
+    renderDownloadRootRuleSummary(summaryEl, rule) {
+        const match = Array.isArray(rule?.match) ? rule.match : [];
+        if (rule?.match_type === 'tag' && match.length) {
+            summaryEl.textContent = translate(
+                'settings.downloadRootRules.summary.tags',
+                { tags: match.join(', ') },
+                `tags: ${match.join(', ')}`
+            );
+            return;
+        }
         if (!match.length) {
             summaryEl.textContent = translate('settings.downloadSkipBaseModels.summary.none', {}, 'None selected');
             return;
@@ -4733,7 +4894,7 @@ export class SettingsManager {
         this.renderDownloadRootRules();
         if (opening) {
             document
-                .querySelector(`#downloadRootRulesContainer .download-root-rule-row[data-rule-type="${typeKey}"][data-rule-index="${index}"] .base-model-skip-search`)
+                .querySelector(`#downloadRootRulesContainer .download-root-rule-row[data-rule-type="${typeKey}"][data-rule-index="${index}"] .base-model-skip-search, #downloadRootRulesContainer .download-root-rule-row[data-rule-type="${typeKey}"][data-rule-index="${index}"] .download-root-rule-tag-input`)
                 ?.focus();
         }
     }
@@ -4812,7 +4973,7 @@ export class SettingsManager {
                 : draft.match.filter((model) => model !== baseModel);
             if (!draft.match.length) {
                 if (summaryEl) {
-                    this.renderDownloadRootRuleSummary(summaryEl, draft.match);
+                    this.renderDownloadRootRuleSummary(summaryEl, draft);
                 }
                 return;
             }
@@ -4850,7 +5011,7 @@ export class SettingsManager {
             return;
         }
         if (summaryEl) {
-            this.renderDownloadRootRuleSummary(summaryEl, rule.match);
+            this.renderDownloadRootRuleSummary(summaryEl, rule);
         }
         this.persistDownloadRootRules();
     }

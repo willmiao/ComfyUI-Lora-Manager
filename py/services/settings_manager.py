@@ -1528,10 +1528,12 @@ class SettingsManager:
         """Normalize a ``download_root_rules`` payload.
 
         Fault-tolerant like the other settings normalizers: unknown type keys,
-        malformed entries, unknown match types and out-of-whitelist base model
-        values are dropped silently; a rule whose root is not one of the
-        configured roots for its type (folder_paths + extra_folder_paths) is
-        dropped with a warning.
+        malformed entries and unknown match types are dropped silently;
+        ``base_model`` rules keep only whitelisted base model values while
+        ``tag`` rules accept any free-text tag (trimmed, case-insensitively
+        deduplicated); a rule whose root is not one of the configured roots
+        for its type (folder_paths + extra_folder_paths) is dropped with a
+        warning.
         """
         normalized: Dict[str, List[Dict[str, Any]]] = {
             key: [] for key in DOWNLOAD_ROOT_RULE_FOLDER_KEYS
@@ -1551,7 +1553,7 @@ class SettingsManager:
                 if not isinstance(raw_rule, Mapping):
                     continue
                 match_type = raw_rule.get("match_type")
-                if match_type != "base_model":
+                if match_type not in ("base_model", "tag"):
                     logger.warning(
                         "Dropping download root rule for %s: unsupported match_type %r",
                         key,
@@ -1563,22 +1565,29 @@ class SettingsManager:
                     match, (str, bytes, bytearray)
                 ):
                     continue
-                matched_models: List[str] = []
+                matched_values: List[str] = []
                 seen = set()
                 for candidate in match:
                     if not isinstance(candidate, str):
                         continue
                     token = candidate.strip()
-                    if not token or token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+                    if not token:
                         continue
-                    if token in seen:
+                    if match_type == "base_model":
+                        if token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+                            continue
+                        dedupe_key = token
+                    else:
+                        dedupe_key = token.casefold()
+                    if dedupe_key in seen:
                         continue
-                    seen.add(token)
-                    matched_models.append(token)
-                if not matched_models:
+                    seen.add(dedupe_key)
+                    matched_values.append(token)
+                if not matched_values:
                     logger.warning(
-                        "Dropping download root rule for %s: no valid base models",
+                        "Dropping download root rule for %s: no valid %s matches",
                         key,
+                        match_type,
                     )
                     continue
                 root = raw_rule.get("root")
@@ -1595,8 +1604,8 @@ class SettingsManager:
                     continue
                 normalized[key].append(
                     {
-                        "match_type": "base_model",
-                        "match": matched_models,
+                        "match_type": match_type,
+                        "match": matched_values,
                         "root": root,
                     }
                 )

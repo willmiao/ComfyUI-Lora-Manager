@@ -51,6 +51,7 @@ async def test_diffusion_base_model_routes_to_unet():
         # No rule matches "Anima", so the resolved root falls back to the
         # auto-configured default unet root.
         "resolved_root": get_settings_manager().get("default_unet_root"),
+        "matched_rule": None,
     }
 
 
@@ -306,3 +307,81 @@ async def test_resolved_root_applies_unet_rules_after_diffusion_routing():
     payload = json.loads(response.text)
     assert payload["root_kind"] == "unet"
     assert payload["resolved_root"] == "/unet-archive"
+
+
+@pytest.mark.asyncio
+async def test_matched_rule_is_null_when_no_rule_matches():
+    manager = get_settings_manager()
+    manager.settings["default_lora_root"] = "/loras-main"
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "lora", "base_model": "Pony", "file_types": []})
+    )
+    payload = json.loads(response.text)
+    assert payload["matched_rule"] is None
+
+
+@pytest.mark.asyncio
+async def test_matched_rule_reports_base_model_hit():
+    manager = get_settings_manager()
+    manager.settings["folder_paths"] = {"loras": ["/loras-main", "/lora-archive"]}
+    manager.settings["default_lora_root"] = "/loras-main"
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/lora-archive"}
+        ]
+    }
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "lora", "base_model": "Flux.1 D", "file_types": []})
+    )
+    payload = json.loads(response.text)
+    assert payload["resolved_root"] == "/lora-archive"
+    assert payload["matched_rule"] == {
+        "match_type": "base_model",
+        "match": ["Flux.1 D"],
+    }
+
+
+@pytest.mark.asyncio
+async def test_matched_rule_reports_tag_hit_from_payload_tags():
+    manager = get_settings_manager()
+    manager.settings["folder_paths"] = {"loras": ["/loras-main", "/lora-archive"]}
+    manager.settings["default_lora_root"] = "/loras-main"
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "tag", "match": ["character"], "root": "/lora-archive"}
+        ]
+    }
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {
+                "model_type": "lora",
+                "base_model": "Pony",
+                "file_types": [],
+                "tags": ["Style", "Character"],
+            }
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["resolved_root"] == "/lora-archive"
+    assert payload["matched_rule"] == {"match_type": "tag", "match": ["character"]}
+
+    # Without a matching tag the same rule does not fire.
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {
+                "model_type": "lora",
+                "base_model": "Pony",
+                "file_types": [],
+                "tags": ["style"],
+            }
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["resolved_root"] == "/loras-main"
+    assert payload["matched_rule"] is None

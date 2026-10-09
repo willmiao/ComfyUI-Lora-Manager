@@ -48,39 +48,83 @@ MODEL_TYPE_TO_DEFAULT_ROOT_SETTING = {
     "embedding": "default_embedding_root",
 }
 
+# match_type values understood by download_root_rules.
+RULE_MATCH_TYPE_BASE_MODEL = "base_model"
+RULE_MATCH_TYPE_TAG = "tag"
+
+
+def _normalize_tag_set(tags: Optional[Iterable[object]]) -> frozenset:
+    """Case-folded, trimmed tag set for rule matching (never None)."""
+    if not tags:
+        return frozenset()
+    return frozenset(
+        tag.strip().casefold()
+        for tag in tags
+        if isinstance(tag, str) and tag.strip()
+    )
+
+
+def match_download_root_rule(
+    rules: Optional[Sequence[Mapping[str, object]]],
+    base_model: str,
+    tags: Optional[Iterable[object]] = None,
+) -> Optional[Mapping[str, object]]:
+    """Return the first rule matching this download, else ``None``.
+
+    Rules are ordered; the first match wins. ``base_model`` rules hit when
+    their ``match`` list contains ``base_model`` (exact match); ``tag`` rules
+    hit when any ``match`` entry equals one of the model's tags (trimmed,
+    case-insensitive). A rule with an empty/invalid root never matches.
+    """
+    if not rules:
+        return None
+
+    model_tags = _normalize_tag_set(tags)
+
+    for rule in rules:
+        if not isinstance(rule, Mapping):
+            continue
+        match = rule.get("match")
+        if not isinstance(match, Sequence) or isinstance(match, (str, bytes)):
+            continue
+        match_type = rule.get("match_type")
+        if match_type == RULE_MATCH_TYPE_BASE_MODEL:
+            if not base_model or base_model not in match:
+                continue
+        elif match_type == RULE_MATCH_TYPE_TAG:
+            if not model_tags or not any(
+                isinstance(entry, str) and entry.strip().casefold() in model_tags
+                for entry in match
+            ):
+                continue
+        else:
+            continue
+        root = rule.get("root")
+        if isinstance(root, str) and root.strip():
+            return rule
+
+    return None
+
 
 def resolve_download_root(
     rules: Optional[Sequence[Mapping[str, object]]],
     base_model: str,
     default_root: str,
+    tags: Optional[Iterable[object]] = None,
 ) -> str:
     """Return the root from the first matching rule, else ``default_root``.
 
-    Rules are ordered; the first rule whose ``match`` list contains
-    ``base_model`` wins. Only ``match_type == "base_model"`` rules are
-    supported (tag matching is a P1 concern).
+    See :func:`match_download_root_rule` for the matching semantics.
     """
-    if not rules or not base_model:
-        return default_root
-
-    for rule in rules:
-        if not isinstance(rule, Mapping):
-            continue
-        if rule.get("match_type") != "base_model":
-            continue
-        match = rule.get("match")
-        if not isinstance(match, Sequence) or isinstance(match, (str, bytes)):
-            continue
-        if base_model not in match:
-            continue
-        root = rule.get("root")
-        if isinstance(root, str) and root.strip():
-            logger.info(
-                "Download root rule matched base model '%s', routing to %s",
-                base_model,
-                root,
-            )
-            return root
+    rule = match_download_root_rule(rules, base_model, tags)
+    if rule is not None:
+        root = rule["root"]
+        logger.info(
+            "Download root rule matched (%s), routing to %s",
+            rule.get("match_type"),
+            root,
+        )
+        return root
 
     return default_root
 

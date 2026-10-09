@@ -506,6 +506,14 @@
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
             "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "matchTypes": {
+                "baseModel": "[TODO: Translate] Base model",
+                "tag": "[TODO: Translate] Tag"
+            },
+            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "summary": {
+                "tags": "[TODO: Translate] tags: {tags}"
+            },
             "types": {
                 "loras": "[TODO: Translate] LoRA",
                 "checkpoints": "[TODO: Translate] Checkpoint",
@@ -1645,6 +1653,10 @@
             "routingOverride": {
                 "label": "대상 유형:",
                 "tooltip": "모델 메타데이터에서 자동으로 감지됩니다. 잘못 감지된 경우 전환하세요. 전환하면 이 다운로드에서 '기본 경로 사용'이 꺼집니다."
+            },
+            "routedByRule": {
+                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
+                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
             },
             "targetFolderPath": "대상 폴더 경로:",
             "browseFolders": "폴더 탐색:",

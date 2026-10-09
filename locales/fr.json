@@ -506,6 +506,14 @@
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
             "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "matchTypes": {
+                "baseModel": "[TODO: Translate] Base model",
+                "tag": "[TODO: Translate] Tag"
+            },
+            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "summary": {
+                "tags": "[TODO: Translate] tags: {tags}"
+            },
             "types": {
                 "loras": "[TODO: Translate] LoRA",
                 "checkpoints": "[TODO: Translate] Checkpoint",
@@ -1645,6 +1653,10 @@
             "routingOverride": {
                 "label": "Type de destination :",
                 "tooltip": "Détecté automatiquement à partir des métadonnées du modèle. Changez si la détection est incorrecte ; changer désactive « Utiliser le chemin par défaut » pour ce téléchargement."
+            },
+            "routedByRule": {
+                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
+                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
             },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",

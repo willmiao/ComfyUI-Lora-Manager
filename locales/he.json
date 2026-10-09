@@ -506,6 +506,14 @@
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
             "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "matchTypes": {
+                "baseModel": "[TODO: Translate] Base model",
+                "tag": "[TODO: Translate] Tag"
+            },
+            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "summary": {
+                "tags": "[TODO: Translate] tags: {tags}"
+            },
             "types": {
                 "loras": "[TODO: Translate] LoRA",
                 "checkpoints": "[TODO: Translate] Checkpoint",
@@ -1645,6 +1653,10 @@
             "routingOverride": {
                 "label": "סוג יעד:",
                 "tooltip": "זוהה אוטומטית ממטא-נתוני המודל. החלף אם הזיהוי שגוי; החלפה מכבה את «השתמש בנתיב ברירת מחדל» עבור הורדה זו."
+            },
+            "routedByRule": {
+                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
+                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
             },
             "targetFolderPath": "נתיב תיקיית יעד:",
             "browseFolders": "דפדף בתיקיות:",

@@ -429,3 +429,162 @@ describe('SettingsManager download root rules default-root cue', () => {
             .toBe('Default: /models/lora-archive — unmatched downloads go here');
     });
 });
+
+
+describe('SettingsManager download root rules tag matching', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        vi.clearAllMocks();
+        state.global.settings = {
+            download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
+        };
+    });
+
+    it('normalizes tag rules as free text with case-insensitive dedupe', () => {
+        const manager = createManager();
+
+        const normalized = manager.normalizeDownloadRootRules({
+            loras: [
+                { match_type: 'tag', match: [' character ', 'Style', 'CHARACTER'], root: '/models/lora-archive' },
+                { match_type: 'tag', match: [], root: '/models/lora-archive' },
+                { match_type: 'unknown', match: ['x'], root: '/models/lora-archive' },
+                { match_type: 'tag', match: ['character'], root: '' },
+            ],
+        });
+
+        expect(normalized.loras).toEqual([
+            { match_type: 'tag', match: ['character', 'Style'], root: '/models/lora-archive' },
+        ]);
+    });
+
+    it('renders a tag rule with the match-type select, summary and tag input', () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'tag', match: ['character', 'style'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+
+        manager.renderDownloadRootRules();
+
+        const row = groupRows('loras')[0];
+        expect(row.querySelector('.download-root-rule-match-type').value).toBe('tag');
+        expect(row.querySelector('.download-root-rule-summary').textContent)
+            .toBe('tags: character, style');
+        expect(row.querySelector('.download-root-rule-tag-input').value)
+            .toBe('character, style');
+        // No base model checkbox list for tag rules
+        expect(row.querySelector('.base-model-skip-list')).toBeNull();
+    });
+
+    it('switching a persisted rule to tag persists immediately and keeps the match list', async () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'base_model', match: ['Flux.1 D'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        const select = groupRows('loras')[0].querySelector('.download-root-rule-match-type');
+        select.value = 'tag';
+        select.dispatchEvent(new Event('change'));
+        await vi.waitFor(() => {
+            expect(manager.saveSetting).toHaveBeenCalled();
+        });
+
+        expect(manager.saveSetting).toHaveBeenCalledWith('download_root_rules', {
+            loras: [{ match_type: 'tag', match: ['Flux.1 D'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        });
+        expect(groupRows('loras')[0].querySelector('.download-root-rule-tag-input')).not.toBeNull();
+    });
+
+    it('a draft switched to tag promotes on the first committed tag input', async () => {
+        appendDownloadRootRulesUi();
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        manager.addDownloadRootRule('loras');
+        const select = groupRows('loras')[0].querySelector('.download-root-rule-match-type');
+        select.value = 'tag';
+        select.dispatchEvent(new Event('change'));
+
+        // Still a draft: nothing persisted yet
+        expect(manager.saveSetting).not.toHaveBeenCalled();
+
+        const tagInput = groupRows('loras')[0].querySelector('.download-root-rule-tag-input');
+        tagInput.value = 'character, Style, CHARACTER';
+        tagInput.dispatchEvent(new Event('blur'));
+        await vi.waitFor(() => {
+            expect(manager.saveSetting).toHaveBeenCalled();
+        });
+
+        expect(manager.downloadRootRuleDrafts.loras).toBeUndefined();
+        expect(manager.saveSetting).toHaveBeenCalledWith('download_root_rules', {
+            loras: [{ match_type: 'tag', match: ['character', 'Style'], root: '/models/loras-main' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        });
+    });
+
+    it('committing an empty tag list on a persisted rule removes the rule', async () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'tag', match: ['character'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        const tagInput = groupRows('loras')[0].querySelector('.download-root-rule-tag-input');
+        tagInput.value = '  , ';
+        tagInput.dispatchEvent(new Event('blur'));
+        await vi.waitFor(() => {
+            expect(manager.saveSetting).toHaveBeenCalled();
+        });
+
+        expect(manager.saveSetting).toHaveBeenCalledWith('download_root_rules', {
+            loras: [],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        });
+        expect(groupRows('loras')).toHaveLength(0);
+    });
+
+    it('editing tags on a persisted rule parses, dedupes and persists', async () => {
+        appendDownloadRootRulesUi();
+        state.global.settings.download_root_rules = {
+            loras: [{ match_type: 'tag', match: ['character'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        };
+        const manager = createManager();
+        manager.renderDownloadRootRules();
+
+        const tagInput = groupRows('loras')[0].querySelector('.download-root-rule-tag-input');
+        tagInput.value = 'realistic, style, REALISTIC';
+        tagInput.dispatchEvent(new Event('blur'));
+        await vi.waitFor(() => {
+            expect(manager.saveSetting).toHaveBeenCalled();
+        });
+
+        expect(manager.saveSetting).toHaveBeenCalledWith('download_root_rules', {
+            loras: [{ match_type: 'tag', match: ['realistic', 'style'], root: '/models/lora-archive' }],
+            checkpoints: [],
+            unet: [],
+            embeddings: [],
+        });
+    });
+});

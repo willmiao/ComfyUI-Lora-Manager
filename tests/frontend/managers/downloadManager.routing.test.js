@@ -107,6 +107,7 @@ describe('DownloadManager._resolveIsDiffusionModel', () => {
         model_type: 'checkpoint',
         base_model: 'Anima',
         file_types: ['Model'],
+        tags: [],
       }),
     });
   });
@@ -197,7 +198,6 @@ describe('DownloadManager._resolveOtherSubType', () => {
       }),
     });
   });
-
   it('sends selected_file_type plus all version file types when a file is selected', async () => {
     manager.currentVersion = { baseModel: 'Flux.1 D', files: [{ type: 'Model' }, { type: 'VAE' }] };
     manager.selectedFile = { type: 'VAE' };
@@ -363,5 +363,93 @@ describe('DownloadManager.proceedToLocationContent (other page)', () => {
 
     expect(manager.apiClient.fetchModelRoots).toHaveBeenCalledWith('upscaler');
     expect(document.getElementById('modelRoot').value).toBe('/models/upscale');
+  });
+});
+
+
+describe('DownloadManager matched-rule hint', () => {
+  let manager;
+  let fetchMock;
+
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <select id="modelRoot"></select>
+      <label id="modelRootLabel"></label>
+      <div class="download-rule-match-hint" id="downloadRuleMatchHint" hidden></div>
+    `;
+    state.global.settings = {};
+
+    manager = new DownloadManager();
+    manager.apiClient = { modelType: 'loras' };
+    manager.selectedFile = null;
+    manager.selectedFiles = [];
+    manager.currentVersion = null;
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends model tags to the routing endpoint and captures the matched rule', async () => {
+    manager.currentVersion = {
+      baseModel: 'Pony',
+      files: [{ type: 'Model' }],
+      modelTags: ['style', 'character'],
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        root_kind: 'lora',
+        resolved_root: '/lora-archive',
+        matched_rule: { match_type: 'tag', match: ['character'] },
+      }),
+    });
+
+    const resolved = await manager._resolveRuleRoot();
+
+    expect(resolved).toBe('/lora-archive');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).tags).toEqual(['style', 'character']);
+    expect(manager._matchedRule).toEqual({ match_type: 'tag', match: ['character'] });
+  });
+
+  it('shows the matched tag rule next to the root selector', () => {
+    manager.currentVersion = {
+      baseModel: 'Pony',
+      modelTags: ['style', 'character'],
+    };
+    manager._matchedRule = { match_type: 'tag', match: ['Character', 'style'] };
+
+    manager._renderRuleMatchHint();
+
+    const hint = document.getElementById('downloadRuleMatchHint');
+    expect(hint.hidden).toBe(false);
+    // Both entries hit; the rule's own order decides which one is shown.
+    expect(hint.textContent).toBe('Routed by rule: tag "Character"');
+  });
+
+  it('shows the matched base model rule', () => {
+    manager.currentVersion = { baseModel: 'Flux.1 D', modelTags: [] };
+    manager._matchedRule = { match_type: 'base_model', match: ['Flux.1 D'] };
+
+    manager._renderRuleMatchHint();
+
+    const hint = document.getElementById('downloadRuleMatchHint');
+    expect(hint.hidden).toBe(false);
+    expect(hint.textContent).toBe('Routed by rule: base model "Flux.1 D"');
+  });
+
+  it('hides the hint when no rule matched', () => {
+    manager.currentVersion = { baseModel: 'Pony', modelTags: [] };
+    manager._matchedRule = null;
+
+    manager._renderRuleMatchHint();
+
+    const hint = document.getElementById('downloadRuleMatchHint');
+    expect(hint.hidden).toBe(true);
+    expect(hint.textContent).toBe('');
   });
 });

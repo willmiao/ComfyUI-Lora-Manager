@@ -506,6 +506,14 @@
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
             "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "matchTypes": {
+                "baseModel": "[TODO: Translate] Base model",
+                "tag": "[TODO: Translate] Tag"
+            },
+            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "summary": {
+                "tags": "[TODO: Translate] tags: {tags}"
+            },
             "types": {
                 "loras": "[TODO: Translate] LoRA",
                 "checkpoints": "[TODO: Translate] Checkpoint",
@@ -1645,6 +1653,10 @@
             "routingOverride": {
                 "label": "目标类型：",
                 "tooltip": "根据模型元数据自动检测。如果检测结果有误，请切换；切换会为本次下载关闭“使用默认路径”。"
+            },
+            "routedByRule": {
+                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
+                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
             },
             "targetFolderPath": "目标文件夹路径：",
             "browseFolders": "浏览文件夹：",

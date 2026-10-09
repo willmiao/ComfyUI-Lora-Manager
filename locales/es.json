@@ -506,6 +506,14 @@
             "moveUp": "[TODO: Translate] Move up",
             "moveDown": "[TODO: Translate] Move down",
             "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "matchTypes": {
+                "baseModel": "[TODO: Translate] Base model",
+                "tag": "[TODO: Translate] Tag"
+            },
+            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "summary": {
+                "tags": "[TODO: Translate] tags: {tags}"
+            },
             "types": {
                 "loras": "[TODO: Translate] LoRA",
                 "checkpoints": "[TODO: Translate] Checkpoint",
@@ -1645,6 +1653,10 @@
             "routingOverride": {
                 "label": "Tipo de destino:",
                 "tooltip": "Detectado automáticamente a partir de los metadatos del modelo. Cámbialo si la detección fue incorrecta; cambiar desactiva «Usar ruta predeterminada» para esta descarga."
+            },
+            "routedByRule": {
+                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
+                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
             },
             "targetFolderPath": "Ruta de carpeta de destino:",
             "browseFolders": "Explorar carpetas:",

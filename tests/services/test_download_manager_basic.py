@@ -2541,3 +2541,47 @@ async def test_download_root_rule_applies_to_final_unet_type(
     assert result["success"] is True
     assert captured["model_type"] == "checkpoint"
     assert captured["save_dir"] == str(unet_archive / "Flux.1 D" / "fantasy")
+
+
+@pytest.mark.asyncio
+async def test_download_root_rule_tag_match_routes_to_rule_root(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """A tag rule hits on the model's CivitAI tags (case-insensitive) even
+    when no base_model rule applies."""
+    manager = DownloadManager()
+
+    default_root = tmp_path / "loras-main"
+    archive_root = tmp_path / "lora-archive"
+    settings = get_settings_manager()
+    settings.settings["folder_paths"] = {
+        "loras": [str(default_root), str(archive_root)]
+    }
+    settings.settings["default_lora_root"] = str(default_root)
+    settings.settings["download_root_rules"] = {
+        "loras": [
+            {
+                "match_type": "tag",
+                "match": ["Character"],
+                "root": str(archive_root),
+            }
+        ]
+    }
+    payload = _lora_payload("Pony")
+    payload["model"]["tags"] = ["style", "character"]
+    metadata_provider.payload = payload
+
+    captured = {}
+    _capture_execute_download(monkeypatch, captured)
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "lora"
+    assert str(captured["save_dir"]).startswith(str(archive_root))

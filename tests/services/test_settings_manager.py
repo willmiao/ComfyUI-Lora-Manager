@@ -1759,3 +1759,77 @@ def test_set_download_root_rules_normalizes(manager):
     assert manager.get("download_root_rules")["loras"] == [
         {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/loras-archive"}
     ]
+
+
+def test_download_root_rules_normalize_keeps_tag_rules_with_free_text(manager):
+    """Tag rules accept arbitrary free-text tags (no base model whitelist),
+    trimmed and deduplicated case-insensitively."""
+    _configure_lora_roots(manager, "/loras-archive")
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {
+                "match_type": "tag",
+                "match": [" character ", "Style", "STYLE", 42, ""],
+                "root": "/loras-archive",
+            }
+        ]
+    }
+
+    result = manager.get_download_root_rules()
+
+    assert result["loras"] == [
+        {
+            "match_type": "tag",
+            "match": ["character", "Style"],
+            "root": "/loras-archive",
+        }
+    ]
+
+
+def test_download_root_rules_normalize_drops_tag_rule_with_empty_match(manager, caplog):
+    _configure_lora_roots(manager, "/loras-archive")
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "tag", "match": ["", "  "], "root": "/loras-archive"}
+        ]
+    }
+
+    with caplog.at_level(logging.WARNING):
+        result = manager.get_download_root_rules()
+
+    assert result["loras"] == []
+    assert "tag" in caplog.text
+
+
+def test_download_root_rules_normalize_preserves_mixed_rule_order(manager):
+    """base_model and tag rules can be interleaved; order is significant."""
+    _configure_lora_roots(manager, "/nas", "/main")
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "tag", "match": ["character"], "root": "/nas"},
+            {"match_type": "base_model", "match": ["Pony"], "root": "/main"},
+        ]
+    }
+
+    result = manager.get_download_root_rules()
+
+    assert [rule["match_type"] for rule in result["loras"]] == [
+        "tag",
+        "base_model",
+    ]
+    assert [rule["root"] for rule in result["loras"]] == ["/nas", "/main"]
+
+
+def test_download_root_rules_tag_rules_still_validate_root(manager, caplog):
+    _configure_lora_roots(manager, "/loras-main")
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "tag", "match": ["character"], "root": "/not-configured"}
+        ]
+    }
+
+    with caplog.at_level(logging.WARNING):
+        result = manager.get_download_root_rules()
+
+    assert result["loras"] == []
+    assert "/not-configured" in caplog.text
