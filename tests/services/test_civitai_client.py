@@ -199,6 +199,26 @@ async def test_get_model_versions_raises_on_not_found(monkeypatch, downloader):
         await client.get_model_versions("missing")
 
 
+@pytest.mark.parametrize("payload", ["Resource not found", {"error": "No model with id 3390681"}])
+async def test_get_model_versions_not_found_explains_id_and_access(payload, downloader, caplog):
+    downloader.make_request = AsyncMock(return_value=(False, payload))
+    client = await CivitaiClient.get_instance()
+
+    with caplog.at_level("INFO"), pytest.raises(ResourceNotFoundError) as exc_info:
+        await client.get_model_versions("3390681")
+
+    message = str(exc_info.value)
+    assert "3390681" in message
+    assert "/models/<id>" in message
+    assert "modelVersionId" in message
+    assert "/api/download/models/<id>" in message
+    assert "API key" in message
+    assert "no longer available" not in caplog.text
+    downloader.make_request.assert_awaited_once_with(
+        "GET", f"{client.base_url}/models/3390681", use_auth=True
+    )
+
+
 async def test_get_model_versions_raises_on_nested_not_found(monkeypatch, downloader):
     async def fake_make_request(method, url, use_auth=True, **kwargs):
         return False, {"error": {"message": "Resource not found"}}

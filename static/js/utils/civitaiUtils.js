@@ -228,12 +228,19 @@ export function extractCivitaiModelUrlParts(url) {
 
     try {
         const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            return { modelId: null, modelVersionId: null };
+        }
         if (!isSupportedCivitaiPageHost(parsedUrl.hostname)) {
             return { modelId: null, modelVersionId: null };
         }
 
-        const pathMatch = parsedUrl.pathname.match(/\/models\/(\d+)/);
-        const modelId = pathMatch ? pathMatch[1] : null;
+        // Download URLs contain version IDs, not model IDs.
+        const pathMatch = parsedUrl.pathname.match(/^\/models\/(\d+)(?:\/|$)/);
+        if (!pathMatch) {
+            return { modelId: null, modelVersionId: null };
+        }
+        const modelId = pathMatch[1];
         const modelVersionId = parsedUrl.searchParams.get('modelVersionId');
 
         return { modelId, modelVersionId };
@@ -269,8 +276,11 @@ export function classifyModelRelinkUrl(url) {
     }
 
     const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '');
-    const pathMatch = parsedUrl.pathname.match(/\/models\/(\d+)/);
-    const modelId = pathMatch ? pathMatch[1] : null;
+    const pathMatch = parsedUrl.pathname.match(/^\/models\/(\d+)(?:\/|$)/);
+    if (!pathMatch) {
+        return { source: null, modelId: null, modelVersionId: null };
+    }
+    const modelId = pathMatch[1];
     const modelVersionId = parsedUrl.searchParams.get('modelVersionId');
 
     if (SUPPORTED_CIVITAI_PAGE_HOSTS.has(hostname)) {

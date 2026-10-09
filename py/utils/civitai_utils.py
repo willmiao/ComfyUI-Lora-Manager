@@ -148,7 +148,8 @@ def extract_civitai_model_url_parts(
     if parsed is None:
         return None, None
 
-    path_match = re.search(r"/models/(\d+)", parsed.path)
+    # Download URLs contain version IDs, not model IDs.
+    path_match = re.match(r"^/models/(\d+)(?:/|$)", parsed.path)
     if not path_match:
         return None, None
 
