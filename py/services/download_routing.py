@@ -10,7 +10,7 @@ two can never disagree.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional
+from typing import Iterable, Mapping, Optional, Sequence
 
 from ..utils.constants import (
     CHECKPOINT_BASE_MODELS,
@@ -29,6 +29,60 @@ DIFFUSION_FILE_TYPES = frozenset({"UNet", "Diffusion Model"})
 # unknown_base_model_default parameter below.
 ROUTING_DIFFUSION_MODEL = "diffusion_model"
 ROUTING_CHECKPOINT = "checkpoint"
+
+# Download-time model type -> download_root_rules folder key. The rule set is
+# keyed by folder_paths keys, so a checkpoint download that resolves to the
+# unet roots consults the "unet" rules, not the "checkpoints" ones.
+MODEL_TYPE_TO_ROOT_RULE_KEY = {
+    "lora": "loras",
+    "checkpoint": "checkpoints",
+    "unet": "unet",
+    "embedding": "embeddings",
+}
+
+# Download-time model type -> the setting holding its default download root.
+MODEL_TYPE_TO_DEFAULT_ROOT_SETTING = {
+    "lora": "default_lora_root",
+    "checkpoint": "default_checkpoint_root",
+    "unet": "default_unet_root",
+    "embedding": "default_embedding_root",
+}
+
+
+def resolve_download_root(
+    rules: Optional[Sequence[Mapping[str, object]]],
+    base_model: str,
+    default_root: str,
+) -> str:
+    """Return the root from the first matching rule, else ``default_root``.
+
+    Rules are ordered; the first rule whose ``match`` list contains
+    ``base_model`` wins. Only ``match_type == "base_model"`` rules are
+    supported (tag matching is a P1 concern).
+    """
+    if not rules or not base_model:
+        return default_root
+
+    for rule in rules:
+        if not isinstance(rule, Mapping):
+            continue
+        if rule.get("match_type") != "base_model":
+            continue
+        match = rule.get("match")
+        if not isinstance(match, Sequence) or isinstance(match, (str, bytes)):
+            continue
+        if base_model not in match:
+            continue
+        root = rule.get("root")
+        if isinstance(root, str) and root.strip():
+            logger.info(
+                "Download root rule matched base model '%s', routing to %s",
+                base_model,
+                root,
+            )
+            return root
+
+    return default_root
 
 
 def is_diffusion_model_download(

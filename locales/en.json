@@ -495,6 +495,25 @@
         "saveFailed": "Unable to save excluded base models: {message}"
       }
     },
+    "downloadRootRules": {
+      "title": "Download Root Rules",
+      "help": "Route downloads to a different root folder based on the model's base model.",
+      "description": "Rules are checked in order. First match wins; unmatched downloads use the default root.",
+      "addRule": "Add rule",
+      "removeRule": "Remove rule",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "noRoots": "No roots configured for this model type.",
+      "types": {
+        "loras": "LoRA",
+        "checkpoints": "Checkpoint",
+        "unet": "Diffusion Model",
+        "embeddings": "Embedding"
+      },
+      "validation": {
+        "saveFailed": "Unable to save download root rules: {message}"
+      }
+    },
     "skipPreviouslyDownloadedModelVersions": {
       "label": "Skip previously downloaded model versions",
       "help": "When enabled, versions downloaded before will be skipped."

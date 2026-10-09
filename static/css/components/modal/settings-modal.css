@@ -620,6 +620,76 @@
     opacity: 0.75;
 }
 
+.download-root-rule-group {
+    margin-bottom: var(--space-3);
+}
+
+.download-root-rule-group:last-child {
+    margin-bottom: 0;
+}
+
+.download-root-rule-group-header {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: var(--space-1);
+}
+
+.download-root-rule-toggle {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-root-rule-root {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.rule-move-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+}
+
+.rule-move-btn:hover:not(:disabled) {
+    border-color: var(--lora-accent);
+    color: var(--lora-accent);
+}
+
+.rule-move-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.download-root-rules-hint {
+    font-size: 0.9em;
+    opacity: 0.6;
+    padding: 4px 0;
+}
+
+.download-root-rule-panel {
+    margin-top: var(--space-1);
+}
+
 .priority-tags-input:focus {
     border-color: var(--lora-accent);
     outline: none;

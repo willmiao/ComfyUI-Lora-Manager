@@ -495,6 +495,25 @@
                 "saveFailed": "无法保存已排除的基础模型：{message}"
             }
         },
+        "downloadRootRules": {
+            "title": "[TODO: Translate] Download Root Rules",
+            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
+            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
+            "addRule": "[TODO: Translate] Add rule",
+            "removeRule": "[TODO: Translate] Remove rule",
+            "moveUp": "[TODO: Translate] Move up",
+            "moveDown": "[TODO: Translate] Move down",
+            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "types": {
+                "loras": "[TODO: Translate] LoRA",
+                "checkpoints": "[TODO: Translate] Checkpoint",
+                "unet": "[TODO: Translate] Diffusion Model",
+                "embeddings": "[TODO: Translate] Embedding"
+            },
+            "validation": {
+                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "跳过已下载的模型版本",
             "help": "启用后，如果下载历史服务记录显示该版本已下载，LoRA Manager 将跳过下载该模型版本。适用于所有下载流程。"

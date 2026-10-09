@@ -205,3 +205,69 @@ class TestResolveOtherDownloadSubType:
 
     def test_model_type_matching_is_case_insensitive(self):
         assert resolve_other_download_sub_type("vAe") == "vae"
+
+
+from py.services.download_routing import resolve_download_root
+
+
+def test_resolve_download_root_returns_default_without_rules():
+    assert resolve_download_root(None, "Flux.1 D", "/default") == "/default"
+    assert resolve_download_root([], "Flux.1 D", "/default") == "/default"
+
+
+def test_resolve_download_root_returns_default_without_base_model():
+    rules = [{"match_type": "base_model", "match": ["Flux.1 D"], "root": "/nas"}]
+    assert resolve_download_root(rules, "", "/default") == "/default"
+
+
+def test_resolve_download_root_first_match_wins():
+    rules = [
+        {"match_type": "base_model", "match": ["Flux.1 D", "Wan Video"], "root": "/nas"},
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/other"},
+    ]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/nas"
+    assert resolve_download_root(rules, "Wan Video", "/default") == "/nas"
+
+
+def test_resolve_download_root_falls_back_when_no_rule_matches():
+    rules = [{"match_type": "base_model", "match": ["Pony"], "root": "/nas"}]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/default"
+
+
+def test_resolve_download_root_skips_malformed_rules():
+    rules = [
+        {"match_type": "tags", "match": ["Flux.1 D"], "root": "/nas"},
+        {"match_type": "base_model", "match": "Flux.1 D", "root": "/nas"},
+        "not-a-dict",
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": ""},
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/nas"},
+    ]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/nas"
+
+
+def test_resolve_download_root_rule_lists_are_per_type():
+    """Checkpoint and unet rule sets are consulted independently."""
+    rules_by_type = {
+        "checkpoints": [
+            {"match_type": "base_model", "match": ["SDXL 1.0"], "root": "/ckpt-nas"}
+        ],
+        "unet": [
+            {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/unet-nas"}
+        ],
+    }
+    assert (
+        resolve_download_root(rules_by_type["checkpoints"], "SDXL 1.0", "/default")
+        == "/ckpt-nas"
+    )
+    assert (
+        resolve_download_root(rules_by_type["unet"], "SDXL 1.0", "/default")
+        == "/default"
+    )
+    assert (
+        resolve_download_root(rules_by_type["unet"], "Flux.1 D", "/default")
+        == "/unet-nas"
+    )
+    assert (
+        resolve_download_root(rules_by_type["checkpoints"], "Flux.1 D", "/default")
+        == "/default"
+    )

@@ -47,7 +47,11 @@ from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .service_registry import ServiceRegistry
-from .download_routing import is_diffusion_model_download, resolve_other_download_sub_type
+from .download_routing import (
+    is_diffusion_model_download,
+    resolve_download_root,
+    resolve_other_download_sub_type,
+)
 from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
@@ -1494,6 +1498,23 @@ class DownloadManager:
 
             self._restored_persisted_downloads = True
 
+    @staticmethod
+    def _resolve_rule_routed_root(
+        rule_key: str,
+        base_model: str,
+        default_root: str,
+    ) -> str:
+        """Apply download_root_rules for the final model type's folder key.
+
+        ``rule_key`` is a folder_paths key ("loras"/"checkpoints"/"unet"/
+        "embeddings") — a checkpoint download routed to the unet roots
+        consults the "unet" rules.
+        """
+        if not isinstance(base_model, str) or not base_model:
+            return default_root
+        rules = get_settings_manager().get_download_root_rules().get(rule_key)
+        return resolve_download_root(rules, base_model, default_root)
+
     async def _resolve_download_target_path(
         self,
         save_dir: str,
@@ -1904,15 +1925,19 @@ class DownloadManager:
                         if is_diffusion_model:
                             default_path = settings_manager.get("default_unet_root")
                             error_msg = "Default unet root path not set in settings"
+                            rule_key = "unet"
                         else:
                             default_path = settings_manager.get("default_checkpoint_root")
                             error_msg = "Default checkpoint root path not set in settings"
+                            rule_key = "checkpoints"
                         if not default_path:
                             return {
                                 "success": False,
                                 "error": error_msg,
                             }
-                        save_dir = default_path
+                        save_dir = self._resolve_rule_routed_root(
+                            rule_key, base_model_value, default_path
+                        )
                     elif model_type == "lora":
                         default_path = settings_manager.get("default_lora_root")
                         if not default_path:
@@ -1920,7 +1945,9 @@ class DownloadManager:
                                 "success": False,
                                 "error": "Default lora root path not set in settings",
                             }
-                        save_dir = default_path
+                        save_dir = self._resolve_rule_routed_root(
+                            "loras", base_model_value, default_path
+                        )
                     elif model_type == "embedding":
                         default_path = settings_manager.get("default_embedding_root")
                         if not default_path:
@@ -1928,7 +1955,9 @@ class DownloadManager:
                                 "success": False,
                                 "error": "Default embedding root path not set in settings",
                             }
-                        save_dir = default_path
+                        save_dir = self._resolve_rule_routed_root(
+                            "embeddings", base_model_value, default_path
+                        )
                     elif model_type == "other":
                         other_sub_type = resolve_other_download_sub_type(
                             model_type_from_info,

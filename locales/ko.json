@@ -495,6 +495,25 @@
                 "saveFailed": "제외된 베이스 모델을 저장할 수 없습니다: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "[TODO: Translate] Download Root Rules",
+            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
+            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
+            "addRule": "[TODO: Translate] Add rule",
+            "removeRule": "[TODO: Translate] Remove rule",
+            "moveUp": "[TODO: Translate] Move up",
+            "moveDown": "[TODO: Translate] Move down",
+            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "types": {
+                "loras": "[TODO: Translate] LoRA",
+                "checkpoints": "[TODO: Translate] Checkpoint",
+                "unet": "[TODO: Translate] Diffusion Model",
+                "embeddings": "[TODO: Translate] Embedding"
+            },
+            "validation": {
+                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "이전에 다운로드한 모델 버전 건너뛰기",
             "help": "활성화하면 다운로드 기록 서비스가 해당 버전이 이미 다운로드되었음을 기록한 경우 LoRA Manager는 해당 모델 버전 다운로드를 건너뜁니다. 모든 다운로드 플로우에 적용됩니다."

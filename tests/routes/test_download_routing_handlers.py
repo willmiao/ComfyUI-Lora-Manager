@@ -44,7 +44,14 @@ async def test_diffusion_base_model_routes_to_unet():
     )
     payload = json.loads(response.text)
     assert response.status == 200
-    assert payload == {"success": True, "is_diffusion_model": True, "root_kind": "unet"}
+    assert payload == {
+        "success": True,
+        "is_diffusion_model": True,
+        "root_kind": "unet",
+        # No rule matches "Anima", so the resolved root falls back to the
+        # auto-configured default unet root.
+        "resolved_root": get_settings_manager().get("default_unet_root"),
+    }
 
 
 @pytest.mark.asyncio
@@ -245,3 +252,57 @@ async def test_other_routing_disabled_for_switched_off_sub_type():
     assert payload["disabled"] is True
     assert payload["reason"] == "other_sub_type_disabled"
     assert payload["requested_sub_type"] == "upscaler"
+
+
+@pytest.mark.asyncio
+async def test_resolved_root_falls_back_to_default_root():
+    manager = get_settings_manager()
+    manager.settings["default_lora_root"] = "/loras-main"
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "lora", "base_model": "Pony", "file_types": []})
+    )
+    payload = json.loads(response.text)
+    assert payload["resolved_root"] == "/loras-main"
+
+
+@pytest.mark.asyncio
+async def test_resolved_root_applies_download_root_rules():
+    manager = get_settings_manager()
+    manager.settings["folder_paths"] = {"loras": ["/loras-main", "/lora-archive"]}
+    manager.settings["default_lora_root"] = "/loras-main"
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/lora-archive"}
+        ]
+    }
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "lora", "base_model": "Flux.1 D", "file_types": []})
+    )
+    payload = json.loads(response.text)
+    assert payload["resolved_root"] == "/lora-archive"
+
+
+@pytest.mark.asyncio
+async def test_resolved_root_applies_unet_rules_after_diffusion_routing():
+    manager = get_settings_manager()
+    manager.settings["folder_paths"] = {"unet": ["/unet-main", "/unet-archive"]}
+    manager.settings["default_unet_root"] = "/unet-main"
+    manager.settings["download_root_rules"] = {
+        "unet": [
+            {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/unet-archive"}
+        ]
+    }
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {"model_type": "checkpoint", "base_model": "Flux.1 D", "file_types": ["Model"]}
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["root_kind"] == "unet"
+    assert payload["resolved_root"] == "/unet-archive"

@@ -495,6 +495,25 @@
                 "saveFailed": "לא ניתן לשמור את מודלי הבסיס המוחרגים: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "[TODO: Translate] Download Root Rules",
+            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
+            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
+            "addRule": "[TODO: Translate] Add rule",
+            "removeRule": "[TODO: Translate] Remove rule",
+            "moveUp": "[TODO: Translate] Move up",
+            "moveDown": "[TODO: Translate] Move down",
+            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "types": {
+                "loras": "[TODO: Translate] LoRA",
+                "checkpoints": "[TODO: Translate] Checkpoint",
+                "unet": "[TODO: Translate] Diffusion Model",
+                "embeddings": "[TODO: Translate] Embedding"
+            },
+            "validation": {
+                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "דלג על גרסאות מודלים שהורדו בעבר",
             "help": "כאשר מופעל, LoRA Manager ידלג על הורדת גרסת מודל אם שירות היסטוריית ההורדות רושם את הגרסה המדויקת הזו ככבר שהורדה. חל על כל תהליכי ההורדה."
