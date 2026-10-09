@@ -168,7 +168,7 @@ def extract_civitai_image_id(url: str | None) -> str | None:
     if parsed is None:
         return None
 
-    path_match = re.search(r"/images/(\d+)", parsed.path)
+    path_match = re.match(r"^/images/(\d+)(?:/|$)", parsed.path)
     if not path_match:
         return None
 

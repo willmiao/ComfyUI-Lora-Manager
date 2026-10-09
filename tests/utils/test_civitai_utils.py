@@ -10,12 +10,25 @@ from py.utils.civitai_utils import (
     resolve_license_payload,
 )
 
+
 @pytest.mark.parametrize("host", ["civitai.com", "civitai.red"])
-@pytest.mark.parametrize("path", ["/api/download/models/3390681", "/api/v1/models/3390681", "/models/3390681invalid"])
+@pytest.mark.parametrize(
+    "path",
+    ["/api/download/models/3390681", "/api/v1/models/3390681", "/models/3390681invalid"],
+)
 def test_extract_civitai_model_url_parts_rejects_non_model_pages(host, path):
     assert extract_civitai_model_url_parts(
         f"https://{host}{path}?modelVersionId=3390681"
     ) == (None, None)
+
+
+@pytest.mark.parametrize("host", ["civitai.com", "civitai.red"])
+@pytest.mark.parametrize(
+    "path",
+    ["/api/v1/images/126920345", "/images/126920345invalid"],
+)
+def test_extract_civitai_image_id_rejects_non_image_pages(host, path):
+    assert extract_civitai_image_id(f"https://{host}{path}") is None
 
 
 def test_resolve_license_payload_defaults():

@@ -379,6 +379,12 @@ describe('civitaiUtils', () => {
         it('rejects image-like URLs from unsupported hosts', () => {
             expect(extractCivitaiImageId('https://example.com/images/126920345')).toBe(null);
         });
+
+        it.each(['civitai.com', 'civitai.red'])('rejects non-image pages on %s', (host) => {
+            for (const path of ['/api/v1/images/126920345', '/images/126920345invalid']) {
+                expect(extractCivitaiImageId(`https://${host}${path}`)).toBe(null);
+            }
+        });
     });
 
     describe('classifyModelRelinkUrl', () => {

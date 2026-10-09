@@ -304,7 +304,7 @@ export function extractCivitaiImageId(url) {
             return null;
         }
 
-        const pathMatch = parsedUrl.pathname.match(/\/images\/(\d+)/);
+        const pathMatch = parsedUrl.pathname.match(/^\/images\/(\d+)(?:\/|$)/);
         return pathMatch ? pathMatch[1] : null;
     } catch (e) {
         return null;

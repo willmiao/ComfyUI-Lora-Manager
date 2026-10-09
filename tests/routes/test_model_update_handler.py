@@ -15,6 +15,7 @@ from py.routes.handlers.model_handlers import (
     ModelUpdateHandler,
 )
 from py.routes.model_route_registrar import COMMON_ROUTE_DEFINITIONS
+from py.services.errors import ResourceNotFoundError
 from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
@@ -229,6 +230,43 @@ async def test_get_civitai_versions_degrades_when_download_history_unavailable(m
     assert payload[0]["id"] == 7
     assert payload[0]["existsLocally"] is False
     assert payload[0]["hasBeenDownloaded"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_civitai_versions_surfaces_not_found_details():
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    class NotFoundProvider:
+        async def get_model_versions(self, model_id):
+            raise ResourceNotFoundError(f"Civitai model {model_id} was not found")
+
+    async def metadata_provider_factory():
+        return NotFoundProvider()
+
+    handler = ModelCivitaiHandler(
+        service=service,
+        settings_service=SimpleNamespace(get=lambda *_: False),  # pyright: ignore[reportArgumentType]
+        ws_manager=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        logger=logging.getLogger(__name__),
+        metadata_provider_factory=metadata_provider_factory,
+        validate_model_type=lambda *_: True,
+        expected_model_types=lambda: "LoRA",
+        find_model_file=lambda *_: None,
+        metadata_sync=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_refresh_use_case=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_progress_callback=lambda *_args, **_kwargs: None,  # pyright: ignore[reportArgumentType]
+    )
+
+    response = await handler.get_civitai_versions(
+        SimpleNamespace(match_info={"model_id": "42"})  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+
+    assert response.status == 404
+    assert "42" in payload["error"]
 
 
 @pytest.mark.asyncio

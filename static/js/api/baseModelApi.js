@@ -1310,7 +1310,7 @@ export class BaseModelApiClient {
                 if (errorData && errorData.error && errorData.error.includes('Model type mismatch')) {
                     throw new Error(`This model is not a ${this.apiConfig.config.displayName}. Please switch to the appropriate page to download this model type.`);
                 }
-                throw new Error('Failed to fetch model versions');
+                throw new Error((errorData && errorData.error) || 'Failed to fetch model versions');
             }
             return await response.json();
         } catch (error) {

@@ -2359,8 +2359,8 @@ class ModelCivitaiHandler:
             metadata_provider = await self._metadata_provider_factory()
             try:
                 response = await metadata_provider.get_model_versions(model_id)
-            except ResourceNotFoundError:
-                return web.Response(status=404, text="Model not found")
+            except ResourceNotFoundError as exc:
+                return web.json_response({"error": str(exc)}, status=404)
             if not response or not response.get("modelVersions"):
                 return web.Response(status=404, text="Model not found")
 

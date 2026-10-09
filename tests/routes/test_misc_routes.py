@@ -37,6 +37,7 @@ from py.utils.session_logging import (
 )
 from py.routes.misc_route_registrar import MISC_ROUTE_DEFINITIONS, MiscRouteRegistrar
 from py.routes.misc_routes import MiscRoutes
+from py.services.errors import ResourceNotFoundError
 
 
 def _json_payload(response) -> dict[str, Any]:
@@ -2746,6 +2747,38 @@ async def test_get_model_versions_status_supported_type_stays_interactive():
             "hasBeenDownloaded": False,
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_surfaces_not_found_details():
+    """A missing CivitAI model keeps the provider's diagnostic message."""
+
+    class NotFoundProvider:
+        async def get_model_versions(self, _model_id):
+            raise ResourceNotFoundError("Civitai model 3390681 was not found")
+
+    async def metadata_factory():
+        return NotFoundProvider()
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=metadata_factory,
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "3390681"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 404
+    assert payload["success"] is False
+    assert "3390681" in payload["error"]
 
 
 class DummySidecarMigrationUseCase:
