@@ -719,12 +719,12 @@ describe('SettingsManager download root rules row layout', () => {
 
         manager.addDownloadRootRule('loras', 'base_model');
         expect(groupRows('loras')[0].querySelector('.download-root-rule-summary').textContent)
-            .toBe('Select base models…');
+            .toBe('Select base models...');
 
         manager.removeDownloadRootRule('loras', 0, true);
         manager.addDownloadRootRule('loras', 'tag');
         expect(groupRows('loras')[0].querySelector('.download-root-rule-summary').textContent)
-            .toBe('Enter tags…');
+            .toBe('Enter tags...');
     });
 
     it('summarizes more than two matches as first two plus a count', () => {

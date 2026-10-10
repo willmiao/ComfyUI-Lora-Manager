@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "下载根目录规则",
+            "help": "根据模型的基础模型或标签，将下载路由到其他根目录。",
+            "description": "规则按顺序检查，首个命中的规则生效；未匹配的下载使用默认根目录。",
+            "defaultHint": "默认：{root} — 未匹配的下载将保存到这里",
+            "defaultSuffix": "默认",
+            "addBaseModelRule": "基础模型规则",
+            "addTagRule": "标签规则",
+            "removeRule": "移除规则",
+            "moveUp": "上移",
+            "moveDown": "下移",
+            "noRoots": "此模型类型尚未配置根目录。",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "基础模型",
+                "tag": "标签"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "标签"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "选择基础模型...",
+                "enterTags": "输入标签...",
+                "more": "还有 {count} 项"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "无法保存下载根目录规则：{message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "根据模型元数据自动检测。如果检测结果有误，请切换；切换会为本次下载关闭“使用默认路径”。"
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "已由规则路由：基础模型“{value}”",
+                "tag": "已由规则路由：标签“{value}”"
             },
             "targetFolderPath": "目标文件夹路径：",
             "browseFolders": "浏览文件夹：",

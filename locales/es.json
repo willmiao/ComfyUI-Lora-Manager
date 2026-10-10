@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "Reglas de raíz de descarga",
+            "help": "Enruta las descargas a una carpeta raíz diferente según el modelo base o las etiquetas del modelo.",
+            "description": "Las reglas se comprueban en orden. Gana la primera coincidencia; las descargas sin coincidencia usan la raíz predeterminada.",
+            "defaultHint": "Predeterminada: {root} — las descargas sin coincidencia van aquí",
+            "defaultSuffix": "predeterminado",
+            "addBaseModelRule": "Regla de modelo base",
+            "addTagRule": "Regla de etiqueta",
+            "removeRule": "Eliminar regla",
+            "moveUp": "Subir",
+            "moveDown": "Bajar",
+            "noRoots": "No hay raíces configuradas para este tipo de modelo.",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "Modelo base",
+                "tag": "Etiqueta"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "Tag"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "Selecciona modelos base...",
+                "enterTags": "Introduce etiquetas...",
+                "more": "+{count} más"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "No se pudieron guardar las reglas de raíz de descarga: {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "Detectado automáticamente a partir de los metadatos del modelo. Cámbialo si la detección fue incorrecta; cambiar desactiva «Usar ruta predeterminada» para esta descarga."
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "Enrutado por regla: modelo base «{value}»",
+                "tag": "Enrutado por regla: etiqueta «{value}»"
             },
             "targetFolderPath": "Ruta de carpeta de destino:",
             "browseFolders": "Explorar carpetas:",

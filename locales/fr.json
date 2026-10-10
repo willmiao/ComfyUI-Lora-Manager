@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "Règles de racine de téléchargement",
+            "help": "Route les téléchargements vers un autre dossier racine en fonction du modèle de base ou des tags du modèle.",
+            "description": "Les règles sont vérifiées dans l’ordre. La première correspondance l’emporte ; les téléchargements sans correspondance utilisent la racine par défaut.",
+            "defaultHint": "Par défaut : {root} — les téléchargements sans correspondance arrivent ici",
+            "defaultSuffix": "par défaut",
+            "addBaseModelRule": "Règle de modèle de base",
+            "addTagRule": "Règle de tag",
+            "removeRule": "Supprimer la règle",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "noRoots": "Aucune racine configurée pour ce type de modèle.",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "Modèle de base",
+                "tag": "Tag"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "Tag"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "Sélectionner des modèles de base...",
+                "enterTags": "Saisir des tags...",
+                "more": "+{count} de plus"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "Impossible d’enregistrer les règles de racine de téléchargement : {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "Détecté automatiquement à partir des métadonnées du modèle. Changez si la détection est incorrecte ; changer désactive « Utiliser le chemin par défaut » pour ce téléchargement."
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "Routé par règle : modèle de base « {value} »",
+                "tag": "Routé par règle : tag « {value} »"
             },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",

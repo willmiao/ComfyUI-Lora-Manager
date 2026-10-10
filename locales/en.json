@@ -517,8 +517,8 @@
       },
       "tagPlaceholder": "character, style, realistic",
       "summary": {
-        "selectBaseModels": "Select base models…",
-        "enterTags": "Enter tags…",
+        "selectBaseModels": "Select base models...",
+        "enterTags": "Enter tags...",
         "more": "+{count} more"
       },
       "types": {

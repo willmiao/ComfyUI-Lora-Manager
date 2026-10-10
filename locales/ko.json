@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "다운로드 루트 규칙",
+            "help": "모델의 베이스 모델 또는 태그에 따라 다운로드를 다른 루트 폴더로 라우팅합니다.",
+            "description": "규칙은 순서대로 확인됩니다. 첫 번째로 일치하는 규칙이 적용되며, 일치하지 않는 다운로드는 기본 루트를 사용합니다.",
+            "defaultHint": "기본값: {root} — 일치하지 않는 다운로드는 여기에 저장됩니다",
+            "defaultSuffix": "기본값",
+            "addBaseModelRule": "베이스 모델 규칙",
+            "addTagRule": "태그 규칙",
+            "removeRule": "규칙 제거",
+            "moveUp": "위로 이동",
+            "moveDown": "아래로 이동",
+            "noRoots": "이 모델 유형에 구성된 루트가 없습니다.",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "베이스 모델",
+                "tag": "태그"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "태그"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "베이스 모델 선택...",
+                "enterTags": "태그 입력...",
+                "more": "+{count}개 더"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "다운로드 루트 규칙을 저장할 수 없습니다: {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "모델 메타데이터에서 자동으로 감지됩니다. 잘못 감지된 경우 전환하세요. 전환하면 이 다운로드에서 '기본 경로 사용'이 꺼집니다."
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "규칙에 따라 라우팅됨: 베이스 모델 '{value}'",
+                "tag": "규칙에 따라 라우팅됨: 태그 '{value}'"
             },
             "targetFolderPath": "대상 폴더 경로:",
             "browseFolders": "폴더 탐색:",

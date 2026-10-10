@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "Правила корневых папок загрузки",
+            "help": "Направляет загрузки в другую корневую папку в зависимости от базовой модели или тегов модели.",
+            "description": "Правила проверяются по порядку. Срабатывает первое совпадение; загрузки без совпадения используют корневую папку по умолчанию.",
+            "defaultHint": "По умолчанию: {root} — загрузки без совпадения попадают сюда",
+            "defaultSuffix": "по умолчанию",
+            "addBaseModelRule": "Правило базовой модели",
+            "addTagRule": "Правило тега",
+            "removeRule": "Удалить правило",
+            "moveUp": "Вверх",
+            "moveDown": "Вниз",
+            "noRoots": "Для этого типа моделей не настроены корневые папки.",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "Базовая модель",
+                "tag": "Тег"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "Тег"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "Выберите базовые модели...",
+                "enterTags": "Введите теги...",
+                "more": "ещё {count}"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "Не удалось сохранить правила корневых папок загрузки: {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "Определяется автоматически из метаданных модели. Переключите, если определение неверно; переключение отключает «Использовать путь по умолчанию» для этой загрузки."
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "Маршрут по правилу: базовая модель «{value}»",
+                "tag": "Маршрут по правилу: тег «{value}»"
             },
             "targetFolderPath": "Путь к целевой папке:",
             "browseFolders": "Обзор папок:",

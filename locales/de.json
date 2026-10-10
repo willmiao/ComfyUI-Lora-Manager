@@ -496,39 +496,39 @@
             }
         },
         "downloadRootRules": {
-            "title": "[TODO: Translate] Download Root Rules",
-            "help": "[TODO: Translate] Route downloads to a different root folder based on the model's base model.",
-            "description": "[TODO: Translate] Rules are checked in order. First match wins; unmatched downloads use the default root.",
-            "defaultHint": "[TODO: Translate] Default: {root} — unmatched downloads go here",
-            "defaultSuffix": "[TODO: Translate] default",
-            "addBaseModelRule": "[TODO: Translate] Base model rule",
-            "addTagRule": "[TODO: Translate] Tag rule",
-            "removeRule": "[TODO: Translate] Remove rule",
-            "moveUp": "[TODO: Translate] Move up",
-            "moveDown": "[TODO: Translate] Move down",
-            "noRoots": "[TODO: Translate] No roots configured for this model type.",
+            "title": "Download-Root-Regeln",
+            "help": "Leitet Downloads anhand des Basismodells oder der Tags des Modells in einen anderen Stammordner.",
+            "description": "Regeln werden der Reihe nach geprüft. Der erste Treffer gewinnt; Downloads ohne Treffer verwenden den Standard-Stammordner.",
+            "defaultHint": "Standard: {root} — Downloads ohne Treffer landen hier",
+            "defaultSuffix": "Standard",
+            "addBaseModelRule": "Basismodell-Regel",
+            "addTagRule": "Tag-Regel",
+            "removeRule": "Regel entfernen",
+            "moveUp": "Nach oben",
+            "moveDown": "Nach unten",
+            "noRoots": "Für diesen Modelltyp sind keine Stammordner konfiguriert.",
             "matchTypes": {
-                "baseModel": "[TODO: Translate] Base model",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "Basismodell",
+                "tag": "Tag"
             },
             "matchTypeChips": {
-                "baseModel": "[TODO: Translate] BM",
-                "tag": "[TODO: Translate] Tag"
+                "baseModel": "BM",
+                "tag": "Tag"
             },
-            "tagPlaceholder": "[TODO: Translate] character, style, realistic",
+            "tagPlaceholder": "character, style, realistic",
             "summary": {
-                "selectBaseModels": "[TODO: Translate] Select base models…",
-                "enterTags": "[TODO: Translate] Enter tags…",
-                "more": "[TODO: Translate] +{count} more"
+                "selectBaseModels": "Basismodelle auswählen...",
+                "enterTags": "Tags eingeben...",
+                "more": "+{count} weitere"
             },
             "types": {
-                "loras": "[TODO: Translate] LoRA",
-                "checkpoints": "[TODO: Translate] Checkpoint",
-                "unet": "[TODO: Translate] Diffusion Model",
-                "embeddings": "[TODO: Translate] Embedding"
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
             },
             "validation": {
-                "saveFailed": "[TODO: Translate] Unable to save download root rules: {message}"
+                "saveFailed": "Download-Root-Regeln konnten nicht gespeichert werden: {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -1662,8 +1662,8 @@
                 "tooltip": "Automatisch aus den Modell-Metadaten erkannt. Wechseln Sie, wenn die Erkennung falsch war; ein Wechsel deaktiviert „Standardpfad verwenden“ für diesen Download."
             },
             "routedByRule": {
-                "baseModel": "[TODO: Translate] Routed by rule: base model \"{value}\"",
-                "tag": "[TODO: Translate] Routed by rule: tag \"{value}\""
+                "baseModel": "Per Regel geroutet: Basismodell „{value}“",
+                "tag": "Per Regel geroutet: Tag „{value}“"
             },
             "targetFolderPath": "Zielordnerpfad:",
             "browseFolders": "Ordner durchsuchen:",

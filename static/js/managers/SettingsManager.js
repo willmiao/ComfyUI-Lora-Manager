@@ -4823,8 +4823,8 @@ export class SettingsManager {
         if (!match.length) {
             // Only drafts can be empty; persisted rules always have matches.
             summaryEl.textContent = rule?.match_type === 'tag'
-                ? translate('settings.downloadRootRules.summary.enterTags', {}, 'Enter tags…')
-                : translate('settings.downloadRootRules.summary.selectBaseModels', {}, 'Select base models…');
+                ? translate('settings.downloadRootRules.summary.enterTags', {}, 'Enter tags...')
+                : translate('settings.downloadRootRules.summary.selectBaseModels', {}, 'Select base models...');
             return;
         }
         if (match.length <= 2) {
