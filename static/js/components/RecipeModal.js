@@ -835,8 +835,8 @@ class RecipeModal {
             const workflowBtn = document.createElement('button');
             workflowBtn.className = 'recipe-source-url-btn';
             workflowBtn.id = 'sendWorkflowBtn';
-            workflowBtn.title = 'Send Workflow to ComfyUI';
-            workflowBtn.innerHTML = '<i class="fas fa-project-diagram"></i> Send Workflow to ComfyUI';
+            workflowBtn.title = translate('recipes.workflow.sendWorkflow', {}, 'Send Workflow to ComfyUI');
+            workflowBtn.innerHTML = `<i class="fas fa-diagram-project"></i> ${workflowBtn.title}`;
             workflowBtn.addEventListener('click', () => {
                 this.sendWorkflowToComfyUI();
             });

@@ -1071,7 +1071,8 @@
             "sendWorkflow": "傳送工作流到 ComfyUI",
             "sent": "工作流已傳送到 ComfyUI",
             "sendFailed": "傳送工作流到 ComfyUI 失敗",
-            "noWorkflow": "此配方中未找到內嵌工作流"
+            "noWorkflow": "此配方中未找到內嵌工作流",
+            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
         },
         "status": {
             "ready": "可直接使用",

@@ -664,7 +664,8 @@ body.hide-card-version .hl-badge {
 .card-footer,
 .card-header,
 .model-name,
-.base-model-label {
+.base-model-label,
+.workflow-badge {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -886,4 +887,27 @@ body.hide-card-version .hl-badge {
     justify-content: center;
     flex-shrink: 0;
     opacity: 0.9;
+}
+
+/* Recipe card capability badge: mirrors the model-card update/skip-refresh
+   badges (small square icon next to the base-model pill) but stays a neutral
+   attribute marker — no card-level highlight like .has-update. */
+.workflow-badge {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 4px;
+    background: var(--badge-workflow-bg);
+    color: var(--badge-workflow-text);
+    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px var(--badge-workflow-glow);
+    border: 1px solid color-mix(in oklab, var(--badge-workflow-bg) 55%, transparent);
+}
+
+.workflow-badge i {
+    line-height: 1;
 }

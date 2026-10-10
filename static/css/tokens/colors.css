@@ -44,6 +44,10 @@
   --color-skip-refresh-bg: oklch(82% 0.12 var(--color-warning-h));
   --color-skip-refresh-text: oklch(35% 0.02 var(--color-warning-h));
   --color-skip-refresh-glow: oklch(82% 0.12 var(--color-warning-h) / 0.15);
+
+  --color-workflow-bg: oklch(72% 0.18 var(--color-accent-h));
+  --color-workflow-text: oklch(28% 0.03 var(--color-accent-h));
+  --color-workflow-glow: oklch(72% 0.18 var(--color-accent-h) / 0.28);
 }
 
 :root {
@@ -109,6 +113,10 @@
   --color-info-bg: oklch(62% 0.18 var(--color-info-h));
   --color-info-text: oklch(98% 0.02 var(--color-info-h));
   --color-info-glow: oklch(62% 0.18 var(--color-info-h) / 0.4);
+
+  --color-workflow-bg: oklch(62% 0.18 var(--color-accent-h));
+  --color-workflow-text: oklch(98% 0.02 var(--color-accent-h));
+  --color-workflow-glow: oklch(62% 0.18 var(--color-accent-h) / 0.4);
 
   --color-error-bg: color-mix(in oklch, var(--color-error) 15%, transparent);
   --color-error-border: color-mix(in oklch, var(--color-error) 40%, transparent);

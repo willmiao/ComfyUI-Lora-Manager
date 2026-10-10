@@ -1071,7 +1071,8 @@
             "sendWorkflow": "ワークフローをComfyUIへ送信",
             "sent": "ワークフローをComfyUIへ送信しました",
             "sendFailed": "ワークフローをComfyUIへ送信できませんでした",
-            "noWorkflow": "このレシピに埋め込まれたワークフローが見つかりません"
+            "noWorkflow": "このレシピに埋め込まれたワークフローが見つかりません",
+            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
         },
         "status": {
             "ready": "使用可能",

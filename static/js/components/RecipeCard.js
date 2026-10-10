@@ -133,7 +133,13 @@ class RecipeCard {
                     `<button class="toggle-blur-btn" title="Toggle blur">
                           <i class="fas fa-eye"></i>
                       </button>` : ''}
-                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">${baseModelDisplay}</span>
+                    <div class="card-header-info">
+                        <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">${baseModelDisplay}</span>
+                        ${this.recipe.has_workflow === true ? `
+                        <span class="workflow-badge" title="${translate('recipes.workflow.hasWorkflow', {}, 'Contains a ComfyUI workflow')}">
+                            <i class="fas fa-diagram-project"></i>
+                        </span>` : ''}
+                    </div>
                     <div class="card-actions">
                         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"></i>
                         <i class="fas fa-share-alt" title="Share Recipe"></i>

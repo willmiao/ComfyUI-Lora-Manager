@@ -1071,7 +1071,8 @@
       "sendWorkflow": "Send Workflow to ComfyUI",
       "sent": "Workflow sent to ComfyUI",
       "sendFailed": "Failed to send workflow to ComfyUI",
-      "noWorkflow": "No embedded workflow found in this recipe"
+      "noWorkflow": "No embedded workflow found in this recipe",
+      "hasWorkflow": "Contains a ComfyUI workflow"
     },
     "status": {
       "ready": "Ready to use",

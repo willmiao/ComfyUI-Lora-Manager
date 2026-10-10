@@ -79,6 +79,9 @@ body {
     --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
     --badge-skip-refresh-text: var(--color-skip-refresh-text);
     --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
+    --badge-workflow-bg: var(--color-workflow-bg);
+    --badge-workflow-text: var(--color-workflow-text);
+    --badge-workflow-glow: var(--color-workflow-glow);
 }
 
 :root[data-theme="dark"] {
@@ -104,6 +107,9 @@ body {
     --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
     --badge-skip-refresh-text: var(--color-skip-refresh-text);
     --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
+    --badge-workflow-bg: var(--color-workflow-bg);
+    --badge-workflow-text: var(--color-workflow-text);
+    --badge-workflow-glow: var(--color-workflow-glow);
 }
 
 html[data-theme="dark"] {
