@@ -125,7 +125,7 @@
 
 .stage-item.active .stage-icon {
   background: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 .stage-item.completed .stage-icon {

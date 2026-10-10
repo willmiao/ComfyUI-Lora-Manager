@@ -80,7 +80,7 @@
 /* Primary Action Button */
 .banner-action-primary {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -99,7 +99,7 @@
 
 .banner-action-secondary:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
@@ -114,7 +114,7 @@
 
 .banner-action-tertiary:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-1px);
 }
 

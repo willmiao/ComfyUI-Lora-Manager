@@ -144,7 +144,7 @@
   font-size: 0.7em;
   font-weight: 600;
   background-color: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: 8px;
@@ -171,7 +171,7 @@
 .replay-tutorial-btn .new-content-badge {
   display: none;
   background-color: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  color: var(--text-on-accent);
   box-shadow: none;
   margin-left: 2px;
 }
@@ -227,7 +227,7 @@
   font-size: 0.75em;
   font-weight: 500;
   background-color: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   padding: 4px 8px;
   border-radius: 12px;
   margin-left: 10px;
@@ -306,7 +306,7 @@
   cursor: pointer;
   transition: var(--transition-base);
   background-color: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   text-decoration: none;
   border: none;
 }
@@ -343,7 +343,7 @@
   cursor: pointer;
   transition: var(--transition-base);
   background-color: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   border: none;
 }
 

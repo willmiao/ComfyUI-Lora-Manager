@@ -104,7 +104,7 @@
 
 .nav-item.active {
   background-color: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 /* Header search - Centered with VS Code command palette style */
@@ -354,7 +354,7 @@
 
 .header-controls>div:hover {
   background: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   transform: translateY(-2px);
 }
 

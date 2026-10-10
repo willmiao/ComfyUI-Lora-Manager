@@ -13,7 +13,7 @@
     width: 24px;
     height: 24px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-radius: 50%;
     display: flex;
     align-items: center;

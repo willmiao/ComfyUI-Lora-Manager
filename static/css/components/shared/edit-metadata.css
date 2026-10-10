@@ -257,7 +257,7 @@ body.reorder-drag-active * {
 .append-tags-btn,
 .replace-tags-btn {
   background: var(--lora-accent) !important;
-  color: white !important;
+  color: var(--text-on-accent) !important;
   border-color: var(--lora-accent) !important;
 }
 
@@ -271,7 +271,7 @@ body.reorder-drag-active * {
 /* Specific styling for bulk tag action buttons */
 .bulk-append-tags-btn {
   background: var(--lora-accent) !important;
-  color: white !important;
+  color: var(--text-on-accent) !important;
   border-color: var(--lora-accent) !important;
 }
 

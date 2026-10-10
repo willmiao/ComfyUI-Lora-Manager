@@ -277,7 +277,7 @@
     top: 10px;
     left: 10px;
     background: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
-    color: white;
+    color: var(--text-on-accent);
     font-size: 12px;
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
@@ -616,7 +616,7 @@ html[data-theme="dark"] .help-tooltip {
 /* Make the active duplicates button more prominent */
 #findDuplicatesBtn.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
     box-shadow: 0 0 0 2px oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.25);
     position: relative;

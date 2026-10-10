@@ -245,7 +245,7 @@
 
 .show-content-btn {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     padding: 4px var(--space-1);
@@ -805,7 +805,7 @@ body.hide-card-version .hl-badge {
     top: 8px;
     right: 8px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-radius: var(--border-radius-xs);
     padding: 3px 6px;
     font-size: 0.75em;

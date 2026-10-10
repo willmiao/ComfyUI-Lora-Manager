@@ -330,7 +330,7 @@
 
 .showcase-layout-toggle .layout-toggle-btn.active {
   background: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
 }
 
 /* Vertical list layout (showcase_layout = vertical): every example stacked
@@ -446,7 +446,7 @@
 
 .media-control-btn.set-preview-btn:hover {
   background: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   border-color: var(--lora-accent);
 }
 
@@ -805,7 +805,7 @@
 
 .select-files-btn {
   background: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   border: none;
   border-radius: var(--border-radius-xs);
   padding: var(--space-2) var(--space-3);
@@ -891,7 +891,7 @@
 .setup-settings-btn {
   margin-top: var(--space-2);
   background: var(--lora-accent) !important;
-  color: var(--lora-text) !important;
+  color: var(--text-on-accent) !important;
 }
 
 .setup-settings-btn:hover {

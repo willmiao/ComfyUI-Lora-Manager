@@ -42,7 +42,7 @@
     padding: 0 0.4rem;
     border-radius: 999px;
     background: var(--lora-accent);
-    color: #fff;
+    color: var(--text-on-accent);
     font-size: 0.75rem;
     font-weight: 600;
     align-items: center;
@@ -163,7 +163,7 @@
 
 .update-link:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -274,7 +274,7 @@
 
 .changelog-item .latest-badge {
     background-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.75em;
@@ -384,12 +384,12 @@
 
 .channel-btn.active {
     background: var(--lora-accent, #4285F4);
-    color: #fff;
+    color: var(--text-on-accent);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .channel-btn.active i {
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 .channel-btn i {
@@ -456,7 +456,7 @@
     border: none;
     border-radius: 6px;
     background: var(--lora-accent, #4285F4);
-    color: #fff;
+    color: var(--text-on-accent);
     cursor: pointer;
     font-size: 0.9em;
     font-weight: 500;
@@ -614,7 +614,7 @@
 .banner-history-action.banner-history-action-primary {
     background: var(--lora-accent);
     border-color: var(--lora-accent);
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 .banner-history-action.banner-history-action-secondary {

@@ -423,7 +423,7 @@
 
 .source-url-save-btn {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .source-url-cancel-btn:hover {
@@ -1268,7 +1268,7 @@
 
 .reconnect-confirm-btn {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .reconnect-cancel-btn:hover {
@@ -1517,7 +1517,7 @@
 
 .resource-action.primary {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 

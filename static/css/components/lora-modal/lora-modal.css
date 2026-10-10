@@ -473,7 +473,7 @@
 
 .modal-content .back-to-top:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -1262,7 +1262,7 @@
 
 .creator-placeholder {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     display: flex;
     align-items: center;
     justify-content: center;

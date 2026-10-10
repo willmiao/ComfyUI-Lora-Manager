@@ -24,7 +24,7 @@
 .context-menu-item:hover,
 .context-menu-item:focus-visible {
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     outline: none;
 }
 
@@ -78,7 +78,7 @@
    the accent background would otherwise wash the muted colour out. */
 .context-menu-item:hover .context-menu-count,
 .context-menu-item:focus-visible .context-menu-count {
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     opacity: 0.8;
 }
 
@@ -212,7 +212,7 @@
 
 .nsfw-level-btn.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -251,7 +251,7 @@
 
 .node-item:hover {
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 .node-icon-indicator {
@@ -282,7 +282,7 @@
 
 .send-all-item:hover {
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 .send-all-item i {

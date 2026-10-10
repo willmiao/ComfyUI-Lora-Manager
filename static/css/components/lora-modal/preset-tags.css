@@ -56,7 +56,7 @@
 .add-preset-btn {
   padding: calc(var(--space-1) * 0.5) var(--space-2);
   background: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   border: none;
   border-radius: var(--border-radius-xs);
   cursor: pointer;

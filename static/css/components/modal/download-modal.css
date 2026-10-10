@@ -373,7 +373,7 @@
 
 .create-folder-form button.confirm {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -1139,7 +1139,7 @@
 
 .routing-override-option.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
     opacity: 1;
     cursor: default;

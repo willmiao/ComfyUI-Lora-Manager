@@ -1,7 +1,7 @@
 /* Update toast animation for trigger word copy */
 .toast.toast-copy {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     padding: 8px 16px;
     font-size: 0.9em;
@@ -98,7 +98,7 @@
 
 .toast-action-btn:hover {
     background: var(--lora-accent);
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 .toast-countdown {

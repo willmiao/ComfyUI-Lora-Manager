@@ -159,7 +159,7 @@ body.sticky-controls .sticky-topbar {
 
 .control-group button.favorite-filter.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .control-group button.favorite-filter i {
@@ -174,17 +174,17 @@ body.sticky-controls .sticky-topbar {
 
 .control-group button.update-filter.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .control-group button.update-filter.active i {
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .update-filter-group .dropdown-main.update-filter.active + .dropdown-toggle {
     background: var(--lora-accent);
     border-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .update-filter-group .dropdown-main.update-filter.active + .dropdown-toggle i {
@@ -194,7 +194,7 @@ body.sticky-controls .sticky-topbar {
 /* Active state for buttons that can be toggled */
 .control-group button.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -540,7 +540,7 @@ body.sticky-controls .sticky-topbar {
 
 .back-to-top:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
 }

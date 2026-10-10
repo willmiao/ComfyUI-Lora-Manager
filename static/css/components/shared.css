@@ -3,7 +3,7 @@
     display: inline-flex;
     align-items: center;
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
     font-size: 0.8em;

@@ -110,13 +110,13 @@
 
 .onboarding-btn:hover {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
 .onboarding-btn.primary {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -189,7 +189,7 @@
 .language-option.selected {
     border-color: var(--lora-accent);
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 .language-flag {

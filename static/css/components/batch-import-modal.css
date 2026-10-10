@@ -93,7 +93,7 @@
     content: '\f00c';
     font-family: 'Font Awesome 6 Free', sans-serif;
     font-weight: 900;
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     font-size: 12px;
 }
 
@@ -120,7 +120,7 @@
     white-space: nowrap;
     padding: 8px 16px;
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
@@ -134,7 +134,7 @@
 /* Dark theme adjustments for input-with-button */
 [data-theme="dark"] .input-with-button button {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 [data-theme="dark"] .input-with-button button:hover {

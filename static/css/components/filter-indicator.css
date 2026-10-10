@@ -4,7 +4,7 @@
     align-items: center;
     gap: 6px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-radius: var(--border-radius-xs);
     padding: 4px 10px;
     transition: var(--transition-base);

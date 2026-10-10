@@ -15,7 +15,7 @@
 
 .settings-toggle:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -86,13 +86,13 @@
 }
 
 .settings-nav-item:hover {
-    background: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
     color: var(--lora-accent);
 }
 
 .settings-nav-item.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     font-weight: 600;
 }
 
@@ -160,7 +160,7 @@
 .settings-search-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .settings-search-input::placeholder {
@@ -193,7 +193,7 @@
 
 /* Search Highlight Styles */
 .settings-search-highlight {
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.3);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.3);
     color: var(--lora-accent);
     padding: 0 2px;
     border-radius: 2px;
@@ -265,7 +265,7 @@
 }
 
 .settings-action-link:focus-visible {
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.2);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.2);
 }
 
 /* Settings Links */
@@ -296,7 +296,7 @@
 
 .settings-link:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -364,7 +364,7 @@
 .api-key-input input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .api-key-input .toggle-visibility {
@@ -491,7 +491,7 @@
 .text-input-wrapper input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 /* Dark theme specific adjustments */
@@ -577,7 +577,7 @@
 .base-model-skip-search:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .base-model-skip-list {
@@ -602,7 +602,7 @@
 
 .base-model-skip-option:hover {
     border-color: var(--lora-accent);
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.05);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.05);
 }
 
 .base-model-skip-option input {
@@ -623,7 +623,7 @@
 .priority-tags-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .priority-tags-item {
@@ -681,7 +681,7 @@
 
 .priority-tags-example code {
     font-family: var(--font-mono);
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.12);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.12);
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
     display: inline-block;
@@ -1268,7 +1268,7 @@ input:checked + .toggle-slider:before {
     gap: 6px;
     padding: 6px 12px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
@@ -1315,7 +1315,7 @@ input:checked + .toggle-slider:before {
 .path-value-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .remove-mapping-btn {
@@ -1442,7 +1442,7 @@ input:checked + .toggle-slider:before {
 .placeholder-tag {
     display: inline-block;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: var(--font-mono);
@@ -1468,6 +1468,9 @@ input:checked + .toggle-slider:before {
 
 .template-custom-input {
     width: 96%;
+    /* Space from the label/apply-button row above; the row has no bottom
+       margin, so without this the input sits flush against the button. */
+    margin-top: var(--space-1);
     padding: 6px 10px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
@@ -1482,7 +1485,7 @@ input:checked + .toggle-slider:before {
 .template-custom-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .template-custom-input::placeholder {
@@ -1646,7 +1649,7 @@ input:checked + .toggle-slider:before {
 .extra-folder-path-row .path-controls .extra-folder-path-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .extra-folder-path-row .path-controls .extra-folder-path-input.has-error {
@@ -1713,7 +1716,7 @@ input:checked + .toggle-slider:before {
 
 #settingsModal .browse-path-btn:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 /* Inset variant (static path fields): the button floats inside the right

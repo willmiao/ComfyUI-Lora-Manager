@@ -64,6 +64,14 @@ body {
     --border-color: var(--border-base);
 
     --lora-accent: var(--color-accent);
+    /* Channel aliases: referenced across components (oklch tints, focus
+       rings); previously undeclared, so those declarations silently dropped. */
+    --lora-accent-l: var(--color-accent-l);
+    --lora-accent-c: var(--color-accent-c);
+    --lora-accent-h: var(--color-accent-h);
+    --lora-accent-hover: var(--color-accent-hover);
+    --lora-accent-light: var(--color-accent-subtle);
+    --text-on-accent: var(--color-accent-contrast);
     --lora-surface: var(--bg-elevated);
     --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);
@@ -93,6 +101,14 @@ body {
     --border-color: var(--border-base);
 
     --lora-accent: var(--color-accent);
+    /* Channel aliases: referenced across components (oklch tints, focus
+       rings); previously undeclared, so those declarations silently dropped. */
+    --lora-accent-l: var(--color-accent-l);
+    --lora-accent-c: var(--color-accent-c);
+    --lora-accent-h: var(--color-accent-h);
+    --lora-accent-hover: var(--color-accent-hover);
+    --lora-accent-light: var(--color-accent-subtle);
+    --text-on-accent: var(--color-accent-contrast);
     --lora-surface: var(--bg-elevated);
     --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);

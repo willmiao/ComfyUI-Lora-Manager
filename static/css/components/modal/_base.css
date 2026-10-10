@@ -114,7 +114,7 @@ body.modal-open {
 /* Style for exclude button - different from delete button */
 .exclude-btn, .confirm-btn {
     background: var(--lora-accent, #4f46e5);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .cancel-btn:hover,
@@ -187,7 +187,7 @@ body.modal-open {
     gap: 8px;
     padding: var(--space-1) var(--space-2);
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
@@ -198,7 +198,7 @@ body.modal-open {
 .primary-btn:hover,
 .primary-btn:focus-visible {
     background-color: oklch(from var(--lora-accent) l c h / 85%);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     outline: none;
 }
 
@@ -229,7 +229,7 @@ body.modal-open {
     opacity: 0.5;
     cursor: not-allowed;
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     pointer-events: none;
 }
 
@@ -668,7 +668,7 @@ button:disabled,
     content: '\f00c';
     font-family: 'Font Awesome 6 Free', sans-serif;
     font-weight: 900;
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     font-size: 12px;
 }
 

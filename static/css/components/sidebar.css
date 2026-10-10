@@ -140,7 +140,7 @@
 }
 
 .sidebar-hidden-indicator:hover i {
-    color: white;
+    color: var(--text-on-accent);
 }
 
 /* Subtle breathing animation for first-time discovery */
