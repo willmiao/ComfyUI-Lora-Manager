@@ -3738,6 +3738,12 @@ class RecipeScanner:
                             if self._compute_availability_statuses(item) & selected
                         ]
 
+                # Filter by embedded workflow presence
+                if filters.get("has_workflow"):
+                    filtered_data = [
+                        item for item in filtered_data if item.get("has_workflow")
+                    ]
+
         # Apply sorting if not already handled by pre-sorted cache
         if ":" in sort_by or sort_field in ("loras_count", "random", "opened"):
             field, order = (sort_by.split(":") + ["desc"])[:2]

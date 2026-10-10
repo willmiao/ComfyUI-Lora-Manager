@@ -308,6 +308,9 @@ class RecipeListingHandler:
             if lora_availability:
                 filters["lora_availability"] = lora_availability
 
+            if request.query.get("has_workflow", "").lower() == "true":
+                filters["has_workflow"] = True
+
             lora_hash = request.query.get("lora_hash")
             checkpoint_hash = request.query.get("checkpoint_hash")
 

@@ -297,7 +297,9 @@
             "loraAvailability": "Доступность LoRAs",
             "availabilityReady": "Готовы к использованию",
             "availabilityMissing": "Есть отсутствующие",
-            "availabilityDeleted": "Есть удалённые"
+            "availabilityDeleted": "Есть удалённые",
+            "workflow": "[TODO: Translate] Workflow",
+            "hasWorkflow": "[TODO: Translate] Has Workflow"
         },
         "theme": {
             "toggle": "Переключить тему",

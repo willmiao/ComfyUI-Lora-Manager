@@ -297,7 +297,9 @@
             "loraAvailability": "Disponibilité des LoRAs",
             "availabilityReady": "Prêts à l'emploi",
             "availabilityMissing": "Avec LoRAs manquants",
-            "availabilityDeleted": "Avec LoRAs supprimés"
+            "availabilityDeleted": "Avec LoRAs supprimés",
+            "workflow": "[TODO: Translate] Workflow",
+            "hasWorkflow": "[TODO: Translate] Has Workflow"
         },
         "theme": {
             "toggle": "Basculer le thème",

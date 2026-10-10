@@ -183,6 +183,11 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
             if (pageState.filters?.loraAvailability && pageState.filters.loraAvailability.length > 0) {
                 params.append('lora_availability', pageState.filters.loraAvailability.join(','));
             }
+
+            // Add has-workflow filter
+            if (pageState.filters?.hasWorkflow) {
+                params.append('has_workflow', 'true');
+            }
         }
 
         // Fetch recipes

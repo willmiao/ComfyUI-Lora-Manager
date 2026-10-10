@@ -758,6 +758,31 @@ async def test_list_recipes_ignores_invalid_lora_availability_values(
         assert "lora_availability" not in filters
 
 
+async def test_list_recipes_passes_has_workflow_filter(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes?has_workflow=true")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["items"] == []
+        assert harness.scanner.last_paginated_params is not None
+        filters = harness.scanner.last_paginated_params["filters"]
+        assert filters["has_workflow"] is True
+
+
+async def test_list_recipes_ignores_non_true_has_workflow(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes?has_workflow=bogus")
+        assert response.status == 200
+        assert harness.scanner.last_paginated_params is not None
+        filters = harness.scanner.last_paginated_params["filters"]
+        assert "has_workflow" not in filters
+
+
 async def test_get_recipes_for_checkpoint(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.scanner.checkpoint_lookup["abc123"] = [

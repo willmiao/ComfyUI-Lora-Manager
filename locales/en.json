@@ -297,7 +297,9 @@
       "loraAvailability": "Lora Availability",
       "availabilityReady": "Ready to use",
       "availabilityMissing": "Has missing",
-      "availabilityDeleted": "Has deleted"
+      "availabilityDeleted": "Has deleted",
+      "workflow": "Workflow",
+      "hasWorkflow": "Has Workflow"
     },
     "theme": {
       "toggle": "Toggle theme",

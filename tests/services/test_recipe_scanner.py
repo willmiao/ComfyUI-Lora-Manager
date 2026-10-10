@@ -2065,6 +2065,52 @@ async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
 
 
 @pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_has_workflow(recipe_scanner):
+    scanner, _ = recipe_scanner
+
+    await scanner.add_recipe(
+        {
+            "id": "no-workflow",
+            "file_path": "path/no-workflow.png",
+            "title": "No Workflow Recipe",
+            "modified": 1.0,
+            "created_date": 1.0,
+            "loras": [],
+            "has_workflow": False,
+        }
+    )
+
+    await scanner.add_recipe(
+        {
+            "id": "with-workflow",
+            "file_path": "path/with-workflow.png",
+            "title": "Workflow Recipe",
+            "modified": 2.0,
+            "created_date": 2.0,
+            "loras": [],
+            "has_workflow": True,
+        }
+    )
+
+    await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
+
+    result_all = await scanner.get_paginated_data(page=1, page_size=10)
+    assert len(result_all["items"]) == 2
+
+    result_wf = await scanner.get_paginated_data(
+        page=1, page_size=10, filters={"has_workflow": True}
+    )
+    assert len(result_wf["items"]) == 1
+    assert result_wf["items"][0]["id"] == "with-workflow"
+
+    result_wf_false = await scanner.get_paginated_data(
+        page=1, page_size=10, filters={"has_workflow": False}
+    )
+    assert len(result_wf_false["items"]) == 2
+
+
+@pytest.mark.asyncio
 async def test_get_paginated_data_filters_by_base_model_unknown_bucket(recipe_scanner):
     scanner, _ = recipe_scanner
 
