@@ -607,6 +607,7 @@
 
 .base-model-skip-option input {
     margin: 0;
+    accent-color: var(--lora-accent);
 }
 
 .base-model-skip-option span {
@@ -1849,6 +1850,7 @@ input:checked + .toggle-slider:before {
 
 .other-subtype-checkbox input[type="checkbox"] {
     cursor: pointer;
+    accent-color: var(--lora-accent);
 }
 
 .other-subtype-toggles.is-disabled {

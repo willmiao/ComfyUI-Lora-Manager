@@ -149,6 +149,7 @@
 .folder-root-option input[type="checkbox"] {
     margin-top: 2px;
     flex: 0 0 auto;
+    accent-color: var(--lora-accent);
 }
 
 /* Path over status, so a row keeps its height when the verdict replaces
