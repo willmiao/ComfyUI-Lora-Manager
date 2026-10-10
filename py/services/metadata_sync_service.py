@@ -241,7 +241,40 @@ class MetadataSyncService:
             raise MetadataPersistError(
                 f"Failed to write metadata sidecar: {metadata_path}"
             )
+        self._unblock_example_image_failures(local_metadata)
         return local_metadata
+
+    @staticmethod
+    def _unblock_example_image_failures(local_metadata: Dict[str, Any]) -> None:
+        """Drop the model from the example-images failed list, if present.
+
+        Fresh provider metadata invalidates any earlier "no example images"
+        verdict, so the next example-image run should retry the model. The
+        unblock only edits the local progress file — no provider API calls —
+        and must never break the metadata update itself.
+        """
+
+        sha256 = (local_metadata.get("sha256") or "").lower()
+        if not sha256:
+            return
+
+        try:
+            # Lazy import: example_images_download_manager (via
+            # example_images_metadata) imports this service at module level.
+            from ..utils.example_images_download_manager import (
+                unblock_failed_example_image_models,
+            )
+
+            removed = unblock_failed_example_image_models([sha256])
+            if removed:
+                logger.info(
+                    "Re-enabled example image downloads for %s after metadata update",
+                    local_metadata.get("model_name", sha256),
+                )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "Failed to unblock example image failures for %s: %s", sha256, exc
+            )
 
     async def fetch_and_update_model(
         self,

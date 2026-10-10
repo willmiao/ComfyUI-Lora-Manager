@@ -301,6 +301,57 @@ async def test_update_model_metadata_raises_when_sidecar_write_fails():
 
 
 @pytest.mark.asyncio
+async def test_update_model_metadata_unblocks_example_image_failures(monkeypatch):
+    """Persisting fresh provider metadata re-enables example image downloads."""
+    helpers = build_service()
+
+    from py.utils import example_images_download_manager as download_module
+
+    calls: list[list[str]] = []
+
+    def fake_unblock(hashes, library_name=None):
+        calls.append(list(hashes))
+        return len(hashes)
+
+    monkeypatch.setattr(
+        download_module, "unblock_failed_example_image_models", fake_unblock
+    )
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        {"sha256": "A" * 64, "model_name": "Local"},
+        {"source": "api", "model": {"name": "Remote"}, "images": []},
+        helpers.default_provider,
+    )
+
+    assert result["model_name"] == "Remote"
+    assert calls == [["a" * 64]]
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_without_hash_skips_unblock(monkeypatch):
+    helpers = build_service()
+
+    from py.utils import example_images_download_manager as download_module
+
+    def fail_unblock(hashes, library_name=None):  # pragma: no cover - must not run
+        raise AssertionError("unblock must not run without a sha256")
+
+    monkeypatch.setattr(
+        download_module, "unblock_failed_example_image_models", fail_unblock
+    )
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        {"model_name": "Local"},
+        {"source": "api", "model": {"name": "Remote"}, "images": []},
+        helpers.default_provider,
+    )
+
+    assert result["model_name"] == "Remote"
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_reports_sidecar_write_failure(tmp_path):
     """Fetch fails the item (and leaves the cache untouched) when the sidecar
     cannot be written, so the model stays eligible for the next run."""
