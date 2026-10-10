@@ -1072,7 +1072,7 @@
             "sent": "Workflow enviado a ComfyUI",
             "sendFailed": "Error al enviar el workflow a ComfyUI",
             "noWorkflow": "No se encontró ningún workflow integrado en esta receta",
-            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
+            "hasWorkflow": "Contiene un workflow de ComfyUI"
         },
         "status": {
             "ready": "Listo para usar",

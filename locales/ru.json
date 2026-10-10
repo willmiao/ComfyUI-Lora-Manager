@@ -1072,7 +1072,7 @@
             "sent": "Workflow отправлен в ComfyUI",
             "sendFailed": "Не удалось отправить workflow в ComfyUI",
             "noWorkflow": "В этом рецепте не найден встроенный workflow",
-            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
+            "hasWorkflow": "Содержит Workflow ComfyUI"
         },
         "status": {
             "ready": "Готово к использованию",

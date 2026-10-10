@@ -1072,7 +1072,7 @@
             "sent": "워크플로를 ComfyUI로 보냈습니다",
             "sendFailed": "워크플로를 ComfyUI로 보내지 못했습니다",
             "noWorkflow": "이 레시피에서 임베드된 워크플로를 찾을 수 없습니다",
-            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
+            "hasWorkflow": "ComfyUI 워크플로 포함"
         },
         "status": {
             "ready": "바로 사용 가능",

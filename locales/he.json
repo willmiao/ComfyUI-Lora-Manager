@@ -1072,7 +1072,7 @@
             "sent": "ה-workflow נשלח ל-ComfyUI",
             "sendFailed": "שליחת ה-workflow ל-ComfyUI נכשלה",
             "noWorkflow": "לא נמצא workflow מוטבע במתכון זה",
-            "hasWorkflow": "[TODO: Translate] Contains a ComfyUI workflow"
+            "hasWorkflow": "מכיל workflow של ComfyUI"
         },
         "status": {
             "ready": "מוכן לשימוש",
