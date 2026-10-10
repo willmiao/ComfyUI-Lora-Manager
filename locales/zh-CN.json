@@ -1749,7 +1749,8 @@
             "titleToAlongside": "要将附属文件移回模型文件旁边吗？",
             "confirmButton": "立即迁移",
             "titleRelocateRoot": "要将附属文件移到新的存储目录吗？",
-            "destination": "目标位置：{path}"
+            "destination": "目标位置：{path}",
+            "defaultLocationHint": "将使用默认存储位置。如需使用自定义文件夹，请取消，在上方设置存储路径，然后点击“立即迁移附属文件”。"
         },
         "sidecarMigrationResult": {
             "title": "附属文件迁移摘要",

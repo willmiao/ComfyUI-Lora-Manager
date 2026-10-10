@@ -1749,7 +1749,8 @@
             "titleToAlongside": "Remettre les fichiers sidecar à côté des fichiers de modèle ?",
             "confirmButton": "Migrer maintenant",
             "titleRelocateRoot": "Déplacer les fichiers sidecar vers le nouveau dossier de stockage ?",
-            "destination": "Destination : {path}"
+            "destination": "Destination : {path}",
+            "defaultLocationHint": "L’emplacement par défaut sera utilisé. Pour utiliser un dossier personnalisé, annulez, définissez le chemin de stockage ci-dessus, puis cliquez sur « Migrer les fichiers sidecar maintenant »."
         },
         "sidecarMigrationResult": {
             "title": "Résumé de la migration des fichiers sidecar",

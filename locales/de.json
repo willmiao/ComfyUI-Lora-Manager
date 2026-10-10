@@ -1749,7 +1749,8 @@
             "titleToAlongside": "Sidecar-Dateien zurück neben die Modelldateien verschieben?",
             "confirmButton": "Jetzt verschieben",
             "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?",
-            "destination": "Ziel: {path}"
+            "destination": "Ziel: {path}",
+            "defaultLocationHint": "Es wird der Standard-Speicherort verwendet. Um einen eigenen Ordner zu nutzen, brechen Sie ab, setzen Sie oben den Speicherpfad und klicken Sie dann auf „Sidecar-Dateien jetzt verschieben“."
         },
         "sidecarMigrationResult": {
             "title": "Sidecar-Migrationsübersicht",

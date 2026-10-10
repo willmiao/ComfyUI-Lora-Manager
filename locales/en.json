@@ -1749,7 +1749,8 @@
       "titleToAlongside": "Move sidecars back next to model files?",
       "confirmButton": "Migrate Now",
       "titleRelocateRoot": "Move sidecars to the new storage directory?",
-      "destination": "Destination: {path}"
+      "destination": "Destination: {path}",
+      "defaultLocationHint": "This uses the default location. To use a custom folder, cancel, set the storage path above, then click \"Migrate Sidecars Now\"."
     },
     "sidecarMigrationResult": {
       "title": "Sidecar Migration Summary",

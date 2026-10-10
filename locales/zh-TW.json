@@ -1749,7 +1749,8 @@
             "titleToAlongside": "要將附屬檔案移回模型檔案旁邊嗎？",
             "confirmButton": "立即遷移",
             "titleRelocateRoot": "要將附屬檔案移到新的儲存目錄嗎？",
-            "destination": "目標位置：{path}"
+            "destination": "目標位置：{path}",
+            "defaultLocationHint": "將使用預設儲存位置。如需使用自訂資料夾，請取消，在上方設定儲存路徑，然後點擊「立即遷移附屬檔案」。"
         },
         "sidecarMigrationResult": {
             "title": "附屬檔案遷移摘要",

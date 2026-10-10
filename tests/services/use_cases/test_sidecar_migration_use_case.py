@@ -619,3 +619,112 @@ async def test_migrate_covers_excluded_models(
     # The excluded model is not in the cache, so cache reconciliation is a
     # no-op for it and only the cached entry gets persisted.
     assert use_case._test_scanner.persist_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_migrate_reports_destination_path_too_long(
+    library_root: Path, sidecar_root: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Windows WinError 206 becomes an actionable per-model error (#1142)."""
+
+    _set_mode("centralized")
+    model = _write_model(library_root, "model")
+    sidecar = _write_sidecar(library_root, "model", model, preview_ext=None)
+
+    use_case = _make_use_case([str(model)])
+
+    def failing_move(src: str, dst: str) -> None:
+        exc = OSError("The filename or extension is too long")
+        exc.winerror = 206  # ERROR_FILENAME_EXCED_RANGE
+        raise exc
+
+    monkeypatch.setattr(use_case, "_move_file", failing_move)
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is False
+    assert summary["error_count"] == 1
+    assert summary["moved"] == 0
+    message = summary["errors"][0]["error"]
+    assert "too long" in message
+    assert "shallower sidecar storage directory" in message
+    # Failed move leaves the source untouched: no partial migration.
+    assert sidecar.exists()
+
+
+@pytest.mark.asyncio
+async def test_migrate_reports_enametoolong(
+    library_root: Path, sidecar_root: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """ENAMETOOLONG gets the same actionable message as WinError 206."""
+
+    import errno as errno_module
+
+    _set_mode("centralized")
+    model = _write_model(library_root, "model")
+    _write_sidecar(library_root, "model", model, preview_ext=None)
+
+    use_case = _make_use_case([str(model)])
+
+    def failing_move(src: str, dst: str) -> None:
+        raise OSError(errno_module.ENAMETOOLONG, "File name too long")
+
+    monkeypatch.setattr(use_case, "_move_file", failing_move)
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is False
+    assert "too long" in summary["errors"][0]["error"]
+
+
+@pytest.mark.asyncio
+async def test_migrate_keeps_unrelated_oserror_message(
+    library_root: Path, sidecar_root: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Non-path-length OSErrors propagate with their original message."""
+
+    import errno as errno_module
+
+    _set_mode("centralized")
+    model = _write_model(library_root, "model")
+    _write_sidecar(library_root, "model", model, preview_ext=None)
+
+    use_case = _make_use_case([str(model)])
+
+    def failing_move(src: str, dst: str) -> None:
+        raise OSError(errno_module.EACCES, "Permission denied")
+
+    monkeypatch.setattr(use_case, "_move_file", failing_move)
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is False
+    message = summary["errors"][0]["error"]
+    assert "Permission denied" in message
+    assert "too long" not in message
+
+
+@pytest.mark.asyncio
+async def test_migrate_root_reports_destination_path_too_long(
+    library_root: Path, sidecar_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Root relocation surfaces path-length failures per file (#1142)."""
+
+    _set_mode("centralized")
+    old_root = tmp_path / "old_sidecars"
+    old_mirror = old_root / "component" / "sub"
+    old_mirror.mkdir(parents=True)
+    (old_mirror / "model.metadata.json").write_text("{}", encoding="utf-8")
+
+    use_case = _make_use_case([])
+
+    def failing_move(src: str, dst: str) -> None:
+        exc = OSError("The filename or extension is too long")
+        exc.winerror = 206
+        raise exc
+
+    monkeypatch.setattr(use_case, "_move_file", failing_move)
+    summary = await use_case.migrate_root(str(old_root), force=True)
+
+    assert summary["success"] is False
+    assert summary["moved"] == 0
+    assert any("too long" in entry["error"] for entry in summary["errors"])
+    # Source file stays in the old tree.
+    assert (old_mirror / "model.metadata.json").exists()

@@ -1749,7 +1749,8 @@
             "titleToAlongside": "사이드카 파일을 모델 파일 옆으로 되돌릴까요?",
             "confirmButton": "지금 이동",
             "titleRelocateRoot": "사이드카 파일을 새 저장 디렉터리로 이동할까요?",
-            "destination": "대상 위치: {path}"
+            "destination": "대상 위치: {path}",
+            "defaultLocationHint": "기본 저장 위치가 사용됩니다. 사용자 지정 폴더를 사용하려면 취소하고 위에서 저장 경로를 설정한 다음 '지금 사이드카 파일 이동'을 클릭하세요."
         },
         "sidecarMigrationResult": {
             "title": "사이드카 파일 이동 요약",

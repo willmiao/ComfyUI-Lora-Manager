@@ -1749,7 +1749,8 @@
             "titleToAlongside": "サイドカーファイルをモデルファイルの隣に戻しますか？",
             "confirmButton": "今すぐ移動",
             "titleRelocateRoot": "サイドカーファイルを新しい保存ディレクトリに移動しますか？",
-            "destination": "移動先：{path}"
+            "destination": "移動先：{path}",
+            "defaultLocationHint": "デフォルトの保存場所が使用されます。カスタムフォルダを使用するには、キャンセルして上の保存先パスを設定してから、「今すぐサイドカーファイルを移動」をクリックしてください。"
         },
         "sidecarMigrationResult": {
             "title": "サイドカーファイル移動の概要",

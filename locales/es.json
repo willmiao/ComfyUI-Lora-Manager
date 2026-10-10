@@ -1749,7 +1749,8 @@
             "titleToAlongside": "¿Devolver los archivos sidecar junto a los archivos de modelo?",
             "confirmButton": "Migrar ahora",
             "titleRelocateRoot": "¿Mover los archivos sidecar al nuevo directorio de almacenamiento?",
-            "destination": "Destino: {path}"
+            "destination": "Destino: {path}",
+            "defaultLocationHint": "Se usará la ubicación predeterminada. Para usar una carpeta personalizada, cancela, define la ruta de almacenamiento arriba y luego haz clic en «Migrar archivos sidecar ahora»."
         },
         "sidecarMigrationResult": {
             "title": "Resumen de la migración de archivos sidecar",

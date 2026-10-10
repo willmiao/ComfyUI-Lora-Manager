@@ -645,6 +645,23 @@ class SidecarMigrationUseCase:
                     exc_info=True,
                 )
 
+    @staticmethod
+    def _raise_path_error(exc: OSError, dst: str) -> None:
+        """Re-raise path-length OS errors with an actionable message.
+
+        Windows rejects paths over MAX_PATH (260 chars) with WinError 206
+        (ERROR_FILENAME_EXCED_RANGE); Linux reports ENAMETOOLONG. A bare
+        OSError gives no hint that the sidecar root is simply too deep.
+        """
+
+        if getattr(exc, "winerror", None) == 206 or exc.errno == errno.ENAMETOOLONG:
+            raise OSError(
+                f"Destination path is too long for the OS ({len(dst)} chars; "
+                f"Windows limit is 260): {dst}. Choose a shallower sidecar "
+                f"storage directory or shorten the file name."
+            ) from exc
+        raise exc
+
     def _transfer(self, src: str, dst: str, result: Dict[str, Any]) -> bool:
         """Move ``src`` to ``dst`` with keep-newer conflict resolution.
 
@@ -667,7 +684,10 @@ class SidecarMigrationUseCase:
                 )
                 os.remove(src)
                 return False
-        self._move_file(src, dst)
+        try:
+            self._move_file(src, dst)
+        except OSError as exc:
+            self._raise_path_error(exc, dst)
         result["moved"] += 1
         return True
 

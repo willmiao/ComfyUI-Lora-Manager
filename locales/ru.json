@@ -1749,7 +1749,8 @@
             "titleToAlongside": "Вернуть sidecar-файлы рядом с файлами моделей?",
             "confirmButton": "Перенести сейчас",
             "titleRelocateRoot": "Перенести sidecar-файлы в новый каталог хранилища?",
-            "destination": "Назначение: {path}"
+            "destination": "Назначение: {path}",
+            "defaultLocationHint": "Будет использовано расположение по умолчанию. Чтобы использовать свою папку, отмените, укажите путь хранилища выше, затем нажмите «Перенести sidecar-файлы сейчас»."
         },
         "sidecarMigrationResult": {
             "title": "Сводка переноса sidecar-файлов",
