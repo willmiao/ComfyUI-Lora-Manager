@@ -298,8 +298,8 @@
             "availabilityReady": "可直接使用",
             "availabilityMissing": "包含缺失 LoRA",
             "availabilityDeleted": "包含已删除 LoRA",
-            "workflow": "[TODO: Translate] Workflow",
-            "hasWorkflow": "[TODO: Translate] Has Workflow"
+            "workflow": "工作流",
+            "hasWorkflow": "包含工作流"
         },
         "theme": {
             "toggle": "切换主题",

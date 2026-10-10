@@ -298,8 +298,8 @@
             "availabilityReady": "Listos para usar",
             "availabilityMissing": "Con LoRAs faltantes",
             "availabilityDeleted": "Con LoRAs eliminados",
-            "workflow": "[TODO: Translate] Workflow",
-            "hasWorkflow": "[TODO: Translate] Has Workflow"
+            "workflow": "Workflow",
+            "hasWorkflow": "Con workflow"
         },
         "theme": {
             "toggle": "Cambiar tema",

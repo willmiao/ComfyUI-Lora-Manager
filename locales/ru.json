@@ -298,8 +298,8 @@
             "availabilityReady": "Готовы к использованию",
             "availabilityMissing": "Есть отсутствующие",
             "availabilityDeleted": "Есть удалённые",
-            "workflow": "[TODO: Translate] Workflow",
-            "hasWorkflow": "[TODO: Translate] Has Workflow"
+            "workflow": "Workflow",
+            "hasWorkflow": "С Workflow"
         },
         "theme": {
             "toggle": "Переключить тему",

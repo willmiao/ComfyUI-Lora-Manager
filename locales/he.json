@@ -298,8 +298,8 @@
             "availabilityReady": "מוכנים לשימוש",
             "availabilityMissing": "עם LoRAs חסרים",
             "availabilityDeleted": "עם LoRAs שנמחקו",
-            "workflow": "[TODO: Translate] Workflow",
-            "hasWorkflow": "[TODO: Translate] Has Workflow"
+            "workflow": "workflow",
+            "hasWorkflow": "עם workflow"
         },
         "theme": {
             "toggle": "החלף ערכת נושא",
