@@ -24,7 +24,10 @@
     position: sticky;
     bottom: 0;
     z-index: 1;
-    background: var(--lora-surface);
+    /* Solid surface: must fully mask the step content scrolling underneath;
+       the translucent --lora-surface would double-composite over the modal
+       surface and show a seam in light themes. */
+    background: var(--lora-surface-solid);
     border-top: 1px solid var(--lora-border);
     padding-top: var(--space-2);
     padding-bottom: var(--space-1);

@@ -37,7 +37,10 @@ body.modal-open {
     height: auto;
     max-height: calc(100vh - var(--header-height, 48px) - 5.5rem); /* Subtract header height and modal margins */
     margin: 1rem auto; /* Keep reduced top margin */
-    background: var(--lora-surface);
+    /* Opaque surface: the modal stacks above the backdrop, and sticky layers
+       inside (action footers, table headers) share this same solid token so
+       they cannot double-composite into a visible seam (light themes). */
+    background: var(--lora-surface-solid);
     border-radius: var(--border-radius-base);
     padding: var(--space-3);
     border: 1px solid var(--lora-border);
@@ -174,7 +177,7 @@ body.modal-open {
 
 /* Dark theme unified styles */
 [data-theme="dark"] .modal-content {
-    background: var(--lora-surface);
+    background: var(--lora-surface-solid);
     border: 1px solid var(--lora-border);
 }
 

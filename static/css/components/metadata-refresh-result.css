@@ -100,7 +100,9 @@
 .failure-table th {
     position: sticky;
     top: 0;
-    background: var(--lora-surface);
+    /* Solid surface: the sticky header must fully mask the rows scrolling
+       underneath; translucent --lora-surface would let them bleed through. */
+    background: var(--lora-surface-solid);
     border-bottom: 1px solid var(--lora-border);
     padding: var(--space-1) var(--space-2);
     text-align: left;
@@ -163,7 +165,7 @@
 }
 
 [data-theme="dark"] .failure-table th {
-    background: var(--lora-surface);
+    background: var(--lora-surface-solid);
 }
 
 [data-theme="dark"] .failure-table td {

@@ -82,6 +82,17 @@
   --favorite-glow: oklch(65% 0.15 85 / 0.5);
 }
 
+/* Opaque variants of the elevated surfaces. The elevated tokens are
+   translucent; a layer stacked on top of an elevated surface (sticky modal
+   footers, sticky table headers) must use the solid variant, otherwise the
+   translucent layer double-composites over the surface and shows as a
+   visible seam in light themes. Derived here so every theme/preset override
+   of the source tokens is picked up automatically. */
+:root {
+  --bg-elevated-solid: oklch(from var(--bg-elevated) l c h / 1);
+  --surface-elevated-solid: oklch(from var(--surface-elevated) l c h / 1);
+}
+
 :root[data-theme="dark"] {
   --bg-base: #1a1a1a;
   --bg-elevated: oklch(25% 0.02 256 / 0.98);

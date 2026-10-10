@@ -65,6 +65,7 @@ body {
 
     --lora-accent: var(--color-accent);
     --lora-surface: var(--bg-elevated);
+    --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);
     --lora-text: var(--text-primary);
     --lora-error: var(--color-error);
@@ -93,6 +94,7 @@ body {
 
     --lora-accent: var(--color-accent);
     --lora-surface: var(--bg-elevated);
+    --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);
     --lora-text: var(--text-primary);
     --lora-error: var(--color-error);
