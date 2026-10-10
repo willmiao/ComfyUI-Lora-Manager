@@ -3563,18 +3563,19 @@ export class SettingsManager {
     }
 
     // Entry point for the "Migrate Sidecars Now" button: the direction follows
-    // the currently saved storage mode.
+    // the currently saved storage mode. manual=true drops the "storage mode
+    // changed / do it later" phrasing: the user just clicked the button.
     async confirmAndMigrateSidecars() {
         const direction = state.global.settings.sidecar_storage_mode === 'centralized'
             ? 'to_centralized'
             : 'to_alongside';
-        const confirmed = await this.confirmSidecarMigration(direction);
+        const confirmed = await this.confirmSidecarMigration(direction, { manual: true });
         if (confirmed) {
             await this.migrateSidecars(direction);
         }
     }
 
-    confirmSidecarMigration(direction) {
+    confirmSidecarMigration(direction, { manual = false } = {}) {
         const modalElement = document.getElementById('sidecarMigrationConfirmModal');
         if (!modalElement) {
             return Promise.resolve(false);
@@ -3597,8 +3598,12 @@ export class SettingsManager {
             messageElement.textContent = isRelocate
                 ? translate('settings.sidecarStorage.confirmRelocateRoot', {}, 'The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?')
                 : isToCentralized
-                    ? translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.')
-                    : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.');
+                    ? (manual
+                        ? translate('settings.sidecarStorage.confirmToCentralizedManual', {}, 'Move existing .metadata.json sidecars and preview images into the centralized storage directory now?')
+                        : translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.'))
+                    : (manual
+                        ? translate('settings.sidecarStorage.confirmToAlongsideManual', {}, 'Move existing .metadata.json sidecars and preview images back next to their model files now?')
+                        : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.'));
         }
 
         // Name the destination so users know where the files are going.

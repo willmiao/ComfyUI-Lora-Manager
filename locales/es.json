@@ -839,6 +839,8 @@
             "migrationDeferred": "Los archivos sidecar existentes no se movieron. Puedes migrarlos más tarde desde Configuración → Biblioteca → Almacenamiento de archivos sidecar.",
             "confirmToCentralized": "El modo de almacenamiento ha cambiado, pero los archivos sidecar .metadata.json y las imágenes de vista previa existentes no se mueven automáticamente. ¿Moverlos ahora al directorio de almacenamiento centralizado? También puedes hacerlo más tarde con el botón «Migrar archivos sidecar ahora».",
             "confirmToAlongside": "El modo de almacenamiento ha cambiado, pero los archivos sidecar .metadata.json y las imágenes de vista previa existentes no se mueven automáticamente. ¿Devolverlos ahora junto a sus archivos de modelo? También puedes hacerlo más tarde con el botón «Migrar archivos sidecar ahora».",
+            "confirmToCentralizedManual": "¿Mover ahora los archivos sidecar .metadata.json y las imágenes de vista previa existentes al directorio de almacenamiento centralizado?",
+            "confirmToAlongsideManual": "¿Devolver ahora los archivos sidecar .metadata.json y las imágenes de vista previa existentes junto a sus archivos de modelo?",
             "confirmRelocateRoot": "El directorio de almacenamiento centralizado ha cambiado, pero los archivos sidecar y las imágenes de vista previa existentes siguen en el directorio anterior. ¿Moverlos ahora al nuevo directorio?",
             "effectivePathLabel": "Ubicación de almacenamiento efectiva:",
             "openFolderButton": "Abrir carpeta",

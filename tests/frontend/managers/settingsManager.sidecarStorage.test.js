@@ -359,6 +359,44 @@ describe('SettingsManager sidecar storage', () => {
                 body: JSON.stringify({ direction: 'to_centralized', force: true }),
             }));
         });
+
+        // The button opens this dialog directly, so the message must not
+        // describe a mode change or point back at the button itself.
+        it('uses the button-triggered wording without the mode-change backreference', async () => {
+            const manager = createManager();
+            appendSidecarControls();
+            const modal = appendMigrationModal();
+            state.global.settings = { sidecar_storage_mode: 'centralized' };
+            mockFetchOk();
+
+            const confirmPromise = manager.confirmAndMigrateSidecars();
+            await vi.waitFor(() => expect(modal.classList.contains('show')).toBe(true));
+
+            const message = modal.querySelector('[data-role="message"]').textContent;
+            expect(message).toBe('Move existing .metadata.json sidecars and preview images into the centralized storage directory now?');
+            expect(message).not.toContain('later');
+            expect(message).not.toContain('Migrate Sidecars Now');
+
+            modal.querySelector('[data-action="confirm-sidecar-migration"]').click();
+            await confirmPromise;
+        });
+
+        it('uses the button-triggered wording when migrating back alongside', async () => {
+            const manager = createManager();
+            appendSidecarControls();
+            const modal = appendMigrationModal();
+            state.global.settings = { sidecar_storage_mode: 'alongside' };
+            mockFetchOk();
+
+            const confirmPromise = manager.confirmAndMigrateSidecars();
+            await vi.waitFor(() => expect(modal.classList.contains('show')).toBe(true));
+
+            const message = modal.querySelector('[data-role="message"]').textContent;
+            expect(message).toBe('Move existing .metadata.json sidecars and preview images back next to their model files now?');
+
+            modal.querySelector('[data-action="confirm-sidecar-migration"]').click();
+            await confirmPromise;
+        });
     });
 
     describe('migrateSidecars', () => {

@@ -839,6 +839,8 @@
             "migrationDeferred": "Vorhandene Sidecar-Dateien wurden nicht verschoben. Sie können sie später unter Einstellungen → Bibliothek → Sidecar-Speicherung verschieben.",
             "confirmToCentralized": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt in das zentrale Speicherverzeichnis verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
             "confirmToAlongside": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt wieder neben ihre Modelldateien verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
+            "confirmToCentralizedManual": "Vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder jetzt in das zentrale Speicherverzeichnis verschieben?",
+            "confirmToAlongsideManual": "Vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder jetzt wieder neben ihre Modelldateien verschieben?",
             "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?",
             "effectivePathLabel": "Tatsächlicher Speicherort:",
             "openFolderButton": "Ordner öffnen",

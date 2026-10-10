@@ -839,6 +839,8 @@
       "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
       "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
       "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+      "confirmToCentralizedManual": "Move existing .metadata.json sidecars and preview images into the centralized storage directory now?",
+      "confirmToAlongsideManual": "Move existing .metadata.json sidecars and preview images back next to their model files now?",
       "confirmRelocateRoot": "The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?",
       "effectivePathLabel": "Effective storage location:",
       "openFolderButton": "Open Folder",

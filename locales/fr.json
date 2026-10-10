@@ -839,6 +839,8 @@
             "migrationDeferred": "Les fichiers sidecar existants n’ont pas été déplacés. Vous pouvez les migrer plus tard depuis Paramètres → Bibliothèque → Stockage des fichiers sidecar.",
             "confirmToCentralized": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les déplacer maintenant dans le dossier de stockage centralisé ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
             "confirmToAlongside": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les remettre maintenant à côté de leurs fichiers de modèle ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
+            "confirmToCentralizedManual": "Déplacer maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants dans le dossier de stockage centralisé ?",
+            "confirmToAlongsideManual": "Remettre maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants à côté de leurs fichiers de modèle ?",
             "confirmRelocateRoot": "Le dossier de stockage centralisé a changé, mais les fichiers sidecar et les images d’aperçu existants se trouvent encore dans le dossier précédent. Les déplacer maintenant dans le nouveau dossier ?",
             "effectivePathLabel": "Emplacement de stockage effectif :",
             "openFolderButton": "Ouvrir le dossier",
