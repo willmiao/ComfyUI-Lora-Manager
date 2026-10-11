@@ -15,6 +15,7 @@ from ..utils.example_images_paths import (
     ExampleImagePathResolver,
     ensure_library_root_exists,
     get_example_images_root,
+    get_library_root,
     is_hash_folder,
     uses_library_scoped_folders,
 )
@@ -948,11 +949,26 @@ class DownloadManager:
 
                 return True  # Return True to indicate a remote download happened
             else:
-                # No civitai data or images available, mark as failed to avoid future attempts
-                self._progress["failed_models"].add(model_hash)
-                logger.debug(
-                    f"No civitai images available for model {model_name}, marking as failed"
+                # No example images available. "Metadata not fetched yet"
+                # (no civitai payload at all) is retryable — a later run only
+                # re-reads local metadata, so no extra provider API calls.
+                # Confirmed absences (provider metadata present but
+                # image-less, or the model is known to be gone from CivitAI)
+                # stay on the failed list to avoid future attempts.
+                metadata_missing = not civitai_payload
+                known_absent = bool((full_model or {}).get("civitai_deleted")) or (
+                    (full_model or {}).get("from_civitai") is False
                 )
+                if metadata_missing and not known_absent:
+                    logger.debug(
+                        "No civitai metadata yet for model %s, leaving it pending for a later run",
+                        model_name,
+                    )
+                else:
+                    self._progress["failed_models"].add(model_hash)
+                    logger.debug(
+                        f"No civitai images available for model {model_name}, marking as failed"
+                    )
 
             # Save progress periodically
             if (
@@ -968,8 +984,8 @@ class DownloadManager:
             logger.error(error_msg, exc_info=True)
             self._progress["errors"].append(error_msg)
             self._progress["last_error"] = error_msg
-            # Ensure model is marked as failed so we don't try again in this run
-            self._progress["failed_models"].add(model_hash)
+            # Transient failures (network, disk, ...) must not blacklist the
+            # model: leave it pending so the next run retries it.
             return False
 
     def _save_progress(self, output_dir):
@@ -1544,6 +1560,98 @@ class DownloadManager:
 
 
 _default_download_manager: DownloadManager | None = None
+
+
+def _progress_file_candidates(library_name: str | None = None) -> List[str]:
+    """Return existing-progress-file locations for a library (plus the legacy root)."""
+
+    settings_manager = get_settings_manager()
+    if not settings_manager.get("example_images_path"):
+        return []
+
+    candidates: List[str] = []
+    library_root = get_library_root(
+        library_name or settings_manager.get_active_library_name()
+    )
+    if library_root:
+        candidates.append(os.path.join(library_root, ".download_progress.json"))
+
+    if uses_library_scoped_folders():
+        legacy_root = get_example_images_root()
+        if legacy_root:
+            legacy_file = os.path.join(legacy_root, ".download_progress.json")
+            if legacy_file not in candidates:
+                candidates.append(legacy_file)
+
+    return candidates
+
+
+def _remove_hashes_from_progress_file(progress_file: str, hashes: Set[str]) -> int:
+    """Remove *hashes* from the failed_models list of one progress file."""
+
+    if not os.path.exists(progress_file):
+        return 0
+
+    try:
+        with open(progress_file, "r", encoding="utf-8") as f:
+            raw = f.read()
+    except OSError:
+        return 0
+
+    # Cheap pre-filter: skip the JSON parse and rewrite when none of the
+    # hashes are even mentioned.
+    if not any(h in raw for h in hashes):
+        return 0
+
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return 0
+
+    failed = data.get("failed_models")
+    if not isinstance(failed, list) or not failed:
+        return 0
+
+    remaining = [h for h in failed if (h or "").lower() not in hashes]
+    removed = len(failed) - len(remaining)
+    if not removed:
+        return 0
+
+    data["failed_models"] = remaining
+    try:
+        with open(progress_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except OSError:
+        return 0
+
+    return removed
+
+
+def unblock_failed_example_image_models(
+    model_hashes: Iterable[str], library_name: str | None = None
+) -> int:
+    """Remove hashes from the failed-models list so the next run retries them.
+
+    Called when fresh provider metadata lands for a model (metadata fetch or
+    relink), which invalidates any earlier "no example images" verdict. Only
+    rewrites the local progress file — no provider API calls. Also updates the
+    live download manager's in-memory state when one exists.
+    """
+
+    normalized = {h.lower() for h in model_hashes if h}
+    if not normalized:
+        return 0
+
+    manager = _default_download_manager
+    if manager is not None:
+        failed = manager._progress.get("failed_models")
+        if isinstance(failed, set):
+            failed.difference_update(normalized)
+
+    removed = 0
+    for progress_file in _progress_file_candidates(library_name):
+        removed += _remove_hashes_from_progress_file(progress_file, normalized)
+    return removed
 
 
 def get_default_download_manager(ws_manager) -> DownloadManager:
