@@ -1,0 +1,41 @@
+/* Floating tooltip for [data-tooltip] triggers.
+   Rendered into <body> by static/js/utils/tooltip.js and positioned with
+   `position: fixed`, so scrollable ancestors (e.g. .settings-content) cannot
+   clip it. */
+.lm-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: var(--z-tooltip);
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1.4;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+    overflow-wrap: break-word;
+    box-shadow: var(--shadow-elevated);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+}
+
+.lm-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Dark theme adjustments for tooltip - Fully opaque */
+[data-theme="dark"] .lm-tooltip {
+    background: rgba(40, 40, 40, 0.95);
+    box-shadow: var(--shadow-dark-lg);
+}

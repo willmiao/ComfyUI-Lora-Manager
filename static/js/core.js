@@ -13,6 +13,7 @@ import { helpManager } from './managers/HelpManager.js';
 import { doctorManager } from './managers/DoctorManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
+import { initTooltips } from './utils/tooltip.js';
 import { applyModalBackdropBlurPolicy } from './utils/renderingCapability.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { i18n } from './i18n/index.js';
@@ -75,6 +76,7 @@ export class AppCore {
         window.headerManager = new HeaderManager();
         initTheme();
         initBackToTop();
+        initTooltips();
         
         // Initialize the bulk manager and context menu
         bulkManager.initialize();

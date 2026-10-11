@@ -20,6 +20,7 @@
 @import 'components/modal/download-modal.css';
 @import 'components/modal/directory-picker-modal.css';
 @import 'components/toast.css';
+@import 'components/tooltip.css';
 @import 'components/loading.css';
 @import 'components/menu.css';
 @import 'components/lora-modal/lora-modal.css';
