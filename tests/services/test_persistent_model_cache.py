@@ -451,3 +451,100 @@ def test_get_models_missing_autov3_self_terminates_after_marking(tmp_path: Path,
     store.update_single_model('dummy', new_item, old_item=old_item)
 
     assert store.get_models_missing_autov3('dummy') == []
+
+
+# --- which roots still hold cached entries (issue #1146) --------------------
+
+
+def _cache_with_paths(tmp_path: Path, monkeypatch, entries) -> PersistentModelCache:
+    """Build a cache holding ``entries`` (``(model_type, file_path)`` pairs)."""
+
+    import sqlite3
+
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'roots.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.executemany(
+            "INSERT INTO models (model_type, file_path) VALUES (?, ?)", entries
+        )
+        conn.commit()
+    return store
+
+
+def test_roots_with_cached_entries_matches_the_hosts_slash_style(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The configured root may be spelled with backslashes (Windows)."""
+
+    store = _cache_with_paths(
+        tmp_path,
+        monkeypatch,
+        [("lora", "E:/StableDiffusion/cc_models/loras/pack/a.safetensors")],
+    )
+
+    matched = store.roots_with_cached_entries(
+        "lora", ["E:\\StableDiffusion\\cc_models\\loras", "E:\\empty\\loras"]
+    )
+
+    assert matched == {"E:\\StableDiffusion\\cc_models\\loras"}
+
+
+def test_roots_with_cached_entries_compares_whole_path_segments(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """``loras-extra`` and ``loras2`` are not inside ``loras``."""
+
+    store = _cache_with_paths(
+        tmp_path,
+        monkeypatch,
+        [
+            ("lora", "E:/loras-extra/a.safetensors"),
+            ("lora", "E:/loras2/b.safetensors"),
+            ("checkpoint", "E:/loras/c.safetensors"),
+        ],
+    )
+
+    assert store.roots_with_cached_entries("lora", ["E:/loras"]) == set()
+    assert store.roots_with_cached_entries("checkpoint", ["E:/loras"]) == {"E:/loras"}
+
+
+def test_roots_with_cached_entries_escapes_like_wildcards(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A directory name may contain ``_``/``%`` without becoming a wildcard."""
+
+    store = _cache_with_paths(
+        tmp_path,
+        monkeypatch,
+        [("lora", "E:/myXloras/a.safetensors"), ("lora", "E:/100%/a.safetensors")],
+    )
+
+    assert store.roots_with_cached_entries("lora", ["E:/my_loras"]) == set()
+    assert store.roots_with_cached_entries("lora", ["E:/100x"]) == set()
+    assert store.roots_with_cached_entries("lora", ["E:/100%"]) == {"E:/100%"}
+
+
+def test_roots_with_cached_entries_raises_when_unknown(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """No cache, no answer: the caller must not drop roots on a guess."""
+
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '1')
+    disabled = PersistentModelCache(db_path=str(tmp_path / 'disabled.sqlite'))
+    with pytest.raises(RuntimeError):
+        disabled.roots_with_cached_entries("lora", ["E:/loras"])
+
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    missing = PersistentModelCache(db_path=str(tmp_path / 'missing.sqlite'))
+    (tmp_path / 'missing.sqlite').unlink()
+    with pytest.raises(FileNotFoundError):
+        missing.roots_with_cached_entries("lora", ["E:/loras"])
+
+
+def test_roots_with_cached_entries_without_candidates(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    store = PersistentModelCache(db_path=str(tmp_path / 'empty.sqlite'))
+
+    assert store.roots_with_cached_entries("lora", []) == set()
+    assert store.roots_with_cached_entries("lora", ["", "   "]) == set()

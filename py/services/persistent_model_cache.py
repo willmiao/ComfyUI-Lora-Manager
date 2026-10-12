@@ -4,14 +4,31 @@ import os
 import sqlite3
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from ..utils.cache_db import connect_cache_db
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 from ..utils.file_lock import exclusive_lock
+from ..utils.root_paths import normalize_root_identity
 from .model_sources import normalize_metadata_source
 
 logger = logging.getLogger(__name__)
+
+
+def _like_prefix_pattern(identity: str) -> str:
+    """SQLite LIKE pattern matching every path inside *identity*.
+
+    ``%``/``_`` are legal characters in a path and ``\\`` is the escape character,
+    so all three are escaped. The separator is added only when the identity does not
+    already end in one, so a filesystem root (``/``) still matches everything below
+    it instead of only itself.
+    """
+
+    escaped = (
+        identity.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    )
+    prefix = escaped if escaped.endswith("/") else f"{escaped}/"
+    return f"{prefix}%"
 
 
 @dataclass
@@ -253,6 +270,61 @@ class PersistentModelCache:
             autov3_hash_rows=autov3_pairs,
             all_folders=all_folders,
         )
+
+    def roots_with_cached_entries(
+        self, model_type: str, roots: Sequence[str]
+    ) -> Set[str]:
+        """Return the subset of *roots* that hold at least one cached entry.
+
+        Used by the settings sync to tell a root that was registered but never
+        scanned -- ComfyUI registers ``<output>/loras`` for its save nodes whether
+        or not that directory exists -- from a real root whose drive happens to be
+        switched off: only the latter must keep its place in the saved library
+        paths (issue #1146). Paths are matched on their forward-slash identity, so
+        the host's own slash style does not matter.
+
+        Raises when the answer is unknown (a disabled cache, a missing database, an
+        unreadable file): the caller keeps every root in that case.
+        """
+
+        if not self.is_enabled():
+            raise RuntimeError("persistent model cache is disabled")
+
+        candidates: Dict[str, str] = {}
+        for root in roots:
+            identity = normalize_root_identity(root)
+            if identity:
+                candidates.setdefault(identity, root)
+        if not candidates:
+            return set()
+
+        matched: Set[str] = set()
+        # One scan per model type rather than one per root: the probe runs at
+        # startup for every configured root that is missing right now, which on
+        # Windows includes all of ComfyUI's `<output>/<type>` folders.
+        clause = "replace(file_path, '\\', '/') LIKE ? ESCAPE '\\'"
+        sql = (
+            "SELECT DISTINCT replace(file_path, '\\', '/') FROM models "
+            f"WHERE model_type = ? AND ({' OR '.join([clause] * len(candidates))})"
+        )
+        params: List[Any] = [model_type]
+        params.extend(_like_prefix_pattern(identity) for identity in candidates)
+
+        with self._db_lock:
+            conn = self._connect(readonly=True)
+            try:
+                rows = conn.execute(sql, params).fetchall()
+            finally:
+                conn.close()
+
+        for (cached_path,) in rows:
+            folded = normalize_root_identity(cached_path)
+            for identity, root in candidates.items():
+                prefix = identity if identity.endswith("/") else f"{identity}/"
+                if folded.startswith(prefix):
+                    matched.add(root)
+                    break
+        return matched
 
     def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None, all_folders: Optional[Sequence[str]] = None) -> None:
         if not self.is_enabled():

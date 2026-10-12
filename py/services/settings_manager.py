@@ -2,7 +2,6 @@ import asyncio
 import copy
 import json
 import os
-import posixpath
 import shutil
 import tempfile
 import logging
@@ -36,6 +35,7 @@ from ..utils.constants import (
     normalize_other_sub_types,
 )
 from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
+from ..utils.root_paths import normalize_root_identity
 from ..utils.settings_paths import (
     APP_NAME,
     _portable_env_override,
@@ -154,15 +154,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "llm_api_base": "",  # empty = provider default
     "llm_model": "",  # e.g. "gpt-4o-mini"
 }
-
-
-def _normalize_root_identity(path: str) -> str:
-    """Normalize a root path for equality checks across slash styles."""
-
-    normalized = posixpath.normpath(path.strip().replace("\\", "/"))
-    if len(normalized) >= 2 and normalized[1] == ":":
-        return normalized.lower()
-    return normalized
 
 
 class SettingsManager:
@@ -1058,7 +1049,7 @@ class SettingsManager:
                 return False
 
             allowed_roots = self._get_allowed_roots(key)
-            if current and _normalize_root_identity(current) in allowed_roots:
+            if current and normalize_root_identity(current) in allowed_roots:
                 return False
 
             self.settings[setting_key] = primary_candidates[0]
@@ -1094,7 +1085,7 @@ class SettingsManager:
                 candidate_identities: set[str] = set()
                 for folder_key in OTHER_SUB_TYPE_FOLDER_KEYS.get(sub_type, []):
                     for candidate in self._get_valid_root_candidates(folder_key):
-                        identity = _normalize_root_identity(candidate)
+                        identity = normalize_root_identity(candidate)
                         if identity in candidate_identities:
                             continue
                         candidate_identities.add(identity)
@@ -1102,7 +1093,7 @@ class SettingsManager:
                 if not candidates:
                     continue
                 current = other_roots.get(sub_type, "")
-                if current and _normalize_root_identity(current) in candidate_identities:
+                if current and normalize_root_identity(current) in candidate_identities:
                     continue
                 other_roots[sub_type] = candidates[0]
                 if current:
@@ -1152,7 +1143,7 @@ class SettingsManager:
                 normalized = value.strip()
                 if not normalized:
                     continue
-                identity = _normalize_root_identity(normalized)
+                identity = normalize_root_identity(normalized)
                 if identity in seen:
                     continue
                 seen.add(identity)
@@ -1162,7 +1153,7 @@ class SettingsManager:
     def _get_allowed_roots(self, key: str) -> set[str]:
         """Return all valid roots for a model type, including extra roots."""
 
-        return {_normalize_root_identity(path) for path in self._get_valid_root_candidates(key)}
+        return {normalize_root_identity(path) for path in self._get_valid_root_candidates(key)}
 
     def _check_environment_variables(self) -> None:
         """Check for environment variables and update settings if needed"""

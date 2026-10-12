@@ -55,6 +55,7 @@ from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
 from ...utils.paid_access import is_early_access_deadline_active
+from ...utils.root_paths import normalize_root_identity
 from ...utils.sidecar_paths import get_metadata_path
 from ...utils.url_utils import relative_root_prefix
 
@@ -1170,7 +1171,18 @@ class ModelQueryHandler:
 
             if requested_roots:
                 configured = self._service.get_model_roots()
-                unknown = [root for root in requested_roots if root not in configured]
+                # Compare by identity, not by string: callers may pass the host's
+                # own spelling of a root (backslashes or a differently cased drive
+                # letter on Windows, as settings.json and ComfyUI show it), which
+                # names the same directory the live list holds forward-slashed.
+                known_roots = {
+                    normalize_root_identity(root) for root in configured
+                }
+                unknown = [
+                    root
+                    for root in requested_roots
+                    if normalize_root_identity(root) not in known_roots
+                ]
                 if unknown:
                     return web.json_response(
                         {"error": "Unknown model root(s)", "roots": unknown}, status=400

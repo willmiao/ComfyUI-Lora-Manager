@@ -4,7 +4,6 @@
 # import cycles. Breaking them would require an architectural refactor.
 import os
 import platform
-import posixpath
 import threading
 from pathlib import Path
 import folder_paths  # pyright: ignore[reportMissingImports]
@@ -20,6 +19,7 @@ from .utils.cache_paths import CacheType, get_cache_file_path, get_legacy_cache_
 from .utils.constants import (
     OTHER_MODEL_FOLDER_SUBTYPES,
 )
+from .utils.root_paths import normalize_root_identity
 from .utils.settings_paths import (
     ensure_settings_file,
     get_settings_dir,
@@ -34,14 +34,15 @@ standalone_mode = (
 
 logger = logging.getLogger(__name__)
 
-
-def _normalize_root_identity(path: str) -> str:
-    """Normalize a root path for comparisons across slash styles."""
-
-    normalized = posixpath.normpath(path.strip().replace("\\", "/"))
-    if len(normalized) >= 2 and normalized[1] == ":":
-        return normalized.lower()
-    return normalized
+# Saved folder-path keys mapped to the model type whose cache can tell whether a
+# root that is missing right now is still worth keeping (issue #1146). The
+# checkpoint page holds both checkpoints and unet roots.
+_CACHE_MODEL_TYPE_BY_FOLDER_KEY = {
+    "loras": "lora",
+    "checkpoints": "checkpoint",
+    "unet": "checkpoint",
+    "embeddings": "embedding",
+}
 
 
 def _append_new_paths(current: List[str], candidates: Iterable[str]) -> List[str]:
@@ -52,11 +53,11 @@ def _append_new_paths(current: List[str], candidates: Iterable[str]) -> List[str
     to the root *order* would move user data.
     """
     merged = list(current)
-    seen = {_normalize_root_identity(path) for path in merged}
+    seen = {normalize_root_identity(path) for path in merged}
     for path in candidates:
         if not isinstance(path, str) or not path.strip():
             continue
-        identity = _normalize_root_identity(path)
+        identity = normalize_root_identity(path)
         if identity in seen:
             continue
         seen.add(identity)
@@ -78,15 +79,15 @@ def _resolve_valid_default_root(
         stripped = path.strip()
         if not stripped:
             continue
-        identity = _normalize_root_identity(stripped)
+        identity = normalize_root_identity(stripped)
         if identity in seen:
             continue
         seen.add(identity)
         fallback_paths.append(stripped)
 
-    allowed = {_normalize_root_identity(path) for path in fallback_paths}
+    allowed = {normalize_root_identity(path) for path in fallback_paths}
 
-    if current and _normalize_root_identity(current) in allowed:
+    if current and normalize_root_identity(current) in allowed:
         return current
 
     if not valid_paths:
@@ -320,6 +321,77 @@ class Config:
                 "Could not load extra paths from library settings: %s", exc
             )
 
+    def _drop_missing_roots_without_cache(
+        self,
+        folder_paths_map: Dict[str, List[str]],
+        default_roots: Mapping[str, str],
+    ) -> Dict[str, List[str]]:
+        """Drop saved roots that neither exist nor hold cached entries (issue #1146).
+
+        The startup sync persists what is *configured* rather than what is readable,
+        so a switched-off drive keeps its path (see ``save_folder_paths_to_settings``).
+        A directory the host registered without ever creating it -- ComfyUI adds
+        ``<output>/loras`` and friends for its save nodes whether or not they exist --
+        came along for the ride and stayed there as a permanently "unavailable" root.
+
+        A root that still holds cached entries is exactly the switched-off drive the
+        persistence exists for, so it is kept. A root named by the library's
+        ``default_*_root`` is kept even when it is empty: dropping it would let the
+        next boot repair the default onto another root.
+
+        Best effort: when the cache cannot be consulted, every root is kept.
+        """
+
+        try:
+            from .services.persistent_model_cache import get_persistent_cache
+
+            cache = get_persistent_cache()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Keeping every configured model root: %s", exc)
+            return folder_paths_map
+
+        protected = {
+            identity
+            for identity in (
+                normalize_root_identity(path) for path in default_roots.values()
+            )
+            if identity
+        }
+
+        filtered: Dict[str, List[str]] = {}
+        for key, paths in folder_paths_map.items():
+            missing = [path for path in paths if not os.path.exists(path)]
+            if not missing:
+                filtered[key] = list(paths)
+                continue
+
+            probe = [
+                path
+                for path in missing
+                if normalize_root_identity(path) not in protected
+            ]
+            try:
+                cached = cache.roots_with_cached_entries(
+                    _CACHE_MODEL_TYPE_BY_FOLDER_KEY.get(key, "other"), probe
+                )
+            except Exception as exc:
+                logger.debug(
+                    "Keeping every configured %s root (%s): %s", key, missing, exc
+                )
+                filtered[key] = list(paths)
+                continue
+
+            cached_ids = {normalize_root_identity(path) for path in cached}
+            filtered[key] = [
+                path
+                for path in paths
+                if os.path.exists(path)
+                or normalize_root_identity(path) in protected
+                or normalize_root_identity(path) in cached_ids
+            ]
+
+        return filtered
+
     def save_folder_paths_to_settings(self):
         """Persist ComfyUI-derived folder paths to the multi-library settings."""
         try:
@@ -533,9 +605,26 @@ class Config:
                 or self._should_activate_comfy_library(libraries, libraries_changed)
             )
 
+            # A root that the host registered but never created (and that holds no
+            # cached models) is not a library path: persisting it would bring it
+            # back as an unavailable root on every boot, and in standalone mode the
+            # saved paths are the only source of truth (issue #1146).
+            default_roots = {
+                "loras": default_lora_root
+                or comfy_library.get("default_lora_root", ""),
+                "checkpoints": default_checkpoint_root
+                or comfy_library.get("default_checkpoint_root", ""),
+                "unet": comfy_library.get("default_unet_root", ""),
+                "embeddings": default_embedding_root
+                or comfy_library.get("default_embedding_root", ""),
+            }
+            persisted_folder_paths = self._drop_missing_roots_without_cache(
+                target_folder_paths, default_roots
+            )
+
             settings_service.upsert_library(
                 "comfyui",
-                folder_paths=target_folder_paths,
+                folder_paths=persisted_folder_paths,
                 extra_folder_paths=extra_folder_paths,
                 default_lora_root=default_lora_root,
                 default_checkpoint_root=default_checkpoint_root,

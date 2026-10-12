@@ -968,3 +968,197 @@ def test_save_paths_keeps_configured_root_of_a_switched_off_drive(
     assert config_instance.loras_roots == [readable.replace("\\", "/")]
     # The user's default root survives because it is merely unavailable.
     assert fake_settings.payload["default_lora_root"] == switched_off.replace("\\", "/")
+
+
+# --- roots the host registered but never created (issue #1146) --------------
+
+
+class _FakePersistentCache:
+    """Stand-in for PersistentModelCache in the startup sync."""
+
+    def __init__(self, cached_roots=None, error: Exception | None = None):
+        self._cached_roots = cached_roots or {}
+        self._error = error
+        self.queries: List[tuple] = []
+
+    def roots_with_cached_entries(self, model_type: str, roots):
+        self.queries.append((model_type, list(roots)))
+        if self._error is not None:
+            raise self._error
+        known = {path.replace("\\", "/") for path in self._cached_roots.get(model_type, [])}
+        return {
+            root for root in roots if root.replace("\\", "/") in known
+        }
+
+
+def _stub_persistent_cache(monkeypatch: pytest.MonkeyPatch, cache) -> None:
+    from py.services import persistent_model_cache as persistent_model_cache_module
+
+    monkeypatch.setattr(
+        persistent_model_cache_module, "get_persistent_cache", lambda: cache
+    )
+
+
+class _LibrarySettingsService:
+    """Minimal settings service recording what the startup sync persists."""
+
+    active_library = "comfyui"
+
+    def __init__(self, library: Dict[str, Any]):
+        self._library = library
+        self.payload: Dict[str, Any] = {}
+
+    def get_libraries(self):
+        return {"comfyui": self._library}
+
+    def rename_library(self, *_):  # pragma: no cover - defensive guard
+        raise AssertionError("rename_library should not be invoked")
+
+    def delete_library(self, *_):  # pragma: no cover - defensive guard
+        raise AssertionError("delete_library should not be invoked")
+
+    def get_active_library_name(self):
+        return self.active_library
+
+    def upsert_library(self, name: str, **payload):
+        self.payload = payload
+
+
+def test_save_paths_drops_registered_directories_that_never_existed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """ComfyUI registers `<output>/<type>` for its save nodes unconditionally.
+
+    Those directories are not library paths when they do not exist and hold no
+    cached models: persisting them brings them back as "unavailable" roots on
+    every boot.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    unet_dir = tmp_path / "unet"
+    unet_dir.mkdir()
+    folder_paths["unet"] = [str(unet_dir)]
+    output_loras = str(tmp_path / "output" / "loras")
+    output_checkpoints = str(tmp_path / "output" / "checkpoints")
+    output_unet = str(tmp_path / "output" / "diffusion_models")
+    output_embeddings = str(tmp_path / "output" / "embeddings")
+    folder_paths["loras"].append(output_loras)
+    folder_paths["checkpoints"].append(output_checkpoints)
+    folder_paths["unet"].append(output_unet)
+    folder_paths["embeddings"].append(output_embeddings)
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+            "default_lora_root": folder_paths["loras"][0],
+            "default_checkpoint_root": folder_paths["checkpoints"][0],
+            "default_embedding_root": folder_paths["embeddings"][0],
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    cache = _FakePersistentCache()
+    _stub_persistent_cache(monkeypatch, cache)
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]
+    for key, never_created in (
+        ("loras", output_loras),
+        ("checkpoints", output_checkpoints),
+        ("unet", output_unet),
+        ("embeddings", output_embeddings),
+    ):
+        assert never_created.replace("\\", "/") not in persisted[key], key
+        # The real root of that key is untouched.
+        assert folder_paths[key][0].replace("\\", "/") in persisted[key], key
+    # Lora and checkpoint roots are looked up in their own model type.
+    assert [model_type for model_type, _roots in cache.queries] == [
+        "lora",
+        "checkpoint",
+        "checkpoint",
+        "embedding",
+    ]
+
+
+def test_save_paths_keeps_an_unavailable_root_that_has_cached_models(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """A switched-off drive keeps its path: its models are still cached."""
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    switched_off = str(tmp_path / "drive-Z" / "loras")
+    folder_paths["loras"] = [readable, switched_off]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"loras": [readable]},
+            "default_lora_root": readable,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(
+        monkeypatch, _FakePersistentCache({"lora": [switched_off]})
+    )
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    assert switched_off.replace("\\", "/") in persisted
+    assert readable.replace("\\", "/") in persisted
+
+
+def test_save_paths_keeps_every_root_when_the_cache_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """No answer from the cache means no root is dropped."""
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    unknown = str(tmp_path / "drive-Z" / "loras")
+    folder_paths["loras"] = [readable, unknown]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"loras": [readable]},
+            "default_lora_root": readable,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(
+        monkeypatch, _FakePersistentCache(error=FileNotFoundError("no cache"))
+    )
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    assert unknown.replace("\\", "/") in persisted
+
+
+def test_save_paths_keeps_the_root_a_default_setting_points_at(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """An empty unavailable default root must not be dropped.
+
+    Dropping it would let the next boot "repair" the default onto another root and
+    silently retarget downloads. ``default_unet_root`` is only known from the
+    stored library (the sync resolves the lora/checkpoint/embedding ones itself),
+    so this covers the fallback to the stored value.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    unet_dir = tmp_path / "unet"
+    unet_dir.mkdir()
+    default_target = str(tmp_path / "drive-Z" / "unet")
+    folder_paths["unet"] = [str(unet_dir), default_target]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"unet": [str(unet_dir)]},
+            "default_unet_root": default_target,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(monkeypatch, _FakePersistentCache())
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["unet"]
+    assert default_target.replace("\\", "/") in persisted
+    assert str(unet_dir).replace("\\", "/") in persisted

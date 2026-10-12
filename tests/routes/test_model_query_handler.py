@@ -317,6 +317,32 @@ async def test_scan_models_rejects_unknown_root():
 
 
 @pytest.mark.asyncio
+async def test_scan_models_accepts_a_root_in_the_hosts_own_spelling():
+    """Windows callers may pass a root the way ComfyUI spells it (issue #1146).
+
+    ``settings.json`` and the ComfyUI logs show ``E:\\loras`` while the live list
+    holds ``E:/loras``; both name the same directory, so a scoped scan must select
+    it instead of answering 400 "Unknown model root(s)".
+    """
+    service = ScopedScanService(
+        roots=["E:/StableDiffusion/cc_models/loras"], summary=SUMMARY
+    )
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    for requested in (
+        "E:\\StableDiffusion\\cc_models\\loras",
+        "e:/StableDiffusion/cc_models/loras",
+    ):
+        service.received_scope = "not-called"
+        response = await handler.scan_models(
+            SimpleNamespace(query=QueryParams({"roots": [requested]}))
+        )
+
+        assert response.status == 200, requested
+        assert service.received_scope.roots == (requested,)
+
+
+@pytest.mark.asyncio
 async def test_scan_models_rejects_roots_with_full_rebuild():
     service = ScopedScanService(roots=["/mnt/a"], summary=SUMMARY)
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))

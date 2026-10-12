@@ -2949,3 +2949,133 @@ def test_reconcile_walk_skips_the_recipes_dir(tmp_path: Path, monkeypatch):
     assert "keep" in result.discovered_folders
     assert "recipes" not in result.discovered_folders
     assert "recipes/sub" not in result.discovered_folders
+
+
+# --- the host's path spelling (issue #1146) ---------------------------------
+
+
+def _windows_spelling(path: Path) -> str:
+    """Return a path the way ComfyUI hands it over on Windows.
+
+    ``utils/extra_config.py`` normalizes every configured model folder with
+    ``os.path.normpath``, so on Windows the configured list is all backslashes
+    while the live root list is forward-slashed.
+    """
+    return str(path).replace("/", "\\")
+
+
+async def _windows_spelling_scanner(tmp_path: Path, monkeypatch):
+    """Scanner configured with backslash roots plus a never-created output dir.
+
+    ``<output>/loras`` is what ComfyUI registers for its save nodes whether or not
+    the directory exists (``main.py`` calls ``add_model_folder_path`` with it
+    unconditionally).
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    never_created = tmp_path / "output" / "loras"
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [_windows_spelling(primary), _windows_spelling(never_created)],
+    )
+    return scanner, primary, never_created
+
+
+@pytest.mark.asyncio
+async def test_describe_roots_folds_the_host_path_spelling(tmp_path: Path, monkeypatch):
+    """One directory is one root, whatever separator the host used."""
+    scanner, primary, _never_created = await _windows_spelling_scanner(
+        tmp_path, monkeypatch
+    )
+
+    described = scanner.describe_model_roots()
+
+    assert [entry["path"] for entry in described] == [_normalize_path(primary)]
+    assert described[0]["available"] is True
+    assert described[0]["reachable"] is True
+    assert described[0]["models"] == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_does_not_shadow_a_backslash_configured_root(
+    tmp_path: Path, monkeypatch
+):
+    """A configured twin must not register its live root as unreachable.
+
+    ``_UnreachablePaths`` normalizes the prefixes it is given, so the backslash
+    spelling of a root the walk just read normalized to the same prefix: every
+    cached entry under it counted as "kept", which is what made the refresh toast
+    claim thousands of reachable models were inaccessible -- and what stopped
+    deleted models from ever being pruned.
+    """
+    scanner, primary, _never_created = await _windows_spelling_scanner(
+        tmp_path, monkeypatch
+    )
+    (primary / "pack" / "a.txt").unlink()
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["skipped_roots"] == []
+    assert summary["unavailable_paths"] == []
+    assert summary["kept_unreachable"] == 0
+    assert summary["removed"] == 1
+    assert scanner._cache.raw_data == []
+
+
+@pytest.mark.asyncio
+async def test_root_that_never_existed_is_not_reported(tmp_path: Path, monkeypatch):
+    """A registered directory that neither exists nor holds cache is not a root.
+
+    Only roots the user really configured and whose models are cached are worth an
+    offline row or a "models kept" notice.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    never_created = tmp_path / "output" / "loras"
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [str(primary), str(never_created)],
+    )
+
+    assert [entry["path"] for entry in scanner.describe_model_roots()] == [
+        _normalize_path(primary)
+    ]
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["skipped_roots"] == []
+    assert summary["kept_unreachable"] == 0
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_accepts_the_host_path_spelling(tmp_path: Path, monkeypatch):
+    """A caller may name a root the way the host spells it (issue #1146).
+
+    The Refresh menu sends back the path `/roots` rendered, but the browser
+    extension and scripts can pass what settings.json holds -- backslashes on
+    Windows -- and that must select the root rather than scan nothing.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+
+    scope = ReconcileScope(roots=(_windows_spelling(primary),))
+    summary = await scanner._reconcile_cache(scope=scope)
+
+    assert summary is not None
+    assert summary["scanned_roots"] == [primary.name]
