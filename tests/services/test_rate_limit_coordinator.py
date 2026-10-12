@@ -84,12 +84,15 @@ async def test_register_rate_limit_arms_cooldown_and_waits(monkeypatch):
     )
     coordinator.register_rate_limit("example.com", retry_after=0.15)
     assert coordinator.in_cooldown("example.com")
-    assert 0.1 < coordinator.remaining_seconds("example.com") <= 0.15
+    remaining = coordinator.remaining_seconds("example.com")
+    # The upper bound only says "barely any time has passed": allow the timer's
+    # float noise (Windows reports 0.15000000000000568 for a 0.15s window).
+    assert 0.1 < remaining <= 0.15 + 1e-6
 
     start = time.monotonic()
     await coordinator.wait_for_slot("example.com")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.09  # Windows timer granularity rounds 0.1s down4
+    assert elapsed >= 0.12  # 0.15s cooldown, minus Windows timer rounding
     assert not coordinator.in_cooldown("example.com")
 
 
@@ -255,7 +258,7 @@ async def test_make_request_paces_consecutive_calls(monkeypatch):
     await downloader.make_request("GET", "https://api.example.com/a")
     await downloader.make_request("GET", "https://api.example.com/b")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.09  # Windows timer granularity rounds 0.1s down4
+    assert elapsed >= 0.12  # 0.15s cooldown, minus Windows timer rounding
 
 
 async def test_make_request_gate_disabled_returns_429_immediately(monkeypatch):
