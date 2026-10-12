@@ -175,6 +175,10 @@ async def test_validate_path_expands_user(tmp_path, monkeypatch):
     subdir = tmp_path / "subdir"
     subdir.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path))
+    # ntpath.expanduser reads USERPROFILE (or HOMEDRIVE + HOMEPATH), never HOME.
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setenv("HOMEDRIVE", tmp_path.drive)
+    monkeypatch.setenv("HOMEPATH", str(tmp_path)[len(tmp_path.drive):])
 
     response, payload = await _validate(_make_handler(), "~/subdir")
 

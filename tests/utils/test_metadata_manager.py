@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 import pytest
+import os
 
 from py.utils.metadata_manager import MetadataManager
 from py.utils.models import LoraMetadata
@@ -174,7 +175,7 @@ async def test_load_metadata_payload_tolerates_missing_model_file(tmp_path) -> N
     """A nonexistent model file must not crash payload loading."""
     missing_path = tmp_path / "Ghost.safetensors"
     payload = await MetadataManager.load_metadata_payload(str(missing_path))
-    assert payload["file_path"] == str(missing_path)
+    assert payload["file_path"] == str(missing_path).replace(os.sep, "/")
     assert "file_name" not in payload
     assert "size" not in payload
     assert "modified" not in payload

@@ -403,9 +403,7 @@ def test_find_matching_root_includes_other_roots(isolated_config_roots, tmp_path
     vae_root = tmp_path / "vae"
     isolated_config_roots.other_roots = [str(vae_root)]
 
-    assert model_source_handlers._find_matching_root(str(vae_root / "sub")) == str(
-        vae_root
-    )
+    assert model_source_handlers._find_matching_root(str(vae_root / "sub")) == str(vae_root).replace(os.sep, "/").replace(os.sep, "/")
 
 
 def test_find_matching_root_respects_path_boundaries(isolated_config_roots, tmp_path):

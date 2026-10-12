@@ -47,6 +47,18 @@ def _json_payload(response) -> dict[str, Any]:
     return json.loads(text)
 
 
+def _expected_opener() -> str:
+    """The command the handler uses to open a path on this platform."""
+
+    return "explorer" if os.name == "nt" else "xdg-open"
+
+
+def _posix_only(reason: str):
+    """Mark a test that exercises the POSIX open strategy (xdg-open/dbus)."""
+
+    return pytest.mark.skipif(os.name == "nt", reason=reason)
+
+
 class FakeRequest:
     def __init__(self, *, json_data=None, query=None, method="POST"):
         self._json_data = json_data or {}
@@ -636,7 +648,7 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
     assert response.status == 200
     assert payload["success"] is True
     assert payload["path"] == str(backup_dir)
-    assert calls == [["xdg-open", str(backup_dir)]]
+    assert calls == [[_expected_opener(), str(backup_dir)]]
 
 
 @pytest.mark.asyncio
@@ -667,9 +679,10 @@ async def test_open_sidecar_location_opens_configured_root(tmp_path, monkeypatch
     assert payload["path"] == str(root)
     # Created on demand so the button works before any migration ran.
     assert root.is_dir()
-    assert calls == [["xdg-open", str(root)]]
+    assert calls == [[_expected_opener(), str(root)]]
 
 
+@_posix_only("the headless clipboard fallback is the POSIX strategy; Windows always has a shell")
 @pytest.mark.asyncio
 async def test_open_sidecar_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
     """Without a GUI session xdg-open cannot work; the handler must hand the
@@ -721,6 +734,7 @@ async def test_get_settings_includes_resolved_sidecar_root(tmp_path):
     assert payload["settings"]["sidecar_storage_root_in_repo"] is False
 
 
+@_posix_only("the headless clipboard fallback is the POSIX strategy; Windows always has a shell")
 @pytest.mark.asyncio
 async def test_open_settings_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
     """Without a GUI session xdg-open cannot work; the handler must hand the
@@ -774,7 +788,7 @@ async def test_open_settings_location_with_display_opens_folder(tmp_path, monkey
 
     assert response.status == 200
     assert payload["success"] is True
-    assert calls == [["xdg-open", str(settings_file.parent)]]
+    assert calls == [[_expected_opener(), str(settings_file.parent)]]
 
 
 @pytest.mark.asyncio
@@ -807,9 +821,10 @@ async def test_open_wildcards_location_creates_and_opens_directory(tmp_path, mon
     assert payload["success"] is True
     assert payload["path"] == str(wildcards_dir)
     assert wildcards_dir.is_dir()
-    assert calls == [["xdg-open", str(wildcards_dir)]]
+    assert calls == [[_expected_opener(), str(wildcards_dir)]]
 
 
+@_posix_only("dbus file-manager selection is Linux-only")
 @pytest.mark.asyncio
 async def test_open_file_location_linux_selects_via_dbus(tmp_path, monkeypatch):
     """On a Linux desktop the handler should ask the freedesktop FileManager1
@@ -849,6 +864,7 @@ async def test_open_file_location_linux_selects_via_dbus(tmp_path, monkeypatch):
     assert popen_calls == []
 
 
+@_posix_only("xdg-open is the Linux opener")
 @pytest.mark.asyncio
 async def test_open_file_location_linux_falls_back_to_xdg_open(tmp_path, monkeypatch):
     """When the FileManager1 DBus interface is unavailable, fall back to
@@ -877,9 +893,10 @@ async def test_open_file_location_linux_falls_back_to_xdg_open(tmp_path, monkeyp
 
     assert response.status == 200
     assert payload["success"] is True
-    assert popen_calls == [["xdg-open", str(tmp_path)]]
+    assert popen_calls == [[_expected_opener(), str(tmp_path)]]
 
 
+@_posix_only("the headless clipboard fallback is the POSIX strategy; Windows always has a shell")
 @pytest.mark.asyncio
 async def test_open_file_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
     """Without a GUI session there is no file manager to open; the handler
@@ -917,6 +934,7 @@ def _patch_linux_desktop(monkeypatch):
     monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
 
 
+@_posix_only("file-manager reveal via dbus is Linux-only")
 @pytest.mark.asyncio
 async def test_open_model_sidecar_location_reveals_metadata_file(tmp_path, monkeypatch):
     """Centralized mode: the resolved .metadata.json is revealed selected,
@@ -985,7 +1003,7 @@ async def test_open_model_sidecar_location_falls_back_to_sidecar_dir(tmp_path, m
     assert response.status == 200
     assert payload["success"] is True
     assert payload["path"] == str(sidecar_dir)
-    assert popen_calls == [["xdg-open", str(sidecar_dir)]]
+    assert popen_calls == [[_expected_opener(), str(sidecar_dir)]]
 
 
 @pytest.mark.asyncio
@@ -1012,6 +1030,7 @@ async def test_open_model_sidecar_location_missing_sidecar_returns_404(tmp_path,
     assert payload["success"] is False
 
 
+@_posix_only("the headless clipboard fallback is the POSIX strategy; Windows always has a shell")
 @pytest.mark.asyncio
 async def test_open_model_sidecar_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
     model_file = tmp_path / "model.safetensors"

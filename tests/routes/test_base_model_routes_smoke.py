@@ -932,8 +932,8 @@ def test_resolve_folder_answers_with_the_root_that_holds_the_directory(
             assert payload["folder"] == "recipes"
             assert payload["candidates"] == [
                 {
-                    "folder_path": str(primary / "recipes"),
-                    "root": str(primary),
+                    "folder_path": str(primary / "recipes").replace(os.sep, "/"),
+                    "root": str(primary).replace(os.sep, "/"),
                     "is_symlink": False,
                 }
             ]

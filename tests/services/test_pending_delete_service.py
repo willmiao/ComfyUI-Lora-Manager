@@ -901,7 +901,7 @@ async def test_p_checkpoint_pending_discovery_excludes_staging(tmp_path: Path, m
 
     pending = await scanner._find_pending_models_from_filesystem()
     paths = [entry["file_path"] for entry in pending]
-    assert str(root / "real.safetensors") in paths
+    assert str(root / "real.safetensors").replace(os.sep, "/") in paths
     assert not any(PENDING_DELETE_DIR_NAME in p for p in paths)
 
 
@@ -921,7 +921,7 @@ async def test_p_usage_stats_lookup_excludes_staging(tmp_path: Path) -> None:
     )
 
     # Staged file is not matched; only the real one is returned.
-    assert result == str(root / "mycheckpoint.safetensors")
+    assert result == str(root / "mycheckpoint.safetensors").replace(os.sep, "/")
 
 
 # ---------------------------------------------------------------------------

@@ -36,6 +36,7 @@ from py.utils.example_images_processor import (
 )
 from py.utils.metadata_manager import MetadataManager
 from tests.conftest import MockCache, MockModelService, MockScanner
+import os
 
 
 class StubLockProvider:
@@ -655,7 +656,8 @@ async def test_filename_template_use_case_reverts_to_recorded_original_when_temp
     lifecycle = StubLifecycleService()
 
     async def metadata_loader(metadata_path: str) -> Dict[str, Any]:
-        if metadata_path == "/library/alpha-renamed.metadata.json":
+        # Compare the basename: the sidecar path is platform-spelled.
+        if os.path.basename(metadata_path) == "alpha-renamed.metadata.json":
             return {"original_file_name": "alpha-original"}
         return {}
 
@@ -713,8 +715,10 @@ async def test_filename_template_use_case_skips_revert_matching_current_name() -
 async def test_filename_template_use_case_counts_conflicts_as_failures() -> None:
     _set_filename_template("{model_name}")
     scanner = MockScanner(cache=MockCache([
-        _filename_template_model("/library/alpha.safetensors", "Alpha"),
-        _filename_template_model("/library/beta.safetensors", "Beta"),
+        # The names differ beyond case: on Windows a case-only difference counts
+        # as "already named that" (os.path.normcase) and would be skipped.
+        _filename_template_model("/library/alpha.safetensors", "Alpha Two"),
+        _filename_template_model("/library/beta.safetensors", "Beta Two"),
     ]))
     lifecycle = StubLifecycleService()
     lifecycle.error = ValueError("A file with this name already exists")

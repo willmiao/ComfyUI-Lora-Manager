@@ -532,7 +532,7 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
     extracted = save_dir / "model.safetensors"
     assert extracted.exists()
     saved_call = MetadataManager.save_metadata.await_args
-    assert saved_call.args[0] == str(extracted)
+    assert saved_call.args[0] == str(extracted).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert saved_call.args[1].sha256 == "sha256"
     # The zip-level AutoV3 was cleared; the extracted file is not safetensors,
@@ -693,7 +693,7 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
     extracted = save_dir / "embedding.pt"
     assert extracted.exists()
     saved_call = MetadataManager.save_metadata.await_args
-    assert saved_call.args[0] == str(extracted)
+    assert saved_call.args[0] == str(extracted).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert saved_call.args[1].sha256 == "sha256"
     assert dummy_scanner.add_model_to_cache.await_count == 1

@@ -60,17 +60,17 @@ class TestAdmitConfiguredRoots:
             loras_roots=[str(primary)],
             _configured_root_paths={"lora": [str(primary), str(drive)]},
         )
-        assert config.configured_roots_for("lora") == [str(primary), str(drive)]
+        assert config.configured_roots_for("lora") == [_normalize(primary), _normalize(drive)]
 
         # Still switched off: nothing to admit.
         assert config.admit_configured_roots() == []
-        assert config.loras_roots == [str(primary)]
+        assert config.loras_roots == [_normalize(primary)]
 
         drive.mkdir(parents=True)
         admitted = config.admit_configured_roots()
 
-        assert admitted == [str(drive)]
-        assert config.loras_roots == [str(primary), str(drive)]
+        assert admitted == [_normalize(drive)]
+        assert config.loras_roots == [_normalize(primary), _normalize(drive)]
         # Idempotent: a second call adds nothing.
         assert config.admit_configured_roots() == []
 
@@ -91,7 +91,7 @@ class TestAdmitConfiguredRoots:
         drive.rmdir()
         config.admit_configured_roots()
 
-        assert config.loras_roots == [str(primary), str(drive)]
+        assert config.loras_roots == [_normalize(primary), _normalize(drive)]
 
     def test_admits_every_model_type_and_its_side_maps(self, tmp_path):
         checkpoint_dir = tmp_path / "checkpoints"

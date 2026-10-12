@@ -48,6 +48,20 @@ class RecordingWebSocketManager:
         self.broadcasts.append(payload)
 
 
+def _root_label_names(labels) -> List[str]:
+    """The root names behind display labels.
+
+    ``_root_display_labels`` prefixes the drive on Windows ("C: loras") and may
+    grow a label leftwards to keep it unique ("parent/loras"), so a test that only
+    cares *which* root was walked compares the final path component.
+    """
+
+    return [
+        label.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1].rsplit(" ", 1)[-1]
+        for label in labels
+    ]
+
+
 def _normalize_path(path: Path) -> str:
     return str(path).replace(os.sep, "/")
 
@@ -2306,6 +2320,10 @@ def test_count_cached_entries_per_root_uses_longest_prefix():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="simulates a case-sensitive filesystem; Windows matches case itself",
+)
 async def test_reconcile_case_fold_fallback_is_indexed_not_linear(
     tmp_path: Path, monkeypatch
 ):
@@ -2465,7 +2483,10 @@ async def test_reconcile_walk_broadcasts_per_root_progress(tmp_path: Path, monke
     assert len(walk_messages) >= 2
 
     # Intermediate ticks name the root being walked.
-    assert any(message["active_roots"] == ["loras"] for message in walk_messages)
+    assert any(
+        _root_label_names(message["active_roots"]) == ["loras"]
+        for message in walk_messages
+    )
 
     final = walk_messages[-1]
     assert final["files_seen"] == 4
@@ -2546,7 +2567,7 @@ async def test_reconcile_scoped_scan_leaves_other_roots_untouched(tmp_path: Path
     assert summary is not None
     assert summary["added"] == 1
     assert summary["removed"] == 0
-    assert summary["scanned_roots"] == ["a"]
+    assert _root_label_names(summary["scanned_roots"]) == ["a"]
 
     cached_paths = {item["file_path"] for item in scanner._cache.raw_data}
     assert cached_paths == {
@@ -2717,11 +2738,13 @@ async def test_reconcile_reports_root_filtered_out_at_startup(tmp_path: Path, mo
     assert summary["added"] == 0
     assert summary["removed"] == 0
     # ...but the switched-off root is no longer silent: it is reported with the
-    # entries that were kept for it.
+    # entries that were kept for it. Its label is what the shared label helper
+    # makes of the pair (drive-prefixed on Windows).
+    labels = model_scanner._root_display_labels([str(_primary), str(missing)])
     assert summary["skipped_roots"] == [
         {
             "path": _normalize_path(missing),
-            "label": missing.name,
+            "label": labels[str(missing)],
             "reason": "root_unavailable",
         }
     ]
@@ -2746,7 +2769,7 @@ async def test_scoped_scan_stays_quiet_about_filtered_out_roots(tmp_path: Path, 
     assert summary is not None
     # The caller asked for one root: a root it did not ask about is not its
     # business, but its entries are still kept.
-    assert summary["scanned_roots"] == [primary.name]
+    assert _root_label_names(summary["scanned_roots"]) == [primary.name]
     assert "root_unavailable" not in {
         entry["reason"] for entry in summary["skipped_roots"]
     }
@@ -3091,7 +3114,7 @@ async def test_scoped_scan_accepts_the_host_path_spelling(tmp_path: Path, monkey
     summary = await scanner._reconcile_cache(scope=scope)
 
     assert summary is not None
-    assert summary["scanned_roots"] == [primary.name]
+    assert _root_label_names(summary["scanned_roots"]) == [primary.name]
 
 
 @pytest.mark.asyncio
