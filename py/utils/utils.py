@@ -303,8 +303,10 @@ def _format_model_name_for_comfyui(file_path: str, model_roots: list[str]) -> st
                 norm_root += os.sep
 
             if norm_file.startswith(norm_root):
-                # Use os.path.relpath to get relative path with OS-native separator
-                return os.path.relpath(file_path, root)
+                # ComfyUI names a model with forward slashes on every platform
+                # ("unet/base.safetensors"); os.path.relpath alone returns the
+                # host's separator, which no ComfyUI widget list matches on Windows.
+                return os.path.relpath(file_path, root).replace(os.sep, "/")
         except (ValueError, TypeError):
             continue
 

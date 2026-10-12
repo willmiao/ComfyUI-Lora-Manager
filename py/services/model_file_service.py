@@ -1,7 +1,8 @@
 import asyncio
 import fnmatch
-import os
 import logging
+import os
+import posixpath
 import shutil
 from typing import Any, Dict, List, Optional, Sequence, Set
 from abc import ABC, abstractmethod
@@ -36,12 +37,11 @@ def normalize_relative_folder(folder: str) -> str:
     if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
         raise ValueError("Folder path must be relative to a library root")
 
-    normalized = os.path.normpath(normalized)
-    if (
-        normalized == ".."
-        or normalized.startswith("../")
-        or normalized.startswith(".." + os.sep)
-    ):
+    # posixpath, not os.path: ntpath.normpath would fold the business form back
+    # to backslashes, and every stored folder, cache entry and comparison in the
+    # app is forward-slashed.
+    normalized = posixpath.normpath(normalized)
+    if normalized == ".." or normalized.startswith("../"):
         raise ValueError("Folder path must stay inside the library root")
 
     return normalized
@@ -1062,7 +1062,12 @@ class ModelMoveService:
 
             new_relative = self._calculate_relative_folder(target)
             await self._rename_folder_records(
-                previous_relative, new_relative, absolute_path, target
+                previous_relative,
+                new_relative,
+                # Business paths, like every other absolute path this service
+                # hands out: the scanner re-keys cache entries by prefix.
+                absolute_path.replace(os.sep, "/"),
+                target.replace(os.sep, "/"),
             )
 
             return {

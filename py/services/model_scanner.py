@@ -3094,12 +3094,28 @@ class ModelScanner:
         return await MetadataManager.create_default_metadata(file_path, self.model_class)
     
     def _calculate_folder(self, file_path: str) -> str:
-        """Calculate the folder path for a model file"""
+        """Return the library-relative folder holding *file_path*.
+
+        The path arrives in whichever spelling its caller holds: ComfyUI's own
+        (backslashes on Windows) or the forward-slashed business form used for
+        cache entries. A raw ``startswith(root)`` matched neither the mixed nor
+        the opposite spelling, so every forward-slashed path on Windows resolved
+        to the root folder and a moved model was filed under the library root.
+        Compare identities instead, then slice the relative part off.
+        """
+        candidate = _root_identity(file_path)
+        if not candidate:
+            return ""
         for root in self.get_model_roots():
-            if file_path.startswith(root):
-                rel_path = os.path.relpath(file_path, root)
-                return os.path.dirname(rel_path).replace(os.path.sep, '/')
-        return ''
+            identity = _root_identity(root)
+            if not identity:
+                continue
+            if candidate == identity:
+                return ""
+            if candidate.startswith(f"{identity}/"):
+                relative = candidate[len(identity) + 1:]
+                return relative.rsplit("/", 1)[0] if "/" in relative else ""
+        return ""
 
     def adjust_metadata(self, metadata, file_path, root_path):
         """Hook for subclasses: adjust metadata during scanning"""

@@ -480,6 +480,19 @@ def _legacy_component(root_path: str) -> str:
     return f"{sanitize_path_component(os.path.basename(normalized))}-{digest}"
 
 
+def _join_component(root: str, component: str) -> str:
+    """Join a mirror component name onto *root* as a native path.
+
+    A component adopted from the pre-identity-map layout is reported as
+    ``<library>/<component>`` -- one *name* spanning two directories. Handing it
+    whole to ``os.path.join`` left a mixed path on Windows
+    (``...\\comfyui/loras-1a2b3c4d\\sub``), which no natively built path
+    compares equal to, so it has to be split first.
+    """
+
+    return os.path.join(root, *(part for part in component.split("/") if part))
+
+
 def _list_component_dirs(sidecar_root: str) -> Set[str]:
     """Return the mirror component directories present under ``sidecar_root``.
 
@@ -556,7 +569,7 @@ def _mirror_dir_overlap(sidecar_root: str, component: str, root: str) -> int:
 
     if not component:
         return 0
-    mirror_names = _subdir_names(os.path.join(sidecar_root, component))
+    mirror_names = _subdir_names(_join_component(sidecar_root, component))
     if not mirror_names:
         return 0
     root_names = _subdir_names(root)
@@ -958,7 +971,7 @@ def resolve_centralized_dir_for_dir(
     if not component:
         return None
 
-    parts = [root, component]
+    parts = [_join_component(root, component)]
     if rel_dir and rel_dir != os.curdir:
         parts.extend(
             sanitize_path_component(part)
