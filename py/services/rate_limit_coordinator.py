@@ -160,7 +160,13 @@ class RateLimitCoordinator:
                     self._normalize(destination),
                     delay,
                 )
-                await asyncio.sleep(delay)
+                # Re-check rather than trusting a single sleep: the event-loop
+                # timer can fire early (Windows granularity is ~15ms), and
+                # returning then would send the request inside the cooldown this
+                # gate exists to enforce. ``wake_at`` is fixed, so the loop can
+                # never outlast the ``max_wait_seconds`` check above.
+                while (delay := wake_at - time.monotonic()) > 0:
+                    await asyncio.sleep(delay)
             state.last_send_at = time.monotonic()
 
     def register_rate_limit(

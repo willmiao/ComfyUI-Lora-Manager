@@ -62,7 +62,7 @@ async def test_pacing_enforces_min_interval(monkeypatch):
     await coordinator.wait_for_slot("example.com")
     await coordinator.wait_for_slot("example.com")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.09  # Windows timer granularity rounds 0.1s down
+    assert elapsed >= 0.099  # 1ms of clock slack on a 0.1s interval
 
 
 async def test_pacing_is_per_destination(monkeypatch):
@@ -92,7 +92,7 @@ async def test_register_rate_limit_arms_cooldown_and_waits(monkeypatch):
     start = time.monotonic()
     await coordinator.wait_for_slot("example.com")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.12  # 0.15s cooldown, minus Windows timer rounding
+    assert elapsed >= 0.14  # 0.15s cooldown, 10ms of clock slack
     assert not coordinator.in_cooldown("example.com")
 
 
@@ -258,7 +258,7 @@ async def test_make_request_paces_consecutive_calls(monkeypatch):
     await downloader.make_request("GET", "https://api.example.com/a")
     await downloader.make_request("GET", "https://api.example.com/b")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.12  # 0.15s cooldown, minus Windows timer rounding
+    assert elapsed >= 0.14  # 0.15s cooldown, 10ms of clock slack
 
 
 async def test_make_request_gate_disabled_returns_429_immediately(monkeypatch):
@@ -464,3 +464,31 @@ async def test_get_response_headers_429_registers_cooldown(monkeypatch):
     coordinator = await RateLimitCoordinator.get_instance()
     remaining = coordinator.remaining_seconds("api.example.com")
     assert 50.0 < remaining <= 60.0
+
+
+async def test_wait_for_slot_re_sleeps_when_the_timer_wakes_early(monkeypatch):
+    """An early wake must not let a request through inside the cooldown.
+
+    The event-loop timer can fire before the requested delay has elapsed
+    (Windows granularity is ~15ms), and a single ``asyncio.sleep`` would then
+    return while the cooldown is still armed.
+    """
+
+    coordinator = await _make_coordinator(monkeypatch)
+    coordinator.register_rate_limit("example.com", retry_after=0.15)
+
+    delays = []
+    real_sleep = asyncio.sleep
+
+    async def early_wake(delay):
+        delays.append(delay)
+        if len(delays) == 1:
+            return  # the timer fired early
+        await real_sleep(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", early_wake)
+
+    await coordinator.wait_for_slot("example.com")
+
+    assert len(delays) >= 2, "the gate returned on an early wake"
+    assert not coordinator.in_cooldown("example.com")
