@@ -1237,7 +1237,7 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
         "https://resources.modelscope.cn/cover-images/b.png",
         "https://resources.modelscope.cn/cover-images/c.png",
     ]
-    assert saved["preview_url"] == str(tmp_path / "preview.webp")
+    assert saved["preview_url"] == str(tmp_path / "preview.webp").replace(os.sep, "/")
     assert saved["usage_tips"] == (
         '{"strength_min": 0.5, "strength_max": 1.2, "strength_range": "0.5-1.2"}'
     )

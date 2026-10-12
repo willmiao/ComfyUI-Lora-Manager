@@ -36,6 +36,12 @@ def _normalize(path) -> str:
     return os.path.normpath(str(path)).replace(os.sep, "/")
 
 
+def _fold(paths):
+    """Compare path lists as identities: the code may hand out either spelling."""
+
+    return [_normalize(path) for path in paths]
+
+
 class TestAppendNewPaths:
     def test_appends_without_reordering_or_duplicating(self):
         merged = config_module._append_new_paths(
@@ -60,17 +66,17 @@ class TestAdmitConfiguredRoots:
             loras_roots=[str(primary)],
             _configured_root_paths={"lora": [str(primary), str(drive)]},
         )
-        assert config.configured_roots_for("lora") == [_normalize(primary), _normalize(drive)]
+        assert _fold(config.configured_roots_for("lora")) == _fold([primary, drive])
 
         # Still switched off: nothing to admit.
         assert config.admit_configured_roots() == []
-        assert config.loras_roots == [_normalize(primary)]
+        assert _fold(config.loras_roots) == _fold([primary])
 
         drive.mkdir(parents=True)
         admitted = config.admit_configured_roots()
 
-        assert admitted == [_normalize(drive)]
-        assert config.loras_roots == [_normalize(primary), _normalize(drive)]
+        assert _fold(admitted) == _fold([drive])
+        assert _fold(config.loras_roots) == _fold([primary, drive])
         # Idempotent: a second call adds nothing.
         assert config.admit_configured_roots() == []
 
@@ -91,7 +97,7 @@ class TestAdmitConfiguredRoots:
         drive.rmdir()
         config.admit_configured_roots()
 
-        assert config.loras_roots == [_normalize(primary), _normalize(drive)]
+        assert _fold(config.loras_roots) == _fold([primary, drive])
 
     def test_admits_every_model_type_and_its_side_maps(self, tmp_path):
         checkpoint_dir = tmp_path / "checkpoints"

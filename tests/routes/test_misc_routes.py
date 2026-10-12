@@ -788,7 +788,11 @@ async def test_open_settings_location_with_display_opens_folder(tmp_path, monkey
 
     assert response.status == 200
     assert payload["success"] is True
-    assert calls == [[_expected_opener(), str(settings_file.parent)]]
+    if os.name == "nt":
+        # explorer reveals the file itself, there is no "open the folder" call.
+        assert calls == [["explorer", "/select,", str(settings_file)]]
+    else:
+        assert calls == [[_expected_opener(), str(settings_file.parent)]]
 
 
 @pytest.mark.asyncio

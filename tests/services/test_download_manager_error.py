@@ -617,10 +617,10 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
     assert dummy_scanner.add_model_to_cache.await_count == 2
 
     metadata_calls = MetadataManager.save_metadata.await_args_list
-    assert metadata_calls[0].args[0] == str(extracted_one)
+    assert metadata_calls[0].args[0] == str(extracted_one).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert metadata_calls[0].args[1].sha256 == "sha256"
-    assert metadata_calls[1].args[0] == str(extracted_two)
+    assert metadata_calls[1].args[0] == str(extracted_two).replace(os.sep, "/")
     assert metadata_calls[1].args[1].sha256 == "sha256"
 
 

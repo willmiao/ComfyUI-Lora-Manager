@@ -2495,7 +2495,7 @@ async def test_reconcile_walk_broadcasts_per_root_progress(tmp_path: Path, monke
     assert final["roots_total"] == 1
     assert final["roots_done"] == 1
     assert final["active_roots"] == []
-    assert final["current_name"] == "loras"
+    assert _root_label_names([final["current_name"]]) == ["loras"]
     assert 0 < final["progress"] <= 50
     assert final["full_rebuild"] is False
     assert walk_messages[0]["progress"] <= final["progress"]

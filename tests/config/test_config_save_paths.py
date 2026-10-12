@@ -361,13 +361,11 @@ def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
     }
     assert _identity(payload["folder_paths"]) == _identity(expected_folder_paths)
     assert _identity(payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert (
-        payload["default_checkpoint_root"]
-        == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert _identity(payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0].replace("\\", "/")
     )
-    assert (
-        payload["default_embedding_root"]
-        == folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0].replace("\\", "/")
     )
     assert _identity(payload["metadata"]) == _identity({"display_name": "ComfyUI", "source": "comfyui"})
     assert payload["activate"] is True
@@ -419,12 +417,12 @@ def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.Monke
 
     assert fake_settings.name == "comfyui"
     assert _identity(fake_settings.payload["extra_folder_paths"]["loras"]) == _identity([str(extra_lora_dir).replace("\\", "/")])
-    assert fake_settings.payload["extra_folder_paths"]["checkpoints"] == [
+    assert _identity(fake_settings.payload["extra_folder_paths"]["checkpoints"]) == _identity([
         str(extra_checkpoint_dir).replace("\\", "/")
-    ]
-    assert fake_settings.payload["extra_folder_paths"]["embeddings"] == [
+    ])
+    assert _identity(fake_settings.payload["extra_folder_paths"]["embeddings"]) == _identity([
         str(extra_embedding_dir).replace("\\", "/")
-    ]
+    ])
     assert _identity(fake_settings.payload["default_lora_root"]) == _identity(str(extra_lora_dir).replace("\\", "/"))
     assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(str(extra_checkpoint_dir).replace("\\", "/"))
     assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(str(extra_embedding_dir).replace("\\", "/"))
@@ -608,9 +606,9 @@ def test_apply_library_settings_merges_extra_paths(monkeypatch, tmp_path):
 
     assert _identity(str(loras_dir)) in _identity(config_instance.loras_roots)
     assert _identity(str(extra_loras_dir)) in _identity(config_instance.extra_loras_roots)
-    assert str(checkpoints_dir) in config_instance.base_models_roots
+    assert _identity(str(checkpoints_dir)) in _identity(config_instance.base_models_roots)
     assert _identity(str(extra_checkpoints_dir)) in _identity(config_instance.extra_checkpoints_roots)
-    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
+    assert _identity(str(embeddings_dir)) in _identity((config_instance.embeddings_roots or []))
     assert _identity(str(extra_embeddings_dir)) in _identity(config_instance.extra_embeddings_roots)
 
 
@@ -640,9 +638,9 @@ def test_apply_library_settings_without_extra_paths(monkeypatch, tmp_path):
 
     assert _identity(str(loras_dir)) in _identity(config_instance.loras_roots)
     assert _identity(config_instance.extra_loras_roots) == _identity([])
-    assert str(checkpoints_dir) in config_instance.base_models_roots
+    assert _identity(str(checkpoints_dir)) in _identity(config_instance.base_models_roots)
     assert _identity(config_instance.extra_checkpoints_roots) == _identity([])
-    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
+    assert _identity(str(embeddings_dir)) in _identity((config_instance.embeddings_roots or []))
     assert _identity(config_instance.extra_embeddings_roots) == _identity([])
 
 

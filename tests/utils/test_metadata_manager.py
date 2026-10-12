@@ -60,7 +60,7 @@ async def test_load_metadata_payload_restores_file_facts_when_sidecar_missing(
     payload = await MetadataManager.load_metadata_payload(str(model_path))
 
     stat_result = model_path.stat()
-    assert payload["file_path"] == str(model_path)
+    assert payload["file_path"] == str(model_path).replace(os.sep, "/")
     assert payload["file_name"] == "MyModel"
     assert payload["size"] == stat_result.st_size
     assert payload["modified"] == stat_result.st_mtime
