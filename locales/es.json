@@ -1419,6 +1419,7 @@
             "notEmptyMessageExcluded": "Esta carpeta aún contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca. Anula su exclusión en «Gestionar modelos excluidos» y elimínalos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "missingTitle": "Carpeta no encontrada",
             "missingMessage": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "removeFromList": "[TODO: Translate] Remove from list",
             "symlinkTitle": "La carpeta es un enlace simbólico",
             "symlinkMessage": "Todas las copias de esta carpeta son enlaces simbólicos; elimina el enlace o su destino fuera de LoRA Manager.",
             "protectedTitle": "Carpeta protegida",
@@ -1440,6 +1441,8 @@
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "La eliminación de carpetas no es compatible con esta página",
             "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the sidebar",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
             "symlink": "Esta carpeta es un enlace simbólico; no se puede eliminar desde la barra lateral.",
             "successMulti": "Carpeta \"{name}\" eliminada de {count} raíces de modelo",
             "partial": "Se eliminaron {count} de {total} copias — {failed} no se pudieron eliminar. Actualiza la barra lateral e inténtalo de nuevo."

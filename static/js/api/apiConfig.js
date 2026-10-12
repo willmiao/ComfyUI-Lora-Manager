@@ -85,6 +85,10 @@ export function getApiEndpoints(modelType) {
         moveBulk: `/api/lm/${modelType}/move_models_bulk`,
         createFolder: `/api/lm/${modelType}/create-folder`,
         deleteFolder: `/api/lm/${modelType}/delete-folder`,
+        // Drops the sidebar records of a folder that no longer exists on disk:
+        // the only cleanup left for a node whose directory was moved or deleted
+        // outside LoRA Manager.
+        forgetFolder: `/api/lm/${modelType}/forget-folder`,
         renameFolder: `/api/lm/${modelType}/rename-folder`,
         // Resolves a tree-relative folder onto the root(s) that hold it: the
         // unified folder tree merges every root, so a node does not carry its

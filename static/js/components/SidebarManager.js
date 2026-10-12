@@ -1734,6 +1734,8 @@ export class SidebarManager {
             showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
         } else if (error?.code === 'missing') {
             showToast('sidebar.deleteFolderResult.missing', {}, 'warning');
+        } else if (error?.code === 'exists') {
+            showToast('sidebar.deleteFolderResult.exists', {}, 'warning');
         } else if (error?.code === 'unresolved') {
             showToast('sidebar.folderResult.unresolved', {}, 'error');
         } else {
@@ -1806,6 +1808,8 @@ export class SidebarManager {
             );
         } else {
             this._pendingDeleteFolderPath = null;
+            confirmBtn.style.display = 'none';
+            confirmBtn.disabled = true;
             if (state === 'busy') {
                 title.textContent = translate(
                     'sidebar.deleteFolderModal.busyTitle', {}, 'A deletion is still pending'
@@ -1820,7 +1824,16 @@ export class SidebarManager {
                 );
                 message.textContent = translate(
                     'sidebar.deleteFolderModal.missingMessage', {},
-                    'This folder no longer exists on disk. Refresh the sidebar and try again.'
+                    'This folder no longer exists on disk. Its entries can still be removed from the sidebar.'
+                );
+                // There is nothing left to delete, but the records are what keeps
+                // the ghost node in the tree: offer to drop them (issue #1145).
+                // The confirm re-resolves the node, finds no directory and takes
+                // the forget path.
+                confirmBtn.style.display = '';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = translate(
+                    'sidebar.deleteFolderModal.removeFromList', {}, 'Remove from list'
                 );
             } else if (state === 'symlink') {
                 title.textContent = translate(
@@ -1849,8 +1862,6 @@ export class SidebarManager {
                         || 'This folder still contains models. Delete or move them first.'
                 );
             }
-            confirmBtn.style.display = 'none';
-            confirmBtn.disabled = true;
         }
 
         if (checking) {
@@ -1943,10 +1954,14 @@ export class SidebarManager {
                 );
                 if (!selected) {
                     const empty = (resolution?.candidates || []).length === 0;
+                    if (empty) {
+                        // No root holds the directory any more: there is nothing
+                        // to delete, so drop the records that keep the node in
+                        // the tree (issue #1145).
+                        return this._forgetFolder(relativePath);
+                    }
                     showToast(
-                        empty
-                            ? 'sidebar.deleteFolderResult.missing'
-                            : 'sidebar.deleteFolderResult.symlink',
+                        'sidebar.deleteFolderResult.symlink',
                         {},
                         'warning'
                     );
@@ -1967,7 +1982,15 @@ export class SidebarManager {
             await this.refresh();
 
             const name = result.folder || relativePath;
-            if (result.restorable) {
+            if (result.code === 'missing') {
+                // The directory was already gone when the delete ran (a race with
+                // the file manager, or a row in the multi-root list): only its
+                // records were dropped, so nothing was deleted and there is
+                // nothing to undo.
+                showToast(
+                    'sidebar.deleteFolderResult.forgotten', { name }, 'success'
+                );
+            } else if (result.restorable) {
                 // A truly empty folder is reproducible one-for-one, so offer
                 // the same 20s undo affordance the model delete flow uses.
                 showActionToast('sidebar.deleteFolderResult.success', { name }, 'success', {
@@ -1987,6 +2010,41 @@ export class SidebarManager {
             return true;
         } catch (error) {
             console.error('[SidebarManager] Error deleting folder:', error);
+            this._reportDeleteFolderFailure(error);
+            return false;
+        }
+    }
+
+    /**
+     * Clear a folder node whose directory is gone from every root (issue #1145).
+     *
+     * A folder moved or deleted with a file manager leaves the sidebar holding a
+     * node that no delete can clear, because there is nothing left to remove. The
+     * delete affordance falls back to this instead of refusing: the backend drops
+     * the folder record and the cached models under it, and answers `exists` if
+     * the directory turned out to be back on disk (then it is a delete again).
+     */
+    async _forgetFolder(relativePath) {
+        if (
+            !this._supportsFolderManagement()
+            || typeof this.apiClient.forgetFolder !== 'function'
+        ) {
+            showToast('sidebar.deleteFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const result = await this.apiClient.forgetFolder(relativePath);
+            this._forgetRemovedFolder(relativePath);
+            await this.refresh();
+            showToast(
+                'sidebar.deleteFolderResult.forgotten',
+                { name: result.folder || relativePath },
+                'success'
+            );
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error forgetting folder:', error);
             this._reportDeleteFolderFailure(error);
             return false;
         }

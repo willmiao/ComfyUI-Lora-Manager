@@ -589,6 +589,33 @@ class ModelMoveService:
                 return rel.replace(os.sep, "/")
         return ""
 
+    async def forget_folder(self, folder: str) -> Dict[str, Any]:
+        """Drop the records of a folder that is on disk under no root (#1145).
+
+        A directory moved or deleted with a file manager can leave the sidebar
+        holding a node no delete can clear: the folder is gone, so there is
+        nothing to remove and every attempt answered "Folder no longer exists".
+        This drops what remains — the recorded folder entry and the cached model
+        rows under it — and is refused while any root still holds the directory,
+        because then the caller wants a delete, not a cleanup.
+        """
+        resolution = self.resolve_folder(folder)
+        if not resolution.get("success"):
+            return resolution
+
+        normalized = resolution.get("folder") or ""
+        if not normalized:
+            return {"success": False, "error": "Folder is required"}
+        if resolution.get("candidates"):
+            return {
+                "success": False,
+                "code": "exists",
+                "error": "The folder still exists on disk",
+            }
+
+        await self._forget_folder(normalized)
+        return {"success": True, "folder": normalized}
+
     def resolve_folder(self, folder: str) -> Dict[str, Any]:
         """Map a library-relative folder onto the directories it stands for.
 
@@ -685,11 +712,29 @@ class ModelMoveService:
                 }
             if not os.path.isdir(absolute_path):
                 # `missing` is its own code so the sidebar can tell "this node's
-                # directory is gone, refresh" apart from a failed operation.
+                # directory is gone" apart from a failed operation. There is
+                # nothing left to delete, but the sidebar can still be holding the
+                # node: a folder moved or removed with a file manager leaves its
+                # records behind, and "Folder no longer exists" was a dead end --
+                # the ghost could not be cleared from the UI at all (issue #1145).
+                # The real delete therefore forgets those records and reports
+                # success; the dry run stays a pure read and keeps answering
+                # `missing`, which is what makes the dialog offer the removal.
+                if dry_run:
+                    return {
+                        "success": False,
+                        "code": "missing",
+                        "error": "Folder no longer exists",
+                    }
+
+                relative_folder = self._calculate_relative_folder(absolute_path)
+                await self._forget_folder(relative_folder, absolute_path)
                 return {
-                    "success": False,
+                    "success": True,
                     "code": "missing",
-                    "error": "Folder no longer exists",
+                    "already_missing": True,
+                    "folder": relative_folder,
+                    "folder_path": absolute_path.replace(os.sep, "/"),
                 }
 
             if self._is_model_root(absolute_path):

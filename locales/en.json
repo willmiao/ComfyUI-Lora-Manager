@@ -1418,7 +1418,8 @@
       "notEmptyMessageCount": "This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
       "notEmptyMessageExcluded": "This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
       "missingTitle": "Folder not found",
-      "missingMessage": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "missingMessage": "This folder no longer exists on disk. Its entries can still be removed from the sidebar.",
+      "removeFromList": "Remove from list",
       "symlinkTitle": "Folder is a symbolic link",
       "symlinkMessage": "Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.",
       "protectedTitle": "Folder is protected",
@@ -1440,6 +1441,8 @@
       "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
       "unsupported": "Folder deletion is not supported on this page",
       "missing": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "forgotten": "Folder \"{name}\" removed from the sidebar",
+      "exists": "The folder is back on disk. Delete it instead.",
       "symlink": "This folder is a symbolic link; it cannot be deleted from the sidebar.",
       "successMulti": "Folder \"{name}\" deleted from {count} model roots",
       "partial": "Deleted {count} of {total} copies — {failed} could not be deleted. Refresh the sidebar and retry."

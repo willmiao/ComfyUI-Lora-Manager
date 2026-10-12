@@ -1419,6 +1419,7 @@
             "notEmptyMessageExcluded": "このフォルダにはまだ {count} 個のモデルファイルがあり、そのうち {excluded} 個はライブラリから除外されています。「除外モデルを管理」で除外を解除してから削除してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
             "missingTitle": "フォルダが見つかりません",
             "missingMessage": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
+            "removeFromList": "[TODO: Translate] Remove from list",
             "symlinkTitle": "フォルダがシンボリックリンクです",
             "symlinkMessage": "このフォルダのすべてのコピーがシンボリックリンクです。LoRA Manager の外でリンクまたはそのリンク先を削除してください。",
             "protectedTitle": "フォルダは保護されています",
@@ -1440,6 +1441,8 @@
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダを削除できません",
             "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the sidebar",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
             "symlink": "このフォルダはシンボリックリンクです。サイドバーからは削除できません。",
             "successMulti": "{count} 個のモデルルートからフォルダ \"{name}\" を削除しました",
             "partial": "{total} 個のコピーのうち {count} 個を削除しました —— {failed} 個は削除できませんでした。サイドバーを再読み込みしてからもう一度お試しください。"

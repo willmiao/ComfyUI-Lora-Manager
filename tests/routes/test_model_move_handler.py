@@ -23,6 +23,10 @@ class FakeMoveService:
         self.received_dry_run = dry_run
         return self._result
 
+    async def forget_folder(self, folder):
+        self.received_folder = folder
+        return self._result
+
     async def rename_folder(self, folder_path, new_name):
         self.received_path = folder_path
         self.received_new_name = new_name
@@ -34,11 +38,24 @@ class FakeMoveService:
 
 
 class FakeRequest:
+    method = "POST"
+
     def __init__(self, payload):
         self._payload = payload
+        # A real aiohttp request always carries a query string too.
+        self.query = {}
 
     async def json(self):
         return self._payload
+
+
+class FakeGetRequest:
+    """GET stand-in carrying only a query string, as the extension sends it."""
+
+    method = "GET"
+
+    def __init__(self, query):
+        self.query = query
 
 
 class FakeQueryRequest:
@@ -394,3 +411,54 @@ async def test_rename_folder_invalid_json_body():
 
     assert response.status == 400
     assert json.loads(response.text)["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_forget_folder_success():
+    handler, service = _make_handler({"success": True, "folder": "Krea2/Women"})
+
+    response = await handler.forget_folder(FakeRequest({"folder": "Krea2/Women"}))
+
+    assert response.status == 200
+    assert json.loads(response.text)["folder"] == "Krea2/Women"
+    assert service.received_folder == "Krea2/Women"
+
+
+@pytest.mark.asyncio
+async def test_forget_folder_accepts_get_with_query_params():
+    """Forgetting is a state change, but the extension is GET-only by convention."""
+    handler, service = _make_handler({"success": True, "folder": "Krea2/Women"})
+
+    response = await handler.forget_folder(
+        FakeGetRequest({"folder": "Krea2/Women"})
+    )
+
+    assert response.status == 200
+    assert service.received_folder == "Krea2/Women"
+
+
+@pytest.mark.asyncio
+async def test_forget_folder_requires_a_folder():
+    handler, service = _make_handler({"success": True})
+
+    response = await handler.forget_folder(FakeRequest({}))
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
+    assert service.received_folder is None
+
+
+@pytest.mark.asyncio
+async def test_forget_folder_existing_directory_maps_to_409():
+    """The tree the client rendered is stale: the folder must be deleted."""
+    handler, _service = _make_handler(
+        {
+            "success": False,
+            "code": "exists",
+            "error": "The folder still exists on disk",
+        }
+    )
+
+    response = await handler.forget_folder(FakeRequest({"folder": "Krea2/Women"}))
+
+    assert response.status == 409

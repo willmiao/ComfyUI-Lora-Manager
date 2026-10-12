@@ -1440,7 +1440,9 @@ export class BaseModelApiClient {
      * Only model-free folders can be removed; the backend answers with a 409
      * `not_empty`/`busy` conflict otherwise. Those codes are attached to the
      * thrown Error (`code`, `manifest`) so callers can explain the refusal
-     * instead of showing a bare message.
+     * instead of showing a bare message. A folder that is already gone from disk
+     * is forgotten instead (`code: 'missing'`, success), which is what lets the
+     * sidebar clear a node whose directory was moved outside LoRA Manager.
      *
      * @param {string} folderPath Absolute business path of the folder
      * @param {{dryRun?: boolean}} [options]
@@ -1467,6 +1469,38 @@ export class BaseModelApiClient {
 
         return result;
     }
+
+    /**
+     * Drop the records of a folder that no longer exists on disk.
+     *
+     * Deleting such a folder cannot work -- there is nothing left to remove --
+     * so a node whose directory was moved or deleted outside LoRA Manager is
+     * cleared with this instead. The backend refuses while any root still holds
+     * the directory (`code: 'exists'`), because then it is a delete.
+     *
+     * @param {string} folder - Library-relative folder path (e.g. "Krea2/Women")
+     * @returns {Promise<Object>} `{success: true, folder}` on success
+     */
+    async forgetFolder(folder) {
+        const response = await fetch(this.apiConfig.endpoints.forgetFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || 'Failed to remove folder from the sidebar');
+            error.code = result.code || null;
+            throw error;
+        }
+
+        return result;
+    }
+
 
     /**
      * Rename a folder inside the library roots.

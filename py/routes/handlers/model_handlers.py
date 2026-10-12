@@ -2629,6 +2629,39 @@ class ModelMoveHandler:
             self._logger.error("Error deleting folder: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def forget_folder(self, request: web.Request) -> web.Response:
+        """Drop the records of a folder that no longer exists on disk (#1145).
+
+        The sidebar's delete flow reaches this when the node it holds maps to no
+        directory any more: there is nothing to delete, so the only cleanup left
+        is forgetting the folder entry and the cached models under it.
+        """
+        data: Dict[str, Any] = {}
+        if request.method == "POST":
+            try:
+                data = await request.json()
+            except Exception:
+                data = {}
+        folder = str(data.get("folder") or request.query.get("folder") or "").strip()
+        if not folder:
+            return web.json_response(
+                {"success": False, "error": "Folder is required"}, status=400
+            )
+
+        try:
+            result = await self._move_service.forget_folder(folder)
+            if result.get("success"):
+                _broadcast_models_changed()
+                return web.json_response(result, status=200)
+
+            # `exists` is a conflict between the tree the client rendered and the
+            # on-disk truth: the folder is still there, so it must be deleted.
+            status = 409 if result.get("code") == "exists" else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error forgetting folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def rename_folder(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -3701,6 +3734,7 @@ class ModelHandlerSet:
             "create_folder": self.move.create_folder,
             "resolve_folder": self.move.resolve_folder,
             "delete_folder": self.move.delete_folder,
+            "forget_folder": self.move.forget_folder,
             "rename_folder": self.move.rename_folder,
             "auto_organize_models": self.auto_organize.auto_organize_models,
             "get_auto_organize_progress": self.auto_organize.get_auto_organize_progress,

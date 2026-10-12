@@ -70,6 +70,7 @@ function createApiClient(overrides = {}) {
       dir_count: 0,
       restorable: true,
     }),
+    forgetFolder: vi.fn().mockResolvedValue({ success: true, folder: 'empty' }),
     renameFolder: vi.fn().mockResolvedValue({
       success: true,
       renamed: true,
@@ -1294,7 +1295,7 @@ describe('SidebarManager folder deletion', () => {
     expect(manager.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('reports a stale tree node as missing instead of fabricating a path', async () => {
+  it('offers to clear a stale tree node instead of fabricating a path', async () => {
     const apiClient = createApiClient({
       resolveFolder: vi.fn().mockResolvedValue({
         success: true, folder: 'removed', candidates: [],
@@ -1307,9 +1308,85 @@ describe('SidebarManager folder deletion', () => {
 
     const modal = document.getElementById('deleteFolderModal');
     expect(modal.dataset.state).toBe('missing');
-    expect(confirmBtn().style.display).toBe('none');
-    expect(manager._pendingDeleteFolderPath).toBeNull();
+    // Nothing to delete, so the delete probe never runs and no path is guessed...
     expect(apiClient.deleteFolder).not.toHaveBeenCalled();
+    expect(manager._pendingDeleteFolderPath).toBeNull();
+    // ...but the records are all that keeps the node alive, so they can be
+    // dropped from here (issue #1145).
+    expect(confirmBtn().style.display).toBe('');
+    expect(confirmBtn().disabled).toBe(false);
+    expect(confirmBtn().textContent).toBe('Remove from list');
+  });
+
+  it('clears the node through the forget endpoint when no root holds it', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true, folder: 'removed', candidates: [],
+      }),
+      forgetFolder: vi.fn().mockResolvedValue({ success: true, folder: 'removed' }),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager.showDeleteFolderModal('removed');
+    const cleared = await manager.handleDeleteFolderConfirm();
+
+    expect(cleared).toBe(true);
+    expect(apiClient.forgetFolder).toHaveBeenCalledWith('removed');
+    expect(apiClient.deleteFolder).not.toHaveBeenCalled();
+    expect(manager.refresh).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.forgotten',
+      { name: 'removed' },
+      'success'
+    );
+  });
+
+  it('reports a delete that found the folder gone as cleared, not deleted', async () => {
+    // The probe can pass and the directory still be gone by the time the real
+    // delete runs (a file manager move in between, or another row of the
+    // multi-root list): the records are dropped and nothing was deleted.
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockResolvedValue({
+        success: true,
+        code: 'missing',
+        already_missing: true,
+        folder: 'empty',
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const deleted = await manager._deleteFolder('empty', '/models/loras/empty');
+
+    expect(deleted).toBe(true);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.forgotten',
+      { name: 'empty' },
+      'success'
+    );
+    expect(showActionToast).not.toHaveBeenCalled();
+  });
+
+  it('warns when the folder turned out to be back on disk', async () => {
+    const apiClient = createApiClient({
+      resolveFolder: vi.fn().mockResolvedValue({
+        success: true, folder: 'back', candidates: [],
+      }),
+      forgetFolder: vi.fn().mockRejectedValue(
+        Object.assign(new Error('The folder still exists on disk'), { code: 'exists' })
+      ),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const cleared = await manager._deleteFolder('back');
+
+    expect(cleared).toBe(false);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.exists', {}, 'warning'
+    );
   });
 
   it('refuses a node whose every copy is a symbolic link', async () => {

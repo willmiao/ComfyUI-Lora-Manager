@@ -1419,6 +1419,7 @@
             "notEmptyMessageExcluded": "Dieser Ordner enthält noch {count} Modelldatei(en), davon {excluded} von der Bibliothek ausgeschlossen. Heben Sie den Ausschluss unter „Ausgeschlossene Modelle verwalten“ auf und löschen Sie sie zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
             "missingTitle": "Ordner nicht gefunden",
             "missingMessage": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "removeFromList": "[TODO: Translate] Remove from list",
             "symlinkTitle": "Ordner ist ein symbolischer Link",
             "symlinkMessage": "Alle Kopien dieses Ordners sind symbolische Links; entfernen Sie den Link oder sein Ziel außerhalb von LoRA Manager.",
             "protectedTitle": "Ordner ist geschützt",
@@ -1440,6 +1441,8 @@
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Löschen von Ordnern wird auf dieser Seite nicht unterstützt",
             "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the sidebar",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
             "symlink": "Dieser Ordner ist ein symbolischer Link; er kann nicht über die Seitenleiste gelöscht werden.",
             "successMulti": "Ordner \"{name}\" aus {count} Modell-Stammverzeichnissen gelöscht",
             "partial": "{count} von {total} Kopien gelöscht — {failed} konnten nicht gelöscht werden. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."

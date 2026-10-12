@@ -1419,6 +1419,7 @@
             "notEmptyMessageExcluded": "이 폴더에는 아직 모델 파일이 {count}개 있으며, 그중 {excluded}개는 라이브러리에서 제외되어 있습니다. '제외된 모델 관리'에서 제외를 해제한 뒤 먼저 삭제하세요 —— 폴더를 삭제해도 모델 파일이 함께 삭제되지는 않습니다.",
             "missingTitle": "폴더를 찾을 수 없습니다",
             "missingMessage": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
+            "removeFromList": "[TODO: Translate] Remove from list",
             "symlinkTitle": "폴더가 심볼릭 링크입니다",
             "symlinkMessage": "이 폴더의 모든 복사본이 심볼릭 링크입니다. LoRA Manager 외부에서 링크 또는 그 대상을 삭제하세요.",
             "protectedTitle": "보호된 폴더",
@@ -1440,6 +1441,8 @@
             "busy": "이 폴더에 아직 대기 중인 삭제 작업이 있습니다. 되돌리기 시간이 끝날 때까지 기다리세요.",
             "unsupported": "이 페이지에서는 폴더를 삭제할 수 없습니다",
             "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the sidebar",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
             "symlink": "이 폴더는 심볼릭 링크이므로 사이드바에서 삭제할 수 없습니다.",
             "successMulti": "모델 루트 {count}개에서 \"{name}\" 폴더를 삭제했습니다",
             "partial": "복사본 {total}개 중 {count}개를 삭제했습니다 —— {failed}개는 삭제하지 못했습니다. 사이드바를 새로 고친 후 다시 시도하세요."

@@ -1419,6 +1419,7 @@
             "notEmptyMessageExcluded": "בתיקייה זו עדיין יש {count} קובצי מודלים, שמהם {excluded} מוחרגים מהספרייה. בטל את ההחרגה ב«ניהול מודלים מוחרגים» ומחק אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
             "missingTitle": "התיקייה לא נמצאה",
             "missingMessage": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
+            "removeFromList": "[TODO: Translate] Remove from list",
             "symlinkTitle": "התיקייה היא קישור סמלי",
             "symlinkMessage": "כל העותקים של תיקייה זו הם קישורים סמליים; מחק את הקישור או את היעד שלו מחוץ ל-LoRA Manager.",
             "protectedTitle": "תיקייה מוגנת",
@@ -1440,6 +1441,8 @@
             "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
             "unsupported": "מחיקת תיקיות אינה נתמכת בדף זה",
             "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the sidebar",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
             "symlink": "תיקייה זו היא קישור סמלי; לא ניתן למחוק אותה מסרגל הצד.",
             "successMulti": "התיקייה \"{name}\" נמחקה מ-{count} שורשי מודלים",
             "partial": "נמחקו {count} מתוך {total} עותקים — {failed} לא נמחקו. רענן את סרגל הצד ונסה שוב."
