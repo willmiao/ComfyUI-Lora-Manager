@@ -309,6 +309,36 @@ class _UnreachablePaths:
                 return prefix
         return None
 
+    def covers_folder(self, root: str, folder: str) -> bool:
+        """Whether *folder* (relative to *root*) sits in an unreadable area.
+
+        Used when refreshing the recorded folder list: an entry the walk did not
+        find is only kept while a *specific* area we could not read may still hold
+        it -- a directory ``os.walk`` failed to enter, or a first-level symlink
+        whose target is gone. Both directions count: the folder may be inside the
+        unreadable directory, or hold it.
+
+        A root that is unreadable *as a whole* (drive switched off) deliberately
+        does not count here. The recorded list holds library-relative names, so a
+        missing root would trivially "cover" every entry and no ghost could ever be
+        cleared (issue #1145). Its folders still show up while they hold cached
+        models -- ``get_all_folders()`` unions the model-derived folders -- and a
+        genuinely empty folder comes back the next time that root is walked.
+        """
+        relative = (folder or "").replace("\\", "/").strip("/")
+        if not relative:
+            return False
+
+        root_prefix = _normalized_root_prefix(root)
+        candidate = f"{root_prefix}{relative}/"
+        if _CASE_INSENSITIVE_PATHS:
+            candidate = candidate.lower()
+        return any(
+            prefix != root_prefix
+            and (candidate.startswith(prefix) or prefix.startswith(candidate))
+            for prefix in self._prefixes
+        )
+
     def record_kept(self, prefix: str, amount: int = 1) -> None:
         detail = self._details.get(prefix)
         if detail is not None:
@@ -2197,22 +2227,43 @@ class ModelScanner:
                     total_removed += dedup_removed
             
             # The walk above visited every directory *in scope*, so refresh the
-            # recorded folder list (including empty folders) when nothing was
-            # left unverified — e.g. an empty folder was created or removed
-            # externally. A scoped scan, or one with unreadable paths, can only
-            # add to the list: dropping folders this walk never looked at would
-            # empty the sidebar for every drive that was not scanned.
+            # recorded folder list (including empty folders) when this run could
+            # speak for every root: e.g. an empty folder was created or removed
+            # externally.
+            #
+            # A folder the walk did not find is dropped unless a root we could not
+            # read still covers it — the drive is off, ``os.walk`` failed to enter
+            # a directory, or a first-level symlink lost its target. Keeping the
+            # *whole* list whenever anything was unreadable is what made a ghost
+            # folder outlive every refresh, a restart and even the folder being
+            # deleted in the UI (issue #1145). A scoped scan cannot speak for the
+            # roots it was not asked about, so it still only adds: dropping
+            # folders it never looked at would empty the sidebar for every drive
+            # that was not scanned.
             sorted_discovered = sorted(discovered_folders, key=lambda x: x.lower())
-            fully_verified = (
-                len(roots) == len(configured_roots)
-                and scope_folder is None
-                and not unreachable.has_entries()
+            discovered_set = set(sorted_discovered)
+            recorded = set(self._cache.all_folders or [])
+            speaks_for_every_root = scope_folder is None and (
+                scope is None
+                or scope.roots is None
+                or len(scope_roots) == len(configured_roots)
             )
-            if fully_verified:
-                merged_folders = sorted_discovered
+            if speaks_for_every_root:
+                merged_folders = sorted(
+                    discovered_set
+                    | {
+                        folder
+                        for folder in recorded - discovered_set
+                        if any(
+                            unreachable.covers_folder(root, folder)
+                            for root in configured_roots + configured_only
+                        )
+                    },
+                    key=lambda x: x.lower(),
+                )
             else:
                 merged_folders = sorted(
-                    set(self._cache.all_folders or []) | set(sorted_discovered),
+                    recorded | discovered_set,
                     key=lambda x: x.lower(),
                 )
             folders_changed = self._cache.all_folders != merged_folders

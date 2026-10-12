@@ -22,9 +22,11 @@ Implementation notes / deviations from the draft below:
   they are outside every configured root prefix. The `root_unreachable` path therefore covers the
   *mid-session* case (drive switched off while LM runs), which is the workflow that motivated the
   issue; both paths keep the entries, which is what matters.
-* Known limitation to keep in mind: after a scoped scan (or one with unreadable paths) the recorded
-  empty-folder list is unioned instead of replaced, so an empty folder deleted on disk can linger in
-  the sidebar until the next full refresh. Models are unaffected.
+* Known limitation to keep in mind: after a *scoped* scan the recorded empty-folder list is unioned
+  instead of replaced, so an empty folder deleted on disk can linger in the sidebar until the next
+  full refresh. A full refresh keeps only the entries a specific unreadable area (a directory
+  `os.walk` could not enter, an offline symlink) may still hold, so one switched-off drive no longer
+  keeps every other root's ghosts alive (issue #1145).
 
 ## TL;DR (For humans)
 

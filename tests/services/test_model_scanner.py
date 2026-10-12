@@ -2964,6 +2964,18 @@ def _windows_spelling(path: Path) -> str:
     return str(path).replace("/", "\\")
 
 
+def _simulate_windows_separators(monkeypatch) -> None:
+    """Make ``os.sep`` a backslash, as it is on the reporting machine.
+
+    ``os.path`` stays ``posixpath`` (its separator is its own constant), so this
+    only changes code that folds separators through ``os.sep`` -- which is exactly
+    what turned the backslash twin into the live root's unreachable prefix on
+    Windows and stopped deleted models from being pruned. Without it that half of
+    #1145/#1146 can only be reproduced on Windows.
+    """
+    monkeypatch.setattr(os, "sep", "\\")
+
+
 async def _windows_spelling_scanner(tmp_path: Path, monkeypatch):
     """Scanner configured with backslash roots plus a never-created output dir.
 
@@ -2983,6 +2995,7 @@ async def _windows_spelling_scanner(tmp_path: Path, monkeypatch):
         "get_configured_model_roots",
         lambda: [_windows_spelling(primary), _windows_spelling(never_created)],
     )
+    _simulate_windows_separators(monkeypatch)
     return scanner, primary, never_created
 
 
@@ -3079,3 +3092,165 @@ async def test_scoped_scan_accepts_the_host_path_spelling(tmp_path: Path, monkey
 
     assert summary is not None
     assert summary["scanned_roots"] == [primary.name]
+
+
+@pytest.mark.asyncio
+async def test_external_folder_move_leaves_no_ghost(tmp_path: Path, monkeypatch):
+    """A folder moved with a file manager must leave no ghost (issue #1145).
+
+    Both reported symptoms share the cause fixed for #1146: while the configured
+    twin of a live root was registered as unreachable, the cached rows under the
+    old path were "kept" instead of pruned (the same model was then listed at its
+    old and its new location), and the walk could never be considered fully
+    verified -- so `all_folders` only ever grew and the deleted folder stayed in
+    the sidebar, even though the delete dialog correctly reported it as gone.
+    """
+    primary = tmp_path / "primary"
+    (primary / "Krea2" / "Women").mkdir(parents=True)
+    original = primary / "Krea2" / "Women" / "a.txt"
+    original.write_text("a", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    assert "Krea2/Women" in await scanner.get_all_folders()
+
+    # What Dopus did: the folder is gone and its file lives somewhere else.
+    (primary / "Krea2" / "New").mkdir()
+    shutil.move(str(original), str(primary / "Krea2" / "New" / "a.txt"))
+    (primary / "Krea2" / "Women").rmdir()
+    monkeypatch.setattr(
+        scanner, "get_configured_model_roots", lambda: [_windows_spelling(primary)]
+    )
+    _simulate_windows_separators(monkeypatch)
+
+    summary = await scanner._reconcile_cache()
+
+    # One model, listed once: the old path is pruned and the new one added.
+    assert summary is not None
+    assert summary["removed"] == 1
+    assert summary["added"] == 1
+    assert summary["kept_unreachable"] == 0
+    assert [item["file_path"] for item in scanner._cache.raw_data] == [
+        _normalize_path(primary / "Krea2" / "New" / "a.txt")
+    ]
+    # ...and the folder record follows the filesystem instead of only growing.
+    all_folders = await scanner.get_all_folders()
+    assert "Krea2/Women" not in all_folders
+    assert "Krea2/New" in all_folders
+
+
+def test_unreachable_paths_cover_whole_folders():
+    """The folder refresh asks "could this specific entry have been read?"."""
+    unreachable = model_scanner._UnreachablePaths()
+    unreachable.add("/mnt/drive-z/loras", "root_unreachable", kept=1)
+    unreachable.add("/mnt/a/loras/locked", "unreadable_dir")
+
+    # A directory the walk could not enter covers itself and everything below it,
+    # whichever way the root is spelled.
+    assert unreachable.covers_folder("/mnt/a/loras", "locked") is True
+    assert unreachable.covers_folder("/mnt/a/loras", "locked/deep") is True
+    assert unreachable.covers_folder("\\mnt\\a\\loras", "locked/deep") is True
+
+    # A root that is unreadable as a whole does not: library-relative names carry
+    # no root, so it would cover every entry and keep every ghost alive (#1145).
+    assert unreachable.covers_folder("/mnt/drive-z/loras", "pack") is False
+
+    assert unreachable.covers_folder("/mnt/a/loras", "free") is False
+    assert unreachable.covers_folder("/mnt/a/loras", "locked_other") is False
+    assert unreachable.covers_folder("/mnt/a/loras", "") is False
+
+
+@pytest.mark.asyncio
+async def test_ghost_folder_cleared_while_another_root_is_offline(
+    tmp_path: Path, monkeypatch
+):
+    """A switched-off drive must not keep the other roots' ghosts alive (#1145).
+
+    Keeping the whole folder list whenever anything was unreadable is what made a
+    folder moved in a file manager outlive every refresh. Only the entries the
+    unreadable root can actually account for may be kept.
+    """
+    online = tmp_path / "online"
+    offline = tmp_path / "offline"
+    (online / "old" / "pack").mkdir(parents=True)
+    (online / "old" / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    (offline / "keepme").mkdir(parents=True)
+    (offline / "keepme" / "b.txt").write_text("b", encoding="utf-8")
+    (offline / "empty_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([online, offline])
+    await scanner._initialize_cache()
+    assert "old/pack" in scanner._cache.all_folders
+    assert "keepme" in scanner._cache.all_folders
+
+    # The folder is moved externally...
+    (online / "new" / "pack").mkdir(parents=True)
+    shutil.move(
+        str(online / "old" / "pack" / "a.txt"),
+        str(online / "new" / "pack" / "a.txt"),
+    )
+    shutil.rmtree(online / "old")
+    # ...while the other drive is switched off.
+    shutil.rmtree(offline)
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["added"] == 1
+    assert summary["removed"] == 1
+    assert summary["kept_unreachable"] == 1
+
+    folders = await scanner.get_all_folders()
+    assert "old" not in folders
+    assert "old/pack" not in folders
+    assert "new/pack" in folders
+    # The unreadable root keeps its model-bearing folders and its cached models
+    # (model-derived folders are always unioned in)...
+    assert "keepme" in folders
+    assert _normalize_path(offline / "keepme" / "b.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+    # ...while an *empty* folder on it cannot be attributed to any root, so it is
+    # not kept alive. It comes back the next time that root is walked.
+    assert "empty_folder" not in folders
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_never_drops_folders_of_other_roots(tmp_path: Path):
+    """A scoped scan cannot speak for the roots it was not asked about."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    (root_a / "a_folder").mkdir(parents=True)
+    (root_b / "b_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    shutil.rmtree(root_a / "a_folder")
+    await scanner._reconcile_cache(scope=ReconcileScope(roots=(str(root_b),)))
+
+    folders = await scanner.get_all_folders()
+    assert "a_folder" in folders
+    assert "b_folder" in folders
+
+
+@pytest.mark.asyncio
+async def test_root_scoped_scan_of_every_root_still_cleans_folders(tmp_path: Path):
+    """Asking for every root is a full refresh: ghosts are dropped."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    (root_a / "a_folder").mkdir(parents=True)
+    (root_b / "b_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    shutil.rmtree(root_a / "a_folder")
+    await scanner._reconcile_cache(
+        scope=ReconcileScope(roots=(str(root_a), str(root_b)))
+    )
+
+    folders = await scanner.get_all_folders()
+    assert "a_folder" not in folders
+    assert "b_folder" in folders
+
