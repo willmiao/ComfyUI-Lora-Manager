@@ -1824,7 +1824,7 @@ export class SidebarManager {
                 );
                 message.textContent = translate(
                     'sidebar.deleteFolderModal.missingMessage', {},
-                    'This folder no longer exists on disk. Its entries can still be removed from the sidebar.'
+                    'This folder no longer exists on disk. You can remove it from the list.'
                 );
                 // There is nothing left to delete, but the records are what keeps
                 // the ghost node in the tree: offer to drop them (issue #1145).
