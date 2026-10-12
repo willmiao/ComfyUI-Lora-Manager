@@ -724,3 +724,33 @@ class TestHasWorkflowColumn:
         assert loaded is not None
         assert loaded.raw_data[0]["id"] == "legacy-1"
         assert loaded.raw_data[0]["has_workflow"] is False
+
+
+def test_schema_initialization_closes_its_connection(tmp_path, monkeypatch):
+    """The schema init must not leak a file handle.
+
+    ``with sqlite3.Connection`` only ends the transaction: the handle stays open,
+    and on Windows a live handle keeps the cache database undeletable
+    (``WinError 32``) until the garbage collector happens to run -- which broke
+    every teardown that removes a temporary cache file.
+    """
+
+    import sqlite3
+
+    from py.services import persistent_recipe_cache as module
+
+    opened = []
+    real_connect = sqlite3.connect
+
+    def tracking_connect(*args, **kwargs):
+        conn = real_connect(*args, **kwargs)
+        opened.append(conn)
+        return conn
+
+    monkeypatch.setattr(sqlite3, "connect", tracking_connect)
+    module.PersistentRecipeCache(db_path=str(tmp_path / "recipe.sqlite"))
+
+    assert opened, "initializing the schema should have opened a connection"
+    for conn in opened:
+        with pytest.raises(sqlite3.ProgrammingError):
+            conn.execute("SELECT 1")

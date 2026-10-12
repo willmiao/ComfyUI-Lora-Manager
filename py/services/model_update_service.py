@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Seque
 
 from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
+from ..utils.cache_db import closing_connection
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
@@ -445,7 +446,7 @@ class ModelUpdateService:
         if self._schema_initialized:
             return
         try:
-            with self._connect() as conn:
+            with closing_connection(self._connect()) as conn:
                 conn.execute("PRAGMA journal_mode=WAL")
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.executescript(self._SCHEMA)
@@ -484,7 +485,7 @@ class ModelUpdateService:
             return
 
         try:
-            with sqlite3.connect(legacy_path, check_same_thread=False) as legacy_conn:
+            with closing_connection(sqlite3.connect(legacy_path, check_same_thread=False)) as legacy_conn:
                 legacy_conn.row_factory = sqlite3.Row
                 status_rows = legacy_conn.execute(
                     """
@@ -2315,7 +2316,7 @@ class ModelUpdateService:
         status_rows: list[sqlite3.Row] = []
         version_rows: list[sqlite3.Row] = []
 
-        with self._connect() as conn:
+        with closing_connection(self._connect()) as conn:
             for start in range(0, len(ids), self._SQLITE_MAX_VARIABLES):
                 chunk = tuple(ids[start : start + self._SQLITE_MAX_VARIABLES])
                 placeholders = ",".join("?" for _ in chunk)
@@ -2418,7 +2419,7 @@ class ModelUpdateService:
             record.last_checked_at,
             1 if record.should_ignore_model else 0,
         )
-        with self._connect() as conn:
+        with closing_connection(self._connect()) as conn:
             conn.execute(
                 """
                 INSERT INTO model_update_status (

@@ -14,7 +14,8 @@ the write path in WAL so readers are never blocked by a writer.
 from __future__ import annotations
 
 import sqlite3
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 
 # How long a connection waits for a competing writer before raising.
 CONCURRENT_TIMEOUT_SECONDS = 30.0
@@ -79,3 +80,19 @@ def connect_cache_db(
         pass
 
     return conn
+
+
+@contextmanager
+def closing_connection(conn: sqlite3.Connection) -> Iterator[sqlite3.Connection]:
+    """Yield *conn* and close it on exit.
+
+    ``with sqlite3.Connection`` only ends the transaction: it leaves the file
+    handle open, and a live handle keeps the cache database undeletable on
+    Windows (``WinError 32``) until the garbage collector happens to run. Every
+    ``with`` over a cache connection goes through here instead.
+    """
+
+    try:
+        yield conn
+    finally:
+        conn.close()

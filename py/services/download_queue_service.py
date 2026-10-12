@@ -8,6 +8,7 @@ import sqlite3
 import time
 from typing import Any, List, Optional
 
+from ..utils.cache_db import closing_connection
 from ..utils.cache_paths import get_cache_base_dir
 
 logger = logging.getLogger(__name__)
@@ -127,7 +128,7 @@ class DownloadQueueService:
     def _initialize_schema(self) -> None:
         if self._schema_initialized:
             return
-        with self._connect() as conn:
+        with closing_connection(self._connect()) as conn:
             conn.executescript(self._SCHEMA_TABLES)
 
             # Databases created by older versions lack

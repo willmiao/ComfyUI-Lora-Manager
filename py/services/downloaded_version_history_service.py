@@ -11,6 +11,7 @@ import sqlite3
 import time
 from typing import Iterable, Mapping, Optional, Sequence
 
+from ..utils.cache_db import closing_connection
 from ..utils.cache_paths import get_cache_base_dir
 from .settings_manager import get_settings_manager
 
@@ -100,7 +101,7 @@ class DownloadedVersionHistoryService:
     def _initialize_schema(self) -> None:
         if self._schema_initialized:
             return
-        with self._connect() as conn:
+        with closing_connection(self._connect()) as conn:
             conn.executescript(self._SCHEMA)
             conn.commit()
         self._schema_initialized = True

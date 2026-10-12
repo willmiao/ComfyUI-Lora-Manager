@@ -19,7 +19,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ..utils.cache_db import connect_cache_db
+from ..utils.cache_db import closing_connection, connect_cache_db
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 from ..utils.file_lock import exclusive_lock
 
@@ -457,7 +457,7 @@ class PersistentRecipeCache:
             if self._schema_initialized:
                 return
             try:
-                with self._connect() as conn:
+                with closing_connection(self._connect()) as conn:
                     conn.execute("PRAGMA journal_mode=WAL")
                     conn.execute("PRAGMA foreign_keys = ON")
                     conn.executescript(
