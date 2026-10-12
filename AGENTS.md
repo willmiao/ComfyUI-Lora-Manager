@@ -72,10 +72,24 @@ python scripts/sync_translation_keys.py
 
 Locale files are in `locales/` (en, zh-CN, zh-TW, ja, ko, fr, de, es, ru, he).
 
+`locales/*.json` keep a hand-maintained layout and **the two groups differ**: `en.json` (the
+reference) uses **2-space indent**, the nine translated locales use **4-space indent** (what
+`sync_translation_keys.py` writes). Both keep `ensure_ascii=False` and exactly one trailing newline.
+Edit values **in place** (line/anchored text edit) and add keys with the sync script. Never
+`json.load` + `json.dumps` a locale file just to change a string: the serializer rewrites the whole
+layout, so a two-value edit lands as a several-thousand-line diff that has to be reverted and redone
+(`tests/i18n/test_i18n.py::test_locale_files_keep_their_maintained_layout` now fails on that).
+After writing to any existing structured file, check `git diff --stat`: the changed-line count must
+match the change you meant to make.
+
 After adding keys to `en.json` and syncing, **stop**: the `[TODO: Translate]` placeholders in
 the other locales are the expected end state during feature development. Do NOT translate
 proactively — translate only when the feature owner explicitly asks (see
 `docs/i18n-translation-guidelines.md` §7).
+
+Changing an **existing** English string is a translation event too: the other locales' value for
+that key is now stale, so put it back in the queue (`[TODO: Translate] <new English>`) instead of
+leaving a translation that describes the old behaviour.
 
 **Before translating anything, read `docs/i18n-translation-guidelines.md`** — it defines the
 term conventions (e.g. "Recipe" stays untranslated in French, 配方 in Chinese; model-type and
