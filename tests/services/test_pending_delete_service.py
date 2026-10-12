@@ -2298,3 +2298,89 @@ async def test_symlink5_cross_volume_merge_then_one_undo_restores_everything(
     assert not (root_b / PENDING_DELETE_DIR_NAME / bid_b).exists()
     staging = root_a / PENDING_DELETE_DIR_NAME
     assert not staging.exists() or not any(staging.iterdir())
+
+
+# ---------------------------------------------------------------------------
+# (n) the staging CONTAINER is dropped with its last batch (issue #1145)
+# ---------------------------------------------------------------------------
+async def test_n_purge_removes_the_empty_staging_container(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """`.lm-pending-delete` is a container, not a record of a pending delete.
+
+    Leaving it behind made every later folder delete (and rename) answer "A
+    deletion is still pending inside this folder" forever, because the folder
+    manifest only matched the directory name.
+    """
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "expired")
+
+    manifest_path = root / PENDING_DELETE_DIR_NAME / batch_id / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expires_at"] = int(time.time()) - 10
+    manifest_path.write_text(json.dumps(manifest))
+
+    await service.purge_expired()
+
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+
+async def test_n_undo_removes_the_empty_staging_container(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "restored")
+
+    await service.undo(batch_id)
+
+    assert (root / "restored.safetensors").exists()
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+
+async def test_n_container_survives_while_another_batch_is_staged(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Only the last batch out drops the container."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    service = await PendingDeleteService.get_instance()
+    expired_id = await _stage_simple(service, root, "expired")
+    fresh_id = await _stage_simple(service, root, "fresh")
+
+    manifest_path = root / PENDING_DELETE_DIR_NAME / expired_id / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expires_at"] = int(time.time()) - 10
+    manifest_path.write_text(json.dumps(manifest))
+
+    await service.purge_expired()
+
+    staging = root / PENDING_DELETE_DIR_NAME
+    assert staging.is_dir()
+    assert not (staging / expired_id).exists()
+    assert (staging / fresh_id).exists()
+
+
+async def test_n_empty_manifestless_batch_is_dropped_not_quarantined(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A crash between makedirs and the manifest leaves nothing to preserve."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    staging = root / PENDING_DELETE_DIR_NAME
+    (staging / "batch1").mkdir(parents=True)
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    service = await PendingDeleteService.get_instance()
+    await service.purge_expired(scan_roots=True)
+
+    assert not staging.exists()

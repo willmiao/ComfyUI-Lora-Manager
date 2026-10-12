@@ -359,7 +359,9 @@ async def test_delete_folder_success_manifest_carries_excluded_model_count(tmp_p
 @pytest.mark.asyncio
 async def test_delete_folder_refuses_while_a_staged_delete_is_pending(tmp_path: Path):
     target = _make_nested(tmp_path)
-    (target / ".lm-pending-delete").mkdir()
+    batch = target / ".lm-pending-delete" / "batch1"
+    batch.mkdir(parents=True)
+    (batch / "manifest.json").write_text("{}", encoding="utf-8")
     scanner = FakeScanner([tmp_path])
     service = ModelMoveService(scanner, "lora")
 
@@ -368,6 +370,43 @@ async def test_delete_folder_refuses_while_a_staged_delete_is_pending(tmp_path: 
     assert result["success"] is False
     assert result["code"] == "busy"
     assert target.exists()
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_ignores_an_empty_staging_container(tmp_path: Path):
+    """An empty `.lm-pending-delete` is a leftover, not a pending deletion.
+
+    Every purge, undo and failed staging used to leave the container behind, and
+    the name match alone made the folder undeletable for good: "A deletion is
+    still pending inside this folder. Wait for the undo window to expire." with
+    no window left to wait for (issue #1145 follow-up).
+    """
+    target = _make_nested(tmp_path)
+    (target / ".lm-pending-delete").mkdir()
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is True
+    assert not target.exists()
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_refuses_over_a_quarantined_batch(tmp_path: Path):
+    """Quarantine preserves the user's staged files, so it still blocks."""
+    target = _make_nested(tmp_path)
+    quarantined = target / ".lm-pending-delete" / "batch1.orphaned"
+    quarantined.mkdir(parents=True)
+    (quarantined / "model.safetensors").write_bytes(b"user-data")
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is False
+    assert result["code"] == "busy"
+    assert (quarantined / "model.safetensors").read_bytes() == b"user-data"
 
 
 @pytest.mark.asyncio
@@ -669,7 +708,9 @@ async def test_rename_folder_refuses_symlinked_directory(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_rename_folder_refuses_while_a_staged_delete_is_pending(tmp_path: Path):
     target = _make_nested(tmp_path)
-    (target / ".lm-pending-delete").mkdir()
+    batch = target / ".lm-pending-delete" / "batch1"
+    batch.mkdir(parents=True)
+    (batch / "manifest.json").write_text("{}", encoding="utf-8")
     scanner = FakeScanner([tmp_path])
     service = ModelMoveService(scanner, "lora")
 
@@ -679,6 +720,20 @@ async def test_rename_folder_refuses_while_a_staged_delete_is_pending(tmp_path: 
     assert result["code"] == "busy"
     assert target.is_dir()
     assert scanner.renamed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_ignores_an_empty_staging_container(tmp_path: Path):
+    """The leftover container must not block a rename either."""
+    target = _make_nested(tmp_path)
+    (target / ".lm-pending-delete").mkdir()
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), "animation")
+
+    assert result["success"] is True
+    assert scanner.renamed_folders
 
 
 @pytest.mark.asyncio

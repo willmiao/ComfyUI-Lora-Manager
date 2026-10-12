@@ -12,7 +12,10 @@ from ..utils.recipes_paths import path_is_or_contains_recipes_dir
 from ..utils.sidecar_paths import is_centralized, resolve_centralized_dir_for_dir
 from ..services.settings_manager import get_settings_manager
 from ..services.model_lifecycle_service import _require_path_in_library_roots
-from ..services.pending_delete_service import PENDING_DELETE_DIR_NAME
+from ..services.pending_delete_service import (
+    PENDING_DELETE_DIR_NAME,
+    staging_dir_has_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -881,7 +884,12 @@ class ModelMoveService:
         excluded_paths = self._excluded_model_paths()
 
         for dirpath, dirnames, filenames in os.walk(absolute_path):
-            if PENDING_DELETE_DIR_NAME in dirnames:
+            # The container alone means nothing: an empty `.lm-pending-delete`
+            # is a leftover from a purge, an undo or a failed staging, and
+            # treating it as pending made the folder undeletable for good.
+            if PENDING_DELETE_DIR_NAME in dirnames and staging_dir_has_content(
+                os.path.join(dirpath, PENDING_DELETE_DIR_NAME)
+            ):
                 pending_delete_job = True
 
             for name in dirnames:
@@ -1072,9 +1080,15 @@ class ModelMoveService:
 
     @staticmethod
     def _has_pending_delete_job(absolute_path: str) -> bool:
-        """Return True when a staged-delete batch lives inside the subtree."""
-        for _dirpath, dirnames, _filenames in os.walk(absolute_path):
-            if PENDING_DELETE_DIR_NAME in dirnames:
+        """Return True when a staged-delete batch lives inside the subtree.
+
+        An empty ``.lm-pending-delete`` container does not count: it is a
+        leftover, not a batch, and a rename must not be refused because of one.
+        """
+        for dirpath, dirnames, _filenames in os.walk(absolute_path):
+            if PENDING_DELETE_DIR_NAME in dirnames and staging_dir_has_content(
+                os.path.join(dirpath, PENDING_DELETE_DIR_NAME)
+            ):
                 return True
         return False
 

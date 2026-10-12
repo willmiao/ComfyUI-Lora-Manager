@@ -55,6 +55,28 @@ MANIFEST_FILE_NAME = "manifest.json"
 # deleted by the sweep.
 ORPHANED_SUFFIX = ".orphaned"
 
+
+def staging_dir_has_content(directory: str) -> bool:
+    """Whether a staging directory still holds a batch (or a quarantined one).
+
+    ``.lm-pending-delete`` is only a container: the batch dir inside it is what
+    carries the staged files, and the purge, the undo and the staging rollback
+    all remove it. An empty container left behind must not be mistaken for a
+    staged delete -- it used to make every later folder delete answer "A
+    deletion is still pending inside this folder" forever, with no undo window
+    to wait for and nothing in the UI to clear it (issue #1145 follow-up).
+
+    Quarantined batches (``*.orphaned``) are kept on purpose, so anything left
+    inside still counts. An unreadable directory counts as content too: never
+    delete over something we could not list.
+    """
+
+    try:
+        return bool(os.listdir(directory))
+    except OSError:
+        return True
+
+
 # Map scanner.model_type (singular) to the manifest page type values.
 _MODEL_TYPE_PAGE_MAP = {
     "lora": "loras",
@@ -201,6 +223,7 @@ class PendingDeleteService:
                 if batch_dir:
                     self._rollback_model_staging(batch_dir, staged_pairs)
                     self._remove_empty_dir(batch_dir)
+                    self._remove_empty_staging_parent(batch_dir)
                 return None
             except Exception as exc:  # defensive - never block the delete flow
                 logger.warning(
@@ -266,6 +289,7 @@ class PendingDeleteService:
                 if batch_dir:
                     self._rollback_recipe_staging(batch_dir, staged_pairs)
                     self._remove_empty_dir(batch_dir)
+                    self._remove_empty_staging_parent(batch_dir)
                 return None
             except Exception as exc:  # defensive - never block the delete flow
                 logger.warning(
@@ -454,6 +478,7 @@ class PendingDeleteService:
             # Remove the manifest + batch dir only after all entries restored.
             self._remove_manifest(batch_dir)
             self._remove_empty_dir(batch_dir)
+            self._remove_empty_staging_parent(batch_dir)
             await self._forget_batch(batch_id)
             # Clean up merged loser dirs (their staged files were restored
             # above) and drop them from the registry too.
@@ -832,6 +857,7 @@ class PendingDeleteService:
                 continue
             self._remove_manifest(src)
             self._remove_empty_dir(src)
+            self._remove_empty_staging_parent(src)
             removed.append(os.path.basename(src))
         return removed
 
@@ -842,6 +868,13 @@ class PendingDeleteService:
 
         manifest = self._read_manifest(batch_dir)
         if manifest is None:
+            if not staging_dir_has_content(batch_dir):
+                # Crash leftover: the batch dir was created but nothing was ever
+                # staged into it. Quarantining an empty directory would leave a
+                # container that blocks folder deletion for good.
+                self._remove_empty_dir(batch_dir)
+                self._remove_empty_staging_parent(batch_dir)
+                return True
             # Corrupted or manifest-less batch: quarantine, NEVER delete the
             # staged files (they may be the only copy of the user's data).
             self._quarantine_batch_dir(batch_dir)
@@ -885,6 +918,7 @@ class PendingDeleteService:
 
         self._remove_manifest(batch_dir)
         self._remove_empty_dir(batch_dir)
+        self._remove_empty_staging_parent(batch_dir)
         self._remove_merged_batch_dirs(manifest)
         return True
 
@@ -1131,6 +1165,18 @@ class PendingDeleteService:
             os.rmdir(directory)
         except OSError as exc:
             logger.debug("Directory %s not empty or missing: %s", directory, exc)
+
+    def _remove_empty_staging_parent(self, batch_dir: str) -> None:
+        """Drop the staging container once its last batch is gone.
+
+        Only an empty ``.lm-pending-delete`` directory is removed (``rmdir``
+        refuses anything else), and only when the path really is one, so a model
+        folder is never at risk.
+        """
+        parent = os.path.dirname(batch_dir)
+        if os.path.basename(parent) != PENDING_DELETE_DIR_NAME:
+            return
+        self._remove_empty_dir(parent)
 
     def _new_batch_id(self) -> str:
         return uuid.uuid4().hex
