@@ -37,6 +37,12 @@ export class DownloadManager {
         // Manual checkpoint/diffusion root override on the location step:
         // null follows the auto classification, true/false is user-picked.
         this._routingOverride = null;
+        // Root resolved by download_root_rules for the current version
+        // (null = no rule matched; the default root is preselected).
+        this._resolvedRoot = null;
+        // The download_root_rules rule that matched, for the location-step
+        // "routed by rule" hint ({match_type, match} or null).
+        this._matchedRule = null;
 
         // Multi-file selection state: selectedFile stays the first selected
         // file for backward compatibility with single-file flows (#1058).
@@ -981,8 +987,11 @@ export class DownloadManager {
     async proceedToLocationContent() {
 
         try {
+            this._resolvedRoot = null;
+            this._matchedRule = null;
             this._isDiffusionModel = await this._resolveIsDiffusionModel();
             this._otherSubType = await this._resolveOtherSubType();
+            this._resolvedRoot = await this._resolveRuleRoot();
             // Each location-step entry starts from the auto classification;
             // the user can override it via the checkpoint/diffusion toggle.
             this._routingOverride = null;
@@ -1073,13 +1082,59 @@ export class DownloadManager {
         }
         console.log('Default root:', defaultRoot);
         console.log('Available roots:', rootsData.roots);
-        if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
-            console.log(`Setting default root: ${defaultRoot}`);
-            modelRoot.value = defaultRoot;
+        // A download_root_rules hit preselects the rule's root so the
+        // location-step preview matches where the download will land.
+        const preferredRoot = (this._resolvedRoot && rootsData.roots.includes(this._resolvedRoot))
+            ? this._resolvedRoot
+            : defaultRoot;
+        if (preferredRoot && rootsData.roots.includes(preferredRoot)) {
+            console.log(`Setting default root: ${preferredRoot}`);
+            modelRoot.value = preferredRoot;
         }
 
         document.getElementById('modelRootLabel').textContent =
             translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
+
+        this._renderRuleMatchHint();
+    }
+
+    /**
+     * Show which download_root_rules rule routed this download to the
+     * preselected root (or hide the hint when none matched). The user can
+     * still override the root manually; the hint only explains the
+     * preselection.
+     */
+    _renderRuleMatchHint() {
+        const hint = document.getElementById('downloadRuleMatchHint');
+        if (!hint) return;
+
+        const rule = this._matchedRule;
+        if (!rule || (rule.match_type !== 'base_model' && rule.match_type !== 'tag')) {
+            hint.hidden = true;
+            hint.textContent = '';
+            return;
+        }
+
+        const match = Array.isArray(rule.match) ? rule.match : [];
+        let value;
+        let i18nKey;
+        let fallback;
+        if (rule.match_type === 'tag') {
+            const modelTags = (this.currentVersion?.modelTags || [])
+                .map((tag) => String(tag).trim().toLowerCase());
+            value = match.find((entry) => modelTags.includes(String(entry).trim().toLowerCase()))
+                || match[0]
+                || '';
+            i18nKey = 'modals.download.routedByRule.tag';
+            fallback = `Routed by rule: tag "${value}"`;
+        } else {
+            value = this.currentVersion?.baseModel || match[0] || '';
+            i18nKey = 'modals.download.routedByRule.baseModel';
+            fallback = `Routed by rule: base model "${value}"`;
+        }
+
+        hint.textContent = translate(i18nKey, { value }, fallback);
+        hint.hidden = false;
     }
 
     /**
@@ -1166,12 +1221,18 @@ export class DownloadManager {
                     model_type: 'checkpoint',
                     base_model: this.currentVersion?.baseModel || '',
                     file_types: fileTypes,
+                    tags: this.currentVersion?.modelTags || [],
                 }),
             });
             if (!response.ok) {
                 throw new Error(`routing endpoint returned ${response.status}`);
             }
             const data = await response.json();
+            if (typeof data.resolved_root === 'string' && data.resolved_root) {
+                // Root a download_root_rules rule would send this download to.
+                this._resolvedRoot = data.resolved_root;
+            }
+            this._matchedRule = data.matched_rule || null;
             if (typeof data.is_diffusion_model === 'boolean') {
                 return data.is_diffusion_model;
             }
@@ -1180,6 +1241,52 @@ export class DownloadManager {
                 + 'falling back to local file-type check:', error);
         }
         return localFileTypeCheck;
+    }
+
+    /**
+     * Resolve the root a download_root_rules rule routes this download to,
+     * so the location step preselects the same root the backend will use.
+     * Returns null when no rule matches or the endpoint is unavailable.
+     */
+    async _resolveRuleRoot() {
+        // The checkpoints page already fetched the routing decision
+        // (including the rule-resolved root) in _resolveIsDiffusionModel.
+        if (this.apiClient.modelType === 'checkpoints') {
+            return this._resolvedRoot ?? null;
+        }
+
+        // Other-page downloads route by sub_type, not by base model rules;
+        // without version metadata (e.g. Hugging Face downloads) there is
+        // no base model to match a rule against.
+        if (this.apiClient.modelType === 'other'
+            || (!this.selectedFile && !this.currentVersion)) {
+            return null;
+        }
+
+        try {
+            const fileTypes = this.selectedFile
+                ? [this.selectedFile.type]
+                : (this.currentVersion?.files || []).map(f => f.type);
+            const response = await fetch(DOWNLOAD_ENDPOINTS.routing, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model_type: this.apiClient.modelType.replace(/s$/, ''),
+                    base_model: this.currentVersion?.baseModel || '',
+                    file_types: fileTypes,
+                    tags: this.currentVersion?.modelTags || [],
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`routing endpoint returned ${response.status}`);
+            }
+            const data = await response.json();
+            this._matchedRule = data.matched_rule || null;
+            return (typeof data.resolved_root === 'string' && data.resolved_root) || null;
+        } catch (error) {
+            console.warn('[download] root rule resolution unavailable:', error);
+            return null;
+        }
     }
 
     /**

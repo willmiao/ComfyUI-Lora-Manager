@@ -497,6 +497,42 @@
                 "saveFailed": "除外するベースモデルを保存できませんでした: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "ダウンロードルートのルール",
+            "help": "モデルのベースモデルまたはタグに基づいて、ダウンロードを別のルートフォルダに振り分けます。",
+            "description": "ルールは順番にチェックされます。最初に一致したルールが適用され、一致しないダウンロードはデフォルトルートを使用します。",
+            "defaultHint": "デフォルト：{root} — 一致しないダウンロードはここに保存されます",
+            "defaultSuffix": "デフォルト",
+            "addBaseModelRule": "ベースモデルルール",
+            "addTagRule": "タグルール",
+            "removeRule": "ルールを削除",
+            "moveUp": "上に移動",
+            "moveDown": "下に移動",
+            "noRoots": "このモデルタイプにはルートが設定されていません。",
+            "matchTypes": {
+                "baseModel": "ベースモデル",
+                "tag": "タグ"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "タグ"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "ベースモデルを選択...",
+                "enterTags": "タグを入力...",
+                "more": "他 {count} 件"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "ダウンロードルートのルールを保存できませんでした：{message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "以前にダウンロードしたモデルバージョンをスキップ",
             "help": "有効にすると、ダウンロード履歴サービスがそのバージョンが既にダウンロード済みと記録している場合、LoRA Managerはそのモデルバージョンのダウンロードをスキップします。すべてのダウンロードフローに適用されます。"
@@ -1632,6 +1668,10 @@
             "routingOverride": {
                 "label": "保存先タイプ：",
                 "tooltip": "モデルのメタデータから自動検出されます。誤検出の場合は切り替えてください。切り替えると、このダウンロードでは「デフォルトパスを使用」がオフになります。"
+            },
+            "routedByRule": {
+                "baseModel": "ルールで振り分け：ベースモデル「{value}」",
+                "tag": "ルールで振り分け：タグ「{value}」"
             },
             "targetFolderPath": "ターゲットフォルダパス：",
             "browseFolders": "フォルダを参照：",

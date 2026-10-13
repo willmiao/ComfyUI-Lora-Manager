@@ -29,6 +29,7 @@ from ..utils.constants import (
     DEFAULT_ENABLED_OTHER_SUB_TYPES,
     DEFAULT_HASH_CHUNK_SIZE_MB,
     DEFAULT_PRIORITY_TAG_CONFIG,
+    DOWNLOAD_ROOT_RULE_FOLDER_KEYS,
     OTHER_SUB_TYPE_FOLDER_KEYS,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_OTHER_SUB_TYPES,
@@ -140,6 +141,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
+    # Ordered per-type rules routing downloads to a non-default root by base
+    # model; the first matching rule wins, unmatched downloads use default_*_root.
+    "download_root_rules": {key: [] for key in DOWNLOAD_ROOT_RULE_FOLDER_KEYS},
     # Routing target for checkpoint downloads whose baseModel is neither a
     # known diffusion model nor a known full checkpoint (CHECKPOINT_BASE_MODELS).
     "unknown_base_model_routing": "diffusion_model",
@@ -425,6 +429,19 @@ class SettingsManager:
                 updated_existing = True
         else:
             self.settings["download_skip_base_models"] = []
+            inserted_defaults = True
+
+        if "download_root_rules" in self.settings:
+            normalized_root_rules = self.normalize_download_root_rules(
+                self.settings.get("download_root_rules")
+            )
+            if normalized_root_rules != self.settings.get("download_root_rules"):
+                self.settings["download_root_rules"] = normalized_root_rules
+                updated_existing = True
+        else:
+            self.settings["download_root_rules"] = {
+                key: [] for key in DOWNLOAD_ROOT_RULE_FOLDER_KEYS
+            }
             inserted_defaults = True
 
         if "skip_previously_downloaded_model_versions" not in self.settings:
@@ -1496,6 +1513,105 @@ class SettingsManager:
             self._save_settings()
         return base_models
 
+    def normalize_download_root_rules(
+        self, value: Any
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """Normalize a ``download_root_rules`` payload.
+
+        Fault-tolerant like the other settings normalizers: unknown type keys,
+        malformed entries and unknown match types are dropped silently;
+        ``base_model`` rules keep only whitelisted base model values while
+        ``tag`` rules accept any free-text tag (trimmed, case-insensitively
+        deduplicated); a rule whose root is not one of the configured roots
+        for its type (folder_paths + extra_folder_paths) is dropped with a
+        warning.
+        """
+        normalized: Dict[str, List[Dict[str, Any]]] = {
+            key: [] for key in DOWNLOAD_ROOT_RULE_FOLDER_KEYS
+        }
+        if not isinstance(value, Mapping):
+            return normalized
+
+        for key, raw_rules in value.items():
+            if key not in DOWNLOAD_ROOT_RULE_FOLDER_KEYS:
+                continue
+            if not isinstance(raw_rules, Sequence) or isinstance(
+                raw_rules, (str, bytes, bytearray)
+            ):
+                continue
+            allowed_roots = self._get_allowed_roots(key)
+            for raw_rule in raw_rules:
+                if not isinstance(raw_rule, Mapping):
+                    continue
+                match_type = raw_rule.get("match_type")
+                if match_type not in ("base_model", "tag"):
+                    logger.warning(
+                        "Dropping download root rule for %s: unsupported match_type %r",
+                        key,
+                        match_type,
+                    )
+                    continue
+                match = raw_rule.get("match")
+                if not isinstance(match, Sequence) or isinstance(
+                    match, (str, bytes, bytearray)
+                ):
+                    continue
+                matched_values: List[str] = []
+                seen = set()
+                for candidate in match:
+                    if not isinstance(candidate, str):
+                        continue
+                    token = candidate.strip()
+                    if not token:
+                        continue
+                    if match_type == "base_model":
+                        if token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+                            continue
+                        dedupe_key = token
+                    else:
+                        dedupe_key = token.casefold()
+                    if dedupe_key in seen:
+                        continue
+                    seen.add(dedupe_key)
+                    matched_values.append(token)
+                if not matched_values:
+                    logger.warning(
+                        "Dropping download root rule for %s: no valid %s matches",
+                        key,
+                        match_type,
+                    )
+                    continue
+                root = raw_rule.get("root")
+                if not isinstance(root, str) or not root.strip():
+                    continue
+                root = root.strip()
+                if normalize_root_identity(root) not in allowed_roots:
+                    logger.warning(
+                        "Dropping download root rule for %s: root %s is not a "
+                        "configured root for this model type",
+                        key,
+                        root,
+                    )
+                    continue
+                normalized[key].append(
+                    {
+                        "match_type": match_type,
+                        "match": matched_values,
+                        "root": root,
+                    }
+                )
+
+        return normalized
+
+    def get_download_root_rules(self) -> Dict[str, List[Dict[str, Any]]]:
+        rules = self.normalize_download_root_rules(
+            self.settings.get("download_root_rules")
+        )
+        if rules != self.settings.get("download_root_rules"):
+            self.settings["download_root_rules"] = rules
+            self._save_settings()
+        return rules
+
     def get_skip_previously_downloaded_model_versions(self) -> bool:
         value = self.settings.get("skip_previously_downloaded_model_versions", False)
         if isinstance(value, bool):
@@ -1871,6 +1987,8 @@ class SettingsManager:
             value = self.normalize_metadata_refresh_skip_paths(value)
         elif key == "download_skip_base_models":
             value = self.normalize_download_skip_base_models(value)
+        elif key == "download_root_rules":
+            value = self.normalize_download_root_rules(value)
         elif key == "mature_blur_level":
             value = self.normalize_mature_blur_level(value)
         elif key == "default_other_roots":

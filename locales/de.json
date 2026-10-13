@@ -497,6 +497,42 @@
                 "saveFailed": "Ausgeschlossene Basismodelle konnten nicht gespeichert werden: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "Download-Root-Regeln",
+            "help": "Leitet Downloads anhand des Basismodells oder der Tags des Modells in einen anderen Stammordner.",
+            "description": "Regeln werden der Reihe nach geprüft. Der erste Treffer gewinnt; Downloads ohne Treffer verwenden den Standard-Stammordner.",
+            "defaultHint": "Standard: {root} — Downloads ohne Treffer landen hier",
+            "defaultSuffix": "Standard",
+            "addBaseModelRule": "Basismodell-Regel",
+            "addTagRule": "Tag-Regel",
+            "removeRule": "Regel entfernen",
+            "moveUp": "Nach oben",
+            "moveDown": "Nach unten",
+            "noRoots": "Für diesen Modelltyp sind keine Stammordner konfiguriert.",
+            "matchTypes": {
+                "baseModel": "Basismodell",
+                "tag": "Tag"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "Tag"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "Basismodelle auswählen...",
+                "enterTags": "Tags eingeben...",
+                "more": "+{count} weitere"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "Download-Root-Regeln konnten nicht gespeichert werden: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "Bereits heruntergeladene Modellversionen überspringen",
             "help": "Wenn aktiviert, überspringt LoRA Manager den Download einer Modellversion, wenn der Download-Verlaufsdienst diese spezifische Version als bereits heruntergeladen erfasst hat. Gilt für alle Download-Abläufe."
@@ -1632,6 +1668,10 @@
             "routingOverride": {
                 "label": "Zieltyp:",
                 "tooltip": "Automatisch aus den Modell-Metadaten erkannt. Wechseln Sie, wenn die Erkennung falsch war; ein Wechsel deaktiviert „Standardpfad verwenden“ für diesen Download."
+            },
+            "routedByRule": {
+                "baseModel": "Per Regel geroutet: Basismodell „{value}“",
+                "tag": "Per Regel geroutet: Tag „{value}“"
             },
             "targetFolderPath": "Zielordnerpfad:",
             "browseFolders": "Ordner durchsuchen:",

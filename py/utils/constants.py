@@ -516,3 +516,8 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "Wan Video 2.7",
     ]
 )
+
+# Model-type keys that download_root_rules understands. These mirror the
+# folder_paths keys ("loras"/"checkpoints"/"unet"/"embeddings") so a rule's
+# root can be validated against the roots configured for that type.
+DOWNLOAD_ROOT_RULE_FOLDER_KEYS = ("loras", "checkpoints", "unet", "embeddings")

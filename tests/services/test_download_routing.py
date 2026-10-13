@@ -205,3 +205,125 @@ class TestResolveOtherDownloadSubType:
 
     def test_model_type_matching_is_case_insensitive(self):
         assert resolve_other_download_sub_type("vAe") == "vae"
+
+
+from py.services.download_routing import resolve_download_root
+
+
+def test_resolve_download_root_returns_default_without_rules():
+    assert resolve_download_root(None, "Flux.1 D", "/default") == "/default"
+    assert resolve_download_root([], "Flux.1 D", "/default") == "/default"
+
+
+def test_resolve_download_root_returns_default_without_base_model():
+    rules = [{"match_type": "base_model", "match": ["Flux.1 D"], "root": "/nas"}]
+    assert resolve_download_root(rules, "", "/default") == "/default"
+
+
+def test_resolve_download_root_first_match_wins():
+    rules = [
+        {"match_type": "base_model", "match": ["Flux.1 D", "Wan Video"], "root": "/nas"},
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/other"},
+    ]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/nas"
+    assert resolve_download_root(rules, "Wan Video", "/default") == "/nas"
+
+
+def test_resolve_download_root_falls_back_when_no_rule_matches():
+    rules = [{"match_type": "base_model", "match": ["Pony"], "root": "/nas"}]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/default"
+
+
+def test_resolve_download_root_skips_malformed_rules():
+    rules = [
+        {"match_type": "tags", "match": ["Flux.1 D"], "root": "/nas"},
+        {"match_type": "base_model", "match": "Flux.1 D", "root": "/nas"},
+        "not-a-dict",
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": ""},
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/nas"},
+    ]
+    assert resolve_download_root(rules, "Flux.1 D", "/default") == "/nas"
+
+
+def test_resolve_download_root_rule_lists_are_per_type():
+    """Checkpoint and unet rule sets are consulted independently."""
+    rules_by_type = {
+        "checkpoints": [
+            {"match_type": "base_model", "match": ["SDXL 1.0"], "root": "/ckpt-nas"}
+        ],
+        "unet": [
+            {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/unet-nas"}
+        ],
+    }
+    assert (
+        resolve_download_root(rules_by_type["checkpoints"], "SDXL 1.0", "/default")
+        == "/ckpt-nas"
+    )
+    assert (
+        resolve_download_root(rules_by_type["unet"], "SDXL 1.0", "/default")
+        == "/default"
+    )
+    assert (
+        resolve_download_root(rules_by_type["unet"], "Flux.1 D", "/default")
+        == "/unet-nas"
+    )
+    assert (
+        resolve_download_root(rules_by_type["checkpoints"], "Flux.1 D", "/default")
+        == "/default"
+    )
+
+
+def test_resolve_download_root_tag_rule_matches_model_tags():
+    rules = [{"match_type": "tag", "match": ["character"], "root": "/nas"}]
+    assert (
+        resolve_download_root(rules, "Flux.1 D", "/default", tags=["character", "style"])
+        == "/nas"
+    )
+    assert (
+        resolve_download_root(rules, "Flux.1 D", "/default", tags=["style"])
+        == "/default"
+    )
+
+
+def test_resolve_download_root_tag_match_is_case_insensitive_and_trimmed():
+    rules = [{"match_type": "tag", "match": [" Character "], "root": "/nas"}]
+    assert (
+        resolve_download_root(rules, "", "/default", tags=["CHARACTER"])
+        == "/nas"
+    )
+
+
+def test_resolve_download_root_tag_rule_matches_without_base_model():
+    """Tag rules hit even when the model has no usable baseModel value."""
+    rules = [{"match_type": "tag", "match": ["character"], "root": "/nas"}]
+    assert resolve_download_root(rules, "", "/default", tags=["character"]) == "/nas"
+
+
+def test_resolve_download_root_first_match_wins_across_match_types():
+    """A tag rule listed before a base_model rule takes priority."""
+    rules = [
+        {"match_type": "tag", "match": ["character"], "root": "/nas"},
+        {"match_type": "base_model", "match": ["Flux.1 D"], "root": "/main"},
+    ]
+    assert (
+        resolve_download_root(rules, "Flux.1 D", "/default", tags=["character"])
+        == "/nas"
+    )
+    # Without the tag, the base_model rule still applies.
+    assert (
+        resolve_download_root(rules, "Flux.1 D", "/default", tags=["style"])
+        == "/main"
+    )
+
+
+def test_match_download_root_rule_returns_the_matching_rule():
+    from py.services.download_routing import match_download_root_rule
+
+    rules = [
+        {"match_type": "tag", "match": ["character"], "root": "/nas"},
+        {"match_type": "base_model", "match": ["Pony"], "root": "/main"},
+    ]
+    rule = match_download_root_rule(rules, "Pony", ["character"])
+    assert rule["match_type"] == "tag"
+    assert match_download_root_rule(rules, "Pony", ["style"])["match_type"] == "base_model"
+    assert match_download_root_rule(rules, "SDXL 1.0", ["style"]) is None

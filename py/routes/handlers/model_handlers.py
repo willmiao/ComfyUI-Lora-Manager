@@ -2403,7 +2403,12 @@ class ModelCivitaiHandler:
                     exc,
                 )
 
+            # Model-level tags travel with each version so the download
+            # location step can preview download_root_rules tag matches.
+            model_tags = response.get("tags") or []
+
             for version in versions:
+                version["modelTags"] = model_tags
                 version_id = None
                 version_id_raw = version.get("id")
                 if version_id_raw is not None:

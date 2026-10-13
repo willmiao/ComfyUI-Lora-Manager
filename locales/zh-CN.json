@@ -497,6 +497,42 @@
                 "saveFailed": "无法保存已排除的基础模型：{message}"
             }
         },
+        "downloadRootRules": {
+            "title": "下载根目录规则",
+            "help": "根据模型的基础模型或标签，将下载路由到其他根目录。",
+            "description": "规则按顺序检查，首个命中的规则生效；未匹配的下载使用默认根目录。",
+            "defaultHint": "默认：{root} — 未匹配的下载将保存到这里",
+            "defaultSuffix": "默认",
+            "addBaseModelRule": "基础模型规则",
+            "addTagRule": "标签规则",
+            "removeRule": "移除规则",
+            "moveUp": "上移",
+            "moveDown": "下移",
+            "noRoots": "此模型类型尚未配置根目录。",
+            "matchTypes": {
+                "baseModel": "基础模型",
+                "tag": "标签"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "标签"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "选择基础模型...",
+                "enterTags": "输入标签...",
+                "more": "还有 {count} 项"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "无法保存下载根目录规则：{message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "跳过已下载的模型版本",
             "help": "启用后，如果下载历史服务记录显示该版本已下载，LoRA Manager 将跳过下载该模型版本。适用于所有下载流程。"
@@ -1632,6 +1668,10 @@
             "routingOverride": {
                 "label": "目标类型：",
                 "tooltip": "根据模型元数据自动检测。如果检测结果有误，请切换；切换会为本次下载关闭“使用默认路径”。"
+            },
+            "routedByRule": {
+                "baseModel": "已由规则路由：基础模型“{value}”",
+                "tag": "已由规则路由：标签“{value}”"
             },
             "targetFolderPath": "目标文件夹路径：",
             "browseFolders": "浏览文件夹：",

@@ -8,7 +8,10 @@ import logging
 from aiohttp import web
 
 from ...services.download_routing import (
+    MODEL_TYPE_TO_DEFAULT_ROOT_SETTING,
+    MODEL_TYPE_TO_ROOT_RULE_KEY,
     is_diffusion_model_download,
+    match_download_root_rule,
     resolve_other_download_sub_type,
 )
 from ...utils.constants import VALID_OTHER_CIVITAI_TYPES
@@ -35,6 +38,7 @@ class DownloadRoutingHandler:
         model_type = payload.get("model_type", "")
         base_model = payload.get("base_model") or ""
         file_types = payload.get("file_types") or []
+        tags = payload.get("tags") or []
         selected_file_type = payload.get("selected_file_type")
 
         if not isinstance(model_type, str) or not model_type:
@@ -49,6 +53,8 @@ class DownloadRoutingHandler:
                 },
                 status=400,
             )
+        if not isinstance(tags, list):
+            tags = []
         if selected_file_type is not None and not isinstance(selected_file_type, str):
             return web.json_response(
                 {"success": False, "error": "selected_file_type must be a string"},
@@ -103,18 +109,45 @@ class DownloadRoutingHandler:
 
         from ...services.settings_manager import get_settings_manager
 
+        settings = get_settings_manager()
         is_diffusion = is_diffusion_model_download(
             model_type,
             file_types=(str(t) for t in file_types),
             base_model=base_model,
-            unknown_base_model_default=get_settings_manager().get(
+            unknown_base_model_default=settings.get(
                 "unknown_base_model_routing", "diffusion_model"
             ),
         )
+        root_kind = "unet" if is_diffusion else model_type
+
+        # Apply download_root_rules against the final root kind so the
+        # location-step preview matches where the download will land.
+        resolved_root = ""
+        matched_rule = None
+        rule_key = MODEL_TYPE_TO_ROOT_RULE_KEY.get(root_kind.lower())
+        default_root_setting = MODEL_TYPE_TO_DEFAULT_ROOT_SETTING.get(root_kind.lower())
+        if rule_key and default_root_setting:
+            default_root = settings.get(default_root_setting) or ""
+            if isinstance(default_root, str) and default_root:
+                rule = match_download_root_rule(
+                    settings.get_download_root_rules().get(rule_key),
+                    base_model,
+                    tags,
+                )
+                if rule is not None:
+                    resolved_root = rule["root"]
+                    matched_rule = {
+                        "match_type": rule.get("match_type"),
+                        "match": list(rule.get("match") or []),
+                    }
+                else:
+                    resolved_root = default_root
         return web.json_response(
             {
                 "success": True,
                 "is_diffusion_model": is_diffusion,
-                "root_kind": "unet" if is_diffusion else model_type,
+                "root_kind": root_kind,
+                "resolved_root": resolved_root,
+                "matched_rule": matched_rule,
             }
         )

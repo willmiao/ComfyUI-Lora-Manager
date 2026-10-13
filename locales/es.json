@@ -497,6 +497,42 @@
                 "saveFailed": "No se pudieron guardar los modelos base excluidos: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "Reglas de raíz de descarga",
+            "help": "Enruta las descargas a una carpeta raíz diferente según el modelo base o las etiquetas del modelo.",
+            "description": "Las reglas se comprueban en orden. Gana la primera coincidencia; las descargas sin coincidencia usan la raíz predeterminada.",
+            "defaultHint": "Predeterminada: {root} — las descargas sin coincidencia van aquí",
+            "defaultSuffix": "predeterminado",
+            "addBaseModelRule": "Regla de modelo base",
+            "addTagRule": "Regla de etiqueta",
+            "removeRule": "Eliminar regla",
+            "moveUp": "Subir",
+            "moveDown": "Bajar",
+            "noRoots": "No hay raíces configuradas para este tipo de modelo.",
+            "matchTypes": {
+                "baseModel": "Modelo base",
+                "tag": "Etiqueta"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "Tag"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "Selecciona modelos base...",
+                "enterTags": "Introduce etiquetas...",
+                "more": "+{count} más"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "No se pudieron guardar las reglas de raíz de descarga: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "Omitir versiones de modelos previamente descargadas",
             "help": "Cuando está habilitado, LoRA Manager omitirá la descarga de una versión de modelo si el servicio de historial de descargas registra esa versión exacta como ya descargada. Aplica a todos los flujos de descarga."
@@ -1632,6 +1668,10 @@
             "routingOverride": {
                 "label": "Tipo de destino:",
                 "tooltip": "Detectado automáticamente a partir de los metadatos del modelo. Cámbialo si la detección fue incorrecta; cambiar desactiva «Usar ruta predeterminada» para esta descarga."
+            },
+            "routedByRule": {
+                "baseModel": "Enrutado por regla: modelo base «{value}»",
+                "tag": "Enrutado por regla: etiqueta «{value}»"
             },
             "targetFolderPath": "Ruta de carpeta de destino:",
             "browseFolders": "Explorar carpetas:",

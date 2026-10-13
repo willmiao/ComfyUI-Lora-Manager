@@ -1099,6 +1099,12 @@
     margin-bottom: var(--space-2);
 }
 
+.download-rule-match-hint {
+    margin-top: var(--space-1);
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
 .routing-override-group label {
     display: block;
     margin-bottom: 8px;

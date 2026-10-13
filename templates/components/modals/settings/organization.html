@@ -114,6 +114,22 @@
             </div>
         </div>
 
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.downloadRootRules.title') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadRootRules.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <div class="input-help">{{ t('settings.downloadRootRules.description') }}</div>
+            <div class="mappings-container">
+                <div id="downloadRootRulesContainer"></div>
+            </div>
+            <div class="settings-input-error-message" id="downloadRootRulesError"></div>
+        </div>
+
         {{ sm.setting_toggle('skipPreviouslyDownloadedModelVersions', 'skip_previously_downloaded_model_versions', 'settings.skipPreviouslyDownloadedModelVersions.label', 'settings.skipPreviouslyDownloadedModelVersions.help') }}
 
         <div class="setting-item">

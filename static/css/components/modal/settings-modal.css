@@ -621,6 +621,146 @@
     opacity: 0.75;
 }
 
+.download-root-rule-group {
+    margin-bottom: var(--space-3);
+}
+
+.download-root-rule-group:last-child {
+    margin-bottom: 0;
+}
+
+.download-root-rule-group-header {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: var(--space-1);
+}
+
+.download-root-rule-toggle {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-root-rule-root {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.rule-move-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+}
+
+.rule-move-btn:hover:not(:disabled) {
+    border-color: var(--lora-accent);
+    color: var(--lora-accent);
+}
+
+.rule-move-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.download-root-rules-hint {
+    font-size: 0.9em;
+    opacity: 0.6;
+    padding: 4px 0;
+}
+
+.download-root-rule-default-hint {
+    padding-top: 0;
+    overflow-wrap: anywhere;
+}
+
+.download-root-rule-panel {
+    margin-top: var(--space-1);
+}
+
+/* Rule rows have 4 children (chip, summary toggle, root select, actions);
+   override the 3-column .mapping-controls grid so the chip keeps its
+   natural width and the actions stay on the same row. The compound
+   selector wins over .mapping-controls regardless of source order. */
+.mapping-controls.download-root-rule-controls {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+}
+
+.download-root-rule-match-chip {
+    justify-self: start;
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.8;
+    align-self: center;
+    cursor: default;
+}
+
+.download-root-rule-match-chip.is-tag {
+    border-color: var(--lora-accent);
+    color: var(--lora-accent);
+}
+
+.download-root-rule-chevron {
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: transform 0.15s ease;
+}
+
+.download-root-rule-toggle[aria-expanded="true"] .download-root-rule-chevron {
+    transform: rotate(180deg);
+}
+
+.download-root-rule-add-row {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.download-root-rule-add-row .add-mapping-btn {
+    flex: 1;
+}
+
+.download-root-rule-tag-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--settings-bg);
+    color: var(--text-color);
+}
+
+.download-root-rule-tag-input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
 .priority-tags-input:focus {
     border-color: var(--lora-accent);
     outline: none;

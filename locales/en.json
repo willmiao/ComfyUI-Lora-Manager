@@ -497,6 +497,42 @@
         "saveFailed": "Unable to save excluded base models: {message}"
       }
     },
+    "downloadRootRules": {
+      "title": "Download Root Rules",
+      "help": "Route downloads to a different root folder based on the model's base model or tags.",
+      "description": "Rules are checked in order. First match wins; unmatched downloads use the default root.",
+      "defaultHint": "Default: {root} — unmatched downloads go here",
+      "defaultSuffix": "default",
+      "addBaseModelRule": "Base model rule",
+      "addTagRule": "Tag rule",
+      "removeRule": "Remove rule",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "noRoots": "No roots configured for this model type.",
+      "matchTypes": {
+        "baseModel": "Base model",
+        "tag": "Tag"
+      },
+      "matchTypeChips": {
+        "baseModel": "BM",
+        "tag": "Tag"
+      },
+      "tagPlaceholder": "character, style, realistic",
+      "summary": {
+        "selectBaseModels": "Select base models...",
+        "enterTags": "Enter tags...",
+        "more": "+{count} more"
+      },
+      "types": {
+        "loras": "LoRA",
+        "checkpoints": "Checkpoint",
+        "unet": "Diffusion Model",
+        "embeddings": "Embedding"
+      },
+      "validation": {
+        "saveFailed": "Unable to save download root rules: {message}"
+      }
+    },
     "skipPreviouslyDownloadedModelVersions": {
       "label": "Skip previously downloaded model versions",
       "help": "When enabled, versions downloaded before will be skipped."
@@ -1632,6 +1668,10 @@
       "routingOverride": {
         "label": "Destination type:",
         "tooltip": "Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+      },
+      "routedByRule": {
+        "baseModel": "Routed by rule: base model \"{value}\"",
+        "tag": "Routed by rule: tag \"{value}\""
       },
       "targetFolderPath": "Target Folder Path:",
       "browseFolders": "Browse Folders:",

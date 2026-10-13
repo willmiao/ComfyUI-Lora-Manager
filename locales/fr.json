@@ -497,6 +497,42 @@
                 "saveFailed": "Impossible d’enregistrer les modèles de base exclus : {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "Règles de racine de téléchargement",
+            "help": "Route les téléchargements vers un autre dossier racine en fonction du modèle de base ou des tags du modèle.",
+            "description": "Les règles sont vérifiées dans l’ordre. La première correspondance l’emporte ; les téléchargements sans correspondance utilisent la racine par défaut.",
+            "defaultHint": "Par défaut : {root} — les téléchargements sans correspondance arrivent ici",
+            "defaultSuffix": "par défaut",
+            "addBaseModelRule": "Règle de modèle de base",
+            "addTagRule": "Règle de tag",
+            "removeRule": "Supprimer la règle",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "noRoots": "Aucune racine configurée pour ce type de modèle.",
+            "matchTypes": {
+                "baseModel": "Modèle de base",
+                "tag": "Tag"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "Tag"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "Sélectionner des modèles de base...",
+                "enterTags": "Saisir des tags...",
+                "more": "+{count} de plus"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "Impossible d’enregistrer les règles de racine de téléchargement : {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "Ignorer les versions de modèles précédemment téléchargées",
             "help": "Lorsque activé, LoRA Manager ignorera le téléchargement d'une version de modèle si le service d'historique des téléchargements enregistre cette version exacte comme déjà téléchargée. S'applique à tous les flux de téléchargement."
@@ -1632,6 +1668,10 @@
             "routingOverride": {
                 "label": "Type de destination :",
                 "tooltip": "Détecté automatiquement à partir des métadonnées du modèle. Changez si la détection est incorrecte ; changer désactive « Utiliser le chemin par défaut » pour ce téléchargement."
+            },
+            "routedByRule": {
+                "baseModel": "Routé par règle : modèle de base « {value} »",
+                "tag": "Routé par règle : tag « {value} »"
             },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",

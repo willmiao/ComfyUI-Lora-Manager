@@ -10,7 +10,7 @@ two can never disagree.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional
+from typing import Iterable, Mapping, Optional, Sequence
 
 from ..utils.constants import (
     CHECKPOINT_BASE_MODELS,
@@ -29,6 +29,104 @@ DIFFUSION_FILE_TYPES = frozenset({"UNet", "Diffusion Model"})
 # unknown_base_model_default parameter below.
 ROUTING_DIFFUSION_MODEL = "diffusion_model"
 ROUTING_CHECKPOINT = "checkpoint"
+
+# Download-time model type -> download_root_rules folder key. The rule set is
+# keyed by folder_paths keys, so a checkpoint download that resolves to the
+# unet roots consults the "unet" rules, not the "checkpoints" ones.
+MODEL_TYPE_TO_ROOT_RULE_KEY = {
+    "lora": "loras",
+    "checkpoint": "checkpoints",
+    "unet": "unet",
+    "embedding": "embeddings",
+}
+
+# Download-time model type -> the setting holding its default download root.
+MODEL_TYPE_TO_DEFAULT_ROOT_SETTING = {
+    "lora": "default_lora_root",
+    "checkpoint": "default_checkpoint_root",
+    "unet": "default_unet_root",
+    "embedding": "default_embedding_root",
+}
+
+# match_type values understood by download_root_rules.
+RULE_MATCH_TYPE_BASE_MODEL = "base_model"
+RULE_MATCH_TYPE_TAG = "tag"
+
+
+def _normalize_tag_set(tags: Optional[Iterable[object]]) -> frozenset:
+    """Case-folded, trimmed tag set for rule matching (never None)."""
+    if not tags:
+        return frozenset()
+    return frozenset(
+        tag.strip().casefold()
+        for tag in tags
+        if isinstance(tag, str) and tag.strip()
+    )
+
+
+def match_download_root_rule(
+    rules: Optional[Sequence[Mapping[str, object]]],
+    base_model: str,
+    tags: Optional[Iterable[object]] = None,
+) -> Optional[Mapping[str, object]]:
+    """Return the first rule matching this download, else ``None``.
+
+    Rules are ordered; the first match wins. ``base_model`` rules hit when
+    their ``match`` list contains ``base_model`` (exact match); ``tag`` rules
+    hit when any ``match`` entry equals one of the model's tags (trimmed,
+    case-insensitive). A rule with an empty/invalid root never matches.
+    """
+    if not rules:
+        return None
+
+    model_tags = _normalize_tag_set(tags)
+
+    for rule in rules:
+        if not isinstance(rule, Mapping):
+            continue
+        match = rule.get("match")
+        if not isinstance(match, Sequence) or isinstance(match, (str, bytes)):
+            continue
+        match_type = rule.get("match_type")
+        if match_type == RULE_MATCH_TYPE_BASE_MODEL:
+            if not base_model or base_model not in match:
+                continue
+        elif match_type == RULE_MATCH_TYPE_TAG:
+            if not model_tags or not any(
+                isinstance(entry, str) and entry.strip().casefold() in model_tags
+                for entry in match
+            ):
+                continue
+        else:
+            continue
+        root = rule.get("root")
+        if isinstance(root, str) and root.strip():
+            return rule
+
+    return None
+
+
+def resolve_download_root(
+    rules: Optional[Sequence[Mapping[str, object]]],
+    base_model: str,
+    default_root: str,
+    tags: Optional[Iterable[object]] = None,
+) -> str:
+    """Return the root from the first matching rule, else ``default_root``.
+
+    See :func:`match_download_root_rule` for the matching semantics.
+    """
+    rule = match_download_root_rule(rules, base_model, tags)
+    if rule is not None:
+        root = rule["root"]
+        logger.info(
+            "Download root rule matched (%s), routing to %s",
+            rule.get("match_type"),
+            root,
+        )
+        return root
+
+    return default_root
 
 
 def is_diffusion_model_download(
