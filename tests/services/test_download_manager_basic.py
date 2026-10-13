@@ -2368,7 +2368,11 @@ def _capture_execute_download(monkeypatch, captured):
     async def fake_execute_download(self, **kwargs):
         captured.update(
             {
-                "save_dir": kwargs["save_dir"],
+                # Path, like the other fakes in this file: the relative part is
+                # forward-slashed on every platform, so a Windows host spells
+                # the joined value "root\Flux.1 D/fantasy" -- comparing strings
+                # would assert the host separator instead of the routed root.
+                "save_dir": Path(kwargs["save_dir"]),
                 "relative_path": kwargs["relative_path"],
                 "model_type": kwargs["model_type"],
             }
@@ -2435,7 +2439,7 @@ async def test_download_root_rule_routes_lora_to_rule_root(
 
     assert result["success"] is True
     assert captured["model_type"] == "lora"
-    assert captured["save_dir"] == str(archive_root / "Flux.1 D" / "fantasy")
+    assert captured["save_dir"] == archive_root / "Flux.1 D" / "fantasy"
 
 
 @pytest.mark.asyncio
@@ -2540,7 +2544,7 @@ async def test_download_root_rule_applies_to_final_unet_type(
 
     assert result["success"] is True
     assert captured["model_type"] == "checkpoint"
-    assert captured["save_dir"] == str(unet_archive / "Flux.1 D" / "fantasy")
+    assert captured["save_dir"] == unet_archive / "Flux.1 D" / "fantasy"
 
 
 @pytest.mark.asyncio
