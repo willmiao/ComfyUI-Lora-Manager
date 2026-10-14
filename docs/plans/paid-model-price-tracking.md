@@ -5,9 +5,14 @@ model versions and flag when it drops below a threshold or becomes free.
 **Related:** [#1060 — Some "Early Access" models are not identified correctly](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1060)
 (closed) established `is_paid`, the Paid badge and `hide_paid_updates`; this FR is the next step
 after gate *state* — gate *price*.
-**Status:** v3 — **P0–P3 implemented** (§10 records what shipped and the deviations); **P5 (alerts
-panel) planned** in §11, not implemented. The grid-level "price alert only" filter was dropped by
-owner decision, so §11 defines the panel as the only new browsing surface.
+**Status:** v4 — **shipped in v1.2.5; final for now.** What actually survives is recorded in §12.7
+plus the surviving half of §10: gate semantics, the model-page price parser and fetch, the price
+columns, the version badges and the gate-transition toast. The **P5 alerts panel in §11 was built on
+a development branch only and removed before release**, so there is **no independent surface, no
+numeric threshold and no price-drop alert** — obtainability is an attribute of the existing update
+surfaces. Read the threshold material in §4.4, §4.5, §5 P3, §10 and §11 as **historical,
+not shipped**; §12 records the redesign, §12.8 why the model card cannot carry a single price, and
+§13 the open upstream request for a real price field.
 Feasibility was verified against this repo and upstream CivitAI `main` (`6d29ed1368`), including live
 probes against `civitai.com` / `civitai.red`.
 **Scope:** every model type that goes through `ModelUpdateService` (lora / checkpoint / embedding /
@@ -328,6 +333,11 @@ extension is GET-only per `AGENTS.md`):
 
 ## 10. What shipped (P0–P3)
 
+> **v4 note — partially stale.** This section predates the §12 redesign. The threshold-alert parts of
+> it were **removed before release**: `price_alert_state` / `price_alert_since`, the alerts query and
+> `GET /api/lm/{type}/updates/price-alerts`, `getPriceAlerts`, the threshold tests, and answers 2–3 in
+> §10.1. §12.4 lists the removals and §12.7 what shipped instead.
+
 ### 10.1 Answers to the open questions
 
 1. **`{permanent:false, endsAt:null}` is a gate.** Decided by evidence, not preference: the public v1
@@ -385,10 +395,17 @@ extension is GET-only per `AGENTS.md`):
 
 ## 11. P5 — Price alerts panel
 
+> **Superseded — never released.** P5a was implemented on the development branch and then **removed
+> in `e42d649d`**, before v1.2.5, together with the numeric threshold and every alert surface. §12
+> records the redesign and §12.7 what shipped instead. Everything below is the record of a design
+> that was built, reviewed and abandoned — **do not implement it.** The two sections that remain
+> useful are §11.10 (mature-model price limitation) and §11.11 (price capture is independent of the
+> metadata TTL).
+
 **Goal:** a single surface that answers "what got cheaper / became free, and can I act on it".
 
-**Status:** **P5a implemented** (see §11.9); P5b (inline threshold editing, *Refresh prices*, type
-chips, ignore action) and P5c (polish) are not.
+**Status (historical):** **P5a implemented** (see §11.9); P5b (inline threshold editing, *Refresh
+prices*, type chips, ignore action) and P5c (polish) are not.
 
 **Naming:** called P4a–c in earlier discussion; renumbered to **P5** because §5 already uses P4 for
 "docs and upstream".
@@ -397,6 +414,10 @@ chips, ignore action) and P5c (polish) are not.
 only new browsing surface; the existing per-version badges and the update-check toast stay as they
 are. Consequence: the panel carries the "act on it" affordances itself (§11.2), and discoverability
 rests on the bell badge plus the controls-dropdown entry (§11.1 D8).
+
+**Reversed by §12.3 D1:** there is **no independent surface at all**, so this paragraph and the D8
+entry points it describes did not ship — prices live in the version list and the gate-transition
+toast, and the controls-dropdown / global-context-menu entries were removed.
 
 ### 11.1 Locked decisions
 
