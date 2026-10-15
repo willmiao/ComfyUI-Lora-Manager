@@ -478,6 +478,151 @@ async def test_fetch_and_update_model_returns_friendly_offline_message(tmp_path)
     update_cache.assert_not_awaited()
 
 
+def _foreign_ref():
+    from py.services.model_sources import SourceRef
+
+    return SourceRef(
+        platform="modelscope-ai",
+        source_id="arbinshado/Kiara-Krea",
+        url="https://www.modelscope.ai/models/arbinshado/Kiara-Krea",
+    )
+
+
+def _wire_foreign_source(monkeypatch, *, context, hydrate_result=None):
+    """Patch the source-registry pieces _try_link_foreign_source consumes."""
+    from unittest.mock import Mock
+
+    fake_source = SimpleNamespace(
+        fetch_card_context_by_hash=AsyncMock(return_value=context),
+    )
+    hydrate = AsyncMock(return_value=hydrate_result or [])
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.get_source", lambda _platform: fake_source
+    )
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.hydrate_from_source", hydrate
+    )
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.shared_source_cache", lambda *_args: None
+    )
+    return SimpleNamespace(source=fake_source, hydrate=hydrate, Mock=Mock)
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_links_foreign_source_when_not_found(tmp_path, monkeypatch):
+    """CivArchive knows the file only as a foreign-ecosystem entry: the model
+    gets linked to its real source and hydrated instead of flagged deleted."""
+    ref = _foreign_ref()
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=lambda _hash: ref,
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+    wired = _wire_foreign_source(monkeypatch, context=SimpleNamespace(model_name="Kiara-Krea"), hydrate_result=["model_name"])
+
+    model_path = tmp_path / "Kiara-Krea_c1-st4000.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Kiara-Krea_c1-st4000",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="f3a5370b",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is True and error is None
+    assert model_data["source_url"] == ref.url
+    assert model_data["source_platform"] == "modelscope-ai"
+    assert model_data["from_civitai"] is False
+    assert "civitai_deleted" not in model_data
+    helpers.metadata_manager.save_metadata.assert_awaited()
+    update_cache.assert_awaited()
+    wired.hydrate.assert_awaited_once()
+    assert wired.hydrate.await_args.kwargs["ref"] is ref
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_skips_foreign_link_when_hash_not_published(tmp_path, monkeypatch):
+    """The strict hash gate rejects the link: the repository does not publish
+    this exact file, so normal not-found handling takes over."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=lambda _hash: _foreign_ref(),
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+    wired = _wire_foreign_source(monkeypatch, context=None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert ok is False
+    assert "source_url" not in model_data
+    assert model_data["from_civitai"] is False
+    assert model_data["civitai_deleted"] is True
+    wired.hydrate.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_never_relinks_a_model_with_external_source(tmp_path, monkeypatch):
+    """A model already linked to an external source keeps that link."""
+    from unittest.mock import Mock
+
+    pop_ref = Mock(return_value=_foreign_ref())
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=pop_ref,
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+        "source_url": "https://huggingface.co/some/user",
+        "source_platform": "huggingface",
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert ok is False
+    assert model_data["source_url"] == "https://huggingface.co/some/user"
+    pop_ref.assert_not_called()
+
+
 @pytest.mark.asyncio
 async def test_fetch_and_update_model_respects_deleted_without_archive():
     helpers = build_service(settings_values={"enable_metadata_archive_db": False})

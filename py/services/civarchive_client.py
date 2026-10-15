@@ -45,8 +45,44 @@ class CivArchiveClient:
         if hasattr(self, '_initialized'):
             return
         self._initialized = True
-        
+
         self.base_url = "https://civarchive.com/api"
+        # hash (lowercased) -> SourceRef for foreign-ecosystem file entries seen
+        # during hash lookups (e.g. civision entries carrying a ModelScope URL).
+        # Recorded while resolving, consumed by the sync service to link the
+        # model to its real source instead of leaving it "not found".
+        self._foreign_source_refs: Dict[str, Any] = {}
+
+    def _remember_foreign_source_ref(
+        self,
+        expected_hash: Optional[str],
+        file_data: Dict[str, Any],
+    ) -> None:
+        """Record a resolvable source URL from a foreign-ecosystem file entry"""
+        if not expected_hash:
+            return
+        url = file_data.get("url")
+        if not isinstance(url, str) or not url.strip():
+            return
+        try:
+            from .model_sources.registry import detect_source
+        except Exception:  # pragma: no cover - defensive import guard
+            return
+        ref = detect_source(url.strip())
+        if ref is None:
+            return
+        key = expected_hash.strip().lower()
+        self._foreign_source_refs[key] = ref
+        # Bound the map; entries are consumed via pop_foreign_source_ref but a
+        # caller that never asks must not grow it without limit.
+        while len(self._foreign_source_refs) > 64:
+            self._foreign_source_refs.pop(next(iter(self._foreign_source_refs)))
+
+    def pop_foreign_source_ref(self, model_hash: str) -> Any:
+        """Return (and forget) the foreign source ref recorded for *model_hash*"""
+        if not model_hash:
+            return None
+        return self._foreign_source_refs.pop(model_hash.strip().lower(), None)
 
     async def _request_json(
         self,
@@ -346,6 +382,7 @@ class CivArchiveClient:
                 continue
             source = file_data.get("source")
             if isinstance(source, str) and source.strip().lower() in _FOREIGN_ECOSYSTEM_SOURCES:
+                self._remember_foreign_source_ref(expected_hash, file_data)
                 logger.debug(
                     "Skipping CivArchive file entry from foreign ecosystem source=%s",
                     source,

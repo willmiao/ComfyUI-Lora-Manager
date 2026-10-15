@@ -17,6 +17,7 @@ import pytest
 from py.services.model_sources import ModelCardContext, ModelSourceCache, SourceRef
 from py.services.model_sources import hydration
 from py.services.model_sources.base import ModelSource
+from py.services.model_sources.modelscope import ModelScopeSource
 from py.services.model_sources.hydration import (
     SHARED_CACHE_MAX_ENTRIES,
     hydrate_from_source,
@@ -290,6 +291,78 @@ class TestHydrateFromSource:
 # ---------------------------------------------------------------------------
 # Per-repository memo
 # ---------------------------------------------------------------------------
+
+
+class TestFetchCardContextByHash:
+    """The strict hash gate used when linking a local file to a repository."""
+
+    DETAIL = {
+        "Name": "Kiara-Krea",
+        "Description": "Kiara LoRA",
+        "AigcType": "LoRA",
+        "BaseModel": ["krea-community/Krea-2-Turbo"],
+        "ModelInfos": {
+            "safetensor": {
+                "files": [
+                    {"name": "Kiara-Krea_c1-st1000.safetensors", "sha256": "69a8c59a"},
+                    {"name": "Kiara-Krea_c1-st4000.safetensors", "sha256": "f3a5370b"},
+                ]
+            }
+        },
+        "MuseInfo": {
+            "versions": [
+                {
+                    "modelVersion": {
+                        "modelId": 24152,
+                        "id": 130022,
+                        "showName": "c1-st4000",
+                        "triggerWords": '["Kiara"]',
+                    },
+                    "stats": {"fileList": ["Kiara-Krea_c1-st4000.safetensors"]},
+                    "coverImages": [{"url": "https://example.com/cover.png"}],
+                }
+            ]
+        },
+    }
+
+    @pytest.mark.asyncio
+    async def test_returns_context_for_a_published_hash(self, monkeypatch):
+        source = ModelScopeSource()
+        monkeypatch.setattr(source, "_fetch_detail", _async(self.DETAIL))
+
+        context = await source.fetch_card_context_by_hash("owner/repo", "F3A5370B")
+
+        assert context is not None
+        assert context.model_name == "Kiara-Krea"
+        assert context.trigger_words == ["Kiara"]
+        assert context.example_images == ["https://example.com/cover.png"]
+        assert context.source_model_id == "24152"
+        assert context.source_version_id == "130022"
+
+    @pytest.mark.asyncio
+    async def test_returns_none_for_a_hash_the_repo_does_not_publish(self, monkeypatch):
+        source = ModelScopeSource()
+        monkeypatch.setattr(source, "_fetch_detail", _async(self.DETAIL))
+
+        assert await source.fetch_card_context_by_hash("owner/repo", "deadbeef") is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_for_a_blank_hash_without_fetching(self, monkeypatch):
+        source = ModelScopeSource()
+
+        def _fail(*_args, **_kwargs):  # pragma: no cover - must not run
+            raise AssertionError("no API call expected for a blank hash")
+
+        monkeypatch.setattr(source, "_fetch_detail", _fail)
+
+        assert await source.fetch_card_context_by_hash("owner/repo", "") is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_the_detail_api_fails(self, monkeypatch):
+        source = ModelScopeSource()
+        monkeypatch.setattr(source, "_fetch_detail", _async(None))
+
+        assert await source.fetch_card_context_by_hash("owner/repo", "f3a5370b") is None
 
 
 class TestSharedSourceCache:

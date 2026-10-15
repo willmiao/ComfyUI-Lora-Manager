@@ -16,7 +16,8 @@ from ..utils.sidecar_paths import get_metadata_path
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import MetadataPersistError, RateLimitError
 from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
-from .model_sources import get_source_platform, has_external_source
+from .model_sources import get_source, get_source_platform, has_external_source, hydrate_from_source
+from .model_sources.hydration import shared_source_cache
 
 logger = logging.getLogger(__name__)
 
@@ -427,6 +428,17 @@ class MetadataSyncService:
                 last_error = error or last_error
 
             if civitai_metadata is None or metadata_provider is None:
+                # A rate-limited run consults no further providers (#1085);
+                # the foreign-source link also involves network fetches, so it
+                # waits for the next unrated run.
+                if not any_rate_limited and await self._try_link_foreign_source(
+                    sha256=sha256,
+                    file_path=file_path,
+                    model_data=model_data,
+                    update_cache_func=update_cache_func,
+                ):
+                    return True, None
+
                 # Track if we need to save metadata
                 needs_save = False
 
@@ -613,6 +625,78 @@ class MetadataSyncService:
         )
 
         return metadata
+
+    async def _try_link_foreign_source(
+        self,
+        *,
+        sha256: str,
+        file_path: str,
+        model_data: Dict[str, Any],
+        update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
+    ) -> bool:
+        """Link the model to its real source when CivArchive only knows a
+        foreign-ecosystem file entry (e.g. a civision entry mirroring a
+        ModelScope file).
+
+        The source's strict hash gate must confirm the repository publishes
+        this exact file before any link is written.  Returns True when the
+        model was linked and hydrated; False leaves the caller's not-found
+        handling in charge.
+        """
+        if has_external_source(model_data):
+            return False
+        try:
+            provider = await self._get_provider("civarchive_api")
+        except Exception as exc:  # pragma: no cover - provider resolution fault
+            logger.debug("Unable to resolve civarchive provider for foreign source lookup: %s", exc)
+            return False
+        pop_ref = getattr(provider, "pop_foreign_source_ref", None)
+        if pop_ref is None:
+            return False
+        ref = pop_ref(sha256)
+        if ref is None:
+            return False
+
+        source = get_source(ref.platform)
+        strict_context = getattr(source, "fetch_card_context_by_hash", None) if source else None
+        if strict_context is None:
+            return False
+
+        memo = shared_source_cache(ref.platform, ref.source_id)
+        try:
+            context = await strict_context(ref.source_id, sha256, cache=memo)
+        except Exception as exc:
+            logger.debug("Foreign source context fetch failed for %s: %s", ref.url, exc)
+            return False
+        if context is None:
+            logger.debug(
+                "Not linking %s to %s: repository does not publish sha256 %s",
+                os.path.basename(file_path),
+                ref.url,
+                sha256[:10],
+            )
+            return False
+
+        # Hydration refuses to touch a sidecar that is not already linked to
+        # this exact source, so persist the link (and the cache) first.
+        model_data["source_url"] = ref.url
+        model_data["source_platform"] = ref.platform
+        model_data["from_civitai"] = False
+        model_data["last_checked_at"] = datetime.now().timestamp()
+        data_to_save = model_data.copy()
+        data_to_save.pop("folder", None)
+        await self._metadata_manager.save_metadata(file_path, data_to_save)
+        await update_cache_func(file_path, file_path, data_to_save)
+
+        updated = await hydrate_from_source(file_path, ref=ref, cache=memo)
+        logger.info(
+            "Linked %s to %s model %s (hydrated: %s)",
+            os.path.basename(file_path),
+            ref.platform,
+            ref.source_id,
+            ", ".join(updated) or "nothing",
+        )
+        return True
 
     async def save_metadata_updates(
         self,

@@ -304,6 +304,44 @@ async def test_get_model_by_hash_discards_resolved_version_on_hash_mismatch(down
     assert error == "No version data found"
 
 
+async def test_get_model_by_hash_records_foreign_source_ref(downloader):
+    """The civision entry's ModelScope URL is surfaced so the sync service can
+    link the model to its real source instead of leaving it 'not found'."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "filename": "Kiara-Krea_c1-st4000.safetensors",
+                    "url": "https://www.modelscope.ai/models/arbinshado/Kiara-Krea/files?version=20260712182542",
+                    "source": "civision",
+                    "model_id": "455108",
+                    "model_version_id": "130022",
+                }
+            ]
+        }
+    }
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("f3a5370b")
+
+    assert result is None
+    ref = client.pop_foreign_source_ref("f3a5370b")
+    assert ref is not None
+    assert ref.platform == "modelscope-ai"
+    assert ref.source_id == "arbinshado/Kiara-Krea"
+    # Consumed once; a second read returns nothing.
+    assert client.pop_foreign_source_ref("f3a5370b") is None
+
+
 async def test_get_model_by_hash_handles_not_found(downloader):
     async def fake_make_request(method, url, use_auth=False, **kwargs):
         return False, "Resource not found"

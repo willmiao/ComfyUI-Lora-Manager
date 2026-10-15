@@ -260,6 +260,10 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
         """Not supported by CivArchive provider"""
         return None
 
+    def pop_foreign_source_ref(self, model_hash: str) -> Any:
+        """Foreign source ref (e.g. ModelScope) recorded during the hash lookup"""
+        return self.client.pop_foreign_source_ref(model_hash)
+
 class SQLiteModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses SQLite database for metadata"""
     
