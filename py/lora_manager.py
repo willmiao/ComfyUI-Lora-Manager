@@ -36,6 +36,7 @@ from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
 from .middleware.csp_middleware import relax_csp_for_remote_media
 from .middleware.error_middleware import api_json_error
+from .utils.gc_utils import freeze_long_lived_objects
 
 logger = logging.getLogger(__name__)
 
@@ -286,6 +287,11 @@ class LoraManager:
 
             # Wait for all scanner initialization tasks to complete
             await asyncio.gather(*init_tasks, return_exceptions=True)
+
+            # The caches are hydrated now: move their long-lived objects out of
+            # GC tracking so ComfyUI's post-prompt gc.collect() no longer walks
+            # them on every prompt (issue #1147).
+            freeze_long_lived_objects("cache initialization")
 
             logger.debug(
                 "LoRA Manager: Scanner initialization completed, starting post-initialization tasks..."

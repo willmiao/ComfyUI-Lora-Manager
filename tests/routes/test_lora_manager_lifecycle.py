@@ -162,6 +162,15 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         staticmethod(fake_migration),
     )
 
+    freeze_calls: list[tuple[str, bool]] = []
+
+    def record_freeze(reason: str) -> None:
+        freeze_calls.append(
+            (reason, all(scanner.initialized for scanner in scanners.values()))
+        )
+
+    monkeypatch.setattr(lora_manager, "freeze_long_lived_objects", record_freeze)
+
     original_create_task = asyncio.create_task
     scheduled_tasks: list[asyncio.Task[Any]] = []
 
@@ -215,6 +224,10 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
     for scanner in scanners.values():
         assert scanner.initialized is True
+
+    # GC freeze runs once, only after every scanner cache has been hydrated
+    # (issue #1147).
+    assert freeze_calls == [("cache initialization", True)]
 
     assert migration_calls == [True]
 
