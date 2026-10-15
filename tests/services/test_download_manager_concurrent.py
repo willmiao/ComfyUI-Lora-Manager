@@ -13,6 +13,7 @@ from py.services.download_manager import (
     DownloadManager,
 )
 from py.services import download_manager
+from py.services.errors import RateLimitError
 from py.services.service_registry import ServiceRegistry
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils.metadata_manager import MetadataManager
@@ -657,3 +658,142 @@ async def test_civarchive_source_fallback_to_default_provider(
 
     assert result["success"] is True
     assert captured_providers == ["civarchive_api", "default"]
+
+
+@pytest.mark.asyncio
+async def test_civarchive_rate_limit_falls_back_to_default_provider(
+    monkeypatch, scanners, tmp_path
+):
+    """A CivArchive API cooldown (429) must not block models that are still
+    on CivitAI: the metadata step falls back to the default provider."""
+    manager = DownloadManager()
+
+    class CivArchiveProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            raise RateLimitError(
+                "Rate limit wait for 'civarchive.com' exceeds the 300s cap",
+                retry_after=1339.0,
+                provider="civarchive_api",
+            )
+
+    class DefaultProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            return {
+                "id": 119514,
+                "model": {"type": "LoRA", "tags": ["celebrity"]},
+                "baseModel": "SD 1.5",
+                "creator": {"username": "dogu_cat"},
+                "files": [
+                    {
+                        "type": "Model",
+                        "primary": True,
+                        "downloadUrl": "https://civitai.com/api/download/models/119514",
+                        "name": "file.safetensors",
+                        "hashes": {"SHA256": "abc123"},
+                    }
+                ],
+            }
+
+    captured_providers = []
+
+    async def get_metadata_provider(provider_name):
+        if provider_name == "civarchive_api":
+            captured_providers.append("civarchive_api")
+            return CivArchiveProvider()
+        return None
+
+    async def get_default_metadata_provider():
+        captured_providers.append("default")
+        return DefaultProvider()
+
+    monkeypatch.setattr(
+        download_manager, "get_metadata_provider", get_metadata_provider
+    )
+    monkeypatch.setattr(
+        download_manager, "get_default_metadata_provider", get_default_metadata_provider
+    )
+
+    captured = {}
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+    ):
+        captured["download_urls"] = download_urls
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=110828,
+        model_version_id=119514,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    assert captured_providers == ["civarchive_api", "default"]
+    assert captured["download_urls"] == [
+        "https://civitai.com/api/download/models/119514"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_civarchive_rate_limit_reraised_when_default_provider_has_nothing(
+    monkeypatch, scanners, tmp_path
+):
+    """Archive-only model + CivArchive cooling down: the structured 429 must
+    survive so the queue re-queues the download instead of failing it."""
+    manager = DownloadManager()
+
+    class CivArchiveProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            raise RateLimitError(
+                "Rate limit wait for 'civarchive.com' exceeds the 300s cap",
+                retry_after=1339.0,
+                provider="civarchive_api",
+            )
+
+    class DefaultProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            return None
+
+    async def get_metadata_provider(provider_name):
+        if provider_name == "civarchive_api":
+            return CivArchiveProvider()
+        return None
+
+    async def get_default_metadata_provider():
+        return DefaultProvider()
+
+    monkeypatch.setattr(
+        download_manager, "get_metadata_provider", get_metadata_provider
+    )
+    monkeypatch.setattr(
+        download_manager, "get_default_metadata_provider", get_default_metadata_provider
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=110828,
+        model_version_id=119514,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert result["retry_after"] == 1339
