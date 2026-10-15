@@ -1768,6 +1768,30 @@ class Config:
         """
         return list((getattr(self, "_configured_root_paths", None) or {}).get(model_type, []))
 
+    @staticmethod
+    def _unadmitted_paths(
+        configured: Iterable[str], live: Iterable[str]
+    ) -> List[str]:
+        """Configured roots missing from the live list.
+
+        Admission only ever appends, so a root that is already live can never
+        gain a new entry from re-preparation. Skipping those avoids an
+        ``os.path.exists``/``os.path.realpath`` stat per configured root on
+        every call — a single stat is enough to spin up a sleeping drive,
+        which made even a single-root scan touch every configured disk.
+        """
+        live_identities = {
+            Config._normalize_path_for_comparison(path)
+            for path in (live or [])
+            if isinstance(path, str)
+        }
+        return [
+            path
+            for path in configured
+            if isinstance(path, str)
+            and Config._normalize_path_for_comparison(path) not in live_identities
+        ]
+
     def admit_configured_roots(self) -> List[str]:
         """Append configured roots that became readable again, never removing any.
 
@@ -1777,6 +1801,10 @@ class Config:
         paths and appending only the new entries is what makes "plug the drive
         in, scan it" work without a restart. Nothing is ever dropped or
         re-ordered — see ``_append_new_paths`` for why order matters.
+
+        Only configured roots that are not live yet are probed on the
+        filesystem (``_unadmitted_paths``); already-live roots are skipped so
+        routine scans never stat healthy drives.
 
         Returns the paths that were admitted by this call.
         """
@@ -1790,14 +1818,20 @@ class Config:
             return merged
 
         try:
-            lora_configured = self.configured_roots_for("lora")
+            lora_configured = self._unadmitted_paths(
+                self.configured_roots_for("lora"), self.loras_roots
+            )
             if lora_configured:
                 self.loras_roots = _extend(
                     self.loras_roots, self._prepare_lora_paths(lora_configured)
                 )
 
-            checkpoint_configured = self.configured_roots_for("checkpoint")
-            unet_configured = self.configured_roots_for("unet")
+            checkpoint_configured = self._unadmitted_paths(
+                self.configured_roots_for("checkpoint"), self.checkpoints_roots
+            )
+            unet_configured = self._unadmitted_paths(
+                self.configured_roots_for("unet"), self.unet_roots
+            )
             if checkpoint_configured or unet_configured:
                 (
                     all_roots,
@@ -1810,28 +1844,31 @@ class Config:
                 self.checkpoints_roots = _extend(self.checkpoints_roots, checkpoint_roots)
                 self.unet_roots = _extend(self.unet_roots, unet_roots)
 
-            embedding_configured = self.configured_roots_for("embedding")
+            embedding_configured = self._unadmitted_paths(
+                self.configured_roots_for("embedding"), self.embeddings_roots
+            )
             if embedding_configured:
                 self.embeddings_roots = _extend(
                     self.embeddings_roots,
                     self._prepare_embedding_paths(embedding_configured),
                 )
 
-            other_configured = self.configured_roots_for("other")
-            if other_configured:
+            other_missing_by_key = {
+                key: missing
+                for key in self._get_enabled_other_folder_keys()
+                if (
+                    missing := self._unadmitted_paths(
+                        self._configured_other_paths_for_key(key),
+                        self.other_folder_roots.get(key, []),
+                    )
+                )
+            }
+            if other_missing_by_key:
                 (
                     other_roots,
                     other_subtypes,
                     other_per_key,
-                ) = self._prepare_other_paths(
-                    {
-                        key: [
-                            path
-                            for path in self._configured_other_paths_for_key(key)
-                        ]
-                        for key in self._get_enabled_other_folder_keys()
-                    }
-                )
+                ) = self._prepare_other_paths(other_missing_by_key)
                 self.other_roots = _extend(self.other_roots, other_roots)
                 for root, sub_type in other_subtypes.items():
                     self.other_root_subtypes.setdefault(root, sub_type)

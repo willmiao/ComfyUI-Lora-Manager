@@ -80,6 +80,34 @@ class TestAdmitConfiguredRoots:
         # Idempotent: a second call adds nothing.
         assert config.admit_configured_roots() == []
 
+    def test_skips_stat_for_roots_already_live(self, tmp_path, monkeypatch):
+        """Admission probes only roots that are not live yet: a single stat is
+        enough to spin up a sleeping drive, so routine scans must not touch
+        healthy, already-admitted roots at all."""
+        primary = tmp_path / "primary"
+        primary.mkdir()
+        offline = tmp_path / "drive-Z" / "loras"
+
+        config = _make_config(
+            loras_roots=[_normalize(primary)],
+            _configured_root_paths={"lora": [str(primary), str(offline)]},
+        )
+
+        probed = []
+        real_exists = os.path.exists
+
+        def tracking_exists(path):
+            probed.append(path)
+            return real_exists(path)
+
+        monkeypatch.setattr(os.path, "exists", tracking_exists)
+
+        assert config.admit_configured_roots() == []
+
+        probed_identities = [_normalize(path) for path in probed]
+        assert _normalize(primary) not in probed_identities
+        assert _normalize(offline) in probed_identities
+
     def test_never_removes_a_root_that_disappeared(self, tmp_path):
         primary = tmp_path / "primary"
         primary.mkdir()
