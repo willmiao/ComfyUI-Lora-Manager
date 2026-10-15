@@ -1,7 +1,7 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { createMenuItem, createDropIndicator } from "./loras_widget_components.js";
-import { parseLoraValue, formatLoraValue, syncClipStrengthIfCollapsed, saveRecipeDirectly, copyToClipboard, showToast, moveLoraByDirection, getDropTargetIndex, getLoraStrengthRange, applyStrengthRangeCue } from "./loras_widget_utils.js";
+import { parseLoraValue, formatLoraValue, syncClipStrengthIfCollapsed, saveRecipeDirectly, copyToClipboard, showToast, moveLoraByDirection, getDropTargetIndex, getLoraStrengthRange, applyStrengthRangeCue, resetAvailableLorasCache } from "./loras_widget_utils.js";
 import { createNvmeMenuItems } from "./nvme_cache_actions.js";
 
 // Function to handle strength adjustment via dragging
@@ -858,6 +858,76 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
     console.debug('Could not read favorite status:', error);
   });
 
+  // Save this entry's strengths as the LoRA's recommended strength in its
+  // usage tips, keeping any other tips (e.g. the strength range) intact.
+  const setRecommendedStrengthOption = createMenuItem(
+    'Set as Recommended Strength',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>',
+    async () => {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+
+      try {
+        const lora = parseLoraValue(widget.value).find(l => l.name === loraName);
+        if (!lora) {
+          throw new Error('LoRA not found in this node');
+        }
+        const strength = Number(lora.strength);
+        const clipStrength = Number(lora.clipStrength ?? lora.strength);
+
+        const response = await api.fetchApi(
+          `/lm/loras/usage-tips?name=${encodeURIComponent(loraName)}`
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to read usage tips');
+        }
+        if (!data.file_path) {
+          throw new Error('This LoRA is not in the LoRA Manager cache');
+        }
+
+        let usageTips = {};
+        try {
+          const parsed = JSON.parse(data.usage_tips || '{}');
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            usageTips = parsed;
+          }
+        } catch {
+          // Unparseable tips are replaced rather than blocking the save.
+        }
+
+        usageTips.strength = strength;
+        delete usageTips.clipStrength;
+        if (clipStrength !== strength) {
+          usageTips.clip_strength = clipStrength;
+        } else {
+          delete usageTips.clip_strength;
+        }
+
+        const saveResponse = await api.fetchApi('/lm/loras/save-metadata', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_path: data.file_path,
+            usage_tips: JSON.stringify(usageTips),
+          }),
+        });
+        if (!saveResponse.ok) {
+          const errorText = await saveResponse.text();
+          throw new Error(errorText || 'Failed to save recommended strength');
+        }
+
+        // The strength range cues read the recommended value from this cache.
+        resetAvailableLorasCache();
+        const clipText = clipStrength !== strength ? `, clip ${clipStrength.toFixed(2)}` : '';
+        showToast(`Recommended strength set to ${strength.toFixed(2)}${clipText}`, 'success');
+      } catch (error) {
+        console.error('Error setting recommended strength:', error);
+        showToast(error.message || 'Failed to save recommended strength', 'error');
+      }
+    }
+  );
+
   // Delete option with trash icon
   const deleteOption = createMenuItem(
     'Delete',
@@ -1089,6 +1159,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   menu.appendChild(viewOnCivitaiOption);
   menu.appendChild(favoriteOption);
+  menu.appendChild(setRecommendedStrengthOption);
   menu.appendChild(deleteOption);
   menu.appendChild(separator1);
   menu.appendChild(moveUpOption);

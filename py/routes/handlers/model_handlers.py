@@ -1632,6 +1632,45 @@ class ModelQueryHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def get_model_usage_tips(self, request: web.Request) -> web.Response:
+        """Report usage tips for a model, looked up by name.
+
+        Like ``get_model_favorite``, this lets a ComfyUI widget read the
+        current value and the ``file_path`` needed to write it back through
+        ``save-metadata``.
+        """
+        try:
+            model_name = request.query.get("name")
+            if not model_name:
+                return web.Response(
+                    text=f"{self._service.model_type.capitalize()} file name is required",
+                    status=400,
+                )
+            model = await self._service.get_model_info_by_name(model_name)
+            if not model:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f"{self._service.model_type.capitalize()} not found in cache",
+                    },
+                    status=404,
+                )
+            return web.json_response(
+                {
+                    "success": True,
+                    "usage_tips": model.get("usage_tips") or "",
+                    "file_path": model.get("file_path", ""),
+                }
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error getting %s usage tips: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_model_preview_url(self, request: web.Request) -> web.Response:
         try:
             model_name = request.query.get("name")
@@ -3896,6 +3935,7 @@ class ModelHandlerSet:
             "apply_filename_template": self.filename_template.apply_filename_template,
             "get_model_notes": self.query.get_model_notes,
             "get_model_favorite": self.query.get_model_favorite,
+            "get_model_usage_tips": self.query.get_model_usage_tips,
             "get_model_preview_url": self.query.get_model_preview_url,
             "get_model_civitai_url": self.query.get_model_civitai_url,
             "get_model_metadata": self.query.get_model_metadata,

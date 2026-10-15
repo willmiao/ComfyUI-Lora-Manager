@@ -353,6 +353,93 @@ def test_favorite_endpoint_reports_a_model_missing_from_cache(
     asyncio.run(scenario())
 
 
+def test_usage_tips_endpoint_resolves_name_to_tips_and_path(mock_service, mock_scanner):
+    seen = []
+
+    async def fake_lookup(name):
+        seen.append(name)
+        return {
+            "usage_tips": '{"strength": 0.8}',
+            "file_path": "/models/loras/characters/mianne.safetensors",
+        }
+
+    mock_service.get_model_info_by_name = fake_lookup
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get(
+                "/api/lm/test-models/usage-tips?name=characters%2Fmianne"
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload == {
+                "success": True,
+                "usage_tips": '{"strength": 0.8}',
+                "file_path": "/models/loras/characters/mianne.safetensors",
+            }
+            assert seen == ["characters/mianne"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_usage_tips_endpoint_defaults_to_empty_tips(mock_service, mock_scanner):
+    async def fake_lookup(_name):
+        return {"usage_tips": None, "file_path": "/models/loras/mianne.safetensors"}
+
+    mock_service.get_model_info_by_name = fake_lookup
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get("/api/lm/test-models/usage-tips?name=mianne")
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["usage_tips"] == ""
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_usage_tips_endpoint_requires_a_name(mock_service, mock_scanner):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get("/api/lm/test-models/usage-tips")
+            assert response.status == 400
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_usage_tips_endpoint_reports_a_model_missing_from_cache(
+    mock_service, mock_scanner
+):
+    async def fake_lookup(_name):
+        return None
+
+    mock_service.get_model_info_by_name = fake_lookup
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get("/api/lm/test-models/usage-tips?name=nope")
+            payload = await response.json()
+
+            assert response.status == 404
+            assert payload["success"] is False
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_routes_return_service_not_ready_when_unattached():
     async def scenario():
         client = await create_test_client(None)

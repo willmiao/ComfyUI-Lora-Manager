@@ -77,6 +77,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     ),
     RouteDefinition("GET", "/api/lm/{prefix}/get-notes", "get_model_notes"),
     RouteDefinition("GET", "/api/lm/{prefix}/favorite", "get_model_favorite"),
+    RouteDefinition("GET", "/api/lm/{prefix}/usage-tips", "get_model_usage_tips"),
     RouteDefinition("GET", "/api/lm/{prefix}/preview-url", "get_model_preview_url"),
     RouteDefinition("GET", "/api/lm/{prefix}/civitai-url", "get_model_civitai_url"),
     RouteDefinition("GET", "/api/lm/{prefix}/metadata", "get_model_metadata"),
