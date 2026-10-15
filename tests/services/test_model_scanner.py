@@ -190,6 +190,31 @@ def _create_files(root: Path) -> tuple[Path, Path, Path]:
 
 
 @pytest.mark.asyncio
+async def test_calculate_folder_preserves_case_with_drive_letter_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    # The host may spell the root in a different case than the file path.
+    scanner._root = "c:/models/loras"
+    folder = scanner._calculate_folder("C:/Models/Loras/Krea 2/Kroma/Merges/model.safetensors")
+    assert folder == "Krea 2/Kroma/Merges"
+
+
+@pytest.mark.asyncio
+async def test_calculate_folder_preserves_case_with_backslash_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    scanner._root = "C:\\Models\\Loras"
+    folder = scanner._calculate_folder("C:\\Models\\Loras\\Krea 2\\model.safetensors")
+    assert folder == "Krea 2"
+
+
+@pytest.mark.asyncio
+async def test_calculate_folder_returns_empty_for_root_and_unknown_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    scanner._root = "C:/Models/Loras"
+    assert scanner._calculate_folder("C:/Models/Loras/model.safetensors") == ""
+    assert scanner._calculate_folder("D:/Elsewhere/model.safetensors") == ""
+
+
+@pytest.mark.asyncio
 async def test_initialize_cache_populates_cache(tmp_path: Path):
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)

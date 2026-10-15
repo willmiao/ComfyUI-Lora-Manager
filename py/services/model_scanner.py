@@ -26,7 +26,7 @@ from ..utils.recipes_paths import (
     get_effective_recipes_dir,
     normalized_recipes_dir_key,
 )
-from ..utils.root_paths import normalize_root_identity
+from ..utils.root_paths import normalize_root_identity, normalize_root_spelling
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
 from .model_lifecycle_service import delete_model_artifacts, _require_path_in_library_roots
@@ -3135,10 +3135,21 @@ class ModelScanner:
         the opposite spelling, so every forward-slashed path on Windows resolved
         to the root folder and a moved model was filed under the library root.
         Compare identities instead, then slice the relative part off.
+
+        The identity folds case on case-insensitive filesystems, so the slice
+        comes from the case-preserving spelling: slicing the identity itself
+        recorded every folder in lowercase on Windows, and the sidebar grew a
+        lowercase twin branch on every move until the next disk walk healed it.
         """
         candidate = _root_identity(file_path)
         if not candidate:
             return ""
+        spelling = normalize_root_spelling(file_path)
+        if len(spelling) != len(candidate):
+            # Case folding changed the length (e.g. a Unicode character whose
+            # lowercase form spans two code points): fall back to the identity
+            # rather than slice at a wrong offset.
+            spelling = candidate
         for root in self.get_model_roots():
             identity = _root_identity(root)
             if not identity:
@@ -3146,7 +3157,7 @@ class ModelScanner:
             if candidate == identity:
                 return ""
             if candidate.startswith(f"{identity}/"):
-                relative = candidate[len(identity) + 1:]
+                relative = spelling[len(identity) + 1:]
                 return relative.rsplit("/", 1)[0] if "/" in relative else ""
         return ""
 

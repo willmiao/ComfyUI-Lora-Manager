@@ -34,3 +34,21 @@ def normalize_root_identity(path: str) -> str:
     if os.name == "nt" or (len(normalized) >= 2 and normalized[1] == ":"):
         return normalized.lower()
     return normalized
+
+
+def normalize_root_spelling(path: str) -> str:
+    """Case-preserving counterpart of :func:`normalize_root_identity`.
+
+    Same separator and redundancy folding, but keeps the original casing. Use it
+    to slice a relative part out of a path with offsets computed from the
+    identity -- the identity may have folded case, so slicing it directly would
+    lose the on-disk spelling.
+    """
+
+    if not isinstance(path, str):
+        return ""
+    candidate = path.strip()
+    if not candidate:
+        return ""
+
+    return posixpath.normpath(candidate.replace("\\", "/"))
