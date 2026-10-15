@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Type, Union, cast
 
 from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
+from .gguf_utils import detect_quantization
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
 from .sidecar_paths import get_metadata_path, get_preview_dir, resolve_metadata_path
 
@@ -270,6 +271,10 @@ class MetadataManager:
             # large files. At creation time we always know the checked state:
             # store "" when no recognized hash is embedded (checked-unavailable).
             autov3 = calculate_autov3(real_path)
+
+            # Quantization detection is likewise header-only (GGUF file_type /
+            # safetensors dtypes). "" = checked, no quantization detected.
+            quantization = detect_quantization(real_path)
             
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
@@ -320,6 +325,7 @@ class MetadataManager:
             
             # Record the AutoV3 state explicitly ("" = checked, no value).
             metadata.autov3 = autov3 or ""
+            metadata.quantization = quantization or ""
 
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)

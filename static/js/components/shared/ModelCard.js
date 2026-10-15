@@ -735,12 +735,14 @@ export function createModelCard(model, modelType) {
                             const autoTags = model.auto_tags || [];
                             const hlTags = autoTags.filter(t => t === 'HIGH' || t === 'LOW');
                             const hasVersionName = model.civitai?.name;
+                            const quantization = typeof model.quantization === 'string' && model.quantization
+                                ? model.quantization : null;
                             // When group_by_model is active and model has multiple versions,
                             // show clickable version count instead of version name (and hide badges)
                             const isGroupByModel = state.global.settings.group_by_model;
                             const versionCount = model.version_count;
                             const showVersionCount = isGroupByModel && versionCount > 1;
-                            if (!hlTags.length && !hasVersionName && !showVersionCount) return '';
+                            if (!hlTags.length && !hasVersionName && !showVersionCount && !quantization) return '';
                             const density = state.global.settings.display_density || 'default';
                             const shortLabels = density === 'medium' || density === 'compact';
                             // Don't show HIGH/LOW badges when showing version count (confusing in grouped mode)
@@ -750,6 +752,9 @@ export function createModelCard(model, modelType) {
                                 const titleAttr = shortLabels ? ` title="${t}"` : '';
                                 return `<span class="${cls}"${titleAttr}>${label}</span>`;
                             }).join('') : '';
+                            // Suppress the quant badge in grouped mode too (a group mixes quants)
+                            const quantBadge = !showVersionCount && quantization
+                                ? `<span class="quant-badge">${quantization}</span>` : '';
                             let versionHtml = '';
                             if (showVersionCount) {
                                 const countLabel = translate('modelCard.footer.versionCount', { count: versionCount }, `${versionCount} versions`);
@@ -757,7 +762,7 @@ export function createModelCard(model, modelType) {
                             } else if (hasVersionName) {
                                 versionHtml = `<span class="version-name civitai-version">${model.civitai.name}</span>`;
                             }
-                            return `<span class="badge-version-unit">${badges}${versionHtml}</span>`;
+                            return `<span class="badge-version-unit">${badges}${versionHtml}${quantBadge}</span>`;
                         })()}
                         ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}
                     </div>

@@ -50,6 +50,36 @@ def autov3_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: st
     return None
 
 
+def quantization_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: str) -> Optional[str]:
+    """Extract the quantization from Civitai metadata for the matching file.
+
+    Fallback for when content-based detection found nothing: Civitai reports
+    the precision of each file under ``files[].metadata.fp`` ("fp8", "fp16",
+    ...). Only "fp8" is reported (as "FP8") — other precisions are not
+    quantizations. The value is only valid for the file whose
+    ``hashes.SHA256`` equals the local model's sha256 (case-insensitive).
+
+    Returns ``None`` when no Civitai data, no matching file, or the matching
+    file is not fp8.
+    """
+    if not civitai_data or not sha256:
+        return None
+    target_sha = sha256.lower()
+    for file_info in civitai_data.get("files") or []:
+        if not isinstance(file_info, dict):
+            continue
+        hashes = file_info.get("hashes") or {}
+        file_sha = (hashes.get("SHA256") or "").lower()
+        if file_sha and file_sha == target_sha:
+            file_metadata = file_info.get("metadata")
+            if isinstance(file_metadata, dict):
+                fp = file_metadata.get("fp")
+                if isinstance(fp, str) and fp.lower() == "fp8":
+                    return "FP8"
+            return None
+    return None
+
+
 def strip_model_extension(file_name: str) -> str:
     """Strip a recognized model file extension, leaving dotted stems intact.
 
@@ -99,6 +129,7 @@ class BaseModelMetadata:
     last_checked_at: float = 0  # Last checked timestamp
     hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
     autov3: Optional[str] = None  # CivitAI AutoV3 hash (12-char lowercase hex); "" = checked but unavailable, None = not checked
+    quantization: Optional[str] = None  # Content-detected quantization ("Q4_K_M"/"FP8"/...); "" = checked but unavailable, None = not checked
     _unknown_fields: Dict[str, Any] = field(
         default_factory=dict, repr=False, compare=False
     )  # Store unknown fields
@@ -120,9 +151,11 @@ class BaseModelMetadata:
         # JSON null in the sidecar ("checked but unavailable") is normalized to ""
         # in memory; an absent key stays None ("not checked yet"). autov3 is a known
         # field, so it flows through fields_to_use below and never leaks into
-        # _unknown_fields.
+        # _unknown_fields. quantization follows the same contract.
         if "autov3" in data_copy:
             data_copy["autov3"] = data_copy["autov3"] or ""
+        if "quantization" in data_copy:
+            data_copy["quantization"] = data_copy["quantization"] or ""
 
         # Use cached fields if available, otherwise compute them
         if not hasattr(cls, "_known_fields_cache"):
@@ -172,6 +205,12 @@ class BaseModelMetadata:
         else:
             result.pop("autov3", None)
 
+        # quantization uses the same three-state contract as autov3.
+        if self.quantization is not None:
+            result["quantization"] = self.quantization or None
+        else:
+            result.pop("quantization", None)
+
         return result
 
     def update_civitai_info(self, civitai_data: Dict[str, Any]) -> None:
@@ -186,6 +225,13 @@ class BaseModelMetadata:
         autov3 = autov3_from_civitai_files(civitai_data, self.sha256)
         if autov3:
             self.autov3 = autov3
+        # Civitai fp8 is only a fallback: it may fill an unchecked or
+        # checked-unavailable quantization, but never overrides a value
+        # detected from the file content itself.
+        if not self.quantization:
+            quantization = quantization_from_civitai_files(civitai_data, self.sha256)
+            if quantization:
+                self.quantization = quantization
 
     def update_file_info(self, file_path: str, update_timestamps: bool = False) -> None:
         """

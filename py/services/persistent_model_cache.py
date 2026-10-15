@@ -61,6 +61,7 @@ class PersistentModelCache:
         "modified",
         "sha256",
         "autov3",
+        "quantization",
         "base_model",
         "preview_url",
         "preview_nsfw_level",
@@ -241,6 +242,8 @@ class PersistentModelCache:
             normalize_metadata_source(item)
             if row["autov3"] is not None:
                 item["autov3"] = (row["autov3"] or "").lower()
+            if row["quantization"] is not None:
+                item["quantization"] = row["quantization"] or ""
             raw_data.append(item)
 
         hash_pairs = [(entry["sha256"].lower(), entry["file_path"]) for entry in hash_rows if entry["sha256"]]
@@ -633,6 +636,7 @@ class PersistentModelCache:
                             modified REAL,
                             sha256 TEXT,
                             autov3 TEXT,
+                            quantization TEXT,
                             base_model TEXT,
                             preview_url TEXT,
                             preview_nsfw_level INTEGER,
@@ -729,6 +733,7 @@ class PersistentModelCache:
             "source_model_id": "TEXT DEFAULT ''",
             "source_version_id": "TEXT DEFAULT ''",
             "autov3": "TEXT",
+            "quantization": "TEXT",
         }
 
         for column, definition in required_columns.items():
@@ -781,6 +786,14 @@ class PersistentModelCache:
         else:
             autov3_column = (autov3_value or "").lower()
 
+        # Same three-state contract as autov3 (NULL = not checked), but the
+        # canonical names are case-sensitive, so no lowering.
+        quantization_value = item.get("quantization")
+        if quantization_value is None:
+            quantization_column = None
+        else:
+            quantization_column = quantization_value or ""
+
         return (
             model_type,
             item.get("file_path"),
@@ -791,6 +804,7 @@ class PersistentModelCache:
             float(item.get("modified") or 0.0),
             (item.get("sha256") or "").lower() or None,
             autov3_column,
+            quantization_column,
             item.get("base_model") or "",
             item.get("preview_url") or "",
             int(item.get("preview_nsfw_level") or 0),
@@ -961,6 +975,40 @@ class PersistentModelCache:
         except Exception as exc:
             logger.warning(
                 "Failed to query models missing autov3 for %s: %s",
+                model_type,
+                exc,
+            )
+            return []
+
+    def get_models_missing_quantization(self, model_type: str) -> List[str]:
+        """Return file paths whose models lack a quantization checked state.
+
+        Every row with a NULL quantization column qualifies — rows with ''
+        (checked-unavailable) or a value are never returned, so the backfill
+        query self-terminates. Unlike the autov3 query there is no sha256
+        filter: content detection only needs the file header.
+        """
+        if not self.is_enabled():
+            return []
+        if not self._schema_initialized:
+            self._initialize_schema()
+        if not self._schema_initialized:
+            return []
+        try:
+            with self._db_lock:
+                conn = self._connect(readonly=True)
+                try:
+                    rows = conn.execute(
+                        "SELECT file_path FROM models "
+                        "WHERE model_type = ? AND quantization IS NULL",
+                        (model_type,),
+                    ).fetchall()
+                finally:
+                    conn.close()
+            return [row["file_path"] for row in rows]
+        except Exception as exc:
+            logger.warning(
+                "Failed to query models missing quantization for %s: %s",
                 model_type,
                 exc,
             )

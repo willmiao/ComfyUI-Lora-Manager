@@ -1221,6 +1221,12 @@ export class SettingsManager {
             showVersionOnCardCheckbox.checked = state.global.settings.show_version_on_card !== false;
         }
 
+        // Set show quantization on card
+        const showQuantizationOnCardCheckbox = document.getElementById('showQuantizationOnCard');
+        if (showQuantizationOnCardCheckbox) {
+            showQuantizationOnCardCheckbox.checked = state.global.settings.show_quantization_on_card !== false;
+        }
+
         // Set group by model
         const groupByModelCheckbox = document.getElementById('groupByModel');
         if (groupByModelCheckbox) {
@@ -5573,6 +5579,10 @@ export class SettingsManager {
         // Apply show version on card setting
         const showVersionOnCard = state.global.settings.show_version_on_card !== false;
         document.body.classList.toggle('hide-card-version', !showVersionOnCard);
+
+        // Apply show quantization on card setting
+        const showQuantizationOnCard = state.global.settings.show_quantization_on_card !== false;
+        document.body.classList.toggle('hide-card-quant', !showQuantizationOnCard);
 
         // Apply license icon style
         const useNewLicenseIcons = state.global.settings.use_new_license_icons !== false;

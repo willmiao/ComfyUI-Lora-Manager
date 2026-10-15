@@ -577,6 +577,8 @@
       },
       "showVersionOnCard": "Show Version on Card",
       "showVersionOnCardHelp": "Show or hide the version name on model cards",
+      "showQuantizationOnCard": "Show Quantization on Card",
+      "showQuantizationOnCardHelp": "Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
       "modelCardFooterAction": "Model Card Button Action",
       "modelCardFooterActionOptions": {
         "exampleImages": "Open Example Images",

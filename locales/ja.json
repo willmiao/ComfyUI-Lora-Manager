@@ -577,6 +577,8 @@
             },
             "showVersionOnCard": "カードにバージョンを表示",
             "showVersionOnCardHelp": "モデルカード上のバージョン名の表示/非表示を切り替えます",
+            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
+            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
             "modelCardFooterAction": "モデルカードボタンのアクション",
             "modelCardFooterActionOptions": {
                 "exampleImages": "例画像を開く",

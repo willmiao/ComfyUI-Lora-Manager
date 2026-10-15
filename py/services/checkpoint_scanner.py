@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from ..utils.models import CheckpointMetadata
 from ..utils.file_utils import find_preview_file, normalize_path, calculate_autov3
+from ..utils.gguf_utils import detect_quantization
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_preview_dir, is_centralized
 from ..config import config
@@ -71,6 +72,10 @@ class CheckpointScanner(ModelScanner):
             # checked but unavailable).
             autov3 = calculate_autov3(real_path)
 
+            # Quantization detection is likewise header-only (GGUF file_type /
+            # safetensors dtypes). "" = checked, no quantization detected.
+            quantization = detect_quantization(real_path)
+
             # Create metadata WITHOUT calculating hash
             metadata = CheckpointMetadata(
                 file_name=base_name,
@@ -87,6 +92,7 @@ class CheckpointScanner(ModelScanner):
                 from_civitai=False,  # Mark as local model since no hash yet
                 hash_status="pending",  # Mark hash as pending
                 autov3=autov3 or "",
+                quantization=quantization or "",
             )
 
             # Save the created metadata

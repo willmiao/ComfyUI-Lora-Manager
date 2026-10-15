@@ -577,6 +577,8 @@
             },
             "showVersionOnCard": "카드에 버전 표시",
             "showVersionOnCardHelp": "모델 카드에 버전 이름 표시 여부를 전환합니다",
+            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
+            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
             "modelCardFooterAction": "모델 카드 버튼 동작",
             "modelCardFooterActionOptions": {
                 "exampleImages": "예시 이미지 열기",

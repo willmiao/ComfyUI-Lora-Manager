@@ -59,6 +59,7 @@ class LoraService(BaseModelService):
             "folder": folder,
             "sha256": model_data.get("sha256", ""),
             "autov3": model_data.get("autov3"),
+            "quantization": model_data.get("quantization"),
             "file_path": file_path.replace(os.sep, "/"),
             "file_size": model_data.get("size", 0),
             "modified": model_data.get("modified", ""),

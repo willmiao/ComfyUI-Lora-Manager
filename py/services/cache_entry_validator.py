@@ -60,6 +60,7 @@ class CacheEntryValidator:
         'usage_tips': ('', False),
         'hash_status': ('completed', False),
         'autov3': (None, False),
+        'quantization': (None, False),
     }
 
     @classmethod
@@ -268,6 +269,17 @@ class CacheEntryValidator:
                 return f"Field 'autov3' should be string or None, got {type(value).__name__}"
             if len(value) != 12 or any(c not in '0123456789abcdefABCDEF' for c in value):
                 return "Field 'autov3' should be a 12-character hex string"
+            return None
+
+        # Special case: quantization shares autov3's three-state contract
+        # (None = not checked, "" = checked but unavailable) but the value is
+        # a canonical name ("Q4_K_M", "FP8"), not a hex string, so only the
+        # type is constrained.
+        if field_name == 'quantization':
+            if value is None or value == "":
+                return None
+            if not isinstance(value, str):
+                return f"Field 'quantization' should be string or None, got {type(value).__name__}"
             return None
 
         # Special handling for numeric types

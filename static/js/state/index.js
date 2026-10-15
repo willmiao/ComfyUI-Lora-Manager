@@ -52,6 +52,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     lora_syntax_format: 'legacy',
     model_card_footer_action: 'example_images',
     show_version_on_card: true,
+    show_quantization_on_card: true,
     include_trigger_words: false,
     compact_mode: false,
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },

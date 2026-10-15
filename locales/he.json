@@ -577,6 +577,8 @@
             },
             "showVersionOnCard": "הצג גרסה בכרטיס",
             "showVersionOnCardHelp": "הצג או הסתר את שם הגרסה בכרטיסי המודל",
+            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
+            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
             "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
             "modelCardFooterActionOptions": {
                 "exampleImages": "פתח תמונות דוגמה",

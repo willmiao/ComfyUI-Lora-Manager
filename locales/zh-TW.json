@@ -577,6 +577,8 @@
             },
             "showVersionOnCard": "在卡片上顯示版本",
             "showVersionOnCardHelp": "在模型卡片上顯示或隱藏版本名稱",
+            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
+            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
             "modelCardFooterAction": "模型卡片按鈕操作",
             "modelCardFooterActionOptions": {
                 "exampleImages": "開啟範例圖片",
