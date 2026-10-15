@@ -222,13 +222,86 @@ async def test_get_model_by_hash_uses_file_fallback(downloader, monkeypatch):
 
     client = await CivArchiveClient.get_instance()
 
-    result, error = await client.get_model_by_hash("fallback")
+    result, error = await client.get_model_by_hash(
+        "e2b7a280d6539556f23f380b3f71e4e22bc4524445c4c96526e117c6005c6ad3"
+    )
 
     assert error is None
     assert result is not None
     assert result["id"] == 1976567
     assert result["model"]["name"] == "Mixplin Style [Illustrious]"
     assert any("/models/1746460" in call["url"] for call in downloader.calls)
+
+
+async def test_get_model_by_hash_skips_foreign_ecosystem_file_entries(downloader):
+    """File entries from a foreign ecosystem (e.g. civision) carry IDs from a
+    different ID space; resolving them would hit an unrelated CivitAI model."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "filename": "Kiara-Krea_c1-st4000.safetensors",
+                    "url": "https://www.modelscope.ai/models/arbinshado/Kiara-Krea/files",
+                    "source": "civision",
+                    "model_id": "455108",
+                    "model_version_id": "130022",
+                }
+            ]
+        }
+    }
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("f3a5370b")
+
+    assert result is None
+    assert error == "No version data found"
+    assert not any("/models/" in call["url"] for call in downloader.calls)
+
+
+async def test_get_model_by_hash_discards_resolved_version_on_hash_mismatch(downloader):
+    """The version endpoint resolves modelVersionId globally, so a colliding
+    foreign ID can resolve to a valid-looking but wrong version. The resolved
+    files must contain the queried hash, otherwise the result is discarded."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "model_id": 1746460,
+                    "model_version_id": 1976567,
+                }
+            ]
+        }
+    }
+
+    version_payload = _base_civarchive_payload()
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        if "/models/1746460" in url:
+            return True, copy.deepcopy(version_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash(
+        "f3a5370b60e2a10ba8c35ddd95dc8a573b3843e032bd507a941b2cc467884955"
+    )
+
+    assert result is None
+    assert error == "No version data found"
 
 
 async def test_get_model_by_hash_handles_not_found(downloader):
