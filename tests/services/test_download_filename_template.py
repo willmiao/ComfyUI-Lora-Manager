@@ -151,7 +151,11 @@ async def test_download_rename_trims_stem_to_fit_path_budget(
     tmp_path: Path, download_manager: DownloadManager, monkeypatch: pytest.MonkeyPatch
 ):
     """The fixed stem cap ignores the real depth; the budget trim catches it (#1142)."""
-    monkeypatch.setattr("py.utils.utils.MAX_FULL_PATH_LENGTH", 120)
+    # Patch the limit relative to the actual temp dir: Windows runner paths
+    # are long, so a fixed limit could leave no room for a viable name there.
+    monkeypatch.setattr(
+        "py.utils.utils.MAX_FULL_PATH_LENGTH", len(str(tmp_path)) + 60
+    )
     _set_template("{model_name}")
     model_path = _write_model(tmp_path, "V1", "m" * 400, "abcdef0123456789")
 
@@ -172,7 +176,8 @@ async def test_download_rename_trims_stem_to_fit_path_budget(
         download_id=None,
     )
 
-    renamed = tmp_path / f"{'m' * (100 - len(str(tmp_path)) - 1)}.safetensors"
+    # budget = limit - 20 suffix allowance; stem = budget - dir - separator
+    renamed = tmp_path / f"{'m' * 39}.safetensors"
     assert not model_path.exists()
     assert renamed.exists()
     # The budget reserves room for the longest companion suffix.

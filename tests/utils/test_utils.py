@@ -595,11 +595,16 @@ PATH_BUDGET = MAX_FULL_PATH_LENGTH - PATH_BUDGET_SUFFIX_ALLOWANCE
 
 @pytest.fixture
 def alongside_sidecar_dir(monkeypatch):
-    """Pin sidecar resolution to alongside mode regardless of global settings."""
+    """Pin sidecar resolution to alongside mode regardless of global settings.
+
+    Plain dirname, no abspath: abspath prepends the drive letter on Windows,
+    which would make the sidecar path two chars longer than the model path
+    and skew the budget math these tests assert on.
+    """
 
     monkeypatch.setattr(
         "py.utils.utils.get_sidecar_dir",
-        lambda path: os.path.dirname(os.path.abspath(path)),
+        lambda path: os.path.dirname(path),
     )
 
 
