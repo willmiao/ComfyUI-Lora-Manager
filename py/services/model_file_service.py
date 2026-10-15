@@ -7,7 +7,7 @@ import shutil
 from typing import Any, Dict, List, Optional, Sequence, Set
 from abc import ABC, abstractmethod
 
-from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
+from ..utils.utils import calculate_relative_path_for_model, fit_stem_to_path_budget, remove_empty_dirs
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE, MODEL_FILE_EXTENSIONS
 from ..utils.recipes_paths import path_is_or_contains_recipes_dir
 from ..utils.sidecar_paths import is_centralized, resolve_centralized_dir_for_dir
@@ -396,7 +396,20 @@ class ModelFileService:
             # Check for conflicts
             file_name = os.path.basename(file_path)
             target_file_path = os.path.join(target_dir, file_name)
-            
+
+            # Auto-organize moves the file as-is, so an over-long target
+            # cannot be fixed by trimming the name here — refuse with an
+            # actionable message instead of letting the OS move fail
+            # (#1142). The check covers the sidecar mirror path too.
+            file_stem, file_ext = os.path.splitext(file_name)
+            if fit_stem_to_path_budget(target_dir, file_stem, file_ext) != file_stem:
+                self._add_result(result, model_name, False,
+                               "Skipped - target path would exceed the OS path "
+                               "length limit; shorten the file name or move the "
+                               "library to a shallower root")
+                result.skipped_count += 1
+                return
+
             if os.path.exists(target_file_path):
                 self._add_result(result, model_name, False, 
                                f"Target file already exists: {target_file_path}")

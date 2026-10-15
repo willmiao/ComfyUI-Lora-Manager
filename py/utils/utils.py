@@ -9,8 +9,12 @@ from ..services.settings_manager import get_settings_manager
 from .constants import (
     MAX_FILENAME_STEM_LENGTH,
     MAX_FOLDER_NAME_LENGTH,
+    MAX_FULL_PATH_LENGTH,
     MAX_PATH_TAG_LENGTH,
+    MIN_VIABLE_STEM_LENGTH,
+    PATH_BUDGET_SUFFIX_ALLOWANCE,
 )
+from .sidecar_paths import get_sidecar_dir
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -486,6 +490,42 @@ def sanitize_folder_name(
     return sanitized
 
 
+def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> str:
+    """Truncate ``stem`` so the file and its companions fit the path budget.
+
+    The per-component caps (:data:`MAX_FILENAME_STEM_LENGTH` and friends) do
+    not add up to a guarantee: a deep model root plus template folders plus a
+    150-char stem still overflows the Windows MAX_PATH limit (issue #1142).
+    This measures the real destination instead: the model path
+    ``dir_path/stem+extension`` and the sidecar location resolved by
+    :func:`~py.utils.sidecar_paths.get_sidecar_dir` (the centralized mirror
+    tree when active, which is typically deeper than the model directory).
+    The stem is shared by the model file, the ``.metadata.json`` sidecar (and
+    its ``.bak``), preview files and aria2 control files, so
+    :data:`PATH_BUDGET_SUFFIX_ALLOWANCE` characters past the stem stay
+    reserved for the longest of those suffixes.
+
+    Returns the (possibly truncated) stem, or "" when the directory alone
+    leaves no room for a viable name — callers must treat that as "skip with
+    an actionable error", never write a stub name.
+    """
+
+    if not stem:
+        return ""
+
+    budget = MAX_FULL_PATH_LENGTH - PATH_BUDGET_SUFFIX_ALLOWANCE
+    model_base = os.path.join(dir_path, stem)
+    sidecar_dir = get_sidecar_dir(model_base + extension)
+    used = max(len(model_base), len(os.path.join(sidecar_dir, stem)))
+    if used <= budget:
+        return stem
+
+    allowed = len(stem) - (used - budget)
+    if allowed < MIN_VIABLE_STEM_LENGTH:
+        return ""
+    return stem[:allowed].strip("-_. ")
+
+
 def calculate_recipe_fingerprint(loras):
     """
     Calculate a unique fingerprint for a recipe based on its LoRAs.
@@ -641,7 +681,7 @@ def calculate_relative_path_for_model(
 
 
 def calculate_filename_for_model(
-    model_data: Dict[str, Any], model_type: str = "lora"
+    model_data: Dict[str, Any], model_type: str = "lora", target_dir: Optional[str] = None
 ) -> str:
     """Calculate the filename stem for a model using the filename template.
 
@@ -653,6 +693,10 @@ def calculate_filename_for_model(
     Args:
         model_data: Model data from scanner cache
         model_type: Type of model ('lora', 'checkpoint', 'embedding')
+        target_dir: Optional destination directory. When given, the rendered
+            stem is additionally trimmed to the full-path budget for that
+            location (see :func:`fit_stem_to_path_budget`); "" is returned
+            when the directory leaves no room for a viable name.
 
     Returns:
         Sanitized filename stem without extension, or an empty string when no
@@ -744,6 +788,12 @@ def calculate_filename_for_model(
     # well and re-trim the cut.
     if len(result) > MAX_FILENAME_STEM_LENGTH:
         result = result[:MAX_FILENAME_STEM_LENGTH].strip("-_. ")
+
+    # The fixed cap above ignores how deep the destination actually is; when
+    # the caller knows it, trim further so the full path (including the
+    # sidecar mirror) stays within budget.
+    if result and target_dir:
+        result = fit_stem_to_path_budget(target_dir, result)
 
     return result
 

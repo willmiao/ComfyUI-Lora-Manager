@@ -42,7 +42,7 @@ from ..utils.paid_access import (
 )
 from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
-from ..utils.utils import calculate_filename_for_model, sanitize_folder_name
+from ..utils.utils import calculate_filename_for_model, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
@@ -2191,6 +2191,30 @@ class DownloadManager:
             file_name = file_info.get("name", "")
             if not file_name:
                 return {"success": False, "error": "No filename found in file info"}
+            # Raw stored filenames carry no length cap, and the fixed stem
+            # cap only applies to template renames; trim to the real path
+            # budget (model path and sidecar mirror alike) so the target
+            # stays writable on Windows (#1142).
+            file_stem, file_ext = os.path.splitext(file_name)
+            fitted_stem = fit_stem_to_path_budget(save_dir, file_stem, file_ext)
+            if not fitted_stem:
+                return {
+                    "success": False,
+                    "error": (
+                        "Download target path would exceed the OS path length "
+                        "limit. Choose a shallower destination folder."
+                    ),
+                }
+            if fitted_stem != file_stem:
+                logger.info(
+                    "[download] Truncating filename '%s' to fit the path length limit",
+                    file_name,
+                )
+                # Rewrite file_info like the raw-name lookup above (#1100):
+                # from this point the name is the on-disk identity, which is
+                # what metadata, history and the scanner all agree on.
+                file_name = fitted_stem + file_ext
+                file_info = {**file_info, "name": file_name}
             save_path = os.path.join(save_dir, file_name)
 
             # 5. Prepare metadata based on model type
@@ -3088,8 +3112,12 @@ class DownloadManager:
                 if not isinstance(file_path, str) or not file_path:
                     continue
 
-                new_stem = calculate_filename_for_model(metadata_dict, model_type)
+                new_stem = calculate_filename_for_model(
+                    metadata_dict, model_type, target_dir=os.path.dirname(file_path)
+                )
                 if not new_stem:
+                    # An empty stem here also covers "no viable name fits the
+                    # path budget": keep the name already on disk.
                     continue
 
                 current_stem = os.path.splitext(os.path.basename(file_path))[0]

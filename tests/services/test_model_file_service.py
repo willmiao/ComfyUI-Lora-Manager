@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import List
 
@@ -826,3 +827,81 @@ async def test_rename_folder_refuses_the_recipes_dir(tmp_path: Path, monkeypatch
     assert result["code"] == "protected"
     assert target.is_dir()
     assert scanner.renamed_folders == []
+
+
+class AutoOrganizeScanner:
+    """Minimal scanner stand-in for auto-organize path-budget tests."""
+
+    def __init__(self, root: Path, models: List[dict]) -> None:
+        self._root = str(root)
+        from types import SimpleNamespace
+
+        self._cache = SimpleNamespace(raw_data=models)
+        self.moves: List[tuple] = []
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root]
+
+    def reset_cancellation(self) -> None:
+        pass
+
+    def is_cancelled(self) -> bool:
+        return False
+
+    async def get_cached_data(self):
+        return self._cache
+
+    async def move_model(self, file_path: str, target_dir: str) -> bool:
+        self.moves.append((file_path, target_dir))
+        return True
+
+
+def _organize_setup(tmp_path: Path):
+    from py.services.model_file_service import ModelFileService
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_path_templates") or {})
+    templates["lora"] = "{base_model}"
+    manager.settings["download_path_templates"] = templates
+
+    model_path = tmp_path / "mymodel.safetensors"
+    model_path.write_bytes(b"model")
+    models = [
+        {
+            "file_path": model_path.as_posix(),
+            "model_name": "mymodel",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 1},
+        }
+    ]
+    scanner = AutoOrganizeScanner(tmp_path, models)
+    return ModelFileService(scanner, "lora"), scanner, model_path
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_moves_model_within_path_budget(tmp_path: Path):
+    service, scanner, model_path = _organize_setup(tmp_path)
+
+    result = await service.auto_organize_models()
+
+    assert result.success_count == 1
+    assert scanner.moves == [
+        (model_path.as_posix(), str(tmp_path / "SDXL").replace(os.sep, "/"))
+    ]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_skips_model_when_target_path_exceeds_budget(
+    tmp_path: Path, monkeypatch
+):
+    """Organize cannot trim names, so an over-long target is skipped (#1142)."""
+    monkeypatch.setattr("py.utils.utils.MAX_FULL_PATH_LENGTH", 40)
+    service, scanner, _model_path = _organize_setup(tmp_path)
+
+    result = await service.auto_organize_models()
+
+    assert result.skipped_count == 1
+    assert scanner.moves == []
+    assert "path length limit" in result.results[0]["message"]

@@ -145,3 +145,54 @@ async def test_download_rename_noop_without_template(
 
     assert model_path.exists()
     assert (tmp_path / "V1.metadata.json").exists()
+
+
+async def test_download_rename_trims_stem_to_fit_path_budget(
+    tmp_path: Path, download_manager: DownloadManager, monkeypatch: pytest.MonkeyPatch
+):
+    """The fixed stem cap ignores the real depth; the budget trim catches it (#1142)."""
+    monkeypatch.setattr("py.utils.utils.MAX_FULL_PATH_LENGTH", 120)
+    _set_template("{model_name}")
+    model_path = _write_model(tmp_path, "V1", "m" * 400, "abcdef0123456789")
+
+    downloaded_metadata = [
+        {
+            "file_path": model_path.as_posix(),
+            "file_name": "V1",
+            "model_name": "m" * 400,
+            "sha256": "abcdef0123456789",
+            "civitai": {"id": 1},
+        }
+    ]
+
+    await download_manager._apply_download_filename_template(
+        scanner=DummyScanner(tmp_path),
+        model_type="lora",
+        downloaded_metadata=downloaded_metadata,
+        download_id=None,
+    )
+
+    renamed = tmp_path / f"{'m' * (100 - len(str(tmp_path)) - 1)}.safetensors"
+    assert not model_path.exists()
+    assert renamed.exists()
+    # The budget reserves room for the longest companion suffix.
+    assert (tmp_path / f"{renamed.stem}.metadata.json").exists()
+
+
+async def test_download_rename_keeps_original_when_no_viable_name_fits(
+    tmp_path: Path, download_manager: DownloadManager, monkeypatch: pytest.MonkeyPatch
+):
+    """A destination too deep for any name keeps the file already on disk."""
+    monkeypatch.setattr("py.utils.utils.MAX_FULL_PATH_LENGTH", 40)
+    _set_template("{model_name}")
+    model_path = _write_model(tmp_path, "V1", "m" * 400, "abcdef0123456789")
+
+    await download_manager._apply_download_filename_template(
+        scanner=DummyScanner(tmp_path),
+        model_type="lora",
+        downloaded_metadata=[{"file_path": model_path.as_posix()}],
+        download_id=None,
+    )
+
+    assert model_path.exists()
+    assert (tmp_path / "V1.metadata.json").exists()

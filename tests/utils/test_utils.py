@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from py.services.settings_manager import SettingsManager, get_settings_manager
@@ -5,12 +7,15 @@ from py.services.service_registry import ServiceRegistry
 from py.utils.constants import (
     MAX_FILENAME_STEM_LENGTH,
     MAX_FOLDER_NAME_LENGTH,
+    MAX_FULL_PATH_LENGTH,
     MAX_PATH_TAG_LENGTH,
+    PATH_BUDGET_SUFFIX_ALLOWANCE,
 )
 from py.utils.utils import (
     calculate_filename_for_model,
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    fit_stem_to_path_budget,
     get_lora_info,
     get_lora_info_absolute,
     sanitize_folder_name,
@@ -581,3 +586,105 @@ def test_get_lora_info_absolute_does_not_substitute_missing_absolute_path(mock_l
     assert get_lora_info_absolute("/models/missing/same.safetensors") == (
         "/models/missing/same.safetensors", []
     )
+
+
+# Budget available to "directory + stem"; suffixes (.safetensors,
+# .metadata.json, previews) are covered by PATH_BUDGET_SUFFIX_ALLOWANCE.
+PATH_BUDGET = MAX_FULL_PATH_LENGTH - PATH_BUDGET_SUFFIX_ALLOWANCE
+
+
+@pytest.fixture
+def alongside_sidecar_dir(monkeypatch):
+    """Pin sidecar resolution to alongside mode regardless of global settings."""
+
+    monkeypatch.setattr(
+        "py.utils.utils.get_sidecar_dir",
+        lambda path: os.path.dirname(os.path.abspath(path)),
+    )
+
+
+def test_fit_stem_to_path_budget_returns_stem_within_budget(alongside_sidecar_dir):
+    assert fit_stem_to_path_budget("/models", "abc", ".safetensors") == "abc"
+
+
+def test_fit_stem_to_path_budget_empty_stem(alongside_sidecar_dir):
+    assert fit_stem_to_path_budget("/models", "") == ""
+
+
+def test_fit_stem_to_path_budget_truncates_overlong_stem(alongside_sidecar_dir):
+    dir_path = "/" + "d" * 200  # 201 chars
+    stem = "n" * 100
+
+    result = fit_stem_to_path_budget(dir_path, stem, ".safetensors")
+
+    assert len(os.path.join(dir_path, result)) == PATH_BUDGET
+    assert result == "n" * (len(stem) - (201 + 1 + len(stem) - PATH_BUDGET))
+
+
+def test_fit_stem_to_path_budget_retrims_separators_exposed_by_the_cut(
+    alongside_sidecar_dir,
+):
+    dir_path = "/" + "d" * 226  # 227 chars -> cut leaves "aaaaaaaa____"
+    stem = "aaaaaaaa______bbbb"
+
+    result = fit_stem_to_path_budget(dir_path, stem)
+
+    assert result == "aaaaaaaa"
+
+
+def test_fit_stem_to_path_budget_returns_empty_when_dir_leaves_no_room(
+    alongside_sidecar_dir,
+):
+    dir_path = "/" + "d" * 235  # 236 chars
+
+    assert fit_stem_to_path_budget(dir_path, "n" * 30) == ""
+
+
+def test_fit_stem_to_path_budget_counts_the_centralized_sidecar_mirror(
+    monkeypatch,
+):
+    """The mirror tree is typically deeper than the model dir (#1142)."""
+
+    mirror_dir = "/" + "m" * 225  # 226 chars
+    monkeypatch.setattr("py.utils.utils.get_sidecar_dir", lambda path: mirror_dir)
+
+    result = fit_stem_to_path_budget("/models", "n" * 100, ".safetensors")
+
+    assert len(os.path.join(mirror_dir, result)) == PATH_BUDGET
+
+
+def test_calculate_filename_with_target_dir_trims_to_path_budget(
+    isolated_settings, alongside_sidecar_dir
+):
+    """The fixed stem cap ignores the real depth; target_dir tightens it."""
+    _set_filename_templates(isolated_settings, "{model_name}")
+    dir_path = "/" + "d" * 200  # 201 chars: 150-cap stem would overflow
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    result = calculate_filename_for_model(model_data, "lora", target_dir=dir_path)
+
+    assert result
+    assert len(result) < MAX_FILENAME_STEM_LENGTH
+    assert len(os.path.join(dir_path, result)) == PATH_BUDGET
+
+
+def test_calculate_filename_with_target_dir_returns_empty_when_unviable(
+    isolated_settings, alongside_sidecar_dir
+):
+    _set_filename_templates(isolated_settings, "{model_name}")
+    dir_path = "/" + "d" * 235  # 236 chars: no viable stem fits
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    assert calculate_filename_for_model(model_data, "lora", target_dir=dir_path) == ""
+
+
+def test_calculate_filename_without_target_dir_keeps_fixed_cap(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}")
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert len(result) == MAX_FILENAME_STEM_LENGTH

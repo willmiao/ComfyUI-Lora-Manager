@@ -13,7 +13,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
 
 from ...utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ...utils.sidecar_paths import get_metadata_path
-from ...utils.utils import calculate_filename_for_model
+from ...utils.utils import calculate_filename_for_model, fit_stem_to_path_budget
 from ..model_file_service import AutoOrganizeResult, ProgressCallback
 from ..model_lifecycle_service import ModelLifecycleService, load_local_metadata
 from ..settings_manager import get_settings_manager
@@ -172,6 +172,26 @@ class FilenameTemplateUseCase:
             if not new_stem:
                 result.skipped_count += 1
                 return
+
+            # The fixed stem cap ignores how deep the destination is; trim
+            # the rendered name to the real path budget (model path and
+            # sidecar mirror alike) so the rename cannot produce a path
+            # Windows would refuse (#1142).
+            fitted_stem = fit_stem_to_path_budget(
+                os.path.dirname(file_path), new_stem
+            )
+            if not fitted_stem:
+                self._add_result(
+                    result,
+                    model_name,
+                    False,
+                    "Skipped - target path would exceed the OS path length "
+                    "limit; shorten the filename or move the library to a "
+                    "shallower root",
+                )
+                result.skipped_count += 1
+                return
+            new_stem = fitted_stem
 
             current_stem = os.path.splitext(os.path.basename(file_path))[0]
             if new_stem == current_stem or os.path.normcase(
