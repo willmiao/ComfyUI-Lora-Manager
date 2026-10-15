@@ -577,8 +577,8 @@
             },
             "showVersionOnCard": "Version auf Karte anzeigen",
             "showVersionOnCardHelp": "Den Versionsnamen auf Modellkarten ein- oder ausblenden",
-            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
-            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
+            "showQuantizationOnCard": "Quantisierung auf Karte anzeigen",
+            "showQuantizationOnCardHelp": "Die Quantisierungsstufe (z. B. Q4_K_M, FP8) neben dem Versionsnamen auf Modellkarten anzeigen",
             "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Beispielbilder öffnen",

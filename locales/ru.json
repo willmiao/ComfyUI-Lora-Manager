@@ -577,8 +577,8 @@
             },
             "showVersionOnCard": "Показывать версию на карточке",
             "showVersionOnCardHelp": "Показать или скрыть название версии на карточках моделей",
-            "showQuantizationOnCard": "[TODO: Translate] Show Quantization on Card",
-            "showQuantizationOnCardHelp": "[TODO: Translate] Display the quantization level (e.g. Q4_K_M, FP8) next to the version name on model cards",
+            "showQuantizationOnCard": "Показывать квантование на карточке",
+            "showQuantizationOnCardHelp": "Показать уровень квантования (например, Q4_K_M, FP8) рядом с названием версии на карточках моделей",
             "modelCardFooterAction": "Действие кнопки карточки модели",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Открыть примеры изображений",
