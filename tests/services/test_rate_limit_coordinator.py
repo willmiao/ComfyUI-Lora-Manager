@@ -122,16 +122,18 @@ async def test_backoff_grows_on_consecutive_429_and_resets_on_success(
     )
     coordinator.register_rate_limit("example.com", retry_after=None)
     first = coordinator.remaining_seconds("example.com")
-    assert 29.0 < first <= 30.0
+    # Upper bounds carry an epsilon for float noise: arming computes
+    # now + backoff, and the subtraction can round an epsilon above it.
+    assert 29.0 < first <= 30.0 + 1e-6
 
     coordinator.register_rate_limit("example.com", retry_after=None)
     second = coordinator.remaining_seconds("example.com")
-    assert 59.0 < second <= 60.0
+    assert 59.0 < second <= 60.0 + 1e-6
 
     coordinator.register_success("example.com")
     coordinator.register_rate_limit("example.com", retry_after=None)
     third = coordinator.remaining_seconds("example.com")
-    assert 29.0 < third <= 30.0
+    assert 29.0 < third <= 30.0 + 1e-6
 
 
 async def test_wait_beyond_cap_raises_rate_limit_error(monkeypatch):
@@ -442,7 +444,9 @@ async def test_download_to_memory_429_registers_cooldown(monkeypatch):
     assert "Rate limited" in error
     coordinator = await RateLimitCoordinator.get_instance()
     remaining = coordinator.remaining_seconds("api.example.com")
-    assert 110.0 < remaining <= 120.0
+    # Upper bound carries an epsilon for float noise: arming computes
+    # now + backoff, and the subtraction can round an epsilon above it.
+    assert 110.0 < remaining <= 120.0 + 1e-6
 
 
 async def test_get_response_headers_429_registers_cooldown(monkeypatch):
@@ -463,7 +467,9 @@ async def test_get_response_headers_429_registers_cooldown(monkeypatch):
     assert "rate limited" in error.lower()
     coordinator = await RateLimitCoordinator.get_instance()
     remaining = coordinator.remaining_seconds("api.example.com")
-    assert 50.0 < remaining <= 60.0
+    # Upper bound carries an epsilon for float noise: arming computes
+    # now + backoff, and the subtraction can round an epsilon above it.
+    assert 50.0 < remaining <= 60.0 + 1e-6
 
 
 async def test_wait_for_slot_re_sleeps_when_the_timer_wakes_early(monkeypatch):
