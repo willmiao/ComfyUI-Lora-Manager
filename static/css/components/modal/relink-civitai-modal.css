@@ -1,57 +1,191 @@
-/* Re-link to Civitai Modal styles */
-.warning-box {
-  background-color: rgba(255, 193, 7, 0.1);
-  border: 1px solid rgba(255, 193, 7, 0.5);
-  border-radius: var(--border-radius-sm);
-  padding: var(--space-2);
-  margin-bottom: var(--space-3);
+/* Re-link to CivitAI / Link to Model Source modal styles */
+
+.link-source-modal {
+    max-width: 640px;
 }
 
-.warning-box i {
-  color: var(--lora-warning);
-  margin-right: var(--space-1);
+/* Specificity must beat the global .modal-header rule in lora-modal.css,
+   which loads later and would otherwise restore flex-direction: column. */
+.link-source-modal .modal-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
 }
 
-.warning-box ul {
-  padding-left: 20px;
-  margin: var(--space-1) 0;
+/* In-flow close button, vertically centered in the header row: an absolutely
+   positioned one is sized from the glyph and its hover outline crosses the
+   header divider. */
+.link-source-modal .close {
+    position: static;
+    flex-shrink: 0;
+    padding: 2px 6px;
+    font-size: 1.25em;
+    line-height: 1;
 }
 
-.warning-box li {
-  margin-bottom: 4px;
+.link-source-modal-header h2 {
+    margin: 0;
+    font-size: 1.25em;
 }
 
-#relinkCivitaiModal .input-group,
-#linkHfModal .input-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: var(--space-2);
+.link-source-title-icon {
+    color: var(--lora-accent);
+    margin-right: var(--space-1);
+    font-size: 0.85em;
 }
 
-#relinkCivitaiModal .input-group label,
-#linkHfModal .input-group label {
-  margin-bottom: var(--space-1);
-  font-weight: 500;
+/* Info / warning banner */
+.link-source-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--lora-border);
+    border-left: 4px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+    background: oklch(from var(--lora-accent) l c h / 0.06);
+    font-size: 0.92em;
+    line-height: 1.5;
+    color: var(--text-color);
 }
 
-#relinkCivitaiModal .input-group input,
-#linkHfModal .input-group input {
-  width: auto;
-  padding: 8px 12px;
-  border-radius: var(--border-radius-xs);
-  border: 1px solid var(--border-color);
-  background-color: var(--lora-surface);
-  color: var(--text-color);
+.link-source-banner > i {
+    color: var(--lora-accent);
+    margin-top: 2px;
+    flex-shrink: 0;
 }
 
-.input-error {
-  color: var(--lora-error);
-  font-size: 0.9em;
-  min-height: 20px;
-  margin-top: 4px;
+.link-source-banner--warning {
+    border-left-color: var(--lora-warning);
+    background: oklch(from var(--lora-warning) l c h / 0.06);
 }
 
-[data-theme="dark"] .warning-box {
-  background-color: rgba(255, 193, 7, 0.05);
-  border-color: rgba(255, 193, 7, 0.3);
+.link-source-banner--warning > i {
+    color: var(--lora-warning);
+}
+
+.link-source-banner-text {
+    min-width: 0;
+}
+
+.link-source-banner-text p {
+    margin: 0 0 var(--space-1) 0;
+}
+
+.link-source-banner-text p:last-child {
+    margin-bottom: 0;
+}
+
+.link-source-banner-text ul {
+    margin: var(--space-1) 0;
+    padding-left: 18px;
+}
+
+.link-source-banner-text li {
+    margin-bottom: 2px;
+}
+
+.link-source-banner-note {
+    color: var(--text-muted);
+}
+
+/* URL input field */
+.link-source-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+}
+
+.link-source-field label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.link-source-field input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.link-source-field input:focus {
+    outline: none;
+    border-color: var(--lora-accent);
+    box-shadow: 0 0 0 3px oklch(from var(--lora-accent) l c h / 0.15);
+}
+
+.link-source-field input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* Validation message: only occupies space when it has content */
+.link-source-field .input-error {
+    display: none;
+    color: var(--lora-error);
+    font-size: 0.85em;
+}
+
+.link-source-field .input-error:not(:empty) {
+    display: block;
+}
+
+/* Supported-URL help panel */
+.link-source-help {
+    padding: var(--space-2);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--surface-subtle);
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.link-source-help-title {
+    margin: 0 0 var(--space-1) 0;
+}
+
+.link-source-formats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Server-rendered hints in #hfSupportedSources use <strong>/<br>; normalize
+   both markups to the same chip list. */
+.link-source-formats br {
+    display: none;
+}
+
+.link-source-formats code,
+.link-source-formats strong {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-xs);
+    background: var(--lora-surface);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.link-source-help-note {
+    margin: var(--space-1) 0 0 0;
 }

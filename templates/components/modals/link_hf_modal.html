@@ -1,30 +1,34 @@
 <!-- Link to Model Source Modal -->
 <div id="linkHfModal" class="modal">
-    <div class="modal-content">
-        <button class="close" onclick="modalManager.closeModal('linkHfModal')">&times;</button>
-        <h2>{{ t('modals.linkModelSource.title') }}</h2>
-        <div class="warning-box">
-            <i class="fas fa-info-circle"></i>
-            <p>{{ t('modals.linkModelSource.infoText') }}</p>
+    <div class="modal-content link-source-modal">
+        <div class="modal-header link-source-modal-header">
+            <h2><i class="fas fa-link link-source-title-icon" aria-hidden="true"></i>{{ t('modals.linkModelSource.title') }}</h2>
+            <button class="close" onclick="modalManager.closeModal('linkHfModal')">&times;</button>
         </div>
-        <div class="input-group">
-            <label for="hfModelUrl">{{ t('modals.linkModelSource.urlLabel') }}</label>
-            <input type="text" id="hfModelUrl" placeholder="{{ t('modals.linkModelSource.urlPlaceholder') }}" />
-            <div class="input-error" id="hfModelUrlError"></div>
-            <div class="input-help">
-                {{ t('modals.linkModelSource.helpText') }}
-                <div id="hfSupportedSources">
-                    <strong>https://huggingface.co/user/repo</strong><br>
-                    <strong>https://modelscope.cn/models/user/repo</strong><br>
-                    <strong>https://www.modelscope.ai/models/user/repo</strong><br>
-                    <strong>https://tensor.art/models/827823520299086029</strong>
-                </div>
-                {{ t('modals.linkModelSource.enrichNote') }}
+        <div class="link-source-banner">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <div class="link-source-banner-text">
+                <p>{{ t('modals.linkModelSource.infoText') }}</p>
             </div>
         </div>
+        <div class="link-source-field">
+            <label for="hfModelUrl">{{ t('modals.linkModelSource.urlLabel') }}</label>
+            <input type="text" id="hfModelUrl" placeholder="{{ t('modals.linkModelSource.urlPlaceholder') }}" autocomplete="off" spellcheck="false" />
+            <div class="input-error" id="hfModelUrlError" role="alert"></div>
+        </div>
+        <div class="link-source-help">
+            <p class="link-source-help-title">{{ t('modals.linkModelSource.helpText') }}</p>
+            <div class="link-source-formats" id="hfSupportedSources">
+                <strong>https://huggingface.co/user/repo</strong><br>
+                <strong>https://modelscope.cn/models/user/repo</strong><br>
+                <strong>https://www.modelscope.ai/models/user/repo</strong><br>
+                <strong>https://tensor.art/models/827823520299086029</strong>
+            </div>
+            <p class="link-source-help-note">{{ t('modals.linkModelSource.enrichNote') }}</p>
+        </div>
         <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('linkHfModal')">{{ t('common.actions.cancel') }}</button>
-            <button class="confirm-btn" id="confirmLinkHfBtn">{{ t('modals.linkModelSource.confirmAction') }}</button>
+            <button class="secondary-btn" onclick="modalManager.closeModal('linkHfModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="confirmLinkHfBtn"><i class="fas fa-link" aria-hidden="true"></i>{{ t('modals.linkModelSource.confirmAction') }}</button>
         </div>
     </div>
 </div>

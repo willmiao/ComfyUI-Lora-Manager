@@ -1,34 +1,40 @@
 <!-- Re-link to Civitai Modal -->
 <div id="relinkCivitaiModal" class="modal">
-    <div class="modal-content">
-        <button class="close" onclick="modalManager.closeModal('relinkCivitaiModal')">&times;</button>
-        <h2>{{ t('modals.relinkCivitai.title') }}</h2>
-        <div class="warning-box">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p><strong>{{ t('modals.relinkCivitai.warning') }}</strong> {{ t('modals.relinkCivitai.warningText') }}</p>
-            <ul>
-                <li>{{ t('modals.relinkCivitai.warningList.overrideMetadata') }}</li>
-                <li>{{ t('modals.relinkCivitai.warningList.modifyHash') }}</li>
-                <li>{{ t('modals.relinkCivitai.warningList.unintendedConsequences') }}</li>
-            </ul>
-            <p>{{ t('modals.relinkCivitai.proceedText') }}</p>
+    <div class="modal-content link-source-modal">
+        <div class="modal-header link-source-modal-header">
+            <h2><i class="fas fa-link link-source-title-icon" aria-hidden="true"></i>{{ t('modals.relinkCivitai.title') }}</h2>
+            <button class="close" onclick="modalManager.closeModal('relinkCivitaiModal')">&times;</button>
         </div>
-        <div class="input-group">
-            <label for="civitaiModelUrl">{{ t('modals.relinkCivitai.urlLabel') }}</label>
-            <input type="text" id="civitaiModelUrl" placeholder="{{ t('modals.relinkCivitai.urlPlaceholder') }}" />
-            <div class="input-error" id="civitaiModelUrlError"></div>
-            <div class="input-help">
-                {{ t('modals.relinkCivitai.helpText.title') }}<br>
-                • {{ t('modals.relinkCivitai.helpText.format1') }}<br>
-                • {{ t('modals.relinkCivitai.helpText.format2') }}<br>
-                • {{ t('modals.relinkCivitai.helpText.format3') }}<br>
-                • {{ t('modals.relinkCivitai.helpText.format4') }}<br>
-                <em>{{ t('modals.relinkCivitai.helpText.note') }}</em>
+        <div class="link-source-banner link-source-banner--warning">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <div class="link-source-banner-text">
+                <p><strong>{{ t('modals.relinkCivitai.warning') }}</strong> {{ t('modals.relinkCivitai.warningText') }}</p>
+                <ul>
+                    <li>{{ t('modals.relinkCivitai.warningList.overrideMetadata') }}</li>
+                    <li>{{ t('modals.relinkCivitai.warningList.modifyHash') }}</li>
+                    <li>{{ t('modals.relinkCivitai.warningList.unintendedConsequences') }}</li>
+                </ul>
+                <p class="link-source-banner-note">{{ t('modals.relinkCivitai.proceedText') }}</p>
             </div>
         </div>
+        <div class="link-source-field">
+            <label for="civitaiModelUrl">{{ t('modals.relinkCivitai.urlLabel') }}</label>
+            <input type="text" id="civitaiModelUrl" placeholder="{{ t('modals.relinkCivitai.urlPlaceholder') }}" autocomplete="off" spellcheck="false" />
+            <div class="input-error" id="civitaiModelUrlError" role="alert"></div>
+        </div>
+        <div class="link-source-help">
+            <p class="link-source-help-title">{{ t('modals.relinkCivitai.helpText.title') }}</p>
+            <ul class="link-source-formats">
+                <li><code>{{ t('modals.relinkCivitai.helpText.format1') }}</code></li>
+                <li><code>{{ t('modals.relinkCivitai.helpText.format2') }}</code></li>
+                <li><code>{{ t('modals.relinkCivitai.helpText.format3') }}</code></li>
+                <li><code>{{ t('modals.relinkCivitai.helpText.format4') }}</code></li>
+            </ul>
+            <p class="link-source-help-note"><em>{{ t('modals.relinkCivitai.helpText.note') }}</em></p>
+        </div>
         <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('relinkCivitaiModal')">{{ t('common.actions.cancel') }}</button>
-            <button class="confirm-btn" id="confirmRelinkBtn">{{ t('modals.relinkCivitai.confirmAction') }}</button>
+            <button class="secondary-btn" onclick="modalManager.closeModal('relinkCivitaiModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="confirmRelinkBtn"><i class="fas fa-link" aria-hidden="true"></i>{{ t('modals.relinkCivitai.confirmAction') }}</button>
         </div>
     </div>
 </div>
