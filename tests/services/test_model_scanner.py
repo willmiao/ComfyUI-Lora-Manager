@@ -3302,3 +3302,24 @@ async def test_root_scoped_scan_of_every_root_still_cleans_folders(tmp_path: Pat
     assert "a_folder" not in folders
     assert "b_folder" in folders
 
+
+async def test_on_library_changed_schedules_refreeze_after_reinit(tmp_path: Path, monkeypatch):
+    """Re-init after a library change re-freezes the GC once it finishes (#1147)."""
+    scanner = DummyScanner(str(tmp_path))
+    calls: List[Any] = []
+
+    async def _noop_initialize(reconcile: bool = False) -> None:
+        calls.append(("init", reconcile))
+
+    monkeypatch.setattr(scanner, "initialize_in_background", _noop_initialize)
+    monkeypatch.setattr(
+        model_scanner,
+        "schedule_refreeze_after_rebuild",
+        lambda reason: calls.append(("freeze", reason)),
+    )
+
+    scanner.on_library_changed(reconcile=True)
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+
+    assert calls == [("init", True), ("freeze", "dummy library change")]

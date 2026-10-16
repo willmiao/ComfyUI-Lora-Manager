@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequ
 from ..utils.models import BaseModelMetadata, autov3_from_civitai_files, quantization_from_civitai_files
 from ..config import config
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
+from ..utils.gc_utils import schedule_refreeze_after_rebuild
 from ..utils.gguf_utils import detect_quantization
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import (
@@ -916,7 +917,16 @@ class ModelScanner:
         if loop and not loop.is_closed():
             self._loop = loop
             self.loop = loop
-            loop.create_task(self.initialize_in_background(reconcile=reconcile))
+            loop.create_task(self._reinitialize_after_library_change(reconcile=reconcile))
+
+    async def _reinitialize_after_library_change(self, reconcile: bool = False) -> None:
+        """Re-hydrate the cache for the new library, then re-freeze the GC.
+
+        The replacement cache is built from freshly allocated objects, which
+        are GC-tracked again (issue #1147).
+        """
+        await self.initialize_in_background(reconcile=reconcile)
+        schedule_refreeze_after_rebuild(f"{self.model_type} library change")
 
     def _resolve_name_display_mode(self) -> str:
         """Return the configured display mode for name sorting."""
@@ -1843,6 +1853,10 @@ class ModelScanner:
                     f"{self.model_type.capitalize()} Scanner: Cache initialization completed in {time.time() - start_time:.2f} seconds, "
                     f"found {len(scan_result.raw_data)} models"
                 )
+                # A full rebuild replaces the (frozen) cache with freshly
+                # allocated, GC-tracked objects; re-freeze once the follow-up
+                # work settles (issue #1147).
+                schedule_refreeze_after_rebuild(f"{self.model_type} cache rebuild")
             else:
                 await self._broadcast_scan_progress(
                     'cancelled', 'process_models', last_progress_percent, True,

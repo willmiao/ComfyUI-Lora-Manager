@@ -17,6 +17,7 @@ from ..config import config
 from ..utils.constants import VALID_CHECKPOINT_SUB_TYPES, VALID_LORA_TYPES
 from ..utils.exif_utils import ExifUtils
 from ..utils.file_utils import calculate_autov3
+from ..utils.gc_utils import schedule_refreeze_after_rebuild
 from ..utils.recipe_open_stats import RecipeOpenStats
 from .model_scanner import WEIGHT_FILE_EXTENSIONS
 from .recipe_cache import RecipeCache
@@ -803,7 +804,16 @@ class RecipeScanner:
             loop = None
 
         if loop and not loop.is_closed():
-            loop.create_task(self.initialize_in_background())
+            loop.create_task(self._reinitialize_after_library_change())
+
+    async def _reinitialize_after_library_change(self) -> None:
+        """Rebuild the cache for the new library, then re-freeze the GC.
+
+        The rebuilt cache is freshly allocated and GC-tracked again
+        (issue #1147).
+        """
+        await self.initialize_in_background()
+        schedule_refreeze_after_rebuild("recipe library change")
 
     async def _get_civitai_client(self):
         """Lazily initialize CivitaiClient from registry"""
@@ -2753,6 +2763,11 @@ class RecipeScanner:
                         self._schedule_post_scan_enrichment()
                         if not self._prune_skipped:
                             self._schedule_fts_index_build()
+
+                        # The rebuilt cache is freshly allocated and GC-tracked
+                        # again; re-freeze once the follow-up work settles
+                        # (issue #1147).
+                        schedule_refreeze_after_rebuild("recipe cache refresh")
 
                         return cast(RecipeCache, self._cache)
 
