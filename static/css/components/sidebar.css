@@ -693,6 +693,62 @@
     background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.02);
 }
 
+/* Compact drag image shown while moving model cards to a folder. Replaces
+   the browser's default full-card snapshot so the folder tree stays visible
+   under the cursor. Parked off-screen; the browser snapshots it for the
+   drag via setDragImage(). */
+.model-card-drag-chip {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 240px;
+    padding: 6px 10px;
+    background: var(--bg-color);
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-xs);
+    box-shadow: var(--shadow-lg);
+    font-size: 0.85em;
+    color: var(--text-color);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.model-card-drag-chip-thumb {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.model-card-drag-chip-icon {
+    width: 32px;
+    font-size: 18px;
+    text-align: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.model-card-drag-chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
+.model-card-drag-chip-count {
+    background: var(--lora-accent);
+    color: var(--text-on-accent);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 0.85em;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
 /* Folder context menu - positioned relative to sidebar */
 #sidebarFolderContextMenu {
     z-index: var(--z-modal, 1002);

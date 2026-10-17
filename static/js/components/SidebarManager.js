@@ -19,6 +19,14 @@ import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
 // makes the hidden sidebar discoverable/recoverable.
 const SIDEBAR_DEFAULT_HIDDEN_PAGES = new Set(['other']);
 
+// Hover a collapsed folder this long while dragging to auto-expand it.
+const DRAG_HOVER_EXPAND_DELAY_MS = 600;
+
+// Distance from the tree container's top/bottom edge that starts
+// auto-scrolling during a drag, and the scroll speed per animation frame.
+const SIDEBAR_AUTOSCROLL_ZONE_PX = 48;
+const SIDEBAR_AUTOSCROLL_SPEED_PX = 12;
+
 export class SidebarManager {
     constructor() {
         this.pageControls = null;
@@ -62,6 +70,14 @@ export class SidebarManager {
         // Bumped on every modal open/close so a late dry-run answer can never
         // repaint a modal the user has already dismissed or retargeted.
         this._deleteFolderProbeToken = 0;
+
+        // Drag-and-drop transient state: the custom drag image element, the
+        // pending hover-to-expand timer, and the edge auto-scroll loop.
+        this._dragPreviewElement = null;
+        this._dragExpandTimer = null;
+        this._dragExpandPath = null;
+        this._autoScrollFrame = null;
+        this._autoScrollDirection = 0;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -278,6 +294,11 @@ export class SidebarManager {
             } catch (error) {
                 // Ignore serialization errors
             }
+
+            // Replace the browser's default full-card snapshot with a small
+            // chip (thumbnail + name + count) so the drag image does not
+            // cover the folder tree the user is aiming at.
+            this._setDragPreviewImage(event, card, filePaths.length);
         }
 
         card.classList.add('dragging');
@@ -287,6 +308,8 @@ export class SidebarManager {
         if (sidebar) {
             sidebar.classList.add('dragging-active');
         }
+
+        this._startSidebarAutoScroll();
     }
 
     handleCardDragEnd(event) {
@@ -294,15 +317,175 @@ export class SidebarManager {
         if (card) {
             card.classList.remove('dragging');
         }
-        
+
         // Remove dragging state from sidebar
         const sidebar = document.getElementById('folderSidebar');
         if (sidebar) {
             sidebar.classList.remove('dragging-active');
         }
 
+        this._removeDragPreviewImage();
+        this._cancelDragExpand();
+        this._stopSidebarAutoScroll();
         this.clearAllDropHighlights();
         this.resetDragState();
+    }
+
+    /**
+     * Swap the default drag image (a full-size snapshot of the card) for a
+     * compact chip: preview thumbnail, model name, and a count badge for
+     * bulk drags. The chip is anchored below-right of the cursor so it never
+     * covers the folder row the pointer is hovering.
+     */
+    _setDragPreviewImage(event, card, count) {
+        const dataTransfer = event.dataTransfer;
+        if (!dataTransfer || typeof dataTransfer.setDragImage !== 'function') return;
+
+        this._removeDragPreviewImage();
+
+        const chip = document.createElement('div');
+        chip.className = 'model-card-drag-chip';
+
+        // A blurred (mature-content) preview stays hidden in the chip too.
+        const isBlurred = Boolean(card.querySelector('.card-preview.blurred'));
+        const previewImg = card.querySelector('.card-preview img');
+        if (previewImg && previewImg.src && !isBlurred) {
+            const thumb = document.createElement('img');
+            thumb.className = 'model-card-drag-chip-thumb';
+            thumb.src = previewImg.src;
+            thumb.alt = '';
+            chip.appendChild(thumb);
+        } else {
+            const icon = document.createElement('i');
+            const isVideo = Boolean(card.querySelector('.card-preview video'));
+            icon.className = `model-card-drag-chip-icon fas ${isVideo ? 'fa-film' : 'fa-image'}`;
+            chip.appendChild(icon);
+        }
+
+        const name = document.createElement('span');
+        name.className = 'model-card-drag-chip-name';
+        name.textContent = card.dataset.name || card.dataset.file_name || '';
+        chip.appendChild(name);
+
+        if (count > 1) {
+            const badge = document.createElement('span');
+            badge.className = 'model-card-drag-chip-count';
+            badge.textContent = `×${count}`;
+            chip.appendChild(badge);
+        }
+
+        document.body.appendChild(chip);
+        this._dragPreviewElement = chip;
+
+        try {
+            // Negative offsets place the chip below-right of the cursor.
+            dataTransfer.setDragImage(chip, -12, -12);
+        } catch (error) {
+            // A failed setDragImage keeps the default image; still fine.
+        }
+    }
+
+    _removeDragPreviewImage() {
+        if (this._dragPreviewElement) {
+            this._dragPreviewElement.remove();
+            this._dragPreviewElement = null;
+        }
+    }
+
+    /**
+     * Expand a collapsed tree folder after a short hover during a drag, so
+     * nested folders can be dropped into without a separate click.
+     */
+    _scheduleDragExpand(folderElement) {
+        if (this.displayMode !== 'tree') return;
+
+        const treeNode = folderElement.classList.contains('sidebar-tree-node')
+            ? folderElement
+            : folderElement.closest('.sidebar-tree-node');
+        const path = treeNode?.dataset.path;
+        if (!treeNode || !path) return;
+        if (this.expandedNodes.has(path)) return;
+        if (!treeNode.querySelector(':scope > .sidebar-tree-children')) return;
+
+        if (this._dragExpandTimer && this._dragExpandPath === path) return;
+
+        this._cancelDragExpand();
+        this._dragExpandPath = path;
+        this._dragExpandTimer = setTimeout(() => {
+            this._dragExpandTimer = null;
+            this._dragExpandPath = null;
+
+            // Re-validate against the live DOM: the drag may have ended or the
+            // tree may have re-rendered while the timer was pending.
+            if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+            const folderTree = this.folderTreeElement || document.getElementById('sidebarFolderTree');
+            const node = folderTree
+                ? [...folderTree.querySelectorAll('.sidebar-tree-node')].find(el => el.dataset.path === path)
+                : null;
+            if (!node || this.expandedNodes.has(path)) return;
+
+            this.expandedNodes.add(path);
+            // Toggle in place instead of re-rendering so the drop highlight
+            // and the hover position survive the expansion.
+            node.querySelector(':scope > .sidebar-tree-node-content > .sidebar-tree-expand-icon')
+                ?.classList.add('expanded');
+            node.querySelector(':scope > .sidebar-tree-children')?.classList.add('expanded');
+            this.saveExpandedState();
+        }, DRAG_HOVER_EXPAND_DELAY_MS);
+    }
+
+    _cancelDragExpand() {
+        if (this._dragExpandTimer) {
+            clearTimeout(this._dragExpandTimer);
+            this._dragExpandTimer = null;
+        }
+        this._dragExpandPath = null;
+    }
+
+    _startSidebarAutoScroll() {
+        this._stopSidebarAutoScroll();
+        this._autoScrollDirection = 0;
+
+        if (typeof requestAnimationFrame !== 'function') return;
+
+        const step = () => {
+            if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) {
+                this._autoScrollFrame = null;
+                return;
+            }
+            if (this._autoScrollDirection !== 0) {
+                const container = this.folderTreeElement?.closest('.sidebar-tree-container');
+                if (container) {
+                    container.scrollTop += this._autoScrollDirection * SIDEBAR_AUTOSCROLL_SPEED_PX;
+                }
+            }
+            this._autoScrollFrame = requestAnimationFrame(step);
+        };
+        this._autoScrollFrame = requestAnimationFrame(step);
+    }
+
+    _stopSidebarAutoScroll() {
+        if (this._autoScrollFrame !== null && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._autoScrollFrame);
+        }
+        this._autoScrollFrame = null;
+        this._autoScrollDirection = 0;
+    }
+
+    _updateAutoScrollDirection(clientY) {
+        const container = this.folderTreeElement?.closest('.sidebar-tree-container');
+        if (!container || typeof clientY !== 'number') {
+            this._autoScrollDirection = 0;
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        if (clientY < rect.top + SIDEBAR_AUTOSCROLL_ZONE_PX) {
+            this._autoScrollDirection = -1;
+        } else if (clientY > rect.bottom - SIDEBAR_AUTOSCROLL_ZONE_PX) {
+            this._autoScrollDirection = 1;
+        } else {
+            this._autoScrollDirection = 0;
+        }
     }
 
     getRootPathFromCard(card) {
@@ -389,6 +572,7 @@ export class SidebarManager {
 
         this.setDropTargetHighlight(folderElement, true);
         this.currentDropTarget = folderElement;
+        this._scheduleDragExpand(folderElement);
     }
 
     handleFolderDragOver(event) {
@@ -402,6 +586,8 @@ export class SidebarManager {
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'move';
         }
+
+        this._updateAutoScrollDirection(event.clientY);
     }
 
     handleFolderDragLeave(event) {
@@ -416,6 +602,15 @@ export class SidebarManager {
             if (this.currentDropTarget === folderElement) {
                 this.currentDropTarget = null;
             }
+            if (this._dragExpandPath && folderElement.dataset.path === this._dragExpandPath) {
+                this._cancelDragExpand();
+            }
+        }
+
+        // Pointer left the tree entirely: stop any edge auto-scroll.
+        const folderTree = this.folderTreeElement || document.getElementById('sidebarFolderTree');
+        if (folderTree && (!relatedTarget || !folderTree.contains(relatedTarget))) {
+            this._autoScrollDirection = 0;
         }
     }
 
@@ -430,6 +625,8 @@ export class SidebarManager {
 
         this.setDropTargetHighlight(folderElement, false);
         this.currentDropTarget = null;
+        this._cancelDragExpand();
+        this._autoScrollDirection = 0;
 
         const targetPath = folderElement.dataset.path || '';
 
