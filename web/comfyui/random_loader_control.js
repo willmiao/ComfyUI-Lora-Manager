@@ -61,14 +61,16 @@ async function refreshPoolCache() {
  * to its separator-normalized form when that form is a known model, so old
  * workflows keep their selection instead of resetting to the first model.
  */
-function migrateModelWidgetValue(modelWidget, names) {
+function migrateModelWidgetValue(node, modelWidget, names) {
   const value = modelWidget.value;
   if (typeof value !== "string" || !value.includes("\\")) return;
   if (names.includes(value)) return;
   const normalized = value.replace(/\\/g, "/");
-  if (names.includes(normalized)) {
-    modelWidget.value = normalized;
-  }
+  if (!names.includes(normalized)) return;
+  modelWidget.value = normalized;
+  // Fire the standard widget-changed hook so the frontend's error-clearing
+  // chain drops the stale "value not in list" flag on the corrected widget.
+  node?.onWidgetChanged?.(modelWidget.name, normalized, value, modelWidget);
 }
 
 function applyBaseModelFilter(node, config) {
@@ -85,6 +87,7 @@ function applyBaseModelFilter(node, config) {
   // Migrate against the full pool: separator spelling is independent of the
   // base_model filter, and wired widgets skip the filter entirely below.
   migrateModelWidgetValue(
+    node,
     modelWidget,
     pool.map((model) => model.name)
   );
@@ -166,12 +169,19 @@ export function sanitizeControlWidget(node, config) {
 }
 
 function applyToAllNodes() {
-  app.graph?.nodes?.forEach((node) => {
-    const config = NODE_CONFIGS[node.comfyClass];
-    if (!config) return;
-    sanitizeControlWidget(node, config);
-    applyBaseModelFilter(node, config);
-  });
+  // Subgraphs nest loader nodes; Subgraph extends LGraph, so the same .nodes
+  // list recurses through every level.
+  const visit = (graph) => {
+    for (const node of graph?.nodes ?? []) {
+      const config = NODE_CONFIGS[node.comfyClass];
+      if (config) {
+        sanitizeControlWidget(node, config);
+        applyBaseModelFilter(node, config);
+      }
+      if (node.subgraph) visit(node.subgraph);
+    }
+  };
+  visit(app.graph);
 }
 
 function ensureGraphConfigureHook(graph) {
@@ -226,6 +236,16 @@ app.registerExtension({
     nodeType.prototype.onAdded = function () {
       const result = onAdded?.apply(this, arguments);
       ensureGraphConfigureHook(this.graph);
+      return result;
+    };
+
+    // onConfigure fires after widget values are restored, catching pasted
+    // nodes that never go through the graph-level configure hook.
+    const onConfigure = nodeType.prototype.onConfigure;
+    nodeType.prototype.onConfigure = function () {
+      const result = onConfigure?.apply(this, arguments);
+      sanitizeControlWidget(this, config);
+      applyBaseModelFilter(this, config);
       return result;
     };
   },
