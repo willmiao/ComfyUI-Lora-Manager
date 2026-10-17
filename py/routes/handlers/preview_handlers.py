@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import mimetypes
+import sys
 import urllib.parse
 from pathlib import Path
 
@@ -16,9 +16,26 @@ logger = logging.getLogger(__name__)
 
 _CHUNK_SIZE = 1024 * 1024  # 1 MB — balance between streaming iteration overhead and per-chunk memory
 
-# Video file extensions that bypass native sendfile on Windows
-# to avoid IOCP/ProactorEventLoop crashes during client disconnect.
-_VIDEO_EXTENSIONS = frozenset({".mp4", ".webm", ".mov", ".avi", ".mkv"})
+
+class _ChunkedFileResponse(web.FileResponse):
+    """FileResponse that skips loop.sendfile and always sends in chunks.
+
+    On Windows, aiohttp's native sendfile (TransmitFile over IOCP) is suspected
+    of wedging the event loop and leaving an unkillable process when clients
+    abort transfers while scrolling through previews. Range, ETag and header
+    handling stay with FileResponse.
+    """
+
+    async def _sendfile(self, request, fobj, offset, count):
+        writer = await web.StreamResponse.prepare(self, request)
+        try:
+            return await self._sendfile_fallback(writer, fobj, offset, count)
+        except ConnectionError:
+            # Client went away mid-transfer, which is routine when scrolling fast.
+            return writer
+
+
+_FileResponse = _ChunkedFileResponse if sys.platform == "win32" else web.FileResponse
 
 
 class PreviewHandler:
@@ -68,17 +85,14 @@ class PreviewHandler:
                 )
             raise web.HTTPNotFound(text="Preview file not found")
 
-        # aiohttp's FileResponse handles range requests, content headers, and
-        # uses kernel sendfile (zero-copy DMA) on Linux/macOS. On Windows it
-        # uses IOCP-based _sendfile_native which can crash when the client
-        # disconnects mid-transfer during fast scrolling. The _stream_file()
-        # fallback is kept for a future compat toggle.
+        # FileResponse handles range requests and content headers, and uses
+        # kernel sendfile on Linux/macOS (chunked on Windows, see above).
         #
         # Set explicit Cache-Control so the browser can cache video (and image)
         # previews across VirtualScroller recycling cycles. Without this,
         # Chrome does not cache 206 Partial Content responses for <video>
         # elements, causing the same video to be re-downloaded on every scroll.
-        resp = web.FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
+        resp = _FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
 
@@ -110,45 +124,6 @@ class PreviewHandler:
                     )
         except Exception as exc:
             logger.debug("Failed to clean up stale preview_url: %s", exc)
-
-    async def _stream_file(
-        self, request: web.Request, path: Path
-    ) -> web.StreamResponse:
-        """Stream a file chunk-by-chunk, bypassing native sendfile.
-
-        This avoids the Windows IOCP ``_sendfile_native`` crash that occurs
-        when the client disconnects during a large file transfer.
-        """
-        content_type, _ = mimetypes.guess_type(str(path))
-        if content_type is None:
-            content_type = "application/octet-stream"
-
-        file_size = path.stat().st_size
-        resp = web.StreamResponse()
-        resp.content_type = content_type
-        resp.content_length = file_size
-
-        # Allow browser caching: video previews rarely change during a session.
-        # The frontend already appends ?t={version} to bust cache on update.
-        resp.headers["Cache-Control"] = "public, max-age=86400"
-
-        await resp.prepare(request)
-
-        try:
-            with open(path, "rb") as f:
-                while True:
-                    chunk = f.read(_CHUNK_SIZE)
-                    if not chunk:
-                        break
-                    await resp.write(chunk)
-        except (ConnectionResetError, ConnectionAbortedError):
-            # Client disconnected during streaming — expected when scrolling
-            # rapidly through a library with animated previews.
-            pass
-        except OSError as exc:
-            logger.debug("I/O error streaming preview %s: %s", path, exc)
-
-        return resp
 
 
 __all__ = ["PreviewHandler"]
