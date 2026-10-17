@@ -232,8 +232,9 @@ def get_checkpoint_info_absolute(checkpoint_name):
         # Get model roots for matching
         model_roots = scanner.get_model_roots()
 
-        # Normalize the checkpoint name
-        normalized_name = checkpoint_name.replace(os.sep, "/")
+        # Normalize the checkpoint name; old Windows workflows spell model
+        # names with backslashes while the cache formats them forward-slashed.
+        normalized_name = checkpoint_name.replace("\\", "/")
 
         for item in cache.raw_data:
             file_path = item.get("file_path", "")
@@ -243,8 +244,8 @@ def get_checkpoint_info_absolute(checkpoint_name):
             # Format the stored path as ComfyUI-style name
             formatted_name = _format_model_name_for_comfyui(file_path, model_roots)
 
-            # Match by formatted name (normalize separators for robust comparison)
-            if formatted_name.replace(os.sep, "/") == normalized_name or formatted_name == checkpoint_name:
+            # Match by formatted name (normalized separators) or exact spelling
+            if formatted_name == normalized_name or formatted_name == checkpoint_name:
                 return file_path, item
 
             # Also try matching by basename only (for backward compatibility)

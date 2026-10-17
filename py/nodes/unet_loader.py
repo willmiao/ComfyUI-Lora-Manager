@@ -3,6 +3,7 @@ import os
 from typing import Any, List, Tuple
 import comfy.sd  # pyright: ignore[reportMissingImports]
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
+from .utils import validate_loader_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,14 @@ class UNETLoaderLM:
     FUNCTION = "load_unet"
 
     @classmethod
+    def VALIDATE_INPUTS(cls, unet_name=None):
+        # Declaring unet_name here lifts ComfyUI's strict "value not in list"
+        # check for it; the helper additionally accepts backslash-spelled
+        # names from workflows saved before the forward-slash paths fix.
+        error = validate_loader_model_name(unet_name)
+        return error if error else True
+
+    @classmethod
     def _get_unet_names(cls) -> List[str]:
         """Get list of diffusion model names from scanner cache in ComfyUI format (relative path with extension)"""
         try:
@@ -100,7 +109,8 @@ class UNETLoaderLM:
                         # flags missing diffusion models at queue time via
                         # "value not in list" (the scanner cache can be stale).
                         if file_path and os.path.exists(file_path):
-                            # Format using relative path with OS-native separator
+                            # Format as a forward-slashed relative path on
+                            # every platform (ComfyUI-style model name).
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots
                             )

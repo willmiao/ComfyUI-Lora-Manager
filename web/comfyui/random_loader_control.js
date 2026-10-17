@@ -54,6 +54,23 @@ async function refreshPoolCache() {
   );
 }
 
+/**
+ * Migrate a model widget value spelled with backslashes. Windows workflows
+ * saved before the forward-slash paths fix carry "dir\model.safetensors"
+ * while the combo list now offers "dir/model.safetensors"; rewrite the value
+ * to its separator-normalized form when that form is a known model, so old
+ * workflows keep their selection instead of resetting to the first model.
+ */
+function migrateModelWidgetValue(modelWidget, names) {
+  const value = modelWidget.value;
+  if (typeof value !== "string" || !value.includes("\\")) return;
+  if (names.includes(value)) return;
+  const normalized = value.replace(/\\/g, "/");
+  if (names.includes(normalized)) {
+    modelWidget.value = normalized;
+  }
+}
+
 function applyBaseModelFilter(node, config) {
   const modelWidget = node.widgets?.find(
     (widget) => widget.name === config.modelWidget
@@ -63,13 +80,21 @@ function applyBaseModelFilter(node, config) {
   );
   if (!modelWidget || !baseModelWidget) return;
 
+  const pool = poolCache.get(config.subType) ?? [];
+
+  // Migrate against the full pool: separator spelling is independent of the
+  // base_model filter, and wired widgets skip the filter entirely below.
+  migrateModelWidgetValue(
+    modelWidget,
+    pool.map((model) => model.name)
+  );
+
   const wired = node.inputs?.some(
     (input) =>
       input.widget?.name === config.modelWidget && input.link != null
   );
   if (wired) return;
 
-  const pool = poolCache.get(config.subType) ?? [];
   const filter = baseModelWidget.value;
   const filtered =
     filter === "Any"

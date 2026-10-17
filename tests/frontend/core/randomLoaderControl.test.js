@@ -253,3 +253,78 @@ describe("extension graph configure hook", () => {
     expect(dtypeWidget(node).value).toBe("fp8_e4m3fn");
   });
 });
+
+describe("model widget value migration", () => {
+  function modelWidget(node, name) {
+    return node.widgets.find((widget) => widget.name === name);
+  }
+
+  async function loadGraphWith(nodes) {
+    const extension = state.registerExtension.mock.calls.map(
+      (call) => call[0]
+    )[0];
+    await extension.setup();
+
+    state.graph.nodes = nodes;
+    for (const node of nodes) {
+      const nodeType = { comfyClass: node.comfyClass, prototype: {} };
+      extension.beforeRegisterNodeDef(nodeType, {});
+      nodeType.prototype.onAdded.call({ graph: state.graph });
+    }
+
+    state.graph.onConfigure({});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  beforeEach(() => {
+    state.fetchApi.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          { name: "aaa/first.safetensors", base_model: "Any" },
+          { name: "dir/model.safetensors", base_model: "Any" },
+        ],
+      }),
+    });
+  });
+
+  it("migrates a backslash-spelled value instead of resetting to the first model", async () => {
+    const node = makeCheckpointNode();
+    modelWidget(node, "ckpt_name").value = "dir\\model.safetensors";
+
+    await loadGraphWith([node]);
+
+    expect(modelWidget(node, "ckpt_name").value).toBe("dir/model.safetensors");
+  });
+
+  it("still resets to the first model when the normalized value is unknown", async () => {
+    const node = makeCheckpointNode();
+    modelWidget(node, "ckpt_name").value = "dir\\unknown.safetensors";
+
+    await loadGraphWith([node]);
+
+    expect(modelWidget(node, "ckpt_name").value).toBe("aaa/first.safetensors");
+  });
+
+  it("migrates wired widgets without touching their option list", async () => {
+    const node = makeCheckpointNode();
+    node.inputs = [{ widget: { name: "ckpt_name" }, link: 1 }];
+    const widget = modelWidget(node, "ckpt_name");
+    widget.value = "dir\\model.safetensors";
+    widget.options.values = ["model.safetensors"];
+
+    await loadGraphWith([node]);
+
+    expect(widget.value).toBe("dir/model.safetensors");
+    expect(widget.options.values).toEqual(["model.safetensors"]);
+  });
+
+  it("leaves an already-valid forward-slash value untouched", async () => {
+    const node = makeCheckpointNode();
+    modelWidget(node, "ckpt_name").value = "dir/model.safetensors";
+
+    await loadGraphWith([node]);
+
+    expect(modelWidget(node, "ckpt_name").value).toBe("dir/model.safetensors");
+  });
+});
