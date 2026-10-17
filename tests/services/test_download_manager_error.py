@@ -730,6 +730,37 @@ async def test_extract_model_files_from_archive_uses_executor(monkeypatch, tmp_p
 
 
 @pytest.mark.asyncio
+async def test_extract_model_files_from_archive_fits_member_names_to_path_budget(
+    tmp_path,
+):
+    """Archive member names carry no length cap: a CJK-heavy member whose
+    stem passes every character cap still overflows NAME_MAX in bytes and
+    must be truncated, or the create fails with ENAMETOOLONG."""
+    from py.utils.constants import (
+        MAX_FILENAME_COMPONENT_BYTES,
+        PATH_BUDGET_SUFFIX_ALLOWANCE,
+    )
+
+    manager = DownloadManager()
+    archive_path = tmp_path / "bundle.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("界" * 100 + ".safetensors", b"model")
+
+    extracted = await manager._extract_model_files_from_archive(
+        str(archive_path),
+        {".safetensors"},
+    )
+
+    assert len(extracted) == 1
+    member_stem = os.path.splitext(os.path.basename(extracted[0]))[0]
+    assert (
+        len(member_stem.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE
+        <= MAX_FILENAME_COMPONENT_BYTES
+    )
+    assert os.path.exists(extracted[0])
+
+
+@pytest.mark.asyncio
 async def test_pause_download_updates_state():
     """Test that pause_download updates download state correctly."""
     manager = DownloadManager()

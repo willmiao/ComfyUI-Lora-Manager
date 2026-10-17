@@ -5,6 +5,7 @@ import pytest
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.services.service_registry import ServiceRegistry
 from py.utils.constants import (
+    MAX_FILENAME_COMPONENT_BYTES,
     MAX_FILENAME_STEM_LENGTH,
     MAX_FOLDER_NAME_LENGTH,
     MAX_FULL_PATH_LENGTH,
@@ -656,6 +657,56 @@ def test_fit_stem_to_path_budget_counts_the_centralized_sidecar_mirror(
     result = fit_stem_to_path_budget("/models", "n" * 100, ".safetensors")
 
     assert len(os.path.join(mirror_dir, result)) == PATH_BUDGET
+
+
+def test_fit_stem_to_path_budget_enforces_component_byte_limit_for_cjk(
+    alongside_sidecar_dir,
+):
+    """POSIX NAME_MAX counts bytes: a 100-char CJK stem (300 bytes) passes
+    every character cap yet cannot be created on disk (ENAMETOOLONG)."""
+
+    result = fit_stem_to_path_budget("/models", "界" * 100, ".safetensors")
+
+    assert 0 < len(result) < 100
+    # stem + longest companion suffix (".metadata.json.bak") fits NAME_MAX.
+    assert (
+        len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE
+        <= MAX_FILENAME_COMPONENT_BYTES
+    )
+
+
+def test_fit_stem_to_path_budget_honors_probed_name_max(
+    monkeypatch, alongside_sidecar_dir
+):
+    """eCryptfs (Ubuntu encrypted home, Synology encrypted shares) allows
+    only 143 bytes per component; the probe must tighten the budget."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 143)
+
+    result = fit_stem_to_path_budget("/models", "か" * 60, ".safetensors")
+
+    assert 0 < len(result) < 60
+    assert len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE <= 143
+
+
+def test_fit_stem_to_path_budget_byte_cut_never_splits_a_multibyte_character(
+    alongside_sidecar_dir,
+):
+    stem = "a" * 233 + "界界"  # 239 bytes; the 235-byte cut lands mid-界
+
+    result = fit_stem_to_path_budget("/", stem, ".safetensors")
+
+    assert result == "a" * 233
+
+
+def test_fit_stem_to_path_budget_returns_empty_when_byte_budget_is_not_viable(
+    monkeypatch, alongside_sidecar_dir
+):
+    """A name-max probe below the viable stem size must skip, not stub."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 24)
+
+    assert fit_stem_to_path_budget("/models", "n" * 30, ".safetensors") == ""
 
 
 def test_calculate_filename_with_target_dir_trims_to_path_budget(

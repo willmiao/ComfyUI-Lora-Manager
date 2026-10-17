@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+import functools
 import logging
 import os
 import re
@@ -7,6 +8,7 @@ from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
 from .constants import (
+    MAX_FILENAME_COMPONENT_BYTES,
     MAX_FILENAME_STEM_LENGTH,
     MAX_FOLDER_NAME_LENGTH,
     MAX_FULL_PATH_LENGTH,
@@ -491,6 +493,45 @@ def sanitize_folder_name(
     return sanitized
 
 
+@functools.lru_cache(maxsize=256)
+def _probe_name_max_bytes(dir_path: str) -> int:
+    """Best-effort NAME_MAX (in bytes) for the filesystem hosting ``dir_path``.
+
+    Walks up to the nearest existing ancestor because the target directory
+    may not exist yet. Falls back to :data:`MAX_FILENAME_COMPONENT_BYTES`
+    when the platform cannot report a limit (``os.pathconf`` is Unix-only) or
+    reports an indeterminate one, and caps larger limits at that value so
+    libraries stay portable across filesystems.
+    """
+
+    path = dir_path or os.sep
+    while not os.path.isdir(path):
+        parent = os.path.dirname(path)
+        if parent == path:
+            break
+        path = parent
+    try:
+        value = os.pathconf(path, "PC_NAME_MAX")
+    except (AttributeError, ValueError, OSError):
+        return MAX_FILENAME_COMPONENT_BYTES
+    if value <= 0:
+        return MAX_FILENAME_COMPONENT_BYTES
+    return min(value, MAX_FILENAME_COMPONENT_BYTES)
+
+
+def _truncate_to_byte_budget(text: str, max_bytes: int) -> str:
+    """Truncate ``text`` to at most ``max_bytes`` UTF-8 bytes.
+
+    The cut always lands on a character boundary: a multibyte character
+    straddling the limit is dropped, never split.
+    """
+
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
 def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> str:
     """Truncate ``stem`` so the file and its companions fit the path budget.
 
@@ -506,6 +547,15 @@ def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> st
     :data:`PATH_BUDGET_SUFFIX_ALLOWANCE` characters past the stem stay
     reserved for the longest of those suffixes.
 
+    A second, independent limit is enforced on the name component itself:
+    POSIX filesystems bound a single path component in BYTES (NAME_MAX), so a
+    CJK-heavy stem passes every character cap above and still fails with
+    ENAMETOOLONG on disk. The limit is probed per directory via
+    ``os.pathconf`` because encrypted filesystems report less than the usual
+    255 (eCryptfs — Ubuntu encrypted home dirs, Synology encrypted shares —
+    allows only 143 bytes); both the model directory and the sidecar mirror
+    directory are probed and the stricter value wins.
+
     Returns the (possibly truncated) stem, or "" when the directory alone
     leaves no room for a viable name — callers must treat that as "skip with
     an actionable error", never write a stub name.
@@ -518,13 +568,30 @@ def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> st
     model_base = os.path.join(dir_path, stem)
     sidecar_dir = get_sidecar_dir(model_base + extension)
     used = max(len(model_base), len(os.path.join(sidecar_dir, stem)))
-    if used <= budget:
-        return stem
+    if used > budget:
+        allowed = len(stem) - (used - budget)
+        if allowed < MIN_VIABLE_STEM_LENGTH:
+            return ""
+        stem = stem[:allowed].strip("-_. ")
 
-    allowed = len(stem) - (used - budget)
-    if allowed < MIN_VIABLE_STEM_LENGTH:
-        return ""
-    return stem[:allowed].strip("-_. ")
+    name_max = min(
+        (
+            _probe_name_max_bytes(path)
+            for path in (dir_path, sidecar_dir)
+            if path
+        ),
+        default=MAX_FILENAME_COMPONENT_BYTES,
+    )
+    # The component holds stem + the longest companion suffix: the model
+    # file's own extension or ".metadata.json.bak", whichever is longer.
+    suffix_bytes = max(len(extension.encode("utf-8")), PATH_BUDGET_SUFFIX_ALLOWANCE)
+    byte_budget = name_max - suffix_bytes
+    if len(stem.encode("utf-8")) > byte_budget:
+        stem = _truncate_to_byte_budget(stem, byte_budget).strip("-_. ")
+        if len(stem) < MIN_VIABLE_STEM_LENGTH:
+            return ""
+
+    return stem
 
 
 def calculate_recipe_fingerprint(loras):
