@@ -602,6 +602,10 @@ class _RootWalkResult:
     root_path: str
     found_paths: Set[str] = field(default_factory=set)
     stale_paths: List[str] = field(default_factory=list)
+    # (cached path, expected folder) pairs: the entry's stored folder no longer
+    # matches where its file_path actually sits (written wrong by an older
+    # version, e.g. issue #1148). Repaired in place after the walk.
+    folder_repairs: List[Tuple[str, str]] = field(default_factory=list)
     # (business path, real path) pairs for files that are neither cached nor
     # excluded; the caller claims real paths in configured root order.
     new_candidates: List[Tuple[str, str]] = field(default_factory=list)
@@ -621,6 +625,7 @@ def _walk_root_for_reconcile(
     excluded_models: Set[str],
     is_cancelled: Callable[[], bool],
     report_progress: Callable[[int], None],
+    expected_folder_of: Callable[[str], str],
     walk_path: Optional[str] = None,
     unreachable: Optional[_UnreachablePaths] = None,
 ) -> _RootWalkResult:
@@ -635,17 +640,7 @@ def _walk_root_for_reconcile(
     """
     result = _RootWalkResult(root_path=root_path)
     stale_seen: Set[str] = set()
-    files_since_report = 0
-    walk_start = walk_path or root_path
-    # The recipe library sits inside a lora root by default; it is a reserved
-    # directory, never a model folder, so the walk must not descend into it.
-    recipes_dir_key = normalized_recipes_dir_key()
-
-    def _on_walk_error(error: OSError) -> None:
-        """Record a directory the walk could not enter (offline/denied)."""
-        filename = getattr(error, 'filename', None)
-        if filename and unreachable is not None:
-            unreachable.add(str(filename), 'unreadable_dir')
+    folder_repair_seen: Set[str] = set()
 
     def mark_stale_if_needed(cached_path: str) -> None:
         """Queue a cached path for file_name repair when it drifted."""
@@ -658,6 +653,37 @@ def _walk_root_for_reconcile(
             return
         stale_seen.add(cached_path)
         result.stale_paths.append(cached_path)
+
+    def mark_folder_repair_if_needed(cached_path: str) -> None:
+        """Queue a cached entry whose folder no longer matches its file_path.
+
+        A wrong folder is more than cosmetic: the sidebar drag-and-drop derives
+        the library root by stripping the folder off the file path, so a
+        mismatch makes the next move nest the target under the source directory
+        (issue #1148). Refresh never rewrote existing entries, so a folder
+        recorded wrong by an older version kept poisoning moves forever.
+        """
+        if cached_path in folder_repair_seen:
+            return
+        folder_repair_seen.add(cached_path)
+        item = path_to_item.get(cached_path)
+        if item is None:
+            return
+        expected = expected_folder_of(cached_path)
+        if (item.get("folder") or "") != expected:
+            result.folder_repairs.append((cached_path, expected))
+
+    files_since_report = 0
+    walk_start = walk_path or root_path
+    # The recipe library sits inside a lora root by default; it is a reserved
+    # directory, never a model folder, so the walk must not descend into it.
+    recipes_dir_key = normalized_recipes_dir_key()
+
+    def _on_walk_error(error: OSError) -> None:
+        """Record a directory the walk could not enter (offline/denied)."""
+        filename = getattr(error, 'filename', None)
+        if filename and unreachable is not None:
+            unreachable.add(str(filename), 'unreadable_dir')
 
     for root, dirnames, files in os.walk(
         walk_start, followlinks=True, onerror=_on_walk_error
@@ -699,6 +725,7 @@ def _walk_root_for_reconcile(
             if file_path in cached_paths:
                 result.found_paths.add(file_path)
                 mark_stale_if_needed(file_path)
+                mark_folder_repair_if_needed(file_path)
                 continue
 
             # Only a cache miss needs the physical path, so the realpath
@@ -710,6 +737,7 @@ def _walk_root_for_reconcile(
             if cached_real_match:
                 result.found_paths.add(cached_real_match)
                 mark_stale_if_needed(cached_real_match)
+                mark_folder_repair_if_needed(cached_real_match)
                 continue
 
             if file_path in excluded_models:
@@ -723,6 +751,7 @@ def _walk_root_for_reconcile(
                 if cached_case_match:
                     result.found_paths.add(cached_case_match)
                     mark_stale_if_needed(cached_case_match)
+                    mark_folder_repair_if_needed(cached_case_match)
                     continue
 
             # Not cached yet; the caller claims the real path in root order so
@@ -2008,6 +2037,11 @@ class ModelScanner:
                 _count_cached_entries_for_prefixes(cached_paths, walk_prefixes),
                 labels={root: all_labels.get(root, root) for root in roots},
             )
+            # The folder-drift check reuses this phase's roots snapshot: the
+            # walk runs in worker threads and must not re-read config per file.
+            def expected_folder_of(path: str) -> str:
+                return self._calculate_folder(path, roots=configured_roots)
+
             walk_results = await self._walk_roots_for_reconcile(
                 roots=roots,
                 walk_targets={
@@ -2017,6 +2051,7 @@ class ModelScanner:
                 cached_paths=cached_paths,
                 path_to_item=path_to_item,
                 unreachable=unreachable,
+                expected_folder_of=expected_folder_of,
             )
 
             # Final walk snapshot: the bar reaches the walk share, then the
@@ -2044,6 +2079,8 @@ class ModelScanner:
             # only pays one string compare per cached file.
             stale_paths: List[str] = []
             stale_seen: Set[str] = set()
+            folder_repairs: List[Tuple[str, str]] = []
+            folder_repair_seen: Set[str] = set()
             new_files: List[str] = []
             discovered_real_files: Set[str] = set()
 
@@ -2055,6 +2092,11 @@ class ModelScanner:
                         continue
                     stale_seen.add(cached_path)
                     stale_paths.append(cached_path)
+                for cached_path, expected_folder in result.folder_repairs:
+                    if cached_path in folder_repair_seen:
+                        continue
+                    folder_repair_seen.add(cached_path)
+                    folder_repairs.append((cached_path, expected_folder))
 
             for result in walk_results:
                 for file_path, real_file_path in result.new_candidates:
@@ -2203,6 +2245,24 @@ class ModelScanner:
                             exc,
                         )
 
+            # Repair entries whose folder drifted from where their file_path
+            # actually sits (written wrong by an older version, issue #1148).
+            # The value comes from the file path itself, so unlike the
+            # file_name repair no metadata re-read is needed.
+            total_folder_repaired = 0
+            for cached_path, expected_folder in folder_repairs:
+                item = path_to_item.get(cached_path)
+                if item is None or (item.get('folder') or '') == expected_folder:
+                    continue
+                item['folder'] = expected_folder
+                total_folder_repaired += 1
+            if total_folder_repaired:
+                logger.info(
+                    "%s Scanner: Repaired %d cached entries whose folder no longer matched their file location",
+                    self.model_type.capitalize(),
+                    total_folder_repaired,
+                )
+
             # Find missing files (in cache but not in filesystem). Only paths
             # inside this scan's scope are candidates, and paths the walk could
             # not read are kept and reported instead of being removed.
@@ -2318,7 +2378,7 @@ class ModelScanner:
                 self._cache.all_folders = merged_folders
 
             # Resort cache if changes were made
-            if total_added > 0 or total_removed > 0:
+            if total_added > 0 or total_removed > 0 or total_folder_repaired > 0:
                 # Update folders list
                 all_folders = set(item.get('folder', '') for item in self._cache.raw_data)
                 self._cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
@@ -2336,6 +2396,7 @@ class ModelScanner:
                 'added': total_added,
                 'removed': total_removed,
                 'repaired': total_repaired,
+                'folder_repaired': total_folder_repaired,
                 'scanned_roots': [all_labels.get(root, root) for root in roots],
                 # A folder scope is named by the folder the user clicked, not by
                 # the roots it happens to live under.
@@ -2349,6 +2410,11 @@ class ModelScanner:
                 f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in "
                 f"{time.time() - start_time:.2f} seconds. Added {total_added}, "
                 f"removed {total_removed}, repaired {total_repaired} models."
+                + (
+                    f" Repaired {total_folder_repaired} folder field(s)."
+                    if total_folder_repaired
+                    else ""
+                )
                 + (
                     f" Skipped {len(skipped_roots)} unreachable root(s), kept "
                     f"{summary['kept_unreachable']} model(s) under unreadable paths."
@@ -2381,6 +2447,7 @@ class ModelScanner:
         cached_paths: Set[str],
         path_to_item: Mapping[str, Dict[str, Any]],
         unreachable: _UnreachablePaths,
+        expected_folder_of: Callable[[str], str],
     ) -> List[_RootWalkResult]:
         """Walk every root off the event loop and return results in root order.
 
@@ -2411,6 +2478,7 @@ class ModelScanner:
                     path_to_item,
                     walk_targets,
                     unreachable,
+                    expected_folder_of,
                 )
                 for group in _group_roots_by_device(roots)
             ]
@@ -2440,6 +2508,7 @@ class ModelScanner:
         path_to_item: Mapping[str, Dict[str, Any]],
         walk_targets: Mapping[str, str],
         unreachable: _UnreachablePaths,
+        expected_folder_of: Callable[[str], str],
     ) -> List[_RootWalkResult]:
         """Walk the roots of one device sequentially (worker-thread entry point)."""
         results: List[_RootWalkResult] = []
@@ -2464,6 +2533,7 @@ class ModelScanner:
                     excluded_models=excluded_models,
                     is_cancelled=self.is_cancelled,
                     report_progress=report_progress,
+                    expected_folder_of=expected_folder_of,
                     unreachable=unreachable,
                 )
             finally:
@@ -3140,7 +3210,7 @@ class ModelScanner:
         """Get model file info and metadata (extensible for different model types)"""
         return await MetadataManager.create_default_metadata(file_path, self.model_class)
     
-    def _calculate_folder(self, file_path: str) -> str:
+    def _calculate_folder(self, file_path: str, roots: Optional[List[str]] = None) -> str:
         """Return the library-relative folder holding *file_path*.
 
         The path arrives in whichever spelling its caller holds: ComfyUI's own
@@ -3154,6 +3224,9 @@ class ModelScanner:
         comes from the case-preserving spelling: slicing the identity itself
         recorded every folder in lowercase on Windows, and the sidebar grew a
         lowercase twin branch on every move until the next disk walk healed it.
+
+        ``roots`` defaults to the live root list; reconcile workers pass a
+        snapshot so the walk never re-reads config off the event loop.
         """
         candidate = _root_identity(file_path)
         if not candidate:
@@ -3164,7 +3237,7 @@ class ModelScanner:
             # lowercase form spans two code points): fall back to the identity
             # rather than slice at a wrong offset.
             spelling = candidate
-        for root in self.get_model_roots():
+        for root in (roots if roots is not None else self.get_model_roots()):
             identity = _root_identity(root)
             if not identity:
                 continue

@@ -510,11 +510,48 @@ export class SidebarManager {
         }
 
         const suffix = `/${normalizedFolder}`;
-        if (directory.endsWith(suffix)) {
+        // Case-insensitive: a cached folder may differ from the file path in
+        // case alone, which is the same directory on Windows/macOS.
+        if (directory.toLowerCase().endsWith(suffix.toLowerCase())) {
             return directory.slice(0, -suffix.length);
         }
 
-        return directory;
+        // Folder and file path disagree (stale cache entry): returning the
+        // file's own directory here would make the move nest the target under
+        // the source folder (issue #1148). Let the caller resolve the root
+        // from the library roots instead.
+        return null;
+    }
+
+    /**
+     * Resolve the library root a dragged file lives under.
+     *
+     * Prefers the authoritative root list (longest root prefixing the file
+     * path) over the card heuristic, which silently derives a wrong root when
+     * the cached folder disagrees with the file path (issue #1148).
+     */
+    async _resolveMoveRoot(filePath) {
+        try {
+            if (typeof this.apiClient?.fetchModelRoots === 'function') {
+                const rootsData = await this.apiClient.fetchModelRoots();
+                const roots = rootsData?.roots || [];
+                const normalizedFile = (filePath || '').replace(/\\/g, '/').toLowerCase();
+                let best = '';
+                for (const root of roots) {
+                    const normalizedRoot = (root || '').replace(/\\/g, '/').replace(/\/+$/, '');
+                    if (!normalizedRoot) continue;
+                    const key = normalizedRoot.toLowerCase();
+                    if ((normalizedFile === key || normalizedFile.startsWith(key + '/')) &&
+                        normalizedRoot.length > best.length) {
+                        best = normalizedRoot;
+                    }
+                }
+                if (best) return best;
+            }
+        } catch (error) {
+            console.warn('[SidebarManager] Failed to resolve move root from library roots:', error);
+        }
+        return this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
     }
 
     combineRootAndRelativePath(root, relative) {
@@ -658,7 +695,7 @@ export class SidebarManager {
             return false;
         }
 
-        const rootPath = this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
+        const rootPath = await this._resolveMoveRoot(this.draggedFilePaths[0]);
         console.log('[SidebarManager] rootPath:', rootPath);
         if (!rootPath) {
             console.log('[SidebarManager] performDragMove returning false - no rootPath');

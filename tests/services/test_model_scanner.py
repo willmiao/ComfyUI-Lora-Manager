@@ -215,6 +215,36 @@ async def test_calculate_folder_returns_empty_for_root_and_unknown_paths(tmp_pat
 
 
 @pytest.mark.asyncio
+async def test_reconcile_cache_heals_folder_drift(tmp_path: Path):
+    """An incremental refresh repairs entries whose folder no longer matches
+    where the file actually sits (issue #1148): older versions could record a
+    wrong folder, and the sidebar drag-and-drop strips the folder off the file
+    path to find the library root, so the stale value made the next move nest
+    the target under the source directory."""
+    nested = tmp_path / "anima" / "character"
+    nested.mkdir(parents=True)
+    model = nested / "x.txt"
+    model.write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    item = next(i for i in scanner._cache.raw_data if i["file_path"].endswith("/x.txt"))
+    assert item["folder"] == "anima/character"
+    item["folder"] = ""  # pollution as written by the buggy versions
+
+    summary = await scanner._reconcile_cache()
+
+    assert item["folder"] == "anima/character"
+    assert summary["folder_repaired"] == 1
+    assert "anima/character" in scanner._cache.folders
+
+    # A second reconcile over the healed cache finds nothing left to repair.
+    summary = await scanner._reconcile_cache()
+    assert summary["folder_repaired"] == 0
+
+
+@pytest.mark.asyncio
 async def test_initialize_cache_populates_cache(tmp_path: Path):
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)
@@ -2992,6 +3022,7 @@ def test_reconcile_walk_skips_the_recipes_dir(tmp_path: Path, monkeypatch):
         excluded_models=set(),
         is_cancelled=lambda: False,
         report_progress=lambda _files_seen: None,
+        expected_folder_of=lambda _path: "",
     )
 
     assert "keep" in result.discovered_folders
