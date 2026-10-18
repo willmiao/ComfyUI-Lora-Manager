@@ -7,6 +7,7 @@ import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { initSortDropdown, applySortToSelect, randomizeSortValue } from './SortDropdown.js';
+import { initModelTypeDropdown } from './ModelTypeDropdown.js';
 import { renderScanScopeMenu, resolveScanScopeTarget } from './ScanScopeMenu.js';
 
 /**
@@ -139,6 +140,10 @@ export class PageControls {
                 await this.resetAndReload();
             });
         }
+
+        // Model type quick-switch dropdown (loras / checkpoints / other pages;
+        // hides itself when the page has a single sub-type)
+        initModelTypeDropdown(this.pageType);
         
         // Refresh button handler
         const refreshBtn = document.querySelector('[data-action="refresh"]');
@@ -992,6 +997,7 @@ export class PageControls {
             '[data-action="find-duplicates"]',
             '#favoriteFilterBtn',
             '.update-filter-group',
+            '#modelTypeDropdown',
         ];
         const customFilterIndicator = document.getElementById('customFilterIndicator');
 

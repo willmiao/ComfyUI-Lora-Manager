@@ -64,6 +64,15 @@
                     </optgroup>
                 </select>
             </div>
+            {% if page_id in ['loras', 'checkpoints', 'other'] %}
+            <div class="control-group model-type-dropdown-group dropdown-group hidden" id="modelTypeDropdown" title="{{ t('loras.controls.modelType.title') }}">
+                <button type="button" class="model-type-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="model-type-trigger__label"></span>
+                    <i class="fas fa-caret-down model-type-trigger__caret" aria-hidden="true"></i>
+                </button>
+                <div class="dropdown-menu model-type-dropdown-menu" role="listbox"></div>
+            </div>
+            {% endif %}
             <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.title') }}{% else %}{{ t('loras.controls.refresh.title') }}{% endif %}" class="control-group dropdown-group">
                 <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span><span>{{ t('common.actions.refresh') }}</span> <kbd class="shortcut-key">R</kbd></span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">

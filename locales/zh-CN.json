@@ -970,6 +970,11 @@
                 "random": "随机",
                 "randomAction": "随机排序（洗牌）"
             },
+            "modelType": {
+                "title": "[TODO: Translate] Filter by model type",
+                "all": "[TODO: Translate] All Types",
+                "multiple": "[TODO: Translate] {count} types"
+            },
             "refresh": {
                 "title": "刷新模型列表",
                 "full": "重建缓存",

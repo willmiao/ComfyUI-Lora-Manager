@@ -970,6 +970,11 @@
                 "random": "אקראי",
                 "randomAction": "ערבוב אקראי"
             },
+            "modelType": {
+                "title": "[TODO: Translate] Filter by model type",
+                "all": "[TODO: Translate] All Types",
+                "multiple": "[TODO: Translate] {count} types"
+            },
             "refresh": {
                 "title": "רענן רשימת מודלים",
                 "full": "בניית מטמון מחדש",

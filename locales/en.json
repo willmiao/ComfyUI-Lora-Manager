@@ -970,6 +970,11 @@
         "random": "Random",
         "randomAction": "Randomize (shuffle)"
       },
+      "modelType": {
+        "title": "Filter by model type",
+        "all": "All Types",
+        "multiple": "{count} types"
+      },
       "refresh": {
         "title": "Refresh model list",
         "full": "Rebuild Cache",

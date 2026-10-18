@@ -970,6 +970,11 @@
                 "random": "랜덤",
                 "randomAction": "셔플 (무작위)"
             },
+            "modelType": {
+                "title": "[TODO: Translate] Filter by model type",
+                "all": "[TODO: Translate] All Types",
+                "multiple": "[TODO: Translate] {count} types"
+            },
             "refresh": {
                 "title": "모델 목록 새로고침",
                 "full": "캐시 재구성",

@@ -970,6 +970,11 @@
                 "random": "ランダム",
                 "randomAction": "シャッフル（ランダム）"
             },
+            "modelType": {
+                "title": "[TODO: Translate] Filter by model type",
+                "all": "[TODO: Translate] All Types",
+                "multiple": "[TODO: Translate] {count} types"
+            },
             "refresh": {
                 "title": "モデルリストを更新",
                 "full": "キャッシュを再構築",

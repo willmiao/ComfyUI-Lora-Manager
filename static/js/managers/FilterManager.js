@@ -631,6 +631,8 @@ export class FilterManager {
                     }
 
                     this.updateActiveFiltersCount();
+                    // Keep the controls-bar quick switcher in sync (no-op when absent)
+                    window.modelTypeDropdown?.syncFromFilters?.();
                     await this.applyFilters(false);
                 });
 
@@ -781,6 +783,8 @@ export class FilterManager {
                 tag.classList.remove('active');
             }
         });
+        // Keep the controls-bar quick switcher in sync (no-op when absent)
+        window.modelTypeDropdown?.syncFromFilters?.();
     }
 
     updateActiveFiltersCount() {
