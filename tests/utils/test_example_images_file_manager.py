@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 
 import pytest
 
@@ -20,8 +20,13 @@ class JsonRequest:
         return self._payload
 
 
+def _parse_json(response) -> Dict[str, Any]:
+    assert response.text is not None
+    return json.loads(response.text)
+
+
 @pytest.fixture(autouse=True)
-def restore_settings() -> None:
+def restore_settings() -> Generator[None, None, None]:
     manager = get_settings_manager()
     original = manager.settings.copy()
     try:
@@ -54,7 +59,7 @@ async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest
 
     request = JsonRequest({"model_hash": model_hash})
     response = await ExampleImagesFileManager.open_folder(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert body["success"] is True
     # On Windows, os.startfile is used; on other platforms, subprocess.Popen
@@ -89,7 +94,7 @@ async def test_open_folder_returns_clipboard_mode_with_mapped_local_path(
 
     request = JsonRequest({"model_hash": model_hash})
     response = await ExampleImagesFileManager.open_folder(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert response.status == 200
     assert body == {
@@ -126,7 +131,7 @@ async def test_open_folder_returns_uri_mode_with_rendered_template(
 
     request = JsonRequest({"model_hash": model_hash})
     response = await ExampleImagesFileManager.open_folder(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert response.status == 200
     assert body["success"] is True
@@ -150,7 +155,7 @@ async def test_open_folder_rejects_missing_uri_template(monkeypatch: pytest.Monk
     (model_folder / "image.png").write_text("data", encoding="utf-8")
 
     response = await ExampleImagesFileManager.open_folder(JsonRequest({"model_hash": model_hash}))
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert response.status == 400
     assert body["success"] is False
@@ -168,7 +173,7 @@ async def test_open_folder_rejects_invalid_paths(monkeypatch: pytest.MonkeyPatch
 
     request = JsonRequest({"model_hash": "a" * 64})
     response = await ExampleImagesFileManager.open_folder(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert response.status == 400
     assert body["success"] is False
@@ -186,7 +191,7 @@ async def test_get_files_lists_supported_media(tmp_path) -> None:
 
     request = JsonRequest({}, {"model_hash": model_hash})
     response = await ExampleImagesFileManager.get_files(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert response.status == 200
     names = {entry["name"] for entry in body["files"]}
@@ -203,18 +208,18 @@ async def test_has_images_reports_presence(tmp_path) -> None:
 
     request = JsonRequest({}, {"model_hash": model_hash})
     response = await ExampleImagesFileManager.has_images(request)
-    body = json.loads(response.text)
+    body = _parse_json(response)
 
     assert body["has_images"] is True
 
     empty_request = JsonRequest({}, {"model_hash": "missing"})
     empty_response = await ExampleImagesFileManager.has_images(empty_request)
-    empty_body = json.loads(empty_response.text)
+    empty_body = _parse_json(empty_response)
     assert empty_body["has_images"] is False
 
 
 async def test_has_images_requires_model_hash() -> None:
     response = await ExampleImagesFileManager.has_images(JsonRequest({}, {}))
-    body = json.loads(response.text)
+    body = _parse_json(response)
     assert response.status == 400
     assert body["success"] is False

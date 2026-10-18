@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """
 Unified download manager for all HTTP/HTTPS downloads in the application.
 
@@ -20,14 +24,15 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlparse
-from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
+from typing import Optional, Dict, Tuple, Callable, Union, Awaitable, Any, cast
 from ..services.settings_manager import get_settings_manager
 from .connectivity_guard import (
     OFFLINE_COOLDOWN_ERROR,
     OFFLINE_FRIENDLY_MESSAGE,
     ConnectivityGuard,
 )
-from .errors import RateLimitError
+from .errors import DownloadRateLimitError, RateLimitError
+from .rate_limit_coordinator import RateLimitCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +157,25 @@ class DownloadStalledError(Exception):
     """Raised when download progress stalls beyond the configured timeout."""
 
 
+def _disable_netrc_auth(session: aiohttp.ClientSession) -> None:
+    """Prevent the session from loading credentials from netrc files.
+
+    ``trust_env=True`` is kept so system-level proxies still work, but aiohttp
+    would also auto-apply netrc entries (e.g. ``machine civitai.red``) as
+    BasicAuth. aiohttp refuses to combine those with the explicit
+    ``Authorization: Bearer`` header set for CivitAI requests, raising
+    "Cannot combine AUTHORIZATION header with AUTH argument or credentials
+    encoded in URL" before the request is even sent. Subclassing ClientSession
+    is discouraged by aiohttp (emits a DeprecationWarning), so the private
+    hook is patched on the instance instead.
+    """
+
+    def _no_netrc_auth(*args: Any, **kwargs: Any) -> Optional[aiohttp.BasicAuth]:
+        return None
+
+    setattr(session, "_get_netrc_auth", _no_netrc_auth)
+
+
 class Downloader:
     """Unified downloader for all HTTP/HTTPS downloads in the application."""
 
@@ -204,6 +228,7 @@ class Downloader:
                 # Double check after acquiring lock
                 if self._session is None or self._should_refresh_session():
                     await self._create_session()
+        assert self._session is not None
         return self._session
 
     @property
@@ -231,7 +256,7 @@ class Downloader:
         )
 
         try:
-            timeout_value = float(raw_value)
+            timeout_value = float(cast(Any, raw_value))
         except (TypeError, ValueError):
             timeout_value = default_timeout
 
@@ -243,7 +268,7 @@ class Downloader:
         raw_value = os.environ.get("COMFYUI_DOWNLOAD_MAX_RETRIES")
 
         try:
-            retries = int(raw_value)
+            retries = int(cast(Any, raw_value))
         except (TypeError, ValueError):
             retries = default_retries
 
@@ -320,7 +345,7 @@ class Downloader:
         # CA coverage across different Python environments (especially
         # embedded/compatibility Python builds).
         try:
-            import certifi  # type: ignore[import-untyped]
+            import certifi  # pyright: ignore[reportMissingTypeStubs]
 
             ca_path = certifi.where()
             ssl_context = ssl.create_default_context(cafile=ca_path)
@@ -330,7 +355,7 @@ class Downloader:
             logger.debug("SSL: certifi unavailable; using system default CA bundle")
 
         # Optimize TCP connection parameters
-        connector_kwargs = dict(
+        connector_kwargs: Dict[str, Any] = dict(
             ssl=ssl_context,
             limit=8,  # Concurrent connections
             ttl_dns_cache=300,  # DNS cache timeout
@@ -365,6 +390,7 @@ class Downloader:
             trust_env=not app_proxy_active,
             timeout=timeout,
         )
+        _disable_netrc_auth(self._session)
 
         # Store proxy URL for per-request use. Stays None for SOCKS because the
         # ProxyConnector already tunnels everything; passing proxy= for SOCKS
@@ -408,6 +434,7 @@ class Downloader:
         custom_headers: Optional[Dict[str, str]] = None,
         allow_resume: bool = True,
         pause_event: Optional[DownloadStreamControl] = None,
+        raise_on_rate_limit: bool = False,
     ) -> Tuple[bool, str]:
         """
         Download a file with resumable downloads and retry mechanism
@@ -420,6 +447,11 @@ class Downloader:
             custom_headers: Additional headers to include in request
             allow_resume: Whether to support resumable downloads
             pause_event: Optional stream control used to pause/resume and request reconnects
+            raise_on_rate_limit: When True, a 429 response raises
+                ``DownloadRateLimitError`` instead of returning a plain error
+                string, so callers (the model download manager) can build the
+                structured rate-limit result required by the download queue
+                contract. Defaults to the legacy tuple behavior.
 
         Returns:
             Tuple[bool, str]: (success, save_path or error message)
@@ -570,6 +602,27 @@ class Downloader:
                             False,
                             "File not found - the download link may be invalid or expired.",
                         )
+                    elif response.status == 429:
+                        # Register the vendor's cooldown so API calls through
+                        # make_request queue behind it (#1085). The download
+                        # itself fails as before; retry policy stays with the
+                        # caller (download manager).
+                        retry_after = self._extract_retry_after(response.headers)
+                        coordinator = await RateLimitCoordinator.get_instance()
+                        if coordinator.enabled:
+                            coordinator.register_rate_limit(
+                                self._guard_destination(url), retry_after
+                            )
+                        logger.warning(
+                            f"Rate limited (429) for {url}, retry_after={retry_after}"
+                        )
+                        if raise_on_rate_limit:
+                            raise DownloadRateLimitError(
+                                f"Download rate limited (429), retry after {retry_after}s",
+                                retry_after=retry_after,
+                                host=self._guard_destination(url),
+                            )
+                        return False, f"Download rate limited (429), retry after {retry_after}s"
                     else:
                         logger.error(
                             f"Download failed for {url} with status {response.status}"
@@ -861,6 +914,11 @@ class Downloader:
                         f"Network error after {self.max_retries + 1} attempts: {str(e)}",
                     )
 
+            except DownloadRateLimitError:
+                # 429s are never retried in-band; the structured error must
+                # reach the caller (download manager) unmodified.
+                raise
+
             except Exception as e:
                 logger.error(f"Unexpected download error: {e}")
                 return False, str(e)
@@ -890,7 +948,8 @@ class Downloader:
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         return_headers: bool = False,
-    ) -> Tuple[bool, Union[bytes, str], Optional[Dict]]:
+        raise_on_rate_limit: bool = False,
+    ) -> Tuple[bool, Union[bytes, str], Optional[Dict[str, Any]]]:
         """
         Download a file to memory (for small files like preview images)
 
@@ -899,6 +958,10 @@ class Downloader:
             use_auth: Whether to include authentication headers
             custom_headers: Additional headers to include in request
             return_headers: Whether to return response headers along with content
+            raise_on_rate_limit: When True, a 429 response raises
+                ``DownloadRateLimitError`` instead of returning a plain error
+                string (see ``download_file``). Defaults to the legacy tuple
+                behavior.
 
         Returns:
             Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
@@ -947,6 +1010,11 @@ class Downloader:
                 elif response.status == 429:
                     raw_retry_after = response.headers.get("Retry-After")
                     retry_after = _parse_retry_after(raw_retry_after or "")
+                    # Register the vendor's cooldown so API calls through
+                    # make_request queue behind it (#1085).
+                    coordinator = await RateLimitCoordinator.get_instance()
+                    if coordinator.enabled:
+                        coordinator.register_rate_limit(destination, retry_after)
                     if raw_retry_after:
                         logger.warning(
                             "Rate limited (429) for %s, Retry-After: %ss", url, retry_after
@@ -956,10 +1024,20 @@ class Downloader:
                             "Rate limited (429) for %s, no Retry-After header; defaulting to %ss",
                             url, retry_after,
                         )
+                    if raise_on_rate_limit:
+                        raise DownloadRateLimitError(
+                            f"Rate limited (429), retry after {retry_after}s",
+                            retry_after=retry_after,
+                            host=destination,
+                        )
                     return False, f"Rate limited (429), retry after {retry_after}s", None
                 else:
                     error_msg = f"Download failed with status {response.status}"
                     return False, error_msg, None
+
+        except DownloadRateLimitError:
+            # Structured rate-limit errors must reach the caller unmodified.
+            raise
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
@@ -976,7 +1054,7 @@ class Downloader:
         url: str,
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
-    ) -> Tuple[bool, Union[Dict, str]]:
+    ) -> Tuple[bool, Union[Dict[str, Any], str]]:
         """
         Get response headers without downloading the full content
 
@@ -1016,6 +1094,14 @@ class Downloader:
                 if response.status == 200:
                     guard.register_success(destination)
                     return True, dict(response.headers)
+                elif response.status == 429:
+                    # Register the vendor's cooldown so API calls through
+                    # make_request queue behind it (#1085).
+                    retry_after = self._extract_retry_after(response.headers)
+                    coordinator = await RateLimitCoordinator.get_instance()
+                    if coordinator.enabled:
+                        coordinator.register_rate_limit(destination, retry_after)
+                    return False, f"Head request rate limited (429), retry after {retry_after}s"
                 else:
                     return False, f"Head request failed with status {response.status}"
 
@@ -1036,7 +1122,7 @@ class Downloader:
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         **kwargs,
-    ) -> Tuple[bool, Union[Dict, str]]:
+    ) -> Tuple[bool, Union[Dict[str, Any], str, RateLimitError]]:
         """
         Make a generic HTTP request and return JSON response
 
@@ -1049,74 +1135,113 @@ class Downloader:
 
         Returns:
             Tuple[bool, Union[Dict, str]]: (success, response data or error message)
+
+        When the rate-limit gate is enabled (``rate_limit_gate_enabled``),
+        requests are paced per destination and 429 responses are honored by
+        waiting out the ``Retry-After`` window (bounded by
+        ``rate_limit_max_wait_seconds``) before re-sending. A ``RateLimitError``
+        returned after gate involvement is marked with ``gate_handled = True``
+        so downstream retry helpers do not wait a second time.
         """
         guard = await ConnectivityGuard.get_instance()
         destination = self._guard_destination(url)
+        # Fail fast on transport-level outages before pacing: there is no
+        # point waiting out a vendor cooldown while the network is down.
         if guard.should_block_request(destination):
             return False, OFFLINE_COOLDOWN_ERROR
 
-        try:
-            session = await self.session
-            # Debug log for proxy mode at request time
-            if self.proxy_url:
-                logger.debug(f"[make_request] Using app-level proxy: {self.proxy_url}")
-            else:
-                logger.debug(
-                    "[make_request] Using system-level proxy (trust_env) if configured."
-                )
+        coordinator = await RateLimitCoordinator.get_instance()
+        gate_enabled = coordinator.enabled
+        # Safety bound on the wait-and-resend loop; each 429 normally exits
+        # via the wait cap in wait_for_slot, this covers pathological 429s
+        # with tiny Retry-After values.
+        max_resend_attempts = 5
+        attempt = 0
 
-            # Prepare headers
-            headers = self._get_auth_headers(use_auth)
-            if custom_headers:
-                headers.update(custom_headers)
+        while True:
+            if gate_enabled:
+                try:
+                    await coordinator.wait_for_slot(destination)
+                except RateLimitError as exc:
+                    exc.gate_handled = True
+                    return False, exc
 
-            # Add proxy to kwargs if not already present
-            if "proxy" not in kwargs:
-                kwargs["proxy"] = self.proxy_url
-
-            async with session.request(
-                method, url, headers=headers, **kwargs
-            ) as response:
-                if response.status == 200:
-                    guard.register_success(destination)
-                    # Try to parse as JSON, fall back to text
-                    try:
-                        data = await response.json()
-                        return True, data
-                    except:
-                        text = await response.text()
-                        return True, text
-                elif response.status == 401:
-                    return False, "Unauthorized access - invalid or missing API key"
-                elif response.status == 403:
-                    return False, "Access forbidden"
-                elif response.status == 404:
-                    return False, "Resource not found"
-                elif response.status == 429:
-                    retry_after = self._extract_retry_after(response.headers)
-                    error_msg = "Request rate limited"
-                    logger.warning(
-                        "Rate limit encountered for %s %s; retry_after=%s",
-                        method,
-                        url,
-                        retry_after,
-                    )
-                    return False, RateLimitError(
-                        error_msg,
-                        retry_after=retry_after,
-                    )
+            try:
+                session = await self.session
+                # Debug log for proxy mode at request time
+                if self.proxy_url:
+                    logger.debug(f"[make_request] Using app-level proxy: {self.proxy_url}")
                 else:
-                    return False, f"Request failed with status {response.status}"
+                    logger.debug(
+                        "[make_request] Using system-level proxy (trust_env) if configured."
+                    )
 
-        except Exception as e:
-            if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e, destination)
-                if guard.should_block_request(destination):
-                    return False, OFFLINE_COOLDOWN_ERROR
-                logger.debug("Network unavailable for %s %s: %s", method, url, e)
+                # Prepare headers
+                headers = self._get_auth_headers(use_auth)
+                if custom_headers:
+                    headers.update(custom_headers)
+
+                # Add proxy to kwargs if not already present
+                if "proxy" not in kwargs:
+                    kwargs["proxy"] = self.proxy_url
+
+                async with session.request(
+                    method, url, headers=headers, **kwargs
+                ) as response:
+                    if response.status == 200:
+                        guard.register_success(destination)
+                        if gate_enabled:
+                            coordinator.register_success(destination)
+                        # Try to parse as JSON, fall back to text
+                        try:
+                            data = await response.json()
+                            return True, data
+                        except:
+                            text = await response.text()
+                            return True, text
+                    elif response.status == 401:
+                        return False, "Unauthorized access - invalid or missing API key"
+                    elif response.status == 403:
+                        return False, "Access forbidden"
+                    elif response.status == 404:
+                        return False, "Resource not found"
+                    elif response.status == 429:
+                        retry_after = self._extract_retry_after(response.headers)
+                        error_msg = "Request rate limited"
+                        if not gate_enabled:
+                            logger.warning(
+                                "Rate limit encountered for %s %s; retry_after=%s",
+                                method,
+                                url,
+                                retry_after,
+                            )
+                            return False, RateLimitError(
+                                error_msg,
+                                retry_after=retry_after,
+                            )
+                        # The coordinator logs the cooldown notice (INFO once
+                        # per window, DEBUG on extension).
+                        coordinator.register_rate_limit(destination, retry_after)
+                        attempt += 1
+                        if attempt >= max_resend_attempts:
+                            error = RateLimitError(error_msg, retry_after=retry_after)
+                            error.gate_handled = True
+                            return False, error
+                        # Loop back: wait_for_slot blocks until the cooldown
+                        # elapses (or raises once the wait exceeds the cap).
+                        continue
+                    else:
+                        return False, f"Request failed with status {response.status}"
+
+            except Exception as e:
+                if guard.is_network_unreachable_error(e):
+                    guard.register_network_failure(e, destination)
+                    if guard.should_block_request(destination):
+                        return False, OFFLINE_COOLDOWN_ERROR
+                    logger.debug("Network unavailable for %s %s: %s", method, url, e)
+                    return False, str(e)
+                logger.error(f"Error making {method} request to {url}: {e}")
                 return False, str(e)
-            logger.error(f"Error making {method} request to {url}: {e}")
-            return False, str(e)
 
     async def close(self):
         """Close the HTTP session"""

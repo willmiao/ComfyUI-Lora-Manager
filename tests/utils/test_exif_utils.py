@@ -1,6 +1,7 @@
 import json
+from typing import Any, Dict
 
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image, PngImagePlugin
 
 from py.utils.exif_utils import ExifUtils
@@ -64,6 +65,69 @@ def test_append_recipe_metadata_includes_checkpoint(monkeypatch, tmp_path):
     assert payload["base_model"] == "Illustrious"
 
 
+def test_append_recipe_metadata_pixel_preserving_webp(tmp_path):
+    """pixel_preserving=True must rewrite only the EXIF chunk of a WebP,
+    leaving the pixel chunks byte-identical and the old block replaced."""
+    img = Image.new("RGB", (64, 48), (120, 30, 200))
+    original_params = (
+        "masterpiece, best quality\n"
+        "Negative prompt: lowres\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 1, "
+        "Size: 512x768, Model hash: abc123, Model: foo_v1, Clip skip: 2\n"
+        ' Recipe metadata: {"title": "Old", "loras": []}'
+    )
+    exif = piexif.dump(
+        {
+            "0th": {},
+            "Exif": {
+                piexif.ExifIFD.UserComment: b"UNICODE\x00"
+                + original_params.encode("utf-16be")
+            },
+        }
+    )
+    image_path = tmp_path / "recipe.webp"
+    img.save(str(image_path), format="WEBP", exif=exif, quality=85)
+
+    with open(image_path, "rb") as fh:
+        before = fh.read()
+
+    new_recipe = {
+        "title": "New",
+        "base_model": "SDXL",
+        "loras": [],
+        "gen_params": {"steps": 25},
+    }
+    ExifUtils.append_recipe_metadata(
+        str(image_path), new_recipe, pixel_preserving=True
+    )
+
+    with open(image_path, "rb") as fh:
+        after = fh.read()
+
+    def chunks(data: bytes) -> Dict[bytes, bytes]:
+        pos, result = 12, {}
+        while pos + 8 <= len(data):
+            fourcc = data[pos : pos + 4]
+            size = int.from_bytes(data[pos + 4 : pos + 8], "little")
+            result[fourcc] = data[pos + 8 : pos + 8 + size]
+            pos += 8 + size + (size % 2)
+        return result
+
+    before_chunks = chunks(before)
+    after_chunks = chunks(after)
+    for fourcc, payload in before_chunks.items():
+        if fourcc == b"EXIF":
+            assert after_chunks[fourcc] != payload, "EXIF must be replaced"
+        else:
+            assert after_chunks[fourcc] == payload, f"{fourcc} was re-encoded"
+
+    # The appended block is updated; the original parameters stay in front.
+    metadata = ExifUtils.extract_image_metadata(str(image_path))
+    assert "Steps: 20" in metadata
+    assert 'Recipe metadata: {"title": "New"' in metadata
+    assert '"title": "Old"' not in metadata
+
+
 def test_optimize_image_preserves_workflow_when_converting_png_to_webp(tmp_path):
     image_path = tmp_path / "source.png"
     png_info = PngImagePlugin.PngInfo()
@@ -84,10 +148,12 @@ def test_optimize_image_preserves_workflow_when_converting_png_to_webp(tmp_path)
     optimized_path.write_bytes(optimized_data)
 
     exif_dict = piexif.load(str(optimized_path))
+    assert exif_dict["0th"] is not None
     assert (
         exif_dict["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
         == 'Workflow:{"nodes": [{"id": 1}]}'
     )
+    assert exif_dict["Exif"] is not None
     user_comment = exif_dict["Exif"][piexif.ExifIFD.UserComment]
     assert user_comment.startswith(b"UNICODE\0")
     assert user_comment[8:].decode("utf-16be") == "prompt text\nSteps: 20"
@@ -113,10 +179,12 @@ def test_update_image_metadata_preserves_webp_workflow(tmp_path):
     )
 
     updated_exif = piexif.load(str(image_path))
+    assert updated_exif["0th"] is not None
     assert (
         updated_exif["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
         == 'Workflow:{"nodes":[{"id":1}]}'
     )
+    assert updated_exif["Exif"] is not None
     updated_comment = updated_exif["Exif"][piexif.ExifIFD.UserComment]
     assert (
         updated_comment[8:].decode("utf-16be")
@@ -143,14 +211,112 @@ def test_update_image_metadata_preserves_png_workflow(tmp_path):
         )
 
 
+def test_optimize_image_embeds_supplied_workflow_when_source_has_none(tmp_path):
+    """Import paths hand the workflow over as data when the preview source is
+    metadata-free (CivitAI's optimized rendition); optimize_image must embed
+    it while re-encoding, otherwise the recipe loses has_workflow."""
+    image_path = tmp_path / "optimized.webp"
+    Image.new("RGB", (64, 32), color="red").save(image_path, format="WEBP", quality=85)
+
+    workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow=workflow,
+    )
+
+    optimized_path = tmp_path / f"embedded{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_optimize_image_keeps_source_workflow_over_supplied(tmp_path):
+    image_path = tmp_path / "source.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":7}]}')
+    Image.new("RGB", (64, 32), color="red").save(image_path, pnginfo=png_info)
+
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow={"nodes": [{"id": 1}]},
+    )
+
+    optimized_path = tmp_path / f"sourcewins{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == '{"nodes":[{"id":7}]}'
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_webp(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (32, 32), color="blue").save(image_path, format="WEBP", quality=85)
+
+    workflow = json.dumps({"nodes": [{"id": 1}]})
+    returned = ExifUtils.embed_workflow(str(image_path), workflow)
+
+    assert returned == str(image_path)
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == workflow
+    with Image.open(image_path) as img:
+        assert img.size == (32, 32)
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_png(tmp_path):
+    image_path = tmp_path / "preview.png"
+    Image.new("RGB", (32, 32), color="blue").save(image_path)
+
+    workflow = {"nodes": [{"id": 3}]}
+    ExifUtils.embed_workflow(str(image_path), workflow)
+
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_embed_workflow_leaves_existing_workflow_untouched(tmp_path):
+    image_path = tmp_path / "preview.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":9}]}')
+    Image.new("RGB", (32, 32), color="green").save(image_path, pnginfo=png_info)
+
+    ExifUtils.embed_workflow(str(image_path), {"nodes": [{"id": 1}]})
+
+    with Image.open(image_path) as img:
+        assert img.info["workflow"] == '{"nodes":[{"id":9}]}'
+
+
+def test_embed_workflow_ignores_unsupported_payloads_and_containers(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (16, 16), color="black").save(image_path, format="WEBP")
+
+    # Nothing to embed / unsupported payload types are no-ops.
+    assert ExifUtils.embed_workflow(str(image_path), None) == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), "") == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), 123) == str(image_path)
+    assert ExifUtils._load_structured_metadata(str(image_path))["workflow"] is None
+
+    video_path = tmp_path / "clip.mp4"
+    video_path.write_bytes(b"video")
+    assert ExifUtils.embed_workflow(str(video_path), {"nodes": []}) == str(video_path)
+
+
 # --- ISOBMFF / brotli extraction tests ---
 
 import struct
 
-import brotli
+import brotli  # pyright: ignore[reportMissingTypeStubs]
 
 
-def _build_jxl_with_brob(payload_json: dict) -> bytes:
+def _build_jxl_with_brob(payload_json: Dict[str, Any]) -> bytes:
     """Build a minimal JXL container with a brob box containing brotli-compressed JSON."""
     # ISOBMFF box 1: JXL signature box (size=12, type='JXL ', signature)
     box1 = struct.pack(">I", 12) + b"JXL " + bytes([0x0d, 0x0a, 0x87, 0x0a])
@@ -163,7 +329,7 @@ def _build_jxl_with_brob(payload_json: dict) -> bytes:
     return box1 + box2 + box3
 
 
-def _build_avif_with_brob(payload_json: dict) -> bytes:
+def _build_avif_with_brob(payload_json: Dict[str, Any]) -> bytes:
     """Build a minimal AVIF container with a brob box containing brotli-compressed JSON."""
     compressed = brotli.compress(json.dumps(payload_json).encode("utf-8"))
     brob_payload = b"comf" + compressed
@@ -262,6 +428,7 @@ class TestIsobmffBrotliExtraction:
         path.write_bytes(data)
 
         result = ExifUtils._load_structured_metadata(str(path))
+        assert result["prompt"] is not None
         assert json.loads(result["prompt"]) == {"text": "hello", "negative": "bad"}
 
     def test_extract_workflow_as_list(self, tmp_path):
@@ -272,6 +439,7 @@ class TestIsobmffBrotliExtraction:
         path.write_bytes(data)
 
         result = ExifUtils._load_structured_metadata(str(path))
+        assert result["workflow"] is not None
         assert json.loads(result["workflow"]) == [{"id": 1}, {"id": 2}]
 
     def test_over_decompressed_size_limit(self, tmp_path, monkeypatch):

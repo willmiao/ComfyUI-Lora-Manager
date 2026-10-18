@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from aiohttp import web
-from typing import Dict
-from server import PromptServer  # type: ignore
+from typing import Any, Dict
+from server import PromptServer  # pyright: ignore[reportMissingImports]
 
 from .base_model_routes import BaseModelRoutes
 from .model_route_registrar import ModelRouteRegistrar
@@ -31,13 +31,13 @@ class LoraRoutes(BaseModelRoutes):
         # Attach service dependencies
         self.attach_service(self.service)
 
-    def setup_routes(self, app: web.Application):
+    def setup_routes(self, app: web.Application, prefix: str = "loras"):
         """Setup LoRA routes"""
         # Schedule service initialization on app startup
         app.on_startup.append(lambda _: self.initialize_services())
 
         # Setup common routes with 'loras' prefix (includes page route)
-        super().setup_routes(app, "loras")
+        super().setup_routes(app, prefix)
 
     def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup LoRA-specific routes"""
@@ -73,7 +73,7 @@ class LoraRoutes(BaseModelRoutes):
             "POST", "/api/lm/{prefix}/get_trigger_words", prefix, self.get_trigger_words
         )
 
-    def _parse_specific_params(self, request: web.Request) -> Dict:
+    def _parse_specific_params(self, request: web.Request) -> Dict[str, Any]:
         """Parse LoRA-specific parameters"""
         params = {}
 
@@ -119,25 +119,6 @@ class LoraRoutes(BaseModelRoutes):
             logger.error(f"Error getting letter counts: {e}")
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
-    async def get_lora_notes(self, request: web.Request) -> web.Response:
-        """Get notes for a specific LoRA file"""
-        try:
-            lora_name = request.query.get("name")
-            if not lora_name:
-                return web.Response(text="Lora file name is required", status=400)
-
-            notes = await self.service.get_lora_notes(lora_name)
-            if notes is not None:
-                return web.json_response({"success": True, "notes": notes})
-            else:
-                return web.json_response(
-                    {"success": False, "error": "LoRA not found in cache"}, status=404
-                )
-
-        except Exception as e:
-            logger.error(f"Error getting lora notes: {e}", exc_info=True)
-            return web.json_response({"success": False, "error": str(e)}, status=500)
-
     async def get_lora_trigger_words(self, request: web.Request) -> web.Response:
         """Get trigger words for a specific LoRA file"""
         try:
@@ -166,52 +147,6 @@ class LoraRoutes(BaseModelRoutes):
 
         except Exception as e:
             logger.error(f"Error getting lora usage tips by path: {e}", exc_info=True)
-            return web.json_response({"success": False, "error": str(e)}, status=500)
-
-    async def get_lora_preview_url(self, request: web.Request) -> web.Response:
-        """Get the static preview URL for a LoRA file"""
-        try:
-            lora_name = request.query.get("name")
-            if not lora_name:
-                return web.Response(text="Lora file name is required", status=400)
-
-            preview_url = await self.service.get_lora_preview_url(lora_name)
-            if preview_url:
-                return web.json_response({"success": True, "preview_url": preview_url})
-            else:
-                return web.json_response(
-                    {
-                        "success": False,
-                        "error": "No preview URL found for the specified lora",
-                    },
-                    status=404,
-                )
-
-        except Exception as e:
-            logger.error(f"Error getting lora preview URL: {e}", exc_info=True)
-            return web.json_response({"success": False, "error": str(e)}, status=500)
-
-    async def get_lora_civitai_url(self, request: web.Request) -> web.Response:
-        """Get the Civitai URL for a LoRA file"""
-        try:
-            lora_name = request.query.get("name")
-            if not lora_name:
-                return web.Response(text="Lora file name is required", status=400)
-
-            result = await self.service.get_lora_civitai_url(lora_name)
-            if result["civitai_url"]:
-                return web.json_response({"success": True, **result})
-            else:
-                return web.json_response(
-                    {
-                        "success": False,
-                        "error": "No Civitai data found for the specified lora",
-                    },
-                    status=404,
-                )
-
-        except Exception as e:
-            logger.error(f"Error getting lora Civitai URL: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def get_random_loras(self, request: web.Request) -> web.Response:
@@ -337,7 +272,7 @@ class LoraRoutes(BaseModelRoutes):
                     graph_identifier = entry.get("graph_id")
 
                 try:
-                    parsed_node_id = int(node_identifier)
+                    parsed_node_id = int(node_identifier)  # pyright: ignore[reportArgumentType]
                 except (TypeError, ValueError):
                     parsed_node_id = node_identifier
 

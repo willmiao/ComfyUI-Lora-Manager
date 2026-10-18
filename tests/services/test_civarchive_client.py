@@ -1,4 +1,6 @@
 import copy
+import logging
+from typing import Any, Dict
 from unittest.mock import AsyncMock
 
 import pytest
@@ -34,7 +36,7 @@ def downloader(monkeypatch):
     return instance
 
 
-def _base_civarchive_payload(version_id=1976567, *, trigger="mxpln", nsfw_level=31):
+def _base_civarchive_payload(version_id=1976567, *, trigger="mxpln", nsfw_level=31) -> Dict[str, Any]:
     version_name = "v2.0" if version_id != 1976567 else "v1.0"
     file_sha = "e2b7a280d6539556f23f380b3f71e4e22bc4524445c4c96526e117c6005c6ad3"
     return {
@@ -110,6 +112,7 @@ async def test_get_model_by_hash_transforms_payload(downloader):
     result, error = await client.get_model_by_hash("abc")
 
     assert error is None
+    assert result is not None
     assert result["id"] == 1976567
     assert result["nsfwLevel"] == 31
     assert result["trainedWords"] == ["mxpln"]
@@ -131,7 +134,7 @@ async def test_get_model_versions_fetches_each_version(downloader):
     base_payload = _base_civarchive_payload(version_id=2042594, trigger="mxpln-new", nsfw_level=5)
     other_payload = _base_civarchive_payload()
 
-    responses = {
+    responses: Dict[Any, Dict[str, Any]] = {
         (base_url, None): base_payload,
         (base_url, (("modelVersionId", "2042594"),)): base_payload,
         (base_url, (("modelVersionId", "1976567"),)): other_payload,
@@ -151,6 +154,7 @@ async def test_get_model_versions_fetches_each_version(downloader):
 
     result = await client.get_model_versions("1746460")
 
+    assert result is not None
     assert result["name"] == "Mixplin Style [Illustrious]"
     assert result["type"] == "LORA"
     versions = result["modelVersions"]
@@ -218,12 +222,124 @@ async def test_get_model_by_hash_uses_file_fallback(downloader, monkeypatch):
 
     client = await CivArchiveClient.get_instance()
 
-    result, error = await client.get_model_by_hash("fallback")
+    result, error = await client.get_model_by_hash(
+        "e2b7a280d6539556f23f380b3f71e4e22bc4524445c4c96526e117c6005c6ad3"
+    )
 
     assert error is None
+    assert result is not None
     assert result["id"] == 1976567
     assert result["model"]["name"] == "Mixplin Style [Illustrious]"
     assert any("/models/1746460" in call["url"] for call in downloader.calls)
+
+
+async def test_get_model_by_hash_skips_foreign_ecosystem_file_entries(downloader):
+    """File entries from a foreign ecosystem (e.g. civision) carry IDs from a
+    different ID space; resolving them would hit an unrelated CivitAI model."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "filename": "Kiara-Krea_c1-st4000.safetensors",
+                    "url": "https://www.modelscope.ai/models/arbinshado/Kiara-Krea/files",
+                    "source": "civision",
+                    "model_id": "455108",
+                    "model_version_id": "130022",
+                }
+            ]
+        }
+    }
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("f3a5370b")
+
+    assert result is None
+    assert error == "No version data found"
+    assert not any("/models/" in call["url"] for call in downloader.calls)
+
+
+async def test_get_model_by_hash_discards_resolved_version_on_hash_mismatch(downloader):
+    """The version endpoint resolves modelVersionId globally, so a colliding
+    foreign ID can resolve to a valid-looking but wrong version. The resolved
+    files must contain the queried hash, otherwise the result is discarded."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "model_id": 1746460,
+                    "model_version_id": 1976567,
+                }
+            ]
+        }
+    }
+
+    version_payload = _base_civarchive_payload()
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        if "/models/1746460" in url:
+            return True, copy.deepcopy(version_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash(
+        "f3a5370b60e2a10ba8c35ddd95dc8a573b3843e032bd507a941b2cc467884955"
+    )
+
+    assert result is None
+    assert error == "No version data found"
+
+
+async def test_get_model_by_hash_records_foreign_source_ref(downloader):
+    """The civision entry's ModelScope URL is surfaced so the sync service can
+    link the model to its real source instead of leaving it 'not found'."""
+    file_only_payload = {
+        "data": {
+            "files": [
+                {
+                    "filename": "Kiara-Krea_c1-st4000.safetensors",
+                    "url": "https://www.modelscope.ai/models/arbinshado/Kiara-Krea/files?version=20260712182542",
+                    "source": "civision",
+                    "model_id": "455108",
+                    "model_version_id": "130022",
+                }
+            ]
+        }
+    }
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        downloader.calls.append({"url": url, "params": kwargs.get("params")})
+        if "/sha256/" in url:
+            return True, copy.deepcopy(file_only_payload)
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("f3a5370b")
+
+    assert result is None
+    ref = client.pop_foreign_source_ref("f3a5370b")
+    assert ref is not None
+    assert ref.platform == "modelscope-ai"
+    assert ref.source_id == "arbinshado/Kiara-Krea"
+    # Consumed once; a second read returns nothing.
+    assert client.pop_foreign_source_ref("f3a5370b") is None
 
 
 async def test_get_model_by_hash_handles_not_found(downloader):
@@ -253,3 +369,49 @@ async def test_get_model_by_hash_propagates_rate_limit(downloader):
 
     assert exc_info.value.retry_after == 5
     assert exc_info.value.provider == "civarchive_api"
+
+
+async def test_get_model_by_hash_empty_error_payload(downloader):
+    """An empty-string failure payload must surface as a proper error.
+
+    Regression test: (None, "") used to fall through the falsy-error check and
+    crash in _resolve_version_from_files with "'NoneType' object has no
+    attribute 'get'".
+    """
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        return False, ""
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("empty-error")
+
+    assert result is None
+    assert error == "Request failed"
+
+
+async def test_get_model_version_offline_cooldown_logged_as_debug(downloader, caplog):
+    """Cooldown short-circuits must not spam an ERROR per request."""
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        return False, "offline_cooldown"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.civarchive_client"):
+        result = await client.get_model_version(model_id=1, version_id=123)
+
+    assert result is None
+    module_records = [r for r in caplog.records if r.name == "py.services.civarchive_client"]
+    assert not any(
+        r.levelno >= logging.ERROR and "Error fetching CivArchive model version" in r.getMessage()
+        for r in module_records
+    )
+    assert any(
+        r.levelno == logging.DEBUG and "while offline" in r.getMessage()
+        for r in module_records
+    )

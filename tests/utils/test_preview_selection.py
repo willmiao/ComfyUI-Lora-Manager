@@ -12,6 +12,7 @@ def test_select_preview_returns_first_when_blur_disabled():
 
     selected, level = select_preview_media(images, blur_mature_content=False)
 
+    assert selected is not None
     assert selected["url"] == "nsfw"
     assert level == 32
 
@@ -40,6 +41,7 @@ def test_select_preview_respects_configurable_threshold(threshold_name, expected
         mature_threshold=NSFW_LEVELS[threshold_name],
     )
 
+    assert selected is not None
     assert selected["url"] == expected_url
     assert level == next(item["nsfwLevel"] for item in images if item["url"] == expected_url)
 

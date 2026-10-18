@@ -6,10 +6,10 @@ from pathlib import Path
 
 import types
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 folder_paths_stub = types.SimpleNamespace(get_folder_paths=lambda *_: [])
-sys.modules.setdefault("folder_paths", folder_paths_stub)
+sys.modules.setdefault("folder_paths", folder_paths_stub)  # pyright: ignore[reportArgumentType]
 
 import pytest
 from aiohttp import FormData, web
@@ -23,6 +23,7 @@ from py.services.metadata_sync_service import MetadataSyncService
 from py.services.model_file_service import AutoOrganizeResult
 from py.services.model_update_service import ModelVersionRecord
 from py.services.service_registry import ServiceRegistry
+from py.services.use_cases import FilenameTemplateUseCase
 from py.services.websocket_manager import ws_manager
 from py.utils.exif_utils import ExifUtils
 from py.utils.metadata_manager import MetadataManager
@@ -38,7 +39,9 @@ class DummyRoutes(BaseModelRoutes):
 
     def __init__(self, service=None):
         super().__init__(service)
-        self.set_model_update_service(NullModelUpdateService())
+        self.set_model_update_service(
+            NullModelUpdateService()  # pyright: ignore[reportArgumentType]
+        )
 
 
 @dataclass
@@ -110,7 +113,7 @@ class NullModelUpdateService:
         return None
 
 
-async def create_test_client(service) -> TestClient:
+async def create_test_client(service) -> TestClient[Any, Any]:
     routes = DummyRoutes(service)
     app = web.Application()
     routes.setup_routes(app, "test-models")
@@ -124,9 +127,11 @@ async def create_test_client(service) -> TestClient:
 @pytest.fixture(autouse=True)
 def reset_ws_manager_state():
     ws_manager.cleanup_auto_organize_progress()
+    ws_manager.cleanup_filename_template_progress()
     ws_manager._download_progress.clear()
     yield
     ws_manager.cleanup_auto_organize_progress()
+    ws_manager.cleanup_filename_template_progress()
     ws_manager._download_progress.clear()
 
 
@@ -457,18 +462,18 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
     mock_scanner._cache.raw_data = [minimal_cache_entry]
 
     class FakeMetadata:
-        def __init__(self, payload: dict) -> None:
+        def __init__(self, payload: dict[str, Any]) -> None:
             self._payload = payload
             self._unknown_fields = {"legacy_field": "legacy"}
 
-        def to_dict(self) -> dict:
+        def to_dict(self) -> dict[str, Any]:
             return self._payload.copy()
 
     async def fake_load_metadata(path: str, *_args, **_kwargs):
         assert path == str(model_path)
         return FakeMetadata(existing_metadata), False
 
-    async def fake_save_metadata(path: str, metadata: dict) -> bool:
+    async def fake_save_metadata(path: str, metadata: dict[str, Any]) -> bool:
         save_calls.append((path, json.loads(json.dumps(metadata))))
         return True
 
@@ -477,7 +482,7 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
         *,
         sha256: str,
         file_path: str,
-        model_data: dict,
+        model_data: dict[str, Any],
         update_cache_func,
     ):
         captured["model_data"] = json.loads(json.dumps(model_data))
@@ -490,8 +495,8 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
         await update_cache_func(file_path, file_path, model_data)
         return True, None
 
-    save_calls: list[tuple[str, dict]] = []
-    captured: dict[str, dict] = {}
+    save_calls: list[tuple[str, dict[str, Any]]] = []
+    captured: dict[str, dict[str, Any]] = {}
 
     monkeypatch.setattr(
         MetadataManager, "load_metadata", staticmethod(fake_load_metadata)
@@ -760,6 +765,105 @@ def test_auto_organize_conflict_when_running(mock_service):
     asyncio.run(scenario())
 
 
+def test_apply_filename_template_route_emits_progress(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    async def fake_execute(self, file_paths=None, progress_callback=None):
+        result = AutoOrganizeResult()
+        result.total = 1
+        result.processed = 1
+        result.success_count = 1
+        result.operation_type = "filename_template"
+        if progress_callback is not None:
+            await progress_callback.on_progress(
+                {"type": "filename_template_progress", "status": "started"}
+            )
+            await progress_callback.on_progress(
+                {"type": "filename_template_progress", "status": "completed"}
+            )
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/apply-filename-template",
+                json={"file_paths": ["/tmp/a.safetensors"]},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert payload["summary"]["operation_type"] == "filename_template"
+
+            progress = ws_manager.get_filename_template_progress()
+            assert progress is not None
+            assert progress["status"] == "completed"
+            # Auto-organize progress state must stay untouched.
+            assert ws_manager.get_auto_organize_progress() is None
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_get_parses_query_file_paths(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    captured = {}
+
+    async def fake_execute(self, file_paths=None, progress_callback=None):
+        captured["file_paths"] = file_paths
+        result = AutoOrganizeResult()
+        result.operation_type = "filename_template"
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get(
+                "/api/lm/test-models/apply-filename-template",
+                params={"file_paths": "/tmp/a.safetensors, /tmp/b.safetensors"},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert captured["file_paths"] == [
+                "/tmp/a.safetensors",
+                "/tmp/b.safetensors",
+            ]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_conflict_when_running(mock_service):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            await ws_manager.broadcast_filename_template_progress(
+                {"type": "filename_template_progress", "status": "started"}
+            )
+
+            response = await client.post("/api/lm/test-models/apply-filename-template")
+            payload = await response.json()
+
+            assert response.status == 409
+            assert payload == {
+                "success": False,
+                "error": "Another library operation is already running. Please wait for it to complete.",
+            }
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
 
 def test_download_model_returns_skipped_success(mock_service, download_manager_stub):
     async def scenario():
@@ -793,6 +897,57 @@ def test_download_model_returns_skipped_success(mock_service, download_manager_s
             assert payload["reason"] == "base_model_excluded"
             assert payload["base_model"] == "SDXL 1.0"
             assert payload["file_name"] == "demo.safetensors"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_resolve_folder_answers_with_the_root_that_holds_the_directory(
+    mock_service, mock_scanner, tmp_path: Path
+):
+    """The route the sidebar needs to stop guessing a root for a tree node.
+
+    The unified folder tree merges every model root into one relative-path
+    namespace, so "recipes" below must resolve to the root that actually has it
+    even though another root is configured as the library default.
+    """
+
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "recipes").mkdir(parents=True)
+    extra.mkdir()
+    mock_scanner.get_model_roots = lambda: [str(primary), str(extra)]
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get(
+                "/api/lm/test-models/resolve-folder", params={"folder": "recipes"}
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert payload["folder"] == "recipes"
+            assert payload["candidates"] == [
+                {
+                    "folder_path": str(primary / "recipes").replace(os.sep, "/"),
+                    "root": str(primary).replace(os.sep, "/"),
+                    "is_symlink": False,
+                }
+            ]
+
+            stale = await client.get(
+                "/api/lm/test-models/resolve-folder", params={"folder": "gone"}
+            )
+            assert (await stale.json())["candidates"] == []
+
+            refused = await client.get(
+                "/api/lm/test-models/resolve-folder",
+                params={"folder": str(primary / "recipes")},
+            )
+            assert refused.status == 400
         finally:
             await client.close()
 

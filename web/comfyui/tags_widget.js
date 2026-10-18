@@ -439,6 +439,12 @@ function renderGroupEditor(widget, tagData, index) {
     return;
   }
 
+  // Preserve the scroll position across re-renders: toggling a child tag
+  // rebuilds the whole panel, and a fresh panel would otherwise jump back
+  // to the top.
+  const previousScrollTop = state.panelEl ? state.panelEl.scrollTop : 0;
+  const previousScrollLeft = state.panelEl ? state.panelEl.scrollLeft : 0;
+
   if (state.panelEl) {
     state.panelEl.remove();
   }
@@ -551,6 +557,8 @@ function renderGroupEditor(widget, tagData, index) {
   state.lastAnchorRect = getRectSnapshot(state.anchorEl);
   attachGroupEditorCloseHandlers(widget);
   positionGroupEditor(widget);
+  panel.scrollTop = previousScrollTop;
+  panel.scrollLeft = previousScrollLeft;
   startGroupEditorTracking(widget);
 }
 
@@ -960,6 +968,10 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     getMinHeight: () => MIN_HEIGHT,
     hideOnZoom: true,
     selectOn: ["click", "focus"],
+    // Keep this DOM widget out of the right-side Properties Panel: the panel
+    // falls back to WidgetLegacy for unknown widget types and writes
+    // widget.width, which squashes the canvas overlay (frontend #11574).
+    hideInPanel: true,
   });
 
   widget.value = initialTagsData;

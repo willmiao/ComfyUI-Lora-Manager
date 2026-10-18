@@ -7,9 +7,10 @@ from aiohttp.test_utils import TestClient, TestServer
 
 import sys
 import types
+from typing import Any
 
 folder_paths_stub = types.SimpleNamespace(get_folder_paths=lambda *_: [])
-sys.modules.setdefault("folder_paths", folder_paths_stub)
+sys.modules.setdefault("folder_paths", folder_paths_stub)  # pyright: ignore[reportArgumentType]
 
 from py.routes.handlers.model_handlers import ModelListingHandler
 
@@ -19,6 +20,7 @@ class MockService:
 
     def __init__(self):
         self.model_type = "test-model"
+        self.last_call_kwargs: dict[str, Any] = {}
 
     async def get_paginated_data(self, **kwargs):
         # Store the kwargs for verification

@@ -1,10 +1,15 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../../utils/uiHelpers.js';
+import { isModelWeightFile } from '../../utils/modelFileTypes.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
 import { moveManager } from '../../managers/MoveManager.js';
+import { rematchModalManager } from '../../managers/RematchModalManager.js';
+import { showRematchSummary } from '../RematchSummaryModal.js';
+import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../../utils/extensionReimportBridge.js';
+import { withBasePath } from '../../utils/basePath.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
     constructor() {
@@ -36,8 +41,7 @@ export class RecipeContextMenu extends BaseContextMenu {
 
         if (recipeId && missingLorasItem) {
             // Check if this card has missing LoRAs
-            const loraCountElement = card.querySelector('.lora-count');
-            const hasMissingLoras = loraCountElement && loraCountElement.classList.contains('missing');
+            const hasMissingLoras = Boolean(card.querySelector('.lora-count.missing'));
 
             // Show/hide the download missing LoRAs option based on missing status
             if (hasMissingLoras) {
@@ -93,9 +97,9 @@ export class RecipeContextMenu extends BaseContextMenu {
                 // Download missing LoRAs
                 this.downloadMissingLoRAs(recipeId);
                 break;
-            case 'repair':
-                // Repair recipe metadata
-                this.repairRecipe(recipeId);
+            case 'rematch':
+                // Rematch recipe resources to local models
+                this.rematchRecipe(recipeId);
                 break;
             case 'reimport':
                 this.reimportRecipe(recipeId);
@@ -177,7 +181,7 @@ export class RecipeContextMenu extends BaseContextMenu {
                     setSessionItem('filterRecipeName', recipe.title);
 
                     // Navigate to the LoRAs page
-                    window.location.href = '/loras';
+                    window.location.href = withBasePath('/loras');
                 } else {
                     showToast('recipes.contextMenu.viewLoras.noLorasFound', {}, 'info');
                 }
@@ -200,8 +204,9 @@ export class RecipeContextMenu extends BaseContextMenu {
             const response = await fetch(`/api/lm/recipe/${recipeId}`);
             const recipe = await response.json();
 
-            // Get missing LoRAs
-            const missingLoras = recipe.loras.filter(lora => !lora.inLibrary && !lora.isDeleted);
+            // Get missing LoRAs (still downloadable: not deleted from the
+            // source and hash still resolvable)
+            const missingLoras = recipe.loras.filter(lora => !lora.inLibrary && !lora.isDeleted && !lora.hashInvalid);
 
             if (missingLoras.length === 0) {
                 showToast('recipes.contextMenu.downloadMissing.noMissingLoras', {}, 'info');
@@ -251,7 +256,7 @@ export class RecipeContextMenu extends BaseContextMenu {
                 loras: validLoras.map(lora => {
                     const civitaiInfo = lora.civitaiInfo;
                     const modelFile = civitaiInfo.files ?
-                        civitaiInfo.files.find(file => file.type === 'Model') : null;
+                        civitaiInfo.files.find(file => isModelWeightFile(file.type)) : null;
 
                     return {
                         // Basic lora info
@@ -292,41 +297,75 @@ export class RecipeContextMenu extends BaseContextMenu {
         }
     }
 
-    // Repair recipe metadata
-    async repairRecipe(recipeId) {
+    async rematchRecipe(recipeId) {
         if (!recipeId) {
-            showToast('recipes.contextMenu.repair.missingId', {}, 'error');
+            showToast('toast.recipes.rematchFailed', { message: 'Missing recipe ID' }, 'error');
             return;
         }
 
-        try {
-            showToast('recipes.contextMenu.repair.starting', {}, 'info');
+        // Capture before any await: the menu's click handler nulls currentCard
+        const filePath = this.currentCard?.dataset?.filepath;
 
-            const response = await fetch(`/api/lm/recipe/${recipeId}/repair`, {
-                method: 'POST'
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            scope: 'single',
+            onConfirm: ({ relaxed }) => this._startRematchRecipe(recipeId, filePath, relaxed),
+        });
+    }
+
+    async _startRematchRecipe(recipeId, filePath, relaxed = false) {
+        try {
+            showToast('Rematching recipe to local models...', {}, 'info');
+
+            const response = await fetch(`/api/lm/recipe/${recipeId}/rematch`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ relaxed: !!relaxed }),
             });
             const result = await response.json();
 
             if (result.success) {
-                if (result.repaired > 0) {
-                    showToast('recipes.contextMenu.repair.success', {}, 'success');
+                const matchedEntries = result.matched_entries || result.rematched || 0;
+                const failures = result.errors || 0;
+                const unresolvedEntries = result.unresolved_entries || 0;
+                const l4Matches = Array.isArray(result.l4_matches) ? result.l4_matches : [];
+                // Complete no-op (nothing matched, nothing unresolved, no
+                // errors) keeps the lightweight toast; anything else opens
+                // the post-run summary modal.
+                const isNoop = matchedEntries === 0 && unresolvedEntries === 0 && failures === 0;
+
+                if (matchedEntries > 0) {
                     const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
                     if (detailResponse.ok) {
                         const updatedRecipe = await detailResponse.json();
-                        const filePath = this.currentCard?.dataset?.filepath;
                         if (filePath && state.virtualScroller) {
                             state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
                         }
                     }
+                }
+
+                if (isNoop) {
+                    showToast('toast.recipes.rematchSkipped', { total: 1 }, 'info');
                 } else {
-                    showToast('recipes.contextMenu.repair.skipped', {}, 'info');
+                    showRematchSummary({
+                        scope: 'single',
+                        total: 1,
+                        matchedRecipes: result.matched_recipes || (matchedEntries > 0 ? 1 : 0),
+                        matchedEntries,
+                        unresolvedRecipes: result.unresolved_recipes || 0,
+                        unresolvedEntries,
+                        skipped: result.skipped || 0,
+                        errors: failures,
+                        l4Matches,
+                    });
                 }
             } else {
-                throw new Error(result.error || 'Repair failed');
+                throw new Error(result.error || 'Rematch failed');
             }
         } catch (error) {
-            console.error('Error repairing recipe:', error);
-            showToast('recipes.contextMenu.repair.failed', { message: error.message }, 'error');
+            console.error('Error rematching recipe:', error);
+            showToast('toast.recipes.rematchFailed', { message: error.message }, 'error');
         }
     }
 
@@ -334,6 +373,24 @@ export class RecipeContextMenu extends BaseContextMenu {
         if (!recipeId) {
             showToast('recipes.contextMenu.reimport.missingId', {}, 'error');
             return;
+        }
+
+        // Recipes imported from a CivitAI image page can carry incomplete
+        // metadata (0 LoRAs); the companion browser extension can re-import
+        // them with the full page data. Fall back to the native path whenever
+        // the extension is absent, unlicensed, or the delegation fails.
+        const recipeItem = state.virtualScroller?.items?.find(item => item?.id === recipeId);
+        const civitaiImage = getCivitaiImageInfo(recipeItem?.source_path);
+        if (civitaiImage) {
+            try {
+                const probe = await probeExtension();
+                if (probe?.supported && probe?.licenseValid) {
+                    await this.reimportViaExtension(recipeId, civitaiImage, recipeItem?.title || '');
+                    return;
+                }
+            } catch (error) {
+                console.warn('Extension re-import unavailable, using native path:', error);
+            }
         }
 
         state.loadingManager.showSimpleLoading('Re-importing recipe from source...');
@@ -356,6 +413,34 @@ export class RecipeContextMenu extends BaseContextMenu {
             console.error('Error reimporting recipe:', error);
             state.loadingManager.hide();
             showToast('recipes.contextMenu.reimport.failed', { message: error.message }, 'error');
+        }
+    }
+
+    // Re-import a single CivitAI-image recipe through the companion browser
+    // extension. Throws on delegation failure so the caller can fall back to
+    // the native path.
+    async reimportViaExtension(recipeId, civitaiImage, title) {
+        state.loadingManager.showSimpleLoading('Re-importing recipe via browser extension...');
+
+        try {
+            const { failed } = await delegateReimport([{
+                recipeId,
+                imageId: civitaiImage.imageId,
+                imageUrl: civitaiImage.imageUrl,
+                title,
+            }]);
+
+            state.loadingManager.hide();
+            if (failed > 0) {
+                showToast('recipes.contextMenu.reimport.failed', { message: 'Extension re-import failed' }, 'error');
+            } else {
+                showToast('toast.recipes.reimportSuccess', {}, 'success');
+            }
+            const { resetAndReload } = await import('../../api/recipeApi.js');
+            resetAndReload(false, { preserveScroll: false });
+        } catch (error) {
+            state.loadingManager.hide();
+            throw error;
         }
     }
 }

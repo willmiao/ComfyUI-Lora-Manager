@@ -21,9 +21,17 @@ class WebSocketProgressCallback(ProgressCallback):
         await ws_manager.broadcast_auto_organize_progress(progress_data)
 
 
+class WebSocketFilenameTemplateProgressCallback(ProgressCallback):
+    """WebSocket progress callback for filename template operations."""
+
+    async def on_progress(self, progress_data: Dict[str, Any]) -> None:
+        """Send filename template progress via WebSocket."""
+        await ws_manager.broadcast_filename_template_progress(progress_data)
+
+
 class WebSocketBroadcastCallback:
     """Generic WebSocket progress callback broadcasting to all clients."""
 
-    async def on_progress(self, progress_data: Dict[str, Any]) -> None:
+    async def on_progress(self, payload: Dict[str, Any]) -> None:
         """Send the provided payload to all connected clients."""
-        await ws_manager.broadcast(progress_data)
+        await ws_manager.broadcast(payload)

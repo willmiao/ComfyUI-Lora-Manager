@@ -71,7 +71,7 @@ class StubLoraScanner:
 def recipe_scanner(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
     stub = StubLoraScanner()
-    scanner = RecipeScanner(lora_scanner=stub)
+    scanner = RecipeScanner(lora_scanner=stub)  # pyright: ignore[reportArgumentType]
     return scanner
 
 @pytest.mark.asyncio

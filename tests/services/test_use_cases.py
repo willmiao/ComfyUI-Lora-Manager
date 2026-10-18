@@ -1,11 +1,15 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from types import SimpleNamespace
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
 
-from py.services.model_file_service import AutoOrganizeResult
+from py.services.download_coordinator import DownloadCoordinator
+from py.services.metadata_sync_service import MetadataSyncService
+from py.services.model_file_service import AutoOrganizeResult, ModelFileService
 from py.services.use_cases import (
     AutoOrganizeInProgressError,
     AutoOrganizeUseCase,
@@ -16,6 +20,7 @@ from py.services.use_cases import (
     DownloadModelEarlyAccessError,
     DownloadModelUseCase,
     DownloadModelValidationError,
+    FilenameTemplateUseCase,
     ImportExampleImagesUseCase,
     ImportExampleImagesValidationError,
 )
@@ -26,10 +31,12 @@ from py.utils.example_images_download_manager import (
 )
 from py.utils.example_images_processor import (
     ExampleImagesImportError,
+    ExampleImagesProcessor,
     ExampleImagesValidationError,
 )
 from py.utils.metadata_manager import MetadataManager
-from tests.conftest import MockModelService, MockScanner
+from tests.conftest import MockCache, MockModelService, MockScanner
+import os
 
 
 class StubLockProvider:
@@ -44,13 +51,13 @@ class StubLockProvider:
         return self._lock
 
 
-class StubFileService:
+class StubFileService(ModelFileService):
     def __init__(self) -> None:
+        super().__init__(scanner=None, model_type="lora")
         self.calls: List[Dict[str, Any]] = []
 
     async def auto_organize_models(
         self,
-        *,
         file_paths: Optional[List[str]] = None,
         progress_callback=None,
         exclusion_patterns=None,
@@ -65,8 +72,15 @@ class StubFileService:
         return result
 
 
-class StubMetadataSync:
+class StubMetadataSync(MetadataSyncService):
     def __init__(self) -> None:
+        super().__init__(
+            metadata_manager=object(),
+            preview_service=object(),
+            settings=StubSettings(),  # pyright: ignore[reportArgumentType]
+            default_metadata_provider_factory=lambda: asyncio.sleep(0, result=None),  # pyright: ignore[reportArgumentType]
+            metadata_provider_selector=lambda _name=None: asyncio.sleep(0, result=None),  # pyright: ignore[reportArgumentType]
+        )
         self.calls: List[Dict[str, Any]] = []
 
     async def fetch_and_update_model(self, **kwargs: Any):
@@ -94,8 +108,12 @@ class ProgressCollector:
         self.events.append(payload)
 
 
-class StubDownloadCoordinator:
+class StubDownloadCoordinator(DownloadCoordinator):
     def __init__(self, *, error: Optional[str] = None) -> None:
+        super().__init__(
+            ws_manager=SimpleNamespace(generate_download_id=lambda: "abc123"),
+            download_manager_factory=lambda: asyncio.sleep(0, result=None),
+        )
         self.error = error
         self.payloads: List[Dict[str, Any]] = []
 
@@ -125,19 +143,25 @@ class StubExampleImagesDownloadManager:
         return {"success": True, "message": "ok"}
 
 
-class StubExampleImagesProcessor:
+class StubExampleImagesProcessor(ExampleImagesProcessor):
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
         self.error: Optional[str] = None
         self.response: Dict[str, Any] = {"success": True}
+        self.resolved_hash: Optional[str] = None
+        self.resolve_calls: List[str] = []
 
-    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:
+    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:  # pyright: ignore[reportIncompatibleMethodOverride]
         self.calls.append({"model_hash": model_hash, "files": files})
         if self.error == "validation":
             raise ExampleImagesValidationError("missing")
         if self.error == "generic":
             raise ExampleImagesImportError("boom")
         return self.response
+
+    async def resolve_hash_for_file_path(self, file_path: str) -> str:
+        self.resolve_calls.append(file_path)
+        return self.resolved_hash or ""
 
 
 async def test_auto_organize_use_case_executes_with_lock() -> None:
@@ -464,7 +488,7 @@ async def test_import_example_images_use_case_delegates() -> None:
     use_case = ImportExampleImagesUseCase(processor=processor)
 
     request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
-    result = await use_case.execute(request)
+    result = await use_case.execute(request)  # pyright: ignore[reportArgumentType]
 
     assert processor.calls == [{"model_hash": "abc", "files": ["/tmp/file"]}]
     assert result == {"success": True}
@@ -477,7 +501,7 @@ async def test_import_example_images_use_case_maps_validation_error() -> None:
     request = DummyJsonRequest({"model_hash": None, "file_paths": []})
 
     with pytest.raises(ImportExampleImagesValidationError):
-        await use_case.execute(request)
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
 
 
 async def test_import_example_images_use_case_propagates_generic_error() -> None:
@@ -487,4 +511,271 @@ async def test_import_example_images_use_case_propagates_generic_error() -> None
     request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
 
     with pytest.raises(ExampleImagesImportError):
-        await use_case.execute(request)
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+
+async def test_import_example_images_use_case_resolves_hash_from_model_path() -> None:
+    """Models with a deferred hash (checkpoints, Other) send model_path
+    instead of model_hash; the use case must resolve the hash on demand."""
+    processor = StubExampleImagesProcessor()
+    processor.resolved_hash = "f" * 64
+    use_case = ImportExampleImagesUseCase(processor=processor)
+
+    request = DummyJsonRequest(
+        {"model_path": "/models/vae/x.safetensors", "file_paths": ["/tmp/file"]}
+    )
+    result = await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+    assert processor.resolve_calls == ["/models/vae/x.safetensors"]
+    assert processor.calls == [{"model_hash": "f" * 64, "files": ["/tmp/file"]}]
+    assert result == {"success": True}
+
+
+async def test_import_example_images_use_case_rejects_unresolvable_model_path() -> None:
+    processor = StubExampleImagesProcessor()
+    use_case = ImportExampleImagesUseCase(processor=processor)
+    request = DummyJsonRequest(
+        {"model_path": "/models/unknown.safetensors", "file_paths": []}
+    )
+
+    with pytest.raises(ImportExampleImagesValidationError):
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+
+class StubLifecycleService:
+    def __init__(self, scanner: Optional[MockScanner] = None) -> None:
+        self.renames: List[Dict[str, str]] = []
+        self.error: Optional[Exception] = None
+        self.cancel_on_rename = False
+        self._scanner = scanner
+
+    @asynccontextmanager
+    async def bulk_rename_session(self) -> AsyncIterator[None]:
+        yield None
+
+    async def rename_model(
+        self, *, file_path: str, new_file_name: str, bulk_context: Any = None
+    ) -> Dict[str, Any]:
+        if self.error is not None:
+            raise self.error
+        self.renames.append({"file_path": file_path, "new_file_name": new_file_name})
+        if self.cancel_on_rename and self._scanner is not None:
+            self._scanner.cancel_task()
+        return {"success": True, "new_file_path": file_path}
+
+
+def _filename_template_model(
+    file_path: str,
+    model_name: str,
+    sha256: str = "abcdef0123456789",
+) -> Dict[str, Any]:
+    return {
+        "file_path": file_path,
+        "file_name": file_path.rsplit("/", 1)[-1].rsplit(".", 1)[0],
+        "model_name": model_name,
+        "sha256": sha256,
+        "civitai": {"id": 1},
+    }
+
+
+def _set_filename_template(template: str, model_type: str = "lora") -> None:
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_filename_templates") or {})
+    templates[model_type] = template
+    manager.settings["download_filename_templates"] = templates
+
+
+def _make_filename_template_use_case(
+    scanner: MockScanner,
+    lifecycle: StubLifecycleService,
+    lock_provider: Optional[StubLockProvider] = None,
+    metadata_loader: Optional[Any] = None,
+) -> FilenameTemplateUseCase:
+    kwargs: Dict[str, Any] = {}
+    if metadata_loader is not None:
+        kwargs["metadata_loader"] = metadata_loader
+    return FilenameTemplateUseCase(
+        scanner=scanner,
+        lifecycle_service=lifecycle,  # pyright: ignore[reportArgumentType]
+        lock_provider=lock_provider or StubLockProvider(),
+        model_type="lora",
+        **kwargs,
+    )
+
+
+async def test_filename_template_use_case_renames_models() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    progress = ProgressCollector()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=progress)
+
+    assert result.status == "success"
+    assert result.operation_type == "filename_template"
+    assert result.total == 2
+    assert result.success_count == 2
+    assert result.failure_count == 0
+    assert lifecycle.renames == [
+        {"file_path": "/library/alpha.safetensors", "new_file_name": "Alpha-abcdef0123"},
+        {"file_path": "/library/beta.safetensors", "new_file_name": "Beta-abcdef0123"},
+    ]
+    statuses = [event["status"] for event in progress.events]
+    assert statuses[0] == "started"
+    assert statuses[-1] == "completed"
+    assert all(event["type"] == "filename_template_progress" for event in progress.events)
+
+
+async def test_filename_template_use_case_skips_unchanged_names() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/Alpha-abcdef0123.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 0
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_reverts_to_recorded_original_when_template_empty() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha-renamed.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+
+    async def metadata_loader(metadata_path: str) -> Dict[str, Any]:
+        # Compare the basename: the sidecar path is platform-spelled.
+        if os.path.basename(metadata_path) == "alpha-renamed.metadata.json":
+            return {"original_file_name": "alpha-original"}
+        return {}
+
+    use_case = _make_filename_template_use_case(
+        scanner, lifecycle, metadata_loader=metadata_loader
+    )
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 1
+    assert result.skipped_count == 1
+    assert lifecycle.renames == [
+        {
+            "file_path": "/library/alpha-renamed.safetensors",
+            "new_file_name": "alpha-original",
+        }
+    ]
+
+
+async def test_filename_template_use_case_skips_revert_without_recorded_original() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_skips_revert_matching_current_name() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+
+    async def metadata_loader(metadata_path: str) -> Dict[str, Any]:
+        return {"original_file_name": "alpha"}
+
+    use_case = _make_filename_template_use_case(
+        scanner, lifecycle, metadata_loader=metadata_loader
+    )
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 0
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_counts_conflicts_as_failures() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache([
+        # The names differ beyond case: on Windows a case-only difference counts
+        # as "already named that" (os.path.normcase) and would be skipped.
+        _filename_template_model("/library/alpha.safetensors", "Alpha Two"),
+        _filename_template_model("/library/beta.safetensors", "Beta Two"),
+    ]))
+    lifecycle = StubLifecycleService()
+    lifecycle.error = ValueError("A file with this name already exists")
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.status == "success"
+    assert result.failure_count == 2
+    assert result.success_count == 0
+    assert len(result.results) == 2
+
+
+async def test_filename_template_use_case_honours_cancellation() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService(scanner=scanner)
+    lifecycle.cancel_on_rename = True
+    progress = ProgressCollector()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=progress)
+
+    assert result.status == "cancelled"
+    assert len(lifecycle.renames) == 1
+    assert progress.events[-1]["status"] == "cancelled"
+
+
+async def test_filename_template_use_case_filters_file_paths() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(
+        file_paths=["/library/beta.safetensors"], progress_callback=None
+    )
+
+    assert result.total == 1
+    assert lifecycle.renames == [
+        {"file_path": "/library/beta.safetensors", "new_file_name": "Beta-abcdef0123"}
+    ]
+
+
+async def test_filename_template_use_case_rejects_when_lock_held() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache())
+    lifecycle = StubLifecycleService()
+    lock_provider = StubLockProvider()
+    lock_provider.running = True
+    use_case = _make_filename_template_use_case(scanner, lifecycle, lock_provider)
+
+    with pytest.raises(AutoOrganizeInProgressError):
+        await use_case.execute(progress_callback=None)

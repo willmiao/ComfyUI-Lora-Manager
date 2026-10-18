@@ -8,8 +8,10 @@ response schemas.
 from __future__ import annotations
 
 import json
-import pytest
 from types import SimpleNamespace
+from typing import Any
+
+import pytest
 from syrupy import SnapshotAssertion
 
 from py.routes.handlers.misc_handlers import (
@@ -54,13 +56,35 @@ async def noop_async(*_args, **_kwargs):
     return None
 
 
+class FakeDownloader:
+    """Minimal downloader stub satisfying DownloaderProtocol."""
+
+    async def refresh_session(self) -> None:
+        return None
+
+
+async def fake_downloader_factory() -> FakeDownloader:
+    return FakeDownloader()
+
+
+async def fake_metadata_provider_factory():
+    return None
+
+
+def json_payload(response) -> Any:
+    """Decode the JSON body of a web.Response, asserting it is not null."""
+    text = response.text
+    assert text is not None
+    return json.loads(text)
+
+
 class FakePromptServer:
     """Fake prompt server for testing."""
 
     sent = []
 
     class Instance:
-        sockets: dict = {}
+        sockets: dict[str, Any] = {}
 
         def send_sync(self, event, payload, sid=None):
             FakePromptServer.sent.append((event, payload))
@@ -93,8 +117,20 @@ class TestSettingsHandlerSnapshots:
     """Snapshot tests for SettingsHandler responses."""
 
     @pytest.mark.asyncio
-    async def test_get_settings_response_format(self, snapshot: SnapshotAssertion):
+    async def test_get_settings_response_format(
+        self, snapshot: SnapshotAssertion, monkeypatch: pytest.MonkeyPatch
+    ):
         """Verify get_settings response format matches snapshot."""
+        # Pin the resolved sidecar root: it derives from the machine-specific
+        # settings directory, which would make the snapshot non-deterministic.
+        monkeypatch.setattr(
+            "py.routes.handlers.misc_handlers.describe_sidecar_root",
+            lambda: {
+                "root": "/sidecars",
+                "is_default": True,
+                "inside_repo": False,
+            },
+        )
         settings_service = DummySettings({
             "civitai_api_key": "test-key",
             "language": "en",
@@ -103,11 +139,11 @@ class TestSettingsHandlerSnapshots:
         handler = SettingsHandler(
             settings_service=settings_service,
             metadata_provider_updater=noop_async,
-            downloader_factory=lambda: None,
+            downloader_factory=fake_downloader_factory,
         )
 
-        response = await handler.get_settings(FakeRequest())
-        payload = json.loads(response.text)
+        response = await handler.get_settings(FakeRequest())  # pyright: ignore[reportArgumentType]
+        payload = json_payload(response)
 
         assert payload == snapshot
 
@@ -118,12 +154,12 @@ class TestSettingsHandlerSnapshots:
         handler = SettingsHandler(
             settings_service=settings_service,
             metadata_provider_updater=noop_async,
-            downloader_factory=lambda: None,
+            downloader_factory=fake_downloader_factory,
         )
 
         request = FakeRequest(json_data={"language": "zh"})
-        response = await handler.update_settings(request)
-        payload = json.loads(response.text)
+        response = await handler.update_settings(request)  # pyright: ignore[reportArgumentType]
+        payload = json_payload(response)
 
         assert payload == snapshot
 
@@ -137,7 +173,7 @@ class TestNodeRegistryHandlerSnapshots:
         node_registry = NodeRegistry()
         handler = NodeRegistryHandler(
             node_registry=node_registry,
-            prompt_server=FakePromptServer,
+            prompt_server=FakePromptServer,  # pyright: ignore[reportArgumentType]
             standalone_mode=False,
         )
 
@@ -155,8 +191,8 @@ class TestNodeRegistryHandlerSnapshots:
             }
         )
 
-        response = await handler.register_nodes(request)
-        payload = json.loads(response.text)
+        response = await handler.register_nodes(request)  # pyright: ignore[reportArgumentType]
+        payload = json_payload(response)
 
         assert payload == snapshot
 
@@ -166,13 +202,13 @@ class TestNodeRegistryHandlerSnapshots:
         node_registry = NodeRegistry()
         handler = NodeRegistryHandler(
             node_registry=node_registry,
-            prompt_server=FakePromptServer,
+            prompt_server=FakePromptServer,  # pyright: ignore[reportArgumentType]
             standalone_mode=False,
         )
 
         request = FakeRequest(json_data={"nodes": [], "client_id": "test-client-1"})
-        response = await handler.register_nodes(request)
-        payload = json.loads(response.text)
+        response = await handler.register_nodes(request)  # pyright: ignore[reportArgumentType]
+        payload = json_payload(response)
 
         assert payload == snapshot
 
@@ -249,10 +285,12 @@ class TestModelLibraryHandlerSnapshots:
                 get_embedding_scanner=scanner_factory,
                 get_downloaded_version_history_service=fake_download_history_service_factory,
             ),
-            metadata_provider_factory=lambda: None,
+            metadata_provider_factory=fake_metadata_provider_factory,
         )
 
-        response = await handler.check_model_exists(FakeRequest(query={"modelId": "1"}))
-        payload = json.loads(response.text)
+        response = await handler.check_model_exists(
+            FakeRequest(query={"modelId": "1"})  # pyright: ignore[reportArgumentType]
+        )
+        payload = json_payload(response)
 
         assert payload == snapshot

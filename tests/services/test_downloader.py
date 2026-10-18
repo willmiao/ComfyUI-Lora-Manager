@@ -5,11 +5,24 @@ from typing import Sequence
 
 import pytest
 
+from py.services.connectivity_guard import ConnectivityGuard
 from py.services.downloader import Downloader
+from py.services.errors import DownloadRateLimitError
+from py.services.rate_limit_coordinator import RateLimitCoordinator
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limit_singletons():
+    """429 handling mutates the global coordinator/guard; isolate per test."""
+    RateLimitCoordinator._instance = None
+    ConnectivityGuard._instance = None
+    yield
+    RateLimitCoordinator._instance = None
+    ConnectivityGuard._instance = None
 
 
 class FakeStream:
-    def __init__(self, chunks: Sequence[Sequence] | Sequence[bytes]):
+    def __init__(self, chunks: Sequence[bytes | tuple[bytes, float]]):
         self._chunks = list(chunks)
 
     async def read(self, _chunk_size: int) -> bytes:
@@ -25,6 +38,7 @@ class FakeStream:
             payload = item[0]
             delay = item[1]
 
+        assert isinstance(payload, bytes)
         await asyncio.sleep(delay)
         return payload
 
@@ -84,16 +98,23 @@ def _build_downloader(responses, *, max_retries=0):
     downloader.max_retries = max_retries
     downloader.base_delay = 0
     fake_session = FakeSession(responses)
-    downloader._session = fake_session
+    downloader._session = fake_session  # pyright: ignore[reportAttributeAccessIssue]
     downloader._session_created_at = datetime.now()
     downloader._proxy_url = None
     async def _noop_create_session():
-        downloader._session = fake_session
+        downloader._session = fake_session  # pyright: ignore[reportAttributeAccessIssue]
         downloader._session_created_at = datetime.now()
         downloader._proxy_url = None
 
     downloader._create_session = _noop_create_session  # type: ignore[assignment]
     return downloader
+
+
+def _session(downloader: Downloader) -> FakeSession:
+    """Return the injected fake session, asserting the runtime invariant."""
+    session = downloader._session
+    assert isinstance(session, FakeSession)
+    return session
 
 
 @pytest.mark.asyncio
@@ -196,7 +217,7 @@ async def test_download_file_recovers_from_stall(tmp_path):
 
     assert success is True
     assert Path(result_path).read_bytes() == payload
-    assert downloader._session._get_calls == 2
+    assert _session(downloader)._get_calls == 2
     assert not Path(str(target_path) + ".part").exists()
 
 
@@ -224,8 +245,8 @@ async def test_download_file_resumes_after_incomplete_integrity_check(tmp_path):
 
     assert success is True
     assert Path(result_path).read_bytes() == b"abcdef"
-    assert downloader._session._get_calls == 2
-    assert downloader._session.requests[1]["headers"]["Range"] == "bytes=3-"
+    assert _session(downloader)._get_calls == 2
+    assert _session(downloader).requests[1]["headers"]["Range"] == "bytes=3-"
     assert not Path(str(target_path) + ".part").exists()
 
 
@@ -261,6 +282,133 @@ async def test_download_file_retries_redirected_url_when_range_not_honored(tmp_p
     assert success is True
     assert Path(result_path).read_bytes() == b"abcdef"
     assert first_response.released is True
-    assert downloader._session.requests[0]["headers"]["Range"] == "bytes=3-"
-    assert downloader._session.requests[1]["url"] == redirected_url
-    assert downloader._session.requests[1]["headers"]["Range"] == "bytes=3-"
+    assert _session(downloader).requests[0]["headers"]["Range"] == "bytes=3-"
+    assert _session(downloader).requests[1]["url"] == redirected_url
+    assert _session(downloader).requests[1]["headers"]["Range"] == "bytes=3-"
+
+
+@pytest.mark.asyncio
+async def test_disable_netrc_auth_ignores_netrc_file(tmp_path, monkeypatch):
+    """netrc entries must not be auto-applied as BasicAuth.
+
+    Regression test for "Cannot combine AUTHORIZATION header with AUTH
+    argument or credentials encoded in URL": with trust_env=True aiohttp
+    loads credentials from netrc files, which conflict with the explicit
+    Authorization: Bearer header used for CivitAI requests.
+    """
+    import aiohttp
+
+    from py.services.downloader import _disable_netrc_auth
+
+    netrc_file = tmp_path / ".netrc"
+    netrc_file.write_text("machine civitai.red\nlogin user\npassword pass\n")
+    monkeypatch.setenv("NETRC", str(netrc_file))
+
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        # Premise: a plain session would pick up the netrc credentials.
+        assert session._get_netrc_auth("civitai.red") is not None
+
+        _disable_netrc_auth(session)
+        assert session._get_netrc_auth("civitai.red") is None
+
+
+@pytest.mark.asyncio
+async def test_download_file_rate_limit_raises_structured_error_when_enabled(tmp_path):
+    """With raise_on_rate_limit=True a 429 raises DownloadRateLimitError."""
+    target_path = tmp_path / "model" / "file.bin"
+    target_path.parent.mkdir()
+
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "120"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    with pytest.raises(DownloadRateLimitError) as exc_info:
+        await downloader.download_file(
+            "https://example.com/file",
+            str(target_path),
+            raise_on_rate_limit=True,
+        )
+
+    assert exc_info.value.retry_after == 120.0
+    assert exc_info.value.host == "example.com"
+    # The cooldown was registered with the coordinator for the target host.
+    coordinator = await RateLimitCoordinator.get_instance()
+    assert coordinator.remaining_seconds("example.com") > 0
+    # 429 is never retried in-band.
+    assert _session(downloader)._get_calls == 1
+    assert not Path(str(target_path) + ".part").exists()
+
+
+@pytest.mark.asyncio
+async def test_download_file_rate_limit_keeps_legacy_tuple_by_default(tmp_path):
+    """Default behavior (other callers) stays the plain error string."""
+    target_path = tmp_path / "model" / "file.bin"
+    target_path.parent.mkdir()
+
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "120"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    success, message = await downloader.download_file(
+        "https://example.com/file", str(target_path)
+    )
+
+    assert success is False
+    assert message == "Download rate limited (429), retry after 120.0s"
+
+
+@pytest.mark.asyncio
+async def test_download_to_memory_rate_limit_raises_structured_error_when_enabled():
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "90"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    with pytest.raises(DownloadRateLimitError) as exc_info:
+        await downloader.download_to_memory(
+            "https://example.com/preview.png",
+            raise_on_rate_limit=True,
+        )
+
+    assert exc_info.value.retry_after == 90
+    assert exc_info.value.host == "example.com"
+    coordinator = await RateLimitCoordinator.get_instance()
+    assert coordinator.remaining_seconds("example.com") > 0
+
+
+@pytest.mark.asyncio
+async def test_download_to_memory_rate_limit_keeps_legacy_tuple_by_default():
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "90"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    success, message, headers = await downloader.download_to_memory(
+        "https://example.com/preview.png"
+    )
+
+    assert success is False
+    assert message == "Rate limited (429), retry after 90s"
+    assert headers is None

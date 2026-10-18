@@ -497,6 +497,12 @@ export class VirtualScroller {
             modelCard.style.minWidth = '0';
         }
 
+        // Scroll recycling rebuilds cards from scratch, dropping `.selected`
+        // even though the filepath is still selected in state.
+        if (state.bulkMode && modelCard && state.selectedModels.has(modelCard.dataset.filepath)) {
+            modelCard.classList.add('selected');
+        }
+
         return element;
     }
 
@@ -699,10 +705,17 @@ export class VirtualScroller {
             const pageType = state.currentPageType;
 
             if (pageType === 'recipes') {
-                placeholderText = `
-                    <p>No recipes found</p>
-                    <p>Add recipe images to your recipes folder to see them here.</p>
-                `;
+                if (String(getCurrentPageState().sortBy).startsWith('opened')) {
+                    placeholderText = `
+                        <p>No recently opened recipes</p>
+                        <p>Recipes you open will appear here.</p>
+                    `;
+                } else {
+                    placeholderText = `
+                        <p>No recipes found</p>
+                        <p>Add recipe images to your recipes folder to see them here.</p>
+                    `;
+                }
             } else if (pageType === 'loras') {
                 placeholderText = `
                     <p>No LoRAs found</p>

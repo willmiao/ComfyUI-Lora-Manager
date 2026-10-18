@@ -8,6 +8,8 @@ from py.recipes.parsers import SuiImageParamsParser
 class TestSuiImageParamsParser:
     """Test cases for SuiImageParamsParser."""
 
+    parser: SuiImageParamsParser = SuiImageParamsParser()
+
     def setup_method(self):
         """Set up test fixtures."""
         self.parser = SuiImageParamsParser()
@@ -116,6 +118,7 @@ class TestSuiImageParamsParser:
         result = await self.parser.parse_metadata(metadata_str)
 
         loras = result.get('loras')
+        assert isinstance(loras, list)
         assert len(loras) == 1
         assert loras[0]['type'] == 'lora'
         assert loras[0]['name'] == 'test_lora'
@@ -142,6 +145,7 @@ class TestSuiImageParamsParser:
         result = await self.parser.parse_metadata(metadata_str)
 
         loras = result.get('loras')
+        assert isinstance(loras, list)
         assert len(loras) == 1
         assert loras[0]['type'] == 'lora'
 

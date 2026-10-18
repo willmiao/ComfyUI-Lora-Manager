@@ -36,6 +36,7 @@ SCANNER_TYPE_MAP: dict[str, str] = {
     "get_lora_scanner": "lora",
     "get_checkpoint_scanner": "checkpoint",
     "get_embedding_scanner": "embedding",
+    "get_other_scanner": "other",
 }
 
 SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
@@ -43,7 +44,7 @@ SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
 
 async def _find_model_entry(
     model_path: str,
-) -> tuple[object, object, str | None] | tuple[None, None, None]:
+) -> tuple[Any, object, str | None] | tuple[None, None, None]:
     """Iterate all scanners and return the first (scanner, entry, getter_name)
     that owns *model_path*.  Returns ``(None, None, None)`` when no scanner
     claims it.
@@ -73,15 +74,15 @@ async def _find_model_entry(
 
 async def _find_scanner_for_model(
     model_path: str,
-) -> tuple[object, object] | tuple[None, None]:
+) -> tuple[Any, object] | tuple[None, None]:
     """Find the (scanner, cache_entry) responsible for *model_path*."""
     scanner, entry, _ = await _find_model_entry(model_path)
     return scanner, entry
 
 
 async def identify_model_type(model_path: str) -> str:
-    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``, or
-    ``\"embedding\"``) for *model_path*.
+    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``,
+    ``\"embedding\"``, or ``\"other\"``) for *model_path*.
 
     Falls back to ``\"lora\"`` when unknown.
     """
@@ -171,12 +172,16 @@ async def download_preview(
     """
     from ..services.downloader import get_downloader
     from ..utils.exif_utils import ExifUtils
+    from ..utils.sidecar_paths import get_preview_dir
 
     if not url or not url.strip():
         return None
 
     base_name = os.path.splitext(os.path.basename(model_path))[0]
-    preview_dir = os.path.dirname(model_path)
+    preview_dir = get_preview_dir(model_path)
+    # Centralized mirrors may not exist yet (unlike the model's own directory
+    # in alongside mode).
+    os.makedirs(preview_dir, exist_ok=True)
     output_path = os.path.join(preview_dir, base_name + ".webp")
 
     downloader = await get_downloader()

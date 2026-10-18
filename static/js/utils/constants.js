@@ -87,6 +87,14 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
+// Window event dispatched after dynamic base models are (re)loaded from the API.
+// Pickers listen for it to refresh their option lists when data arrives late.
+export const BASE_MODELS_UPDATED_EVENT = 'lora-manager:base-models-updated';
+
+// Custom dataTransfer MIME type tagging internal model-card drags (move-to-folder).
+// Preview-drop handlers use it to ignore drags that did not come from the OS file system.
+export const MODEL_CARD_DRAG_MIME_TYPE = 'application/x-lora-manager-model-card';
+
 // Model sub-type display names (new canonical field: sub_type)
 export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     // LoRA sub-types
@@ -98,6 +106,12 @@ export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     diffusion_model: "Diffusion Model",
     // Embedding sub-types
     embedding: "Embedding",
+    // Other model sub-types
+    vae: "VAE",
+    upscaler: "Upscaler",
+    text_encoder: "Text Encoder",
+    clip_vision: "CLIP Vision",
+    controlnet: "ControlNet",
 };
 
 // Backward compatibility alias
@@ -111,6 +125,11 @@ export const MODEL_SUBTYPE_ABBREVIATIONS = {
     checkpoint: "CKPT",
     diffusion_model: "DM",
     embedding: "EMB",
+    vae: "VAE",
+    upscaler: "UPS",
+    text_encoder: "TE",
+    clip_vision: "CV",
+    controlnet: "CN",
 };
 
 export function getSubTypeAbbreviation(subType) {
@@ -334,7 +353,30 @@ export const DEFAULT_PATH_TEMPLATES = {
     lora: '{base_model}/{first_tag}',
     checkpoint: '{base_model}',
     unet: '{base_model}',
-    embedding: '{first_tag}'
+    embedding: '{first_tag}',
+    // Other models (VAE/upscaler/...) default to a flat layout: their root is
+    // already split per sub_type, and priority_tags has no "other" entry, so
+    // {first_tag} would resolve to an arbitrary CivitAI tag.
+    other: ''
+};
+
+// Valid placeholders for download filename templates (opt-in rename of
+// downloaded safetensors; the result is a filename stem, no path separators)
+export const FILENAME_TEMPLATE_PLACEHOLDERS = [
+    '{model_name}',
+    '{version_name}',
+    '{base_model}',
+    '{author}',
+    '{first_tag}',
+    '{hash_short}',
+    '{original_name}'
+];
+
+// Default filename templates per model type; empty string keeps the original filename
+export const DEFAULT_FILENAME_TEMPLATES = {
+    lora: '',
+    checkpoint: '',
+    embedding: ''
 };
 
 // Model type labels for UI

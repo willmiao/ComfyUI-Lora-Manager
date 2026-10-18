@@ -15,15 +15,15 @@ import os
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
-import comfy.utils  # type: ignore
-import folder_paths  # type: ignore
+import comfy.utils  # pyright: ignore[reportMissingImports]
+import folder_paths  # pyright: ignore[reportMissingImports]
 import torch
 import torch.nn as nn
 from safetensors import safe_open
 
-from nunchaku.lora.flux.nunchaku_converter import (
+from nunchaku.lora.flux.nunchaku_converter import (  # pyright: ignore[reportMissingTypeStubs]
     pack_lowrank_weight,
     unpack_lowrank_weight,
 )
@@ -87,10 +87,6 @@ def _rename_layer_underscore_layer_name(old_name: str) -> str:
     return new_name
 
 
-def _is_indexable_module(module):
-    return isinstance(module, (nn.ModuleList, nn.Sequential, list, tuple))
-
-
 def _get_module_by_name(model: nn.Module, name: str) -> Optional[nn.Module]:
     if not name:
         return model
@@ -100,7 +96,7 @@ def _get_module_by_name(model: nn.Module, name: str) -> Optional[nn.Module]:
             continue
         if hasattr(module, part):
             module = getattr(module, part)
-        elif part.isdigit() and _is_indexable_module(module):
+        elif part.isdigit() and isinstance(module, (nn.ModuleList, nn.Sequential, list, tuple)):
             try:
                 module = module[int(part)]
             except (IndexError, TypeError):
@@ -267,7 +263,9 @@ def _handle_proj_out_split(lora_dict: Dict[str, Dict[str, torch.Tensor]], base_k
     return result, consumed
 
 
-def _apply_lora_to_module(module: nn.Module, a_tensor: torch.Tensor, b_tensor: torch.Tensor, module_name: str, model: nn.Module) -> None:
+def _apply_lora_to_module(module: Any, a_tensor: torch.Tensor, b_tensor: torch.Tensor, module_name: str, model: Any) -> None:
+    # These modules are dynamic torch containers; monkey-patched attributes
+    # below are set at runtime, so the module/model types are deliberately Any.
     if not hasattr(module, "in_features") or not hasattr(module, "out_features"):
         raise ValueError(f"{module_name}: unsupported module without in/out features")
     if a_tensor.shape[1] != module.in_features or b_tensor.shape[0] != module.out_features:
@@ -336,7 +334,7 @@ def _apply_lora_to_module(module: nn.Module, a_tensor: torch.Tensor, b_tensor: t
     raise ValueError(f"{module_name}: unsupported module type {type(module)}")
 
 
-def reset_lora_v2(model: nn.Module) -> None:
+def reset_lora_v2(model: Any) -> None:
     slots = getattr(model, "_lora_slots", None)
     if not slots:
         return
@@ -344,6 +342,7 @@ def reset_lora_v2(model: nn.Module) -> None:
         module = _get_module_by_name(model, name)
         if module is None:
             continue
+        module = cast(Any, module)
         module_type = info.get("type", "nunchaku")
         if module_type == "nunchaku":
             base_rank = info["base_rank"]
@@ -371,7 +370,7 @@ def reset_lora_v2(model: nn.Module) -> None:
 def compose_loras_v2(model: nn.Module, lora_configs: List[Tuple[Union[str, Path, Dict[str, torch.Tensor]], float]], apply_awq_mod: bool = True) -> bool:
     del apply_awq_mod  # retained for interface compatibility
     reset_lora_v2(model)
-    aggregated_weights: Dict[str, List[Dict[str, object]]] = defaultdict(list)
+    aggregated_weights: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     saw_supported_format = False
     unresolved_targets = 0
 
@@ -471,7 +470,7 @@ def compose_loras_v2(model: nn.Module, lora_configs: List[Tuple[Union[str, Path,
 class ComfyQwenImageWrapperLM(nn.Module):
     def __init__(self, model: nn.Module, config=None, apply_awq_mod: bool = True):
         super().__init__()
-        self.model = model
+        self.model: Any = model
         self.config = {} if config is None else config
         self.dtype = next(model.parameters()).dtype
         self.loras: List[Tuple[Union[str, Path, Dict[str, torch.Tensor]], float]] = []

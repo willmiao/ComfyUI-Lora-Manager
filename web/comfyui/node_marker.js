@@ -7,6 +7,10 @@ import { app } from "../../scripts/app.js";
 // Roles are stored in ``node.properties.lm_marker_role`` and automatically
 // persist with the workflow JSON.
 //
+// A separate "Exclude from Send Targets" toggle stores
+// ``node.properties.lm_exclude_send``: such nodes never appear as send
+// targets, regardless of capabilities or markers.
+//
 // Two categories:
 //   send_* – consumed by the standalone UI's "Send to Workflow" feature
 //   meta_* – consumed by the metadata processor to override heuristic inference
@@ -104,6 +108,27 @@ function triggerRegistryRefresh() {
   window.dispatchEvent(new CustomEvent("lm_marker_changed"));
 }
 
+// ---- Send-target exclusion toggle -------------------------------------------
+
+function isExcludedFromSend(node) {
+  return node?.properties?.lm_exclude_send === true;
+}
+
+function toggleExcludeFromSend(node) {
+  if (!node) return;
+  node.properties = node.properties || {};
+  if (node.properties.lm_exclude_send) {
+    delete node.properties.lm_exclude_send;
+  } else {
+    node.properties.lm_exclude_send = true;
+  }
+
+  if (typeof node.setDirtyCanvas === "function") {
+    node.setDirtyCanvas(true, true);
+  }
+  triggerRegistryRefresh();
+}
+
 // ---- Submenu builder --------------------------------------------------------
 
 function buildSubmenuOptions(node) {
@@ -137,6 +162,7 @@ function buildSubmenuOptions(node) {
 }
 
 function buildMenuItems(node) {
+  const excluded = isExcludedFromSend(node);
   return [
     null,
     {
@@ -145,6 +171,10 @@ function buildMenuItems(node) {
       submenu: {
         options: buildSubmenuOptions(node),
       },
+    },
+    {
+      content: `${excluded ? "\u2713 " : ""}\uD83D\uDEAB Exclude from Send Targets`,
+      callback: () => toggleExcludeFromSend(node),
     },
   ];
 }

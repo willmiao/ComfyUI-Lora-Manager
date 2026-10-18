@@ -1,13 +1,34 @@
+import os
+
 import pytest
 
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.services.service_registry import ServiceRegistry
+from py.utils.constants import (
+    MAX_FILENAME_COMPONENT_BYTES,
+    MAX_FILENAME_STEM_LENGTH,
+    MAX_FOLDER_NAME_LENGTH,
+    MAX_FULL_PATH_LENGTH,
+    MAX_PATH_TAG_LENGTH,
+    PATH_BUDGET_SUFFIX_ALLOWANCE,
+)
 from py.utils.utils import (
+    calculate_filename_for_model,
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    fit_stem_to_path_budget,
     get_lora_info,
     get_lora_info_absolute,
     sanitize_folder_name,
+)
+
+
+# Real CivitAI data for the model reported in issue #1119: the uploader dumped
+# a whole keyword list into a single tag.
+KEYWORD_DUMP_TAG = (
+    "lora, character, rosie, irish, redhead, auburn, freckles, green eyes, "
+    "curly hair, woman, female, photorealistic, realistic, krea2, dark beast, "
+    "kreativity, nsfw, nude, portrait, face"
 )
 
 
@@ -146,6 +167,80 @@ def test_calculate_relative_path_sanitizes_double_slashes(isolated_settings):
     assert relative_path == "no tags/Author"
 
 
+def test_calculate_relative_path_ignores_keyword_dump_tag(isolated_settings):
+    """A tag holding a whole keyword list must not become a folder name (#1119)."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "Krea 2/no tags"
+
+
+def test_calculate_relative_path_uses_next_usable_tag(isolated_settings):
+    """Unusable tags are skipped instead of hijacking the folder name (#1119)."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG, "portrait"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/portrait"
+
+
+def test_calculate_relative_path_ignores_civitai_meta_tag(isolated_settings):
+    """Civitai's "base model" label is not content, so it is not a folder."""
+    model_data = {"base_model": "Krea 2", "tags": ["base model"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/no tags"
+
+
+def test_calculate_relative_path_ignores_full_1119_tag_list(isolated_settings):
+    """The reported model carries only a keyword dump and the meta label."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG, "base model"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/no tags"
+
+
+def test_calculate_relative_path_sanitizes_tag_segment(isolated_settings):
+    """A tag with path separators must not create nested folders."""
+    model_data = {"base_model": "SDXL", "tags": ["a/b:c"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "SDXL/a_b_c"
+
+
+def test_calculate_relative_path_caps_tag_segment(isolated_settings):
+    """A long configured priority tag is truncated to the tag length budget."""
+    long_tag = "y" * 80
+    isolated_settings["priority_tags"] = {"lora": long_tag}
+
+    model_data = {"base_model": "SDXL", "tags": [long_tag]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "SDXL/" + "y" * MAX_PATH_TAG_LENGTH
+
+
+def test_calculate_relative_path_keeps_tag_within_budget(isolated_settings):
+    model_data = {"base_model": "SDXL", "tags": ["t" * 40]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "SDXL/" + "t" * 40
+
+
+def test_calculate_relative_path_caps_model_and_version_names(isolated_settings):
+    isolated_settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+
+    model_data = {
+        "model_name": "m" * 300,
+        "base_model": "SDXL",
+        "tags": [],
+        "civitai": {"id": 1, "name": "v" * 300, "creator": {"username": "Creator"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == (
+        "m" * MAX_FOLDER_NAME_LENGTH + "/" + "v" * MAX_FOLDER_NAME_LENGTH
+    )
+
+
 def test_calculate_recipe_fingerprint_filters_and_sorts():
     loras = [
         {"hash": "ABC", "strength": 0.1234},
@@ -164,6 +259,171 @@ def test_calculate_recipe_fingerprint_empty_input():
     assert calculate_recipe_fingerprint([]) == ""
 
 
+def _set_filename_templates(isolated_settings, template, model_types=("lora", "checkpoint", "embedding")):
+    isolated_settings["download_filename_templates"] = {
+        model_type: template for model_type in model_types
+    }
+
+
+def test_calculate_filename_returns_empty_without_template(isolated_settings):
+    model_data = {"model_name": "Model", "file_path": "/models/V1.safetensors"}
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_substitutes_all_placeholders(isolated_settings):
+    _set_filename_templates(
+        isolated_settings,
+        "{base_model}-{model_name}-{version_name}-{author}-{first_tag}-{hash_short}-{original_name}",
+    )
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "SDXL",
+        "tags": ["Style"],
+        "sha256": "ABCDEF0123456789",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1, "name": "v3", "creator": {"username": "Author"}},
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert result == "SDXL-My Model-v3-Author-style-abcdef0123-V1"
+
+
+def test_calculate_filename_hash_short_empty_when_unknown(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}-{hash_short}")
+
+    model_data = {
+        "model_name": "My Model",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    # Missing hash leaves an empty segment; the dangling separator collapses.
+    assert calculate_filename_for_model(model_data, "lora") == "My Model"
+
+
+def test_calculate_filename_missing_metadata_produces_empty_segments(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "",
+        "tags": [],
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "My Model"
+
+
+def test_calculate_filename_rejects_path_separators(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}/{model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "SDXL",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+    _set_filename_templates(isolated_settings, "{base_model}\\{model_name}")
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_strips_illegal_characters(isolated_settings):
+    _set_filename_templates(isolated_settings, '{model_name}:"custom"')
+
+    model_data = {
+        "model_name": "My:Model*",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert result == "My_Modelcustom"
+
+
+def test_calculate_filename_empty_result_returns_empty(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{first_tag}")
+
+    model_data = {
+        "base_model": "",
+        "tags": [],
+        "file_path": "/models/V1.safetensors",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_uses_base_model_mapping(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{model_name}")
+    isolated_settings["base_model_path_mappings"] = {"SDXL": "sdxl-mapped"}
+
+    model_data = {
+        "model_name": "Model",
+        "base_model": "SDXL",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "sdxl-mapped-Model"
+
+
+def test_calculate_filename_embedding_replaces_spaces(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model} {model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "Base Model",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "embedding") == "Base_Model_My_Model"
+
+
+def test_calculate_filename_original_name_falls_back_to_file_name(isolated_settings):
+    _set_filename_templates(isolated_settings, "{original_name}-{hash_short}")
+
+    model_data = {
+        "file_name": "legacy-name",
+        "sha256": "0123456789abcdef",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "legacy-name-0123456789"
+
+
+def test_calculate_filename_drops_keyword_dump_tag(isolated_settings):
+    """The keyword-dump tag collapses instead of filling the filename (#1119)."""
+    _set_filename_templates(isolated_settings, "{base_model}-{first_tag}")
+
+    model_data = {
+        "base_model": "Krea 2",
+        "tags": [KEYWORD_DUMP_TAG],
+        "file_path": "/models/V1.safetensors",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "Krea 2"
+
+
+def test_calculate_filename_caps_rendered_stem(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}")
+
+    model_data = {
+        "model_name": "m" * 400,
+        "file_path": "/models/V1.safetensors",
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert len(result) == MAX_FILENAME_STEM_LENGTH
+
+
 @pytest.mark.parametrize(
     "original, expected",
     [
@@ -176,6 +436,27 @@ def test_calculate_recipe_fingerprint_empty_input():
 )
 def test_sanitize_folder_name(original, expected):
     assert sanitize_folder_name(original) == expected
+
+
+def test_sanitize_folder_name_without_max_length_is_unbounded():
+    assert sanitize_folder_name("x" * 300) == "x" * 300
+
+
+@pytest.mark.parametrize(
+    "original, max_length, expected",
+    [
+        ("abcdefghij", 4, "abcd"),
+        # Re-trim separators and spaces exposed by the cut.
+        ("abc...defg", 4, "abc"),
+        ("abcdefg hij", 8, "abcdefg"),
+        # Shorter than the cap is returned untouched.
+        ("short", 10, "short"),
+        # A cut that leaves only separators falls back to "unnamed".
+        ("...abcdef", 3, "unnamed"),
+    ],
+)
+def test_sanitize_folder_name_truncates_to_max_length(original, max_length, expected):
+    assert sanitize_folder_name(original, max_length=max_length) == expected
 
 
 def test_get_lora_info_absolute_bare_name(mock_lora_scanner):
@@ -287,3 +568,179 @@ def test_get_lora_info_not_found_returns_original(mock_lora_scanner):
 
     assert path == "nonexistent"
     assert triggers == []
+
+
+def test_get_lora_info_absolute_preserves_exact_stack_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "same", "folder": "a", "file_path": "/models/a/same.safetensors", "civitai": {"trainedWords": ["wrong"]}},
+        {"file_name": "same", "folder": "b", "file_path": "/models/b/same.safetensors", "civitai": {"trainedWords": ["right"]}},
+    ])
+    assert get_lora_info_absolute("/models/b/same.safetensors") == (
+        "/models/b/same.safetensors", ["right"]
+    )
+
+
+def test_get_lora_info_absolute_does_not_substitute_missing_absolute_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "same", "folder": "a", "file_path": "/models/a/same.safetensors"},
+    ])
+    assert get_lora_info_absolute("/models/missing/same.safetensors") == (
+        "/models/missing/same.safetensors", []
+    )
+
+
+# Budget available to "directory + stem"; suffixes (.safetensors,
+# .metadata.json, previews) are covered by PATH_BUDGET_SUFFIX_ALLOWANCE.
+PATH_BUDGET = MAX_FULL_PATH_LENGTH - PATH_BUDGET_SUFFIX_ALLOWANCE
+
+
+@pytest.fixture
+def alongside_sidecar_dir(monkeypatch):
+    """Pin sidecar resolution to alongside mode regardless of global settings.
+
+    Plain dirname, no abspath: abspath prepends the drive letter on Windows,
+    which would make the sidecar path two chars longer than the model path
+    and skew the budget math these tests assert on.
+    """
+
+    monkeypatch.setattr(
+        "py.utils.utils.get_sidecar_dir",
+        lambda path: os.path.dirname(path),
+    )
+
+
+def test_fit_stem_to_path_budget_returns_stem_within_budget(alongside_sidecar_dir):
+    assert fit_stem_to_path_budget("/models", "abc", ".safetensors") == "abc"
+
+
+def test_fit_stem_to_path_budget_empty_stem(alongside_sidecar_dir):
+    assert fit_stem_to_path_budget("/models", "") == ""
+
+
+def test_fit_stem_to_path_budget_truncates_overlong_stem(alongside_sidecar_dir):
+    dir_path = "/" + "d" * 200  # 201 chars
+    stem = "n" * 100
+
+    result = fit_stem_to_path_budget(dir_path, stem, ".safetensors")
+
+    assert len(os.path.join(dir_path, result)) == PATH_BUDGET
+    assert result == "n" * (len(stem) - (201 + 1 + len(stem) - PATH_BUDGET))
+
+
+def test_fit_stem_to_path_budget_retrims_separators_exposed_by_the_cut(
+    alongside_sidecar_dir,
+):
+    dir_path = "/" + "d" * 226  # 227 chars -> cut leaves "aaaaaaaa____"
+    stem = "aaaaaaaa______bbbb"
+
+    result = fit_stem_to_path_budget(dir_path, stem)
+
+    assert result == "aaaaaaaa"
+
+
+def test_fit_stem_to_path_budget_returns_empty_when_dir_leaves_no_room(
+    alongside_sidecar_dir,
+):
+    dir_path = "/" + "d" * 235  # 236 chars
+
+    assert fit_stem_to_path_budget(dir_path, "n" * 30) == ""
+
+
+def test_fit_stem_to_path_budget_counts_the_centralized_sidecar_mirror(
+    monkeypatch,
+):
+    """The mirror tree is typically deeper than the model dir (#1142)."""
+
+    mirror_dir = "/" + "m" * 225  # 226 chars
+    monkeypatch.setattr("py.utils.utils.get_sidecar_dir", lambda path: mirror_dir)
+
+    result = fit_stem_to_path_budget("/models", "n" * 100, ".safetensors")
+
+    assert len(os.path.join(mirror_dir, result)) == PATH_BUDGET
+
+
+def test_fit_stem_to_path_budget_enforces_component_byte_limit_for_cjk(
+    alongside_sidecar_dir,
+):
+    """POSIX NAME_MAX counts bytes: a 100-char CJK stem (300 bytes) passes
+    every character cap yet cannot be created on disk (ENAMETOOLONG)."""
+
+    result = fit_stem_to_path_budget("/models", "界" * 100, ".safetensors")
+
+    assert 0 < len(result) < 100
+    # stem + longest companion suffix (".metadata.json.bak") fits NAME_MAX.
+    assert (
+        len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE
+        <= MAX_FILENAME_COMPONENT_BYTES
+    )
+
+
+def test_fit_stem_to_path_budget_honors_probed_name_max(
+    monkeypatch, alongside_sidecar_dir
+):
+    """eCryptfs (Ubuntu encrypted home, Synology encrypted shares) allows
+    only 143 bytes per component; the probe must tighten the budget."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 143)
+
+    result = fit_stem_to_path_budget("/models", "か" * 60, ".safetensors")
+
+    assert 0 < len(result) < 60
+    assert len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE <= 143
+
+
+def test_fit_stem_to_path_budget_byte_cut_never_splits_a_multibyte_character(
+    alongside_sidecar_dir,
+):
+    stem = "a" * 233 + "界界"  # 239 bytes; the 235-byte cut lands mid-界
+
+    result = fit_stem_to_path_budget("/", stem, ".safetensors")
+
+    assert result == "a" * 233
+
+
+def test_fit_stem_to_path_budget_returns_empty_when_byte_budget_is_not_viable(
+    monkeypatch, alongside_sidecar_dir
+):
+    """A name-max probe below the viable stem size must skip, not stub."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 24)
+
+    assert fit_stem_to_path_budget("/models", "n" * 30, ".safetensors") == ""
+
+
+def test_calculate_filename_with_target_dir_trims_to_path_budget(
+    isolated_settings, alongside_sidecar_dir
+):
+    """The fixed stem cap ignores the real depth; target_dir tightens it."""
+    _set_filename_templates(isolated_settings, "{model_name}")
+    dir_path = "/" + "d" * 200  # 201 chars: 150-cap stem would overflow
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    result = calculate_filename_for_model(model_data, "lora", target_dir=dir_path)
+
+    assert result
+    assert len(result) < MAX_FILENAME_STEM_LENGTH
+    assert len(os.path.join(dir_path, result)) == PATH_BUDGET
+
+
+def test_calculate_filename_with_target_dir_returns_empty_when_unviable(
+    isolated_settings, alongside_sidecar_dir
+):
+    _set_filename_templates(isolated_settings, "{model_name}")
+    dir_path = "/" + "d" * 235  # 236 chars: no viable stem fits
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    assert calculate_filename_for_model(model_data, "lora", target_dir=dir_path) == ""
+
+
+def test_calculate_filename_without_target_dir_keeps_fixed_cap(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}")
+
+    model_data = {"model_name": "m" * 400, "file_path": "/models/V1.safetensors"}
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert len(result) == MAX_FILENAME_STEM_LENGTH

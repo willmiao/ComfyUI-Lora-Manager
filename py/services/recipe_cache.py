@@ -1,5 +1,5 @@
 import asyncio
-from typing import Iterable, List, Dict, Optional
+from typing import Any, Iterable, List, Dict, Optional
 from dataclasses import dataclass, field
 from natsort import natsorted
 
@@ -8,12 +8,13 @@ from natsort import natsorted
 class RecipeCache:
     """Cache structure for Recipe data"""
 
-    raw_data: List[Dict]
-    sorted_by_name: List[Dict]
-    sorted_by_date: List[Dict]
+    raw_data: List[Dict[str, Any]]
+    sorted_by_name: List[Dict[str, Any]]
+    sorted_by_date: List[Dict[str, Any]]
     folders: List[str] | None = None
-    folder_tree: Dict | None = None
+    folder_tree: Dict[str, Any] | None = None
     image_id_map: Dict[str, str] = field(default_factory=dict)
+    _lock: Any = field(init=False, repr=False, default=None)
     """Mapping of civitai image_id → recipe_id, precomputed at cache build time.
 
     Built once during cache initialization (O(n)) so that
@@ -40,7 +41,7 @@ class RecipeCache:
             )
 
     async def update_recipe_metadata(
-        self, recipe_id: str, metadata: Dict, *, resort: bool = True
+        self, recipe_id: str, metadata: Dict[str, Any], *, resort: bool = True
     ) -> bool:
         """Update metadata for a specific recipe in all cached data
 
@@ -60,7 +61,7 @@ class RecipeCache:
                     return True
         return False  # Recipe not found
 
-    async def add_recipe(self, recipe_data: Dict, *, resort: bool = False) -> None:
+    async def add_recipe(self, recipe_data: Dict[str, Any], *, resort: bool = False) -> None:
         """Add a new recipe to the cache."""
 
         async with self._lock:
@@ -70,7 +71,7 @@ class RecipeCache:
 
     async def remove_recipe(
         self, recipe_id: str, *, resort: bool = False
-    ) -> Optional[Dict]:
+    ) -> Optional[Dict[str, Any]]:
         """Remove a recipe from the cache by ID.
 
         Args:
@@ -91,7 +92,7 @@ class RecipeCache:
 
     async def bulk_remove(
         self, recipe_ids: Iterable[str], *, resort: bool = False
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """Remove multiple recipes from the cache."""
 
         id_set = {str(recipe_id) for recipe_id in recipe_ids}
@@ -111,7 +112,7 @@ class RecipeCache:
             return removed
 
     async def replace_recipe(
-        self, recipe_id: str, new_data: Dict, *, resort: bool = False
+        self, recipe_id: str, new_data: Dict[str, Any], *, resort: bool = False
     ) -> bool:
         """Replace cached data for a recipe."""
 
@@ -124,7 +125,7 @@ class RecipeCache:
                     return True
         return False
 
-    async def get_recipe(self, recipe_id: str) -> Optional[Dict]:
+    async def get_recipe(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         """Return a shallow copy of a cached recipe."""
 
         async with self._lock:
@@ -133,7 +134,7 @@ class RecipeCache:
                     return dict(recipe)
         return None
 
-    async def snapshot(self) -> List[Dict]:
+    async def snapshot(self) -> List[Dict[str, Any]]:
         """Return a copy of all cached recipes."""
 
         async with self._lock:

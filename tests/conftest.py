@@ -3,9 +3,10 @@ import importlib.util
 import inspect
 import sys
 import types
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 from unittest import mock
 
 import pytest
@@ -63,23 +64,23 @@ sys.modules.setdefault("py_local", _repo_package)
 
 # Mock ComfyUI modules before any imports from the main project
 server_mock = MockModule("server")
-server_mock.PromptServer = mock.MagicMock()
+setattr(server_mock, "PromptServer", mock.MagicMock())
 sys.modules['server'] = server_mock
 
 folder_paths_mock = MockModule("folder_paths")
-folder_paths_mock.get_folder_paths = mock.MagicMock(return_value=[])
-folder_paths_mock.folder_names_and_paths = {}
+setattr(folder_paths_mock, "get_folder_paths", mock.MagicMock(return_value=[]))
+setattr(folder_paths_mock, "folder_names_and_paths", {})
 sys.modules['folder_paths'] = folder_paths_mock
 
 # Mock other ComfyUI modules that might be imported
 comfy_mock = MockModule("comfy")
-comfy_mock.utils = MockModule("comfy.utils")
-comfy_mock.utils.load_torch_file = mock.MagicMock(return_value={})
-comfy_mock.sd = MockModule("comfy.sd")
-comfy_mock.sd.load_lora_for_models = mock.MagicMock(return_value=(None, None))
-comfy_mock.model_management = MockModule("comfy.model_management")
-comfy_mock.comfy_types = MockModule("comfy.comfy_types")
-comfy_mock.comfy_types.IO = mock.MagicMock()
+setattr(comfy_mock, "utils", MockModule("comfy.utils"))
+setattr(comfy_mock.utils, "load_torch_file", mock.MagicMock(return_value={}))
+setattr(comfy_mock, "sd", MockModule("comfy.sd"))
+setattr(comfy_mock.sd, "load_lora_for_models", mock.MagicMock(return_value=(None, None)))
+setattr(comfy_mock, "model_management", MockModule("comfy.model_management"))
+setattr(comfy_mock, "comfy_types", MockModule("comfy.comfy_types"))
+setattr(comfy_mock.comfy_types, "IO", mock.MagicMock())
 sys.modules['comfy'] = comfy_mock
 sys.modules['comfy.utils'] = comfy_mock.utils
 sys.modules['comfy.sd'] = comfy_mock.sd
@@ -88,14 +89,14 @@ sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
 sys.modules['comfy.hooks'] = MockModule("comfy.hooks")
 
 execution_mock = MockModule("execution")
-execution_mock.PromptExecutor = mock.MagicMock()
+setattr(execution_mock, "PromptExecutor", mock.MagicMock())
 sys.modules['execution'] = execution_mock
 
 # Mock ComfyUI nodes module  
 nodes_mock = MockModule("nodes")
-nodes_mock.LoraLoader = mock.MagicMock()
-nodes_mock.SaveImage = mock.MagicMock()
-nodes_mock.NODE_CLASS_MAPPINGS = {}
+setattr(nodes_mock, "LoraLoader", mock.MagicMock())
+setattr(nodes_mock, "SaveImage", mock.MagicMock())
+setattr(nodes_mock, "NODE_CLASS_MAPPINGS", {})
 sys.modules['nodes'] = nodes_mock
 
 
@@ -176,6 +177,10 @@ class MockScanner:
 
     def reset_cancellation(self) -> None:
         self._cancelled = False
+
+    @asynccontextmanager
+    async def defer_cache_persist(self) -> AsyncIterator[None]:
+        yield None
 
     async def get_cached_data(self, force_refresh: bool = False):
         return self._cache
@@ -334,6 +339,21 @@ def mock_websocket_manager():
 
 
 @pytest.fixture(autouse=True)
+def reset_media_dimension_caches():
+    """Clear path-keyed dimension caches so files reused across tests re-probe."""
+    from py.utils.exif_utils import _get_image_dimensions_cached
+    from py.utils.video_metadata import _clear_video_dimensions_cache
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
+
+    yield
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
+
+
+@pytest.fixture(autouse=True)
 def reset_singletons():
     """Reset all singletons before each test to ensure isolation."""
     # Import here to avoid circular imports
@@ -347,7 +367,7 @@ def reset_singletons():
 
     # Reset ServiceRegistry
     ServiceRegistry._services = {}
-    ServiceRegistry._initialized = False
+    ServiceRegistry._initialized = False  # pyright: ignore[reportAttributeAccessIssue]
 
     # Reset ModelScanner instances
     if hasattr(ModelScanner, '_instances'):
@@ -356,14 +376,14 @@ def reset_singletons():
     # Reset SettingsManager
     settings_manager = get_settings_manager()
     if hasattr(settings_manager, '_reset'):
-        settings_manager._reset()
+        settings_manager._reset()  # pyright: ignore[reportAttributeAccessIssue]
 
     yield
 
     # Cleanup after test
     DownloadManager._instance = None
     ServiceRegistry._services = {}
-    ServiceRegistry._initialized = False
+    ServiceRegistry._initialized = False  # pyright: ignore[reportAttributeAccessIssue]
     if hasattr(ModelScanner, '_instances'):
         ModelScanner._instances.clear()
 

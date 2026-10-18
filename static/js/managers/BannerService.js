@@ -6,9 +6,11 @@ import {
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { enableOtherModels, openOtherModelsSettings } from '../utils/otherModels.js';
 
 const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
 const CACHE_HEALTH_BANNER_ID = 'cache-health-warning';
+const OTHER_MODELS_BANNER_ID = 'other-models-announcement';
 const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
 const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
@@ -29,6 +31,9 @@ class BannerService {
         this.banners = new Map();
         this.container = null;
         this.initialized = false;
+        // Only one banner is rendered at a time; this index selects which of
+        // the active (non-dismissed) banners is currently displayed.
+        this.currentBannerIndex = 0;
         this.recentHistory = this.loadBannerHistory();
         this.bannerHistoryViewedAt = this.loadBannerHistoryViewedAt();
 
@@ -80,6 +85,7 @@ class BannerService {
         });
 
         this.prepareCommunitySupportBanner();
+        this.prepareOtherModelsBanner();
 
         await this.showActiveBanners();
         this.initialized = true;
@@ -118,12 +124,22 @@ class BannerService {
      */
     registerBanner(id, bannerConfig) {
         this.banners.set(id, bannerConfig);
-        
-        // If already initialized, render the banner immediately
-        if (this.initialized && !this.isBannerDismissed(id) && this.container) {
-            this.renderBanner(bannerConfig);
-            this.updateContainerVisibility();
+
+        if (!this.initialized || !this.container || this.isBannerDismissed(id)) {
+            return;
         }
+
+        // Preempt the currently displayed banner only when the new one has a
+        // strictly higher priority (i.e. sorts earlier).
+        const activeBanners = this.getSortedActiveBanners();
+        const displayedId = this.container.querySelector('.banner-item')
+            ?.getAttribute('data-banner-id');
+        const newIndex = activeBanners.findIndex(banner => banner.id === id);
+        const displayedIndex = activeBanners.findIndex(banner => banner.id === displayedId);
+        if (displayedIndex === -1 || (newIndex !== -1 && newIndex < displayedIndex)) {
+            this.currentBannerIndex = Math.max(newIndex, 0);
+        }
+        this.renderCurrentBanner();
     }
 
     /**
@@ -161,11 +177,10 @@ class BannerService {
             if (banner && typeof banner.onRemove === 'function') {
                 banner.onRemove(bannerElement);
             }
-            
+
             bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
             setTimeout(() => {
-                bannerElement.remove();
-                this.updateContainerVisibility();
+                this.renderCurrentBanner();
             }, 300);
         }
 
@@ -191,27 +206,86 @@ class BannerService {
     }
 
     /**
+     * Get active (non-dismissed) banners sorted by priority, highest first
+     * @returns {Object[]}
+     */
+    getSortedActiveBanners() {
+        return Array.from(this.banners.values())
+            .filter(banner => !this.isBannerDismissed(banner.id))
+            .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    }
+
+    /**
      * Show all active (non-dismissed) banners
      */
     async showActiveBanners() {
         if (!this.container) return;
 
-        const activeBanners = Array.from(this.banners.values())
-            .filter(banner => !this.isBannerDismissed(banner.id))
-            .sort((a, b) => (b.priority || 0) - (a.priority || 0));
-
-        activeBanners.forEach(banner => {
-            this.renderBanner(banner);
-        });
-
-        this.updateContainerVisibility();
+        this.currentBannerIndex = 0;
+        this.renderCurrentBanner();
     }
 
     /**
-     * Render a banner to the DOM
-     * @param {Object} banner - Banner configuration
+     * Render the currently selected banner into the container. Only one
+     * banner is visible at a time; a pager lets the user cycle through the
+     * remaining active banners.
      */
-    renderBanner(banner) {
+    renderCurrentBanner() {
+        if (!this.container) return;
+
+        const activeBanners = this.getSortedActiveBanners();
+
+        this.container.innerHTML = '';
+
+        if (activeBanners.length === 0) {
+            this.currentBannerIndex = 0;
+            this.updateContainerVisibility();
+            return;
+        }
+
+        if (this.currentBannerIndex >= activeBanners.length) {
+            this.currentBannerIndex = activeBanners.length - 1;
+        }
+        if (this.currentBannerIndex < 0) {
+            this.currentBannerIndex = 0;
+        }
+
+        // Record every active banner once so dismissed/cycled-away banners
+        // remain reachable through the notification center history.
+        activeBanners.forEach(banner => this.recordBannerAppearance(banner));
+
+        const banner = activeBanners[this.currentBannerIndex];
+        const bannerElement = this.buildBannerElement(banner, activeBanners.length);
+        this.container.appendChild(bannerElement);
+
+        this.updateContainerVisibility();
+
+        // Call onRegister callback if provided
+        if (typeof banner.onRegister === 'function') {
+            banner.onRegister(bannerElement);
+        }
+    }
+
+    /**
+     * Advance the displayed banner by offset, wrapping around
+     * @param {number} offset - +1 for next, -1 for previous
+     */
+    showAdjacentBanner(offset) {
+        const activeBanners = this.getSortedActiveBanners();
+        if (activeBanners.length < 2) return;
+
+        this.currentBannerIndex =
+            (this.currentBannerIndex + offset + activeBanners.length) % activeBanners.length;
+        this.renderCurrentBanner();
+    }
+
+    /**
+     * Build a banner DOM element
+     * @param {Object} banner - Banner configuration
+     * @param {number} totalCount - Total number of active banners
+     * @returns {HTMLElement}
+     */
+    buildBannerElement(banner, totalCount) {
         const bannerElement = document.createElement('div');
         bannerElement.className = 'banner-item';
         bannerElement.setAttribute('data-banner-id', banner.id);
@@ -227,10 +301,33 @@ class BannerService {
             </a>`;
         }).join('') : '';
 
-        const dismissButtonHtml = banner.dismissible ? 
+        const dismissButtonHtml = banner.dismissible ?
             `<button class="banner-dismiss" onclick="bannerService.dismissBanner('${banner.id}').catch(console.error)" title="Dismiss">
                 <i class="fas fa-times"></i>
             </button>` : '';
+
+        let pagerHtml = '';
+        if (totalCount > 1) {
+            const previousLabel = translate('banners.pager.previous', {}, 'Previous message');
+            const nextLabel = translate('banners.pager.next', {}, 'Next message');
+            const positionLabel = translate('banners.pager.position', {
+                current: this.currentBannerIndex + 1,
+                total: totalCount
+            }, `Message ${this.currentBannerIndex + 1} of ${totalCount}`);
+
+            pagerHtml = `
+                <div class="banner-pager">
+                    <button type="button" class="banner-pager-btn" data-pager="prev"
+                            aria-label="${previousLabel}" title="${previousLabel}">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="banner-pager-indicator" aria-label="${positionLabel}">${this.currentBannerIndex + 1} / ${totalCount}</span>
+                    <button type="button" class="banner-pager-btn" data-pager="next"
+                            aria-label="${nextLabel}" title="${nextLabel}">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>`;
+        }
 
         bannerElement.innerHTML = `
             <div class="banner-content">
@@ -241,18 +338,19 @@ class BannerService {
                 <div class="banner-actions">
                     ${actionsHtml}
                 </div>
+                ${pagerHtml}
             </div>
             ${dismissButtonHtml}
         `;
 
-        this.container.appendChild(bannerElement);
+        bannerElement.querySelectorAll('.banner-pager-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.showAdjacentBanner(button.getAttribute('data-pager') === 'next' ? 1 : -1);
+            });
+        });
 
-        this.recordBannerAppearance(banner);
-
-        // Call onRegister callback if provided
-        if (typeof banner.onRegister === 'function') {
-            banner.onRegister(bannerElement);
-        }
+        return bannerElement;
     }
 
     /**
@@ -424,12 +522,13 @@ class BannerService {
 
     /**
      * Get the current page type from the URL
-     * @returns {string} Page type (loras, checkpoints, embeddings, recipes)
+     * @returns {string} Page type (loras, checkpoints, embeddings, other, recipes)
      */
     getCurrentPageType() {
         const path = window.location.pathname;
         if (path.includes('/checkpoints')) return 'checkpoints';
         if (path.includes('/embeddings')) return 'embeddings';
+        if (path.includes('/other')) return 'other';
         if (path.includes('/recipes')) return 'recipes';
         return 'loras';
     }
@@ -443,7 +542,8 @@ class BannerService {
         const endpoints = {
             'loras': '/api/lm/loras/reload?rebuild=true',
             'checkpoints': '/api/lm/checkpoints/reload?rebuild=true',
-            'embeddings': '/api/lm/embeddings/reload?rebuild=true'
+            'embeddings': '/api/lm/embeddings/reload?rebuild=true',
+            'other': '/api/lm/other/reload?rebuild=true'
         };
         return endpoints[pageType] || endpoints['loras'];
     }
@@ -453,17 +553,18 @@ class BannerService {
      * @param {string} bannerId - Banner ID to remove
      */
     removeBannerElement(bannerId) {
+        // Also remove from banners map
+        this.banners.delete(bannerId);
+
         const bannerElement = document.querySelector(`[data-banner-id="${bannerId}"]`);
         if (bannerElement) {
             bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
             setTimeout(() => {
-                bannerElement.remove();
-                this.updateContainerVisibility();
+                this.renderCurrentBanner();
             }, 300);
+        } else {
+            this.renderCurrentBanner();
         }
-
-        // Also remove from banners map
-        this.banners.delete(bannerId);
     }
 
     prepareCommunitySupportBanner() {
@@ -537,6 +638,99 @@ class BannerService {
         });
 
         this.updateContainerVisibility();
+    }
+
+    /**
+     * Announce the opt-in Other Models management to users who have not turned
+     * it on yet. Dismissal is persisted through the shared dismissed_banners
+     * setting, so users who are not interested are not nagged again.
+     */
+    prepareOtherModelsBanner() {
+        if (state.global.settings.enable_other_models) {
+            return;
+        }
+        // Only announce when the host can actually resolve other-model folders.
+        // Standalone installs only know the folder_paths keys present in
+        // settings.json, so announcing there would land the user on an empty
+        // page. `=== false` (not falsy) keeps older payloads working.
+        if (state.global.settings.other_models_paths_available === false) {
+            return;
+        }
+        if (this.isBannerDismissed(OTHER_MODELS_BANNER_ID)) {
+            return;
+        }
+
+        this.registerBanner(OTHER_MODELS_BANNER_ID, {
+            id: OTHER_MODELS_BANNER_ID,
+            title: translate(
+                'banners.otherModels.title',
+                {},
+                'Other Models Management is available'
+            ),
+            content: translate(
+                'banners.otherModels.content',
+                {},
+                'Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.'
+            ),
+            actions: [
+                {
+                    text: translate(
+                        'banners.otherModels.enable',
+                        {},
+                        'Enable Other Models'
+                    ),
+                    icon: 'fas fa-shapes',
+                    type: 'primary',
+                    action: 'enable-other-models'
+                },
+                {
+                    text: translate(
+                        'banners.otherModels.openSettings',
+                        {},
+                        'Open Settings'
+                    ),
+                    icon: 'fas fa-cog',
+                    type: 'secondary',
+                    action: 'open-other-models-settings'
+                }
+            ],
+            dismissible: true,
+            priority: 0,
+            onRegister: (bannerElement) => {
+                const enableButton = bannerElement.querySelector(
+                    '.banner-action[data-action="enable-other-models"]'
+                );
+                if (enableButton) {
+                    enableButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        enableOtherModels().catch((error) => {
+                            console.error('Failed to enable Other Models:', error);
+                        });
+                    });
+                }
+
+                const settingsButton = bannerElement.querySelector(
+                    '.banner-action[data-action="open-other-models-settings"]'
+                );
+                if (settingsButton) {
+                    settingsButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        openOtherModelsSettings();
+                    });
+                }
+            }
+        });
+
+        this.updateContainerVisibility();
+    }
+
+    /**
+     * Drop the Other Models announcement once the feature is enabled.
+     * Dismissal is deliberately NOT persisted, so the announcement can come
+     * back if the user switches the feature off again.
+     */
+    removeOtherModelsAnnouncement() {
+        this.removeBannerElement(OTHER_MODELS_BANNER_ID);
     }
 
     initializeCommunitySupportState() {

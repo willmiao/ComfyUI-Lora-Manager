@@ -6,25 +6,88 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
+from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Protocol
 
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
+from ..utils.models import autov3_from_civitai_files
+from ..utils.sidecar_paths import get_metadata_path
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
-from .errors import RateLimitError
+from .errors import MetadataPersistError, RateLimitError
+from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
+from .model_sources import get_source, get_source_platform, has_external_source, hydrate_from_source
+from .model_sources.hydration import shared_source_cache
 
 logger = logging.getLogger(__name__)
 
 
-class MetadataProviderProtocol:
+# Providers restricted to specific model sub_types, keyed by their
+# registration label. Providers not listed apply to every model type.
+# OpenModelDB only indexes upscalers, so it is never consulted for other model
+# types — that keeps its one-time bulk-catalogue download from being paid by
+# users who manage no upscalers at all.
+_PROVIDER_SUB_TYPE_RESTRICTIONS: Dict[str, frozenset] = {
+    "openmodeldb_api": frozenset({"upscaler"}),
+}
+
+#: External-source platforms that have their own hash-lookup metadata
+#: provider. A model downloaded from one of these is refreshed against the
+#: source's own catalogue first (upgrading the download-time card to the full
+#: payload) before CivitAI is consulted at all.
+_EXTERNAL_SOURCE_METADATA_PROVIDERS: Dict[str, str] = {
+    "openmodeldb": "openmodeldb_api",
+}
+
+
+def _restricted_providers_for_sub_type(sub_type: Optional[str]) -> list:
+    """Return the restricted provider labels that apply to ``sub_type``."""
+    return [
+        name
+        for name, allowed in _PROVIDER_SUB_TYPE_RESTRICTIONS.items()
+        if sub_type in allowed
+    ]
+
+
+def _inapplicable_providers_for_sub_type(sub_type: Optional[str]) -> set:
+    """Return the restricted provider labels that do NOT apply to ``sub_type``."""
+    return {
+        name
+        for name, allowed in _PROVIDER_SUB_TYPE_RESTRICTIONS.items()
+        if sub_type not in allowed
+    }
+
+
+def _merge_ordered_unique(existing: Iterable[str], new: Iterable[str]) -> list[str]:
+    """Concatenate two word lists, dropping duplicates without reordering.
+
+    Trigger word order is meaningful: the sequence stored in
+    ``civitai.trainedWords`` is the order used when building prompts, and users
+    can reorder it in the UI. A plain ``set`` union used to shuffle that order on
+    every metadata refresh, so existing words are kept first (in their saved
+    order) and newly discovered ones are appended.
+    """
+
+    merged: list[str] = []
+    seen: set[str] = set()
+
+    for word in list(existing) + list(new):
+        if word in seen:
+            continue
+        seen.add(word)
+        merged.append(word)
+
+    return merged
+
+
+class MetadataProviderProtocol(Protocol):
     """Subset of metadata provider interface consumed by the sync service."""
 
-    async def get_model_by_hash(self, sha256: str) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
         ...
 
     async def get_model_version(
-        self, model_id: int, model_version_id: Optional[int]
+        self, model_id: Any = None, version_id: Any = None
     ) -> Optional[Dict[str, Any]]:
         ...
 
@@ -38,8 +101,8 @@ class MetadataSyncService:
         metadata_manager,
         preview_service,
         settings: SettingsManager,
-        default_metadata_provider_factory: Callable[[], Awaitable[MetadataProviderProtocol]],
-        metadata_provider_selector: Callable[[str], Awaitable[MetadataProviderProtocol]],
+        default_metadata_provider_factory: Callable[..., Awaitable[MetadataProviderProtocol]],
+        metadata_provider_selector: Callable[..., Awaitable[MetadataProviderProtocol]],
     ) -> None:
         self._metadata_manager = metadata_manager
         self._preview_service = preview_service
@@ -113,9 +176,10 @@ class MetadataSyncService:
                 )
 
             if "trainedWords" in existing_civitai:
-                existing_trained = existing_civitai.get("trainedWords", [])
-                new_trained = civitai_metadata.get("trainedWords", [])
-                merged_trained = list(set(existing_trained + new_trained))
+                existing_trained = existing_civitai.get("trainedWords", []) or []
+                new_trained = civitai_metadata.get("trainedWords", []) or []
+                # Order preserving merge: the saved order drives prompt order.
+                merged_trained = _merge_ordered_unique(existing_trained, new_trained)
                 merged_civitai["trainedWords"] = merged_trained
 
             local_metadata["civitai"] = merged_civitai
@@ -152,12 +216,66 @@ class MetadataSyncService:
             civitai_metadata.get("baseModel")
         )
 
+        # Civitai-first AutoV3 propagation: the freshly fetched version
+        # metadata may report an AutoV3 for the file whose SHA256 matches the
+        # local model. Persist it now so recipe matching sees it immediately —
+        # no full rescan or restart required (the header is never re-read to
+        # upgrade the checked-unavailable '' state).
+        sha256_value = (local_metadata.get("sha256") or "").lower()
+        civitai_autov3 = autov3_from_civitai_files(
+            local_metadata.get("civitai"), sha256_value
+        )
+        if civitai_autov3:
+            local_metadata["autov3"] = civitai_autov3
+
         await self._preview_service.ensure_preview_for_metadata(
             metadata_path, local_metadata, civitai_metadata.get("images", [])
         )
 
-        await self._metadata_manager.save_metadata(metadata_path, local_metadata)
+        saved = await self._metadata_manager.save_metadata(metadata_path, local_metadata)
+        if not saved:
+            # A swallowed write failure would update the cache while the
+            # durable sidecar never lands (e.g. the drive went offline), and
+            # the model would be skipped by every later fetch as "already
+            # fetched". Fail loudly instead so the caller reports the item
+            # and it stays eligible for the next run.
+            raise MetadataPersistError(
+                f"Failed to write metadata sidecar: {metadata_path}"
+            )
+        self._unblock_example_image_failures(local_metadata)
         return local_metadata
+
+    @staticmethod
+    def _unblock_example_image_failures(local_metadata: Dict[str, Any]) -> None:
+        """Drop the model from the example-images failed list, if present.
+
+        Fresh provider metadata invalidates any earlier "no example images"
+        verdict, so the next example-image run should retry the model. The
+        unblock only edits the local progress file — no provider API calls —
+        and must never break the metadata update itself.
+        """
+
+        sha256 = (local_metadata.get("sha256") or "").lower()
+        if not sha256:
+            return
+
+        try:
+            # Lazy import: example_images_download_manager (via
+            # example_images_metadata) imports this service at module level.
+            from ..utils.example_images_download_manager import (
+                unblock_failed_example_image_models,
+            )
+
+            removed = unblock_failed_example_image_models([sha256])
+            if removed:
+                logger.info(
+                    "Re-enabled example image downloads for %s after metadata update",
+                    local_metadata.get("model_name", sha256),
+                )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "Failed to unblock example image failures for %s: %s", sha256, exc
+            )
 
     async def fetch_and_update_model(
         self,
@@ -179,7 +297,7 @@ class MetadataSyncService:
             logger.error(error)
             return False, error
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
         previous_source = model_data.get("metadata_source") or (model_data.get("civitai") or {}).get("source")
 
@@ -188,6 +306,18 @@ class MetadataSyncService:
             sqlite_attempted = False
 
             if model_data.get("civitai_deleted") is True:
+                # Sub_type-restricted providers (e.g. OpenModelDB for
+                # upscalers) stay reachable for deleted models: their
+                # catalogues grow independently of CivitAI, so a model deleted
+                # from CivitAI may still gain metadata there later.
+                for restricted_name in _restricted_providers_for_sub_type(
+                    model_data.get("sub_type")
+                ):
+                    try:
+                        provider_attempts.append((restricted_name, await self._get_provider(restricted_name)))
+                    except Exception as exc:  # pragma: no cover - provider resolution fault
+                        logger.debug("Unable to resolve %s provider: %s", restricted_name, exc)
+
                 if previous_source in (None, "civarchive"):
                     try:
                         provider_attempts.append(("civarchive_api", await self._get_provider("civarchive_api")))
@@ -209,21 +339,47 @@ class MetadataSyncService:
                         error_msg = "CivitAI model is deleted and no archive provider is available"
                     return False, error_msg
             else:
-                is_hf_source = bool(model_data.get("hf_url"))
+                is_hf_source = has_external_source(model_data)
                 if is_hf_source:
-                    # HF-sourced model: only check CivitAI API directly.
-                    # CivArchive is almost guaranteed to have no record, and
-                    # hitting it wastes rate-limit budget.
+                    # External-source model (Hugging Face / ModelScope /
+                    # TensorArt / OpenModelDB): a source with its own
+                    # hash-lookup provider (OpenModelDB) is consulted first,
+                    # then CivitAI API directly. CivArchive is almost
+                    # guaranteed to have no record, and hitting it wastes
+                    # rate-limit budget.
                     # Use a distinct provider name ("civitai_api" not None) so
                     # downstream code does NOT interpret a "Model not found"
                     # response as civitai_api_not_found — which would mark the
                     # model civitai_deleted=True when it was never on CivitAI.
-                    try:
-                        provider_attempts.append(("civitai_api", await self._get_provider("civitai_api")))
-                    except Exception as exc:  # pragma: no cover - provider resolution fault
-                        logger.debug("Unable to resolve civitai_api provider: %s", exc)
+                    source_provider = _EXTERNAL_SOURCE_METADATA_PROVIDERS.get(
+                        get_source_platform(model_data)
+                    )
+                    provider_names = (
+                        [source_provider, "civitai_api"]
+                        if source_provider
+                        else ["civitai_api"]
+                    )
+                    for provider_name in provider_names:
+                        try:
+                            provider_attempts.append(
+                                (provider_name, await self._get_provider(provider_name))
+                            )
+                        except Exception as exc:  # pragma: no cover - provider resolution fault
+                            logger.debug(
+                                "Unable to resolve %s provider: %s", provider_name, exc
+                            )
                 if not provider_attempts:
-                    provider_attempts.append((None, await self._get_default_provider()))
+                    default_provider = await self._get_default_provider()
+                    # Drop sub_type-restricted providers that cannot apply to
+                    # this model (e.g. OpenModelDB only indexes upscalers), so
+                    # their cold-start cost is never paid pointlessly.
+                    inapplicable = _inapplicable_providers_for_sub_type(
+                        model_data.get("sub_type")
+                    )
+                    excluding = getattr(default_provider, "excluding", None)
+                    if inapplicable and callable(excluding):
+                        default_provider = excluding(inapplicable)
+                    provider_attempts.append((None, default_provider))
 
             civitai_metadata: Optional[Dict[str, Any]] = None
             metadata_provider: Optional[MetadataProviderProtocol] = None
@@ -232,16 +388,24 @@ class MetadataSyncService:
             civitai_api_not_found = False
             any_rate_limited = False
 
+            skip_network_providers = False
             for provider_name, provider in provider_attempts:
+                if skip_network_providers and provider_name not in _LOCAL_PROVIDER_LABELS:
+                    # A network provider was already rate-limited; failing
+                    # over to another network provider just spreads the flood
+                    # (#1085). Local lookups (sqlite archive, the cached
+                    # OpenModelDB index) stay available as a last resort.
+                    continue
                 try:
                     civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
                 except RateLimitError as exc:
                     logger.warning(
-                        "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                        "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                         provider_name or provider.__class__.__name__,
                         exc.retry_after or 0,
                     )
                     any_rate_limited = True
+                    skip_network_providers = True
                     continue
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.error("Provider %s failed for hash %s: %s", provider_name, sha256, exc)
@@ -264,6 +428,17 @@ class MetadataSyncService:
                 last_error = error or last_error
 
             if civitai_metadata is None or metadata_provider is None:
+                # A rate-limited run consults no further providers (#1085);
+                # the foreign-source link also involves network fetches, so it
+                # waits for the next unrated run.
+                if not any_rate_limited and await self._try_link_foreign_source(
+                    sha256=sha256,
+                    file_path=file_path,
+                    model_data=model_data,
+                    update_cache_func=update_cache_func,
+                ):
+                    return True, None
+
                 # Track if we need to save metadata
                 needs_save = False
 
@@ -340,6 +515,7 @@ class MetadataSyncService:
             readable_source = {
                 "civitai_api": "CivitAI API",
                 "civarchive": "CivArchive API",
+                "openmodeldb": "OpenModelDB",
                 "archive_db": "Archive Database",
             }.get(source, source)
 
@@ -406,18 +582,41 @@ class MetadataSyncService:
         metadata: Dict[str, Any],
         model_id: int,
         model_version_id: Optional[int],
+        provider_name: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Relink a local metadata record to a specific CivitAI model version."""
+        """Relink a local metadata record to a specific CivitAI model version.
 
-        provider = await self._get_default_provider()
+        When ``provider_name`` is given, the named provider is resolved via the
+        metadata provider selector instead of the default fallback chain. A
+        missing/disabled provider surfaces a user-friendly error instead of the
+        raw selector exception.
+        """
+
+        if provider_name:
+            try:
+                provider = await self._get_provider(provider_name)
+            except ValueError as exc:
+                logger.warning(
+                    "Unable to resolve metadata provider %s: %s", provider_name, exc
+                )
+                raise ValueError(
+                    "CivitArchive is not available or not enabled. "
+                    "Enable the CivitArchive API in settings to relink via CivArchive."
+                ) from exc
+        else:
+            provider = await self._get_default_provider()
+
         civitai_metadata = await provider.get_model_version(model_id, model_version_id)
         if not civitai_metadata:
+            provider_label = (
+                "CivitArchive" if provider_name == "civarchive_api" else "CivitAI"
+            )
             raise ValueError(
-                f"Model version not found on CivitAI for ID: {model_id}"
+                f"Model version not found on {provider_label} for ID: {model_id}"
                 + (f" with version: {model_version_id}" if model_version_id else "")
             )
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         await self.update_model_metadata(
             metadata_path,
             metadata,
@@ -426,6 +625,78 @@ class MetadataSyncService:
         )
 
         return metadata
+
+    async def _try_link_foreign_source(
+        self,
+        *,
+        sha256: str,
+        file_path: str,
+        model_data: Dict[str, Any],
+        update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
+    ) -> bool:
+        """Link the model to its real source when CivArchive only knows a
+        foreign-ecosystem file entry (e.g. a civision entry mirroring a
+        ModelScope file).
+
+        The source's strict hash gate must confirm the repository publishes
+        this exact file before any link is written.  Returns True when the
+        model was linked and hydrated; False leaves the caller's not-found
+        handling in charge.
+        """
+        if has_external_source(model_data):
+            return False
+        try:
+            provider = await self._get_provider("civarchive_api")
+        except Exception as exc:  # pragma: no cover - provider resolution fault
+            logger.debug("Unable to resolve civarchive provider for foreign source lookup: %s", exc)
+            return False
+        pop_ref = getattr(provider, "pop_foreign_source_ref", None)
+        if pop_ref is None:
+            return False
+        ref = pop_ref(sha256)
+        if ref is None:
+            return False
+
+        source = get_source(ref.platform)
+        strict_context = getattr(source, "fetch_card_context_by_hash", None) if source else None
+        if strict_context is None:
+            return False
+
+        memo = shared_source_cache(ref.platform, ref.source_id)
+        try:
+            context = await strict_context(ref.source_id, sha256, cache=memo)
+        except Exception as exc:
+            logger.debug("Foreign source context fetch failed for %s: %s", ref.url, exc)
+            return False
+        if context is None:
+            logger.debug(
+                "Not linking %s to %s: repository does not publish sha256 %s",
+                os.path.basename(file_path),
+                ref.url,
+                sha256[:10],
+            )
+            return False
+
+        # Hydration refuses to touch a sidecar that is not already linked to
+        # this exact source, so persist the link (and the cache) first.
+        model_data["source_url"] = ref.url
+        model_data["source_platform"] = ref.platform
+        model_data["from_civitai"] = False
+        model_data["last_checked_at"] = datetime.now().timestamp()
+        data_to_save = model_data.copy()
+        data_to_save.pop("folder", None)
+        await self._metadata_manager.save_metadata(file_path, data_to_save)
+        await update_cache_func(file_path, file_path, data_to_save)
+
+        updated = await hydrate_from_source(file_path, ref=ref, cache=memo)
+        logger.info(
+            "Linked %s to %s model %s (hydrated: %s)",
+            os.path.basename(file_path),
+            ref.platform,
+            ref.source_id,
+            ", ".join(updated) or "nothing",
+        )
+        return True
 
     async def save_metadata_updates(
         self,
@@ -437,7 +708,7 @@ class MetadataSyncService:
     ) -> Dict[str, Any]:
         """Apply metadata updates and persist to disk and cache."""
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await metadata_loader(metadata_path)
 
         for key, value in updates.items():
@@ -479,14 +750,14 @@ class MetadataSyncService:
         if not file_paths:
             raise ValueError("No file paths provided for verification")
 
-        results = {
+        results: Dict[str, Any] = {
             "verified_as_duplicates": True,
             "mismatched_files": [],
             "new_hash_map": {},
         }
 
         expected_hash: Optional[str] = None
-        first_metadata_path = os.path.splitext(file_paths[0])[0] + ".metadata.json"
+        first_metadata_path = get_metadata_path(file_paths[0])
         first_metadata = await metadata_loader(first_metadata_path)
         if first_metadata and "sha256" in first_metadata:
             expected_hash = first_metadata["sha256"].lower()
@@ -497,7 +768,7 @@ class MetadataSyncService:
 
             try:
                 actual_hash = await hash_calculator(path)
-                metadata_path = os.path.splitext(path)[0] + ".metadata.json"
+                metadata_path = get_metadata_path(path)
                 metadata = await metadata_loader(metadata_path)
                 stored_hash = metadata.get("sha256", "").lower()
 

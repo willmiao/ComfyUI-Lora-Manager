@@ -193,7 +193,7 @@ class TestDownloadRouteIntegration:
 
         assert response.status == 400
         # Response might be JSON or text, check both
-        if hasattr(response, 'text'):
+        if hasattr(response, 'text') and response.text is not None:
             error_text = response.text.lower()
         else:
             body = response.body

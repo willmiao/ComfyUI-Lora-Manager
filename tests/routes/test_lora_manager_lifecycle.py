@@ -4,6 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from aiohttp import web
@@ -131,6 +132,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         "lora": _DummyScanner("lora"),
         "checkpoint": _DummyScanner("checkpoint"),
         "embedding": _DummyScanner("embedding"),
+        "other": _DummyScanner("other"),
         "recipe": _DummyScanner("recipe"),
     }
 
@@ -146,6 +148,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
     monkeypatch.setattr(lora_manager.ServiceRegistry, "get_lora_scanner", lambda: _stub("lora_scanner", scanners["lora"]))
     monkeypatch.setattr(lora_manager.ServiceRegistry, "get_checkpoint_scanner", lambda: _stub("checkpoint_scanner", scanners["checkpoint"]))
     monkeypatch.setattr(lora_manager.ServiceRegistry, "get_embedding_scanner", lambda: _stub("embedding_scanner", scanners["embedding"]))
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_other_scanner", lambda: _stub("other_scanner", scanners["other"]))
     monkeypatch.setattr(lora_manager.ServiceRegistry, "get_recipe_scanner", lambda: _stub("recipe_scanner", scanners["recipe"]))
 
     migration_calls: list[bool] = []
@@ -159,8 +162,17 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         staticmethod(fake_migration),
     )
 
+    freeze_calls: list[tuple[str, bool]] = []
+
+    def record_freeze(reason: str) -> None:
+        freeze_calls.append(
+            (reason, all(scanner.initialized for scanner in scanners.values()))
+        )
+
+    monkeypatch.setattr(lora_manager, "freeze_long_lived_objects", record_freeze)
+
     original_create_task = asyncio.create_task
-    scheduled_tasks: list[asyncio.Task] = []
+    scheduled_tasks: list[asyncio.Task[Any]] = []
 
     def track_create_task(coro, *, name=None):
         task = original_create_task(coro, name=name)
@@ -204,14 +216,22 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         await asyncio.gather(*pending)
 
     task_names = {task.get_name() for task in scheduled_tasks}
-    assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "recipe_cache_init", "post_init_tasks", "cleanup_bak_files"}.issubset(task_names)
+    assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "other_cache_init", "recipe_cache_init", "post_init_tasks", "cleanup_bak_files"}.issubset(task_names)
+
+    # Startup sweep: an expired pending-delete purge task is spawned during
+    # service initialization (covers both plugin and standalone modes).
+    assert "pending_delete_startup_sweep" in task_names
 
     for scanner in scanners.values():
         assert scanner.initialized is True
+
+    # GC freeze runs once, only after every scanner cache has been hydrated
+    # (issue #1147).
+    assert freeze_calls == [("cache initialization", True)]
 
     assert migration_calls == [True]
 
     for root in (loras_root, checkpoints_root, embeddings_root):
         assert not any(path.suffix == ".bak" for path in root.rglob("*")), f"Backup files remain in {root}"
 
-    assert {"civitai_client", "download_manager", "websocket_manager", "lora_scanner", "checkpoint_scanner", "embedding_scanner", "recipe_scanner"}.issubset(registry_calls)
+    assert {"civitai_client", "download_manager", "websocket_manager", "lora_scanner", "checkpoint_scanner", "embedding_scanner", "other_scanner", "recipe_scanner"}.issubset(registry_calls)

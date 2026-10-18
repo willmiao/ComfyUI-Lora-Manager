@@ -9,6 +9,7 @@ and tracks the last used combination for reuse.
 import logging
 import os
 from ..utils.utils import get_lora_info
+from .utils import validate_lora_entries
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,11 @@ class LoraRandomizerLM:
                 "pool_config": ("POOL_CONFIG", {}),
             },
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("LORA_STACK",)
     RETURN_NAMES = ("LORA_STACK",)

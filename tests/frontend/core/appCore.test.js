@@ -120,7 +120,7 @@ import { initializeEventManagement } from '../../../static/js/utils/eventManagem
 import { initializeInfiniteScroll } from '../../../static/js/utils/infiniteScroll.js';
 import { createPageContextMenu, createGlobalContextMenu } from '../../../static/js/components/ContextMenu/index.js';
 
-const SUPPORTED_PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings'];
+const SUPPORTED_PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other'];
 
 describe('AppCore page orchestration', () => {
   beforeEach(() => {

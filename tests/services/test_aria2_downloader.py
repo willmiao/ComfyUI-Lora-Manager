@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
-from py.services.aria2_downloader import Aria2Downloader, Aria2Error
+from py.services.aria2_downloader import (
+    Aria2Downloader,
+    Aria2Error,
+    Aria2Transfer,
+    MAX_TRANSFER_RECOVERY_ATTEMPTS,
+)
 from py.services.aria2_transfer_state import Aria2TransferStateStore
 from py.services import aria2_transfer_state
 
@@ -50,7 +57,7 @@ async def test_download_file_polls_until_complete(tmp_path, monkeypatch):
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.addUri":
             return "gid-1"
@@ -132,7 +139,7 @@ async def test_download_file_keeps_auth_headers_when_civitai_does_not_redirect(
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.addUri":
             return "gid-1"
@@ -165,13 +172,13 @@ async def test_download_file_keeps_auth_headers_when_civitai_does_not_redirect(
 @pytest.mark.asyncio
 async def test_pause_resume_cancel_forward_to_rpc(monkeypatch):
     downloader = Aria2Downloader()
-    downloader._transfers["download-1"] = type(
-        "Transfer", (), {"gid": "gid-1", "save_path": "/tmp/model.safetensors"}
-    )()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
 
     calls = []
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         calls.append((method, params))
         return "gid-1"
 
@@ -200,9 +207,9 @@ async def test_download_file_reuses_existing_transfer_without_add_uri(
     downloader._rpc_secret = "secret"
 
     save_path = tmp_path / "downloads" / "model.safetensors"
-    downloader._transfers["download-1"] = type(
-        "Transfer", (), {"gid": "gid-1", "save_path": str(save_path)}
-    )()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path=str(save_path)
+    )
 
     rpc_calls = []
     statuses = iter(
@@ -225,7 +232,7 @@ async def test_download_file_reuses_existing_transfer_without_add_uri(
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.tellStatus":
             return next(statuses)
@@ -244,6 +251,253 @@ async def test_download_file_reuses_existing_transfer_without_add_uri(
     assert success is True
     assert result == str(save_path)
     assert [call[0] for call in rpc_calls] == ["aria2.tellStatus", "aria2.tellStatus"]
+
+
+@pytest.mark.asyncio
+async def test_download_file_recovers_when_transfer_lost_mid_poll(
+    tmp_path, monkeypatch
+):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+    poll_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return "gid-1" if add_uri_count["n"] == 1 else "gid-2"
+        if method == "aria2.tellStatus":
+            poll_count["n"] += 1
+            if poll_count["n"] == 1:
+                # Simulate a concurrent close() wiping the transfer mid-poll.
+                downloader._transfers.pop("download-1", None)
+                return {
+                    "gid": "gid-1",
+                    "status": "active",
+                    "completedLength": "5",
+                    "totalLength": "10",
+                    "downloadSpeed": "25",
+                }
+            return {
+                "gid": "gid-2",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert add_uri_count["n"] == 2
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_recovers_when_rpc_fails_mid_poll(tmp_path, monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+    poll_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return "gid-1" if add_uri_count["n"] == 1 else "gid-2"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    async def fake_get_status_with_retry(download_id):
+        poll_count["n"] += 1
+        if poll_count["n"] == 1:
+            raise Aria2Error(
+                "Failed to query aria2 download status after 4 attempts: boom"
+            )
+        return {
+            "gid": "gid-2",
+            "status": "complete",
+            "completedLength": "10",
+            "totalLength": "10",
+            "downloadSpeed": "0",
+            "files": [{"path": str(save_path)}],
+        }
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr(downloader, "_get_status_with_retry", fake_get_status_with_retry)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert add_uri_count["n"] == 2
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_fails_after_recovery_attempts_exhausted(
+    tmp_path, monkeypatch
+):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return f"gid-{add_uri_count['n']}"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    async def fake_get_status(download_id):
+        return None  # transfer never tracked / always lost
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr(downloader, "get_status", fake_get_status)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is False
+    assert result == "aria2 download not found"
+    assert add_uri_count["n"] == 1 + MAX_TRANSFER_RECOVERY_ATTEMPTS
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_concurrent_same_id_schedules_once(tmp_path, monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+    poll_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return "gid-1"
+        if method == "aria2.tellStatus":
+            poll_count["n"] += 1
+            if poll_count["n"] < 4:
+                return {
+                    "gid": "gid-1",
+                    "status": "active",
+                    "completedLength": "5",
+                    "totalLength": "10",
+                    "downloadSpeed": "25",
+                }
+            return {
+                "gid": "gid-1",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    results = await asyncio.gather(
+        downloader.download_file(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        ),
+        downloader.download_file(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        ),
+    )
+
+    assert all(success for success, _ in results)
+    assert all(result == str(save_path) for _, result in results)
+    assert add_uri_count["n"] <= 2
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_cleanup_preserves_newer_registration(tmp_path, monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    poll_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            return "gid-1"
+        if method == "aria2.tellStatus":
+            poll_count["n"] += 1
+            if poll_count["n"] == 1:
+                # Simulate another invocation registering its own transfer.
+                downloader._transfers["download-1"] = Aria2Transfer(
+                    gid="gid-new", save_path=str(save_path)
+                )
+                return {
+                    "gid": "gid-1",
+                    "status": "active",
+                    "completedLength": "5",
+                    "totalLength": "10",
+                    "downloadSpeed": "25",
+                }
+            return {
+                "gid": "gid-new",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert downloader._transfers["download-1"].gid == "gid-new"
 
 
 def test_build_progress_snapshot_normalizes_numeric_fields():
@@ -453,3 +707,638 @@ async def test_wait_until_ready_includes_stderr_in_error():
     msg = str(exc_info.value)
     assert "code 28" in msg
     assert "ERROR: unknown option --fsync" in msg
+
+
+def test_is_disk_write_error_matches_wrapper_and_cause_lines():
+    downloader = Aria2Downloader()
+
+    assert downloader._is_disk_write_error(
+        "[ERROR] [DownloadCommand.cc:127] errorCode=9 Write disk cache flush failure index=18798"
+    )
+    assert downloader._is_disk_write_error(
+        "Exception: [AbstractDiskWriter.cc:454] errNum=28 errorCode=9 "
+        "Failed to write into the file D:\\models\\model.safetensors, "
+        "cause: No space left on device"
+    )
+    # Windows: "used by another process" = the file is locked by antivirus etc.
+    assert downloader._is_disk_write_error(
+        "Exception: ... The process cannot access the file because it is "
+        "being used by another process."
+    )
+    assert not downloader._is_disk_write_error(
+        "Download aborted. URI=https://example.com/model.safetensors"
+    )
+    assert not downloader._is_disk_write_error("")
+    assert not downloader._is_disk_write_error("bad option: --fsync")
+
+
+@pytest.mark.asyncio
+async def test_drain_stderr_promotes_disk_write_failure_to_info(caplog):
+    downloader = Aria2Downloader()
+
+    class FakeStderr:
+        def __init__(self, lines):
+            self._lines = list(lines)
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if not self._lines:
+                raise StopAsyncIteration
+            return self._lines.pop(0)
+
+    proc = type(
+        "Proc",
+        (),
+        {
+            "stderr": FakeStderr(
+                [
+                    b"",
+                    b"[ERROR] [WrDiskCacheEntry.cc:83] Error when trying to flush write cache",
+                    b"Exception: [AbstractDiskWriter.cc:454] errNum=28 errorCode=9 "
+                    b"Failed to write into the file D:\\models\\model.safetensors, "
+                    b"cause: No space left on device",
+                    b"Download aborted. URI=https://example.com/model.safetensors",
+                ]
+            )
+        },
+    )()
+    downloader._process = proc
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        await downloader._drain_stderr()
+
+    info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+
+    assert any(
+        "Error when trying to flush write cache" in r.message for r in info_records
+    )
+    assert any("No space left on device" in r.message for r in info_records)
+    assert any("Download aborted" in r.message for r in debug_records)
+    assert not any("Download aborted" in r.message for r in info_records)
+
+
+def test_stderr_error_rate_limited_to_one_info_per_window(caplog, monkeypatch):
+    downloader = Aria2Downloader()
+    line = "Exception: ... cause: No space left on device"
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        downloader._report_stderr_error(line)
+        downloader._report_stderr_error(line)
+        monkeypatch.setattr(downloader, "_stderr_error_report", {})
+        downloader._report_stderr_error(line)
+
+    info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+
+    assert len(info_records) == 2
+    assert len(debug_records) == 1
+    assert "repeated disk write error" in debug_records[0].message
+
+
+def test_stderr_error_report_prunes_expired_entries():
+    downloader = Aria2Downloader()
+    old_line = "Exception: ... cause: No space left on device"
+    new_line = "Exception: ... cause: Input/output error"
+    downloader._stderr_error_report[old_line] = time.monotonic() - 120.0
+
+    downloader._report_stderr_error(new_line)
+
+    assert old_line not in downloader._stderr_error_report
+    assert new_line in downloader._stderr_error_report
+
+
+@pytest.mark.asyncio
+async def test_get_status_returns_none_without_retry_when_gid_not_found(monkeypatch):
+    """A forgotten GID is permanent: no retry attempts on a dead GID."""
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gone-gid", save_path="/tmp/model.safetensors"
+    )
+
+    calls = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        calls.append(method)
+        raise Aria2Error("GID gone-gid is not found")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    assert await downloader._get_status_with_retry("download-1") is None
+    assert calls == ["aria2.tellStatus"]
+
+
+@pytest.mark.asyncio
+async def test_get_status_still_raises_on_transient_rpc_error(monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        raise Aria2Error("connection reset")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    with pytest.raises(Aria2Error, match="Failed to query aria2 download status"):
+        await downloader._get_status_with_retry("download-1")
+
+
+@pytest.mark.asyncio
+async def test_cancel_download_pops_transfer_on_success(monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        return "gid-1"
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    result = await downloader.cancel_download("download-1")
+
+    assert result["success"] is True
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_cancel_download_tolerates_missing_gid(monkeypatch):
+    """Cancelling a transfer the daemon already forgot still succeeds."""
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gone-gid", save_path="/tmp/model.safetensors"
+    )
+    await downloader._state_store.upsert(
+        "download-1", {"gid": "gone-gid", "status": "downloading"}
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        raise Aria2Error("GID gone-gid is not found")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    result = await downloader.cancel_download("download-1")
+
+    assert result["success"] is True
+    assert "download-1" not in downloader._transfers
+    assert await downloader._state_store.get("download-1") is None
+
+
+@pytest.mark.asyncio
+async def test_register_transfer_tracks_gid_before_state_persist_completes(
+    tmp_path, monkeypatch
+):
+    """A cancel arriving while the state store write is still in flight must
+    already find the transfer — otherwise the gid leaks and the daemon keeps
+    downloading."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    rpc_calls = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        rpc_calls.append((method, params))
+        if method == "aria2.addUri":
+            return "gid-1"
+        if method == "aria2.forceRemove":
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    persist_started = asyncio.Event()
+    persist_release = asyncio.Event()
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await persist_release.wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+
+    transfer = downloader._transfers.get("download-1")
+    assert transfer is not None and transfer.gid == "gid-1"
+
+    result = await downloader.cancel_download("download-1")
+    assert result["success"] is True
+    assert ("aria2.forceRemove", ["gid-1"]) in rpc_calls
+
+    persist_release.set()
+    registered = await register_task
+    assert registered.gid == "gid-1"
+
+
+@pytest.mark.asyncio
+async def test_schedule_download_removes_gid_accepted_while_cancelled(
+    tmp_path, monkeypatch
+):
+    """Cancelling while the addUri RPC is in flight must remove the gid the
+    daemon accepted, instead of leaking an untracked download."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_started.set()
+            # The daemon processes the request while the client is cancelled.
+            await asyncio.sleep(0.05)
+            return "gid-leaked"
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    schedule_task = asyncio.create_task(
+        downloader._schedule_download(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(add_uri_started.wait(), timeout=1.0)
+    schedule_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await schedule_task
+
+    assert force_removed == ["gid-leaked"]
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_register_transfer_cancelled_during_persist_removes_active_gid(
+    tmp_path, monkeypatch
+):
+    """Cancellation landing after the gid is registered but before the state
+    store write finishes must remove the still-active daemon transfer."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    persist_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            return "gid-2"
+        if method == "aria2.tellStatus":
+            return {"gid": "gid-2", "status": "active"}
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await asyncio.Event().wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+    register_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await register_task
+
+    assert force_removed == ["gid-2"]
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_register_transfer_cancelled_during_persist_preserves_paused_gid(
+    tmp_path, monkeypatch
+):
+    """skip_download pauses the daemon transfer before cancelling the task;
+    the unwind cleanup must not remove a deliberately paused gid."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    persist_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            return "gid-3"
+        if method == "aria2.tellStatus":
+            return {"gid": "gid-3", "status": "paused"}
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await asyncio.Event().wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+    register_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await register_task
+
+    assert force_removed == []
+    assert downloader._transfers["download-1"].gid == "gid-3"
+
+
+@pytest.mark.asyncio
+async def test_rpc_call_suppresses_error_log_when_log_errors_false(
+    monkeypatch, caplog
+):
+    """Probing calls must not spam ERROR for an expected failure."""
+
+    class FakeResponse:
+        status = 400
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def text(self):
+            return '{"jsonrpc": "2.0", "error": {"code": 1, "message": "GID x is not found"}}'
+
+    class FakeSession:
+        closed = False
+
+        def post(self, *args, **kwargs):
+            return FakeResponse()
+
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+    monkeypatch.setattr(downloader, "_get_rpc_session", AsyncMock(return_value=FakeSession()))
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        with pytest.raises(Aria2Error, match="not found"):
+            await downloader._rpc_call("aria2.tellStatus", ["x"], log_errors=False)
+
+    error_records = [r for r in caplog.records if r.levelno == logging.ERROR]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+    assert error_records == []
+    assert any("GID x is not found" in r.message for r in debug_records)
+
+
+@pytest.mark.asyncio
+async def test_download_file_refreshes_signed_url_on_no_uri_available(
+    tmp_path, monkeypatch
+):
+    """An expired CivitAI signed URL ("No URI available") is recovered by
+    resolving a fresh URL and re-scheduling with continue=true."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_urls = []
+    gids = iter(["gid-1", "gid-2"])
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_urls.append(params[0][0])
+            return next(gids)
+        if method == "aria2.tellStatus":
+            gid = params[0]
+            if gid == "gid-1":
+                return {
+                    "gid": "gid-1",
+                    "status": "error",
+                    "errorMessage": "No URI available.",
+                }
+            return {
+                "gid": "gid-2",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    resolve = AsyncMock(
+        side_effect=[
+            "https://signed.example.com/model.safetensors?token=old",
+            "https://signed.example.com/model.safetensors?token=fresh",
+        ]
+    )
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_resolve_authenticated_redirect_url", resolve)
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://civitai.com/api/download/models/123",
+        str(save_path),
+        download_id="download-1",
+        headers={"Authorization": "Bearer token"},
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    # The second addUri used a freshly resolved signed URL, and both
+    # re-schedules keep continue=true so the partial payload is resumed.
+    assert add_uri_urls == [
+        "https://signed.example.com/model.safetensors?token=old",
+        "https://signed.example.com/model.safetensors?token=fresh",
+    ]
+    assert resolve.await_count == 2
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_fails_when_no_uri_available_exceeds_recovery_limit(
+    tmp_path, monkeypatch
+):
+    """URL refresh is bounded by MAX_TRANSFER_RECOVERY_ATTEMPTS."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return f"gid-{add_uri_count['n']}"
+        if method == "aria2.tellStatus":
+            return {
+                "gid": params[0],
+                "status": "error",
+                "errorMessage": "No URI available.",
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is False
+    assert result == "No URI available."
+    assert add_uri_count["n"] == 1 + MAX_TRANSFER_RECOVERY_ATTEMPTS
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_does_not_refresh_url_for_other_errors(
+    tmp_path, monkeypatch
+):
+    """Errors other than "No URI available" remain permanent failures."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_count = {"n": 0}
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_count["n"] += 1
+            return "gid-1"
+        if method == "aria2.tellStatus":
+            return {
+                "gid": "gid-1",
+                "status": "error",
+                "errorMessage": "Download aborted. URI=https://example.com/model.safetensors",
+            }
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is False
+    assert "Download aborted" in result
+    assert add_uri_count["n"] == 1
+    assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_preresolves_huggingface_redirect_and_strips_token(
+    tmp_path, monkeypatch
+):
+    """aria2 forwards custom headers to redirect targets, so the HF Bearer
+    token must never leave huggingface.co: the /resolve/ redirect is resolved
+    first and the signed CDN URL is handed to aria2 without headers."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    rpc_calls = []
+    statuses = iter(
+        [
+            {
+                "gid": "gid-1",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            },
+        ]
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        rpc_calls.append((method, params))
+        if method == "aria2.addUri":
+            return "gid-1"
+        if method == "aria2.tellStatus":
+            return next(statuses)
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(
+        downloader,
+        "_resolve_authenticated_redirect_url",
+        AsyncMock(
+            return_value="https://cdn-lfs.huggingface.co/signed/model.safetensors?sig=abc"
+        ),
+    )
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://huggingface.co/user/repo/resolve/main/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+        headers={"Authorization": "Bearer hf_secret"},
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert rpc_calls[0][0] == "aria2.addUri"
+    assert rpc_calls[0][1][0] == [
+        "https://cdn-lfs.huggingface.co/signed/model.safetensors?sig=abc"
+    ]
+    assert "header" not in rpc_calls[0][1][1]

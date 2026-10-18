@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Optional
 from unittest.mock import AsyncMock
 
 import pytest
@@ -21,13 +22,13 @@ class DummyProvider(ModelMetadataProvider):
     async def get_model_versions_bulk(self, model_ids):
         return None
 
-    async def get_model_version(self, model_id: int = None, version_id: int = None):
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None):
         return None
 
     async def get_model_version_info(self, version_id: str):
         return None, None
 
-    async def get_user_models(self, username: str):
+    async def get_user_models(self, username: str, cursor: Optional[str] = None):
         return None
 
 
@@ -72,6 +73,7 @@ def _stub_settings(**overrides):
     base = {
         "enable_metadata_archive_db": False,
         "enable_civarchive_api": True,
+        "enable_openmodeldb_api": False,
         "metadata_provider_order": "civitai_archive_sqlite",
     }
     base.update(overrides)
@@ -96,6 +98,11 @@ async def _run_initialize(monkeypatch, settings):
     monkeypatch.setattr(
         metadata_service.ServiceRegistry,
         "get_civarchive_client",
+        AsyncMock(return_value=object()),
+    )
+    monkeypatch.setattr(
+        metadata_service.ServiceRegistry,
+        "get_openmodeldb_client",
         AsyncMock(return_value=object()),
     )
 
@@ -171,3 +178,48 @@ async def test_initialize_providers_single_provider_when_only_civitai(monkeypatc
     assert "fallback" not in manager.providers
     assert manager.default_provider == "civitai_api"
 
+
+
+# ---------------------------------------------------------------------------
+# initialize_metadata_providers — OpenModelDB gating + ordering
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_initialize_providers_includes_openmodeldb_when_enabled(monkeypatch):
+    settings = _stub_settings(enable_openmodeldb_api=True)
+    manager = await _run_initialize(monkeypatch, settings)
+    assert "openmodeldb_api" in manager.providers
+    # Local-index lookups run before the rate-limited CivArchive network API.
+    assert _fallback_provider_order(manager) == [
+        "civitai_api",
+        "openmodeldb_api",
+        "civarchive_api",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_initialize_providers_openmodeldb_sqlite_preset(monkeypatch):
+    settings = _stub_settings(
+        enable_metadata_archive_db=True,
+        enable_openmodeldb_api=True,
+        metadata_provider_order="civitai_sqlite_archive",
+    )
+    manager = await _run_initialize(monkeypatch, settings)
+    assert _fallback_provider_order(manager) == [
+        "civitai_api",
+        "openmodeldb_api",
+        "sqlite",
+        "civarchive_api",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_initialize_providers_skips_openmodeldb_when_disabled(monkeypatch):
+    settings = _stub_settings(
+        enable_metadata_archive_db=True,
+        enable_openmodeldb_api=False,
+    )
+    manager = await _run_initialize(monkeypatch, settings)
+    assert "openmodeldb_api" not in manager.providers
+    assert _fallback_provider_order(manager) == ["civitai_api", "civarchive_api", "sqlite"]

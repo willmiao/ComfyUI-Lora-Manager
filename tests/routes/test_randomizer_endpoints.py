@@ -31,7 +31,7 @@ class StubLoraService:
 @pytest.fixture
 def routes():
     handler = LoraRoutes()
-    handler.service = StubLoraService()
+    handler.service = StubLoraService()  # pyright: ignore[reportAttributeAccessIssue]
     return handler
 
 

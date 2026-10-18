@@ -1667,7 +1667,7 @@ describe('AutoComplete widget interactions', () => {
     expect(input.value).toBe('looking_to_the_side,');
   });
 
-  it('shows /af command for loras when active-filters autocomplete is off (default)', async () => {
+  it('shows /activefilters command for loras when active-filters autocomplete is off (default)', async () => {
     const input = document.createElement('textarea');
     input.value = '/';
     input.selectionStart = input.value.length;
@@ -1682,8 +1682,6 @@ describe('AutoComplete widget interactions', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/af');
-    expect(commandNames).not.toContain('/noaf');
     expect(commandNames).toContain('/activefilters');
     expect(commandNames).not.toContain('/noactivefilters');
   });
@@ -1710,11 +1708,11 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/af');
+    expect(commandNames).toContain('/activefilters');
     expect(previewTooltipMock.show).not.toHaveBeenCalled();
   });
 
-  it('shows /noaf command for loras when active-filters autocomplete is on', async () => {
+  it('shows /noactivefilters command for loras when active-filters autocomplete is on', async () => {
     settingGetMock.mockImplementation((key) => {
       if (key === 'loramanager.lora_active_filters_autocomplete') {
         return true;
@@ -1736,8 +1734,6 @@ describe('AutoComplete widget interactions', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/noaf');
-    expect(commandNames).not.toContain('/af');
     expect(commandNames).toContain('/noactivefilters');
     expect(commandNames).not.toContain('/activefilters');
   });
@@ -1766,7 +1762,7 @@ describe('AutoComplete widget interactions', () => {
     expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
   });
 
-  it('toggles the active-filters setting when /af is accepted', async () => {
+  it('toggles the active-filters setting when /activefilters is accepted', async () => {
     const input = document.createElement('textarea');
     input.value = '/';
     input.selectionStart = input.value.length;
@@ -1782,7 +1778,7 @@ describe('AutoComplete widget interactions', () => {
 
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const afItem = autoComplete.items.find((item) => item.command === '/af');
+    const afItem = autoComplete.items.find((item) => item.command === '/activefilters');
     expect(afItem).toBeDefined();
 
     // Simulate the input being cleared after the command is accepted so the
@@ -1793,7 +1789,7 @@ describe('AutoComplete widget interactions', () => {
     expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
   });
 
-  it('appends active filter params to loras autocomplete requests when enabled', async () => {
+  it('sends only the use_active_filters flag when enabled (filters resolved server-side)', async () => {
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1803,12 +1799,11 @@ describe('AutoComplete widget interactions', () => {
       return undefined;
     });
 
+    // Stored manager-page filters must NOT leak into the request URL; the
+    // backend injects them from its server-side store.
     localStorage.setItem('lora_manager_loras_filters', JSON.stringify({
       baseModel: ['SD 1.5'],
-      tags: { anime: 'include', nsfw: 'exclude', __no_tags__: 'exclude' },
-      autoTags: { I2V: 'include' },
-      modelTypes: ['standard'],
-      tagLogic: 'all',
+      tags: { anime: 'include', nsfw: 'exclude' },
       license: { noCredit: 'include', allowSelling: 'exclude' },
     }));
     localStorage.setItem('lora_manager_loras_activeFolder', 'MyLoras');
@@ -1834,19 +1829,7 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('/lm/loras/relative-paths?search=example&limit=100');
-    expect(calledUrl).toContain('folder=MyLoras');
-    expect(calledUrl).toContain('recursive=true');
-    expect(calledUrl).toContain('tag_include=anime');
-    expect(calledUrl).toContain('tag_exclude=nsfw');
-    expect(calledUrl).toContain('tag_exclude=__no_tags__');
-    expect(calledUrl).toContain('auto_tag_include=I2V');
-    expect(calledUrl).toContain('tag_logic=all');
-    expect(calledUrl).toContain('credit_required=false');
-    expect(calledUrl).toContain('allow_selling_generated_content=false');
-    const parsed = new URL(calledUrl, 'https://example.com');
-    expect(parsed.searchParams.get('base_model')).toBe('SD 1.5');
-    expect(parsed.searchParams.get('model_type')).toBe('standard');
+    expect(calledUrl).toBe('/lm/loras/relative-paths?search=example&limit=100&use_active_filters=true');
   });
 
   it('keeps the default loras autocomplete URL when active-filters mode is off', async () => {
@@ -1874,10 +1857,12 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/loras/relative-paths?search=example&limit=100');
   });
 
-  it('sends the filter-pipeline signal even when no filters are stored', async () => {
+  it('sends the filter-pipeline flag even when no filters are stored', async () => {
     // Regression: with filter mode on but no folder/filters stored, the request
-    // carried no params, so the backend skipped the filter pipeline and global
-    // settings like show_only_sfw diverged from the list endpoint.
+    // carried no signal, so the backend skipped the filter pipeline and global
+    // settings like show_only_sfw diverged from the list endpoint. The flag
+    // makes the backend run the pipeline (injecting nothing when its store
+    // is empty).
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1911,10 +1896,13 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('omits folder param when active folder is root and recursion is enabled', async () => {
+  it('leaves folder params to the backend when active folder is root with recursion enabled', async () => {
+    // The root-folder/recursion semantics now live server-side (see
+    // active_filters_store.active_filters_to_query_kwargs); the client only
+    // sends the flag.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1952,10 +1940,12 @@ describe('AutoComplete widget interactions', () => {
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
     expect(calledUrl).not.toContain('folder=');
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('sends an empty folder param for root with recursion disabled, mirroring the page list', async () => {
+  it('leaves the root+non-recursive folder mapping to the backend', async () => {
+    // Root with recursion disabled maps to folder='' server-side (mirroring
+    // the page list); the client no longer encodes this in the URL.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1992,15 +1982,14 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('folder=');
-    expect(calledUrl).toContain('recursive=false');
-    const parsed = new URL(calledUrl, 'https://example.com');
-    expect(parsed.searchParams.get('folder')).toBe('');
+    expect(calledUrl).not.toContain('folder=');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('applies the active folder even when no filter-panel filters are set', async () => {
+  it('sends the flag even when only a folder is stored (no filter-panel filters)', async () => {
     // Regression: folder was skipped when lora_manager_loras_filters was
-    // missing because the filters key gate returned early.
+    // missing because the filters key gate returned early. The flag is now
+    // unconditional, and the backend injects the folder from its store.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -2033,7 +2022,125 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('folder=Flux.1+D%2Fstyle');
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
+    expect(calledUrl).not.toContain('folder=');
+  });
+
+  describe('discoverability hints', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    const typeSlashCommand = async () => {
+      const input = document.createElement('textarea');
+      input.value = '/';
+      input.selectionStart = 1;
+      document.body.append(input);
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+
+      const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+      const autoComplete = new AutoComplete(input, 'prompt', { showPreview: false, minChars: 1 });
+
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return autoComplete;
+    };
+
+    it('shows the current autocomplete state below the slash command list', async () => {
+      const autoComplete = await typeSlashCommand();
+
+      const footer = autoComplete.dropdown.querySelector('.lm-autocomplete-command-footer');
+      expect(footer).not.toBeNull();
+      expect(footer.textContent).toContain('/noautocomplete to disable');
+    });
+
+    it('shows how to re-enable autocomplete in the footer when it is off', async () => {
+      settingGetMock.mockImplementation((key) => {
+        if (key === 'loramanager.prompt_tag_autocomplete') {
+          return false;
+        }
+        return undefined;
+      });
+
+      const autoComplete = await typeSlashCommand();
+
+      const footer = autoComplete.dropdown.querySelector('.lm-autocomplete-command-footer');
+      expect(footer).not.toBeNull();
+      expect(footer.textContent).toContain('/autocomplete to enable');
+    });
+
+    it('stays silent when typing with tag autocomplete disabled', async () => {
+      settingGetMock.mockImplementation((key) => {
+        if (key === 'loramanager.prompt_tag_autocomplete') {
+          return false;
+        }
+        if (key === 'loramanager.autocomplete_accept_key') {
+          return 'both';
+        }
+        return undefined;
+      });
+
+      const input = document.createElement('textarea');
+      input.value = 'hello';
+      input.selectionStart = 5;
+      document.body.append(input);
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('hello');
+
+      const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+      const autoComplete = new AutoComplete(input, 'prompt', { showPreview: false, minChars: 1 });
+
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+
+      expect(autoComplete.isVisible).toBe(false);
+      expect(fetchApiMock).not.toHaveBeenCalled();
+    });
+
+    it('shows a dismissible first-run hint on tag suggestions and remembers dismissal', async () => {
+      vi.useFakeTimers();
+
+      fetchApiMock.mockResolvedValue({
+        json: () => Promise.resolve({
+          success: true,
+          words: [{ tag_name: '1girl', category: 4, post_count: 500000 }],
+        }),
+      });
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('1gi');
+
+      const triggerSearch = async () => {
+        const input = document.createElement('textarea');
+        input.value = '1gi';
+        input.selectionStart = 3;
+        document.body.append(input);
+
+        const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+        const autoComplete = new AutoComplete(input, 'prompt', {
+          debounceDelay: 0,
+          showPreview: false,
+          minChars: 1,
+        });
+
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await vi.runAllTimersAsync();
+        await Promise.resolve();
+        return autoComplete;
+      };
+
+      const autoComplete = await triggerSearch();
+
+      const hint = autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint');
+      expect(hint).not.toBeNull();
+      expect(hint.textContent).toContain('/noautocomplete');
+
+      hint.querySelector('button').click();
+
+      expect(autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
+      expect(localStorage.getItem('lm:autocomplete-disable-tip-dismissed')).toBe('1');
+
+      // A fresh instance no longer shows the hint once dismissed
+      const autoComplete2 = await triggerSearch();
+      expect(autoComplete2.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
+    });
   });
 });

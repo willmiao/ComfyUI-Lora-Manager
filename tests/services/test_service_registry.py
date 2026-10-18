@@ -52,7 +52,7 @@ async def test_lazy_loaded_scanners(monkeypatch, method_name, module_path, class
 async def test_lazy_loaded_websocket_manager(monkeypatch):
     fake_manager = object()
     module = types.ModuleType("py.services.websocket_manager")
-    module.ws_manager = fake_manager
+    setattr(module, "ws_manager", fake_manager)
     monkeypatch.setitem(sys.modules, "py.services.websocket_manager", module)
 
     first = await ServiceRegistry.get_websocket_manager()

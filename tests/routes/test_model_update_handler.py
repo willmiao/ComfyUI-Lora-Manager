@@ -2,11 +2,20 @@ import copy
 import json
 import logging
 from types import SimpleNamespace
+from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 
 from py.config import config
-from py.routes.handlers.model_handlers import ModelCivitaiHandler, ModelUpdateHandler
+from py.routes.handlers.model_handlers import (
+    ModelCivitaiHandler,
+    ModelHandlerSet,
+    ModelManagementHandler,
+    ModelUpdateHandler,
+)
+from py.routes.model_route_registrar import COMMON_ROUTE_DEFINITIONS
+from py.services.errors import ResourceNotFoundError
 from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
@@ -198,27 +207,66 @@ async def test_get_civitai_versions_degrades_when_download_history_unavailable(m
 
     handler = ModelCivitaiHandler(
         service=service,
-        settings_service=SimpleNamespace(get=lambda *_: False),
-        ws_manager=SimpleNamespace(),
+        settings_service=SimpleNamespace(get=lambda *_: False),  # pyright: ignore[reportArgumentType]
+        ws_manager=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
         logger=logging.getLogger(__name__),
         metadata_provider_factory=metadata_provider_factory,
         validate_model_type=lambda *_: True,
         expected_model_types=lambda: "LoRA",
         find_model_file=lambda *_: None,
-        metadata_sync=SimpleNamespace(),
-        metadata_refresh_use_case=SimpleNamespace(),
-        metadata_progress_callback=lambda *_args, **_kwargs: None,
+        metadata_sync=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_refresh_use_case=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_progress_callback=lambda *_args, **_kwargs: None,  # pyright: ignore[reportArgumentType]
     )
 
     response = await handler.get_civitai_versions(
-        SimpleNamespace(match_info={"model_id": "42"})
+        SimpleNamespace(match_info={"model_id": "42"})  # pyright: ignore[reportArgumentType]
     )
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert response.status == 200
     assert payload[0]["id"] == 7
     assert payload[0]["existsLocally"] is False
     assert payload[0]["hasBeenDownloaded"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_civitai_versions_surfaces_not_found_details():
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    class NotFoundProvider:
+        async def get_model_versions(self, model_id):
+            raise ResourceNotFoundError(f"Civitai model {model_id} was not found")
+
+    async def metadata_provider_factory():
+        return NotFoundProvider()
+
+    handler = ModelCivitaiHandler(
+        service=service,
+        settings_service=SimpleNamespace(get=lambda *_: False),  # pyright: ignore[reportArgumentType]
+        ws_manager=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        logger=logging.getLogger(__name__),
+        metadata_provider_factory=metadata_provider_factory,
+        validate_model_type=lambda *_: True,
+        expected_model_types=lambda: "LoRA",
+        find_model_file=lambda *_: None,
+        metadata_sync=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_refresh_use_case=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_progress_callback=lambda *_args, **_kwargs: None,  # pyright: ignore[reportArgumentType]
+    )
+
+    response = await handler.get_civitai_versions(
+        SimpleNamespace(match_info={"model_id": "42"})  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+
+    assert response.status == 404
+    assert "42" in payload["error"]
 
 
 @pytest.mark.asyncio
@@ -231,15 +279,25 @@ async def test_refresh_model_updates_filters_records_without_updates():
         model_id=1,
         versions=[
             ModelVersionRecord(
+                version_id=8,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
                 version_id=10,
                 name="v1",
-                base_model=None,
+                base_model="Pony",
                 released_at=None,
                 size_bytes=None,
                 preview_url=None,
                 is_in_library=False,
                 should_ignore=False,
-            )
+            ),
         ],
         last_checked_at=None,
         should_ignore_model=False,
@@ -284,10 +342,14 @@ async def test_refresh_model_updates_filters_records_without_updates():
         async def json(self):
             return {}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["records"]) == 1
     assert payload["records"][0]["modelId"] == 1
@@ -300,6 +362,316 @@ async def test_refresh_model_updates_filters_records_without_updates():
     assert call["force_refresh"] is False
     assert call["provider"] is not None
     assert call["target_model_ids"] is None
+
+
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_reports_gate_events_for_all_records():
+    """Gate transitions are reported even for records that do not qualify as
+    updates (a version already in the library that became free)."""
+
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+    record = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=11,
+                name="v11",
+                base_model=None,
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            )
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+        events=[{"versionId": 11, "kind": "became_free", "versionName": "v11", "isInLibrary": True}],
+    )
+    update_service = DummyUpdateService({1: record})
+    metadata_selector = AsyncMock(return_value=SimpleNamespace())
+
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    # The record itself does not qualify as an update...
+    assert payload["records"] == []
+    # ...but its transition is still surfaced.
+    assert payload["events"] == [
+        {
+            "modelId": 1,
+            "modelType": "lora",
+            "versionId": 11,
+            "kind": "became_free",
+            "versionName": "v11",
+            "isInLibrary": True,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_same_base_scope_excludes_cross_base_updates():
+    """Issue #1083: with version_grouping=same_base (the default), a newer
+    remote version targeting another base model must not be counted, matching
+    what the Updates filter displays."""
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    cross_base_only = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+    update_service = DummyUpdateService({1: cross_base_only})
+
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    assert response.status == 200
+
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert payload["records"] == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_any_grouping_counts_cross_base_updates():
+    """With version_grouping=any the unscoped predicate applies, so a newer
+    remote version on any base model is counted."""
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    cross_base_only = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+    update_service = DummyUpdateService({1: cross_base_only})
+
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    settings = SimpleNamespace(
+        get=lambda key, default=None: (
+            "any" if key == "version_grouping" else default
+        )
+    )
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=settings,
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    assert response.status == 200
+
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert [record["modelId"] for record in payload["records"]] == [1]
+
+
+def _make_cross_base_only_record() -> ModelUpdateRecord:
+    return ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+
+def _base_handler(update_service, settings_service):
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    return ModelUpdateHandler(
+        service=DummyService(SimpleNamespace(version_index={})),
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=settings_service,
+        logger=logging.getLogger(__name__),
+    )
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_explicit_same_base_setting_excludes_cross_base():
+    """The literal "same_base" string (any casing/whitespace) selects the
+    scoped predicate, mirroring BaseModelService's strategy parsing."""
+    update_service = DummyUpdateService({1: _make_cross_base_only_record()})
+    settings = SimpleNamespace(
+        get=lambda key, default=None: (
+            " Same_Base " if key == "version_grouping" else default
+        )
+    )
+    handler = _base_handler(update_service, settings)
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["records"] == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_falls_back_without_scoped_predicate():
+    """A record type without has_update_for_local_bases (pre-change callers /
+    fakes) still counts via the unscoped predicate under same_base scope."""
+    legacy_record = _make_cross_base_only_record()
+    legacy_record.__dict__["has_update_for_local_bases"] = None
+
+    update_service = DummyUpdateService({1: legacy_record})
+    handler = _base_handler(update_service, SimpleNamespace(get=lambda *_: False))
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert [record["modelId"] for record in payload["records"]] == [1]
 
 
 @pytest.mark.asyncio
@@ -347,7 +719,9 @@ async def test_refresh_model_updates_with_target_ids():
         async def json(self):
             return {"modelIds": [1, "2", None]}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
     call = update_service.calls[0]
@@ -399,7 +773,9 @@ async def test_refresh_model_updates_accepts_snake_case_ids():
         async def json(self):
             return {"model_ids": [3, "4", "abc", None]}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
     call = update_service.calls[0]
@@ -429,9 +805,9 @@ async def test_fetch_missing_license_data_updates_metadata(monkeypatch):
             return None, False
         return SimpleNamespace(to_dict=lambda: copy.deepcopy(data)), False
 
-    saved: list[tuple[str, dict]] = []
+    saved: list[tuple[str, dict[str, Any]]] = []
 
-    async def fake_save(path: str, metadata: dict):
+    async def fake_save(path: str, metadata: dict[str, Any]):
         saved.append((path, copy.deepcopy(metadata)))
         return True
 
@@ -479,10 +855,14 @@ async def test_fetch_missing_license_data_updates_metadata(monkeypatch):
         async def json(self):
             return {}
 
-    response = await handler.fetch_missing_civitai_license_data(DummyRequest())
+    response = await handler.fetch_missing_civitai_license_data(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["updated"]) == 3
     assert provider_calls == [[10, 20]]
@@ -516,9 +896,9 @@ async def test_fetch_missing_license_data_filters_model_ids(monkeypatch):
             return None, False
         return SimpleNamespace(to_dict=lambda: copy.deepcopy(data)), False
 
-    saved: list[tuple[str, dict]] = []
+    saved: list[tuple[str, dict[str, Any]]] = []
 
-    async def fake_save(path: str, metadata: dict):
+    async def fake_save(path: str, metadata: dict[str, Any]):
         saved.append((path, copy.deepcopy(metadata)))
         return True
 
@@ -566,11 +946,287 @@ async def test_fetch_missing_license_data_filters_model_ids(monkeypatch):
         async def json(self):
             return {"modelIds": [20]}
 
-    response = await handler.fetch_missing_civitai_license_data(DummyRequest())
+    response = await handler.fetch_missing_civitai_license_data(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["updated"]) == 1
     assert provider_calls == [[20]]
     assert len(saved) == 1
+
+
+def test_serialize_version_permanent_paid_is_not_early_access():
+    """Permanent paid versions (is_paid, no end date) must not be flagged as
+    early access, mirroring _is_early_access_active in the update service."""
+    version = ModelVersionRecord(
+        version_id=7, name="v7", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=False, should_ignore=False,
+        early_access_ends_at=None, is_early_access=True, usage_control="Download",
+        paid_access=json.dumps({"permanent": True, "endsAt": None}), is_paid=True,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["isEarlyAccess"] is False
+    assert serialized["isPaid"] is True
+    assert serialized["paidAccess"] == {"permanent": True, "endsAt": None}
+
+
+def test_serialize_version_timed_paid_is_early_access():
+    """Timed paid gates (endsAt in the future) stay flagged as early access."""
+    version = ModelVersionRecord(
+        version_id=8, name="v8", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=False, should_ignore=False,
+        early_access_ends_at="2099-01-01T00:00:00.000Z", is_early_access=True,
+        usage_control="Download",
+        paid_access=json.dumps({"permanent": False, "endsAt": "2099-01-01T00:00:00.000Z"}),
+        is_paid=False,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["isEarlyAccess"] is True
+    assert serialized["isPaid"] is False
+
+
+def test_serialize_version_malformed_paid_access_does_not_crash():
+    """A malformed paid_access row must degrade to None instead of failing
+    the whole versions-list response."""
+    version = ModelVersionRecord(
+        version_id=10, name="v10", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=False, should_ignore=False,
+        early_access_ends_at=None, is_early_access=True, usage_control=None,
+        paid_access="{not json", is_paid=False,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["paidAccess"] is None
+    assert serialized["isEarlyAccess"] is True
+
+
+async def test_enrich_early_access_details_skips_permanent_paid(monkeypatch):
+    """Permanent paid versions must not trigger per-version CivitAI fetches in
+    _enrich_early_access_details: they are not early access and can never get
+    an end time, so enriching them is wasted API traffic."""
+    record = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=100, name="paid", base_model=None, released_at=None,
+                size_bytes=None, preview_url=None, is_in_library=False,
+                should_ignore=False, early_access_ends_at=None,
+                is_early_access=True, usage_control="Download",
+                paid_access='{"permanent": true, "endsAt": null}', is_paid=True,
+            ),
+            ModelVersionRecord(
+                version_id=200, name="ea", base_model=None, released_at=None,
+                size_bytes=None, preview_url=None, is_in_library=False,
+                should_ignore=False, early_access_ends_at=None,
+                is_early_access=True, usage_control="Download",
+                paid_access=None, is_paid=False,
+            ),
+        ],
+        last_checked_at=1.0,
+        should_ignore_model=False,
+    )
+
+    fetched: list[int] = []
+
+    async def fake_version_info(version_id: str):
+        fetched.append(int(version_id))
+        return {"earlyAccessEndsAt": "2099-01-01T00:00:00.000Z"}, None
+
+    provider = SimpleNamespace(get_model_version_info=fake_version_info)
+
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return provider
+
+    handler = ModelUpdateHandler(
+        service=DummyService(SimpleNamespace(raw_data=[], version_index={})),
+        update_service=SimpleNamespace(),
+        metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    enriched = await handler._enrich_early_access_details(record)
+
+    # Only the timed EA version (200) is fetched; the permanent paid one (100) is skipped.
+    assert fetched == [200]
+    enriched_map = {v.version_id: v for v in enriched.versions}
+    assert enriched_map[200].early_access_ends_at == "2099-01-01T00:00:00.000Z"
+    assert enriched_map[100].early_access_ends_at is None
+
+
+def test_serialize_version_includes_file_count():
+    version = ModelVersionRecord(
+        version_id=11, name="v11", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=True, should_ignore=False, file_count=2,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["fileCount"] == 2
+
+
+def test_serialize_version_file_count_defaults_to_none():
+    version = ModelVersionRecord(
+        version_id=12, name="v12", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=False, should_ignore=False,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["fileCount"] is None
+
+
+def _build_relink_handler(metadata_sync):
+    service = SimpleNamespace(
+        scanner=SimpleNamespace(update_single_model_cache=AsyncMock())
+    )
+    return ModelManagementHandler(
+        service=service,
+        logger=logging.getLogger(__name__),
+        metadata_sync=metadata_sync,
+        preview_service=SimpleNamespace(),
+        tag_update_service=SimpleNamespace(),
+        lifecycle_service=SimpleNamespace(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_rejects_unsupported_source():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+                "source": "huggingface",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "Unsupported relink source" in payload["error"]
+    metadata_sync.relink_metadata.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_passes_provider_name_for_civarchive_source():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={"model_name": "Local"}),
+        relink_metadata=AsyncMock(
+            return_value={"model_name": "Archived", "sha256": "abc"}
+        ),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+                "source": "civarchive",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert "CivArchive" in payload["message"]
+    metadata_sync.relink_metadata.assert_awaited_once_with(
+        file_path="/tmp/model.safetensors",
+        metadata={"model_name": "Local"},
+        model_id=123,
+        model_version_id=456,
+        provider_name="civarchive_api",
+    )
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_surfaces_provider_unavailable_without_500():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(
+            side_effect=ValueError(
+                "CivitArchive is not available or not enabled. "
+                "Enable the CivitArchive API in settings to relink via CivArchive."
+            )
+        ),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": None,
+                "source": "civarchive",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "CivitArchive" in payload["error"]
+
+
+def test_every_common_route_definition_resolves_to_a_handler():
+    """Guard the declarative route table against a missing mapping entry.
+
+    Adding a RouteDefinition without registering it in
+    ``ModelHandlerSet.to_route_mapping`` fails at request time with a bare
+    KeyError from the handler lookup (and only on a live server), so assert the
+    whole table resolves here instead.
+    """
+
+    class AnyHandler:
+        def __getattr__(self, _name):
+            return lambda request: None
+
+    handler_set = ModelHandlerSet(
+        page_view=AnyHandler(),
+        listing=AnyHandler(),
+        management=AnyHandler(),
+        query=AnyHandler(),
+        download=AnyHandler(),
+        civitai=AnyHandler(),
+        move=AnyHandler(),
+        auto_organize=AnyHandler(),
+        filename_template=AnyHandler(),
+        updates=AnyHandler(),
+    )
+
+    mapping = handler_set.to_route_mapping()
+    missing = [
+        definition.handler_name
+        for definition in COMMON_ROUTE_DEFINITIONS
+        if definition.handler_name not in mapping
+    ]
+
+    assert missing == []
+
+
+def test_price_alert_endpoints_are_not_registered():
+    """The redesign dropped the standalone alerts surface: obtainability rides on
+    the update surfaces, so no per-type alert route may remain."""
+
+    assert [
+        definition.path_template
+        for definition in COMMON_ROUTE_DEFINITIONS
+        if "price-alert" in definition.path_template
+    ] == []

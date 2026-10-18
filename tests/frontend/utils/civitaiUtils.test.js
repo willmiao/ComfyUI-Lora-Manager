@@ -8,9 +8,12 @@ import {
     rewriteCivitaiUrl,
     getOptimizedUrl,
     getShowcaseUrl,
+    getDisplayUrl,
     getThumbnailUrl,
+    getGalleryThumbnailUrl,
     extractCivitaiImageId,
     extractCivitaiModelUrlParts,
+    classifyModelRelinkUrl,
     isCivitaiUrl,
     isSupportedCivitaiPageHost,
     OptimizationMode
@@ -20,7 +23,9 @@ describe('civitaiUtils', () => {
     describe('OptimizationMode', () => {
         it('should have correct mode values', () => {
             expect(OptimizationMode.SHOWCASE).toBe('showcase');
+            expect(OptimizationMode.DISPLAY).toBe('display');
             expect(OptimizationMode.THUMBNAIL).toBe('thumbnail');
+            expect(OptimizationMode.GALLERY_THUMBNAIL).toBe('gallery-thumbnail');
         });
     });
 
@@ -104,6 +109,38 @@ describe('civitaiUtils', () => {
 
             expect(wasRewritten).toBe(true);
             expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite image URLs with /original=true for gallery-thumbnail mode (width=160)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.GALLERY_THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=160,optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite video URLs with /original=true for gallery-thumbnail mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'video', OptimizationMode.GALLERY_THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=160,optimized=true/12345.mp4');
+        });
+
+        it('should rewrite image URLs with /original=true for display mode (width=2400)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.DISPLAY);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=2400,optimized=true/12345.jpeg');
+        });
+
+        it('should keep videos full quality in display mode (no transcode/width)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'video', OptimizationMode.DISPLAY);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.mp4');
         });
 
         it('should not rewrite URLs without /original=true', () => {
@@ -231,6 +268,38 @@ describe('civitaiUtils', () => {
         });
     });
 
+    describe('getDisplayUrl', () => {
+        it('should return display-optimized URL (width=2400) for images', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const displayUrl = getDisplayUrl(originalUrl, 'image');
+
+            expect(displayUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=2400,optimized=true/12345.jpeg');
+        });
+
+        it('should keep videos full quality', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const displayUrl = getDisplayUrl(originalUrl, 'video');
+
+            expect(displayUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.mp4');
+        });
+    });
+
+    describe('getGalleryThumbnailUrl', () => {
+        it('should return gallery-thumbnail-optimized URL (width=160)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const thumbnailUrl = getGalleryThumbnailUrl(originalUrl, 'image');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=160,optimized=true/12345.jpeg');
+        });
+
+        it('should handle videos for gallery thumbnails', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const thumbnailUrl = getGalleryThumbnailUrl(originalUrl, 'video');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=160,optimized=true/12345.mp4');
+        });
+    });
+
     describe('isCivitaiUrl', () => {
         it('should return true for CivitAI URLs', () => {
             expect(isCivitaiUrl('https://image.civitai.com/something')).toBe(true);
@@ -283,6 +352,12 @@ describe('civitaiUtils', () => {
     });
 
     describe('extractCivitaiModelUrlParts', () => {
+        it.each(['civitai.com', 'civitai.red'])('rejects download and API URLs on %s', (host) => {
+            for (const path of ['/api/download/models/3390681', '/api/v1/models/3390681', '/models/3390681invalid']) {
+                expect(extractCivitaiModelUrlParts(`https://${host}${path}?modelVersionId=3390681`))
+                    .toEqual({ modelId: null, modelVersionId: null });
+            }
+        });
         it('extracts model and version ids from civitai.red model URLs', () => {
             expect(
                 extractCivitaiModelUrlParts('https://civitai.red/models/65423/name?modelVersionId=98765')
@@ -303,6 +378,62 @@ describe('civitaiUtils', () => {
 
         it('rejects image-like URLs from unsupported hosts', () => {
             expect(extractCivitaiImageId('https://example.com/images/126920345')).toBe(null);
+        });
+
+        it.each(['civitai.com', 'civitai.red'])('rejects non-image pages on %s', (host) => {
+            for (const path of ['/api/v1/images/126920345', '/images/126920345invalid']) {
+                expect(extractCivitaiImageId(`https://${host}${path}`)).toBe(null);
+            }
+        });
+    });
+
+    describe('classifyModelRelinkUrl', () => {
+        it.each(['civitai.com', 'civitai.red', 'civarchive.com'])('rejects non-model pages on %s', (host) => {
+            for (const path of ['/api/download/models/3390681', '/api/v1/models/3390681', '/models/3390681invalid']) {
+                expect(classifyModelRelinkUrl(`https://${host}${path}`))
+                    .toEqual({ source: null, modelId: null, modelVersionId: null });
+            }
+        });
+        it('classifies civitai.com model URLs', () => {
+            expect(
+                classifyModelRelinkUrl('https://civitai.com/models/649516/name?modelVersionId=726676')
+            ).toEqual({ source: 'civitai', modelId: '649516', modelVersionId: '726676' });
+        });
+
+        it('classifies civitai.red model URLs without a version id', () => {
+            expect(
+                classifyModelRelinkUrl('https://civitai.red/models/65423/')
+            ).toEqual({ source: 'civitai', modelId: '65423', modelVersionId: null });
+        });
+
+        it('classifies civarchive and civitaiarchive model URLs', () => {
+            expect(
+                classifyModelRelinkUrl('https://civarchive.com/models/1746460')
+            ).toEqual({ source: 'civarchive', modelId: '1746460', modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('http://www.civitaiarchive.com/models/42?modelVersionId=43')
+            ).toEqual({ source: 'civarchive', modelId: '42', modelVersionId: '43' });
+        });
+
+        it('rejects archive hosts when the path has no numeric model id', () => {
+            expect(
+                classifyModelRelinkUrl('https://civarchive.com/images/123')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+        });
+
+        it('rejects unsupported hosts and malformed input', () => {
+            expect(
+                classifyModelRelinkUrl('https://example.com/models/65423')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('not a url')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl(null)
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
         });
     });
 });

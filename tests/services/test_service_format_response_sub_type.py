@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, AsyncMock
 from py.services.lora_service import LoraService
 from py.services.checkpoint_service import CheckpointService
 from py.services.embedding_service import EmbeddingService
+from py.services.other_model_service import OtherModelService
 
 
 class TestLoraServiceFormatResponse:
@@ -204,6 +205,89 @@ class TestEmbeddingServiceFormatResponse:
 
         assert result["sub_type"] == "embedding"
         assert "model_type" not in result  # Removed in refactoring
+
+
+class TestOtherModelServiceFormatResponse:
+    """Test OtherModelService.format_response includes sub_type."""
+
+    @pytest.fixture
+    def mock_scanner(self):
+        scanner = MagicMock()
+        scanner._hash_index = MagicMock()
+        return scanner
+
+    @pytest.fixture
+    def other_service(self, mock_scanner):
+        return OtherModelService(mock_scanner)
+
+    @pytest.mark.asyncio
+    async def test_format_response_includes_sub_type(self, other_service):
+        """format_response should include sub_type field."""
+        other_data = {
+            "model_name": "Test VAE",
+            "file_name": "test_vae",
+            "preview_url": "test.webp",
+            "preview_nsfw_level": 0,
+            "base_model": "SDXL",
+            "folder": "",
+            "sha256": "abc123",
+            "file_path": "/models/vae/test_vae.safetensors",
+            "size": 1000,
+            "modified": 1234567890.0,
+            "tags": [],
+            "from_civitai": True,
+            "notes": "",
+            "favorite": False,
+            "sub_type": "vae",
+            "civitai": {},
+        }
+
+        result = await other_service.format_response(other_data)
+
+        assert "sub_type" in result
+        assert result["sub_type"] == "vae"
+        assert "model_type" not in result  # Removed in refactoring
+
+    @pytest.mark.asyncio
+    async def test_format_response_defaults_to_vae(self, other_service):
+        """format_response should default to 'vae' if no sub_type field."""
+        other_data = {
+            "model_name": "Test Upscaler",
+            "file_name": "test_upscaler",
+            "preview_url": "test.webp",
+            "preview_nsfw_level": 0,
+            "base_model": "SD1.5",
+            "folder": "",
+            "sha256": "abc123",
+            "file_path": "/models/upscale_models/test.pth",
+            "size": 1000,
+            "modified": 1234567890.0,
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+        }
+
+        result = await other_service.format_response(other_data)
+
+        assert result["sub_type"] == "vae"
+        assert "model_type" not in result  # Removed in refactoring
+
+    @pytest.mark.asyncio
+    async def test_format_response_returns_none_on_missing_file_path(self, other_service):
+        """format_response returns None when file_path is missing (corrupted row)."""
+        other_data = {
+            "model_name": "Test",
+            "file_name": "test",
+            "file_path": None,  # corrupted: missing file_path
+            "folder": "",
+            "sha256": "abc",
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+            "sub_type": "text_encoder",
+        }
+        result = await other_service.format_response(other_data)
+        assert result is None
 
 
 class TestFormatResponseCorruptedEntries:

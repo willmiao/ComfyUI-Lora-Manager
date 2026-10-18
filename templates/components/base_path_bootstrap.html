@@ -1,0 +1,195 @@
+{#
+  Base-path bootstrap. Must be the FIRST element in <head>: it detects the
+  reverse-proxy subpath (e.g. "/comfyui" when served via llama-swap, or
+  "/ComfyBackendDirect" via SwarmUI) from the current page URL and, only when
+  a prefix exists, patches fetch/XHR/WebSocket/innerHTML/DOM URL setters so
+  that root-absolute URLs ("/api/lm/...", "/loras_static/...") generated
+  anywhere in the frontend or in backend JSON payloads get the prefix
+  prepended. When no prefix is detected (normal or standalone deployment)
+  nothing is patched and behavior is byte-identical to before.
+#}
+<script>
+(function () {
+    'use strict';
+
+    // Manager page routes as the backend sees them (proxies strip the
+    // prefix, so the page path always ends with one of these suffixes).
+    // Longest first so "/loras/recipes" wins over "/loras".
+    var KNOWN_PAGES = ['/loras/recipes', '/loras', '/checkpoints', '/embeddings', '/other', '/statistics'];
+
+    var path = window.location.pathname.replace(/\/+$/, '') || '/';
+    var prefix = '';
+    for (var i = 0; i < KNOWN_PAGES.length; i++) {
+        var page = KNOWN_PAGES[i];
+        if (path === page || (path.length > page.length && path.endsWith(page))) {
+            prefix = path.slice(0, path.length - page.length);
+            break;
+        }
+    }
+
+    window.LM_BASE_PATH = prefix;
+    if (!prefix) {
+        return;
+    }
+
+    var prefixBody = prefix.slice(1);
+
+    function prefixPath(p) {
+        if (p.charAt(0) !== '/' || p.charAt(1) === '/') {
+            return p;
+        }
+        // Already prefixed (e.g. markup re-serialized from the DOM).
+        if (p === prefix || p.indexOf(prefix + '/') === 0) {
+            return p;
+        }
+        return prefix + p;
+    }
+
+    function prefixUrl(url) {
+        if (typeof url !== 'string') {
+            return url;
+        }
+        if (url.charAt(0) === '/') {
+            return prefixPath(url);
+        }
+        // Absolute same-origin URL (e.g. from a Request object).
+        if (url.indexOf('http') === 0) {
+            try {
+                var u = new URL(url);
+                if (u.origin === window.location.origin) {
+                    var prefixed = prefixPath(u.pathname);
+                    if (prefixed !== u.pathname) {
+                        u.pathname = prefixed;
+                        return u.toString();
+                    }
+                }
+            } catch (e) { /* not a parseable URL: leave untouched */ }
+        }
+        return url;
+    }
+
+    window.lmWithBasePath = prefixUrl;
+
+    // fetch()
+    if (window.fetch) {
+        var nativeFetch = window.fetch;
+        window.fetch = function (input, init) {
+            if (typeof input === 'string') {
+                input = prefixUrl(input);
+            } else if (typeof URL !== 'undefined' && input instanceof URL) {
+                // fetch(new URL('/api/...', location.origin)) bypasses the
+                // string check — coerce so same-origin URLs get prefixed.
+                input = prefixUrl(input.href);
+            } else if (typeof Request !== 'undefined' && input instanceof Request) {
+                var requestUrl = prefixUrl(input.url);
+                if (requestUrl !== input.url) {
+                    input = new Request(requestUrl, input);
+                }
+            }
+            return nativeFetch.call(this, input, init);
+        };
+    }
+
+    // XMLHttpRequest
+    if (window.XMLHttpRequest) {
+        var nativeOpen = window.XMLHttpRequest.prototype.open;
+        window.XMLHttpRequest.prototype.open = function (method, url) {
+            arguments[1] = prefixUrl(typeof url === 'string' ? url : String(url));
+            return nativeOpen.apply(this, arguments);
+        };
+    }
+
+    // WebSocket
+    if (window.WebSocket) {
+        var NativeWebSocket = window.WebSocket;
+        var PatchedWebSocket = function (url, protocols) {
+            if (url && typeof url !== 'string' && url.href) {
+                url = url.href;
+            }
+            return protocols === undefined
+                ? new NativeWebSocket(prefixUrl(url))
+                : new NativeWebSocket(prefixUrl(url), protocols);
+        };
+        PatchedWebSocket.prototype = NativeWebSocket.prototype;
+        PatchedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+        PatchedWebSocket.OPEN = NativeWebSocket.OPEN;
+        PatchedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+        PatchedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+        window.WebSocket = PatchedWebSocket;
+    }
+
+    // Markup injected via innerHTML/outerHTML/insertAdjacentHTML carries
+    // root-absolute URLs from backend JSON (preview URLs, placeholders) and
+    // inline handlers (onerror="this.src='/...'"): rewrite the attributes.
+    var ATTR_URL_RE = /((?:src|href|poster)\s*=\s*["'])(\/)(?!\/)/g;
+    function rewriteMarkup(html) {
+        if (typeof html !== 'string' || html.indexOf('/') === -1) {
+            return html;
+        }
+        return html.replace(ATTR_URL_RE, function (match, head, slash, offset, whole) {
+            var rest = whole.slice(offset + match.length);
+            if (rest === prefixBody || rest.indexOf(prefixBody + '/') === 0) {
+                return match;
+            }
+            return head + prefix + '/';
+        });
+    }
+
+    function patchMarkupProp(proto, prop) {
+        var desc = Object.getOwnPropertyDescriptor(proto, prop);
+        if (!desc || !desc.set) {
+            return;
+        }
+        Object.defineProperty(proto, prop, {
+            configurable: true,
+            enumerable: desc.enumerable,
+            get: desc.get,
+            set: function (value) { desc.set.call(this, rewriteMarkup(value)); },
+        });
+    }
+
+    if (window.Element) {
+        patchMarkupProp(window.Element.prototype, 'innerHTML');
+        patchMarkupProp(window.Element.prototype, 'outerHTML');
+        var nativeInsertAdjacentHTML = window.Element.prototype.insertAdjacentHTML;
+        if (nativeInsertAdjacentHTML) {
+            window.Element.prototype.insertAdjacentHTML = function (position, html) {
+                return nativeInsertAdjacentHTML.call(this, position, rewriteMarkup(html));
+            };
+        }
+
+        // Direct DOM assignments: img.src = model.preview_url, anchor.href, ...
+        var nativeSetAttribute = window.Element.prototype.setAttribute;
+        window.Element.prototype.setAttribute = function (name, value) {
+            if (typeof value === 'string' && /^(src|href|poster)$/i.test(name)) {
+                value = prefixUrl(value);
+            }
+            return nativeSetAttribute.call(this, name, value);
+        };
+    }
+
+    function patchUrlProp(proto, prop) {
+        if (!proto) {
+            return;
+        }
+        var desc = Object.getOwnPropertyDescriptor(proto, prop);
+        if (!desc || !desc.set) {
+            return;
+        }
+        Object.defineProperty(proto, prop, {
+            configurable: true,
+            enumerable: desc.enumerable,
+            get: desc.get,
+            set: function (value) { desc.set.call(this, prefixUrl(value)); },
+        });
+    }
+
+    patchUrlProp(window.HTMLImageElement && window.HTMLImageElement.prototype, 'src');
+    patchUrlProp(window.HTMLMediaElement && window.HTMLMediaElement.prototype, 'src');
+    patchUrlProp(window.HTMLSourceElement && window.HTMLSourceElement.prototype, 'src');
+    patchUrlProp(window.HTMLVideoElement && window.HTMLVideoElement.prototype, 'poster');
+    patchUrlProp(window.HTMLAnchorElement && window.HTMLAnchorElement.prototype, 'href');
+    patchUrlProp(window.HTMLScriptElement && window.HTMLScriptElement.prototype, 'src');
+    patchUrlProp(window.HTMLLinkElement && window.HTMLLinkElement.prototype, 'href');
+})();
+</script>

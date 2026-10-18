@@ -55,7 +55,7 @@ class ServerI18nManager:
             logger.warning(f"Locale {locale} not found, using 'en'")
             self.current_locale = 'en'
     
-    def get_translation(self, key: str, params: Dict[str, Any] = None, **kwargs) -> str:
+    def get_translation(self, key: str, params: Dict[str, Any] | None = None, **kwargs) -> str:
         """Get translation for a key with optional parameters (supports both dict and keyword args)"""
         # Merge kwargs into params for convenience
         if params is None:
@@ -100,7 +100,7 @@ class ServerI18nManager:
         
         return value
     
-    def get_available_locales(self) -> list:
+    def get_available_locales(self) -> list[str]:
         """Get list of available locales"""
         return list(self.translations.keys())
     

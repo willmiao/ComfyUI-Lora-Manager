@@ -283,7 +283,7 @@ class CivitaiBaseModelService:
                 return None
 
             if isinstance(result, str):
-                data = json.loads(result)
+                data: Any = json.loads(result)
             else:
                 data = result
 

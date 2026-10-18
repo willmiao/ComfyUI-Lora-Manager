@@ -1,7 +1,12 @@
 import { RecipeCard } from '../components/RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { translate } from '../utils/i18nHelpers.js';
 import { captureScrollPosition, restoreScrollPosition } from '../utils/infiniteScroll.js';
+import { WS_ENDPOINTS } from './apiConfig.js';
+// Import from the dependency-light utils module, not baseModelApi.js, to
+// avoid the baseModelApi <-> modelApiFactory import cycle on this page.
+import { createScanEtaTracker } from '../utils/scanEtaUtils.js';
 
 const RECIPE_ENDPOINTS = {
     list: '/api/lm/recipes',
@@ -15,7 +20,8 @@ const RECIPE_ENDPOINTS = {
     move: '/api/lm/recipe/move',
     moveBulk: '/api/lm/recipes/move-bulk',
     bulkDelete: '/api/lm/recipes/bulk-delete',
-    repairBulk: '/api/lm/recipes/repair-bulk',
+    rematchBulk: '/api/lm/recipes/rematch-bulk',
+    rematchSingle: '/api/lm/recipe/{recipe_id}/rematch',
 };
 
 const RECIPE_SIDEBAR_CONFIG = {
@@ -45,6 +51,28 @@ export async function fetchRecipeDetails(recipeId) {
     }
 
     return response.json();
+}
+
+export async function sendRecipeWorkflow(recipeId) {
+    if (!recipeId) {
+        throw new Error('Unable to determine recipe ID');
+    }
+
+    const encodedRecipeId = encodeURIComponent(recipeId);
+    const response = await fetch(`${RECIPE_ENDPOINTS.detail}/${encodedRecipeId}/send-workflow`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        return { success: false, error: result.error || response.statusText };
+    }
+
+    return result;
 }
 
 /**
@@ -149,6 +177,16 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
                         params.append('tag_exclude', tag);
                     }
                 });
+            }
+
+            // Add LoRA availability filter (no statuses selected = no filtering)
+            if (pageState.filters?.loraAvailability && pageState.filters.loraAvailability.length > 0) {
+                params.append('lora_availability', pageState.filters.loraAvailability.join(','));
+            }
+
+            // Add has-workflow filter
+            if (pageState.filters?.hasWorkflow) {
+                params.append('has_workflow', 'true');
             }
         }
 
@@ -304,11 +342,53 @@ export async function syncChanges() {
 }
 
 export async function refreshRecipes(fullRebuild = true) {
-    const actionLabel = fullRebuild ? 'Rebuilding recipe cache' : 'Refreshing recipes';
-    const actionToast = fullRebuild ? 'Full rebuild' : 'Refresh';
+    const actionText = translate(
+        fullRebuild ? 'common.scanProgress.actionFullRebuild' : 'common.scanProgress.actionRefresh',
+        {},
+        fullRebuild ? 'Full rebuild' : 'Refresh'
+    );
+    const actionLowerText = translate(
+        fullRebuild ? 'common.scanProgress.actionRebuildLower' : 'common.scanProgress.actionRefreshLower',
+        {},
+        fullRebuild ? 'rebuild' : 'refresh'
+    );
+    const initialMessage = translate(
+        fullRebuild ? 'common.scanProgress.fullRebuilding' : 'common.scanProgress.refreshing',
+        { type: RECIPE_SIDEBAR_CONFIG.config.displayName },
+        `${fullRebuild ? 'Full rebuild' : 'Refreshing'} Recipes...`
+    );
+    const etaTracker = createScanEtaTracker();
+    let ws = null;
+
+    const handleScanProgress = (data) => {
+        if (typeof data.progress === 'number') {
+            state.loadingManager.setProgress(data.progress);
+        }
+        let statusText = translate(
+            `common.scanProgress.stages.${data.stage}`,
+            { total: data.total },
+            data.stage || ''
+        );
+        if (data.status === 'processing' && data.total > 0) {
+            statusText += ` (${data.processed}/${data.total})`;
+            if (data.current_name) {
+                statusText += ` ${data.current_name}`;
+            }
+            const etaText = etaTracker.update(data.processed, data.total);
+            if (etaText) {
+                statusText += ` | ${etaText}`;
+            }
+        }
+        state.loadingManager.setStatus(statusText);
+    };
 
     try {
-        state.loadingManager.show(`${actionLabel}...`, 0);
+        state.loadingManager.show(initialMessage, 0);
+
+        // Connect to the shared progress channel for live scan updates.
+        // Failure to connect must not block the refresh itself — fall back
+        // to the plain loading indicator.
+        ws = await connectScanProgressSocket(handleScanProgress);
 
         const url = new URL(RECIPE_ENDPOINTS.scan, window.location.origin);
         url.searchParams.append('full_rebuild', fullRebuild);
@@ -327,13 +407,61 @@ export async function refreshRecipes(fullRebuild = true) {
 
         await resetAndReload(false);
 
-        showToast('toast.api.refreshComplete', { action: actionToast }, 'success');
+        showToast('toast.api.refreshComplete', { action: actionText }, 'success');
     } catch (error) {
         console.error('Error refreshing recipes:', error);
-        showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: 'recipe' }, 'error');
+        showToast('toast.api.refreshFailed', { action: actionLowerText, type: 'recipe' }, 'error');
     } finally {
+        if (ws) {
+            ws.close();
+        }
         state.loadingManager.hide();
         state.loadingManager.restoreProgressBar();
+    }
+}
+
+/**
+ * Connect to the shared fetch-progress WebSocket for recipe scan progress.
+ * Returns null when the connection cannot be established (silent fallback).
+ * @param {Function} onScanProgress - Handler for scan_progress messages
+ * @returns {Promise<WebSocket|null>}
+ */
+async function connectScanProgressSocket(onScanProgress) {
+    let socket = null;
+    try {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        socket = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+
+        await new Promise((resolve, reject) => {
+            socket.onopen = resolve;
+            socket.onerror = reject;
+        });
+
+        socket.onmessage = (event) => {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (parseError) {
+                return;
+            }
+            // Only handle recipe scan progress; other operations share this
+            // channel and must be ignored.
+            if (data.type !== 'scan_progress' || data.model_type !== 'recipe') {
+                return;
+            }
+            onScanProgress(data);
+        };
+
+        return socket;
+    } catch (error) {
+        if (socket) {
+            try {
+                socket.close();
+            } catch (closeError) {
+                // Ignore close errors during fallback
+            }
+        }
+        return null;
     }
 }
 
@@ -554,7 +682,7 @@ export class RecipeSidebarApiClient {
         };
     }
 
-    async repairBulkModels(filePaths) {
+    async rematchBulkModels(filePaths, options = {}) {
         if (!filePaths || filePaths.length === 0) {
             throw new Error('No file paths provided');
         }
@@ -567,20 +695,25 @@ export class RecipeSidebarApiClient {
             throw new Error('No recipe IDs could be derived from file paths');
         }
 
-        const response = await fetch(this.apiConfig.endpoints.repairBulk, {
+        const body = { recipe_ids: recipeIds };
+        // Only sent when opted in — the strict body stays exactly
+        // {recipe_ids} for backward compatibility.
+        if (options.relaxed === true) {
+            body.relaxed = true;
+        }
+
+        const response = await fetch(this.apiConfig.endpoints.rematchBulk, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                recipe_ids: recipeIds,
-            }),
+            body: JSON.stringify(body),
         });
 
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-            throw new Error(result.error || 'Failed to repair recipes');
+            throw new Error(result.error || 'Failed to rematch recipes');
         }
 
         return result;
@@ -623,6 +756,10 @@ export class RecipeSidebarApiClient {
                 deleted_count: result.total_deleted,
                 failed_count: result.total_failed || 0,
                 errors: result.failed || [],
+                // Undo batch fields — batch_id on merge success, batch_ids
+                // array on merge failure
+                batch_id: result.batch_id || null,
+                batch_ids: result.batch_ids || null,
             };
         } finally {
             state.loadingManager?.hide();

@@ -3,22 +3,49 @@
         <button class="close" onclick="modalManager.closeModal('recipeModal')">&times;</button>
         
         <header class="recipe-modal-header">
-            <h2 id="recipeModalTitle">Recipe Details</h2>
-            <!-- Header Actions: populated dynamically in RecipeModal.js -->
-            <div class="recipe-header-actions" id="recipeHeaderActions"></div>
-            <!-- Recipe Tags Container (rendered by renderCompactTags) -->
-            <div id="recipeTagsContainer"></div>
+            <div class="recipe-modal-header-row">
+                <h2 id="recipeModalTitle">Recipe Details</h2>
+                <div class="modal-nav-controls" role="group" aria-label="{{ t('recipes.navigation.label') }}">
+                    <button class="modal-nav-btn" id="recipeNavPrevBtn" title="{{ t('recipes.navigation.previousWithShortcut') }}" aria-label="{{ t('recipes.navigation.previousWithShortcut') }}" disabled>
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <button class="modal-nav-btn" id="recipeNavNextBtn" title="{{ t('recipes.navigation.nextWithShortcut') }}" aria-label="{{ t('recipes.navigation.nextWithShortcut') }}" disabled>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Header Actions: Send and Copy buttons are static; source URL button is appended dynamically in RecipeModal.js -->
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+                <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                    <i class="fas fa-paper-plane"></i> <span>{{ t('recipes.actions.sendRecipe') }}</span>
+                </button>
+                <button class="modal-copy-btn" id="copyRecipeSyntaxBtn" title="{{ t('recipes.actions.copyRecipeSyntax') }}" aria-label="{{ t('recipes.actions.copyRecipeSyntax') }}">
+                    <i class="fas fa-copy" aria-hidden="true"></i>
+                </button>
+                <button class="modal-delete-btn" id="deleteRecipeBtn" title="{{ t('recipes.actions.deleteRecipeWithShortcut') }}" aria-label="{{ t('recipes.actions.deleteRecipeWithShortcut') }}">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+            </div>
+            <!-- Tags row: the base model badge is an independent sibling of the
+                 tags container so renderCompactTags re-renders and tag edit mode
+                 never touch it. Badge is populated by RecipeModal.syncBaseModelBadge(). -->
+            <div class="recipe-tags-row">
+                <span id="recipeBaseModelBadge" class="base-model-label recipe-base-model-badge" hidden></span>
+                <div id="recipeTagsContainer"></div>
+            </div>
         </header>
         
         <div class="modal-body">
-            <!-- Top Section: Preview and Generation Parameters -->
-            <div class="recipe-top-section">
+            <!-- Left Column: Preview -->
+            <div class="recipe-media-column">
                 <div class="recipe-preview-container" id="recipePreviewContainer">
                     <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
                     <!-- Source URL elements are now added dynamically in RecipeModal.js -->
                 </div>
-                
-                <div class="info-section recipe-gen-params">
+            </div>
+
+            <!-- Center Column: Generation Parameters -->
+            <div class="info-section recipe-gen-params">
                     <div class="gen-params-header-row">
                         <h3>Generation Parameters</h3>
                         <label class="inline-toggle-container lora-strip-toggle" title="When enabled, &lt;lora:...&gt; tags are removed from prompt text when copying">
@@ -103,9 +130,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Bottom Section: Resources -->
+
+            <!-- Right Column: Resources -->
             <div class="info-section recipe-bottom-section">
                 <div class="recipe-section-header">
                     <h3>Resources</h3>
@@ -113,12 +139,6 @@
                     <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                     <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                         <i class="fas fa-external-link-alt"></i>
-                    </button>
-                    <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="action-btn send-recipe-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
-                        <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>
@@ -129,5 +149,8 @@
             </div>
         </div>
     </div>
-</div>
+
+        <!-- Meta footer: file location + recipe ID, populated by RecipeModal.syncMetaFooter() -->
+        <footer class="recipe-meta-footer" id="recipeMetaFooter" hidden></footer>
+    </div>
 </div>

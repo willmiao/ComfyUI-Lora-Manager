@@ -3,6 +3,7 @@ import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } fr
 import { createPageControls } from './components/controls/index.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
+import { initActiveFiltersSync } from './utils/activeFiltersSync.js';
 
 // Initialize the Checkpoints page
 export class CheckpointsPageManager {
@@ -31,6 +32,9 @@ export class CheckpointsPageManager {
     async initialize() {
         // Initialize common page features (including context menus)
         appCore.initializePageFeatures();
+
+        // Mirror active filters to the backend for the ComfyUI-side autocomplete
+        initActiveFiltersSync(MODEL_TYPES.CHECKPOINT);
 
         console.log('Checkpoints Manager initialized');
     }

@@ -1,6 +1,6 @@
 import logging
 from aiohttp import web
-from typing import Set, Dict, Optional
+from typing import Set, Dict, Optional, Any
 from uuid import uuid4
 import asyncio
 from datetime import datetime, timedelta
@@ -15,13 +15,15 @@ class WebSocketManager:
         self._init_websockets: Set[web.WebSocketResponse] = set()  # New set for initialization progress clients
         self._download_websockets: Dict[str, web.WebSocketResponse] = {}  # New dict for download-specific clients
         # Add progress tracking dictionary
-        self._download_progress: Dict[str, Dict] = {}
+        self._download_progress: Dict[str, Dict[str, Any]] = {}
         # Cache last initialization progress payloads
-        self._last_init_progress: Dict[str, Dict] = {}
+        self._last_init_progress: Dict[str, Dict[str, Any]] = {}
         # Add auto-organize progress tracking
-        self._auto_organize_progress: Optional[Dict] = None
-        # Add recipe repair progress tracking
-        self._recipe_repair_progress: Optional[Dict] = None
+        self._auto_organize_progress: Optional[Dict[str, Any]] = None
+        # Add filename template progress tracking
+        self._filename_template_progress: Optional[Dict[str, Any]] = None
+        # Add recipe rematch progress tracking
+        self._recipe_rematch_progress: Optional[Dict[str, Any]] = None
         self._auto_organize_lock = asyncio.Lock()
         
     async def handle_connection(self, request: web.Request) -> web.WebSocketResponse:
@@ -95,7 +97,7 @@ class WebSocketManager:
             self.cleanup_download_progress(download_id)
             logger.debug(f"Delayed cleanup completed for download {download_id}")
     
-    async def broadcast(self, data: Dict):
+    async def broadcast(self, data: Dict[str, Any]):
         """Broadcast message to all connected clients"""
         if not self._websockets:
             return
@@ -106,7 +108,7 @@ class WebSocketManager:
             except Exception as e:
                 logger.error(f"Error sending progress: {e}")
     
-    async def broadcast_init_progress(self, data: Dict):
+    async def broadcast_init_progress(self, data: Dict[str, Any]):
         """Broadcast initialization progress to connected clients"""
         payload = dict(data) if data else {}
 
@@ -145,7 +147,7 @@ class WebSocketManager:
             except Exception as e:
                 logger.debug(f'Error sending cached initialization progress: {e}')
 
-    def _get_init_progress_key(self, data: Dict) -> str:
+    def _get_init_progress_key(self, data: Dict[str, Any]) -> str:
         """Return a stable key for caching initialization progress payloads"""
         page_type = data.get('pageType')
         if page_type:
@@ -155,7 +157,7 @@ class WebSocketManager:
             return f'scanner:{scanner_type}'
         return 'global'
 
-    async def broadcast_download_progress(self, download_id: str, data: Dict):
+    async def broadcast_download_progress(self, download_id: str, data: Dict[str, Any]):
         """Send progress update to specific download client"""
         progress_entry = {
             'progress': data.get('progress', 0),
@@ -170,6 +172,13 @@ class WebSocketManager:
             progress_entry['status'] = data['status']
         if 'message' in data:
             progress_entry['message'] = data['message']
+        # Post-transfer stage reporting (see `model_source_handlers._report_phase`):
+        # the byte counter has stopped by then, so the stage is the only thing
+        # that still says the download is working.
+        if 'stage' in data:
+            progress_entry['stage'] = data['stage']
+        if 'platform' in data:
+            progress_entry['platform'] = data['platform']
 
         self._download_progress[download_id] = progress_entry
         
@@ -183,7 +192,7 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error sending download progress: {e}")
             
-    async def broadcast_auto_organize_progress(self, data: Dict):
+    async def broadcast_auto_organize_progress(self, data: Dict[str, Any]):
         """Broadcast auto-organize progress to connected clients"""
         # Store progress data in memory
         self._auto_organize_progress = data
@@ -191,36 +200,56 @@ class WebSocketManager:
         # Broadcast via WebSocket
         await self.broadcast(data)
     
-    async def broadcast_recipe_repair_progress(self, data: Dict):
-        """Broadcast recipe repair progress to connected clients"""
-        # Store progress data in memory
-        self._recipe_repair_progress = data
-        
-        # Broadcast via WebSocket
-        await self.broadcast(data)
-    
-    def get_auto_organize_progress(self) -> Optional[Dict]:
+    def get_auto_organize_progress(self) -> Optional[Dict[str, Any]]:
         """Get current auto-organize progress"""
         return self._auto_organize_progress
     
     def cleanup_auto_organize_progress(self):
         """Clear auto-organize progress data"""
         self._auto_organize_progress = None
-    
-    def get_recipe_repair_progress(self) -> Optional[Dict]:
-        """Get current recipe repair progress"""
-        return self._recipe_repair_progress
-    
-    def cleanup_recipe_repair_progress(self):
-        """Clear recipe repair progress data if it is in a finished state"""
-        if self._recipe_repair_progress and self._recipe_repair_progress.get('status') in ['completed', 'cancelled', 'error']:
-            self._recipe_repair_progress = None
-    
-    def is_recipe_repair_running(self) -> bool:
-        """Check if recipe repair is currently running"""
-        if not self._recipe_repair_progress:
+
+    async def broadcast_filename_template_progress(self, data: Dict[str, Any]):
+        """Broadcast filename template progress to connected clients"""
+        self._filename_template_progress = data
+        await self.broadcast(data)
+
+    def get_filename_template_progress(self) -> Optional[Dict[str, Any]]:
+        """Get current filename template progress"""
+        return self._filename_template_progress
+
+    def cleanup_filename_template_progress(self):
+        """Clear filename template progress data"""
+        self._filename_template_progress = None
+
+    def is_filename_template_running(self) -> bool:
+        """Check if a filename template operation is currently running"""
+        if not self._filename_template_progress:
             return False
-        status = self._recipe_repair_progress.get('status')
+        status = self._filename_template_progress.get('status')
+        return status in ['started', 'processing']
+    
+    async def broadcast_recipe_rematch_progress(self, data: Dict[str, Any]):
+        """Broadcast recipe rematch progress to connected clients"""
+        # Store progress data in memory
+        self._recipe_rematch_progress = data
+        
+        # Broadcast via WebSocket
+        await self.broadcast(data)
+    
+    def get_recipe_rematch_progress(self) -> Optional[Dict[str, Any]]:
+        """Get current recipe rematch progress"""
+        return self._recipe_rematch_progress
+    
+    def cleanup_recipe_rematch_progress(self):
+        """Clear recipe rematch progress data if it is in a finished state"""
+        if self._recipe_rematch_progress and self._recipe_rematch_progress.get('status') in ['completed', 'cancelled', 'error']:
+            self._recipe_rematch_progress = None
+    
+    def is_recipe_rematch_running(self) -> bool:
+        """Check if recipe rematch is currently running"""
+        if not self._recipe_rematch_progress:
+            return False
+        status = self._recipe_rematch_progress.get('status')
         return status in ['started', 'processing']
     
     def is_auto_organize_running(self) -> bool:
@@ -234,7 +263,7 @@ class WebSocketManager:
         """Get the auto-organize lock"""
         return self._auto_organize_lock
     
-    def get_download_progress(self, download_id: str) -> Optional[Dict]:
+    def get_download_progress(self, download_id: str) -> Optional[Dict[str, Any]]:
         """Get progress information for a specific download"""
         return self._download_progress.get(download_id)
     
@@ -255,7 +284,7 @@ class WebSocketManager:
             self._download_progress.pop(download_id, None)
             logger.debug(f"Cleaned up old download progress for {download_id}")
             
-    async def broadcast_cache_health_warning(self, report: 'HealthReport', page_type: str = None):
+    async def broadcast_cache_health_warning(self, report: 'HealthReport', page_type: Optional[str] = None):
         """
         Broadcast cache health warning to frontend.
 

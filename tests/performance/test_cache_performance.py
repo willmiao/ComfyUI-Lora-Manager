@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import random
 import string
+from typing import Any, Dict, cast
+
 import pytest
 
 from py.services.model_hash_index import ModelHashIndex
@@ -22,9 +24,11 @@ class TestHashIndexPerformance:
 
     def test_hash_index_lookup_small(self, benchmark):
         """Benchmark hash index lookup with 100 models."""
-        index, target_hash = self._create_hash_index_with_n_models(
-            100, return_target=True
+        index, target_hash = cast(
+            tuple[ModelHashIndex, str | None],
+            self._create_hash_index_with_n_models(100, return_target=True),
         )
+        assert target_hash is not None
 
         def lookup():
             return index.get_path(target_hash)
@@ -34,9 +38,11 @@ class TestHashIndexPerformance:
 
     def test_hash_index_lookup_medium(self, benchmark):
         """Benchmark hash index lookup with 1,000 models."""
-        index, target_hash = self._create_hash_index_with_n_models(
-            1000, return_target=True
+        index, target_hash = cast(
+            tuple[ModelHashIndex, str | None],
+            self._create_hash_index_with_n_models(1000, return_target=True),
         )
+        assert target_hash is not None
 
         def lookup():
             return index.get_path(target_hash)
@@ -46,9 +52,11 @@ class TestHashIndexPerformance:
 
     def test_hash_index_lookup_large(self, benchmark):
         """Benchmark hash index lookup with 10,000 models."""
-        index, target_hash = self._create_hash_index_with_n_models(
-            10000, return_target=True
+        index, target_hash = cast(
+            tuple[ModelHashIndex, str | None],
+            self._create_hash_index_with_n_models(10000, return_target=True),
         )
+        assert target_hash is not None
 
         def lookup():
             return index.get_path(target_hash)
@@ -58,7 +66,7 @@ class TestHashIndexPerformance:
 
     def test_hash_index_add_entry_small(self, benchmark):
         """Benchmark adding entries to hash index with 100 existing models."""
-        index = self._create_hash_index_with_n_models(100)
+        index = cast(ModelHashIndex, self._create_hash_index_with_n_models(100))
         new_hash = f"new_hash_{self._random_string(16)}"
         new_path = "/path/to/new_model.safetensors"
 
@@ -69,7 +77,7 @@ class TestHashIndexPerformance:
 
     def test_hash_index_add_entry_large(self, benchmark):
         """Benchmark adding entries to hash index with 10,000 existing models."""
-        index = self._create_hash_index_with_n_models(10000)
+        index = cast(ModelHashIndex, self._create_hash_index_with_n_models(10000))
         new_hash = f"new_hash_{self._random_string(16)}"
         new_path = "/path/to/new_model.safetensors"
 
@@ -78,7 +86,9 @@ class TestHashIndexPerformance:
 
         benchmark(add_entry)
 
-    def _create_hash_index_with_n_models(self, n: int, return_target: bool = False):
+    def _create_hash_index_with_n_models(
+        self, n: int, return_target: bool = False
+    ) -> ModelHashIndex | tuple[ModelHashIndex, str | None]:
         """Create a hash index with n mock models.
 
         Args:
@@ -170,7 +180,7 @@ class TestRecipeFingerprintPerformance:
 
         benchmark(calculate)
 
-    def _create_loras(self, n: int) -> list:
+    def _create_loras(self, n: int) -> list[Dict[str, Any]]:
         """Create a list of n mock LoRA dictionaries."""
         loras = []
         for i in range(n):

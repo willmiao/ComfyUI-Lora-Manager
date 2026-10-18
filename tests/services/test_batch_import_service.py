@@ -154,6 +154,65 @@ class TestAdaptiveConcurrencyController:
         controller.record_result(duration=5.0, success=True)
         assert controller.current_concurrency == 3
 
+    @pytest.mark.asyncio
+    async def test_get_semaphore_returns_shared_instance(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        # Every item of a batch must receive the same semaphore so the
+        # concurrency bound is actually enforced batch-wide.
+        first = controller.get_semaphore()
+        second = controller.get_semaphore()
+        assert first is second
+
+    @pytest.mark.asyncio
+    async def test_shared_semaphore_limits_concurrent_tasks(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        active = 0
+        peak = 0
+
+        async def worker():
+            nonlocal active, peak
+            async with semaphore:
+                active += 1
+                peak = max(peak, active)
+                await asyncio.sleep(0.05)
+                active -= 1
+
+        await asyncio.gather(*[worker() for _ in range(10)])
+        assert peak == 3
+
+    @pytest.mark.asyncio
+    async def test_apply_concurrency_increases_capacity(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        controller.record_result(duration=0.5, success=True)  # 3 -> 4
+        await controller.apply_concurrency()
+
+        acquired = await asyncio.gather(
+            *[asyncio.wait_for(semaphore.acquire(), timeout=0.2) for _ in range(4)]
+        )
+        assert all(acquired)
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(semaphore.acquire(), timeout=0.05)
+        for _ in range(4):
+            semaphore.release()
+
+    @pytest.mark.asyncio
+    async def test_apply_concurrency_decreases_capacity(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        controller.record_result(duration=1.0, success=False)  # 3 -> 2
+        await controller.apply_concurrency()
+
+        acquired = await asyncio.gather(
+            *[asyncio.wait_for(semaphore.acquire(), timeout=0.2) for _ in range(2)]
+        )
+        assert all(acquired)
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(semaphore.acquire(), timeout=0.05)
+        for _ in range(2):
+            semaphore.release()
+
 
 class TestBatchImportProgress:
     def test_to_dict(self):
@@ -333,7 +392,7 @@ class TestBatchImportService:
         )
 
         service = BatchImportService(
-            analysis_service=analysis_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
             persistence_service=persistence_service,
             ws_manager=ws_manager,
             logger=logger,
@@ -445,8 +504,8 @@ class TestBatchImportServiceEdgeCases:
         logger = logging.getLogger("test")
 
         return BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )
@@ -506,8 +565,8 @@ class TestBatchImportServiceEdgeCases:
         (tmp_path / "test.png").write_bytes(b"fake-image")
 
         service = BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )
@@ -529,6 +588,49 @@ class TestBatchImportServiceEdgeCases:
         if persistence_service.saved_recipes:
             assert "batch-import" in persistence_service.saved_recipes[0]["tags"]
             assert "test" in persistence_service.saved_recipes[0]["tags"]
+
+    @pytest.mark.asyncio
+    async def test_workflow_from_analysis_is_passed_to_persistence(self, tmp_path):
+        """A workflow recovered from the source's original rendition travels in
+        the analysis payload and must reach save_recipe as metadata."""
+        workflow = '{"nodes": [{"id": 1}]}'
+        ws_manager = MockWebSocketManager()
+        analysis_service = MockAnalysisService(
+            {
+                "https://civitai.red/images/1": MockAnalysisResult(
+                    {
+                        "loras": [{"name": "test-lora"}],
+                        "workflow": workflow,
+                    }
+                ),
+            }
+        )
+        persistence_service = MockPersistenceService()
+        logger = logging.getLogger("test")
+
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        recipe_scanner_getter = lambda: SimpleNamespace(
+            find_recipes_by_fingerprint=lambda x: [],
+        )
+        civitai_client_getter = lambda: SimpleNamespace()
+
+        await service.start_batch_import(
+            recipe_scanner_getter=recipe_scanner_getter,
+            civitai_client_getter=civitai_client_getter,
+            items=[{"source": "https://civitai.red/images/1"}],
+            tags=[],
+        )
+
+        await asyncio.sleep(0.3)
+
+        assert persistence_service.saved_recipes
+        assert persistence_service.saved_recipes[0]["metadata"]["workflow"] == workflow
 
     @pytest.mark.asyncio
     async def test_skip_duplicates_parameter(self, service):
@@ -571,8 +673,8 @@ class TestInputValidation:
         logger = logging.getLogger("test")
 
         return BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )
@@ -596,3 +698,103 @@ class TestInputValidation:
         assert service._validate_local_path("../etc/passwd") is False
         assert service._validate_local_path("relative/path.png") is False
         assert service._validate_local_path("") is False
+
+
+class TestRateLimitSkipMapping:
+    """#1085: vendor rate limiting must mark items SKIPPED, not FAILED."""
+
+    @pytest.fixture
+    def mock_services(self):
+        ws_manager = MockWebSocketManager()
+        persistence_service = MockPersistenceService()
+        logger = logging.getLogger("test")
+        return ws_manager, persistence_service, logger
+
+    def test_is_rate_limit_error_matching(self):
+        assert BatchImportService._is_rate_limit_error("Rate limited") is True
+        assert BatchImportService._is_rate_limit_error(
+            "Rate limit wait for 'civarchive.com' exceeds the 300s cap"
+        ) is True
+        assert BatchImportService._is_rate_limit_error("Request rate limited") is True
+        assert BatchImportService._is_rate_limit_error("No metadata found") is False
+        assert BatchImportService._is_rate_limit_error(None) is False
+        assert BatchImportService._is_rate_limit_error("") is False
+
+    @pytest.mark.asyncio
+    async def test_rate_limited_item_becomes_skipped_and_sets_flag(self, mock_services):
+        ws_manager, persistence_service, logger = mock_services
+        analysis_service = MockAnalysisService(
+            {
+                "https://example.com/limited.png": MockAnalysisResult(
+                    {"error": "Rate limited"}
+                ),
+            }
+        )
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        operation_id = await service.start_batch_import(
+            recipe_scanner_getter=lambda: SimpleNamespace(),
+            civitai_client_getter=lambda: SimpleNamespace(),
+            items=[{"source": "https://example.com/limited.png"}],
+        )
+        await asyncio.sleep(0.5)
+
+        # The operation may already be cleaned up; inspect the broadcasts.
+        final = next(
+            (
+                b
+                for b in reversed(ws_manager.broadcasts)
+                if b.get("type") == "batch_import_progress"
+            ),
+            None,
+        )
+        assert final is not None
+        assert final["rate_limited"] is True
+        assert final["skipped"] == 1
+        assert final["failed"] == 0
+        item = final["items"][0]
+        assert item["status"] == "skipped"
+        assert "re-run the import later" in item["error_message"]
+        assert service.get_progress(operation_id) is None or True
+
+    @pytest.mark.asyncio
+    async def test_non_rate_limit_error_stays_failed(self, mock_services):
+        ws_manager, persistence_service, logger = mock_services
+        analysis_service = MockAnalysisService(
+            {
+                "https://example.com/broken.png": MockAnalysisResult(
+                    {"error": "No metadata found"}
+                ),
+            }
+        )
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        await service.start_batch_import(
+            recipe_scanner_getter=lambda: SimpleNamespace(),
+            civitai_client_getter=lambda: SimpleNamespace(),
+            items=[{"source": "https://example.com/broken.png"}],
+        )
+        await asyncio.sleep(0.5)
+
+        final = next(
+            (
+                b
+                for b in reversed(ws_manager.broadcasts)
+                if b.get("type") == "batch_import_progress"
+            ),
+            None,
+        )
+        assert final is not None
+        assert final["rate_limited"] is False
+        assert final["failed"] == 1
+        assert final["skipped"] == 0

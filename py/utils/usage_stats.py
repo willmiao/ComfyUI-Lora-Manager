@@ -6,10 +6,11 @@ import asyncio
 import logging
 import datetime
 import shutil
-from typing import Dict, Set
+from typing import Any, Awaitable, Dict, Set, cast
 
 from ..config import config
 from ..services.service_registry import ServiceRegistry
+from ..services.model_scanner import _is_excluded_dir
 from ..utils.settings_paths import get_settings_dir
 
 # Check if running in standalone mode
@@ -68,7 +69,7 @@ class UsageStats:
             return
             
         # Initialize stats storage
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             "checkpoints": {},  # sha256 -> { total: count, history: { date: count } }
             "loras": {},        # sha256 -> { total: count, history: { date: count } }
             "embeddings": {},   # sha256 -> { total: count, history: { date: count } }
@@ -297,8 +298,8 @@ class UsageStats:
 
                     # Process each prompt_id
                     try:
-                        registry = MetadataRegistry()
-                    except NameError:
+                        registry = MetadataRegistry()  # pyright: ignore[reportPossiblyUnboundVariable]
+                    except (ImportError, NameError):
                         # MetadataRegistry not available (standalone mode)
                         registry = None
                     
@@ -374,7 +375,7 @@ class UsageStats:
         if not callable(get_cached_data):
             return None
 
-        cache = await get_cached_data()
+        cache = await cast(Awaitable[Any], get_cached_data())
         raw_data = getattr(cache, "raw_data", None)
         if not isinstance(raw_data, list):
             return None
@@ -404,7 +405,7 @@ class UsageStats:
         if not callable(get_model_roots):
             return None
 
-        roots = [root for root in get_model_roots() if root]
+        roots = [root for root in cast(Any, get_model_roots()) if root]
         if not roots:
             return None
 
@@ -421,7 +422,8 @@ class UsageStats:
             if not os.path.exists(root_path):
                 continue
 
-            for dirpath, _dirnames, filenames in os.walk(root_path):
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
                 for filename in filenames:
                     extension = os.path.splitext(filename)[1].lower()
                     if extension not in supported_extensions:
@@ -486,7 +488,7 @@ class UsageStats:
             model_filename,
             file_path,
         )
-        calculated_hash = await calculate_hash(file_path)
+        calculated_hash = await cast(Awaitable[Any], calculate_hash(file_path))
         if calculated_hash:
             return calculated_hash
 
@@ -557,7 +559,7 @@ class UsageStats:
             logger.error(f"Error processing LoRA usage: {e}", exc_info=True)
     
     @staticmethod
-    def _extract_embedding_names(prompt_text: str) -> set:
+    def _extract_embedding_names(prompt_text: str) -> set[str]:
         """Parse embedding:name references from prompt text.
 
         ComfyUI's SDTokenizer resolves ``embedding:<name>`` during tokenization
@@ -605,7 +607,7 @@ class UsageStats:
         except Exception as e:
             logger.error("Error processing embedding usage: %s", e, exc_info=True)
 
-    async def get_stats(self):
+    async def get_stats(self) -> Dict[str, Any]:
         """Get current usage statistics"""
         return self.stats
     
@@ -633,7 +635,7 @@ class UsageStats:
 
         try:
             # Process metadata for this prompt_id
-            registry = MetadataRegistry()
+            registry = MetadataRegistry()  # pyright: ignore[reportPossiblyUnboundVariable]
             metadata = registry.get_metadata(prompt_id)
             if metadata:
                 await self._process_metadata(metadata)

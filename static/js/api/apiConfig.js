@@ -9,7 +9,8 @@ import { state } from '../state/index.js';
 export const MODEL_TYPES = {
     LORA: 'loras',
     CHECKPOINT: 'checkpoints',
-    EMBEDDING: 'embeddings' // Future model type
+    EMBEDDING: 'embeddings',
+    OTHER: 'other'
 };
 
 // Base API configuration for each model type
@@ -21,6 +22,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: true,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'loras.html'
     },
     [MODEL_TYPES.CHECKPOINT]: {
@@ -30,6 +32,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: false,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'checkpoints.html'
     },
     [MODEL_TYPES.EMBEDDING]: {
@@ -39,7 +42,18 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: true,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'embeddings.html'
+    },
+    [MODEL_TYPES.OTHER]: {
+        displayName: 'Other Model',
+        singularName: 'other',
+        defaultPageSize: 100,
+        supportsLetterFilter: false,
+        supportsBulkOperations: true,
+        supportsMove: true,
+        supportsFolderManagement: true,
+        templateName: 'other.html'
     }
 };
 
@@ -69,6 +83,17 @@ export function getApiEndpoints(modelType) {
         // Move operations (now common for all model types that support move)
         moveModel: `/api/lm/${modelType}/move_model`,
         moveBulk: `/api/lm/${modelType}/move_models_bulk`,
+        createFolder: `/api/lm/${modelType}/create-folder`,
+        deleteFolder: `/api/lm/${modelType}/delete-folder`,
+        // Drops the sidebar records of a folder that no longer exists on disk:
+        // the only cleanup left for a node whose directory was moved or deleted
+        // outside LoRA Manager.
+        forgetFolder: `/api/lm/${modelType}/forget-folder`,
+        renameFolder: `/api/lm/${modelType}/rename-folder`,
+        // Resolves a tree-relative folder onto the root(s) that hold it: the
+        // unified folder tree merges every root, so a node does not carry its
+        // own absolute path.
+        resolveFolder: `/api/lm/${modelType}/resolve-folder`,
 
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,
@@ -81,6 +106,9 @@ export function getApiEndpoints(modelType) {
         modelUpdateVersions: `/api/lm/${modelType}/updates/versions`,
         ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
         ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
+
+        // Price alerts are app-wide (all model types in one query), so they are
+        // not part of this per-type endpoint map; see UpdateService.js.
 
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,
@@ -104,6 +132,9 @@ export function getApiEndpoints(modelType) {
         // Auto-organize operations
         autoOrganize: `/api/lm/${modelType}/auto-organize`,
         autoOrganizeProgress: `/api/lm/${modelType}/auto-organize-progress`,
+
+        // Filename template operations
+        applyFilenameTemplate: `/api/lm/${modelType}/apply-filename-template`,
 
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
@@ -133,6 +164,10 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
     },
     [MODEL_TYPES.EMBEDDING]: {
         metadata: `/api/lm/${MODEL_TYPES.EMBEDDING}/metadata`,
+    },
+    [MODEL_TYPES.OTHER]: {
+        metadata: `/api/lm/${MODEL_TYPES.OTHER}/metadata`,
+        roots_by_subtype: `/api/lm/${MODEL_TYPES.OTHER}/roots_by_subtype`,
     }
 };
 
@@ -184,14 +219,23 @@ export const DOWNLOAD_ENDPOINTS = {
     downloadGet: '/api/lm/download-model-get',
     cancelGet: '/api/lm/cancel-download-get',
     progress: '/api/lm/download-progress',
+    routing: '/api/lm/download/routing',
     exampleImages: '/api/lm/force-download-example-images', // Re-process example images ignoring previous status
     exampleImagesMissing: '/api/lm/download-example-images' // Download only missing example images
 };
 
-// Hugging Face API endpoints
+// External model source endpoints (Hugging Face / ModelScope).
+// The hf-* paths are the historical names, kept as server-side aliases.
+export const MODEL_SOURCE_ENDPOINTS = {
+    repoFiles: '/api/lm/model-source-files',
+    download: '/api/lm/download-model-source',
+    sources: '/api/lm/model-sources',
+};
+
+/** @deprecated use MODEL_SOURCE_ENDPOINTS */
 export const HF_ENDPOINTS = {
-    repoFiles: '/api/lm/hf-repo-files',
-    download: '/api/lm/download-hf-model',
+    repoFiles: MODEL_SOURCE_ENDPOINTS.repoFiles,
+    download: MODEL_SOURCE_ENDPOINTS.download,
 };
 
 // WebSocket endpoints

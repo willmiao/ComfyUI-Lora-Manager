@@ -32,6 +32,7 @@ export class HeaderManager {
       if (path.includes('/loras/recipes')) return 'recipes';
       if (path.includes('/checkpoints')) return 'checkpoints';
       if (path.includes('/embeddings')) return 'embeddings';
+      if (path.includes('/other')) return 'other';
       if (path.includes('/statistics')) return 'statistics';
       if (path.includes('/loras')) return 'loras';
       return 'unknown';
@@ -48,6 +49,18 @@ export class HeaderManager {
     
     initializeCommonElements() {
       this.initializeThemePopover();
+
+      // Header icon buttons are divs with role="button"; make Enter/Space activate them
+      const headerControls = document.getElementById('headerControls');
+      if (headerControls) {
+        headerControls.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          const target = e.target.closest('[role="button"]');
+          if (!target || !headerControls.contains(target)) return;
+          e.preventDefault();
+          target.click();
+        });
+      }
 
       const settingsToggle = document.querySelector('.settings-toggle');
       if (settingsToggle) {

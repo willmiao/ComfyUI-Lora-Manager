@@ -27,6 +27,14 @@ vi.mock('../../../static/js/state/index.js', () => ({
     }
 }));
 
+// Mock the shared Other Models helpers (exercised by their own tests)
+vi.mock('../../../static/js/utils/otherModels.js', () => ({
+    enableOtherModels: vi.fn().mockResolvedValue(),
+    openOtherModelsSettings: vi.fn(),
+}));
+
+import { enableOtherModels, openOtherModelsSettings } from '../../../static/js/utils/otherModels.js';
+
 describe('BannerService', () => {
     beforeEach(() => {
         // Clear all mocks
@@ -35,6 +43,7 @@ describe('BannerService', () => {
         // Reset banner service state
         bannerService.banners.clear();
         bannerService.initialized = false;
+        bannerService.currentBannerIndex = 0;
         bannerService.recentHistory = []; // Clear history for each test
         
         // Clear DOM
@@ -186,6 +195,111 @@ describe('BannerService', () => {
         });
     });
 
+    describe('Other Models announcement', () => {
+        const OTHER_MODELS_BANNER_ID = 'other-models-announcement';
+
+        const prepareBanner = (dismissed = []) => {
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'dismissed_banners') {
+                    return dismissed;
+                }
+                return defaultValue;
+            });
+            bannerService.container = document.getElementById('banner-container');
+            bannerService.initialized = true;
+            bannerService.prepareOtherModelsBanner();
+        };
+
+        const bannerElement = () =>
+            document.querySelector(`[data-banner-id="${OTHER_MODELS_BANNER_ID}"]`);
+
+        beforeEach(() => {
+            state.global.settings.enable_other_models = false;
+            state.global.settings.other_models_paths_available = true;
+        });
+
+        it('announces the feature while it is switched off', () => {
+            prepareBanner();
+
+            const element = bannerElement();
+            expect(element).not.toBeNull();
+            expect(element.querySelector('.banner-title').textContent)
+                .toContain('Other Models Management is available');
+        });
+
+        it('stays silent when the host exposes no other-model folders', () => {
+            // Standalone installs without the folder_paths keys in
+            // settings.json would land on an empty page, so do not announce.
+            state.global.settings.other_models_paths_available = false;
+
+            prepareBanner();
+
+            expect(bannerElement()).toBeNull();
+            expect(bannerService.banners.has(OTHER_MODELS_BANNER_ID)).toBe(false);
+        });
+
+        it('still announces when availability is unknown (older payload)', () => {
+            delete state.global.settings.other_models_paths_available;
+
+            prepareBanner();
+
+            expect(bannerElement()).not.toBeNull();
+        });
+
+        it('stays silent once the feature is enabled', () => {
+            state.global.settings.enable_other_models = true;
+
+            prepareBanner();
+
+            expect(bannerElement()).toBeNull();
+        });
+
+        it('stays silent when it was dismissed before', () => {
+            prepareBanner([OTHER_MODELS_BANNER_ID]);
+
+            expect(bannerElement()).toBeNull();
+        });
+
+        it('enables the feature from the primary action', () => {
+            prepareBanner();
+
+            const button = bannerElement().querySelector(
+                '.banner-action[data-action="enable-other-models"]'
+            );
+            expect(button).not.toBeNull();
+
+            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(enableOtherModels).toHaveBeenCalledTimes(1);
+        });
+
+        it('opens the settings section from the secondary action', () => {
+            prepareBanner();
+
+            const button = bannerElement().querySelector(
+                '.banner-action[data-action="open-other-models-settings"]'
+            );
+            expect(button).not.toBeNull();
+
+            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            expect(openOtherModelsSettings).toHaveBeenCalledTimes(1);
+        });
+
+        it('can drop the announcement without dismissing it', () => {
+            prepareBanner();
+            expect(bannerService.banners.has(OTHER_MODELS_BANNER_ID)).toBe(true);
+
+            bannerService.removeOtherModelsAnnouncement();
+
+            expect(bannerService.banners.has(OTHER_MODELS_BANNER_ID)).toBe(false);
+            expect(storageHelpers.setStorageItem).not.toHaveBeenCalledWith(
+                'dismissed_banners',
+                expect.arrayContaining([OTHER_MODELS_BANNER_ID])
+            );
+        });
+    });
+
     describe('Banner Dismissal', () => {
         it('should add banner to dismissed_banners array when dismissed', () => {
             storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
@@ -215,6 +329,116 @@ describe('BannerService', () => {
             
             // Should not have been called again since it's already dismissed
             expect(storageHelpers.setStorageItem).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Banner Rotation', () => {
+        const registerTestBanner = (id, priority) => {
+            bannerService.registerBanner(id, {
+                id,
+                title: `Banner ${id}`,
+                content: `Content ${id}`,
+                dismissible: true,
+                priority
+            });
+        };
+
+        const displayedBannerId = () =>
+            document.querySelector('#banner-container .banner-item')
+                ?.getAttribute('data-banner-id');
+
+        let dismissedStore;
+
+        beforeEach(() => {
+            dismissedStore = [];
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'dismissed_banners') {
+                    return dismissedStore;
+                }
+                return defaultValue;
+            });
+            storageHelpers.setStorageItem.mockImplementation((key, value) => {
+                if (key === 'dismissed_banners') {
+                    dismissedStore = value;
+                }
+            });
+            bannerService.container = document.getElementById('banner-container');
+            bannerService.initialized = true;
+        });
+
+        it('renders only the highest priority banner when multiple are active', () => {
+            registerTestBanner('low', 1);
+            registerTestBanner('high', 10);
+
+            const rendered = document.querySelectorAll('#banner-container .banner-item');
+            expect(rendered).toHaveLength(1);
+            expect(displayedBannerId()).toBe('high');
+        });
+
+        it('shows a pager with position indicator when multiple banners are active', () => {
+            registerTestBanner('a', 1);
+            registerTestBanner('b', 2);
+
+            const pager = document.querySelector('.banner-pager');
+            expect(pager).not.toBeNull();
+            expect(pager.querySelector('.banner-pager-indicator').textContent.trim())
+                .toBe('1 / 2');
+        });
+
+        it('does not show a pager for a single banner', () => {
+            registerTestBanner('only', 1);
+
+            expect(document.querySelector('.banner-pager')).toBeNull();
+        });
+
+        it('cycles to the next banner and wraps around', () => {
+            registerTestBanner('a', 1);
+            registerTestBanner('b', 2);
+
+            document.querySelector('[data-pager="next"]')
+                .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(displayedBannerId()).toBe('a');
+            expect(document.querySelector('.banner-pager-indicator').textContent.trim())
+                .toBe('2 / 2');
+
+            document.querySelector('[data-pager="next"]')
+                .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(displayedBannerId()).toBe('b');
+            expect(document.querySelector('.banner-pager-indicator').textContent.trim())
+                .toBe('1 / 2');
+        });
+
+        it('cycles backwards with the previous button', () => {
+            registerTestBanner('a', 1);
+            registerTestBanner('b', 2);
+
+            document.querySelector('[data-pager="prev"]')
+                .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(displayedBannerId()).toBe('a');
+        });
+
+        it('shows the next banner after the displayed one is dismissed', async () => {
+            vi.useFakeTimers();
+            try {
+                registerTestBanner('a', 1);
+                registerTestBanner('b', 2);
+                expect(displayedBannerId()).toBe('b');
+
+                await bannerService.dismissBanner('b');
+                vi.advanceTimersByTime(300);
+
+                expect(displayedBannerId()).toBe('a');
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it('records all active banners in history, not just the displayed one', () => {
+            registerTestBanner('a', 1);
+            registerTestBanner('b', 2);
+
+            const historyIds = bannerService.recentHistory.map(entry => entry.id);
+            expect(historyIds).toEqual(expect.arrayContaining(['a', 'b']));
         });
     });
 

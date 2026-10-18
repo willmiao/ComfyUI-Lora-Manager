@@ -1,6 +1,7 @@
 // ComfyUI extension to track model usage statistics
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { lmUrl } from "./base_path.js";
 import { showToast } from "./utils.js";
 import { getAutoPathCorrectionPreference, getUsageStatisticsPreference } from "./settings.js";
 
@@ -40,7 +41,7 @@ app.registerExtension({
     async updateUsageStats(promptId) {
         try {
             // Call backend endpoint with the prompt_id
-            const response = await fetch(`/api/lm/update-usage-stats`, {
+            const response = await fetch(lmUrl(`/api/lm/update-usage-stats`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

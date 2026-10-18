@@ -31,7 +31,7 @@ class _DummyModel:
         return self
 
 def test_nunchaku_load_lora_legacy_fallback(monkeypatch, caplog):
-    import folder_paths
+    import folder_paths  # pyright: ignore[reportMissingImports]
     import copy
     
     dummy_model = _DummyModel()
@@ -59,7 +59,7 @@ def test_nunchaku_load_lora_legacy_fallback(monkeypatch, caplog):
     assert result_model.model.diffusion_model.loras[0][1] == 0.8
 
 def test_nunchaku_load_lora_new_logic(monkeypatch):
-    import folder_paths
+    import folder_paths  # pyright: ignore[reportMissingImports]
     import os
     
     dummy_model = _DummyModel()

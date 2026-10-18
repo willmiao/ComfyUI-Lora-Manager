@@ -44,13 +44,13 @@ def populated_registry(metadata_registry):
 
     # Direct assignment to avoid scanner.py false positive
     # (scanner.py matches _CLASS_MAPPINGS.update({...}) pattern)
-    nodes.NODE_CLASS_MAPPINGS["TSC_EfficientLoader"] = TSC_EfficientLoader
-    nodes.NODE_CLASS_MAPPINGS["SamplerCustomAdvanced"] = SamplerCustomAdvanced
-    nodes.NODE_CLASS_MAPPINGS["BasicScheduler"] = BasicScheduler
-    nodes.NODE_CLASS_MAPPINGS["KSamplerSelect"] = KSamplerSelect
-    nodes.NODE_CLASS_MAPPINGS["CFGGuider"] = CFGGuider
-    nodes.NODE_CLASS_MAPPINGS["CLIPTextEncode"] = CLIPTextEncode
-    nodes.NODE_CLASS_MAPPINGS["VAEDecode"] = VAEDecode
+    nodes.NODE_CLASS_MAPPINGS["TSC_EfficientLoader"] = TSC_EfficientLoader  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["SamplerCustomAdvanced"] = SamplerCustomAdvanced  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["BasicScheduler"] = BasicScheduler  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["KSamplerSelect"] = KSamplerSelect  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["CFGGuider"] = CFGGuider  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["CLIPTextEncode"] = CLIPTextEncode  # pyright: ignore[reportAttributeAccessIssue]
+    nodes.NODE_CLASS_MAPPINGS["VAEDecode"] = VAEDecode  # pyright: ignore[reportAttributeAccessIssue]
 
     prompt_graph = {
         "loader": {"class_type": "TSC_EfficientLoader", "inputs": {}},

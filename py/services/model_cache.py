@@ -31,17 +31,31 @@ DISPLAY_NAME_MODES = {"model_name", "file_name"}
 class ModelCache:
     """Cache structure for model data with extensible sorting."""
 
-    raw_data: List[Dict]
+    raw_data: List[Dict[str, Any]]
     folders: List[str]
-    version_index: Dict[int, Dict] = field(default_factory=dict)
+    # Every directory under the model roots (including empty ones), as
+    # recorded by the last scan/hydration. ``None`` means "never recorded"
+    # (e.g. a persisted snapshot predating this field) and triggers a
+    # background filesystem backfill in the scanner.
+    all_folders: Optional[List[str]] = None
+    version_index: Dict[int, Dict[str, Any]] = field(default_factory=dict)
     model_id_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
+    # Multi-valued companion to version_index: every local file entry of a
+    # CivitAI model version, so versions with several downloaded files stay
+    # consistent (#1058).
+    version_files_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
     name_display_mode: str = "model_name"
+    _lock: Any = field(init=False, repr=False, default=None)
+    # Cache for last sort: (sort_key, order, seed) -> sorted list
+    _last_sort: Tuple[Optional[str], str, Optional[str]] = field(
+        init=False, repr=False, default=(None, "asc", None)
+    )
+    _last_sorted_data: List[Dict[str, Any]] = field(
+        init=False, repr=False, default_factory=list
+    )
 
     def __post_init__(self):
         self._lock = asyncio.Lock()
-        # Cache for last sort: (sort_key, order, seed) -> sorted list
-        self._last_sort: Tuple[Optional[str], str, Optional[str]] = (None, "asc", None)
-        self._last_sorted_data: List[Dict] = []
         self._normalize_raw_data()
         self.name_display_mode = self._normalize_display_mode(self.name_display_mode)
         # Default sort on init
@@ -64,7 +78,7 @@ class ModelCache:
             return ""
         return str(value)
 
-    def _normalize_item(self, item: Dict) -> None:
+    def _normalize_item(self, item: Dict[str, Any]) -> None:
         """Ensure core metadata fields are present and string typed."""
 
         if not isinstance(item, dict):
@@ -80,7 +94,7 @@ class ModelCache:
         for item in self.raw_data:
             self._normalize_item(item)
 
-    def _get_display_name(self, item: Dict) -> str:
+    def _get_display_name(self, item: Dict[str, Any]) -> str:
         """Return the value used for name-based sorting based on display settings."""
 
         if self.name_display_mode == "file_name":
@@ -111,10 +125,11 @@ class ModelCache:
 
         self.version_index = {}
         self.model_id_index = {}
+        self.version_files_index = {}
         for item in self.raw_data:
             self.add_to_version_index(item)
 
-    def add_to_version_index(self, item: Dict) -> None:
+    def add_to_version_index(self, item: Dict[str, Any]) -> None:
         """Register a cache item in the version/model indexes if possible."""
 
         civitai_data = item.get('civitai') if isinstance(item, dict) else None
@@ -126,6 +141,17 @@ class ModelCache:
             return
 
         self.version_index[version_id] = item
+
+        # Register in the multi-valued index, deduplicated by file_path (#1058)
+        files = self.version_files_index.setdefault(version_id, [])
+        for entry in files:
+            if entry is item or (
+                isinstance(entry, dict)
+                and entry.get('file_path') == item.get('file_path')
+            ):
+                break
+        else:
+            files.append(item)
 
         model_id = self._normalize_version_id(civitai_data.get('modelId'))
         if model_id is None:
@@ -143,7 +169,7 @@ class ModelCache:
         else:
             versions.append(descriptor)
 
-    def remove_from_version_index(self, item: Dict) -> None:
+    def remove_from_version_index(self, item: Dict[str, Any]) -> None:
         """Remove a cache item from the version/model indexes if present."""
 
         civitai_data = item.get('civitai') if isinstance(item, dict) else None
@@ -154,12 +180,37 @@ class ModelCache:
         if version_id is None:
             return
 
+        # Drop only this file's entry from the multi-valued index (#1058)
+        files = self.version_files_index.get(version_id)
+        if files:
+            remaining = [
+                entry
+                for entry in files
+                if not (
+                    entry is item
+                    or (
+                        isinstance(entry, dict)
+                        and entry.get('file_path') == item.get('file_path')
+                    )
+                )
+            ]
+            if remaining:
+                self.version_files_index[version_id] = remaining
+            else:
+                self.version_files_index.pop(version_id, None)
+
+        # A surviving sibling file keeps the version present in the indexes
+        sibling = (self.version_files_index.get(version_id) or [None])[0]
+
         existing = self.version_index.get(version_id)
         if existing is item or (
             isinstance(existing, dict)
             and existing.get('file_path') == item.get('file_path')
         ):
-            self.version_index.pop(version_id, None)
+            if sibling is not None:
+                self.version_index[version_id] = sibling
+            else:
+                self.version_index.pop(version_id, None)
 
         model_id = self._normalize_version_id(civitai_data.get('modelId'))
         if model_id is None:
@@ -167,6 +218,20 @@ class ModelCache:
 
         versions = self.model_id_index.get(model_id)
         if not versions:
+            return
+
+        if sibling is not None:
+            # Update the descriptor to reflect the surviving sibling file
+            descriptor = self._build_version_descriptor(
+                sibling,
+                sibling.get('civitai') if isinstance(sibling, dict) else {},
+                version_id,
+            )
+            for index, existing_desc in enumerate(versions):
+                if existing_desc.get('versionId') == version_id:
+                    if descriptor is not None:
+                        versions[index] = descriptor
+                    break
             return
 
         filtered = [v for v in versions if v.get('versionId') != version_id]
@@ -177,7 +242,7 @@ class ModelCache:
 
     def _build_version_descriptor(
         self,
-        item: Dict,
+        item: Dict[str, Any],
         civitai_data: Dict[str, Any],
         version_id: int,
     ) -> Optional[Dict[str, Any]]:
@@ -201,11 +266,20 @@ class ModelCache:
         versions = self.model_id_index.get(normalized_id, [])
         return [dict(version) for version in versions]
 
+    def get_files_by_version_id(self, version_id: Any) -> List[Dict[str, Any]]:
+        """Return every local file entry for a CivitAI model version (#1058)."""
+
+        normalized_id = self._normalize_version_id(version_id)
+        if normalized_id is None:
+            return []
+
+        return list(self.version_files_index.get(normalized_id, []))
+
     async def resort(self):
         """Resort cached data according to last sort mode if set"""
         async with self._lock:
-            if self._last_sort[0] is not None:
-                sort_key, order, seed = self._last_sort
+            sort_key, order, seed = self._last_sort
+            if sort_key is not None:
                 sorted_data = self._sort_data(self.raw_data, sort_key, order, seed)
                 self._last_sorted_data = sorted_data
                 # Update folder list
@@ -219,7 +293,7 @@ class ModelCache:
             self.folders = sorted(list(all_folders), key=lambda x: x.lower())
             self.rebuild_version_index()
 
-    def _sort_data(self, data: List[Dict], sort_key: str, order: str, seed: Optional[str] = None) -> List[Dict]:
+    def _sort_data(self, data: List[Dict[str, Any]], sort_key: str, order: str, seed: Optional[str] = None) -> List[Dict[str, Any]]:
         """Sort data by sort_key and order"""
         start_time = time.perf_counter()
         reverse = (order == 'desc')
@@ -293,7 +367,7 @@ class ModelCache:
             logger.debug("ModelCache._sort_data(%s, %s) for %d items took %.3fs", sort_key, order, len(data), duration)
         return result
 
-    async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc', seed: Optional[str] = None) -> List[Dict]:
+    async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc', seed: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get sorted data by sort_key and order, using cache if possible"""
         async with self._lock:
             cache_key = (sort_key, order, seed)
@@ -321,8 +395,8 @@ class ModelCache:
 
             self.name_display_mode = normalized
 
-            if self._last_sort[0] == 'name':
-                sort_key, order, seed = self._last_sort
+            sort_key, order, seed = self._last_sort
+            if sort_key == 'name':
                 self._last_sorted_data = self._sort_data(self.raw_data, sort_key, order, seed)
 
     async def update_preview_url(self, file_path: str, preview_url: str, preview_nsfw_level: int) -> bool:

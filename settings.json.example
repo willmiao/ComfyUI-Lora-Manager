@@ -18,6 +18,5 @@
       "C:/path/to/your/embeddings_folder",
       "C:/path/to/another/embeddings_folder"
     ]
-  },
-  "auto_organize_exclusions": []
+  }
 }

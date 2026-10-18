@@ -30,7 +30,9 @@ Aliases live inside `()` and are separated with `|`. The canonical name is what 
 When your path template contains `{first_tag}`, the app picks a folder name based on your priority list and the model’s own tags:
 
 - It checks the priority list from top to bottom. If a canonical tag or any of its aliases appear in the model tags, that canonical name becomes the folder name.
-- If no priority tags are found but the model has tags, the very first model tag is used.
+- If no priority tags are found but the model has tags, the first tag that can be used as a folder name is chosen.
+- Tags that contain a comma, or that are longer than 50 characters, are treated as unusable and skipped: some uploaders pack their whole keyword list into a single tag. If every tag is unusable, the folder falls back to `no tags`.
+- Civitai's structural labels, such as `base model`, describe the listing rather than the model, so the automatic fallback skips them too. Add one to your priority list if you really want it as a folder name.
 - If the model has no tags at all, the folder falls back to `no tags`.
 
 ### Example
@@ -42,6 +44,8 @@ With a template like `/{model_type}/{first_tag}` and the priority entry list `ch
 | `["chars", "female"]` | `character` | `chars` matches the `character` alias, so the canonical wins. |
 | `["anime", "portrait"]` | `style` | `anime` hits the `style` entry, so its canonical label is used. |
 | `["portrait", "bw"]` | `portrait` | No priority match, so the first model tag is used. |
+| `["lora, character, rosie, ... face"]` | `no tags` | The only tag is a keyword dump, so it is skipped. |
+| `["lora, character, ... face", "base model"]` | `no tags` | A keyword dump plus a Civitai label: nothing usable is left. |
 | `[]` | `no tags` | Nothing to match, so the fallback is applied. |
 
 ## 3. Save the Settings
@@ -61,10 +65,12 @@ After editing the entry list, press **Enter** to save. Use **Shift+Enter** whene
 - Keep canonical names short and meaningful—they become folder names.
 - Place the most important categories first; the first match wins.
 - Avoid duplicate canonical names within the same list; only the first instance is used.
+- Folder names built from tags are sanitized for filesystem safety and truncated to 50 characters.
 
 ## Troubleshooting
 
 - **Unexpected folder name?** Check that the canonical name you want is placed before other matches.
+- **Folder named `no tags`?** Every model tag was either missing or unusable (a comma-separated keyword dump, or longer than 50 characters). Add the tags you care about to your priority list so they match by name instead.
 - **Alias not working?** Ensure the alias is inside parentheses and separated with `|`, e.g. `character(char|chars)`.
 - **Validation error?** Look for missing parentheses or stray commas. Each entry must follow the `canonical(alias|alias)` pattern or just `canonical`.
 

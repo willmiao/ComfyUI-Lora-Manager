@@ -34,7 +34,7 @@ class _DummyModel:
 
 
 def test_nunchaku_load_lora_skips_missing_lora(monkeypatch, caplog):
-    import folder_paths
+    import folder_paths  # pyright: ignore[reportMissingImports]
 
     dummy_model = _DummyModel()
 

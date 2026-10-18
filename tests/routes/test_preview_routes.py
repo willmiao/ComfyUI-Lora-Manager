@@ -1,7 +1,8 @@
+import asyncio
 import os
 import urllib.parse
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from aiohttp import web
@@ -348,3 +349,67 @@ async def test_deep_symlink_discovered_on_first_access(tmp_path):
 
     # Deep symlink should now be in mappings
     assert normalized_external in config._path_mappings
+
+
+async def test_preview_404_keeps_cache_when_parent_dir_missing(tmp_path):
+    """A preview whose directory is unreachable (drive off) must not clear the
+    cached preview_url: nothing was deleted, the file just cannot be read."""
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    unreachable_parent = library_root / "gone"
+    preview_path = unreachable_parent / "model.webp"
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_path), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    with patch.object(handler, "_cleanup_stale_preview_url", new=AsyncMock()) as cleanup:
+        with pytest.raises(web.HTTPNotFound):
+            await handler.serve_preview(request)
+        await asyncio.sleep(0)
+
+    cleanup.assert_not_called()
+
+
+async def test_preview_404_clears_cache_when_file_really_deleted(tmp_path):
+    """A preview deleted from a reachable directory is genuinely stale."""
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    preview_path = library_root / "model.webp"
+    preview_path.write_bytes(b"preview")
+    preview_path.unlink()
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_path), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    with patch.object(handler, "_cleanup_stale_preview_url", new=AsyncMock()) as cleanup:
+        with pytest.raises(web.HTTPNotFound):
+            await handler.serve_preview(request)
+        await asyncio.sleep(0)
+
+    cleanup.assert_awaited_once()

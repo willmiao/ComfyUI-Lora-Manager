@@ -247,6 +247,25 @@
   border-left: 3px solid rgba(245, 158, 11, 0.6) !important;
 }
 
+.lm-lora-entry[data-missing="true"] {
+  background-color: rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+}
+
+.lm-lora-entry[data-missing="true"] .lm-lora-name {
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.lm-lora-clip-entry[data-missing="true"] {
+  background-color: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  border-left: 2px solid rgba(220, 38, 38, 0.6);
+}
+
+.lm-lora-clip-entry[data-missing="true"] .lm-lora-name {
+  color: rgba(252, 165, 165, 0.95);
+}
+
 .lm-lora-name {
   margin-left: 4px;
   flex: 1;
@@ -288,6 +307,18 @@
   outline: none;
   border-color: rgba(66, 153, 225, 0.9);
   box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.3);
+}
+
+/* Advisory cue: strength is outside the usage-tips recommended range.
+   Amber to distinguish it from the red "missing LoRA" error state. */
+.lm-lora-strength-input.lm-strength-out-of-range {
+  border-color: rgba(245, 158, 11, 0.75);
+  color: rgba(252, 211, 77, 0.95);
+}
+
+.lm-lora-strength-input.lm-strength-out-of-range:focus {
+  border-color: rgba(245, 158, 11, 0.9);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
 }
 
 .lm-lora-strength-buttons {

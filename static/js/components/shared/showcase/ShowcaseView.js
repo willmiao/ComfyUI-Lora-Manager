@@ -1,78 +1,93 @@
 /**
  * ShowcaseView.js
  * Shared showcase component for displaying examples in model modals (Lora/Checkpoint)
+ *
+ * The showcase starts collapsed as a slim indicator bar ("Show N examples"),
+ * so opening the modal never triggers remote image fetches. Expanding reveals
+ * the layout chosen by the `showcase_layout` setting: either a gallery (a
+ * single main viewer with prev/next controls, a horizontal thumbnail strip
+ * for overview/random access, and an always-visible import entry) or the
+ * classic vertical list (every example stacked full-width, see
+ * VerticalListView.js). A segmented toggle in the toolbar switches layouts.
  */
 import { showToast } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
 import { modalManager } from '../../../managers/ModalManager.js';
 import { translate } from '../../../utils/i18nHelpers.js';
 import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js';
-import { 
+import {
     initLazyLoading,
-    initNsfwBlurHandlers, 
+    initNsfwBlurHandlers,
     initMetadataPanelHandlers,
     initMediaControlHandlers,
     positionAllMediaControls
 } from './MediaUtils.js';
-import { generateMetadataPanel } from './MetadataPanel.js';
-import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
-import { getShowcaseUrl } from '../../../utils/civitaiUtils.js';
-import { openMediaViewer } from '../MediaViewer.js';
+import { renderShowcaseMediaItem, findLocalFile } from './MediaRenderers.js';
+import { renderVerticalList, initVerticalList } from './VerticalListView.js';
+import { getShowcaseUrl, getDisplayUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
+import { openMediaViewer, isMediaViewerOpen } from '../MediaViewer.js';
+import { escapeAttribute } from '../utils.js';
 
-export const showcaseListenerMetrics = {
-    wheelListeners: 0,
-    mutationObservers: 0,
-    backToTopHandlers: 0,
+/**
+ * Current gallery state. The model modal is a singleton, so a single module-level
+ * state object is sufficient; it is replaced on every render.
+ *
+ * The gallery starts collapsed: only the indicator bar renders, so remote
+ * example images are never fetched until the user explicitly expands the
+ * gallery — same lazy behavior as the legacy collapsed carousel.
+ */
+const galleryState = {
+    rawImages: [],
+    images: [],
+    exampleFiles: [],
+    activeIndex: 0,
+    previewUrl: '',
+    expanded: false,
 };
-
-export function resetShowcaseListenerMetrics() {
-    showcaseListenerMetrics.wheelListeners = 0;
-    showcaseListenerMetrics.mutationObservers = 0;
-    showcaseListenerMetrics.backToTopHandlers = 0;
-}
 
 /**
  * Load example images asynchronously
  * @param {Array} images - Array of image objects (both regular and custom)
  * @param {string} modelHash - Model hash for fetching local files
+ * @param {string} previewUrl - Model preview URL shown in the collapsed state
  */
-export async function loadExampleImages(images, modelHash) {
+export async function loadExampleImages(images, modelHash, previewUrl = '') {
     try {
         const showcaseTab = document.getElementById('showcase-tab');
         if (!showcaseTab) return;
-        
+
+        // Fresh load of a model's examples: reset the gallery position so a
+        // previously viewed model's active index / expansion state never leaks
+        // into this one (the modal is a singleton, state is module-level)
+        galleryState.activeIndex = 0;
+        galleryState.expanded = false;
+        lastNavDirection = 1;
+
         // First fetch local example files
         let localFiles = [];
 
         try {
             const endpoint = '/api/lm/example-image-files';
             const params = `model_hash=${modelHash}`;
-            
+
             const response = await fetch(`${endpoint}?${params}`);
             const result = await response.json();
-            
+
             if (result.success) {
                 localFiles = result.files;
             }
         } catch (error) {
             console.error("Failed to get example files:", error);
         }
-        
+
         // Then render with both remote images and local files
-        showcaseTab.innerHTML = renderShowcaseContent(images, localFiles);
-        
-        // Re-initialize the showcase event listeners
-        const carousel = showcaseTab.querySelector('.carousel');
-        if (carousel) {
-            // Always bind scroll-indicator click events (even when collapsed)
-            bindScrollIndicatorEvents(carousel);
-            
-            // Only initialize full showcase content when expanded
-            if (!carousel.classList.contains('collapsed')) {
-                initShowcaseContent(carousel);
-            }
+        showcaseTab.innerHTML = renderShowcaseContent(images, localFiles, previewUrl);
+
+        const gallery = showcaseTab.querySelector('.showcase-gallery');
+        if (gallery) {
+            initShowcaseContent(gallery);
         }
-        
+
         // Initialize the example import functionality
         initExampleImport(modelHash, showcaseTab);
     } catch (error) {
@@ -90,23 +105,84 @@ export async function loadExampleImages(images, modelHash) {
 }
 
 /**
- * Render showcase content
+ * Render a small local preview thumbnail for the collapsed indicator bar
+ * (local file, no remote fetch)
+ * @param {string} previewUrl - Model preview URL
+ * @returns {string} HTML content, empty when no preview exists
+ */
+function renderPreviewThumb(previewUrl) {
+    if (!previewUrl) return '';
+    const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+    const media = isVideo
+        ? `<video src="${escapeAttribute(previewUrl)}" muted playsinline preload="metadata"></video>`
+        : `<img src="${escapeAttribute(previewUrl)}" alt="" loading="lazy">`;
+    return `<span class="gallery-preview-thumb">${media}</span>`;
+}
+
+/**
+ * Active showcase layout ('gallery' | 'vertical') from the persisted setting;
+ * unknown/missing values fall back to the gallery
+ * @returns {string}
+ */
+function getShowcaseLayout() {
+    return state.settings.showcase_layout === 'vertical' ? 'vertical' : 'gallery';
+}
+
+/**
+ * Render the segmented gallery/list layout toggle
+ * @param {string} layout - Active layout ('gallery' | 'vertical')
+ * @returns {string} HTML for the toggle
+ */
+function renderLayoutToggle(layout) {
+    const galleryLabel = translate('modals.model.showcase.layoutGallery', {}, 'Gallery view');
+    const listLabel = translate('modals.model.showcase.layoutList', {}, 'List view');
+    return `
+        <div class="showcase-layout-toggle" role="group">
+            <button type="button" class="layout-toggle-btn${layout === 'gallery' ? ' active' : ''}"
+                    data-showcase-layout="gallery" title="${galleryLabel}"
+                    aria-pressed="${layout === 'gallery'}">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button type="button" class="layout-toggle-btn${layout === 'vertical' ? ' active' : ''}"
+                    data-showcase-layout="vertical" title="${listLabel}"
+                    aria-pressed="${layout === 'vertical'}">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * Render showcase content: collapsed indicator bar by default, the active
+ * layout (gallery or vertical list) when expanded
  * @param {Array} images - Array of images/videos to show
  * @param {Array} exampleFiles - Local example files
- * @param {boolean} startExpanded - Whether to start in expanded state
+ * @param {string} previewUrl - Model preview URL for the collapsed indicator bar
+ * @param {boolean} expanded - Whether to render the full showcase (loads remote media)
  * @returns {string} HTML content
  */
-export function renderShowcaseContent(images, exampleFiles = [], startExpanded = false) {
+export function renderShowcaseContent(images, exampleFiles = [], previewUrl = '', expanded = false) {
+    galleryState.rawImages = images || [];
+    galleryState.exampleFiles = exampleFiles;
+    galleryState.previewUrl = previewUrl;
+    galleryState.expanded = expanded;
+
     if (!images?.length) {
-        // Show empty state with import interface
-        return renderImportInterface(true);
+        galleryState.images = [];
+        galleryState.activeIndex = 0;
+        // Empty state: show the import interface directly
+        return `
+            <div class="showcase-gallery">
+                ${renderImportInterface(true)}
+            </div>
+        `;
     }
-    
+
     // Filter images based on SFW setting
     const showOnlySFW = state.settings.show_only_sfw;
     let filteredImages = images;
     let hiddenCount = 0;
-    
+
     if (showOnlySFW) {
         filteredImages = images.filter(img => {
             const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
@@ -115,198 +191,751 @@ export function renderShowcaseContent(images, exampleFiles = [], startExpanded =
             return isSfw;
         });
     }
-    
+
     // Show message if no images are available after filtering
     if (filteredImages.length === 0) {
+        galleryState.images = [];
+        galleryState.activeIndex = 0;
         return `
             <div class="no-examples">
-                <p>All example images are filtered due to NSFW content settings</p>
-                <p class="nsfw-filter-info">Your settings are currently set to show only safe-for-work content</p>
-                <p>You can change this in Settings <i class="fas fa-cog"></i></p>
+                <p>${translate('modals.model.showcase.allFiltered', {}, 'All example images are filtered due to NSFW content settings')}</p>
+                <p class="nsfw-filter-info">${translate('modals.model.showcase.sfwOnlyEnabled', {}, 'Your settings are currently set to show only safe-for-work content')}</p>
+                <p>${translate('modals.model.showcase.changeInSettings', {}, 'You can change this in Settings')} <i class="fas fa-cog"></i></p>
             </div>
         `;
     }
-    
+
+    galleryState.images = filteredImages;
+    if (galleryState.activeIndex >= filteredImages.length || galleryState.activeIndex < 0) {
+        galleryState.activeIndex = 0;
+    }
+
     // Show hidden content notification if applicable
-    const hiddenNotification = hiddenCount > 0 ? 
-        `<div class="nsfw-filter-notification">
-            <i class="fas fa-eye-slash"></i> ${hiddenCount} ${hiddenCount === 1 ? 'image' : 'images'} hidden due to SFW-only setting
-        </div>` : '';
-    
-    return `
-        <div class="scroll-indicator">
-            <i class="fas fa-chevron-${startExpanded ? 'up' : 'down'}"></i>
-            <span>Scroll or click to ${startExpanded ? 'hide' : 'show'} ${filteredImages.length} examples</span>
-        </div>
-        <div class="carousel ${startExpanded ? '' : 'collapsed'}">
-            ${hiddenNotification}
-            <div class="carousel-container">
-                ${filteredImages.map((img, index) => renderMediaItem(img, index, exampleFiles)).join('')}
+    const hiddenNotification = hiddenCount > 0 ?
+        `<span class="nsfw-filter-notification">
+            <i class="fas fa-eye-slash"></i> ${translate('modals.model.showcase.hiddenBySfw', { count: hiddenCount }, `${hiddenCount} hidden by SFW-only setting`)}
+        </span>` : '';
+
+    const exampleImagesPath = state.global.settings.example_images_path;
+    const isPathConfigured = exampleImagesPath && exampleImagesPath.trim() !== '';
+    const count = filteredImages.length;
+
+    const importZone = isPathConfigured ? `<div class="gallery-import-zone hidden" id="galleryImportZone">
+                ${renderImportInterface(false)}
+            </div>` : '';
+
+    const layout = getShowcaseLayout();
+
+    // Collapsed resting state: a slim indicator bar only — remote examples are
+    // not rendered (and therefore not fetched) until the user expands.
+    if (!expanded) {
+        const showText = translate('modals.model.showcase.showExamples', {}, 'Show examples');
+        return `
+        <div class="showcase-gallery">
+            <div class="gallery-indicator-bar">
+                ${renderPreviewThumb(previewUrl)}
+                <button class="gallery-show-btn" id="galleryShowBtn">
+                    <i class="fas fa-chevron-down"></i> ${translate('modals.model.showcase.showCount', { count }, `${showText} (${count})`)}
+                </button>
+                ${hiddenNotification}
+                ${renderLayoutToggle(layout)}
+                <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
+                    <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
+                </button>
             </div>
-            
-            ${renderImportInterface(false)}
+            ${importZone}
+        </div>
+        `;
+    }
+
+    // Vertical list layout: every example stacked full-width
+    if (layout === 'vertical') {
+        return `
+        <div class="showcase-gallery showcase-vertical">
+            <div class="gallery-toolbar">
+                ${hiddenNotification}
+                <button class="gallery-show-btn" id="galleryShowBtn">
+                    <i class="fas fa-chevron-up"></i> ${translate('modals.model.showcase.hideExamples', {}, 'Hide examples')}
+                </button>
+                ${renderLayoutToggle(layout)}
+                <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
+                    <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
+                </button>
+            </div>
+            ${renderVerticalList(filteredImages, exampleFiles)}
+            ${importZone}
+        </div>
+        `;
+    }
+
+    const showNav = count > 1;
+    const positionText = `${galleryState.activeIndex + 1} / ${count}`;
+    const activeImg = filteredImages[galleryState.activeIndex];
+    const mediaAspect = mediaAspectRatio(activeImg);
+
+    return `
+        <div class="showcase-gallery">
+            <div class="gallery-toolbar">
+                ${hiddenNotification}
+                <button class="gallery-show-btn" id="galleryShowBtn">
+                    <i class="fas fa-chevron-up"></i> ${translate('modals.model.showcase.hideExamples', {}, 'Hide examples')}
+                </button>
+                ${renderLayoutToggle(layout)}
+                <button class="gallery-import-btn" id="galleryImportBtn" title="${translate('modals.model.showcase.addExamples', {}, 'Add examples')}">
+                    <i class="fas fa-plus"></i> ${translate('modals.model.showcase.addExamples', {}, 'Add examples')}
+                </button>
+            </div>
+            <div class="gallery-main">
+                <div class="main-media-container" id="mainMediaContainer" style="--media-aspect: ${mediaAspect}">
+                    ${renderMediaItem(activeImg, galleryState.activeIndex, exampleFiles)}
+                    ${renderPositionBadge(positionText)}
+                </div>
+                ${showNav ? `<button class="gallery-nav prev" id="galleryPrevBtn" title="${translate('modals.model.showcase.previousExample', {}, 'Previous example ([)')}">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="gallery-nav next" id="galleryNextBtn" title="${translate('modals.model.showcase.nextExample', {}, 'Next example (])')}">
+                    <i class="fas fa-chevron-right"></i>
+                </button>` : ''}
+            </div>
+            <div class="gallery-strip" id="galleryStrip">
+                ${filteredImages.map((img, index) => renderThumbnail(img, index, exampleFiles)).join('')}
+            </div>
+            ${importZone}
         </div>
     `;
 }
 
 /**
- * Render a single media item (image or video)
+ * Render the position badge that floats over the main media
+ * @param {string} positionText - e.g. "3 / 10"
+ * @returns {string} HTML for the badge
+ */
+function renderPositionBadge(positionText) {
+    return `<span class="gallery-position-badge" id="galleryPosition">${positionText}</span>`;
+}
+
+/**
+ * Compute the aspect ratio (w/h) for the main viewer, falling back to 4:3
+ * when dimensions are missing (prevents NaN layout)
+ * @param {Object} img - Image/video metadata
+ * @returns {number} width / height
+ */
+function mediaAspectRatio(img) {
+    const w = img?.width || 4;
+    const h = img?.height || 3;
+    return w / h;
+}
+
+/**
+ * Render a thumbnail for the gallery strip
+ * @param {Object} img - Image/video metadata
+ * @param {number} index - Index in the array
+ * @param {Array} exampleFiles - Local files
+ * @returns {string} HTML for the thumbnail button
+ */
+function renderThumbnail(img, index, exampleFiles) {
+    const localFile = findLocalFile(img, index, exampleFiles);
+
+    const originalRemoteUrl = img.url || '';
+    const isVideo = localFile ? localFile.is_video :
+        originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
+    const mediaType = isVideo ? 'video' : 'image';
+
+    const thumbUrl = localFile ? localFile.path : getGalleryThumbnailUrl(originalRemoteUrl, mediaType);
+
+    const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
+    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
+
+    const activeClass = index === galleryState.activeIndex ? ' active' : '';
+    const blurClass = shouldBlur ? ' blurred' : '';
+    const mediaHtml = isVideo ?
+        `<video class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" muted playsinline preload="none" data-lazy-video></video>
+         <i class="fas fa-play thumb-video-badge"></i>` :
+        `<img class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" loading="lazy" fetchpriority="low" alt="">`;
+    const nsfwBadge = shouldBlur ? '<i class="fas fa-eye-slash thumb-nsfw-badge"></i>' : '';
+
+    return `<button class="gallery-thumb${activeClass}" data-index="${index}">${mediaHtml}${nsfwBadge}</button>`;
+}
+
+/**
+ * Render the active media item in the main viewer (display-optimized URL,
+ * wrapper sized by its container — see MediaRenderers.js)
  * @param {Object} img - Image/video metadata
  * @param {number} index - Index in the array
  * @param {Array} exampleFiles - Local files
  * @returns {string} HTML for the media item
  */
 function renderMediaItem(img, index, exampleFiles) {
-    // Find matching file in our list of actual files
-    let localFile = findLocalFile(img, index, exampleFiles);
+    return renderShowcaseMediaItem(img, index, exampleFiles);
+}
 
-    // Get original remote URL
-    const originalRemoteUrl = img.url || '';
+// URLs already warmed in the HTTP cache, so repeat navigations and re-renders
+// never issue duplicate prefetch requests
+const prefetchedUrls = new Set();
 
-    // Determine media type for optimization
-    const isVideo = localFile ? localFile.is_video :
-                  originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
-    const mediaType = isVideo ? 'video' : 'image';
+// Direction of the last main-viewer navigation (+1 next / -1 prev); users
+// tend to keep clicking the same arrow, so prefetch reaches one further
+// ahead along it. Defaults to forward (Next is the most common navigation)
+let lastNavDirection = 1;
 
-    // Optimize CivitAI URLs for showcase display (full quality)
-    const remoteUrl = getShowcaseUrl(originalRemoteUrl, mediaType);
+/**
+ * Warm the HTTP cache for the examples most likely to be shown next: both
+ * indices adjacent to the active one, plus one extra ahead along the last
+ * navigation direction, so prev/next navigation feels instant. Images only:
+ * video payloads are too heavy for speculative prefetch, and locally stored
+ * examples need no network fetch at all.
+ */
+function prefetchAdjacentMedia() {
+    const { images, exampleFiles, activeIndex, expanded } = galleryState;
+    if (!expanded || images.length < 2) return;
 
-    const localUrl = localFile ? localFile.path : '';
-    
-    // Calculate appropriate aspect ratio
-    // Defensive fallback: 0 width/height → 4:3 default (prevents NaN layout)
-    const safeW = img.width || 4;
-    const safeH = img.height || 3;
-    const aspectRatio = (safeH / safeW) * 100;
-    const containerWidth = 800; // modal content maximum width
-    const minHeightPercent = 40; 
-    const maxHeightPercent = (window.innerHeight * 0.6 / containerWidth) * 100;
-    const heightPercent = Math.max(
-        minHeightPercent,
-        Math.min(maxHeightPercent, aspectRatio)
-    );
-    
-    // Extract CivitAI image ID from CDN URL for import status check
-    const cdnImageId = (img.url || '').match(/\/(\d+)\.(?:jpeg|jpg|png|webp|gif)(?:\?|#|$)/)?.[1] || '';
+    [1, -1, lastNavDirection * 2].forEach(offset => {
+        const index = ((activeIndex + offset) % images.length + images.length) % images.length;
+        const img = images[index];
+        if (!img?.url || findLocalFile(img, index, exampleFiles)) return;
 
-    // Check if media should be blurred
-    const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
-    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
-    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
-    
-    // Determine NSFW warning text based on level
-    let nsfwText = "Mature Content";
-    if (nsfwLevel >= NSFW_LEVELS.XXX) {
-        nsfwText = "XXX-rated Content";
-    } else if (nsfwLevel >= NSFW_LEVELS.X) {
-        nsfwText = "X-rated Content";
-    } else if (nsfwLevel >= NSFW_LEVELS.R) {
-        nsfwText = "R-rated Content";
-    }
-    
-    // Extract metadata from the image
-    const meta = img.meta || {};
-    const prompt = meta.prompt || '';
-    const negativePrompt = meta.negative_prompt || meta.negativePrompt || '';
-    const size = meta.Size || `${img.width}x${img.height}`;
-    const seed = meta.seed || '';
-    const model = meta.Model || '';
-    const steps = meta.steps || '';
-    const sampler = meta.sampler || '';
-    const cfgScale = meta.cfg_scale || meta.cfgScale || '';
-    const clipSkip = meta.clip_skip || meta.clipSkip || '';
-    
-    // Check if we have any meaningful generation parameters
-    const hasParams = seed || model || steps || sampler || cfgScale || clipSkip;
-    const hasPrompts = prompt || negativePrompt;
-    
-    // Create metadata panel content
-    const metadataPanel = generateMetadataPanel(
-        hasParams, hasPrompts, 
-        prompt, negativePrompt, 
-        size, seed, model, steps, sampler, cfgScale, clipSkip
-    );
-    
-    // Determine if this is a custom image (has id property)
-    const isCustomImage = Boolean(typeof img.id === 'string' && img.id);
-    
-    const hasGenMeta = img.hasMeta || (img.meta && (img.meta.prompt || img.meta.seed || img.meta.resources));
+        const isVideo = img.url.endsWith('.mp4') || img.url.endsWith('.webm');
+        if (isVideo) return;
 
-    // Create the media control buttons HTML
-    const mediaControlsHtml = `
-        <div class="media-controls">
-            <button class="media-control-btn set-preview-btn" title="Set as preview">
-                <i class="fas fa-image"></i>
-            </button>
-            ${hasGenMeta ? `
-            <button class="media-control-btn create-recipe-btn"
-                    title="Create As Recipe"
-                    data-image-meta="${encodeURIComponent(JSON.stringify(img.meta || {}))}"
-                    data-image-url="${img.url || ''}"
-                    data-image-nsfw="${img.nsfwLevel ?? ''}"
-                    data-image-id="${cdnImageId}"
-                    data-img-id="${img.id || ''}"
-                    data-local-path="${localFile ? localFile.path : ''}">
-                <i class="fas fa-book-open"></i>
-            </button>
-            ` : ''}
-            <button class="media-control-btn set-nsfw-btn" 
-                    title="Set content rating"
-                    data-media-index="${index}"
-                    data-media-source="${isCustomImage ? 'custom' : 'civitai'}"
-                    data-media-id="${img.id || ''}">
-                <i class="fas fa-exclamation-triangle"></i>
-            </button>
-            <button class="media-control-btn example-delete-btn ${!isCustomImage ? 'disabled' : ''}" 
-                    title="${isCustomImage ? 'Delete this example' : 'Only custom images can be deleted'}" 
-                    data-short-id="${img.id || ''}" 
-                    ${!isCustomImage ? 'aria-disabled="true"' : ''}>
-                <i class="fas fa-trash-alt"></i>
-                <i class="fas fa-check confirm-icon"></i>
-            </button>
-        </div>
-    `;
-    
-    // Generate the appropriate wrapper based on media type
-    if (isVideo) {
-        return generateVideoWrapper(
-            img, heightPercent, shouldBlur, nsfwText, metadataPanel, 
-            localUrl, remoteUrl, mediaControlsHtml
-        );
-    }
-    
-    return generateImageWrapper(
-        img, heightPercent, shouldBlur, nsfwText, metadataPanel, 
-        localUrl, remoteUrl, mediaControlsHtml
-    );
+        // Must match the main viewer's URL (display mode) or the warmed
+        // cache entry is never used
+        const url = getDisplayUrl(img.url, 'image');
+        if (prefetchedUrls.has(url)) return;
+        prefetchedUrls.add(url);
+
+        // Off-DOM image: fills the HTTP/memory cache without affecting layout.
+        // Low priority keeps it from competing with the active media's load.
+        const preloader = new Image();
+        preloader.fetchPriority = 'low';
+        preloader.src = url;
+    });
 }
 
 /**
- * Find the matching local file for an image
- * @param {Object} img - Image metadata
- * @param {number} index - Image index
- * @param {Array} exampleFiles - Array of local files
- * @returns {Object|null} Matching local file or null
+ * Switch the main viewer to another example (wraps around)
+ * @param {number} index - Target index in galleryState.images
  */
-function findLocalFile(img, index, exampleFiles) {
-    if (!exampleFiles || exampleFiles.length === 0) return null;
-    
-    let localFile = null;
-    
-    if (typeof img.id === 'string' && img.id) {
-        // This is a custom image, find by custom_<id>
-        const customPrefix = `custom_${img.id}`;
-        localFile = exampleFiles.find(file => file.name.startsWith(customPrefix));
-    } else {
-        // This is a regular image from civitai, find by index
-        localFile = exampleFiles.find(file => {
-            const match = file.name.match(/image_(\d+)\./);
-            return match && parseInt(match[1]) === index;
+export function updateMainDisplay(index) {
+    const count = galleryState.images.length;
+    if (!count || !galleryState.expanded) return;
+
+    // Remember the navigation direction for direction-aware prefetching
+    // (a raw index of -1 / count means wrap-around prev / next)
+    const delta = index - galleryState.activeIndex;
+    if (delta !== 0) lastNavDirection = delta > 0 ? 1 : -1;
+
+    galleryState.activeIndex = ((index % count) + count) % count;
+
+    const container = document.getElementById('mainMediaContainer');
+    if (!container) return;
+
+    const activeImg = galleryState.images[galleryState.activeIndex];
+    container.style.setProperty('--media-aspect', mediaAspectRatio(activeImg));
+    // Direction-aware slide makes every switch (wheel, keys, buttons,
+    // thumbnails) perceivable instead of an instant, unexplained swap
+    container.classList.remove('slide-from-left', 'slide-from-right');
+    if (delta !== 0) {
+        void container.offsetWidth; // restart the animation on rapid switches
+        container.classList.add(delta > 0 ? 'slide-from-right' : 'slide-from-left');
+    }
+    // The badge lives inside the container, so rebuild it together with the media
+    container.innerHTML = renderMediaItem(
+        activeImg,
+        galleryState.activeIndex,
+        galleryState.exampleFiles
+    ) + renderPositionBadge(`${galleryState.activeIndex + 1} / ${count}`);
+
+    // Update thumbnail active state and scroll it into view
+    document.querySelectorAll('.gallery-strip .gallery-thumb').forEach(thumb => {
+        const isActive = Number(thumb.dataset.index) === galleryState.activeIndex;
+        thumb.classList.toggle('active', isActive);
+        if (isActive) {
+            thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+    });
+
+    initMainMediaInteractions(container);
+    prefetchAdjacentMedia();
+}
+
+/**
+ * Build the item list for the full-size media viewer from current gallery state
+ * @returns {Array<{url: string, type: string}>}
+ */
+function buildViewerItems() {
+    return galleryState.images.map((img, index) => {
+        const localFile = findLocalFile(img, index, galleryState.exampleFiles);
+        const originalRemoteUrl = img.url || '';
+        const isVideo = localFile ? localFile.is_video :
+            originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
+        return {
+            url: localFile?.path || getShowcaseUrl(originalRemoteUrl, isVideo ? 'video' : 'image'),
+            type: isVideo ? 'video' : 'image'
+        };
+    });
+}
+
+/**
+ * Wire up interactions for the media currently shown in the main viewer
+ * @param {HTMLElement} container - The main media container
+ */
+function initMainMediaInteractions(container) {
+    initLazyLoading(container);
+    initNsfwBlurHandlers(container);
+    initMetadataPanelHandlers(container);
+    initMediaControlHandlers(container);
+    positionAllMediaControls(container);
+
+    // Hoist the metadata panel to the gallery-main level so it spans the full
+    // column width (legacy behavior) instead of being squeezed to the media's
+    // width. Handler references stay valid — they are bound to the element.
+    const panel = container.querySelector('.image-metadata-panel');
+    const galleryMain = container.closest('.gallery-main');
+    if (panel && galleryMain) {
+        // Drop the panel of the previously displayed item, if any
+        galleryMain.querySelectorAll(':scope > .image-metadata-panel').forEach(p => p.remove());
+        galleryMain.appendChild(panel);
+    }
+
+    // Click-to-view: open full-size media viewer at the active index
+    const mediaEl = container.querySelector('.media-wrapper img, .media-wrapper video');
+    if (mediaEl) {
+        mediaEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMediaViewer(buildViewerItems(), galleryState.activeIndex);
         });
     }
-    
-    return localFile;
+
+    // Reposition controls once media dimensions are known
+    container.querySelectorAll('img, video').forEach(media => {
+        media.addEventListener('load', () => positionAllMediaControls(container));
+        if (media.tagName === 'VIDEO') {
+            media.addEventListener('loadedmetadata', () => positionAllMediaControls(container));
+        }
+    });
 }
+
+/**
+ * Scroll to top of modal content
+ * @param {HTMLElement} button - Back to top button
+ */
+export function scrollToTop(button) {
+    const modalContent = button.closest('.modal-content');
+    if (modalContent) {
+        modalContent.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+}
+
+/**
+ * Toggle the inline import zone; without a configured path, open settings instead
+ * @param {HTMLElement} gallery - The gallery root element
+ */
+function toggleImportZone(gallery) {
+    const exampleImagesPath = state.global.settings.example_images_path;
+    const isPathConfigured = exampleImagesPath && exampleImagesPath.trim() !== '';
+    if (!isPathConfigured) {
+        openSettingsForExampleImages();
+        return;
+    }
+    gallery.querySelector('.gallery-import-zone')?.classList.toggle('hidden');
+}
+
+/**
+ * Remove a deleted custom example from the gallery and re-render
+ * @param {string} shortId - Custom image short id
+ */
+function handleExampleDeleted(shortId) {
+    const isDeleted = (img) => img.id === shortId;
+    galleryState.rawImages = galleryState.rawImages.filter(img => !isDeleted(img));
+    galleryState.images = galleryState.images.filter(img => !isDeleted(img));
+    galleryState.exampleFiles = galleryState.exampleFiles.filter(
+        file => !file.name.startsWith(`custom_${shortId}`)
+    );
+    if (galleryState.activeIndex >= galleryState.images.length) {
+        galleryState.activeIndex = Math.max(0, galleryState.images.length - 1);
+    }
+
+    rerenderGallery(galleryState.expanded);
+}
+
+/**
+ * Re-render the gallery in place from current state and rebind everything
+ * @param {boolean} expanded - Whether the re-rendered gallery starts expanded
+ */
+function rerenderGallery(expanded) {
+    const showcaseTab = document.getElementById('showcase-tab');
+    if (!showcaseTab) return;
+
+    showcaseTab.innerHTML = renderShowcaseContent(
+        galleryState.rawImages,
+        galleryState.exampleFiles,
+        galleryState.previewUrl,
+        expanded
+    );
+
+    const gallery = showcaseTab.querySelector('.showcase-gallery');
+    if (gallery) {
+        initShowcaseContent(gallery);
+    }
+
+    const modelHash = document.querySelector('.showcase-section')?.dataset.modelHash;
+    if (modelHash) {
+        initExampleImport(modelHash, showcaseTab);
+    }
+}
+
+// Track the gallery whose controls need repositioning on window resize
+let resizeBoundGallery = null;
+
+// Scroll-to-expand: expands the collapsed gallery when the user keeps
+// scrolling down near the bottom of the modal (legacy muscle memory)
+let scrollExpandTarget = null;
+
+function setupScrollToExpand(gallery) {
+    const modalContent = gallery.closest('.modal-content');
+    if (!modalContent) return;
+    if (scrollExpandTarget === modalContent) return; // already bound
+    scrollExpandTarget = modalContent;
+
+    modalContent.addEventListener('wheel', (event) => {
+        if (galleryState.expanded || !galleryState.images.length) return;
+        if (event.deltaY <= 0) return;
+        const nearBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight < 100;
+        if (nearBottom) {
+            rerenderGallery(true);
+        }
+    }, { passive: true });
+}
+
+// Wheel-navigation tuning: one gesture = one step. Trackpads emit a stream
+// of small deltas, so deltas accumulate until the threshold; the cooldown
+// keeps the tail of the same gesture from stepping again
+const WHEEL_STEP_THRESHOLD = 50;
+const WHEEL_COOLDOWN_MS = 250;
+const WHEEL_ACCUM_RESET_MS = 200;
+
+/**
+ * Wheel navigation on the main viewer area. Bound to .gallery-main (not the
+ * media element) so it works wherever the cursor rests within the viewer —
+ * including over the nav buttons and the dead zones beside the media, and
+ * regardless of whether the hover-triggered metadata panel is showing.
+ *
+ * - Horizontal-dominant deltas (trackpad two-finger swipe) always navigate;
+ *   the modal never scrolls horizontally, so nothing is hijacked.
+ * - Vertical deltas navigate only when the modal content cannot scroll
+ *   further in that direction (same boundary pass-through pattern as the
+ *   metadata panel's wheel handler), so wheel-scrolling the modal through
+ *   the gallery is never trapped mid-way.
+ * - Once a boundary crossing triggers a vertical switch, a "wheel session"
+ *   starts: while the pointer stays over .gallery-main, vertical wheel in
+ *   BOTH directions switches examples (down = next, up = prev — the reverse
+ *   gesture must undo, not scroll the modal away). The session ends when the
+ *   pointer leaves the area, returning vertical scroll to the modal.
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initWheelNavigation(gallery) {
+    const main = gallery.querySelector('.gallery-main');
+    if (!main || galleryState.images.length < 2) return;
+
+    let accumulated = 0;
+    let lastEventAt = 0;
+    let lastStepAt = 0;
+    let verticalSession = false;
+
+    // Leaving the viewer area releases the vertical wheel back to the modal
+    main.addEventListener('pointerleave', () => {
+        verticalSession = false;
+        accumulated = 0;
+    });
+
+    main.addEventListener('wheel', (event) => {
+        // The metadata panel and media controls keep their own behavior;
+        // the panel passes boundary scrolls through to the modal by itself
+        if (event.target.closest('.image-metadata-panel, .media-controls')) return;
+
+        const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+        const delta = horizontal ? event.deltaX : event.deltaY;
+        if (delta === 0) return;
+
+        if (!horizontal && !verticalSession) {
+            const scroller = main.closest('.modal-content');
+            if (scroller) {
+                const atTop = scroller.scrollTop <= 0;
+                const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= 1;
+                if ((delta < 0 && !atTop) || (delta > 0 && !atBottom)) return;
+            }
+        }
+
+        event.preventDefault();
+
+        const now = performance.now();
+        if (now - lastEventAt > WHEEL_ACCUM_RESET_MS) accumulated = 0;
+        lastEventAt = now;
+        if (now - lastStepAt < WHEEL_COOLDOWN_MS) return;
+
+        accumulated += delta;
+        if (Math.abs(accumulated) < WHEEL_STEP_THRESHOLD) return;
+
+        const direction = accumulated > 0 ? 1 : -1;
+        accumulated = 0;
+        lastStepAt = now;
+        if (!horizontal) verticalSession = true;
+        updateMainDisplay(galleryState.activeIndex + direction);
+    }, { passive: false });
+}
+
+// Touch/pen swipe tuning. Mouse is excluded: it already has wheel, keys and
+// buttons, and mouse-drag would fight the media's click-to-view gesture
+const SWIPE_THRESHOLD_PX = 50;
+const SWIPE_CLICK_SUPPRESS_MS = 400;
+
+/**
+ * Horizontal swipe navigation on the main viewer area (touch/pen). Requires
+ * `touch-action: pan-y` on .gallery-main so horizontal pans reach these
+ * handlers while vertical pans still scroll the modal.
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initSwipeNavigation(gallery) {
+    const main = gallery.querySelector('.gallery-main');
+    if (!main || galleryState.images.length < 2) return;
+
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let lastSwipeAt = 0;
+
+    main.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse') return;
+        // Native video controls own their pointer gestures (scrubbing etc.)
+        if (event.target.closest('video, .image-metadata-panel, .media-controls, .gallery-nav')) return;
+        startX = event.clientX;
+        startY = event.clientY;
+        tracking = true;
+    });
+
+    main.addEventListener('pointercancel', () => { tracking = false; });
+
+    main.addEventListener('pointerup', (event) => {
+        if (!tracking) return;
+        tracking = false;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        lastSwipeAt = performance.now();
+        updateMainDisplay(galleryState.activeIndex + (dx < 0 ? 1 : -1));
+    });
+
+    // A completed swipe still produces a click on the media — swallow it in
+    // the capture phase (beats the media element's own handler) so the
+    // full-size viewer does not open
+    main.addEventListener('click', (event) => {
+        if (performance.now() - lastSwipeAt < SWIPE_CLICK_SUPPRESS_MS) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    }, true);
+}
+
+/**
+ * True when the showcase tab is the active pane of an open modal
+ * @returns {boolean}
+ */
+function isShowcaseTabVisible() {
+    const showcaseTab = document.getElementById('showcase-tab');
+    if (!showcaseTab || !showcaseTab.classList.contains('active')) return false;
+    const modalEl = showcaseTab.closest('.modal');
+    // No .modal ancestor: standalone/test rendering, treat as visible
+    if (!modalEl) return true;
+    return modalEl.classList.contains('show') || modalEl.style.display === 'block';
+}
+
+/**
+ * Typing-target guard for the example shortcuts. Unlike the model-level
+ * navigation guard, buttons are NOT excluded: clicking a thumbnail or nav
+ * button leaves focus on it, which would make [ ] feel dead right after the
+ * most common interaction — and buttons consume Space/Enter natively, never
+ * bracket keys.
+ * @param {EventTarget|null} target - keydown event target
+ * @returns {boolean}
+ */
+function isTypingTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+    return target.isContentEditable || ['input', 'textarea', 'select'].includes(tagName);
+}
+
+// '[' / ']' switch examples while the gallery is expanded. ArrowLeft/Right
+// stay reserved for model-level navigation (ModelModal), the full-size
+// media viewer owns its keys while open, and the vertical list has no
+// active-item concept to navigate.
+document.addEventListener('keydown', (event) => {
+    if (event.key !== '[' && event.key !== ']') return;
+    if (getShowcaseLayout() !== 'gallery') return;
+    if (!galleryState.expanded || galleryState.images.length < 2) return;
+    if (isTypingTarget(event.target)) return;
+    if (isMediaViewerOpen()) return;
+    if (!isShowcaseTabVisible()) return;
+
+    event.preventDefault();
+    updateMainDisplay(galleryState.activeIndex + (event.key === ']' ? 1 : -1));
+});
+
+/**
+ * Defer metadata fetches for video thumbnails until they scroll into view:
+ * with preload="metadata" on every strip video, expanding the gallery would
+ * otherwise hit the network for all of them at once
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initStripVideoLazyLoading(gallery) {
+    const videos = gallery.querySelectorAll('.gallery-strip video[data-lazy-video]');
+    if (!videos.length) return;
+
+    const enable = (video) => {
+        video.preload = 'metadata';
+        video.load();
+        video.removeAttribute('data-lazy-video');
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+        videos.forEach(enable);
+        return;
+    }
+
+    // No explicit root: intersection accounts for the strip's overflow
+    // clipping, so off-screen thumbnails stay at preload="none"
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                enable(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    videos.forEach(video => observer.observe(video));
+}
+
+/**
+ * Switch the showcase layout (gallery | vertical list), persist the setting
+ * immediately and re-render in place
+ * @param {string} layout - Target layout
+ */
+async function setShowcaseLayout(layout) {
+    if (layout !== 'gallery' && layout !== 'vertical') return;
+    if (layout === getShowcaseLayout()) return;
+
+    // Components reach the settings manager through the global set by
+    // core.js (importing it here would create a module cycle)
+    const sm = window.settingsManager;
+    if (sm) {
+        try {
+            await sm.saveSetting('showcase_layout', layout);
+        } catch (error) {
+            console.error('Failed to save showcase layout setting:', error);
+            return; // Keep the current layout when the save fails
+        }
+    } else {
+        state.settings.showcase_layout = layout;
+    }
+
+    rerenderGallery(galleryState.expanded);
+}
+
+/**
+ * Initialize all gallery interactions
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+export function initShowcaseContent(gallery) {
+    if (!gallery) return;
+
+    // Gallery layout only: while expanded the thumbnail strip occupies the
+    // modal's bottom-right corner; hide the back-to-top button there (Hide
+    // examples is the equivalent "return to top" affordance). The vertical
+    // list has no strip and is exactly where the button is needed most.
+    const hideBackToTop = galleryState.expanded && getShowcaseLayout() === 'gallery';
+    gallery.closest('.modal-content')?.classList.toggle('showcase-expanded', hideBackToTop);
+
+    // Toolbar: show/hide toggle (expanding renders the gallery and starts remote loads)
+    gallery.querySelector('#galleryShowBtn')?.addEventListener('click', () => {
+        rerenderGallery(!galleryState.expanded);
+    });
+
+    // Segmented layout toggle (gallery / vertical list)
+    gallery.querySelectorAll('[data-showcase-layout]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setShowcaseLayout(btn.dataset.showcaseLayout);
+        });
+    });
+
+    // Same expansion via mouse wheel near the bottom of the modal
+    setupScrollToExpand(gallery);
+
+    // Toolbar: import toggle; scroll the freshly opened zone into view
+    gallery.querySelector('#galleryImportBtn')?.addEventListener('click', () => {
+        toggleImportZone(gallery);
+        const zone = gallery.querySelector('.gallery-import-zone:not(.hidden)');
+        zone?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // Prev/next navigation (wraps around)
+    gallery.querySelector('#galleryPrevBtn')?.addEventListener('click', () => {
+        updateMainDisplay(galleryState.activeIndex - 1);
+    });
+    gallery.querySelector('#galleryNextBtn')?.addEventListener('click', () => {
+        updateMainDisplay(galleryState.activeIndex + 1);
+    });
+
+    // Thumbnail strip: click to select, wheel scrolls horizontally
+    gallery.querySelectorAll('.gallery-thumb').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            updateMainDisplay(Number(thumb.dataset.index));
+        });
+    });
+    const strip = gallery.querySelector('.gallery-strip');
+    if (strip) {
+        strip.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; // let native horizontal scrolling through
+            e.preventDefault();
+            strip.scrollLeft += e.deltaY;
+        }, { passive: false });
+    }
+
+    // Custom example deleted elsewhere (media controls) → refresh gallery
+    gallery.addEventListener('example-media-deleted', (e) => {
+        handleExampleDeleted(e.detail?.shortId);
+    });
+
+    // Main viewer interactions (only exists in the expanded gallery layout)
+    const container = gallery.querySelector('.main-media-container');
+    if (container && galleryState.expanded) {
+        initMainMediaInteractions(container);
+        initWheelNavigation(gallery);
+        initSwipeNavigation(gallery);
+        // Gallery just (re)rendered expanded: warm the cache for the
+        // examples adjacent to the active one
+        prefetchAdjacentMedia();
+        // Video thumbnails start at preload="none"; enable them on visibility
+        initStripVideoLazyLoading(gallery);
+    }
+
+    // Vertical list interactions (only exists in the expanded vertical layout)
+    if (gallery.querySelector('.vertical-list-container') && galleryState.expanded) {
+        initVerticalList(gallery, galleryState.images, galleryState.exampleFiles);
+    }
+
+    // Reposition controls on window resize
+    resizeBoundGallery = gallery;
+}
+
+// Bind the resize handler once; it always repositions the latest gallery
+window.addEventListener('resize', () => {
+    if (resizeBoundGallery && resizeBoundGallery.isConnected) {
+        positionAllMediaControls(resizeBoundGallery);
+    }
+});
 
 /**
  * Render the import interface for example images
@@ -317,14 +946,14 @@ function renderImportInterface(isEmpty) {
     // Check if example images path is configured
     const exampleImagesPath = state.global.settings.example_images_path;
     const isPathConfigured = exampleImagesPath && exampleImagesPath.trim() !== '';
-    
+
     // If path is not configured, show setup guidance
     if (!isPathConfigured) {
         const title = translate('uiHelpers.exampleImages.setupRequired', {}, 'Example Images Storage');
         const description = translate('uiHelpers.exampleImages.setupDescription', {}, 'To add custom example images, you need to set a download location first.');
         const usage = translate('uiHelpers.exampleImages.setupUsage', {}, 'This path is used for both downloaded and custom example images.');
         const openSettings = translate('uiHelpers.exampleImages.openSettings', {}, 'Open Settings');
-        
+
         return `
             <div class="example-import-area ${isEmpty ? 'empty' : ''}">
                 <div class="import-container import-container--needs-setup" id="exampleImportContainer">
@@ -347,26 +976,28 @@ function renderImportInterface(isEmpty) {
             </div>
         `;
     }
-    
+
     return `
         <div class="example-import-area ${isEmpty ? 'empty' : ''}">
             <div class="import-container" id="exampleImportContainer">
                 <div class="import-placeholder">
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <h3>${isEmpty ? 'No example images available' : 'Add more examples'}</h3>
-                    <p>Drag & drop images or videos here</p>
-                    <p class="sub-text">or</p>
+                    <h3>${isEmpty
+                        ? translate('modals.model.showcase.noExamples', {}, 'No example images available')
+                        : translate('modals.model.showcase.addMoreExamples', {}, 'Add more examples')}</h3>
+                    <p>${translate('modals.model.showcase.dragDrop', {}, 'Drag & drop images or videos here')}</p>
+                    <p class="sub-text">${translate('modals.model.showcase.or', {}, 'or')}</p>
                     <button class="select-files-btn" id="selectExampleFilesBtn">
-                        <i class="fas fa-folder-open"></i> Select Files
+                        <i class="fas fa-folder-open"></i> ${translate('modals.model.showcase.selectFiles', {}, 'Select Files')}
                     </button>
-                    <p class="import-formats">Supported formats: jpg, png, gif, webp, avif, jxl, mp4, webm</p>
+                    <p class="import-formats">${translate('modals.model.showcase.supportedFormats', {}, 'Supported formats: jpg, png, gif, webp, avif, jxl, mp4, webm')}</p>
                 </div>
                 <input type="file" id="exampleFilesInput" multiple accept="image/*,image/avif,image/jxl,video/mp4,video/webm" style="display: none;">
                 <div class="import-progress-container" style="display: none;">
                     <div class="import-progress">
                         <div class="progress-bar"></div>
                     </div>
-                    <span class="progress-text">Importing files...</span>
+                    <span class="progress-text">${translate('modals.model.showcase.importing', {}, 'Importing files...')}</span>
                 </div>
             </div>
         </div>
@@ -378,7 +1009,7 @@ function renderImportInterface(isEmpty) {
  */
 function openSettingsForExampleImages() {
     modalManager.showModal('settingsModal');
-    
+
     // Wait for modal to be visible, then scroll to example images section
     setTimeout(() => {
         const exampleImagesInput = document.getElementById('exampleImagesPath');
@@ -407,26 +1038,26 @@ function openSettingsForExampleImages() {
  */
 export function initExampleImport(modelHash, container) {
     if (!container) return;
-    
+
     const importContainer = container.querySelector('#exampleImportContainer');
     const fileInput = container.querySelector('#exampleFilesInput');
     const selectFilesBtn = container.querySelector('#selectExampleFilesBtn');
     const openSettingsBtn = container.querySelector('#openExampleSettingsBtn');
-    
+
     // Set up "Open Settings" button for setup guidance state
     if (openSettingsBtn) {
         openSettingsBtn.addEventListener('click', () => {
             openSettingsForExampleImages();
         });
     }
-    
+
     // Set up file selection button
     if (selectFilesBtn) {
         selectFilesBtn.addEventListener('click', () => {
             fileInput.click();
         });
     }
-    
+
     // Handle file selection
     if (fileInput) {
         fileInput.addEventListener('change', (e) => {
@@ -435,32 +1066,32 @@ export function initExampleImport(modelHash, container) {
             }
         });
     }
-    
+
     // Set up drag and drop
     if (importContainer) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             importContainer.addEventListener(eventName, preventDefaults, false);
         });
-        
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         // Highlight drop area on drag over
         ['dragenter', 'dragover'].forEach(eventName => {
             importContainer.addEventListener(eventName, () => {
                 importContainer.classList.add('highlight');
             }, false);
         });
-        
+
         // Remove highlight on drag leave
         ['dragleave', 'drop'].forEach(eventName => {
             importContainer.addEventListener(eventName, () => {
                 importContainer.classList.remove('highlight');
             }, false);
         });
-        
+
         // Handle dropped files
         importContainer.addEventListener('drop', (e) => {
             const files = Array.from(e.dataTransfer.files);
@@ -480,27 +1111,37 @@ async function handleImportFiles(files, modelHash, importContainer) {
     const supportedImages = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.jxl'];
     const supportedVideos = ['.mp4', '.webm'];
     const supportedExtensions = [...supportedImages, ...supportedVideos];
-    
+
     const validFiles = files.filter(file => {
         const ext = '.' + file.name.split('.').pop().toLowerCase();
         return supportedExtensions.includes(ext);
     });
-    
+
     if (validFiles.length === 0) {
-        alert('No supported files selected. Please select image or video files.');
+        showToast('modals.model.showcase.noSupportedFiles', {}, 'warning');
         return;
     }
-    
+
     try {
         // Upload files one at a time to avoid exceeding server size limits
         let lastSuccessResult = null;
         let successCount = 0;
         const errors = [];
 
+        // The showcase section carries the freshest hash (an import may have
+        // resolved a deferred hash) plus the file path the backend needs to
+        // locate models whose hash is still pending.
+        const showcaseSection = document.querySelector('.showcase-section');
+        const modelPath = showcaseSection?.dataset.filepath || '';
+        const currentHash = showcaseSection?.dataset.modelHash || modelHash;
+
         for (const file of validFiles) {
             try {
                 const formData = new FormData();
-                formData.append('model_hash', modelHash);
+                formData.append('model_hash', currentHash);
+                if (modelPath) {
+                    formData.append('model_path', modelPath);
+                }
                 formData.append('files', file);
 
                 const response = await fetch('/api/lm/import-example-images', {
@@ -527,15 +1168,24 @@ async function handleImportFiles(files, modelHash, importContainer) {
 
         const result = lastSuccessResult;
 
+        // A model with a deferred hash (checkpoint / Other) is imported via
+        // model_path; the backend resolves and returns the real hash. Persist
+        // it so every follow-up (file list, NSFW toggle, delete, re-render)
+        // targets the hash-keyed example folder.
+        const effectiveHash = result.model_hash || currentHash;
+        if (showcaseSection && effectiveHash) {
+            showcaseSection.dataset.modelHash = effectiveHash;
+        }
+
         // Get updated local files
-        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${modelHash}`);
+        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${effectiveHash}`);
         const updatedFilesResult = await updatedFilesResponse.json();
 
         if (!updatedFilesResult.success) {
             throw new Error(updatedFilesResult.error || 'Failed to get updated file list');
         }
 
-        // Re-render the showcase content
+        // Re-render the showcase content, expanded so the user sees the result
         const showcaseTab = document.getElementById('showcase-tab');
         if (showcaseTab) {
             // Get the updated images from the result
@@ -543,16 +1193,20 @@ async function handleImportFiles(files, modelHash, importContainer) {
             const customImages = result.custom_images || [];
             // Combine both arrays for rendering
             const allImages = [...regularImages, ...customImages];
-            showcaseTab.innerHTML = renderShowcaseContent(allImages, updatedFilesResult.files, true);
+            showcaseTab.innerHTML = renderShowcaseContent(allImages, updatedFilesResult.files, galleryState.previewUrl, true);
 
-            // Re-initialize showcase functionality
-            const carousel = showcaseTab.querySelector('.carousel');
-            if (carousel && !carousel.classList.contains('collapsed')) {
-                initShowcaseContent(carousel);
+            // Re-initialize gallery functionality
+            const gallery = showcaseTab.querySelector('.showcase-gallery');
+            if (gallery) {
+                initShowcaseContent(gallery);
+                // Select the most recently imported example
+                updateMainDisplay(galleryState.images.length - 1);
+                // Keep the import zone expanded so multi-file imports can continue
+                gallery.querySelector('.gallery-import-zone')?.classList.remove('hidden');
             }
 
             // Initialize the import UI for the new content
-            initExampleImport(modelHash, showcaseTab);
+            initExampleImport(effectiveHash, showcaseTab);
 
             if (errors.length > 0) {
                 showToast('toast.import.imagesPartial', { success: successCount, failed: errors.length }, 'warning');
@@ -577,241 +1231,5 @@ async function handleImportFiles(files, modelHash, importContainer) {
     } catch (error) {
         console.error('Error importing examples:', error);
         showToast('toast.import.importFailed', { message: error.message }, 'error');
-    }
-}
-
-/**
- * Toggle showcase expansion
- * @param {HTMLElement} element - The scroll indicator element
- */
-export function toggleShowcase(element) {
-    const carousel = element.nextElementSibling;
-    const isCollapsed = carousel.classList.contains('collapsed');
-    const indicator = element.querySelector('span');
-    const icon = element.querySelector('i');
-    
-    carousel.classList.toggle('collapsed');
-    
-    if (isCollapsed) {
-        const count = carousel.querySelectorAll('.media-wrapper').length;
-        indicator.textContent = `Scroll or click to hide examples`;
-        icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-        initShowcaseContent(carousel);
-    } else {
-        const count = carousel.querySelectorAll('.media-wrapper').length;
-        indicator.textContent = `Scroll or click to show ${count} examples`;
-        icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-        
-        // Make sure any open metadata panels get closed
-        const carouselContainer = carousel.querySelector('.carousel-container');
-        if (carouselContainer) {
-            carouselContainer.style.height = '0';
-            setTimeout(() => {
-                carouselContainer.style.height = '';
-            }, 300);
-        }
-    }
-}
-
-/**
- * Bind scroll-indicator click events (works even when carousel is collapsed)
- * @param {HTMLElement} carousel - The carousel element
- */
-function bindScrollIndicatorEvents(carousel) {
-    if (!carousel) return;
-
-    const scrollIndicator = carousel.previousElementSibling;
-    if (scrollIndicator && scrollIndicator.classList.contains('scroll-indicator')) {
-        // Remove previous listeners to avoid duplicates
-        scrollIndicator.onclick = null;
-        scrollIndicator.removeEventListener('click', scrollIndicator._leftClickHandler);
-        scrollIndicator.removeEventListener('mousedown', scrollIndicator._middleClickHandler);
-
-        // Handler for left-click (button 0) - uses 'click' event
-        scrollIndicator._leftClickHandler = (event) => {
-            if (event.button === 0) {
-                event.preventDefault();
-                toggleShowcase(scrollIndicator);
-            }
-        };
-
-        // Handler for middle-click (button 1) - uses 'mousedown' event
-        scrollIndicator._middleClickHandler = (event) => {
-            if (event.button === 1) {
-                event.preventDefault();
-                toggleShowcase(scrollIndicator);
-            }
-        };
-
-        scrollIndicator.addEventListener('click', scrollIndicator._leftClickHandler);
-        scrollIndicator.addEventListener('mousedown', scrollIndicator._middleClickHandler);
-    }
-}
-
-/**
- * Initialize all showcase content interactions
- * @param {HTMLElement} carousel - The carousel element
- */
-export function initShowcaseContent(carousel) {
-    if (!carousel) return;
-    
-    initLazyLoading(carousel);
-    initNsfwBlurHandlers(carousel);
-    initMetadataPanelHandlers(carousel);
-    initMediaControlHandlers(carousel);
-    positionAllMediaControls(carousel);
-
-    // Click-to-view: open full-size media viewer when clicking showcase images/videos
-    const viewerElements = carousel.querySelectorAll('.media-wrapper img, .media-wrapper video');
-    const allItems = [];
-    const elementIndexMap = new Map();
-    viewerElements.forEach((el) => {
-        const isVideo = el.tagName === 'VIDEO';
-        const url = el.src || el.dataset.localSrc || el.dataset.remoteSrc;
-        if (url) {
-            elementIndexMap.set(el, allItems.length);
-            allItems.push({ url, type: isVideo ? 'video' : 'image' });
-        }
-    });
-    viewerElements.forEach((mediaEl) => {
-        const idx = elementIndexMap.get(mediaEl);
-        if (idx === undefined) return;
-        mediaEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openMediaViewer(allItems, idx);
-        });
-    });
-
-    // Bind scroll-indicator click events
-    bindScrollIndicatorEvents(carousel);
-    
-    // Add window resize handler
-    const resizeHandler = () => positionAllMediaControls(carousel);
-    window.removeEventListener('resize', resizeHandler);
-    window.addEventListener('resize', resizeHandler);
-    
-    // Handle images loading which might change dimensions
-    const mediaElements = carousel.querySelectorAll('img, video');
-    mediaElements.forEach(media => {
-        media.addEventListener('load', () => positionAllMediaControls(carousel));
-        if (media.tagName === 'VIDEO') {
-            media.addEventListener('loadedmetadata', () => positionAllMediaControls(carousel));
-        }
-    });
-}
-
-/**
- * Scroll to top of modal content
- * @param {HTMLElement} button - Back to top button
- */
-export function scrollToTop(button) {
-    const modalContent = button.closest('.modal-content');
-    if (modalContent) {
-        modalContent.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-}
-
-/**
- * Set up showcase scroll functionality
- * @param {string} modalId - ID of the modal element
- */
-export function setupShowcaseScroll(modalId) {
-    const wheelOptions = { passive: false };
-    const wheelHandler = (event) => {
-        const modalContent = document.querySelector(`#${modalId} .modal-content`);
-        if (!modalContent) return;
-        
-        const showcase = modalContent.querySelector('.showcase-section');
-        if (!showcase) return;
-        
-        const carousel = showcase.querySelector('.carousel');
-        const scrollIndicator = showcase.querySelector('.scroll-indicator');
-        
-        if (carousel?.classList.contains('collapsed') && event.deltaY > 0) {
-            const isNearBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight < 100;
-            
-            if (isNearBottom) {
-                toggleShowcase(scrollIndicator);
-                event.preventDefault();
-            }
-        }
-    };
-    document.addEventListener('wheel', wheelHandler, wheelOptions);
-    showcaseListenerMetrics.wheelListeners += 1;
-    
-    // Use MutationObserver to set up back-to-top button when modal content is added
-    const observer = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            if (mutation.type === 'childList' && mutation.addedNodes.length) {
-                const modal = document.getElementById(modalId);
-                if (modal && modal.querySelector('.modal-content')) {
-                    setupBackToTopButton(modal.querySelector('.modal-content'));
-                }
-            }
-        }
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-    showcaseListenerMetrics.mutationObservers += 1;
-    
-    // Try to set up the button immediately in case the modal is already open
-    const modalContent = document.querySelector(`#${modalId} .modal-content`);
-    if (modalContent) {
-        setupBackToTopButton(modalContent);
-    }
-
-    let cleanedUp = false;
-
-    return () => {
-        if (cleanedUp) {
-            return;
-        }
-        cleanedUp = true;
-        document.removeEventListener('wheel', wheelHandler, wheelOptions);
-        showcaseListenerMetrics.wheelListeners -= 1;
-        observer.disconnect();
-        showcaseListenerMetrics.mutationObservers -= 1;
-        const modalContent = document.querySelector(`#${modalId} .modal-content`);
-        teardownBackToTopButton(modalContent);
-    };
-}
-
-/**
- * Set up back-to-top button
- * @param {HTMLElement} modalContent - Modal content element
- */
-function setupBackToTopButton(modalContent) {
-    teardownBackToTopButton(modalContent);
-
-    const handler = () => {
-        const backToTopBtn = modalContent.querySelector('.back-to-top');
-        if (backToTopBtn) {
-            if (modalContent.scrollTop > 300) {
-                backToTopBtn.classList.add('visible');
-            } else {
-                backToTopBtn.classList.remove('visible');
-            }
-        }
-    };
-
-    modalContent._backToTopScrollHandler = handler;
-    modalContent.addEventListener('scroll', handler);
-    showcaseListenerMetrics.backToTopHandlers += 1;
-    handler();
-}
-
-function teardownBackToTopButton(modalContent) {
-    if (!modalContent) {
-        return;
-    }
-
-    const existingHandler = modalContent._backToTopScrollHandler;
-    if (existingHandler) {
-        modalContent.removeEventListener('scroll', existingHandler);
-        delete modalContent._backToTopScrollHandler;
-        showcaseListenerMetrics.backToTopHandlers -= 1;
     }
 }

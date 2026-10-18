@@ -84,11 +84,11 @@ class TestResolveSubType:
 
     def test_none_entry_returns_default(self):
         """None entry should return default."""
-        assert resolve_sub_type(None) == "LORA"
+        assert resolve_sub_type(None) == "LORA"  # pyright: ignore[reportArgumentType]
 
     def test_non_mapping_returns_default(self):
         """Non-mapping entry should return default."""
-        assert resolve_sub_type("invalid") == "LORA"
+        assert resolve_sub_type("invalid") == "LORA"  # pyright: ignore[reportArgumentType]
 
 
 class TestModelFilterSetWithSubType:

@@ -6,7 +6,7 @@ import shutil
 import tempfile
 import asyncio
 from aiohttp import web, ClientError
-from typing import Dict, List
+from typing import Any, Dict, List, cast
 
 from ..utils.settings_paths import ensure_settings_file
 from ..services.downloader import get_downloader
@@ -21,7 +21,20 @@ NETWORK_EXCEPTIONS = (ClientError, OSError, asyncio.TimeoutError)
 # otherwise delete them because they are untracked and, in released tags,
 # not listed in ``.gitignore``. ``-e`` excludes a path from cleaning
 # regardless of whether it is ignored.
-_PRESERVE_DIRS = ('settings.json', 'civitai', 'wildcards', 'backups', 'stats', 'logs', 'cache', 'model_cache')
+# ``cache`` covers the resolved cache tree (cache/model, cache/recipe,
+# cache/fts, ...); the legacy ``recipe_cache`` / ``model_cache`` directories
+# are listed too because a portable install can predate the cache/ move.
+_PRESERVE_DIRS = (
+    'settings.json',
+    'civitai',
+    'wildcards',
+    'backups',
+    'stats',
+    'logs',
+    'cache',
+    'model_cache',
+    'recipe_cache',
+)
 
 
 def _clean_excludes() -> List[str]:
@@ -467,9 +480,10 @@ class UpdateRoutes:
             if not success:
                 logger.error(f"Failed to fetch release info: {data}")
                 return False, ""
-            
-            zip_url = data.get("zipball_url")
-            version = data.get("tag_name", "unknown")
+
+            release_payload = cast(dict[str, Any], data)
+            zip_url = release_payload.get("zipball_url", "")
+            version = release_payload.get("tag_name", "unknown")
 
             # Download ZIP to temporary file
             with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_zip:
@@ -580,9 +594,10 @@ class UpdateRoutes:
                 logger.warning("Failed to fetch GitHub commit: %s", data)
                 return "main", [], 0, ""
 
-            commit_sha = data.get('sha', '')[:7]
-            commit_message = data.get('commit', {}).get('message', '')
-            commit_date = data.get('commit', {}).get('committer', {}).get('date', '')[:10]
+            commit_payload = cast(dict[str, Any], data)
+            commit_sha = commit_payload.get('sha', '')[:7]
+            commit_message = commit_payload.get('commit', {}).get('message', '')
+            commit_date = commit_payload.get('commit', {}).get('committer', {}).get('date', '')[:10]
 
             version = f"main-{commit_sha}"
             changelog = [commit_message] if commit_message else []
@@ -598,10 +613,11 @@ class UpdateRoutes:
                     custom_headers={'Accept': 'application/vnd.github+json'}
                 )
                 if c_ok:
-                    if c_data.get('status') in ('ahead', 'diverged'):
-                        behind_by = c_data.get('ahead_by', 0)
+                    compare_payload = cast(dict[str, Any], c_data)
+                    if compare_payload.get('status') in ('ahead', 'diverged'):
+                        behind_by = compare_payload.get('ahead_by', 0)
                     else:
-                        behind_by = c_data.get('behind_by', 0)
+                        behind_by = compare_payload.get('behind_by', 0)
 
             return version, changelog, behind_by, commit_date
 
@@ -706,7 +722,7 @@ class UpdateRoutes:
             logger.info(f"Successfully updated to {new_version}")
             return True, new_version
             
-        except git.exc.GitError as e:
+        except git.exc.GitError as e:  # pyright: ignore[reportAttributeAccessIssue]
             logger.error(f"Git error during update: {e}")
             return False, ""
         except Exception as e:
@@ -767,7 +783,7 @@ class UpdateRoutes:
         return git_info
     
     @staticmethod
-    async def _get_remote_version() -> tuple[str, List[str], List[Dict]]:
+    async def _get_remote_version() -> tuple[str, List[str], List[Dict[str, Any]]]:
         """
         Fetch remote version from GitHub
         Returns:
@@ -789,7 +805,7 @@ class UpdateRoutes:
             
             # Parse releases
             releases = []
-            for i, release in enumerate(data):
+            for i, release in enumerate(cast(list[dict[str, Any]], data)):
                 version = release.get('tag_name', '')
                 if not version.startswith('v'):
                     version = f"v{version}"

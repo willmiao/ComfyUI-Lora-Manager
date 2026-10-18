@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import pytest
 
@@ -55,7 +55,7 @@ async def test_ensure_preview_prefers_rewritten_civitai_image(tmp_path):
         exif_utils=exif_utils,
     )
 
-    images = [
+    images: List[Dict[str, object]] = [
         {
             "url": "https://image.civitai.com/container/example/original=true/sample.jpeg",
             "type": "image",
@@ -115,7 +115,7 @@ async def test_ensure_preview_falls_back_to_webp_when_rewrite_fails(tmp_path):
         exif_utils=exif_utils,
     )
 
-    images = [
+    images: List[Dict[str, object]] = [
         {
             "url": "https://image.civitai.com/container/example/original=true/sample.png",
             "type": "image",
@@ -165,7 +165,7 @@ async def test_ensure_preview_rewrites_civitai_video(tmp_path):
         exif_utils=RecordingExifUtils(),
     )
 
-    images = [
+    images: List[Dict[str, object]] = [
         {
             "url": "https://image.civitai.com/container/example/original=true/sample.mp4",
             "type": "video",
@@ -227,7 +227,7 @@ async def test_ensure_preview_respects_blur_setting(monkeypatch, tmp_path):
         exif_utils=RecordingExifUtils(),
     )
 
-    images = [
+    images: List[Dict[str, object]] = [
         {
             "url": "https://image.civitai.com/container/example/original=true/nsfw.jpeg",
             "type": "image",

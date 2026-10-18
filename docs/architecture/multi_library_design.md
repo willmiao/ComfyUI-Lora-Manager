@@ -1,5 +1,10 @@
 # Multi-Library Management for Standalone Mode
 
+> **Deprecated:** Multi-library support is deprecated and will be removed in an
+> upcoming release. Multiple folder roots within a single library
+> (`folder_paths` / `extra_folder_paths`) remain fully supported. This document
+> is kept for historical reference only.
+
 ## Requirements Summary
 - **Independent libraries**: In standalone mode, users can maintain multiple libraries, where each library represents a distinct set of model folders (LoRAs, checkpoints, embeddings, etc.). Only one library is active at any given time, but users need a fast way to switch between them.
 - **Library-specific settings**: The fields that vary per library are `folder_paths`, `default_lora_root`, `default_checkpoint_root`, and `default_embedding_root` inside `settings.json`.

@@ -30,7 +30,7 @@ class MetaFormatParser(RecipeMetadataParser):
             prompt = parts[0].strip()
             
             # Initialize metadata
-            metadata = {"prompt": prompt, "loras": []}
+            metadata: Dict[str, Any] = {"prompt": prompt, "loras": []}
             
             # Extract negative prompt and parameters if available
             if len(parts) > 1:

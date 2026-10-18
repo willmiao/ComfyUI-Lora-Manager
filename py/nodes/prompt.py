@@ -1,29 +1,38 @@
 from __future__ import annotations
 
 from typing import Any
-import inspect
 
 from ..services.wildcard_service import (
     contains_dynamic_syntax,
     get_wildcard_service,
     is_trigger_words_input,
+    linked_text_requires_rerun,
 )
 
 
-class _PromptOptionalInputs:
-    """Lookup that preserves explicit optional inputs and dynamic trigger slots."""
+class _PromptOptionalInputs(dict):
+    """Optional-input mapping that also resolves dynamically added trigger slots.
+
+    Inheriting ``dict`` keeps ``INPUT_TYPES()`` JSON-serializable for ComfyUI's
+    ``/object_info`` route: it serializes the stored entries, exactly as the plain
+    dict did before. The overridden ``__contains__``/``__getitem__`` let the
+    execution side resolve ``trigger_words3``-style inputs the frontend adds on
+    demand. This replaces the previous ``inspect.stack()`` check for the
+    ``get_input_info`` caller, which the registry security scan reports as
+    anti-debugging.
+    """
 
     def __init__(self, explicit_inputs: dict[str, tuple[str, dict[str, Any]]]) -> None:
-        self._explicit_inputs = explicit_inputs
+        super().__init__(explicit_inputs)
 
     def __contains__(self, item: object) -> bool:
         if not isinstance(item, str):
             return False
-        return item in self._explicit_inputs or is_trigger_words_input(item)
+        return super().__contains__(item) or is_trigger_words_input(item)
 
     def __getitem__(self, key: str) -> tuple[str, dict[str, Any]]:
-        if key in self._explicit_inputs:
-            return self._explicit_inputs[key]
+        if super().__contains__(key):
+            return super().__getitem__(key)
         if is_trigger_words_input(key):
             return (
                 "STRING",
@@ -65,10 +74,6 @@ class PromptLM:
             ),
         }
 
-        stack = inspect.stack()
-        if len(stack) > 2 and stack[2].function == "get_input_info":
-            optional_inputs = _PromptOptionalInputs(optional_inputs)  # type: ignore[assignment]
-
         return {
             "required": {
                 "text": (
@@ -84,7 +89,11 @@ class PromptLM:
                     {"tooltip": "The CLIP model used for encoding the text."},
                 ),
             },
-            "optional": optional_inputs,
+            "optional": _PromptOptionalInputs(optional_inputs),
+            "hidden": {
+                "prompt": "PROMPT",
+                "unique_id": "UNIQUE_ID",
+            },
         }
 
     RETURN_TYPES = ("CONDITIONING", "STRING")
@@ -100,10 +109,16 @@ class PromptLM:
         text: str,
         clip: Any | None = None,
         seed: int | None = None,
+        prompt: dict | None = None,
+        unique_id: str | None = None,
         **kwargs: Any,
     ):
         del clip, kwargs
-        if contains_dynamic_syntax(text) and seed is None:
+        if seed is not None:
+            return False
+        if contains_dynamic_syntax(text):
+            return float("NaN")
+        if text is None and linked_text_requires_rerun(prompt, unique_id, "text"):
             return float("NaN")
         return False
 
@@ -112,8 +127,11 @@ class PromptLM:
         text: str,
         clip: Any,
         seed: int | None = None,
+        prompt: dict | None = None,
+        unique_id: str | None = None,
         **kwargs: Any,
     ):
+        del prompt, unique_id
         expanded_text = get_wildcard_service().expand_text(text, seed=seed)
 
         trigger_words = []
@@ -126,7 +144,7 @@ class PromptLM:
         else:
             prompt = expanded_text
 
-        from nodes import CLIPTextEncode  # type: ignore
+        from nodes import CLIPTextEncode  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
 
         conditioning = CLIPTextEncode().encode(clip, prompt)[0]
         return (conditioning, prompt)

@@ -1,4 +1,433 @@
 import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
+import { lmUrl } from "./base_path.js";
+
+// Mirrors the backend resolver (get_lora_info_absolute): a ".ckpt"/".pt"
+// reference resolves to the same-named .safetensors file. The scanner only
+// indexes .safetensors, but keeping these here lets legacy references match.
+const LORA_FILE_EXTENSIONS = [".safetensors", ".ckpt", ".pt", ".bin"];
+
+/**
+ * Strip a known LoRA model extension from a name (case-insensitive).
+ *
+ * The two sides of the availability check differ:
+ * - The collection side (cycler-list `file_name`) is stored extension-free
+ *   (scanner convention), so stripping is a no-op there.
+ * - The widget entry side comes from the autocomplete path, which returns
+ *   on-disk relative paths WITH the extension (e.g.
+ *   "Illustrious/lazyhand.safetensors"), so stripping is required to match.
+ */
+export function stripLoraExtension(name) {
+  const lowered = String(name || "").toLowerCase();
+  for (const ext of LORA_FILE_EXTENSIONS) {
+    if (lowered.endsWith(ext)) {
+      return name.slice(0, -ext.length);
+    }
+  }
+  return name;
+}
+
+/**
+ * Normalize a LoRA name for availability lookup: forward slashes and no
+ * extension, mirroring the backend matching in get_lora_info_absolute.
+ */
+export function normalizeLoraNameKey(name) {
+  return stripLoraExtension(String(name || "").replace(/\\/g, "/"));
+}
+
+/**
+ * Build the lookup set of available LoRA names from relative paths like
+ * "folder/lora.safetensors". Both the full path and the bare basename are
+ * registered (extension stripped), matching how users can reference LoRAs.
+ */
+export function buildAvailableLoraSet(relativePaths) {
+  const set = new Set();
+  for (const p of relativePaths || []) {
+    const normalized = normalizeLoraNameKey(p);
+    if (!normalized) continue;
+    set.add(normalized);
+    const slash = normalized.lastIndexOf("/");
+    if (slash >= 0) {
+      set.add(normalized.slice(slash + 1));
+    }
+  }
+  return set;
+}
+
+/**
+ * Check whether a widget entry name is available locally.
+ *
+ * When the availability set is not loaded yet (null), every name is treated
+ * as available so entries are never falsely flagged while the fetch is
+ * pending. Absolute paths outside the library cannot be verified
+ * client-side and are treated as available. A folder-qualified name that
+ * does not match a stored path falls back to its basename, mirroring the
+ * backend resolver (get_lora_info_absolute's basename fallback and the
+ * legacy syntax format).
+ */
+export function isLoraNameAvailable(name, availableSet) {
+  if (!availableSet) {
+    return true;
+  }
+  const normalized = String(name || "").replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return true;
+  }
+  const key = normalizeLoraNameKey(name);
+  if (availableSet.has(key)) {
+    return true;
+  }
+  const slash = key.lastIndexOf("/");
+  if (slash >= 0) {
+    return availableSet.has(key.slice(slash + 1));
+  }
+  return false;
+}
+
+const AVAILABLE_LORAS_TTL_MS = 60000;
+let availableLorasCache = null;
+let availableLorasPromise = null;
+let availabilityGeneration = 0;
+
+/**
+ * Parse a numeric usage-tips value (accepts numbers and numeric strings).
+ */
+function parseUsageTipNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * Parse a "x.x-y.y" range string, tolerating whitespace and negatives.
+ */
+function parseRangeString(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)$/);
+  if (!match) {
+    return null;
+  }
+  return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
+}
+
+/**
+ * Extract the recommended strength range from a usage_tips payload (JSON
+ * string or already-parsed object). Explicit strength_min/strength_max keys
+ * take precedence over the strength_range "x.x-y.y" shorthand. Returns
+ * { min, max, recommended } with null bounds for open-ended ranges, or null
+ * when no valid range is configured.
+ */
+export function parseStrengthRange(usageTips) {
+  let tips = usageTips;
+  if (typeof tips === "string") {
+    if (!tips.trim()) {
+      return null;
+    }
+    try {
+      tips = JSON.parse(tips);
+    } catch {
+      return null;
+    }
+  }
+  if (!tips || typeof tips !== "object") {
+    return null;
+  }
+
+  let min = parseUsageTipNumber(tips.strength_min ?? tips.strengthMin);
+  let max = parseUsageTipNumber(tips.strength_max ?? tips.strengthMax);
+
+  if (min === null || max === null) {
+    const parsed = parseRangeString(tips.strength_range ?? tips.strengthRange);
+    if (parsed) {
+      if (min === null) min = parsed.min;
+      if (max === null) max = parsed.max;
+    }
+  }
+
+  if (min === null && max === null) {
+    return null;
+  }
+  if (min !== null && max !== null && min > max) {
+    return null;
+  }
+
+  return { min, max, recommended: parseUsageTipNumber(tips.strength) };
+}
+
+/**
+ * Describe how a strength value violates the recommended range, or return
+ * null when it is inside (or no range is configured). The returned string is
+ * used as the input's tooltip.
+ */
+export function describeStrengthRangeViolation(value, range) {
+  if (!range) {
+    return null;
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+  const { min, max, recommended } = range;
+
+  let direction = null;
+  if (min !== null && numeric < min) {
+    direction = "Below";
+  } else if (max !== null && numeric > max) {
+    direction = "Above";
+  }
+  if (!direction) {
+    return null;
+  }
+
+  let rangeText;
+  if (min !== null && max !== null) {
+    rangeText = `${min.toFixed(2)}\u2013${max.toFixed(2)}`;
+  } else if (min !== null) {
+    rangeText = `\u2265 ${min.toFixed(2)}`;
+  } else {
+    rangeText = `\u2264 ${max.toFixed(2)}`;
+  }
+
+  let text = `${direction} recommended strength range (${rangeText})`;
+  if (recommended !== null) {
+    text += `; recommended: ${recommended.toFixed(2)}`;
+  }
+  return text;
+}
+
+/**
+ * Toggle the out-of-range visual cue on a strength input.
+ */
+export function applyStrengthRangeCue(inputEl, value, range) {
+  const message = describeStrengthRangeViolation(value, range);
+  inputEl.classList.toggle("lm-strength-out-of-range", message !== null);
+  if (message) {
+    inputEl.title = message;
+  } else {
+    inputEl.removeAttribute("title");
+  }
+}
+
+/**
+ * Build the lookup map of recommended strength ranges from cycler-list
+ * entries. Keyed like the availability set (normalized path and basename).
+ */
+export function buildStrengthRangeMap(loras) {
+  const map = new Map();
+  for (const lora of loras || []) {
+    const range = parseStrengthRange(lora?.usage_tips);
+    if (!range) {
+      continue;
+    }
+    const normalized = normalizeLoraNameKey(lora?.file_name);
+    if (!normalized) {
+      continue;
+    }
+    map.set(normalized, range);
+    const slash = normalized.lastIndexOf("/");
+    if (slash >= 0) {
+      map.set(normalized.slice(slash + 1), range);
+    }
+  }
+  return map;
+}
+
+async function refreshAvailableLoras() {
+  const generation = availabilityGeneration;
+  try {
+    const response = await api.fetchApi("/lm/loras/cycler-list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    if (!response || !response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    const loras = data?.loras || [];
+    const paths = loras
+      .map((lora) => lora?.file_name)
+      .filter(Boolean);
+    const set = buildAvailableLoraSet(paths);
+    const ranges = buildStrengthRangeMap(loras);
+    if (generation !== availabilityGeneration) {
+      // Stale response: the cache was invalidated while this fetch was in
+      // flight, do not repopulate it with pre-change data.
+      return null;
+    }
+    availableLorasCache = { set, ranges, at: Date.now() };
+    return set;
+  } catch (error) {
+    console.warn("Failed to fetch available LoRAs:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch the set of available LoRA names, cached with a TTL. Concurrent
+ * callers share a single in-flight request. Resolves to null on failure.
+ */
+export function getAvailableLoras() {
+  connectLibraryChangeSocket();
+  if (
+    availableLorasCache &&
+    Date.now() - availableLorasCache.at < AVAILABLE_LORAS_TTL_MS
+  ) {
+    return Promise.resolve(availableLorasCache.set);
+  }
+  if (!availableLorasPromise) {
+    availableLorasPromise = refreshAvailableLoras().finally(() => {
+      availableLorasPromise = null;
+    });
+  }
+  return availableLorasPromise;
+}
+
+/**
+ * Synchronous snapshot of the cached availability set, or null when the
+ * cache is not loaded (or expired).
+ */
+export function getAvailableLorasSync() {
+  if (
+    availableLorasCache &&
+    Date.now() - availableLorasCache.at < AVAILABLE_LORAS_TTL_MS
+  ) {
+    return availableLorasCache.set;
+  }
+  return null;
+}
+
+/**
+ * Synchronous lookup of a LoRA's recommended strength range from the cached
+ * cycler-list data. Mirrors isLoraNameAvailable's matching: basename fallback
+ * for folder-qualified names, and null for absolute paths or while the cache
+ * is not loaded (no cue is shown in those cases).
+ */
+export function getLoraStrengthRange(name) {
+  if (
+    !availableLorasCache ||
+    Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS
+  ) {
+    return null;
+  }
+  const ranges = availableLorasCache.ranges;
+  if (!ranges || ranges.size === 0) {
+    return null;
+  }
+  const normalized = String(name || "").replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return null;
+  }
+  const key = normalizeLoraNameKey(name);
+  if (ranges.has(key)) {
+    return ranges.get(key);
+  }
+  const slash = key.lastIndexOf("/");
+  if (slash >= 0) {
+    return ranges.get(key.slice(slash + 1)) || null;
+  }
+  return null;
+}
+
+/**
+ * Drop the cached availability data (used by tests and by callers that need
+ * a forced refresh of the local library state). In-flight fetches started
+ * before the reset are invalidated via the generation counter.
+ */
+export function resetAvailableLorasCache() {
+  availabilityGeneration += 1;
+  availableLorasCache = null;
+  availableLorasPromise = null;
+}
+
+// The Lora Manager UI and the ComfyUI graph page are separate pages; the
+// backend broadcasts "models_changed" over its WebSocket when the local
+// library changes (delete/rename/move/scan), so the graph page can
+// invalidate its availability cache immediately instead of waiting for the
+// TTL to expire.
+const libraryChangeListeners = new Set();
+
+/**
+ * Register a callback fired whenever the local model library changes.
+ * Returns an unsubscribe function.
+ */
+export function onLibraryChanged(callback) {
+  libraryChangeListeners.add(callback);
+  return () => {
+    libraryChangeListeners.delete(callback);
+  };
+}
+
+/**
+ * Process a library-change WebSocket message. Exported for testability.
+ */
+export function handleLibraryChangeMessage(data) {
+  if (!data || data.type !== "models_changed") {
+    return;
+  }
+  resetAvailableLorasCache();
+  for (const listener of libraryChangeListeners) {
+    try {
+      listener();
+    } catch (error) {
+      console.warn("Library change listener failed:", error);
+    }
+  }
+}
+
+const LIBRARY_WS_RECONNECT_MS = 30000;
+let libraryWs = null;
+let libraryWsRetryTimer = null;
+
+function connectLibraryChangeSocket() {
+  if (libraryWs || typeof WebSocket === "undefined") {
+    return;
+  }
+  const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+  let ws;
+  try {
+    ws = new WebSocket(`${protocol}${window.location.host}${lmUrl("/ws/fetch-progress")}`);
+  } catch (error) {
+    return;
+  }
+  libraryWs = ws;
+  ws.onmessage = (event) => {
+    try {
+      handleLibraryChangeMessage(JSON.parse(event.data));
+    } catch (error) {
+      // Non-JSON messages from other broadcasters are ignored.
+    }
+  };
+  ws.onclose = () => {
+    libraryWs = null;
+    if (libraryWsRetryTimer === null) {
+      libraryWsRetryTimer = setTimeout(() => {
+        libraryWsRetryTimer = null;
+        connectLibraryChangeSocket();
+      }, LIBRARY_WS_RECONNECT_MS);
+    }
+  };
+  ws.onerror = () => {
+    ws.close();
+  };
+}
+
+/**
+ * Ensure the library-change WebSocket is connected (idempotent). Called on
+ * the first availability fetch; safe in environments without WebSocket.
+ */
+export function ensureLibraryChangeSocket() {
+  connectLibraryChangeSocket();
+}
 
 // Parse LoRA entries from value
 export function parseLoraValue(value) {
@@ -31,23 +460,39 @@ export function syncClipStrengthIfCollapsed(loraData) {
 }
 
 // Function to directly save the recipe without dialog
-export async function saveRecipeDirectly() {
+export async function saveRecipeDirectly({ embedWorkflow = false } = {}) {
   try {
     const prompt = await app.graphToPrompt();
     console.log('Prompt:', prompt); // for debugging purposes
+
+    // Embedding the graph is opt-in: it is by far the largest metadata field
+    // and its widget values can contain sensitive data (paths, API keys). The
+    // UI-format graph is sent rather than the API prompt so node layout and
+    // groups survive — that is what "Send Workflow to ComfyUI" restores.
+    const requestBody = {};
+    if (embedWorkflow) {
+      if (prompt && prompt.workflow) {
+        requestBody.workflow = prompt.workflow;
+      } else {
+        showToast('No workflow available to embed; saving the recipe without it', 'warning');
+      }
+    }
+
     // Show loading toast
     if (app && app.extensionManager && app.extensionManager.toast) {
       app.extensionManager.toast.add({
         severity: 'info',
-        summary: 'Saving Recipe',
+        summary: embedWorkflow ? 'Saving Recipe with Workflow' : 'Saving Recipe',
         detail: 'Please wait...',
         life: 2000
       });
     }
     
     // Send the request to the backend API
-    const response = await fetch('/api/lm/recipes/save-from-widget', {
-      method: 'POST'
+    const response = await fetch(lmUrl('/api/lm/recipes/save-from-widget'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
     });
     
     const result = await response.json();
@@ -55,12 +500,23 @@ export async function saveRecipeDirectly() {
     // Show result toast
     if (app && app.extensionManager && app.extensionManager.toast) {
       if (result.success) {
-        app.extensionManager.toast.add({
-          severity: 'success',
-          summary: 'Recipe Saved',
-          detail: 'Recipe has been saved successfully',
-          life: 3000
-        });
+        let severity = 'success';
+        let summary = embedWorkflow ? 'Recipe Saved with Workflow' : 'Recipe Saved';
+        let detail = embedWorkflow
+          ? 'Recipe and the current workflow have been saved'
+          : 'Recipe has been saved successfully';
+
+        if (embedWorkflow && result.workflow_skipped === 'too_large') {
+          severity = 'warn';
+          summary = 'Recipe Saved without Workflow';
+          detail = 'The workflow is too large to embed; the recipe was saved without it';
+        } else if (embedWorkflow && result.has_workflow !== true) {
+          severity = 'warn';
+          summary = 'Recipe Saved without Workflow';
+          detail = 'The workflow could not be embedded in the recipe image';
+        }
+
+        app.extensionManager.toast.add({ severity, summary, detail, life: 5000 });
       } else {
         app.extensionManager.toast.add({
           severity: 'error',

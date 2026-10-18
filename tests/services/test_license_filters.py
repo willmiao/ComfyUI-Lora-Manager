@@ -1,16 +1,24 @@
 """Tests for license-based filtering functionality."""
 
 import pytest
+from typing import Any
 from unittest.mock import Mock, AsyncMock
 
 from py.services.base_model_service import BaseModelService
 from py.utils.civitai_utils import build_license_flags
+from py.utils.models import BaseModelMetadata
 
 
 class DummyModelService(BaseModelService):
     """Dummy implementation of BaseModelService for testing."""
     
     def __init__(self):
+        super().__init__(
+            model_type="test",
+            scanner=Mock(),
+            metadata_class=BaseModelMetadata,
+            settings_provider=Mock(),
+        )
         # Mock the required attributes
         self.model_type = "test"
         self.scanner = Mock()
@@ -28,7 +36,7 @@ class DummyModelService(BaseModelService):
         
         self.scanner.get_cached_data = mock_get_cached_data
 
-    async def format_response(self, model_data: dict) -> dict:
+    async def format_response(self, model_data: dict[str, Any]) -> dict[str, Any]:
         """Required abstract method implementation."""
         return model_data
 

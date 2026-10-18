@@ -1,5 +1,6 @@
 import { translate } from '../utils/i18nHelpers.js';
 import { formatFileSize } from '../utils/formatters.js';
+import { getModelSource } from '../utils/modelSourceHelpers.js';
 
 // Loading management
 export class LoadingManager {
@@ -278,6 +279,35 @@ export class LoadingManager {
             }
         };
 
+        /**
+         * Describe a post-transfer stage in the status line.
+         *
+         * The byte counter stops as soon as the last byte lands, but the
+         * backend still hashes the file and reads the model site's API. Naming
+         * that work is what stops the bar looking frozen at 100%.
+         */
+        const describeMetadataStage = (stage, platform) => {
+            if (stage === 'indexing') {
+                return translate(
+                    'modals.download.progress.indexingFile',
+                    {},
+                    'Reading model file...'
+                );
+            }
+            const label = getModelSource(platform)?.label || platform || '';
+            return label
+                ? translate(
+                    'modals.download.progress.fetchingSourceMetadata',
+                    { source: label },
+                    `Fetching metadata from ${label}...`
+                )
+                : translate(
+                    'modals.download.progress.fetchingMetadata',
+                    {},
+                    'Fetching metadata...'
+                );
+        };
+
         // Initialize transfer stats with empty data
         updateTransferStats();
 
@@ -285,19 +315,62 @@ export class LoadingManager {
             this.loadingContent.appendChild(this.cancelButton);
         }
 
-        // Return update function
-        return (currentProgress, currentIndex = 0, currentName = '', metrics = {}) => {
+        /**
+         * Update the progress UI.
+         *
+         * @param {number} currentProgress Percentage of the current item.
+         * @param {number} [currentIndex] Items finished so far.
+         * @param {string} [currentName] File being processed.
+         * @param {object} [metrics] Byte counters; only meaningful while
+         *   transferring.
+         * @param {object} [phase] `{ phase: 'metadata', stage, platform }` once
+         *   the transfer has finished, so the UI can show what is still running
+         *   instead of a 0 B/s speed.
+         */
+        return (
+            currentProgress,
+            currentIndex = 0,
+            currentName = '',
+            metrics = {},
+            phase = null
+        ) => {
+            const isMetadata = phase?.phase === 'metadata';
+
             // Update current item progress
             currentItemProgress.style.width = `${currentProgress}%`;
             currentItemPercent.textContent = `${Math.floor(currentProgress)}%`;
+            currentItemProgress.classList.toggle('is-indeterminate', isMetadata);
 
             // Update current item label if name provided
             if (currentName) {
-                currentItemLabel.textContent = translate(
-                    'modals.download.progress.downloading',
-                    { name: currentName },
-                    `Downloading: ${currentName}`
+                currentItemLabel.textContent = isMetadata
+                    ? translate(
+                        'modals.download.progress.metadata',
+                        { name: currentName },
+                        `Metadata: ${currentName}`
+                    )
+                    : translate(
+                        'modals.download.progress.downloading',
+                        { name: currentName },
+                        `Downloading: ${currentName}`
+                    );
+            }
+
+            // No bytes are moving any more, so report the stage instead of a
+            // rate that has dropped to zero.
+            if (isMetadata) {
+                updateTransferStats({ bytesDownloaded: metrics.bytesDownloaded, totalBytes: metrics.totalBytes });
+                const stageText = describeMetadataStage(phase.stage, phase.platform);
+                speedDetail.textContent = stageText;
+                // Keep the batch position visible; the status line is the one
+                // place a caller also writes to.
+                this.setStatus(
+                    totalItems > 1
+                        ? `${Math.min(currentIndex + 1, totalItems)}/${totalItems}: ${stageText}`
+                        : stageText
                 );
+            } else {
+                updateTransferStats(metrics);
             }
 
             // Update overall label if multiple items
@@ -311,8 +384,6 @@ export class LoadingManager {
                 // Single item, just update main progress
                 this.setProgress(currentProgress);
             }
-
-            updateTransferStats(metrics);
         };
     }
 

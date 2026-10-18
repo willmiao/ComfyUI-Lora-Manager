@@ -26,6 +26,7 @@ const {
       },
     },
     downloadModel: vi.fn(),
+    downloadModelSource: vi.fn(),
     downloadHfModel: vi.fn(),
     cancelDownload: vi.fn(),
     getPageState: vi.fn(() => ({})),
@@ -158,7 +159,7 @@ describe('DownloadManager batch download summary flow', () => {
     // Reset the shared mocks so mockResolvedValueOnce queues and call
     // history never leak between tests.
     mockApiClient.downloadModel.mockReset();
-    mockApiClient.downloadHfModel.mockReset();
+    mockApiClient.downloadModelSource.mockReset();
     mockApiClient.cancelDownload.mockReset();
     showToastMock.mockClear();
     showDownloadBatchSummaryMock.mockClear();
@@ -406,14 +407,15 @@ describe('DownloadManager batch download summary flow', () => {
     expect(showToastMock).toHaveBeenCalledWith('toast.loras.downloadCompleted', {}, 'success');
   });
 
-  it('shows a summary for HF partial failure and retries only the failed files', async () => {
-    manager.hfRepoId = 'user/repo';
-    manager.hfSelectedFiles = ['a.safetensors', 'b.safetensors'];
-    mockApiClient.downloadHfModel
+  it('shows a summary for external repo partial failure and retries only the failed files', async () => {
+    manager.sourcePlatform = 'huggingface';
+    manager.sourceRepoId = 'user/repo';
+    manager.sourceSelectedFiles = ['a.safetensors', 'b.safetensors'];
+    mockApiClient.downloadModelSource
       .mockResolvedValueOnce({ success: true })
       .mockResolvedValueOnce({ success: false, error: 'denied' });
 
-    const result = await manager._downloadHfSingle({ modelRoot: '/m', useDefaultPaths: true });
+    const result = await manager._downloadExternalRepoFiles({ modelRoot: '/m', useDefaultPaths: true });
 
     expect(result).toBe(false);
     expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
@@ -428,7 +430,9 @@ describe('DownloadManager batch download summary flow', () => {
 
     await summary.onRetry();
 
-    expect(mockApiClient.downloadHfModel).toHaveBeenCalledTimes(3);
-    expect(mockApiClient.downloadHfModel.mock.calls[2][0].filename).toBe('b.safetensors');
+    expect(mockApiClient.downloadModelSource).toHaveBeenCalledTimes(3);
+    const retryArgs = mockApiClient.downloadModelSource.mock.calls[2][0];
+    expect(retryArgs.filename).toBe('b.safetensors');
+    expect(retryArgs.platform).toBe('huggingface');
   });
 });

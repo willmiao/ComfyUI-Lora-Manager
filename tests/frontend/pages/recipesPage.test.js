@@ -163,6 +163,7 @@ describe('RecipeManager', () => {
   afterEach(() => {
     delete window.recipeManager;
     delete window.importManager;
+    delete window.settingsManager;
   });
 
   it('initializes page controls, restores filters, and wires sort interactions', async () => {
@@ -225,6 +226,38 @@ describe('RecipeManager', () => {
     expect(pageState.sortBy).toBe('name:asc');
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(2);
     expect(initializePageFeaturesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('wires the layout toggle and reflects the saved recipes layout setting', async () => {
+    const gridBtn = document.createElement('button');
+    gridBtn.className = 'layout-toggle-btn';
+    gridBtn.dataset.recipesLayout = 'grid';
+    gridBtn.setAttribute('aria-pressed', 'false');
+    const masonryBtn = document.createElement('button');
+    masonryBtn.className = 'layout-toggle-btn';
+    masonryBtn.dataset.recipesLayout = 'masonry';
+    masonryBtn.setAttribute('aria-pressed', 'false');
+    document.body.appendChild(gridBtn);
+    document.body.appendChild(masonryBtn);
+
+    const saveRecipesLayoutMock = vi.fn().mockResolvedValue();
+    window.settingsManager = { saveRecipesLayout: saveRecipesLayoutMock };
+
+    const manager = new RecipeManager();
+    await manager.initialize();
+
+    // Initial state follows the saved setting (default grid)
+    expect(gridBtn.classList.contains('active')).toBe(true);
+    expect(gridBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(masonryBtn.classList.contains('active')).toBe(false);
+
+    // Clicking the inactive option saves the new layout
+    masonryBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(saveRecipesLayoutMock).toHaveBeenCalledWith('masonry');
+
+    // Clicking the already-active option is a no-op
+    gridBtn.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(saveRecipesLayoutMock).toHaveBeenCalledTimes(1);
   });
 
   it('skips loading when duplicates mode is active and refreshes otherwise', async () => {

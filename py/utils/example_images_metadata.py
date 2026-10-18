@@ -2,7 +2,7 @@ import inspect
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Mapping, MutableMapping, Optional
 
 from ..recipes.constants import GEN_PARAM_KEYS
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
@@ -13,8 +13,19 @@ from ..services.downloader import get_downloader
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
+from ..utils.video_metadata import get_video_dimensions
 
 logger = logging.getLogger(__name__)
+
+# Placeholder dimensions written when the real ones cannot be determined.
+# Kept for backwards compatibility with pre-existing metadata entries.
+_DEFAULT_MEDIA_WIDTH = 720
+_DEFAULT_MEDIA_HEIGHT = 1280
+
+# Example metadata entries carry a marker: ``customImages`` use their ``id``
+# while ``images`` use the positional index. Either way the marker must be a
+# plain filename-safe token, never a path fragment.
+_ENTRY_MARKER_PATTERN = re.compile(r"^(?:custom_|image_)?([^./\\]+)$")
 
 _preview_service = PreviewAssetService(
     metadata_manager=MetadataManager,
@@ -66,6 +77,141 @@ def _build_metadata_sync_service(settings_manager: "SettingsManager") -> Metadat
     )
 
 
+def _read_media_dimensions(path: str, is_video: bool) -> tuple[int, int]:
+    """Return ``(width, height)`` for an example image or video file.
+
+    Videos are read from their container headers (PIL cannot open them) so the
+    showcase viewer sizes the gallery to the real aspect ratio. Falls back to
+    the legacy ``720x1280`` placeholder when the dimensions cannot be
+    determined — e.g. an unreadable file or an exotic codec — which only
+    affects the displayed aspect ratio, never the file itself.
+    """
+
+    dimensions = None
+
+    if is_video:
+        dimensions = get_video_dimensions(path)
+    else:
+        try:
+            from PIL import Image
+
+            if os.path.exists(path):
+                with Image.open(path) as img:
+                    dimensions = img.size
+        except Exception:
+            dimensions = None
+
+    if dimensions:
+        width, height = dimensions
+        if width > 0 and height > 0:
+            return int(width), int(height)
+
+    return _DEFAULT_MEDIA_WIDTH, _DEFAULT_MEDIA_HEIGHT
+
+
+def _is_video_entry(file_path: Optional[str], entry: Mapping[str, Any]) -> bool:
+    """Return True when an example entry points at a video file.
+
+    The local file extension wins over the recorded ``type`` because files in
+    the wild are frequently mislabelled (animated WebP saved as ``.mp4``);
+    ``_read_media_dimensions`` handles that correctly either way.
+    """
+
+    if file_path:
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext in SUPPORTED_MEDIA_EXTENSIONS["videos"]:
+            return True
+        if ext in SUPPORTED_MEDIA_EXTENSIONS["images"]:
+            return False
+    return str(entry.get("type", "")).lower() == "video"
+
+
+def _resolve_local_file(
+    entry: Mapping[str, Any],
+    index: int,
+    local_files: Mapping[str, str],
+) -> Optional[str]:
+    """Map a metadata entry onto its example file inside the model folder.
+
+    Reads the entry's own marker (``id`` for ``customImages``, positional
+    ``index`` for ``images``) with an anchored regex, so the identifier can
+    never bleed into a neighbouring filename the way a prefix comparison can.
+    """
+
+    marker = entry.get("id")
+    if not isinstance(marker, str) or not marker:
+        marker = str(index)
+
+    match = _ENTRY_MARKER_PATTERN.fullmatch(marker)
+    if not match:
+        return None
+
+    return local_files.get(match.group(1))
+
+
+def repair_local_video_dimensions(
+    metadata: MutableMapping[str, Any],
+    local_files: Mapping[str, str],
+    *,
+    dry_run: bool = False,
+) -> int:
+    """Backfill real video dimensions for an entry that has local files.
+
+    Only entries with an empty ``url`` are considered: those have no remote
+    source, so the local file is the single source of truth for their size and
+    rewriting them cannot discard API-supplied data. Entries whose dimensions
+    already match the file are left byte-identical.
+
+    Args:
+        metadata: Raw metadata payload (mutated in place unless ``dry_run``).
+        local_files: ``{identifier: path}`` for files present in the model's
+            example folder, where the identifier is the entry's ``id`` (for
+            ``customImages``) or its positional index (for ``images``).
+        dry_run: Count the fixes without mutating ``metadata``.
+
+    Returns:
+        The number of entries that were (or would be) repaired.
+    """
+
+    civitai = metadata.get("civitai")
+    if not isinstance(civitai, dict):
+        return 0
+
+    repaired = 0
+
+    for key in ("customImages", "images"):
+        entries = civitai.get(key)
+        if not isinstance(entries, list) or not entries:
+            continue
+
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("url", "") != "":
+                # Remote-backed entry: never rebuilt from local state.
+                continue
+
+            file_path = _resolve_local_file(entry, index, local_files)
+            if not file_path or not os.path.isfile(file_path):
+                continue
+
+            dimensions = _read_media_dimensions(
+                file_path, _is_video_entry(file_path, entry)
+            )
+            width, height = dimensions
+            if width <= 0 or height <= 0:
+                continue
+            if entry.get("width") == width and entry.get("height") == height:
+                continue
+
+            if not dry_run:
+                entry["width"] = width
+                entry["height"] = height
+            repaired += 1
+
+    return repaired
+
+
 def _get_metadata_sync_service() -> MetadataSyncService:
     """Return the shared metadata sync service, initialising it lazily."""
 
@@ -93,7 +239,7 @@ class MetadataUpdater:
     """Handles updating model metadata related to example images"""
     
     @staticmethod
-    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner, progress: dict | None = None):
+    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner, progress: dict[str, Any] | None = None):
         """Refresh model metadata from CivitAI
         
         Args:
@@ -230,29 +376,21 @@ class MetadataUpdater:
                     # Determine if video or image
                     file_ext = os.path.splitext(path)[1].lower()
                     is_video = file_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-                    
+
+                    width, height = _read_media_dimensions(path, is_video)
+
                     # Create image metadata entry
                     image_entry = {
                         "url": "",  # Empty URL as required
                         "nsfwLevel": 0,
-                        "width": 720,  # Default dimensions
-                        "height": 1280,
+                        "width": width,
+                        "height": height,
                         "type": "video" if is_video else "image",
                         "meta": None,
                         "hasMeta": False,
                         "hasPositivePrompt": False
                     }
-                    
-                    # If it's an image, try to get actual dimensions (optional enhancement)
-                    try:
-                        from PIL import Image
-                        if not is_video and os.path.exists(path):
-                            with Image.open(path) as img:
-                                image_entry["width"], image_entry["height"] = img.size
-                    except:
-                        # If PIL fails or is unavailable, use default dimensions
-                        pass
-                        
+
                     images.append(image_entry)
                 
                 # Update the model's civitai.images field
@@ -263,8 +401,9 @@ class MetadataUpdater:
                 model_copy: Optional[Dict[str, Any]] = None
                 try:
                     model_copy = model.copy()
-                    model_copy.pop('folder', None)
-                    await MetadataManager.save_metadata(file_path, model_copy)
+                    if model_copy is not None:
+                        model_copy.pop('folder', None)
+                        await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata for {model.get('model_name')}: {str(e)}")
@@ -320,14 +459,16 @@ class MetadataUpdater:
                 # Determine if video or image
                 file_ext = os.path.splitext(path)[1].lower()
                 is_video = file_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-                
+
+                width, height = _read_media_dimensions(path, is_video)
+
                 # Create image metadata entry
                 image_entry = {
                     "url": "",  # Empty URL as requested
                     "id": short_id,
                     "nsfwLevel": 0,
-                    "width": 720,  # Default dimensions
-                    "height": 1280,
+                    "width": width,
+                    "height": height,
                     "type": "video" if is_video else "image",
                     "meta": None,
                     "hasMeta": False,
@@ -352,16 +493,6 @@ class MetadataUpdater:
                     except Exception as e:
                         logger.warning(f"Failed to extract metadata from {os.path.basename(path)}: {e}")
                 
-                # If it's an image, try to get actual dimensions
-                try:
-                    from PIL import Image
-                    if not is_video and os.path.exists(path):
-                        with Image.open(path) as img:
-                            image_entry["width"], image_entry["height"] = img.size
-                except:
-                    # If PIL fails or is unavailable, use default dimensions
-                    pass
-                    
                 # Append to existing customImages array
                 custom_images.append(image_entry)
             
@@ -371,8 +502,9 @@ class MetadataUpdater:
             if file_path:
                 try:
                     model_copy = model_data.copy()
-                    model_copy.pop('folder', None)
-                    await MetadataManager.save_metadata(file_path, model_copy)
+                    if model_copy is not None:
+                        model_copy.pop('folder', None)
+                        await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model_data.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata: {str(e)}")
@@ -553,7 +685,7 @@ class MetadataUpdater:
 
         images = civitai.get("images")
         if isinstance(images, list) and images:
-            stale: list[int] = []
+            stale_images: list[int] = []
 
             for idx, img in enumerate(images):
                 if img.get("url", ""):
@@ -563,15 +695,15 @@ class MetadataUpdater:
 
                 prefix = f"image_{idx}."
                 if not any(f.startswith(prefix) for f in dir_entries):
-                    stale.append(idx)
+                    stale_images.append(idx)
 
-            if stale:
-                for idx in reversed(stale):
+            if stale_images:
+                for idx in reversed(stale_images):
                     images.pop(idx)
                 has_changes = True
                 logger.info(
                     "Pruned %d stale image entry(ies) for %s",
-                    len(stale),
+                    len(stale_images),
                     getattr(metadata, "model_name", model_hash),
                 )
 

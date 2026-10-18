@@ -32,9 +32,11 @@ async def test_search_wildcards_returns_results():
 
     handler = WildcardsHandler(service=StubService())
     response = await handler.search_wildcards(
-        FakeRequest(query={"search": "cat", "limit": "25", "offset": "2"})
+        FakeRequest(query={"search": "cat", "limit": "25", "offset": "2"})  # pyright: ignore[reportArgumentType]
     )
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert response.status == 200
     assert payload == {
@@ -62,8 +64,12 @@ async def test_search_wildcards_handles_errors():
             raise RuntimeError("boom")
 
     handler = WildcardsHandler(service=StubService())
-    response = await handler.search_wildcards(FakeRequest(query={"search": "cat"}))
-    payload = json.loads(response.text)
+    response = await handler.search_wildcards(
+        FakeRequest(query={"search": "cat"})  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert response.status == 500
     assert payload["error"] == "boom"

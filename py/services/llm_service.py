@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -32,7 +33,25 @@ _catalog_cache: Optional[Dict[str, List[str]]] = None
 # ``{provider_id: {model_id: max_output_tokens}}``.
 _model_output_limits: Dict[str, Dict[str, int]] = {}
 
+# Monotonic timestamp of the last failed catalog fetch (None = no failure
+# yet).  Failed fetches are negatively cached: further calls return the
+# empty fallback without hitting the network until the cooldown elapses,
+# so users on broken networks don't stall on every settings-modal open.
+_catalog_last_failure: Optional[float] = None
+_CATALOG_FAILURE_COOLDOWN = 600.0  # seconds
+
+# Serializes catalog fetches so concurrent callers don't duplicate requests.
+_catalog_lock = asyncio.Lock()
+
 _CATALOG_TIMEOUT = aiohttp.ClientTimeout(total=30)
+
+# Cloudflare serves brotli when the client advertises it, and brotli is a
+# required dependency here — a corrupted br stream can crash the native
+# decoder with a Windows access violation (issue #1099).  Request gzip
+# instead; zlib decompression is not affected and corrupt gzip data only
+# raises ContentEncodingError (an aiohttp.ClientError subclass), which the
+# exception handlers below already catch.
+_NO_BROTLI_HEADERS = {"Accept-Encoding": "gzip, deflate"}
 
 
 async def _load_model_catalog() -> Dict[str, List[str]]:
@@ -46,61 +65,85 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
     value has a ``models`` sub-dict keyed by model ID.  The result is cached
     in memory after the first successful fetch.
     Subsequent calls return the cached data immediately.
+
+    Failed fetches are negatively cached: further calls return an empty
+    dict without hitting the network until ``_CATALOG_FAILURE_COOLDOWN``
+    has elapsed, so a broken network does not stall every settings-modal
+    open.  Concurrent callers are serialized behind :data:`_catalog_lock`
+    so only one request is ever in flight.
     """
-    global _catalog_cache, _model_output_limits
+    global _catalog_cache, _model_output_limits, _catalog_last_failure
     if _catalog_cache is not None:
         return _catalog_cache
 
-    try:
-        async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
-            async with session.get(_MODEL_CATALOG_URL) as resp:
-                if resp.status != 200:
-                    logger.warning("Model catalog returned HTTP %s", resp.status)
-                    return _catalog_cache or {}
-                data = await resp.json()
-    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
-        logger.warning("Failed to fetch model catalog: %s", exc)
-        return _catalog_cache or {}
+    async with _catalog_lock:
+        # Re-check under the lock: another caller may have fetched (or
+        # failed) while we were waiting.
+        if _catalog_cache is not None:
+            return _catalog_cache
+        if (
+            _catalog_last_failure is not None
+            and time.monotonic() - _catalog_last_failure < _CATALOG_FAILURE_COOLDOWN
+        ):
+            logger.debug(
+                "Skipping model catalog fetch: last attempt failed %.0fs ago",
+                time.monotonic() - _catalog_last_failure,
+            )
+            return {}
 
-    if not isinstance(data, dict):
-        logger.warning("Model catalog is not a dict, got %s", type(data).__name__)
-        return _catalog_cache or {}
+        try:
+            async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
+                async with session.get(_MODEL_CATALOG_URL, headers=_NO_BROTLI_HEADERS) as resp:
+                    if resp.status != 200:
+                        logger.warning("Model catalog returned HTTP %s", resp.status)
+                        _catalog_last_failure = time.monotonic()
+                        return {}
+                    data = await resp.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            logger.warning("Failed to fetch model catalog: %s", exc)
+            _catalog_last_failure = time.monotonic()
+            return {}
 
-    result: Dict[str, List[str]] = {}
-    output_limits: Dict[str, Dict[str, int]] = {}
-    for provider_id, provider_info in data.items():
-        if not isinstance(provider_info, dict):
-            continue
-        models_dict = provider_info.get("models")
-        if not isinstance(models_dict, dict):
-            continue
-        model_ids: List[str] = []
-        provider_limits: Dict[str, int] = {}
-        for mid, model_info in models_dict.items():
-            if not isinstance(mid, str):
+        if not isinstance(data, dict):
+            logger.warning("Model catalog is not a dict, got %s", type(data).__name__)
+            _catalog_last_failure = time.monotonic()
+            return {}
+
+        result: Dict[str, List[str]] = {}
+        output_limits: Dict[str, Dict[str, int]] = {}
+        for provider_id, provider_info in data.items():
+            if not isinstance(provider_info, dict):
                 continue
-            model_ids.append(mid)
-            if isinstance(model_info, dict):
-                limit = model_info.get("limit")
-                if isinstance(limit, dict):
-                    output = limit.get("output")
-                    if isinstance(output, (int, float)) and output > 0:
-                        provider_limits[mid] = int(output)
-        if model_ids:
-            result[provider_id] = model_ids
-        if provider_limits:
-            output_limits[provider_id] = provider_limits
+            models_dict = provider_info.get("models")
+            if not isinstance(models_dict, dict):
+                continue
+            model_ids: List[str] = []
+            provider_limits: Dict[str, int] = {}
+            for mid, model_info in models_dict.items():
+                if not isinstance(mid, str):
+                    continue
+                model_ids.append(mid)
+                if isinstance(model_info, dict):
+                    limit = model_info.get("limit")
+                    if isinstance(limit, dict):
+                        output = limit.get("output")
+                        if isinstance(output, (int, float)) and output > 0:
+                            provider_limits[mid] = int(output)
+            if model_ids:
+                result[provider_id] = model_ids
+            if provider_limits:
+                output_limits[provider_id] = provider_limits
 
-    _catalog_cache = result
-    _model_output_limits = output_limits
-    logger.debug(
-        "Loaded model catalog: %d providers, %d total models "
-        "(%d providers have output limits)",
-        len(result),
-        sum(len(m) for m in result.values()),
-        len(output_limits),
-    )
-    return result
+        _catalog_cache = result
+        _model_output_limits = output_limits
+        logger.debug(
+            "Loaded model catalog: %d providers, %d total models "
+            "(%d providers have output limits)",
+            len(result),
+            sum(len(m) for m in result.values()),
+            len(output_limits),
+        )
+        return result
 
 
 def _get_model_max_output(provider: str, model: str) -> Optional[int]:
@@ -126,12 +169,12 @@ async def fetch_ollama_models(api_base: str) -> List[str]:
     url = f"{api_base.rstrip('/')}/models"
     try:
         async with aiohttp.ClientSession(timeout=_OLLAMA_API_TIMEOUT) as session:
-            async with session.get(url) as resp:
+            async with session.get(url, headers=_NO_BROTLI_HEADERS) as resp:
                 if resp.status != 200:
                     logger.debug("Ollama API returned HTTP %s from %s", resp.status, api_base)
                     return []
                 data = await resp.json()
-    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.debug("Ollama not reachable at %s: %s", api_base, exc)
         return []
 
@@ -223,6 +266,16 @@ _PROVIDER_DEFAULTS: Dict[str, str] = {
 
 # Request timeout for LLM calls (seconds)
 _LLM_TIMEOUT = aiohttp.ClientTimeout(total=120)
+
+# Providers that do NOT implement ``response_format: {"type": "json_schema"}``
+# and reject it with HTTP 400.  For these the weaker, widely supported
+# ``json_object`` mode is used instead (the prompt already specifies the
+# expected JSON shape, and ``_try_salvage_json`` repairs imperfect output).
+# DeepSeek answers a json_schema request with
+# ``{"error":{"message":"This response_format type is unavailable now"}}``.
+# LM Studio and some other local OpenAI-compatible servers reject
+# ``json_object`` but accept ``json_schema``, so they are not listed here.
+_JSON_OBJECT_ONLY_PROVIDERS = frozenset({"deepseek"})
 
 
 class LLMService:
@@ -571,47 +624,61 @@ class LLMService:
         if effective_max is None:
             effective_max = 4096
 
-        # Use json_schema (not json_object) for broader provider compatibility:
-        # LM Studio and some other OpenAI-compatible servers reject
-        # json_object but accept json_schema.  {"type": "object"} is
-        # functionally equivalent — it accepts any JSON object without
-        # constraining specific fields.
-        response_format = {
+        # Structured-output format.  ``json_schema`` is preferred because LM
+        # Studio and other local OpenAI-compatible servers reject
+        # ``json_object`` but accept ``json_schema``; ``{"type": "object"}``
+        # accepts any JSON object without constraining specific fields, so the
+        # two modes are functionally equivalent here.  Providers known to
+        # reject json_schema (see _JSON_OBJECT_ONLY_PROVIDERS) get
+        # ``json_object`` instead.
+        schema_format: Dict[str, Any] = {
             "type": "json_schema",
             "json_schema": {
                 "name": "metadata",
                 "schema": {"type": "object"},
             },
         }
+        json_object_format: Dict[str, Any] = {"type": "json_object"}
 
-        try:
-            result = await self.chat_completion(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                response_format=response_format,
-                max_tokens=effective_max,
-            )
-        except LLMResponseError as e:
-            # Only fall back when the provider rejects the response_format
-            # type value (e.g. "'response_format.type' must be...").  Avoid
-            # catching unrelated 400 errors whose body happens to mention
-            # "response_format" (e.g. "model does not support
-            # response_format restrictions on this endpoint").
-            if "'response_format.type'" not in str(e).lower():
-                raise
-            logger.info(
-                "Provider rejected response_format, retrying without it. "
-                "Falling back to prompt-only JSON mode. Error: %s",
-                e,
-            )
-            result = await self.chat_completion(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                response_format=None,
-                max_tokens=effective_max,
-            )
+        if self._get_config()["provider"] in _JSON_OBJECT_ONLY_PROVIDERS:
+            format_chain: List[Optional[Dict[str, Any]]] = [
+                json_object_format,
+                None,
+            ]
+        else:
+            format_chain = [schema_format, json_object_format, None]
+
+        result: Optional[Dict[str, Any]] = None
+        for index, fmt in enumerate(format_chain):
+            try:
+                result = await self.chat_completion(
+                    messages=messages,
+                    model=model,
+                    temperature=temperature,
+                    response_format=fmt,
+                    max_tokens=effective_max,
+                )
+                break
+            except LLMResponseError as e:
+                message = str(e).lower()
+                if index + 1 >= len(format_chain):
+                    raise
+                # Only downgrade when the failure is about ``response_format``.
+                # Everything else (auth, unknown model, rate limits) must
+                # surface unchanged.  Matching on the bare parameter name also
+                # covers variants such as DeepSeek's "This response_format
+                # type is unavailable now" without swallowing unrelated 400s.
+                if "response_format" not in message:
+                    raise
+                logger.info(
+                    "Provider rejected response_format=%s, retrying with %s. "
+                    "Error: %s",
+                    (fmt or {}).get("type", "none"),
+                    (format_chain[index + 1] or {}).get("type", "none"),
+                    e,
+                )
+
+        assert result is not None  # non-empty chain always sets or raises
 
         content = result.get("content", "") or ""
         if not content:

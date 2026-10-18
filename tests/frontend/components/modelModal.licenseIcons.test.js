@@ -43,8 +43,6 @@ vi.mock(MODAL_MANAGER_MODULE, () => ({
 }));
 
 vi.mock(SHOWCASE_MODULE, () => ({
-  toggleShowcase: vi.fn(),
-  setupShowcaseScroll: vi.fn(),
   scrollToTop: vi.fn(),
   loadExampleImages: vi.fn(),
 }));

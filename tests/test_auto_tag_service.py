@@ -4,7 +4,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "py"))
 
-from services.auto_tag_service import extract_auto_tags, AUTO_TAG_CATEGORIES
+from services.auto_tag_service import extract_auto_tags, AUTO_TAG_CATEGORIES  # pyright: ignore[reportMissingImports]
 
 
 class TestExtractAutoTags:
@@ -208,18 +208,18 @@ class TestAutoTagCategories:
             re.compile(pattern, re.IGNORECASE)
 
     def test_mode_group_tags(self):
-        from services.auto_tag_service import MODE_TAGS
+        from services.auto_tag_service import MODE_TAGS  # pyright: ignore[reportMissingImports]
         assert "HIGH" in MODE_TAGS
         assert "LOW" in MODE_TAGS
 
     def test_video_group_tags(self):
-        from services.auto_tag_service import VIDEO_MODE_TAGS
+        from services.auto_tag_service import VIDEO_MODE_TAGS  # pyright: ignore[reportMissingImports]
         assert "I2V" in VIDEO_MODE_TAGS
         assert "T2V" in VIDEO_MODE_TAGS
         assert "TI2V" in VIDEO_MODE_TAGS
 
     def test_default_enabled_groups(self):
-        from services.auto_tag_service import DEFAULT_ENABLED_GROUPS
+        from services.auto_tag_service import DEFAULT_ENABLED_GROUPS  # pyright: ignore[reportMissingImports]
         assert "mode" in DEFAULT_ENABLED_GROUPS
         assert "video" in DEFAULT_ENABLED_GROUPS
         assert "speed" not in DEFAULT_ENABLED_GROUPS

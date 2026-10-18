@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import os
-
 from typing import Awaitable, Callable, Dict, List, Sequence, Tuple
 
+from ..utils.sidecar_paths import get_metadata_path
 from .auto_tag_service import extract_auto_tags
 
 
@@ -24,11 +23,11 @@ class TagUpdateService:
         update_cache: Callable[[str, str, Dict[str, object]], Awaitable[bool]],
     ) -> Tuple[List[str], List[str]]:
         """Add tags to a metadata entry and return updated tags and auto_tags."""
-        base, _ = os.path.splitext(file_path)
-        metadata_path = f"{base}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await metadata_loader(metadata_path)
 
-        existing_tags = list(metadata.get("tags", []))
+        raw_tags = metadata.get("tags", [])
+        existing_tags = list(raw_tags) if isinstance(raw_tags, list) else []
         existing_lower = [tag.lower() for tag in existing_tags]
 
         tags_added: List[str] = []

@@ -7,6 +7,12 @@ import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getPriorityTagSuggestions } from '../../utils/priorityTagHelpers.js';
 import { state } from '../../state/index.js';
+import { enablePointerSort } from './pointerSort.js';
+import {
+    refreshReorderState,
+    renderReorderHandle,
+    renderReorderHint,
+} from './reorderSupport.js';
 
 const MODEL_TYPE_SUGGESTION_KEY_MAP = {
     loras: 'lora',
@@ -18,16 +24,22 @@ const MODEL_TYPE_SUGGESTION_KEY_MAP = {
 };
 const METADATA_ITEM_SELECTOR = '.metadata-item';
 const METADATA_ITEMS_CONTAINER_SELECTOR = '.metadata-items';
-const METADATA_ITEM_DRAGGING_CLASS = 'metadata-item-dragging';
-const METADATA_ITEM_PLACEHOLDER_CLASS = 'metadata-item-placeholder';
-const METADATA_ITEMS_SORTING_CLASS = 'metadata-items-sorting';
-const BODY_DRAGGING_CLASS = 'metadata-drag-active';
+
+/**
+ * Tag items have no click action of their own, so the whole chip stays
+ * draggable (handleSelector is null); the small threshold keeps a click on the
+ * grip from starting a drag (it just focuses the grip). Touch users drag by the
+ * grip, which is the element that opts out of scrolling via touch-action.
+ */
+const TAG_SORT_CONFIG = {
+    itemSelector: METADATA_ITEM_SELECTOR,
+    dragThreshold: 5,
+};
 
 let activeModelTypeKey = '';
 let priorityTagSuggestions = [];
 let priorityTagSuggestionsLoaded = false;
 let priorityTagSuggestionsPromise = null;
-let activeTagDragState = null;
 
 // Configurable options for tag editing (set by setupTagEditMode)
 let tagEditOptions = {
@@ -423,6 +435,7 @@ function createTagEditUI(currentTags, editBtnHTML = '') {
             <div class="metadata-items">
                 ${currentTags.map(tag => `
                     <div class="metadata-item" data-tag="${tag}">
+                        ${renderReorderHandle(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                         <span class="metadata-item-content">${tag}</span>
                         <button class="metadata-delete-btn">
                             <i class="fas fa-times"></i>
@@ -431,6 +444,7 @@ function createTagEditUI(currentTags, editBtnHTML = '') {
                 `).join('')}
             </div>
             <div class="metadata-edit-controls">
+                ${renderReorderHint(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                 <button class="save-tags-btn" title="Save changes">
                     <i class="fas fa-save"></i> Save
                 </button>
@@ -543,8 +557,11 @@ function setupDeleteButtons() {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
             const tag = this.closest('.metadata-item');
+            const scope = tag?.closest('.model-tags-container');
             tag.remove();
-            
+
+            refreshTagReorderState(scope);
+
             // Update status of items in the suggestion dropdown
             updateSuggestionsDropdown();
         });
@@ -563,202 +580,29 @@ function setupTagDragAndDrop(scopeContainer) {
         return;
     }
 
-    container.querySelectorAll(METADATA_ITEM_SELECTOR).forEach((item) => {
-        item.removeAttribute('draggable');
-        if (item.classList.contains(METADATA_ITEM_PLACEHOLDER_CLASS)) {
-            return;
-        }
-        if (item.dataset.pointerDragInit === 'true') {
-            return;
-        }
+    const scope = container.closest('.model-tags-container') || container;
 
-        item.addEventListener('pointerdown', handleTagPointerDown);
-        item.dataset.pointerDragInit = 'true';
+    enablePointerSort(container, {
+        ...TAG_SORT_CONFIG,
+        onSorted: () => {
+            updateSuggestionsDropdown();
+            refreshTagReorderState(scope);
+        },
     });
+
+    refreshTagReorderState(scope);
 }
 
-function handleTagPointerDown(event) {
-    if (event.button !== 0) {
-        return;
-    }
-
-    if (event.target.closest('.metadata-delete-btn')) {
-        return;
-    }
-
-    const item = event.currentTarget;
-    const container = item?.closest(METADATA_ITEMS_CONTAINER_SELECTOR);
-    if (!item || !container) {
-        return;
-    }
-
-    event.preventDefault();
-    startPointerDrag({ item, container, startEvent: event });
-}
-
-function startPointerDrag({ item, container, startEvent }) {
-    if (activeTagDragState) {
-        finishPointerDrag();
-    }
-
-    const itemRect = item.getBoundingClientRect();
-    const placeholder = document.createElement('div');
-    placeholder.className = `metadata-item ${METADATA_ITEM_PLACEHOLDER_CLASS}`;
-    placeholder.style.width = `${itemRect.width}px`;
-    placeholder.style.height = `${itemRect.height}px`;
-
-    container.insertBefore(placeholder, item);
-
-    item.classList.add(METADATA_ITEM_DRAGGING_CLASS);
-    item.style.width = `${itemRect.width}px`;
-    item.style.height = `${itemRect.height}px`;
-    item.style.position = 'fixed';
-    item.style.left = `${itemRect.left}px`;
-    item.style.top = `${itemRect.top}px`;
-    item.style.pointerEvents = 'none';
-    item.style.zIndex = '1000';
-
-    container.classList.add(METADATA_ITEMS_SORTING_CLASS);
-    if (document.body) {
-        document.body.classList.add(BODY_DRAGGING_CLASS);
-    }
-
-    const dragState = {
-        container,
-        item,
-        placeholder,
-        offsetX: startEvent.clientX - itemRect.left,
-        offsetY: startEvent.clientY - itemRect.top,
-        lastKnownPointer: { x: startEvent.clientX, y: startEvent.clientY },
-        rafId: null,
-    };
-
-    activeTagDragState = dragState;
-
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointercancel', handlePointerUp);
-}
-
-function handlePointerMove(event) {
-    if (!activeTagDragState) {
-        return;
-    }
-
-    activeTagDragState.lastKnownPointer = { x: event.clientX, y: event.clientY };
-
-    if (activeTagDragState.rafId !== null) {
-        return;
-    }
-
-    activeTagDragState.rafId = requestAnimationFrame(() => {
-        if (!activeTagDragState) {
-            return;
-        }
-        activeTagDragState.rafId = null;
-        updateDraggingItemPosition();
-        updatePlaceholderPosition();
+/**
+ * Refresh the "sortable" flag (and therefore the grip + hint) of a tags section
+ * @param {Element} [tagsSection] - The .model-tags-container element
+ */
+function refreshTagReorderState(tagsSection) {
+    refreshReorderState({
+        container: tagsSection?.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR),
+        scope: tagsSection || undefined,
+        itemSelector: METADATA_ITEM_SELECTOR,
     });
-}
-
-function handlePointerUp() {
-    finishPointerDrag();
-}
-
-function updateDraggingItemPosition() {
-    if (!activeTagDragState) {
-        return;
-    }
-
-    const { item, offsetX, offsetY, lastKnownPointer } = activeTagDragState;
-    const left = lastKnownPointer.x - offsetX;
-    const top = lastKnownPointer.y - offsetY;
-    item.style.left = `${left}px`;
-    item.style.top = `${top}px`;
-}
-
-function updatePlaceholderPosition() {
-    if (!activeTagDragState) {
-        return;
-    }
-
-    const { container, placeholder, item, lastKnownPointer } = activeTagDragState;
-    const siblings = Array.from(
-        container.querySelectorAll(
-            `${METADATA_ITEM_SELECTOR}:not(.${METADATA_ITEM_PLACEHOLDER_CLASS})`
-        )
-    ).filter((element) => element !== item);
-
-    let insertAfter = null;
-
-    for (const sibling of siblings) {
-        const rect = sibling.getBoundingClientRect();
-
-        if (lastKnownPointer.y < rect.top) {
-            container.insertBefore(placeholder, sibling);
-            return;
-        }
-
-        if (lastKnownPointer.y <= rect.bottom) {
-            if (lastKnownPointer.x < rect.left + rect.width / 2) {
-                container.insertBefore(placeholder, sibling);
-                return;
-            }
-            insertAfter = sibling;
-            continue;
-        }
-
-        insertAfter = sibling;
-    }
-
-    if (!insertAfter) {
-        container.insertBefore(placeholder, container.firstElementChild);
-        return;
-    }
-
-    container.insertBefore(placeholder, insertAfter.nextSibling);
-}
-
-function finishPointerDrag() {
-    if (!activeTagDragState) {
-        return;
-    }
-
-    const { container, item, placeholder, rafId } = activeTagDragState;
-
-    document.removeEventListener('pointermove', handlePointerMove);
-    document.removeEventListener('pointerup', handlePointerUp);
-    document.removeEventListener('pointercancel', handlePointerUp);
-
-    container.classList.remove(METADATA_ITEMS_SORTING_CLASS);
-    if (document.body) {
-        document.body.classList.remove(BODY_DRAGGING_CLASS);
-    }
-
-    if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-        activeTagDragState.rafId = null;
-        updateDraggingItemPosition();
-        updatePlaceholderPosition();
-    }
-
-    if (placeholder && placeholder.parentNode === container) {
-        container.insertBefore(item, placeholder);
-        container.removeChild(placeholder);
-    }
-
-    item.classList.remove(METADATA_ITEM_DRAGGING_CLASS);
-    item.style.position = '';
-    item.style.width = '';
-    item.style.height = '';
-    item.style.left = '';
-    item.style.top = '';
-    item.style.pointerEvents = '';
-    item.style.zIndex = '';
-
-    activeTagDragState = null;
-
-    updateSuggestionsDropdown();
 }
 
 /**
@@ -799,6 +643,7 @@ function addNewTag(tag, scopeElement = null) {
     newTag.className = 'metadata-item';
     newTag.dataset.tag = tag;
     newTag.innerHTML = `
+        ${renderReorderHandle(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
         <span class="metadata-item-content">${tag}</span>
         <button class="metadata-delete-btn">
             <i class="fas fa-times"></i>

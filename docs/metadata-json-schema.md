@@ -11,6 +11,33 @@ This document defines the complete schema for `.metadata.json` files used by Lor
 
 ---
 
+## Storage Location (Alongside vs Centralized)
+
+By default, `.metadata.json` sidecars and preview images live **alongside** their model files. An optional centralized mode stores them under a single root directory instead. Two settings control this (Settings → Library → Sidecar Storage):
+
+| Setting | Values | Default |
+|---------|--------|---------|
+| `sidecar_storage_mode` | `"alongside"` \| `"centralized"` | `"alongside"` |
+| `sidecar_storage_path` | Absolute path string; empty = `<settings dir>/sidecars` | `""` |
+
+In centralized mode, sidecars and previews mirror each model root's directory structure:
+
+```
+<sidecar_root>/<root_component>/<rel_dir>/<name>.metadata.json
+```
+
+- `<rel_dir>` is the model's directory relative to the model root containing the file; the longest matching root wins, so nested roots mirror under the most specific root.
+- `<root_component>` identifies the model root and **survives the root being moved or renamed**. It starts as the deterministic `<sanitized basename>-<path digest>` — so mirrors created by older builds, and mirrors left behind by a relocated sidecar root, still resolve — and is then pinned in `<sidecar_root>/.lm-sidecar-roots.json` alongside the root's last known path and a few sample subdirectories. Two roots sharing a basename (e.g. `/mnt/a/loras` and `/mnt/b/loras`) always get distinct components and never collide. Each path component is sanitized to filesystem-safe characters.
+- **Moving or renaming a model root does not strand its sidecars.** On the next run the mirror identity is re-anchored to the root's new path (matched by basename and recorded sample directories), so favorites, notes, tags and usage tips keep resolving. An existing hash-named mirror from an older build is adopted as-is on first use.
+- If an identity cannot be re-anchored unambiguously (e.g. two same-named candidate roots), nothing is guessed: the mirror stays on disk untouched and surfaces as an orphan in **Doctor → Centralized Sidecars** (and in the log). Restoring the original root path re-links it automatically.
+- `.civitai.info` files always stay next to the model file, in both modes.
+- Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings). The migration covers excluded (hidden) models too, so un-excluding one later never strands its sidecar in the old layout. The result payload includes a `sidecar_root` field with the resolved centralized root, and the settings UI shows the outcome counters plus an "Open Folder" shortcut.
+- Changing `sidecar_storage_path` while centralized likewise needs a root relocation: `{"direction": "relocate_root", "old_root": "<previous path>"}` moves the whole mirror tree to the new root (the settings UI offers this automatically). The identity map travels with the tree, and its entries win over any map the destination acquired beforehand — so a mirror that was re-anchored earlier keeps its name even if something resolved against the new path before the relocation ran.
+- The settings UI always shows the resolved effective storage root (via the `sidecar_storage_root*` fields in `GET /api/lm/settings`), with `POST /api/lm/sidecars/open-location` opening it in the file manager. When the resolved root lies inside the plugin installation folder (portable settings mode), the UI warns: reinstalling or clean-updating the plugin would delete the sidecars, so an explicit path outside the installation folder is recommended. The repo `.gitignore` excludes the portable-mode default (`/sidecars/`).
+- All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline. In the default `alongside` mode these helpers do no extra I/O at all — the identity map is only loaded and reconciled when centralized storage is actually in use.
+
+---
+
 ## Base Fields (All Model Types)
 
 These fields are present in all model metadata files.
@@ -39,6 +66,7 @@ These fields are present in all model metadata files.
 | `metadata_source` | string\|null | ❌ No | ✅ Yes | Last provider that supplied metadata (see below) |
 | `last_checked_at` | float | ❌ No (default: `0`) | ✅ Yes | Unix timestamp of last metadata check |
 | `hash_status` | string | ❌ No (default: `"completed"`) | ✅ Yes | Hash calculation status: `"pending"`, `"calculating"`, `"completed"`, `"failed"` |
+| `autov3` | string\|null | ❌ No | ✅ Yes | CivitAI AutoV3 hash (first 12 chars, lowercase hex) sourced from the safetensors embedded metadata (`sshs_model_hash` / `modelspec.hash_sha256`). **Absent** = not yet checked (may be backfilled later); **`null`** = checked but unavailable (header has no recognized hash); **12-char hex string** = value |
 
 ---
 
@@ -271,8 +299,28 @@ The `metadata_source` field indicates which provider last updated the metadata:
 |-------|--------|
 | `"civitai_api"` | Civitai API |
 | `"civarchive"` | CivArchive API |
+| `"openmodeldb"` | OpenModelDB catalogue (upscaler models only; hash-matched) |
 | `"archive_db"` | Metadata Archive Database |
 | `null` | No external source (user-defined only) |
+
+When `metadata_source` is `"openmodeldb"`, the `civitai` payload is a
+CivitAI-shaped version dict synthesized from the OpenModelDB catalogue entry
+(no numeric `id`/`modelId`), and the OpenModelDB-native details live in its
+`openmodeldb` block (`id`, `url`, `authors`, `architecture`,
+`architectureName`, `scale`, `license`, `date`).
+
+In that payload, `images[].url` is always a displayable asset: paired
+comparisons use the site-hosted thumbnail because the `LR`/`SR` originals
+are ephemeral imgdiff viewer sessions that 404 outside them (the original
+viewer link is kept as `images[].meta.comparisonUrl` for reference), and the
+model-level thumbnail leads the list since the card preview derives from
+`images[0]`. `files[].name` is derived from any URL path segment with a
+model extension (mediafire-style mirrors bury it mid-path) or synthesized as
+`{model_id}.{type}` for folder links.
+
+Models downloaded from OpenModelDB additionally carry `source_platform:
+"openmodeldb"` and `source_url` (the model page URL); their download-time
+hydration is recorded as `metadata_source: "source:openmodeldb"`.
 
 ---
 
@@ -287,6 +335,7 @@ These fields are automatically synchronized with the filesystem:
 - `preview_url` — Updated if preview file is moved/removed
 - `sha256` — Updated during hash calculation (when `hash_status="pending"`)
 - `hash_status` — Updated during hash calculation
+- `autov3` — Set when metadata is first created (from safetensors header); may be backfilled later for entries where it is absent
 - `last_checked_at` — Timestamp of scan
 - `metadata_source` — Set based on metadata provider
 
@@ -345,6 +394,7 @@ These fields can be edited by users at any time through the Lora Manager UI or b
 | `metadata_source` | `null` |
 | `last_checked_at` | `0` |
 | `hash_status` | `"completed"` |
+| `autov3` | absent (not checked) or `null` (checked, no value) |
 | `usage_tips` | `"{}"` (LoRA only) |
 | `model_type` | `"checkpoint"` or `"embedding"` (not present in LoRA models) |
 
@@ -354,6 +404,7 @@ These fields can be edited by users at any time through the Lora Manager UI or b
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-08 | Added `autov3` field (CivitAI AutoV3 hash with three-state semantics) |
 | 1.0 | 2026-03 | Initial schema documentation |
 
 ---

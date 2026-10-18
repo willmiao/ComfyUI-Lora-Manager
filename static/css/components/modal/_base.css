@@ -6,9 +6,21 @@
     left: 0;
     width: 100%;
     height: calc(100% - var(--header-height, 48px)); /* Adjust height to exclude header */
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.5));
+    backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
     z-index: var(--z-modal);
     overflow: auto; /* Change from hidden to auto to allow scrolling */
+}
+
+/* Software-rendering fallback (set by applyModalBackdropBlurPolicy): a
+   full-viewport backdrop-filter forces per-frame CPU rasterization of
+   everything behind the modal and freezes the browser (issue #1092) */
+html.no-modal-backdrop-blur .modal,
+html.no-modal-backdrop-blur .delete-modal,
+html.no-modal-backdrop-blur .batch-preview-select-all {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 /* Prevent body scroll when modal is open */
@@ -25,7 +37,10 @@ body.modal-open {
     height: auto;
     max-height: calc(100vh - var(--header-height, 48px) - 5.5rem); /* Subtract header height and modal margins */
     margin: 1rem auto; /* Keep reduced top margin */
-    background: var(--lora-surface);
+    /* Opaque surface: the modal stacks above the backdrop, and sticky layers
+       inside (action footers, table headers) share this same solid token so
+       they cannot double-composite into a visible seam (light themes). */
+    background: var(--lora-surface-solid);
     border-radius: var(--border-radius-base);
     padding: var(--space-3);
     border: 1px solid var(--lora-border);
@@ -99,7 +114,7 @@ body.modal-open {
 /* Style for exclude button - different from delete button */
 .exclude-btn, .confirm-btn {
     background: var(--lora-accent, #4f46e5);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .cancel-btn:hover,
@@ -162,7 +177,7 @@ body.modal-open {
 
 /* Dark theme unified styles */
 [data-theme="dark"] .modal-content {
-    background: var(--lora-surface);
+    background: var(--lora-surface-solid);
     border: 1px solid var(--lora-border);
 }
 
@@ -172,7 +187,7 @@ body.modal-open {
     gap: 8px;
     padding: var(--space-1) var(--space-2);
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
@@ -183,7 +198,7 @@ body.modal-open {
 .primary-btn:hover,
 .primary-btn:focus-visible {
     background-color: oklch(from var(--lora-accent) l c h / 85%);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     outline: none;
 }
 
@@ -214,7 +229,7 @@ body.modal-open {
     opacity: 0.5;
     cursor: not-allowed;
     background-color: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     pointer-events: none;
 }
 
@@ -579,4 +594,146 @@ button:disabled,
     color: var(--lora-accent);
     margin-top: 2px;
     flex-shrink: 0;
+}
+
+/* Recipe Rematch Options Modal */
+#rematchOptionsModal .modal-body {
+    padding: var(--space-3);
+}
+
+#rematchOptionsModal .confirmation-message {
+    color: var(--text-color);
+    margin-bottom: var(--space-3);
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+/* Selectable option card — click anywhere toggles the checkbox (label wrap).
+   Checkmark follows the batch-import modal's custom checkbox pattern. */
+#rematchOptionsModal .rematch-option-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-base);
+}
+
+#rematchOptionsModal .rematch-option-card:hover {
+    border-color: var(--lora-accent);
+}
+
+#rematchOptionsModal .rematch-option-card:has(input[type="checkbox"]:checked) {
+    border-color: var(--lora-accent);
+    background: oklch(from var(--lora-accent) l c h / 0.08);
+}
+
+/* Visually hidden but keyboard-focusable (focus ring lands on the card). */
+#rematchOptionsModal .rematch-option-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+#rematchOptionsModal .rematch-option-card:has(input[type="checkbox"]:focus-visible) {
+    box-shadow: 0 0 0 2px oklch(from var(--lora-accent) l c h / 0.2);
+}
+
+#rematchOptionsModal .rematch-option-checkmark {
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    background: var(--bg-color);
+}
+
+#rematchOptionsModal .rematch-option-card input[type="checkbox"]:checked + .rematch-option-checkmark {
+    background: var(--lora-accent);
+    border-color: var(--lora-accent);
+}
+
+#rematchOptionsModal .rematch-option-card input[type="checkbox"]:checked + .rematch-option-checkmark::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free', sans-serif;
+    font-weight: 900;
+    color: var(--text-on-accent);
+    font-size: 12px;
+}
+
+#rematchOptionsModal .rematch-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    color: var(--text-color);
+    min-width: 0;
+}
+
+#rematchOptionsModal .rematch-option-title {
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+#rematchOptionsModal .rematch-option-caveat {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+#rematchOptionsModal .rematch-option-caveat i {
+    color: var(--lora-accent);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Recipe Rematch Summary Modal (dynamically built by RematchSummaryModal.js;
+   stat cards / failure table / summary header come from
+   metadata-refresh-result.css and download-batch-summary.css). */
+.rematch-summary-modal {
+    max-width: 700px;
+}
+
+.rematch-cancelled-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--text-sm);
+    color: var(--color-warning);
+}
+
+.rematch-cancelled-note i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Review section heading uses the accent (review, not failure) instead of
+   the failure-section error color. */
+.rematch-review-section h4 {
+    color: var(--lora-accent);
+}
+
+#rematchSummaryModal .rematch-undo-btn {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+}
+
+#rematchSummaryModal tr.undone td:not(.rematch-undo-cell) {
+    text-decoration: line-through;
+    opacity: 0.6;
 }

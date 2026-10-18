@@ -35,7 +35,7 @@ class CleanupResult:
     def to_dict(self) -> Dict[str, object]:
         """Convert the dataclass to a serialisable dictionary."""
 
-        data = {
+        data: Dict[str, object] = {
             "success": self.success,
             "checked_folders": self.checked_folders,
             "moved_empty_folders": self.moved_empty_folders,

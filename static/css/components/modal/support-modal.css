@@ -105,7 +105,7 @@
 
 .social-link:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -253,7 +253,7 @@
 }
 
 .social-link:hover .civitai-icon {
-    color: white; /* Icon color changes to white on hover */
+    color: var(--text-on-accent); /* Icon color flips to the on-accent foreground on hover */
 }
 
 /* Enhanced hover visual feedback */

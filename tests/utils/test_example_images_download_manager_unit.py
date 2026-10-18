@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Generator
 
 import pytest
 
@@ -19,7 +19,7 @@ class RecordingWebSocketManager:
 
 
 @pytest.fixture(autouse=True)
-def restore_settings() -> None:
+def restore_settings() -> Generator[None, None, None]:
     manager = get_settings_manager()
     original = manager.settings.copy()
     try:
@@ -45,7 +45,9 @@ async def test_start_download_requires_configured_path(
 
     result = await manager.start_download({"auto_mode": True})
     assert result["success"] is True
-    assert "skipping auto download" in result["message"]
+    message = result["message"]
+    assert isinstance(message, str)
+    assert "skipping auto download" in message
 
 
 async def test_start_download_bootstraps_progress_and_task(

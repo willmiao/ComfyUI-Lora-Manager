@@ -4,14 +4,12 @@ const {
   APP_MODULE,
   API_MODULE,
   UTILS_MODULE,
-  LORAS_WIDGET_MODULE,
   LORA_LOADER_MODULE,
   LORA_STACKER_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
   UTILS_MODULE: new URL("../../../web/comfyui/utils.js", import.meta.url).pathname,
-  LORAS_WIDGET_MODULE: new URL("../../../web/comfyui/loras_widget.js", import.meta.url).pathname,
   LORA_LOADER_MODULE: new URL("../../../web/comfyui/lora_loader.js", import.meta.url).pathname,
   LORA_STACKER_MODULE: new URL("../../../web/comfyui/lora_stacker.js", import.meta.url).pathname,
 }));
@@ -80,12 +78,6 @@ vi.mock(UTILS_MODULE, async (importOriginal) => {
   };
 });
 
-const addLorasWidget = vi.fn();
-
-vi.mock(LORAS_WIDGET_MODULE, () => ({
-  addLorasWidget,
-}));
-
 describe("Node mode change handling", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -109,11 +101,6 @@ describe("Node mode change handling", () => {
 
     getWidgetByName.mockClear();
     getWidgetSerializedValue.mockClear();
-
-    addLorasWidget.mockClear();
-    addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
-      widget: { value: [], callback },
-    }));
   });
 
   describe("Lora Stacker mode change handling", () => {
@@ -222,6 +209,13 @@ describe("Node mode change handling", () => {
             options: {},
             callback: null, // Will be set by onNodeCreated
           },
+          {
+            // Declared LORAS input widget, taken over by onNodeCreated
+            name: "loras",
+            value: [],
+            options: {},
+            callback: null,
+          },
         ],
         addInput: vi.fn(),
         mode: 0, // Initial mode
@@ -282,6 +276,45 @@ describe("Node mode change handling", () => {
         node,
         new Set(["LoaderLora1", "LoaderLora2"])
       );
+    });
+
+    it("should keep bypass state in the shell state on ECS frontends (issue #1123)", async () => {
+      // ComfyUI frontend >= 1.53 backs `mode` with a prototype accessor over
+      // `node._state.mode` and serializes from `_state`; the interceptor must
+      // delegate to it instead of shadowing it.
+      class EcsLGraphNode {
+        constructor() {
+          this._state = { mode: 0 };
+        }
+        get mode() {
+          return this._state.mode;
+        }
+        set mode(value) {
+          this._state.mode = value;
+        }
+      }
+
+      const ecsNode = new EcsLGraphNode();
+      Object.assign(ecsNode, {
+        comfyClass: "Lora Loader (LoraManager)",
+        widgets: [
+          { name: "text", value: "", options: {}, callback: null },
+          { name: "loras", value: [], options: {}, callback: null },
+        ],
+        addInput: vi.fn(),
+        graph: {},
+      });
+
+      const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
+      await extension.beforeRegisterNodeDef(nodeType, {}, {});
+      nodeType.prototype.onNodeCreated.call(ecsNode);
+
+      // Bypass the node: the write must reach the shell state that
+      // serialization reads from.
+      ecsNode.mode = 4;
+      expect(ecsNode._state.mode).toBe(4);
+      expect(ecsNode.mode).toBe(4);
+      expect(updateConnectedTriggerWords).toHaveBeenCalledWith(ecsNode, expect.anything());
     });
   });
 });

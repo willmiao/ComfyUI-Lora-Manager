@@ -28,13 +28,14 @@ class DummyService(BaseModelService):
         return model_data
 
 
-class StubRepository:
+class StubRepository(ModelCacheRepository):
     def __init__(self, data):
+        super().__init__(scanner=object())
         self._data = list(data)
         self.parse_sort_calls = []
         self.fetch_sorted_calls = []
 
-    def parse_sort(self, sort_by):
+    def parse_sort(self, sort_by):  # pyright: ignore[reportIncompatibleMethodOverride]
         params = ModelCacheRepository.parse_sort(sort_by)
         self.parse_sort_calls.append(sort_by)
         return params
@@ -44,8 +45,9 @@ class StubRepository:
         return list(self._data)
 
 
-class StubFilterSet:
+class StubFilterSet(ModelFilterSet):
     def __init__(self, result):
+        super().__init__(settings=StubSettings({}))
         self.result = list(result)
         self.calls = []
 
@@ -54,8 +56,9 @@ class StubFilterSet:
         return list(self.result)
 
 
-class StubSearchStrategy:
+class StubSearchStrategy(SearchStrategy):
     def __init__(self, search_result):
+        super().__init__()
         self.search_result = list(search_result)
         self.normalize_calls = []
         self.apply_calls = []
@@ -67,7 +70,7 @@ class StubSearchStrategy:
             normalized.update(options)
         return normalized
 
-    def apply(self, data, search_term, options, fuzzy):
+    def apply(self, data, search_term, options, fuzzy=False):
         self.apply_calls.append((list(data), search_term, options, fuzzy))
         return list(self.search_result)
 
@@ -79,7 +82,9 @@ class StubUpdateService:
         self.bulk_calls = []
         self.bulk_error = bulk_error
 
-    async def has_updates_bulk(self, model_type, model_ids, hide_early_access: bool = False):
+    async def has_updates_bulk(
+        self, model_type, model_ids, hide_early_access: bool = False, hide_paid: bool = False
+    ):
         self.bulk_calls.append((model_type, list(model_ids)))
         if self.bulk_error:
             raise RuntimeError("bulk failure")
@@ -91,7 +96,9 @@ class StubUpdateService:
             results[model_id] = result
         return results
 
-    async def has_update(self, model_type, model_id, hide_early_access: bool = False):
+    async def has_update(
+        self, model_type, model_id, hide_early_access: bool = False, hide_paid: bool = False
+    ):
         self.calls.append((model_type, model_id))
         result = self.decisions.get(model_id, False)
         if isinstance(result, Exception):
@@ -269,8 +276,9 @@ async def test_get_paginated_data_filters_and_searches_combination():
     assert response["total_pages"] == 1
 
 
-class PassThroughFilterSet:
+class PassThroughFilterSet(ModelFilterSet):
     def __init__(self):
+        super().__init__(settings=StubSettings({}))
         self.calls = []
 
     def apply(self, data, criteria):
@@ -278,8 +286,9 @@ class PassThroughFilterSet:
         return list(data)
 
 
-class NoSearchStrategy:
+class NoSearchStrategy(SearchStrategy):
     def __init__(self):
+        super().__init__()
         self.normalize_calls = []
         self.apply_called = False
 
@@ -355,7 +364,7 @@ async def test_get_paginated_data_filters_by_update_status():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -428,7 +437,7 @@ async def test_get_paginated_data_skips_items_when_update_check_fails():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -465,7 +474,7 @@ async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -561,7 +570,7 @@ async def test_version_grouping_same_base_prefers_matching_base():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -658,7 +667,7 @@ async def test_version_grouping_same_base_honors_latest_local_version():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -694,7 +703,7 @@ async def test_get_paginated_data_filters_update_available_only():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -1028,7 +1037,7 @@ def test_model_filter_set_supports_legacy_tag_arrays():
         {"model_name": "AnimeOnly", "tags": ["anime"]},
     ]
 
-    criteria = FilterCriteria(tags=["style"])
+    criteria = FilterCriteria(tags=["style"])  # pyright: ignore[reportArgumentType]
     result = filter_set.apply(data, criteria)
 
     assert [item["model_name"] for item in result] == ["StyleOnly", "StyleAnime"]
@@ -1254,39 +1263,8 @@ async def test_get_model_civitai_url_falls_back_when_host_setting_is_not_a_strin
     }
 
 
-class TestHfGroupKey:
-    """Tests for _extract_hf_group_key and _extract_group_key."""
-
-    # --- _extract_hf_group_key ---
-
-    def test_hf_group_key_valid_url(self):
-        """Standard HF URL returns hf:user/repo."""
-        item = {"hf_url": "https://huggingface.co/unsloth/qwen-edit"}
-        assert BaseModelService._extract_hf_group_key(item) == "hf:unsloth/qwen-edit"
-
-    def test_hf_group_key_url_with_subpath(self):
-        """URL with subpath still extracts just owner/repo."""
-        item = {"hf_url": "https://huggingface.co/user/repo/resolve/main/file.safetensors"}
-        assert BaseModelService._extract_hf_group_key(item) == "hf:user/repo"
-
-    def test_hf_group_key_empty_url(self):
-        """Empty hf_url returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": ""}) is None
-
-    def test_hf_group_key_no_url(self):
-        """Missing hf_url key returns None."""
-        assert BaseModelService._extract_hf_group_key({}) is None
-
-    def test_hf_group_key_none_url(self):
-        """None hf_url returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": None}) is None
-
-    def test_hf_group_key_invalid_url(self):
-        """Malformed HF URL returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": "not-a-url"}) is None
-        assert BaseModelService._extract_hf_group_key({"hf_url": "https://example.com"}) is None
-
-    # --- _extract_group_key ---
+class TestSourceGroupKey:
+    """Tests for _extract_group_key (CivitAI id, then site-native source identity)."""
 
     def test_group_key_civitai_only(self):
         """CivitAI modelId returned as int."""
@@ -1294,27 +1272,196 @@ class TestHfGroupKey:
         assert BaseModelService._extract_group_key(item) == 123
 
     def test_group_key_hf_only(self):
-        """HF-only item returns hf:user/repo string."""
+        """HF-linked items never group: a repository is not a model identity."""
         item = {"hf_url": "https://huggingface.co/user/repo"}
-        assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+        assert BaseModelService._extract_group_key(item) is None
 
     def test_group_key_civitai_preferred(self):
-        """CivitAI modelId takes precedence over hf_url."""
+        """CivitAI modelId takes precedence over any source identity."""
         item = {
             "civitai": {"modelId": 456},
-            "hf_url": "https://huggingface.co/other/repo",
+            "source_url": "https://tensor.art/models/789",
         }
         assert BaseModelService._extract_group_key(item) == 456
 
     def test_group_key_neither(self):
-        """No CivitAI or HF returns None."""
+        """No CivitAI or groupable source returns None."""
         assert BaseModelService._extract_group_key({}) is None
         assert BaseModelService._extract_group_key({"some": "data"}) is None
 
     def test_group_key_civitai_none_model_id(self):
-        """civitai.modelId=None falls through to HF."""
+        """civitai.modelId=None falls through to the source identity."""
         item = {
             "civitai": {"modelId": None},
-            "hf_url": "https://huggingface.co/user/repo",
+            "source_url": "https://tensor.art/models/789",
         }
-        assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+        assert BaseModelService._extract_group_key(item) == "ta:789"
+
+    def test_group_key_modelscope_uses_published_model_id(self):
+        """ModelScope groups under ms:<modelId> once enrichment recorded it."""
+        item = {
+            "source_platform": "modelscope",
+            "source_url": "https://modelscope.cn/models/u/r",
+            "source_model_id": "555",
+        }
+        assert BaseModelService._extract_group_key(item) == "ms:555"
+
+    def test_group_key_modelscope_unenriched_stays_standalone(self):
+        """Without source_model_id there is no key — never repo-level grouping."""
+        item = {
+            "source_platform": "modelscope",
+            "source_url": "https://modelscope.cn/models/u/r",
+        }
+        assert BaseModelService._extract_group_key(item) is None
+
+    def test_group_key_modelscope_identity_crosses_repos(self):
+        """Same published-model id groups across repos; same repo does not."""
+
+        def ms_item(repo, model_id):
+            return {
+                "source_platform": "modelscope",
+                "source_url": f"https://modelscope.cn/models/{repo}",
+                "source_model_id": model_id,
+            }
+
+        assert BaseModelService._extract_group_key(
+            ms_item("alice/collection", "555")
+        ) == BaseModelService._extract_group_key(ms_item("bob/mirror", "555"))
+        assert BaseModelService._extract_group_key(
+            ms_item("alice/collection", "555")
+        ) != BaseModelService._extract_group_key(ms_item("alice/collection", "777"))
+
+
+class TestApplyHashFilters:
+    """_apply_hash_filters matches items by SHA256 or non-empty AutoV3."""
+
+    def _make_service(self):
+        return DummyService(model_type="stub", scanner=object(), metadata_class=BaseModelMetadata)
+
+    @pytest.mark.asyncio
+    async def test_matches_item_by_autov3(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "ABCDEF123456"})
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_matches_item_by_sha256(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "A" * 64})
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_empty_or_absent_autov3_never_matches(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": ""},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "cdef123456ab"})
+
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_multiple_hashes_match_autov3_and_sha256(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(
+            data, {"multiple_hashes": ["abcdef123456", "c" * 64]}
+        )
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_no_hash_filters_returns_data_unchanged(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+        ]
+
+        result = await service._apply_hash_filters(data, {})
+
+        assert result == data
+
+
+class FolderTreeCache:
+    def __init__(self, folders):
+        self.folders = list(folders)
+
+
+class FolderTreeScanner:
+    def __init__(self, cache, all_folders=None):
+        self._cache = cache
+        self._all_folders = list(all_folders) if all_folders is not None else None
+
+    async def get_cached_data(self, *_, **__):
+        return self._cache
+
+    async def get_all_folders(self):
+        if self._all_folders is None:
+            raise AssertionError("get_all_folders should not be called")
+        return list(self._all_folders)
+
+    def get_model_roots(self):
+        return ["/models/loras"]
+
+
+def _make_folder_tree_service(folders, all_folders=None):
+    cache = FolderTreeCache(folders)
+    scanner = FolderTreeScanner(cache, all_folders)
+    settings = StubSettings({})
+    return DummyService(
+        model_type="stub",
+        scanner=scanner,
+        metadata_class=BaseModelMetadata,
+        cache_repository=ModelCacheRepository(scanner),
+        filter_set=ModelFilterSet(settings),
+        search_strategy=SearchStrategy(),
+        settings_provider=settings,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_defaults_to_models_only_folders():
+    service = _make_folder_tree_service(["a/b"])
+
+    tree = await service.get_unified_folder_tree()
+
+    assert tree == {"a": {"b": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty", "empty/dir"])
+
+    tree = await service.get_unified_folder_tree(include_empty=True)
+
+    assert tree == {"a": {"b": {}}, "empty": {"dir": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty"])
+
+    default_tree = await service.get_folder_tree("/models/loras")
+    include_empty_tree = await service.get_folder_tree(
+        "/models/loras", include_empty=True
+    )
+
+    assert default_tree == {"a": {"b": {}}}
+    assert include_empty_tree == {"a": {"b": {}}, "empty": {}}

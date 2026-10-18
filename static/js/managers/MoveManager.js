@@ -60,7 +60,6 @@ class MoveManager {
         this.bulkFilePaths = null;
 
         const apiClient = this._getApiClient(modelType);
-        const currentPageType = state.currentPageType;
         const modelConfig = apiClient.apiConfig.config;
 
         // Handle bulk mode
@@ -113,7 +112,7 @@ class MoveManager {
             ).join('');
 
             // Set default root if available
-            const settingsKey = `default_${currentPageType.slice(0, -1)}_root`;
+            const settingsKey = `default_${modelConfig.singularName}_root`;
             const defaultRoot = state.global.settings[settingsKey];
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 modelRootSelect.value = defaultRoot;
@@ -200,8 +199,9 @@ class MoveManager {
     async initializeFolderTree() {
         try {
             const apiClient = this._getApiClient();
-            // Fetch unified folder tree
-            const treeData = await apiClient.fetchUnifiedFolderTree();
+            // Fetch unified folder tree, including empty directories so they
+            // can be selected as move targets
+            const treeData = await apiClient.fetchUnifiedFolderTree({ includeEmpty: true });
 
             if (treeData.success) {
                 // Load tree data into folder tree manager
@@ -226,15 +226,13 @@ class MoveManager {
 
         if (modelRoot) {
             if (this.useDefaultPath) {
-                // Show actual template path
-                try {
-                    const singularType = apiClient.modelType.replace(/s$/, '');
-                    const templates = state.global.settings.download_path_templates;
-                    const template = templates[singularType];
+                // Show actual template path; an empty/absent template means a
+                // flat layout, so keep the root as-is.
+                const singularType = config.singularName || apiClient.modelType.replace(/s$/, '');
+                const templates = state.global?.settings?.download_path_templates;
+                const template = templates?.[singularType];
+                if (template) {
                     fullPath += `/${template}`;
-                } catch (error) {
-                    console.error('Failed to fetch template:', error);
-                    fullPath += '/' + translate('modals.download.autoOrganizedPath');
                 }
             } else {
                 // Show manual path selection
@@ -328,7 +326,11 @@ class MoveManager {
                 const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
                 movedFiles = (results || [])
                     .filter(r => r.success)
-                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
+                    .map(r => ({
+                        original_file_path: r.original_file_path,
+                        new_file_path: r.new_file_path,
+                        sub_type: r.cache_entry?.sub_type
+                    }));
 
                 // Deselect moving items and exit bulk mode
                 this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
@@ -339,7 +341,11 @@ class MoveManager {
                 if (result) {
                     movedFiles.push({
                         original_file_path: result.original_file_path || this.currentFilePath,
-                        new_file_path: result.new_file_path
+                        new_file_path: result.new_file_path,
+                        // The backend recalculates location-derived fields
+                        // (e.g. checkpoint -> diffusion_model) during the move;
+                        // carry them so the card re-renders with the new type.
+                        sub_type: result.cache_entry?.sub_type
                     });
                 }
 
@@ -378,24 +384,28 @@ class MoveManager {
                         }
 
                         if (stillVisible) {
+                            const newData = {
+                                file_path: moved.new_file_path,
+                                folder: newRelativeFolder
+                            };
+                            if (moved.sub_type) newData.sub_type = moved.sub_type;
                             pathsToUpdate.push({
                                 originalPath: moved.original_file_path,
-                                newData: {
-                                    file_path: moved.new_file_path,
-                                    folder: newRelativeFolder
-                                }
+                                newData
                             });
                         } else {
                             pathsToRemove.push(moved.original_file_path);
                         }
                     } else {
                         // No folder filter active — items remain visible, just update path
+                        const newData = {
+                            file_path: moved.new_file_path,
+                            folder: this._getRelativeFolder(moved.new_file_path)
+                        };
+                        if (moved.sub_type) newData.sub_type = moved.sub_type;
                         pathsToUpdate.push({
                             originalPath: moved.original_file_path,
-                            newData: {
-                                file_path: moved.new_file_path,
-                                folder: this._getRelativeFolder(moved.new_file_path)
-                            }
+                            newData
                         });
                     }
                 }

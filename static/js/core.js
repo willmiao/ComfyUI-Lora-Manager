@@ -7,11 +7,14 @@ import { HeaderManager } from './components/Header.js';
 import { settingsManager } from './managers/SettingsManager.js';
 import { moveManager } from './managers/MoveManager.js';
 import { bulkManager } from './managers/BulkManager.js';
+import { rematchModalManager } from './managers/RematchModalManager.js';
 import { ExampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { doctorManager } from './managers/DoctorManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
+import { initTooltips } from './utils/tooltip.js';
+import { applyModalBackdropBlurPolicy } from './utils/renderingCapability.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
@@ -20,7 +23,7 @@ import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
 import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';
 import { civitaiBaseModelApi } from './api/civitaiBaseModelApi.js';
-import { setDynamicBaseModels } from './utils/constants.js';
+import { setDynamicBaseModels, BASE_MODELS_UPDATED_EVENT } from './utils/constants.js';
 
 // Core application class
 export class AppCore {
@@ -33,7 +36,11 @@ export class AppCore {
         if (this.initialized) return;
 
         console.log('AppCore: Initializing...');
-        
+
+        // Disable full-viewport backdrop blur under software rendering before
+        // anything can open a modal (issue #1092)
+        applyModalBackdropBlurPolicy();
+
         // Initialize i18n first
         window.i18n = i18n;
         // Wait for i18n to be ready
@@ -63,11 +70,13 @@ export class AppCore {
         window.doctorManager = doctorManager;
         window.moveManager = moveManager;
         window.bulkManager = bulkManager;
+        window.rematchModalManager = rematchModalManager;
         
         // Initialize UI components
         window.headerManager = new HeaderManager();
         initTheme();
         initBackToTop();
+        initTooltips();
         
         // Initialize the bulk manager and context menu
         bulkManager.initialize();
@@ -109,7 +118,7 @@ export class AppCore {
     initializePageFeatures() {
         const pageType = this.getPageType();
         
-        if (['loras', 'recipes', 'checkpoints', 'embeddings'].includes(pageType)) {
+        if (['loras', 'recipes', 'checkpoints', 'embeddings', 'other'].includes(pageType)) {
             this.initializeContextMenus(pageType);
             initializeInfiniteScroll(pageType);
         }
@@ -134,6 +143,7 @@ export class AppCore {
             const result = await civitaiBaseModelApi.getBaseModels();
             if (result && result.models) {
                 setDynamicBaseModels(result.models, result.last_updated);
+                window.dispatchEvent(new CustomEvent(BASE_MODELS_UPDATED_EVENT));
                 console.log(`AppCore: Loaded ${result.merged_count} base models (${result.hardcoded_count} hardcoded + ${result.remote_count} remote)`);
             }
         } catch (error) {

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Dict, Iterable, Set
+from typing import Any, Dict, Iterable, Set
 
 import pytest
 
@@ -105,9 +105,9 @@ HTML_TRANSLATION_PATTERN = (
 
 
 @pytest.fixture(scope="module")
-def loaded_locales() -> Dict[str, dict]:
+def loaded_locales() -> Dict[str, Any]:
     """Load locale JSON once per test module."""
-    locales: Dict[str, dict] = {}
+    locales: Dict[str, Any] = {}
 
     for locale in EXPECTED_LOCALES:
         path = LOCALES_DIR / f"{locale}.json"
@@ -131,7 +131,7 @@ def loaded_locales() -> Dict[str, dict]:
 
 
 @pytest.fixture(scope="module")
-def english_translation_keys(loaded_locales: Dict[str, dict]) -> Set[str]:
+def english_translation_keys(loaded_locales: Dict[str, Any]) -> Set[str]:
     return collect_translation_keys(loaded_locales["en"])
 
 
@@ -140,7 +140,7 @@ def static_code_translation_keys() -> Set[str]:
     return gather_static_translation_keys()
 
 
-def collect_translation_keys(data: dict, prefix: str = "") -> Set[str]:
+def collect_translation_keys(data: Dict[str, Any], prefix: str = "") -> Set[str]:
     """Recursively collect translation keys from a locale dictionary."""
     keys: Set[str] = set()
 
@@ -212,7 +212,7 @@ def extract_i18n_keys_from_html(file_path: Path) -> Set[str]:
 
 
 @pytest.mark.parametrize("locale", EXPECTED_LOCALES)
-def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[str, dict]) -> None:
+def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[str, Any]) -> None:
     """Every locale must contain the required sections."""
     data = loaded_locales[locale]
     missing_sections = sorted(REQUIRED_SECTIONS - data.keys())
@@ -221,7 +221,7 @@ def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[
 
 @pytest.mark.parametrize("locale", EXPECTED_LOCALES[1:])
 def test_locale_keys_match_english(
-    locale: str, loaded_locales: Dict[str, dict], english_translation_keys: Set[str]
+    locale: str, loaded_locales: Dict[str, Any], english_translation_keys: Set[str]
 ) -> None:
     """Locales must expose the same translation keys as English."""
     locale_keys = collect_translation_keys(loaded_locales[locale])
@@ -247,4 +247,44 @@ def test_static_sources_only_use_existing_translations(
     assert not missing_keys, (
         "Static sources reference missing translation keys: "
         f"{missing_keys[:20]}" + ("..." if len(missing_keys) > 20 else "")
+    )
+
+
+# The reference file is hand-maintained with 2-space indent; every other locale
+# is written by scripts/sync_translation_keys.py with 4-space indent. Both keep
+# raw non-ASCII and exactly one trailing newline.
+REFERENCE_INDENT = 2
+TRANSLATION_INDENT = 4
+
+
+def test_locale_files_keep_their_maintained_layout():
+    """A re-serialising edit must fail here instead of landing as a huge diff.
+
+    Loading a locale with ``json.load`` and dumping it back with a different
+    ``indent`` rewrites every line: changing two strings once produced a
+    26k-line diff that had to be reverted and redone in place. Values belong in
+    place (a targeted text edit), keys belong to ``sync_translation_keys.py``.
+    """
+
+    offenders = []
+    for locale in EXPECTED_LOCALES:
+        path = LOCALES_DIR / f"{locale}.json"
+        raw = path.read_text(encoding="utf-8")
+        indent = REFERENCE_INDENT if locale == "en" else TRANSLATION_INDENT
+        canonical = (
+            json.dumps(
+                json.loads(raw),
+                indent=indent,
+                ensure_ascii=False,
+                separators=(",", ": "),
+            )
+            + "\n"
+        )
+        if raw != canonical:
+            offenders.append(path.name)
+
+    assert not offenders, (
+        "these locale files were reformatted: "
+        f"{offenders}. Keep en.json at indent=2 and the others at indent=4 "
+        "(ensure_ascii=False, one trailing newline) and edit values in place."
     )

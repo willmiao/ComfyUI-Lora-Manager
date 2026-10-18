@@ -24,7 +24,7 @@ def _fake_request(body=None, query_params=None):
     async def _json():
         return body or {}
 
-    req.json = _json
+    req.json = _json  # pyright: ignore[reportAttributeAccessIssue]
     return req
 
 
@@ -131,7 +131,7 @@ async def test_perform_git_update_preserves_user_dirs(monkeypatch, tmp_path):
     class FakeHeads:
         def __getitem__(self, name):
             class Head:
-                def checkout(self_inner):
+                def checkout(self):
                     calls.append(("head-checkout", (name,)))
             return Head()
 

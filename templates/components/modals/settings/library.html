@@ -1,0 +1,434 @@
+{% import 'components/modals/settings/_macros.html' as sm with context %}
+<!-- Section 3: Library -->
+<div id="section-library" class="settings-section" data-section="library">
+    <!-- Folder Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.folderSettings') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="librarySelect">
+                    {{ t('settings.folderSettings.activeLibrary') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.activeLibraryHelp') }}"></i>
+                </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
+                        <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_select('defaultLoraRoot', 'default_lora_root', 'settings.folderSettings.defaultLoraRoot', [], 'settings.folderSettings.defaultLoraRootHelp') }}
+
+        {{ sm.setting_select('defaultCheckpointRoot', 'default_checkpoint_root', 'settings.folderSettings.defaultCheckpointRoot', [], 'settings.folderSettings.defaultCheckpointRootHelp') }}
+
+        {{ sm.setting_select('defaultUnetRoot', 'default_unet_root', 'settings.folderSettings.defaultUnetRoot', [], 'settings.folderSettings.defaultUnetRootHelp') }}
+
+        {{ sm.setting_select('unknownBaseModelRouting', 'unknown_base_model_routing', 'settings.unknownBaseModelRouting.label', [
+            ('diffusion_model', 'settings.unknownBaseModelRouting.options.diffusionModel'),
+            ('checkpoint', 'settings.unknownBaseModelRouting.options.checkpoint'),
+        ], 'settings.unknownBaseModelRouting.help') }}
+
+        {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
+
+        {{ sm.setting_toggle('enableOtherModels', 'enable_other_models', 'settings.folderSettings.enableOtherModels', 'settings.folderSettings.enableOtherModelsHelp') }}
+
+        {# 'is none' (not 'or') so an empty allow-list stays empty instead of
+           falling back to the defaults and re-checking every box. #}
+        {% set enabled_other_sub_types = settings.get('enabled_other_sub_types') %}
+        {% if enabled_other_sub_types is none %}{% set enabled_other_sub_types = ['vae', 'upscaler', 'text_encoder'] %}{% endif %}
+        <div class="setting-item other-subtype-toggles" id="otherSubTypeToggles">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.folderSettings.otherSubTypes') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.otherSubTypesHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control other-subtype-checkboxes">
+                    {% for sub_type, label_key in [
+                        ('vae', 'settings.folderSettings.subTypeVae'),
+                        ('upscaler', 'settings.folderSettings.subTypeUpscaler'),
+                        ('text_encoder', 'settings.folderSettings.subTypeTextEncoder'),
+                        ('clip_vision', 'settings.folderSettings.subTypeClipVision'),
+                        ('controlnet', 'settings.folderSettings.subTypeControlnet'),
+                    ] %}
+                    <label class="other-subtype-checkbox">
+                        <input type="checkbox" value="{{ sub_type }}"
+                               data-other-subtype-toggle="{{ sub_type }}"
+                               {% if sub_type in enabled_other_sub_types %}checked{% endif %}
+                               onchange="settingsManager.saveEnabledOtherSubTypes()">
+                        <span>{{ t(label_key) }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% set other_root_selects = [
+            ('vae', 'defaultOtherRootVae', 'settings.folderSettings.defaultVaeRoot', 'settings.folderSettings.defaultVaeRootHelp'),
+            ('upscaler', 'defaultOtherRootUpscaler', 'settings.folderSettings.defaultUpscalerRoot', 'settings.folderSettings.defaultUpscalerRootHelp'),
+            ('text_encoder', 'defaultOtherRootTextEncoder', 'settings.folderSettings.defaultTextEncoderRoot', 'settings.folderSettings.defaultTextEncoderRootHelp'),
+            ('clip_vision', 'defaultOtherRootClipVision', 'settings.folderSettings.defaultClipVisionRoot', 'settings.folderSettings.defaultClipVisionRootHelp'),
+            ('controlnet', 'defaultOtherRootControlnet', 'settings.folderSettings.defaultControlnetRoot', 'settings.folderSettings.defaultControlnetRootHelp'),
+        ] %}
+        {% for sub_type, select_id, label_key, help_key in other_root_selects %}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="{{ select_id }}">
+                        {{ t(label_key) }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t(help_key) }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="{{ select_id }}" data-other-root-subtype="{{ sub_type }}" {% if sub_type not in enabled_other_sub_types %}disabled{% endif %} onchange="settingsManager.saveOtherRootSetting('{{ sub_type }}', this.value)">
+                    </select>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Recipe Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.recipeSettings') }}
+        {{ sm.setting_input('recipesPath', 'recipes_path', 'settings.folderSettings.recipesPath', 'settings.folderSettings.recipesPathPlaceholder', 'settings.folderSettings.recipesPathHelp') }}
+    </div>
+
+    <!-- Extra Folder Paths -->
+    <div class="settings-subsection">
+        <div class="settings-subsection-header">
+            <h4>
+                {{ t('settings.extraFolderPaths.title') }}
+                <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.extraFolderPaths.restartRequired') }}"></i>
+            </h4>
+        </div>
+        <div class="setting-item">
+            <div class="input-help">
+                {{ t('settings.extraFolderPaths.description') }}
+            </div>
+        </div>
+
+        <!-- LoRA Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.lora') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('loras')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-loras">
+            </div>
+        </div>
+
+        <!-- Checkpoint Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.checkpoint') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('checkpoints')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-checkpoints">
+            </div>
+        </div>
+
+        <!-- Diffusion Model (Unet) Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.unet') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('unet')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-unet">
+            </div>
+        </div>
+
+        <!-- Embedding Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.embedding') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('embeddings')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-embeddings">
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Scope -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.versionScope') }}
+        {{ sm.setting_select('versionGrouping', 'version_grouping', 'settings.versionGrouping.label', [
+            ('same_base', 'settings.versionGrouping.options.sameBase'),
+            ('any', 'settings.versionGrouping.options.any'),
+        ], 'settings.versionGrouping.help') }}
+        {{ sm.setting_toggle('hideEarlyAccessUpdates', 'hide_early_access_updates', 'settings.hideEarlyAccessUpdates.label', 'settings.hideEarlyAccessUpdates.help') }}
+        {{ sm.setting_toggle('hidePaidUpdates', 'hide_paid_updates', 'settings.hidePaidUpdates.label', 'settings.hidePaidUpdates.help') }}
+    </div>
+
+    <!-- Buzz Price Tracking -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.priceTracking') }}
+        <div class="settings-help-text subtle">{{ t('settings.priceTracking.help') }}</div>
+        {{ sm.setting_toggle('priceTrackingEnabled', 'price_tracking_enabled', 'settings.priceTracking.enabled', 'settings.priceTracking.enabledHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="priceCheckTtlHours">
+                        {{ t('settings.priceTracking.refreshHours') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.refreshHoursHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input
+                            type="number"
+                            id="priceCheckTtlHours"
+                            min="1"
+                            step="1"
+                            onblur="settingsManager.saveInputSetting('priceCheckTtlHours', 'price_check_ttl_hours')"
+                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Images -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.exampleImages') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesPath">{{ t('settings.exampleImages.downloadLocation') }} <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.exampleImages.restartRequired') }}"></i></label>
+                </div>
+                <div class="setting-control path-control">
+                    <input type="text" id="exampleImagesPath" placeholder="{{ t('settings.exampleImages.downloadLocationPlaceholder') }}" />
+                    <button id="exampleImagesDownloadBtn" class="primary-btn">
+                        <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">{{ t('settings.exampleImages.download') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_toggle('autoDownloadExampleImages', 'auto_download_example_images', 'settings.exampleImages.autoDownload', 'settings.exampleImages.autoDownloadHelp') }}
+
+        {{ sm.setting_toggle('optimizeExampleImages', 'optimize_example_images', 'settings.exampleImages.optimizeImages', 'settings.exampleImages.optimizeImagesHelp') }}
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesOpenMode">
+                        {{ t('settings.exampleImages.openMode') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.openModeHelp') }}"></i>
+                        <a class="settings-action-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Remote-Open-for-Example-Images" target="_blank" rel="noopener" title="{{ t('settings.exampleImages.openModeWikiLink') }}">
+                            <i class="fas fa-question-circle" aria-hidden="true"></i>
+                        </a>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="exampleImagesOpenMode" onchange="settingsManager.handleExampleImagesOpenModeChange()">
+                        <option value="system">{{ t('settings.exampleImages.openModeOptions.system') }}</option>
+                        <option value="clipboard">{{ t('settings.exampleImages.openModeOptions.clipboard') }}</option>
+                        <option value="uri_template">{{ t('settings.exampleImages.openModeOptions.uriTemplate') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="exampleImagesLocalRootSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesLocalRoot">
+                        {{ t('settings.exampleImages.localRoot') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.localRootHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control path-control">
+                    <input
+                        type="text"
+                        id="exampleImagesLocalRoot"
+                        placeholder="{{ t('settings.exampleImages.localRootPlaceholder') }}"
+                        onchange="settingsManager.saveInputSetting('exampleImagesLocalRoot', 'example_images_local_root')" />
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="exampleImagesUriTemplateSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesOpenUriTemplate">
+                        {{ t('settings.exampleImages.uriTemplate') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.uriTemplateHelp') }} {{ t('settings.exampleImages.uriTemplatePlaceholders') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control path-control">
+                    <input
+                        type="text"
+                        id="exampleImagesOpenUriTemplate"
+                        placeholder="{{ t('settings.exampleImages.uriTemplatePlaceholder') }}"
+                        onchange="settingsManager.saveInputSetting('exampleImagesOpenUriTemplate', 'example_images_open_uri_template')" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.metadata') }}
+
+        <!-- Metadata Refresh Skip Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="metadataRefreshSkipPaths">
+                        {{ t('settings.metadataRefreshSkipPaths.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
+            <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
+        </div>
+
+        <!-- CivArchive API provider toggle -->
+        {{ sm.setting_toggle('enableCivarchiveApi', 'enable_civarchive_api', 'settings.metadataArchive.enableCivarchiveApi', 'settings.metadataArchive.enableCivarchiveApiHelp') }}
+
+        <!-- OpenModelDB API provider toggle -->
+        {{ sm.setting_toggle('enableOpenmodeldbApi', 'enable_openmodeldb_api', 'settings.metadataArchive.enableOpenmodeldbApi', 'settings.metadataArchive.enableOpenmodeldbApiHelp') }}
+
+        <!-- Metadata Archive DB -->
+        {{ sm.setting_toggle('enableMetadataArchive', 'enable_metadata_archive_db', 'settings.metadataArchive.enableArchiveDb', 'settings.metadataArchive.enableArchiveDbHelp') }}
+
+        <div class="setting-item">
+            <div class="metadata-archive-status" id="metadataArchiveStatus">
+                <!-- Status will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.metadataArchive.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
+                        {{ t('settings.metadataArchive.downloadButton') }}
+                    </button>
+                    <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                        {{ t('settings.metadataArchive.removeButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metadata provider fallback order -->
+        {{ sm.setting_select('metadataProviderOrder', 'metadata_provider_order', 'settings.metadataArchive.providerOrder', [
+            ('civitai_archive_sqlite', 'settings.metadataArchive.providerOrderCivitaiArchiveSqlite'),
+            ('civitai_sqlite_archive', 'settings.metadataArchive.providerOrderCivitaiSqliteArchive'),
+        ], 'settings.metadataArchive.providerOrderHelp') }}
+    </div>
+
+    <!-- Sidecar Storage -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.sidecarStorage') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStorageMode">
+                        {{ t('settings.sidecarStorage.mode') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.modeHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="sidecarStorageMode" onchange="settingsManager.handleSidecarStorageModeChange()">
+                        <option value="alongside">{{ t('settings.sidecarStorage.modeOptions.alongside') }}</option>
+                        <option value="centralized">{{ t('settings.sidecarStorage.modeOptions.centralized') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="sidecarStoragePathSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStoragePath">
+                        {{ t('settings.sidecarStorage.path') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.pathHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input type="text" id="sidecarStoragePath"
+                               placeholder="{{ t('settings.sidecarStorage.pathPlaceholder') }}"
+                               onblur="settingsManager.handleSidecarStoragePathChange()"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="input-help sidecar-storage-location">
+                        {{ t('settings.sidecarStorage.effectivePathLabel') }}
+                        <code id="sidecarStorageResolvedPath" class="backup-location-path"></code>
+                    </div>
+                    <div class="input-help sidecar-storage-repo-warning" id="sidecarStorageRepoWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ t('settings.sidecarStorage.repoWarning') }}
+                    </div>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="secondary-btn" id="sidecarStorageOpenBtn" onclick="settingsManager.openSidecarStorageLocation()">
+                        {{ t('settings.sidecarStorage.openFolderButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.sidecarStorage.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="migrateSidecarsBtn" class="primary-btn" onclick="settingsManager.confirmAndMigrateSidecars()">
+                        {{ t('settings.sidecarStorage.migrateButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

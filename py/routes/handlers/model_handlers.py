@@ -15,13 +15,21 @@ from aiohttp import web
 import jinja2
 
 from ...config import config
+from ...services.active_filters_store import (
+    ActiveFiltersStore,
+    active_filters_to_query_kwargs,
+)
 from ...services.download_coordinator import DownloadCoordinator
 from ...services.connectivity_guard import (
     OFFLINE_FRIENDLY_MESSAGE,
     is_expected_offline_error,
 )
 from ...services.metadata_sync_service import MetadataSyncService
-from ...services.model_file_service import ModelMoveService
+from ...services.model_file_service import (
+    ModelMoveService,
+    normalize_relative_folder,
+)
+from ...services.model_scanner import ReconcileScope
 from ...services.preview_asset_service import PreviewAssetService
 from ...services.service_registry import ServiceRegistry
 from ...services.settings_manager import SettingsManager, get_settings_manager
@@ -33,15 +41,23 @@ from ...services.use_cases import (
     DownloadModelEarlyAccessError,
     DownloadModelUseCase,
     DownloadModelValidationError,
+    FilenameTemplateUseCase,
     MetadataRefreshProgressReporter,
 )
 from ...services.websocket_manager import WebSocketManager
-from ...services.websocket_progress_callback import WebSocketProgressCallback
+from ...services.websocket_progress_callback import (
+    WebSocketFilenameTemplateProgressCallback,
+    WebSocketProgressCallback,
+)
 from ...services.download_queue_service import DownloadQueueService
 from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
+from ...utils.paid_access import is_early_access_deadline_active
+from ...utils.root_paths import normalize_root_identity
+from ...utils.sidecar_paths import get_metadata_path
+from ...utils.url_utils import relative_root_prefix
 
 LICENSE_FIELDS = (
     "allowNoCredit",
@@ -49,6 +65,29 @@ LICENSE_FIELDS = (
     "allowDerivatives",
     "allowDifferentLicense",
 )
+
+
+_broadcast_models_changed_tasks: set = set()
+
+
+def _broadcast_models_changed() -> None:
+    """Notify connected clients that the local model library changed.
+
+    The ComfyUI graph page listens for this event to invalidate its cached
+    model availability data (loras widget missing-model cues / error flags)
+    without waiting for the cache TTL to expire.
+    """
+    try:
+        from ...services.websocket_manager import ws_manager
+
+        task = asyncio.create_task(ws_manager.broadcast({"type": "models_changed"}))
+        # Keep a reference so the task is not garbage-collected mid-await.
+        _broadcast_models_changed_tasks.add(task)
+        task.add_done_callback(_broadcast_models_changed_tasks.discard)
+    except Exception:
+        logging.getLogger(__name__).debug(
+            "Failed to broadcast models_changed", exc_info=True
+        )
 
 
 class ModelPageView:
@@ -63,6 +102,7 @@ class ModelPageView:
         settings_service: SettingsManager,
         server_i18n,
         logger: logging.Logger,
+        page_context_provider: Callable[[web.Request], Dict[str, Any]] | None = None,
     ) -> None:
         self._template_env = template_env
         self._template_name = template_name
@@ -70,8 +110,9 @@ class ModelPageView:
         self._settings = settings_service
         self._server_i18n = server_i18n
         self._logger = logger
+        self._page_context_provider = page_context_provider
 
-    def _load_supporters(self) -> dict:
+    def _load_supporters(self) -> dict[str, Any]:
         """Load supporters data from JSON file."""
         try:
             current_file = os.path.abspath(__file__)
@@ -152,7 +193,7 @@ class ModelPageView:
                 self._template_env.filters["t"] = (
                     self._server_i18n.create_template_filter()
                 )
-                self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
+                self._template_env._i18n_filter_added = True  # pyright: ignore[reportAttributeAccessIssue]
 
             from ...services.llm_service import PROVIDER_PRESETS
 
@@ -171,6 +212,7 @@ class ModelPageView:
                 "version": self._get_app_version(),
                 "provider_presets_json": json.dumps(PROVIDER_PRESETS),
                 "provider_models_json": "{}",
+                "rel_prefix": relative_root_prefix(request.path),
             }
 
             if not is_initializing:
@@ -182,6 +224,16 @@ class ModelPageView:
                 except Exception as cache_error:  # pragma: no cover - logging path
                     self._logger.error("Error loading cache data: %s", cache_error)
                     template_context["is_initializing"] = True
+
+            if self._page_context_provider is not None:
+                try:
+                    extra_context = self._page_context_provider(request)
+                    if isinstance(extra_context, dict):
+                        template_context.update(extra_context)
+                except Exception as context_error:  # pragma: no cover - logging path
+                    self._logger.error(
+                        "Error building page context: %s", context_error
+                    )
 
             rendered = self._template_env.get_template(self._template_name).render(
                 **template_context
@@ -199,7 +251,7 @@ class ModelListingHandler:
         self,
         *,
         service,
-        parse_specific_params: Callable[[web.Request], Dict],
+        parse_specific_params: Callable[[web.Request], Dict[str, Any]],
         logger: logging.Logger,
     ) -> None:
         self._service = service
@@ -287,7 +339,7 @@ class ModelListingHandler:
             )
             return web.json_response({"error": str(exc)}, status=500)
 
-    def _parse_common_params(self, request: web.Request) -> Dict:
+    def _parse_common_params(self, request: web.Request) -> Dict[str, Any]:
         page = int(request.query.get("page", "1"))
         page_size = min(int(request.query.get("page_size", "20")), 100)
         sort_by = request.query.get("sort_by", "name")
@@ -460,6 +512,7 @@ class ModelManagementHandler:
                 return web.Response(text="Model path is required", status=400)
 
             result = await self._lifecycle_service.delete_model(file_path)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -609,6 +662,16 @@ class ModelManagementHandler:
             file_path = data.get("file_path")
             model_id = data.get("model_id")
             model_version_id = data.get("model_version_id")
+            source = data.get("source")
+
+            if source not in (None, "", "civarchive"):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f"Unsupported relink source: {source}",
+                    },
+                    status=400,
+                )
 
             if not file_path or model_id is None:
                 return web.json_response(
@@ -619,25 +682,38 @@ class ModelManagementHandler:
                     status=400,
                 )
 
-            metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+            metadata_path = get_metadata_path(file_path)
             local_metadata = await self._metadata_sync.load_local_metadata(
                 metadata_path
             )
 
+            relink_kwargs = {
+                "file_path": file_path,
+                "metadata": local_metadata,
+                "model_id": int(model_id),
+                "model_version_id": int(model_version_id) if model_version_id else None,
+            }
+            if source == "civarchive":
+                relink_kwargs["provider_name"] = "civarchive_api"
+
             updated_metadata = await self._metadata_sync.relink_metadata(
-                file_path=file_path,
-                metadata=local_metadata,
-                model_id=int(model_id),
-                model_version_id=int(model_version_id) if model_version_id else None,
+                **relink_kwargs
             )
 
             await self._service.scanner.update_single_model_cache(
                 file_path, file_path, updated_metadata
             )
 
-            message = f"Model successfully re-linked to Civitai model {model_id}" + (
-                f" version {model_version_id}" if model_version_id else ""
-            )
+            if source == "civarchive":
+                message = (
+                    f"Model successfully re-linked to CivArchive model {model_id}"
+                    + (f" version {model_version_id}" if model_version_id else "")
+                )
+            else:
+                message = (
+                    f"Model successfully re-linked to Civitai model {model_id}"
+                    + (f" version {model_version_id}" if model_version_id else "")
+                )
             return web.json_response(
                 {
                     "success": True,
@@ -645,6 +721,8 @@ class ModelManagementHandler:
                     "hash": updated_metadata.get("sha256", ""),
                 }
             )
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
             if is_expected_offline_error(str(exc)):
                 return web.json_response(
@@ -658,7 +736,7 @@ class ModelManagementHandler:
         try:
             reader = await request.multipart()
 
-            field = await reader.next()
+            field: Any = await reader.next()
             if field is None or field.name != "preview_file":
                 raise ValueError("Expected 'preview_file' field")
             content_type = field.headers.get("Content-Type", "image/png")
@@ -700,7 +778,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -781,7 +859,7 @@ class ModelManagementHandler:
 
             result = await self._preview_service.replace_preview(
                 model_path=model_path,
-                preview_data=preview_data,
+                preview_data=preview_bytes,
                 content_type=content_type,
                 original_filename=original_filename,
                 nsfw_level=nsfw_level,
@@ -793,7 +871,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -931,6 +1009,8 @@ class ModelManagementHandler:
                 file_path=file_path, new_file_name=new_file_name
             )
 
+            _broadcast_models_changed()
+
             return web.json_response(
                 {
                     **result,
@@ -959,6 +1039,7 @@ class ModelManagementHandler:
                 )
 
             result = await self._lifecycle_service.bulk_delete_models(file_paths)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1001,6 +1082,11 @@ class ModelQueryHandler:
     def __init__(self, *, service, logger: logging.Logger) -> None:
         self._service = service
         self._logger = logger
+
+    @staticmethod
+    def _parse_include_empty(request: web.Request) -> bool:
+        """Parse the include_empty query flag (``1``/``true``)."""
+        return request.query.get("include_empty", "").lower() in ("1", "true")
 
     async def get_top_tags(self, request: web.Request) -> web.Response:
         try:
@@ -1058,9 +1144,63 @@ class ModelQueryHandler:
     async def scan_models(self, request: web.Request) -> web.Response:
         try:
             full_rebuild = request.query.get("full_rebuild", "false").lower() == "true"
-            await self._service.scan_models(
-                force_refresh=True, rebuild_cache=full_rebuild
+            requested_roots = [
+                value for value in request.query.getall("roots", []) if value
+            ]
+            raw_folder = (request.query.get("folder") or "").strip()
+            if (requested_roots or raw_folder) and full_rebuild:
+                return web.json_response(
+                    {
+                        "error": "Scoped scans are not supported with "
+                        "full_rebuild=true; a full rebuild always walks every root"
+                    },
+                    status=400,
+                )
+
+            folder = None
+            if raw_folder:
+                try:
+                    folder = normalize_relative_folder(raw_folder)
+                except ValueError as exc:
+                    return web.json_response({"error": str(exc)}, status=400)
+
+            # A drive that was plugged in after startup must be scannable without
+            # a restart, and callers that never open the Refresh menu (the browser
+            # extension) have no other chance to admit it.
+            self._service.refresh_model_roots()
+
+            if requested_roots:
+                configured = self._service.get_model_roots()
+                # Compare by identity, not by string: callers may pass the host's
+                # own spelling of a root (backslashes or a differently cased drive
+                # letter on Windows, as settings.json and ComfyUI show it), which
+                # names the same directory the live list holds forward-slashed.
+                known_roots = {
+                    normalize_root_identity(root) for root in configured
+                }
+                unknown = [
+                    root
+                    for root in requested_roots
+                    if normalize_root_identity(root) not in known_roots
+                ]
+                if unknown:
+                    return web.json_response(
+                        {"error": "Unknown model root(s)", "roots": unknown}, status=400
+                    )
+
+            # `folder` alone means "this relative folder in every root that has
+            # it" — the sidebar's unified tree carries no root identity.
+            scope = None
+            if requested_roots or folder:
+                scope = ReconcileScope(
+                    roots=tuple(requested_roots) if requested_roots else None,
+                    folder=folder,
+                )
+
+            summary = await self._service.scan_models(
+                force_refresh=True, rebuild_cache=full_rebuild, scope=scope
             )
+            _broadcast_models_changed()
             if self._service.scanner.is_cancelled():
                 return web.json_response(
                     {
@@ -1068,12 +1208,13 @@ class ModelQueryHandler:
                         "message": f"{self._service.model_type.capitalize()} scan cancelled",
                     }
                 )
-            return web.json_response(
-                {
-                    "status": "success",
-                    "message": f"{self._service.model_type.capitalize()} scan completed",
-                }
-            )
+            payload: Dict[str, Any] = {
+                "status": "success",
+                "message": f"{self._service.model_type.capitalize()} scan completed",
+            }
+            if summary:
+                payload.update(summary)
+            return web.json_response(payload)
         except Exception as exc:
             self._logger.error(
                 "Error scanning %ss: %s", self._service.model_type, exc, exc_info=True
@@ -1082,8 +1223,18 @@ class ModelQueryHandler:
 
     async def get_model_roots(self, request: web.Request) -> web.Response:
         try:
+            # A drive plugged in after startup is admitted here, so the menu shows
+            # it as a normal row instead of "unavailable" until the next restart.
+            self._service.refresh_model_roots()
             roots = self._service.get_model_roots()
-            return web.json_response({"success": True, "roots": roots})
+            try:
+                root_details = self._service.describe_model_roots()
+            except Exception as exc:  # pragma: no cover - defensive
+                self._logger.debug("Root details unavailable: %s", exc)
+                root_details = []
+            return web.json_response(
+                {"success": True, "roots": roots, "root_details": root_details}
+            )
         except Exception as exc:
             self._logger.error(
                 "Error getting %s roots: %s",
@@ -1095,8 +1246,14 @@ class ModelQueryHandler:
 
     async def get_folders(self, request: web.Request) -> web.Response:
         try:
-            cache = await self._service.scanner.get_cached_data()
-            return web.json_response({"folders": cache.folders})
+            include_empty = self._parse_include_empty(request)
+            if include_empty:
+                # Live enumeration includes empty OS-created directories.
+                folders = await self._service.scanner.get_all_folders()
+            else:
+                cache = await self._service.scanner.get_cached_data()
+                folders = cache.folders
+            return web.json_response({"folders": folders})
         except Exception as exc:
             self._logger.error("Error getting folders: %s", exc)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -1121,7 +1278,9 @@ class ModelQueryHandler:
                     {"success": False, "error": "model_root parameter is required"},
                     status=400,
                 )
-            folder_tree = await self._service.get_folder_tree(model_root)
+            folder_tree = await self._service.get_folder_tree(
+                model_root, include_empty=self._parse_include_empty(request)
+            )
             return web.json_response({"success": True, "tree": folder_tree})
         except Exception as exc:
             self._logger.error("Error getting folder tree: %s", exc)
@@ -1129,7 +1288,9 @@ class ModelQueryHandler:
 
     async def get_unified_folder_tree(self, request: web.Request) -> web.Response:
         try:
-            unified_tree = await self._service.get_unified_folder_tree()
+            unified_tree = await self._service.get_unified_folder_tree(
+                include_empty=self._parse_include_empty(request)
+            )
             return web.json_response({"success": True, "tree": unified_tree})
         except Exception as exc:
             self._logger.error("Error getting unified folder tree: %s", exc)
@@ -1526,12 +1687,50 @@ class ModelQueryHandler:
                     allow_selling_generated_content.lower() not in ("false", "0", "")
                 )
 
+            # When requested, merge the manager page's active filters stored
+            # server-side. Explicit query parameters take precedence over the
+            # stored values.
+            use_active_filters = (
+                request.query.get("use_active_filters", "").lower() in ("1", "true")
+            )
+            if use_active_filters:
+                stored = ActiveFiltersStore.get_instance().get_filters(
+                    self._service.model_type
+                )
+                injected = active_filters_to_query_kwargs(stored)
+                if folder is None and "folder" in injected:
+                    folder = injected["folder"]
+                if "recursive" not in request.query and "recursive" in injected:
+                    recursive = injected["recursive"]
+                if not base_models and injected.get("base_models"):
+                    base_models = injected["base_models"]
+                if not model_types and injected.get("model_types"):
+                    model_types = injected["model_types"]
+                if not tag_filters and injected.get("tags"):
+                    tag_filters = injected["tags"]
+                if not auto_tag_filters and injected.get("auto_tags"):
+                    auto_tag_filters = injected["auto_tags"]
+                if "tag_logic" not in request.query and injected.get("tag_logic"):
+                    injected_logic = str(injected["tag_logic"]).lower()
+                    if injected_logic in ("any", "all"):
+                        tag_logic = injected_logic
+                if credit_required is None and "credit_required" in injected:
+                    credit_required = injected["credit_required"]
+                if (
+                    allow_selling_generated_content is None
+                    and "allow_selling_generated_content" in injected
+                ):
+                    allow_selling_generated_content = injected[
+                        "allow_selling_generated_content"
+                    ]
+
             # The presence of the recursive param (always sent by the loras
             # widget when filter mode is on) signals that the filter pipeline
             # must run even when no concrete filter is set, so global settings
             # like show_only_sfw stay consistent with the list endpoint.
             apply_filters = (
-                "recursive" in request.query
+                use_active_filters
+                or "recursive" in request.query
                 or folder is not None
                 or bool(base_models)
                 or bool(model_types)
@@ -1565,6 +1764,50 @@ class ModelQueryHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def update_active_filters(self, request: web.Request) -> web.Response:
+        """Store the manager page's active filters for this model type."""
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+
+        if not isinstance(payload, dict):
+            return web.json_response(
+                {"success": False, "error": "Body must be a JSON object"}, status=400
+            )
+
+        try:
+            ActiveFiltersStore.get_instance().set_filters(
+                self._service.model_type, payload
+            )
+            return web.json_response({"success": True})
+        except Exception as exc:
+            self._logger.error(
+                "Error updating active filters for %s: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_active_filters(self, request: web.Request) -> web.Response:
+        """Return the stored active filters for this model type."""
+        try:
+            filters = ActiveFiltersStore.get_instance().get_filters(
+                self._service.model_type
+            )
+            return web.json_response({"success": True, "filters": filters})
+        except Exception as exc:
+            self._logger.error(
+                "Error getting active filters for %s: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class ModelDownloadHandler:
     """Coordinate downloads and progress reporting."""
@@ -1587,7 +1830,8 @@ class ModelDownloadHandler:
             payload = await request.json()
             result = await self._download_use_case.execute(payload)
             if not result.get("success", False):
-                return web.json_response(result, status=500)
+                status = 429 if result.get("reason") == "rate_limited" else 500
+                return web.json_response(result, status=status)
             return web.json_response(result)
         except DownloadModelValidationError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1631,7 +1875,8 @@ class ModelDownloadHandler:
                 import json
 
                 try:
-                    data["file_params"] = json.loads(file_params_json)
+                    # Normalize falsy payloads (e.g. {}) to None (#1058)
+                    data["file_params"] = json.loads(file_params_json) or None
                 except json.JSONDecodeError:
                     self._logger.warning(
                         "Invalid file_params JSON: %s", file_params_json
@@ -1644,7 +1889,8 @@ class ModelDownloadHandler:
             mock_request = type("MockRequest", (), {"json": lambda self=None: future})()
             result = await self._download_use_case.execute(data)
             if not result.get("success", False):
-                return web.json_response(result, status=500)
+                status = 429 if result.get("reason") == "rate_limited" else 500
+                return web.json_response(result, status=status)
             return web.json_response(result)
         except DownloadModelValidationError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1742,6 +1988,11 @@ class ModelDownloadHandler:
                 response_payload["status"] = status
                 if "message" in progress_data:
                     response_payload["message"] = progress_data["message"]
+                # Post-transfer stage (indexing / source metadata); polling
+                # consumers need it to tell "working" from "stuck".
+                for field in ("stage", "platform"):
+                    if field in progress_data:
+                        response_payload[field] = progress_data[field]
             elif status is None and "message" in progress_data:
                 response_payload["message"] = progress_data["message"]
 
@@ -1783,7 +2034,8 @@ class ModelDownloadHandler:
 
             model_id = int(model_id_str) if model_id_str else None
             model_version_id = int(model_version_id_str) if model_version_id_str else None
-            file_params = json.loads(file_params_json) if file_params_json else None
+            # Normalize falsy payloads (e.g. {}) to None (#1058)
+            file_params = (json.loads(file_params_json) if file_params_json else None) or None
 
             service = await DownloadQueueService.get_instance()
             item = await service.add_to_queue(
@@ -1858,8 +2110,18 @@ class ModelDownloadHandler:
         try:
             status_filter = request.query.get("status") or None
             service = await DownloadQueueService.get_instance()
-            cleared = await service.clear_queue(status_filter=status_filter)
-            return web.json_response({"success": True, "cleared": cleared})
+            cleared_ids = await service.clear_queue(status_filter=status_filter)
+            # Clearing the queue rows alone would orphan any in-memory tasks
+            # and persisted aria2 state for those downloads, leaving them
+            # polling the daemon invisibly.  Tear that tracking down too.
+            try:
+                await self._download_coordinator.discard_cleared_downloads(cleared_ids)
+            except Exception:
+                self._logger.warning(
+                    "Failed to discard in-memory state for cleared downloads",
+                    exc_info=True,
+                )
+            return web.json_response({"success": True, "cleared": len(cleared_ids)})
         except Exception as exc:
             self._logger.error(
                 "Error clearing download queue: %s", exc, exc_info=True
@@ -1942,9 +2204,11 @@ class ModelDownloadHandler:
                 item_id=item_id, download_id=download_id
             )
             if item is None:
+                # Missing or non-retryable history entry is a business
+                # outcome, not a routing error: 200 lets the extension's
+                # apiFetch 404-fallback and error middleware stay quiet.
                 return web.json_response(
-                    {"success": False, "error": "History item not found or not retryable"},
-                    status=404,
+                    {"success": False, "error": "History item not found or not retryable"}
                 )
             return web.json_response({"success": True, "item": item})
         except Exception as exc:
@@ -1995,8 +2259,12 @@ class ModelDownloadHandler:
                 completed_at=completed_at,
             )
             if item is None:
+                # A missing queue item (already completed, or never queued) is
+                # a normal business outcome, not a routing error. Return 200
+                # so the browser extension's apiFetch 404-fallback and the
+                # error middleware stay quiet.
                 return web.json_response(
-                    {"success": False, "error": "Download not found in queue"}, status=404
+                    {"success": False, "error": "Download not found in queue"}
                 )
             return web.json_response({"success": True, "item": item})
         except Exception as exc:
@@ -2038,9 +2306,10 @@ class ModelDownloadHandler:
             service = await DownloadQueueService.get_instance()
             updated = await service.update_status(download_id, status)
             if not updated:
+                # Same rationale as complete_download_in_queue: a missing
+                # queue item is a business outcome, not a routing error.
                 return web.json_response(
-                    {"success": False, "error": "Download not found in queue"},
-                    status=404,
+                    {"success": False, "error": "Download not found in queue"}
                 )
             return web.json_response({"success": True})
         except Exception as exc:
@@ -2060,7 +2329,7 @@ class ModelCivitaiHandler:
         settings_service: SettingsManager,
         ws_manager: WebSocketManager,
         logger: logging.Logger,
-        metadata_provider_factory: Callable[[], Awaitable],
+        metadata_provider_factory: Callable[[], Awaitable[Any]],
         validate_model_type: Callable[[str], bool],
         expected_model_types: Callable[[], str],
         find_model_file: Callable[
@@ -2102,8 +2371,8 @@ class ModelCivitaiHandler:
             metadata_provider = await self._metadata_provider_factory()
             try:
                 response = await metadata_provider.get_model_versions(model_id)
-            except ResourceNotFoundError:
-                return web.Response(status=404, text="Model not found")
+            except ResourceNotFoundError as exc:
+                return web.json_response({"error": str(exc)}, status=404)
             if not response or not response.get("modelVersions"):
                 return web.Response(status=404, text="Model not found")
 
@@ -2125,7 +2394,7 @@ class ModelCivitaiHandler:
                 downloaded_version_ids = set(
                     await history_service.get_downloaded_version_ids(
                         self._service.model_type,
-                        model_id,
+                        int(model_id),
                     )
                 )
             except Exception as exc:  # pragma: no cover - defensive logging
@@ -2134,7 +2403,12 @@ class ModelCivitaiHandler:
                     exc,
                 )
 
+            # Model-level tags travel with each version so the download
+            # location step can preview download_root_rules tag matches.
+            model_tags = response.get("tags") or []
+
             for version in versions:
+                version["modelTags"] = model_tags
                 version_id = None
                 version_id_raw = version.get("id")
                 if version_id_raw is not None:
@@ -2159,6 +2433,19 @@ class ModelCivitaiHandler:
                 else:
                     version.pop("localPath", None)
 
+                # Per-file downloaded state so multi-file versions can show
+                # which individual files are already in the library (#1058)
+                local_entries: List[Any] = []
+                if version_id is not None and cache:
+                    files_getter = getattr(cache, "get_files_by_version_id", None)
+                    if files_getter is not None:
+                        local_entries = files_getter(version_id)
+                    elif cache_entry is not None:
+                        local_entries = [cache_entry]
+                version["downloadedFiles"] = self._match_downloaded_files(
+                    version, local_entries
+                )
+
                 model_file = (
                     self._find_model_file(version.get("files", []))
                     if isinstance(version.get("files"), Iterable)
@@ -2172,6 +2459,64 @@ class ModelCivitaiHandler:
                 "Error fetching %s model versions: %s", self._service.model_type, exc
             )
             return web.Response(status=500, text=str(exc))
+
+    @staticmethod
+    def _match_downloaded_files(
+        version: Mapping[str, Any], local_entries: List[Any]
+    ) -> List[Dict[str, Any]]:
+        """Map local library entries back to individual files of a version.
+
+        Matching follows rule D2 (#1058): SHA256 is authoritative when the
+        local entry carries one; otherwise fall back to extension-less file
+        name equality. Returns ``[{fileId, fileName, filePath}]``.
+        """
+        files = version.get("files")
+        if not isinstance(files, list) or not local_entries:
+            return []
+
+        by_hash: Dict[str, Mapping[str, Any]] = {}
+        by_name: Dict[str, Mapping[str, Any]] = {}
+        for file_info in files:
+            if not isinstance(file_info, Mapping):
+                continue
+            sha = str(
+                (file_info.get("hashes") or {}).get("SHA256") or ""
+            ).strip().lower()
+            if sha:
+                by_hash.setdefault(sha, file_info)
+            name = str(file_info.get("name") or "").strip()
+            if name:
+                by_name.setdefault(os.path.splitext(name)[0], file_info)
+
+        downloaded: List[Dict[str, Any]] = []
+        seen_keys: set = set()
+        for entry in local_entries:
+            if not isinstance(entry, Mapping):
+                continue
+            matched: Optional[Mapping[str, Any]] = None
+            local_hash = str(entry.get("sha256") or "").strip().lower()
+            if local_hash:
+                matched = by_hash.get(local_hash)
+            if matched is None:
+                local_name = str(entry.get("file_name") or "").strip()
+                if local_name:
+                    matched = by_name.get(local_name)
+            if matched is None:
+                continue
+
+            file_id = matched.get("id")
+            dedupe_key = file_id if file_id is not None else matched.get("name")
+            if dedupe_key in seen_keys:
+                continue
+            seen_keys.add(dedupe_key)
+            downloaded.append(
+                {
+                    "fileId": file_id,
+                    "fileName": matched.get("name"),
+                    "filePath": entry.get("file_path"),
+                }
+            )
+        return downloaded
 
     async def get_civitai_model_by_version(self, request: web.Request) -> web.Response:
         try:
@@ -2222,6 +2567,139 @@ class ModelMoveHandler:
         self._move_service = move_service
         self._logger = logger
 
+    async def create_folder(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+        try:
+            folder_path = data.get("folder_path")
+            if not folder_path:
+                return web.json_response(
+                    {"success": False, "error": "Folder path is required"}, status=400
+                )
+            result = await self._move_service.create_folder(folder_path)
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error creating folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def resolve_folder(self, request: web.Request) -> web.Response:
+        """Resolve a library-relative folder onto the roots that hold it.
+
+        The unified folder tree is a merged relative-path namespace, so the
+        client cannot tell which root a node came from; this is what lets the
+        sidebar act on the directory the user actually sees.
+        """
+        try:
+            folder = request.query.get("folder", "")
+            result = self._move_service.resolve_folder(folder)
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error resolving folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def delete_folder(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+        try:
+            folder_path = data.get("folder_path")
+            if not folder_path:
+                return web.json_response(
+                    {"success": False, "error": "Folder path is required"}, status=400
+                )
+            dry_run = bool(data.get("dry_run"))
+            result = await self._move_service.delete_folder(
+                folder_path, dry_run=dry_run
+            )
+            if result.get("success"):
+                if not dry_run:
+                    _broadcast_models_changed()
+                return web.json_response(result, status=200)
+
+            # "not_empty" / "busy" are conflicts between the tree the client
+            # rendered and the on-disk truth; everything else is a bad request.
+            code = result.get("code")
+            status = 409 if code in ("not_empty", "busy") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error deleting folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def forget_folder(self, request: web.Request) -> web.Response:
+        """Drop the records of a folder that no longer exists on disk (#1145).
+
+        The sidebar's delete flow reaches this when the node it holds maps to no
+        directory any more: there is nothing to delete, so the only cleanup left
+        is forgetting the folder entry and the cached models under it.
+        """
+        data: Dict[str, Any] = {}
+        if request.method == "POST":
+            try:
+                data = await request.json()
+            except Exception:
+                data = {}
+        folder = str(data.get("folder") or request.query.get("folder") or "").strip()
+        if not folder:
+            return web.json_response(
+                {"success": False, "error": "Folder is required"}, status=400
+            )
+
+        try:
+            result = await self._move_service.forget_folder(folder)
+            if result.get("success"):
+                _broadcast_models_changed()
+                return web.json_response(result, status=200)
+
+            # `exists` is a conflict between the tree the client rendered and the
+            # on-disk truth: the folder is still there, so it must be deleted.
+            status = 409 if result.get("code") == "exists" else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error forgetting folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def rename_folder(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+        try:
+            folder_path = data.get("folder_path")
+            new_name = data.get("new_name")
+            if not folder_path:
+                return web.json_response(
+                    {"success": False, "error": "Folder path is required"}, status=400
+                )
+            if not new_name:
+                return web.json_response(
+                    {"success": False, "error": "New folder name is required"}, status=400
+                )
+            result = await self._move_service.rename_folder(folder_path, new_name)
+            if result.get("success"):
+                if result.get("renamed"):
+                    _broadcast_models_changed()
+                return web.json_response(result, status=200)
+
+            # A name collision or a staged delete inside the subtree is a
+            # conflict with the state the client rendered, not a bad request.
+            code = result.get("code")
+            status = 409 if code in ("target_exists", "busy") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error renaming folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def move_model(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -2235,6 +2713,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_model(
                 file_path, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             status = 200 if result.get("success") else 500
             return web.json_response(result, status=status)
         except Exception as exc:
@@ -2254,6 +2734,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_models_bulk(
                 file_paths, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             return web.json_response(result)
         except Exception as exc:
             self._logger.error("Error moving models in bulk: %s", exc, exc_info=True)
@@ -2299,6 +2781,7 @@ class ModelAutoOrganizeHandler:
                 progress_callback=self._progress_callback,
                 exclusion_patterns=exclusion_patterns,
             )
+            _broadcast_models_changed()
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(
@@ -2338,6 +2821,71 @@ class ModelAutoOrganizeHandler:
             self._logger.error(
                 "Error getting auto-organize progress: %s", exc, exc_info=True
             )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
+class ModelFilenameTemplateHandler:
+    """Apply the configured filename template to existing library models."""
+
+    def __init__(
+        self,
+        *,
+        use_case: FilenameTemplateUseCase,
+        progress_callback: WebSocketFilenameTemplateProgressCallback,
+        logger: logging.Logger,
+    ) -> None:
+        self._use_case = use_case
+        self._progress_callback = progress_callback
+        self._logger = logger
+
+    async def apply_filename_template(self, request: web.Request) -> web.Response:
+        try:
+            file_paths = None
+            if request.method == "POST":
+                try:
+                    data = await request.json()
+                    file_paths = data.get("file_paths")
+                except Exception:  # pragma: no cover - permissive path
+                    pass
+            else:
+                # GET variant (browser extension is GET-only): comma-separated
+                # file_paths query parameter.
+                raw_file_paths = request.query.get("file_paths")
+                if raw_file_paths:
+                    file_paths = [
+                        path.strip()
+                        for path in raw_file_paths.split(",")
+                        if path.strip()
+                    ]
+
+            result = await self._use_case.execute(
+                file_paths=file_paths,
+                progress_callback=self._progress_callback,
+            )
+            _broadcast_models_changed()
+            return web.json_response(result.to_dict())
+        except AutoOrganizeInProgressError:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Another library operation is already running. Please wait for it to complete.",
+                },
+                status=409,
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error in apply_filename_template: %s", exc, exc_info=True
+            )
+            try:
+                await self._progress_callback.on_progress(
+                    {
+                        "type": "filename_template_progress",
+                        "status": "error",
+                        "error": str(exc),
+                    }
+                )
+            except Exception:  # pragma: no cover - defensive reporting
+                pass
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -2402,8 +2950,8 @@ class ModelUpdateHandler:
             self._logger.error("Failed to fetch license info: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
-        updated: List[Dict[str, str]] = []
-        errors: List[Dict[str, str]] = []
+        updated: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
         for model_id in model_ids:
             license_payload = license_map.get(model_id)
             if not license_payload:
@@ -2416,6 +2964,7 @@ class ModelUpdateHandler:
                 model_section = civitai_section.get("model")
                 if not isinstance(model_section, Mapping):
                     model_section = {}
+                model_section = dict(model_section)
                 model_section.update(resolved_payload)
                 civitai_section["model"] = model_section
                 metadata_payload["civitai"] = civitai_section
@@ -2431,7 +2980,7 @@ class ModelUpdateHandler:
                     )
                     errors.append({"filePath": metadata_path, "error": str(exc)})
 
-        response_payload = {"success": True, "updated": updated}
+        response_payload: Dict[str, Any] = {"success": True, "updated": updated}
         missing_model_ids = [mid for mid in model_ids if mid not in license_map]
         if missing_model_ids:
             response_payload["missingModelIds"] = missing_model_ids
@@ -2501,6 +3050,7 @@ class ModelUpdateHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
         hide_early_access = False
+        hide_paid = False
         if self._settings is not None:
             try:
                 hide_early_access = bool(
@@ -2508,12 +3058,41 @@ class ModelUpdateHandler:
                 )
             except Exception:
                 pass
+            try:
+                hide_paid = bool(self._settings.get("hide_paid_updates", False))
+            except Exception:
+                pass
+
+        same_base_scope = self._uses_same_base_update_scope()
+
+        # Gate/price transitions are reported for every refreshed model, not only
+        # for the ones that qualify as updates: "this version became free" matters
+        # for a version the user already has, which never shows up as an update.
+        events = []
+        for record in records.values():
+            for event in getattr(record, "events", None) or []:
+                events.append(
+                    {
+                        "modelId": record.model_id,
+                        "modelType": record.model_type,
+                        **event,
+                    }
+                )
 
         serialized_records = []
         for record in records.values():
             has_update_fn = getattr(record, "has_update", None)
-            if callable(has_update_fn) and has_update_fn(
-                hide_early_access=hide_early_access
+            if not callable(has_update_fn):
+                continue
+            scoped_fn = (
+                getattr(record, "has_update_for_local_bases", None)
+                if same_base_scope
+                else None
+            )
+            qualifies_fn = scoped_fn if callable(scoped_fn) else has_update_fn
+            if qualifies_fn(
+                hide_early_access=hide_early_access,
+                hide_paid=hide_paid,
             ):
                 serialized_records.append(self._serialize_record(record))
 
@@ -2521,8 +3100,29 @@ class ModelUpdateHandler:
             {
                 "success": True,
                 "records": serialized_records,
+                "events": events,
             }
         )
+
+    def _uses_same_base_update_scope(self) -> bool:
+        """Return True when update reporting must honor same-base scoping.
+
+        Mirrors ``BaseModelService._annotate_update_flags``: the Updates filter
+        evaluates updates per local base model when ``version_grouping`` is
+        ``same_base`` (its default). The refresh summary counts with the same
+        scope so the "Found N update(s)" toast matches what the filter
+        displays. See issue #1083.
+        """
+
+        if self._settings is None:
+            return True
+        try:
+            strategy_value = self._settings.get("version_grouping")
+        except Exception:
+            return True
+        if isinstance(strategy_value, str) and strategy_value.strip():
+            return strategy_value.strip().lower() == "same_base"
+        return True
 
     async def set_model_update_ignore(self, request: web.Request) -> web.Response:
         payload = await self._read_json(request)
@@ -2667,10 +3267,16 @@ class ModelUpdateHandler:
         if not record or not record.versions:
             return record
 
-        # Find versions that need enrichment
+        # Find versions that need enrichment. Permanent paid versions are not
+        # early access (mirror _is_early_access_active) and never carry an end
+        # time, so skip them to avoid pointless per-version API calls.
         versions_needing_update = []
         for version in record.versions:
-            if version.is_early_access and not version.early_access_ends_at:
+            if (
+                version.is_early_access
+                and not version.early_access_ends_at
+                and not getattr(version, "is_paid", False)
+            ):
                 versions_needing_update.append(version)
 
         if not versions_needing_update:
@@ -2780,6 +3386,7 @@ class ModelUpdateHandler:
             civitai_payload = metadata_payload.get("civitai")
             if not isinstance(civitai_payload, Mapping):
                 civitai_payload = {}
+            civitai_payload = dict(civitai_payload)
 
             model_payload = civitai_payload.get("model")
             if not isinstance(model_payload, Mapping):
@@ -2824,7 +3431,7 @@ class ModelUpdateHandler:
 
         return aggregated
 
-    def _extract_target_model_ids(self, payload: Dict) -> Optional[List[int]]:
+    def _extract_target_model_ids(self, payload: Dict[str, Any]) -> Optional[List[int]]:
         if not isinstance(payload, Mapping):
             return None
 
@@ -2852,7 +3459,7 @@ class ModelUpdateHandler:
             return {}
 
         to_dict = getattr(metadata, "to_dict", None)
-        if callable(to_dict):
+        if to_dict:
             try:
                 return to_dict()
             except Exception:
@@ -2863,7 +3470,7 @@ class ModelUpdateHandler:
 
         return {}
 
-    async def _read_json(self, request: web.Request) -> Dict:
+    async def _read_json(self, request: web.Request) -> Dict[str, Any]:
         if not request.can_read_body:
             return {}
         try:
@@ -2895,15 +3502,20 @@ class ModelUpdateHandler:
         record,
         *,
         version_context: Optional[Dict[int, Dict[str, Any]]] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = version_context or {}
         # Check user setting for hiding early access versions
         hide_early_access = False
+        hide_paid = False
         if self._settings is not None:
             try:
                 hide_early_access = bool(
                     self._settings.get("hide_early_access_updates", False)
                 )
+            except Exception:
+                pass
+            try:
+                hide_paid = bool(self._settings.get("hide_paid_updates", False))
             except Exception:
                 pass
         return {
@@ -2914,7 +3526,11 @@ class ModelUpdateHandler:
             "inLibraryVersionIds": record.in_library_version_ids,
             "lastCheckedAt": record.last_checked_at,
             "shouldIgnore": record.should_ignore_model,
-            "hasUpdate": record.has_update(hide_early_access=hide_early_access),
+            "hasUpdate": record.has_update(
+                hide_early_access=hide_early_access,
+                hide_paid=hide_paid,
+            ),
+            "events": list(getattr(record, "events", None) or []),
             "versions": [
                 self._serialize_version(version, context.get(version.version_id))
                 for version in record.versions
@@ -2924,7 +3540,7 @@ class ModelUpdateHandler:
     @staticmethod
     def _serialize_version(
         version, context: Optional[Dict[str, Any]]
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = context or {}
         preview_override = context.get("preview_override")
         preview_url = (
@@ -2933,21 +3549,26 @@ class ModelUpdateHandler:
 
         # Determine if version is currently in early access
         # Two-phase detection: use exact end time if available, otherwise fallback to basic flag
+        # Mirror _is_early_access_active: permanent paid versions (no end time) are NOT early access
         is_early_access = False
-        if version.early_access_ends_at:
-            try:
-                from datetime import datetime, timezone
-
-                ea_date = datetime.fromisoformat(
-                    version.early_access_ends_at.replace("Z", "+00:00")
-                )
-                is_early_access = ea_date > datetime.now(timezone.utc)
-            except (ValueError, AttributeError):
-                # If date parsing fails, treat as active EA (conservative)
-                is_early_access = True
+        if getattr(version, "is_paid", False) and not version.early_access_ends_at:
+            is_early_access = False
+        elif version.early_access_ends_at:
+            # Shared with the update service and the download gate so the badge,
+            # the update filter and the download warning cannot disagree.
+            is_early_access = is_early_access_deadline_active(
+                version.early_access_ends_at
+            )
         elif getattr(version, "is_early_access", False):
             # Fallback to basic EA flag from bulk API
             is_early_access = True
+
+        paid_access_payload = None
+        if getattr(version, "paid_access", None):
+            try:
+                paid_access_payload = json.loads(version.paid_access)
+            except (TypeError, ValueError):
+                paid_access_payload = None
 
         return {
             "versionId": version.version_id,
@@ -2962,8 +3583,22 @@ class ModelUpdateHandler:
             "earlyAccessEndsAt": version.early_access_ends_at,
             "isEarlyAccess": is_early_access,
             "usageControl": version.usage_control,
+            "isPaid": bool(getattr(version, "is_paid", False)),
+            "paidAccess": paid_access_payload,
+            # Set when a version that used to be gated became free, so the UI can
+            # keep showing "Free" long after the transition.
+            "gateLapsedAt": getattr(version, "gate_lapsed_at", None),
+            "priceBuzz": getattr(version, "price_buzz", None),
+            "listPriceBuzz": getattr(version, "list_price_buzz", None),
+            "generationPriceBuzz": getattr(version, "generation_price_buzz", None),
+            "acceptsBlueBuzz": bool(getattr(version, "accepts_blue_buzz", False)),
+            "priceSaleEndsAt": getattr(version, "price_sale_ends_at", None),
+            "priceCheckedAt": getattr(version, "price_checked_at", None),
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
+            # Weight-file variant count (None when unknown); lets the UI hide
+            # the download affordance for single-file in-library versions.
+            "fileCount": getattr(version, "file_count", None),
         }
 
     async def _build_version_context(
@@ -3041,6 +3676,7 @@ class ModelHandlerSet:
     civitai: ModelCivitaiHandler
     move: ModelMoveHandler
     auto_organize: ModelAutoOrganizeHandler
+    filename_template: ModelFilenameTemplateHandler
     updates: ModelUpdateHandler
 
     def to_route_mapping(
@@ -3100,14 +3736,22 @@ class ModelHandlerSet:
             "get_civitai_model_by_hash": self.civitai.get_civitai_model_by_hash,
             "move_model": self.move.move_model,
             "move_models_bulk": self.move.move_models_bulk,
+            "create_folder": self.move.create_folder,
+            "resolve_folder": self.move.resolve_folder,
+            "delete_folder": self.move.delete_folder,
+            "forget_folder": self.move.forget_folder,
+            "rename_folder": self.move.rename_folder,
             "auto_organize_models": self.auto_organize.auto_organize_models,
             "get_auto_organize_progress": self.auto_organize.get_auto_organize_progress,
+            "apply_filename_template": self.filename_template.apply_filename_template,
             "get_model_notes": self.query.get_model_notes,
             "get_model_preview_url": self.query.get_model_preview_url,
             "get_model_civitai_url": self.query.get_model_civitai_url,
             "get_model_metadata": self.query.get_model_metadata,
             "get_model_description": self.query.get_model_description,
             "get_relative_paths": self.query.get_relative_paths,
+            "update_active_filters": self.query.update_active_filters,
+            "get_active_filters": self.query.get_active_filters,
             "refresh_model_updates": self.updates.refresh_model_updates,
             "fetch_missing_civitai_license_data": self.updates.fetch_missing_civitai_license_data,
             "set_model_update_ignore": self.updates.set_model_update_ignore,

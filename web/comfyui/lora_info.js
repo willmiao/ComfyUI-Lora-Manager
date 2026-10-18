@@ -58,8 +58,8 @@ export async function updateConnectedLoraInfoNodes(node, selection) {
     return;
   }
 
-  // No selection or inactive — clear the display on all connected info nodes
-  if (!selection?.name || !selection?.active) {
+  // No selection — clear the display on all connected info nodes
+  if (!selection?.name) {
     for (const infoNode of infoNodes) {
       infoNode.__loraInfoReqId = (infoNode.__loraInfoReqId || 0) + 1;
       if (typeof infoNode._setLoraInfo === "function") {

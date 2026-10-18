@@ -8,7 +8,7 @@ from filename, base_model, and CivitAI version name — no manual tagging requir
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 # ── Tag category definitions ──────────────────────────────────────────
 # Each category maps a display label to a regex pattern.
@@ -52,7 +52,7 @@ AUTO_TAG_GROUPS = {
 DEFAULT_ENABLED_GROUPS = {"mode", "video"}
 
 
-def _collect_sources(model_data: Dict) -> List[str]:
+def _collect_sources(model_data: Dict[str, Any]) -> List[str]:
     """Collect all text sources from model data for tag matching."""
     sources: List[str] = []
 
@@ -73,7 +73,7 @@ def _collect_sources(model_data: Dict) -> List[str]:
     return sources
 
 
-def extract_auto_tags(model_data: Dict) -> List[str]:
+def extract_auto_tags(model_data: Dict[str, Any]) -> List[str]:
     """Extract auto-detected tags from model metadata.
 
     Uses a two-layer approach:

@@ -12,6 +12,10 @@
 .input-group input,
 .input-group select {
     width: 100%;
+    /* Include padding/border in the declared width so full-width fields do not
+       spill past the modal's content box, where their right border gets
+       clipped by the step's overflow-x: hidden. */
+    box-sizing: border-box;
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
@@ -369,7 +373,7 @@
 
 .create-folder-form button.confirm {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -514,6 +518,7 @@
     background: oklch(var(--lora-accent) / 0.18);
     color: var(--lora-accent);
     font-size: inherit;
+    font-family: inherit;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-base);
@@ -603,6 +608,51 @@
     cursor: pointer;
 }
 
+.file-option-radio input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--lora-accent);
+    cursor: pointer;
+}
+
+/* Files already in the library are greyed out and not clickable */
+.file-option.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.file-option.disabled:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+.file-option.disabled input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+/* Options of the other routing group are temporarily disabled once a
+   selection is made (mixed-type multi-select is not allowed) */
+.file-option.group-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.file-option.group-disabled:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+.file-option.group-disabled input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+.file-tag.in-library {
+    background: oklch(var(--lora-accent) / 0.15);
+    color: var(--lora-accent);
+}
+
 .file-option-info {
     flex: 1;
     min-width: 0;
@@ -674,6 +724,9 @@
 /* Textarea for multi-URL input */
 #modelUrl {
     width: 100%;
+    /* Content-box sizing pushed the border box 2px past the step's content
+       edge, clipping the right border. Include padding/border in the width. */
+    box-sizing: border-box;
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
@@ -704,6 +757,45 @@
 #downloadModal .modal-content {
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* The active step scrolls instead of the whole modal */
+}
+
+/* Sticky footer layout (mirrors the import modal fix): fixed header,
+   scrollable step content, pinned action buttons. Ensures Back/Download
+   buttons stay visible on short viewports (e.g. 1080p or 150% zoom). */
+#downloadModal .modal-header {
+    flex-shrink: 0;
+}
+
+#downloadModal .download-step {
+    flex: 1 1 auto;
+    min-height: 0; /* Allow the step to shrink and scroll within the flex container */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+/* Fields sit flush against the scrollable step's content edge; the global
+   focus outline (offset: 2px) has its left/right edges clipped by the step's
+   overflow-x. Draw the ring inset so the full outline stays visible.
+   (Same fix as #importModal in import-modal.css.) */
+#downloadModal input:focus-visible,
+#downloadModal select:focus-visible,
+#downloadModal textarea:focus-visible {
+    outline-offset: -2px;
+}
+
+#downloadModal .download-step .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    /* Solid surface: must fully mask the step content scrolling underneath;
+       the translucent --lora-surface would double-composite over the modal
+       surface and show a seam in light themes. */
+    background: var(--lora-surface-solid);
+    border-top: 1px solid var(--lora-border);
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-1);
 }
 
 #batchPreviewStep {
@@ -875,8 +967,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
 }
 
 .batch-preview-select-all input[type="checkbox"] {
@@ -998,4 +1090,63 @@
 
 [data-theme="dark"] .batch-preview-group-body {
     background: var(--border-color);
+}
+
+
+/* Routing override segmented toggle (Checkpoint / Diffusion Model) shown on
+   the checkpoints page of the download modal when auto-routing can misdetect. */
+.routing-override-group {
+    margin-bottom: var(--space-2);
+}
+
+.download-rule-match-hint {
+    margin-top: var(--space-1);
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
+.routing-override-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.routing-override-toggle {
+    display: flex;
+    gap: 0;
+}
+
+.routing-override-option {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    opacity: 0.75;
+    cursor: pointer;
+    transition: var(--transition-base);
+    font-size: 0.9em;
+}
+
+.routing-override-option:first-child {
+    border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
+    border-right: none;
+}
+
+.routing-override-option:last-child {
+    border-radius: 0 var(--border-radius-xs) var(--border-radius-xs) 0;
+}
+
+.routing-override-option:not(.active):hover,
+.routing-override-option:not(.active):focus-visible {
+    border-color: var(--lora-accent);
+    opacity: 1;
+}
+
+.routing-override-option.active {
+    background: var(--lora-accent);
+    color: var(--text-on-accent);
+    border-color: var(--lora-accent);
+    opacity: 1;
+    cursor: default;
 }

@@ -3,6 +3,40 @@ import pytest
 from py.recipes.parsers.automatic import AutomaticMetadataParser
 
 
+class LocalRecipeScanner:
+    class LoraScanner:
+        @staticmethod
+        def has_hash(model_hash):
+            return False
+
+    def __init__(self, models):
+        self.models = models
+        self.queries = []
+        self.hash_queries = []
+        self._lora_scanner = self.LoraScanner()
+
+    async def get_local_lora(self, name, base_model=None):
+        self.queries.append(name)
+        return self.models.get(name)
+
+    async def get_local_lora_by_hash(self, hash_value):
+        self.hash_queries.append(hash_value)
+        return next((model for model in self.models.values() if model.get("sha256") == hash_value), None)
+
+
+def local_lora(file_name="local_only"):
+    return {
+        "file_path": f"/models/loras/styles/{file_name}.safetensors",
+        "file_name": file_name,
+        "model_name": "Local Only",
+        "sha256": "a" * 64,
+        "size": 123456,
+        "base_model": "Flux.1 D",
+        "preview_url": f"/models/loras/styles/{file_name}.preview.png",
+        "civitai": None,
+    }
+
+
 @pytest.mark.asyncio
 async def test_parse_metadata_extracts_checkpoint_from_civitai_resources(monkeypatch):
     checkpoint_info = {
@@ -133,6 +167,289 @@ async def test_parse_metadata_merges_lora_hashes_over_empty_hashes_json(monkeypa
 
 
 @pytest.mark.asyncio
+async def test_parse_metadata_lora_hashes_override_conflicting_hashes_json(monkeypatch):
+    """When Hashes JSON carries a non-empty but stale hash and the Lora
+    hashes text field carries the real 12-char AutoV3 hash, the Lora hashes
+    value must win: CivitAI is queried with it and the entry is resolved
+    instead of being poisoned by the stale hash."""
+    lora_version_info = {
+        "id": 359072,
+        "modelId": 320224,
+        "model": {"name": "Daphne Blake Cosplay (Scooby Doo)", "type": "LORA"},
+        "name": "v1.0",
+        "images": [{"url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/original=true"}],
+        "baseModel": "SD 1.5",
+        "downloadUrl": "https://civitai.com/api/download/models/359072",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 1024,
+                "name": "Daphne Blake Cosplay_v1.safetensors",
+                "hashes": {"SHA256": "533317d3f7d269f9f504bdc432514774d3ada3738ebd80f3f1a37ff848e88276"},
+            }
+        ],
+    }
+
+    queried_hashes = []
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                queried_hashes.append(model_hash)
+                if model_hash == "e67ebd5e315f":
+                    return lora_version_info, None
+                return None, "Model not found"
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = AutomaticMetadataParser()
+
+    metadata_text = (
+        "woman, natural blonde hair, ice blue eyes, <lora:Daphne Blake Cosplay_v1:1> "
+        "daphne blake cosplay, upper body\n"
+        "Negative prompt: low quality\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 4140408634, "
+        "Size: 512x768, Model hash: 3c8530cb22, Model: cyberrealistic_v33, "
+        'Lora hashes: "Daphne Blake Cosplay_v1: e67ebd5e315f", '
+        'Hashes: {"lora:Daphne Blake Cosplay_v1": "a2a12bfa01"}'
+    )
+
+    result = await parser.parse_metadata(metadata_text)
+
+    assert "e67ebd5e315f" in queried_hashes, (
+        f"CivitAI must be queried with the Lora hashes value, got {queried_hashes}"
+    )
+    assert "a2a12bfa01" not in queried_hashes, (
+        "the stale Hashes JSON value must never be used for CivitAI lookup"
+    )
+    loras = result.get("loras", [])
+    assert len(loras) == 1
+    lora = loras[0]
+    assert lora["hash"] == "533317d3f7d269f9f504bdc432514774d3ada3738ebd80f3f1a37ff848e88276"
+    assert lora["id"] == 359072
+    assert lora["modelId"] == 320224
+    assert lora.get("isDeleted") in (None, False)
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_resolves_local_lora_with_empty_hash(monkeypatch):
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                raise AssertionError("Local and empty-hash LoRAs must not query Civitai")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:local_only:0.65> <lora:missing:0.4>\n"
+        "Steps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, "
+        'Hashes: {"lora:local_only": "", "lora:missing": ""}'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert len(result["loras"]) == 1
+    entry = result["loras"][0]
+    assert entry["name"] == "Local Only"
+    assert entry["file_name"] == "local_only"
+    assert entry["weight"] == 0.65
+    assert entry["hash"] == "a" * 64
+    assert entry["localPath"].endswith("local_only.safetensors")
+    assert entry["size"] == 123456
+    assert entry["baseModel"] == "Flux.1 D"
+    assert entry["existsLocally"] is True
+    assert entry["isDeleted"] is False
+    assert scanner.queries == ["local_only", "missing"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_resolves_prompt_lora_without_hashes(monkeypatch):
+    async def fake_metadata_provider():
+        return None
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    model = local_lora()
+    scanner = LocalRecipeScanner({"styles/local_only": model})
+    metadata_text = "portrait <lora:styles/local_only:0.7>\nSteps: 20, Seed: 1"
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert len(result["loras"]) == 1
+    assert result["loras"][0]["weight"] == 0.7
+    assert result["loras"][0]["hash"] == "a" * 64
+    assert scanner.queries == ["styles/local_only"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_prefers_hash_over_colliding_local_name(monkeypatch):
+    remote_info = {
+        "id": 100,
+        "modelId": 200,
+        "model": {"name": "Hash Match", "type": "LORA"},
+        "name": "v1",
+        "files": [{"type": "Model", "primary": True, "name": "hash_match.safetensors", "hashes": {"SHA256": "b" * 64}}],
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                assert model_hash == "deadbeef00"
+                return remote_info, None
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:local_only:0.8>\n"
+        "Steps: 20, Seed: 1, "
+        'Hashes: {"lora:local_only": "deadbeef00"}'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert len(result["loras"]) == 1
+    assert result["loras"][0]["id"] == 100
+    assert result["loras"][0]["weight"] == 0.8
+    assert scanner.queries == []
+    assert scanner.hash_queries == ["deadbeef00"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_falls_back_to_name_when_hash_is_unresolved(monkeypatch):
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                return None, "Model not found"
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:local_only:0.8>\nSteps: 20, Seed: 1, "
+        'Hashes: {"lora:local_only": "deadbeef00"}'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert result["loras"][0]["hash"] == "a" * 64
+    assert scanner.queries == ["local_only"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_uses_prompt_weight_for_civitai_resource(monkeypatch):
+    remote_info = {
+        "id": 100,
+        "modelId": 200,
+        "model": {"name": "local_only", "type": "LORA"},
+        "name": "v1",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "name": "remote_file.safetensors",
+                "hashes": {"SHA256": "b" * 64},
+            }
+        ],
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                assert version_id == 100
+                return remote_info, None
+
+            async def get_model_by_hash(self, model_hash):
+                raise AssertionError("The Civitai resource should not be fetched again by hash")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:remote_file:0.35> <lora:local_only:0.6>\n"
+        "Steps: 20, Seed: 1, "
+        'Civitai resources: [{"type":"lora","modelVersionId":100,"modelName":"local_only"}]'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert len(result["loras"]) == 2
+    assert [entry["file_name"] for entry in result["loras"]] == ["remote_file", "local_only"]
+    assert [entry["weight"] for entry in result["loras"]] == [0.35, 0.6]
+    assert result["loras"][1]["existsLocally"] is True
+    assert scanner.queries == ["local_only"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_keeps_mixed_local_and_civitai_loras(monkeypatch):
+    remote_info = {
+        "id": 100,
+        "modelId": 200,
+        "model": {"name": "Remote LoRA", "type": "LORA"},
+        "name": "v1",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "name": "remote.safetensors",
+                "hashes": {"SHA256": "b" * 64},
+            }
+        ],
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                assert model_hash == "bbbbbbbbbb"
+                return remote_info, None
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:local_only:0.6> <lora:remote:0.9>\n"
+        "Steps: 20, Seed: 1, "
+        'Hashes: {"lora:local_only": "", "lora:remote": "bbbbbbbbbb"}'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
+    assert [entry["name"] for entry in result["loras"]] == ["Local Only", "Remote LoRA"]
+    assert [entry["weight"] for entry in result["loras"]] == [0.6, 0.9]
+    assert result["loras"][0]["existsLocally"] is True
+    assert result["loras"][1]["existsLocally"] is False
+
+
+@pytest.mark.asyncio
 async def test_parse_metadata_extracts_checkpoint_from_model_hash(monkeypatch):
     checkpoint_info = {
         "id": 98765,
@@ -186,3 +503,64 @@ async def test_parse_metadata_extracts_checkpoint_from_model_hash(monkeypatch):
     assert result["model"] == checkpoint
     assert result["base_model"] == "flux"
     assert result["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_keeps_empty_placeholder_hash_lora_unresolved(monkeypatch):
+    """A LoRA hash equal to the SHA256("") placeholder must never be resolved
+    against CivitAI or the local hash index, but the LoRA item itself must be
+    kept: matched by filename locally when present, otherwise kept as an
+    unresolved entry (no hash) instead of being dropped."""
+    queried_hashes = []
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                queried_hashes.append(model_hash)
+                return None, "Model not found"
+
+            async def get_model_version_info(self, version_id):
+                raise AssertionError("get_model_version_info should not be called")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = AutomaticMetadataParser()
+    metadata_text = (
+        "photo of a DeLorean DMC12, <lora:dmc12bttf:1.2>, at night\n"
+        "Steps: 20, Sampler: Euler, CFG scale: 1, Seed: 2242760352, Size: 1280x720, "
+        "Model: flux1-dev, Model hash: 3f97fdc57a, "
+        'Lora hashes: "dmc12bttf: e3b0c44298fc"'
+    )
+
+    # Local file with the same name: the item is matched by filename.
+    scanner_with_local = LocalRecipeScanner({"dmc12bttf": local_lora("dmc12bttf")})
+    result = await parser.parse_metadata(metadata_text, recipe_scanner=scanner_with_local)
+
+    assert "e3b0c44298fc" not in queried_hashes
+    assert "e3b0c44298" not in queried_hashes
+    assert scanner_with_local.hash_queries == []
+    assert scanner_with_local.queries == ["dmc12bttf"]
+    assert len(result["loras"]) == 1
+    assert result["loras"][0]["file_name"] == "dmc12bttf"
+    assert result["loras"][0]["weight"] == 1.2
+    assert result["loras"][0]["existsLocally"] is True
+    assert result["loras"][0]["isDeleted"] is False
+
+    # No local file: the item is kept as unresolved (empty hash, flagged
+    # hashInvalid so the UI renders the unresolvable-hash badge).
+    scanner_without_local = LocalRecipeScanner({})
+    result = await parser.parse_metadata(metadata_text, recipe_scanner=scanner_without_local)
+
+    assert len(result["loras"]) == 1
+    lora = result["loras"][0]
+    assert lora["file_name"] == "dmc12bttf"
+    assert lora["weight"] == 1.2
+    assert lora["hash"] == ""
+    assert lora["hashInvalid"] is True
+    assert lora["existsLocally"] is False
+    assert lora["isDeleted"] is False

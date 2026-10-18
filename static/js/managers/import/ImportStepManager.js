@@ -1,6 +1,7 @@
 export class ImportStepManager {
     constructor() {
         this.injectedStyles = null;
+        this.currentStep = null;
     }
 
     removeInjectedStyles() {
@@ -18,6 +19,7 @@ export class ImportStepManager {
     showStep(stepId) {
         // Remove any injected styles to prevent conflicts
         this.removeInjectedStyles();
+        this.currentStep = stepId;
         
         // Hide all steps first
         document.querySelectorAll('.import-step').forEach(step => {
@@ -47,11 +49,8 @@ export class ImportStepManager {
                 targetStep.offsetHeight;
             }
             
-            // Scroll modal content to top
-            const modalContent = document.querySelector('#importModal .modal-content');
-            if (modalContent) {
-                modalContent.scrollTop = 0;
-            }
+            // Scroll the active step back to top (steps scroll independently of the modal shell)
+            targetStep.scrollTop = 0;
         }
     }
 }

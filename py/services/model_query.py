@@ -12,6 +12,7 @@ from typing import (
     Tuple,
     Protocol,
     Callable,
+    cast,
 )
 
 from ..utils.constants import NSFW_LEVELS
@@ -309,7 +310,7 @@ class ModelFilterSet:
                     else:
                         include_tags.add(normalized)
             else:
-                include_tags = {tag.strip().lower() for tag in tag_filters if tag}
+                include_tags = {tag.strip().lower() for tag in cast(Iterable[Any], tag_filters) if tag}
 
             if include_tags:
                 tag_logic = criteria.tag_logic.lower() if criteria.tag_logic else "any"
@@ -493,7 +494,40 @@ class SearchStrategy:
                     results.append(item)
                     continue
 
+            # Hash/id search is always exact (never fuzzy) and always on: it
+            # matches the full sha256, its autov2 prefix (first 10 chars),
+            # the autov3 hash, or the Civitai model/version ids. Exact-match
+            # semantics mean it adds no noise to ordinary keyword searches.
+            hash_query = search_lower.strip()
+            if hash_query and self._matches_hash(item, hash_query):
+                results.append(item)
+                continue
+
         return results
+
+    def _matches_hash(self, item: Dict[str, Any], hash_query: str) -> bool:
+        """Exact-match the normalized query against the item's known hashes."""
+        sha256 = item.get("sha256")
+        sha256_lower = sha256.lower() if isinstance(sha256, str) else ""
+        if sha256_lower and hash_query in (sha256_lower, sha256_lower[:10]):
+            return True
+        # autov3 is None when unchecked and "" when checked but unavailable
+        autov3 = item.get("autov3")
+        if isinstance(autov3, str) and autov3 and hash_query == autov3.lower():
+            return True
+        civitai = item.get("civitai")
+        if isinstance(civitai, dict):
+            # A model card corresponds to one Civitai version: `modelId` is
+            # the model id (may match several cards when the library holds
+            # multiple versions), `id` is the version id (unique per card).
+            for key in ("modelId", "model_id", "id"):
+                value = civitai.get(key)
+                if value is None:
+                    continue
+                value_str = str(value).strip()
+                if value_str and value_str != "0" and hash_query == value_str:
+                    return True
+        return False
 
     def _matches(
         self, candidate: str, search_term: str, search_lower: str, fuzzy: bool

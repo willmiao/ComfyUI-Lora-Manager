@@ -341,7 +341,7 @@ async def test_handle_stats_page_renders_template(stats_routes):
     assert response.status == 200
     assert response.text == "rendered"
     assert stats_routes.server_i18n.locale_calls[-1] == "ja"
-    assert stats_routes.routes.template_env._i18n_filter_added is True
+    assert stats_routes.routes._i18n_filter_added is True
     assert "t" in stats_routes.routes.template_env.filters
     assert stats_routes.routes.template_env.filters["t"]("greeting") == "translated:greeting"
     assert template_context["is_initializing"] is False

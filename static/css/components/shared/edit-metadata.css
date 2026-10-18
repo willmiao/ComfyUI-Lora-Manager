@@ -92,38 +92,104 @@
   border-radius: var(--border-radius-xs);
   padding: 4px 8px;
   position: relative;
-  cursor: grab;
   transition: transform 0.18s ease;
 }
 
-.metadata-item:active {
+/* --- Shared chip reordering (tags + trigger words) ------------------------ */
+/* Chips in a list that is actually sortable advertise the grab gesture only
+   then, so lists that cannot be reordered never lie about it. */
+
+.metadata-items.pointer-sort-enabled .metadata-item {
+  cursor: grab;
+}
+
+.metadata-items.pointer-sort-enabled .metadata-item:active {
   cursor: grabbing;
 }
 
-.metadata-item-dragging {
+/* Grip handle: always in the DOM, revealed when the list is sortable */
+.reorder-handle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: -2px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  opacity: 0.4;
+  font-size: 0.8em;
+  line-height: 1;
+  cursor: grab;
+  /* Keep a touch drag on the handle from scrolling the surrounding panel */
+  touch-action: none;
+  user-select: none;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.has-sortable-words .reorder-handle {
+  display: inline-flex;
+}
+
+/* Tag chips have no flex gap (unlike trigger word tags), so the grip needs its
+   own spacing before the tag text */
+.metadata-item .reorder-handle {
+  margin-right: 4px;
+}
+
+.reorder-handle:hover {
+  opacity: 0.9;
+  color: var(--lora-accent);
+}
+
+.reorder-handle:active {
+  cursor: grabbing;
+}
+
+/* Hint shown in the edit controls row while reordering is available */
+.reorder-hint {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  font-size: 0.75em;
+  color: var(--text-color);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.has-sortable-words .reorder-hint {
+  display: inline-flex;
+}
+
+/* Snapped-to-grid transition for the remaining chips while dragging */
+.reorder-sorting > * {
+  transition: transform 0.18s ease;
+}
+
+/* The lifted chip that follows the pointer */
+.reorder-dragging {
   box-shadow: var(--shadow-dialog);
   cursor: grabbing;
   opacity: 0.95;
   transition: none;
 }
 
-.metadata-item-placeholder {
+/* Drop target left behind by the lifted chip */
+.reorder-placeholder {
   border: 1px dashed var(--lora-accent);
   border-radius: var(--border-radius-xs);
   background: rgba(255, 255, 255, 0.1);
   pointer-events: none;
 }
 
-.metadata-items-sorting .metadata-item {
-  transition: transform 0.18s ease;
-}
-
-body.metadata-drag-active {
+body.reorder-drag-active {
   user-select: none;
   cursor: grabbing;
 }
 
-body.metadata-drag-active * {
+body.reorder-drag-active * {
   cursor: grabbing !important;
 }
 
@@ -191,7 +257,7 @@ body.metadata-drag-active * {
 .append-tags-btn,
 .replace-tags-btn {
   background: var(--lora-accent) !important;
-  color: white !important;
+  color: var(--text-on-accent) !important;
   border-color: var(--lora-accent) !important;
 }
 
@@ -205,7 +271,7 @@ body.metadata-drag-active * {
 /* Specific styling for bulk tag action buttons */
 .bulk-append-tags-btn {
   background: var(--lora-accent) !important;
-  color: white !important;
+  color: var(--text-on-accent) !important;
   border-color: var(--lora-accent) !important;
 }
 

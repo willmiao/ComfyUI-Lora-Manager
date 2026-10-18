@@ -1,4 +1,5 @@
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -9,6 +10,8 @@ from typing import Any
 from .constants import (
     CARD_PREVIEW_WIDTH,
     DEFAULT_HASH_CHUNK_SIZE_MB,
+    INVALID_AUTOV3_EMPTY_HASH,
+    MAX_SAFETENSORS_HEADER_BYTES,
     PREVIEW_EXTENSIONS,
 )
 from .exif_utils import ExifUtils
@@ -36,6 +39,11 @@ def _get_hash_chunk_size_bytes() -> int:
 async def calculate_sha256(file_path: str) -> str:
     """Calculate SHA256 hash of a file (full file content).
 
+    The blocking read+hash loop runs in a thread executor so callers awaiting
+    this coroutine never stall the aiohttp event loop — a multi-GB checkpoint
+    hash would otherwise freeze every HTTP endpoint and websocket for the
+    duration of the hash.
+
     Uses ``posix_fadvise`` with ``POSIX_FADV_DONTNEED`` to avoid polluting the OS page
     cache — critical on WSL where cached file pages live inside the VM and are not
     accounted for in guest ``used`` memory, causing VmmemWSL to balloon.
@@ -43,6 +51,11 @@ async def calculate_sha256(file_path: str) -> str:
     On Windows/macOS where ``posix_fadvise`` is not available the hint is silently
     skipped.
     """
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _calculate_sha256_sync, file_path)
+
+
+def _calculate_sha256_sync(file_path: str) -> str:
     sha256_hash = hashlib.sha256()
     chunk_size = _get_hash_chunk_size_bytes()
     with open(file_path, "rb") as f:
@@ -90,6 +103,8 @@ def read_safetensors_metadata(file_path: str) -> dict[str, Any]:
             if len(header_len_bytes) < 8:
                 return {}
             header_len = struct.unpack("<Q", header_len_bytes)[0]
+            if header_len > MAX_SAFETENSORS_HEADER_BYTES:
+                return {}
             header_bytes = f.read(header_len)
             if len(header_bytes) < header_len:
                 return {}
@@ -123,8 +138,16 @@ def calculate_autov3(file_path: str) -> str | None:
         return None
 
     embedded_hash = metadata.get("sshs_model_hash") or metadata.get("modelspec.hash_sha256")
-    if embedded_hash and isinstance(embedded_hash, str) and len(embedded_hash) >= 12:
-        return embedded_hash[:12]
+    if embedded_hash and isinstance(embedded_hash, str):
+        # OneTrainer writes modelspec.hash_sha256 with a "0x" prefix.
+        embedded_hash = embedded_hash.strip().removeprefix("0x").removeprefix("0X")
+        if len(embedded_hash) >= 12:
+            autov3 = embedded_hash[:12].lower()
+            # The empty-string SHA256 placeholder written by some repackaging
+            # tools is not a real hash; treat it as unavailable so broken
+            # models never share one bogus value.
+            if autov3 != INVALID_AUTOV3_EMPTY_HASH:
+                return autov3
 
     return None
 

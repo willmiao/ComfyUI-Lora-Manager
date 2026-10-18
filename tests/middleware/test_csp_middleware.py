@@ -32,7 +32,7 @@ def _parse_directives(header: str) -> dict[str, list[str]]:
 
 async def _invoke_middleware(
     path: str, response: web.Response, csp_header: str | None = DEFAULT_CSP
-) -> web.Response:
+) -> web.StreamResponse:
     async def handler(_request: web.Request) -> web.Response:
         if csp_header is not None:
             response.headers["Content-Security-Policy"] = csp_header

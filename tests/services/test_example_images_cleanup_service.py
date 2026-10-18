@@ -54,7 +54,7 @@ async def test_cleanup_moves_empty_and_orphaned(tmp_path, monkeypatch):
 
         result = await service.cleanup_example_image_folders()
 
-        deleted_bucket = Path(result['deleted_root'])
+        deleted_bucket = Path(str(result['deleted_root']))
         assert result['success'] is True
         assert result['moved_total'] == 2
         assert not empty_folder.exists()

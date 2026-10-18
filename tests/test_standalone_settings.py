@@ -1,6 +1,9 @@
 import importlib
 import json
+import os
+import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,12 +24,12 @@ def reset_settings(tmp_path, monkeypatch):
     reset_settings_manager()
 
 
-def read_settings_file(path: Path) -> dict:
+def read_settings_file(path: Path) -> dict[str, Any]:
     with path.open('r', encoding='utf-8') as handle:
         return json.load(handle)
 
 
-def read_example_settings() -> dict:
+def read_example_settings() -> dict[str, Any]:
     example_path = Path(__file__).resolve().parents[1] / "settings.json.example"
     with example_path.open('r', encoding='utf-8') as handle:
         return json.load(handle)
@@ -50,11 +53,17 @@ def test_missing_settings_creates_defaults_and_emits_warnings(tmp_path):
     actions = warning.get("actions") or []
     assert actions == [
         {
+            "action": "open-model-paths-settings",
+            "label": "Configure model folders",
+            "type": "primary",
+            "icon": "fas fa-cog",
+        },
+        {
             "action": "open-settings-location",
             "label": "Open settings folder",
             "type": "primary",
             "icon": "fas fa-folder-open",
-        }
+        },
     ]
 
 
@@ -111,3 +120,54 @@ def test_validate_settings_logs_warnings(tmp_path, monkeypatch, caplog):
 
     messages = [record.message for record in caplog.records]
     assert any("Standalone mode is using fallback configuration values." in message for message in messages)
+
+
+@pytest.mark.no_settings_dir_isolation
+def test_explicit_settings_dir_env_used_by_manager(tmp_path, monkeypatch):
+    """LORA_MANAGER_SETTINGS_DIR pins the settings file for the manager."""
+    custom_dir = tmp_path / "custom"
+    monkeypatch.setenv("LORA_MANAGER_SETTINGS_DIR", str(custom_dir))
+    reset_settings_manager()
+
+    manager = get_settings_manager()
+
+    assert settings_paths.is_settings_dir_pinned()
+    assert Path(manager.settings_file) == custom_dir / "settings.json"
+    assert settings_paths.get_settings_dir() == str(custom_dir)
+
+
+def test_apply_settings_dir_from_argv():
+    """standalone's argv pre-scan publishes --settings-path into the env."""
+    import standalone
+
+    # The helper writes to os.environ directly; manage the variable manually so
+    # monkeypatch's undo stack cannot restore a stale value after the test.
+    previous = os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+    try:
+        standalone._apply_settings_dir_from_argv(
+            ["--port", "8199", "--settings-path", "/tmp/xyz-e2e-settings"]
+        )
+        assert os.environ["LORA_MANAGER_SETTINGS_DIR"] == "/tmp/xyz-e2e-settings"
+
+        os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        standalone._apply_settings_dir_from_argv(["--settings-path=/tmp/abc-e2e"])
+        assert os.environ["LORA_MANAGER_SETTINGS_DIR"] == "/tmp/abc-e2e"
+
+        os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        standalone._apply_settings_dir_from_argv(["--port", "8199"])
+        assert "LORA_MANAGER_SETTINGS_DIR" not in os.environ
+    finally:
+        if previous is None:
+            os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        else:
+            os.environ["LORA_MANAGER_SETTINGS_DIR"] = previous
+
+
+def test_template_folder_path_placeholders_are_exposed():
+    manager = get_settings_manager()
+
+    placeholders = manager.get_template_folder_path_placeholders()
+
+    assert "C:/path/to/your/loras_folder" in placeholders
+    assert "C:/path/to/another/embeddings_folder" in placeholders
+    assert len(placeholders) == 8
