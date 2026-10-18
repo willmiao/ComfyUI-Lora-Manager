@@ -1,5 +1,6 @@
 // ScanScopeMenu.js - per-root entries of the Refresh dropdown (issue #1108)
 import { translate } from '../../utils/i18nHelpers.js';
+import { formatCount, formatCountExact } from '../../utils/formatters.js';
 
 /**
  * Render one row per configured model root.
@@ -39,13 +40,23 @@ export function renderScanScopeMenu(menu, details = []) {
 
         const meta = document.createElement('span');
         if (detail.reachable) {
-            const count = Number(detail.models || 0).toLocaleString();
+            const count = Number(detail.models || 0);
+            // The visible count is abbreviated at large magnitudes, like the
+            // filter chips; the row tooltip always names the path and the exact
+            // count, so its shape does not change with the library size.
+            const exact = formatCountExact(count);
+            const shown = formatCount(count);
             meta.className = 'scan-root-count';
             meta.textContent = translate(
                 'loras.controls.refresh.rootModels',
-                { count },
-                `${count} models`
+                { count: shown },
+                `${shown} models`
             );
+            item.title = `${detail.path}\n${translate(
+                'loras.controls.refresh.rootModels',
+                { count: exact },
+                `${exact} models`
+            )}`;
         } else {
             meta.className = 'scan-root-offline';
             meta.textContent = translate('loras.controls.refresh.rootOffline', {}, 'Offline');

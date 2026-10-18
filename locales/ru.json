@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Фильтр моделей",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "Пресеты",
             "savePreset": "Сохранить текущие активные фильтры как новый пресет.",
             "savePresetDisabledActive": "Невозможно сохранить: Пресет уже активен. Измените фильтры, чтобы сохранить новый пресет",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "Рецепты LoRA",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "Отправить в ComfyUI",
             "sendRecipe": "Отправить в ComfyUI",

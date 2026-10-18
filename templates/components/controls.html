@@ -65,8 +65,10 @@
                 </select>
             </div>
             {% if page_id in ['loras', 'checkpoints', 'other'] %}
-            <div class="control-group model-type-dropdown-group dropdown-group hidden" id="modelTypeDropdown" title="{{ t('loras.controls.modelType.title') }}">
-                <button type="button" class="model-type-trigger" aria-haspopup="listbox" aria-expanded="false">
+            {# The tooltip sits on the trigger, not the group: a group-level title
+               leaks onto every menu option that has no title of its own. #}
+            <div class="control-group model-type-dropdown-group dropdown-group hidden" id="modelTypeDropdown">
+                <button type="button" class="model-type-trigger" aria-haspopup="listbox" aria-expanded="false" title="{{ t('loras.controls.modelType.title') }}">
                     <span class="model-type-trigger__label"></span>
                     <i class="fas fa-caret-down model-type-trigger__caret" aria-hidden="true"></i>
                 </button>

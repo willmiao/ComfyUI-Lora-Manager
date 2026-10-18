@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "סנן מודלים",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "קביעות מראש",
             "savePreset": "שמור מסננים פעילים כקביעה מראש חדשה.",
             "savePresetDisabledActive": "לא ניתן לשמור: קביעה מראש כבר פעילה. שנה מסננים כדי לשמור קביעה מראש חדשה",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "מתכוני LoRA",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "שלח ל-ComfyUI",
             "sendRecipe": "שלח ל-ComfyUI",

@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "篩選模型",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "預設",
             "savePreset": "將目前啟用的篩選器儲存為新預設。",
             "savePresetDisabledActive": "無法儲存：已有預設處於啟用狀態。修改篩選器後可儲存新預設",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA 配方",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "傳送到 ComfyUI",
             "sendRecipe": "傳送到 ComfyUI",

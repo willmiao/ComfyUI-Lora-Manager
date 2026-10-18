@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Filtrer les modèles",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "Préréglages",
             "savePreset": "Enregistrer les filtres actifs comme nouveau préréglage.",
             "savePresetDisabledActive": "Impossible d'enregistrer : Un préréglage est déjà actif. Modifiez les filtres pour enregistrer un nouveau préréglage",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA Recipes",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "Envoyer vers ComfyUI",
             "sendRecipe": "Envoyer vers ComfyUI",

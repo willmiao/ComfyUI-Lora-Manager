@@ -264,6 +264,7 @@
     },
     "filter": {
       "title": "Filter Models",
+      "countTitle": "{name} — {count} models",
       "presets": "Presets",
       "savePreset": "Save current active filters as a new preset.",
       "savePresetDisabledActive": "Cannot save: A preset is already active. Modify filters to save new preset.",
@@ -1097,6 +1098,9 @@
   },
   "recipes": {
     "title": "LoRA Recipes",
+    "filter": {
+      "countTitle": "{name} — {count} recipes"
+    },
     "actions": {
       "sendCheckpoint": "Send to ComfyUI",
       "sendRecipe": "Send to ComfyUI",

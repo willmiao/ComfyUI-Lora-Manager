@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Modelle filtern",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "Voreinstellungen",
             "savePreset": "Aktive Filter als neue Voreinstellung speichern.",
             "savePresetDisabledActive": "Speichern nicht möglich: Eine Voreinstellung ist bereits aktiv. Ändern Sie die Filter, um eine neue Voreinstellung zu speichern",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA-Rezepte",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "Send to ComfyUI",
             "sendRecipe": "Send to ComfyUI",

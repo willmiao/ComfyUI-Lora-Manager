@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "모델 필터",
+            "countTitle": "[TODO: Translate] {name} — {count} models",
             "presets": "프리셋",
             "savePreset": "현재 활성 필터를 새 프리셋으로 저장.",
             "savePresetDisabledActive": "저장할 수 없음: 프리셋이 이미 활성화되어 있습니다. 필터를 수정한 후 새 프리셋을 저장하세요",
@@ -1097,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA 레시피",
+        "filter": {
+            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+        },
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기",

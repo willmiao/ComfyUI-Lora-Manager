@@ -15,6 +15,7 @@
 
 import { MODEL_TYPE_DISPLAY_NAMES } from '../../utils/constants.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { formatCount, formatCountTitle } from '../../utils/formatters.js';
 
 const GROUP_ID = 'modelTypeDropdown';
 const ALL_TYPES_VALUE = '';
@@ -89,7 +90,13 @@ export async function initModelTypeDropdown(pageType) {
             item.setAttribute('role', 'option');
             item.tabIndex = -1;
             item.dataset.value = type;
-            item.textContent = `${MODEL_TYPE_DISPLAY_NAMES[type]} (${count})`;
+            item.textContent = `${MODEL_TYPE_DISPLAY_NAMES[type]} (${formatCount(count)})`;
+            // Same rule as the filter chips: the tooltip carries the exact count
+            // at every magnitude, so hovering behaves the same whether or not
+            // the menu had to abbreviate. It also replaces the tooltip this
+            // option would otherwise inherit from the group, which describes the
+            // control rather than this entry.
+            item.title = formatCountTitle(MODEL_TYPE_DISPLAY_NAMES[type], count);
             fragment.appendChild(item);
         });
 

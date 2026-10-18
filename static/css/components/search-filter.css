@@ -295,12 +295,44 @@
     min-width: 60px;
 }
 
+/* Chips that carry a count get a stable two-slot layout: the label shrinks and
+   ellipsizes, the count keeps its own slot. Without it a long tag name and a
+   5+ digit count (large libraries) fight over the chip and the count pill can
+   be pushed past the chip's border. */
+.filter-tag:has(.tag-count) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-width: 60px;
+    max-width: 100%;
+}
+
+.filter-tag:has(.tag-count) .tag-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filter-tag:has(.tag-count) .tag-count {
+    margin-left: 0;
+    flex-shrink: 0;
+}
+
 .tag-count {
     background: rgba(0, 0, 0, 0.1);
     padding: 1px 6px;
     border-radius: 10px;
     font-size: 0.8em;
     margin-left: 4px;
+    /* Counts reach 5+ digits in large libraries: tabular digits keep the pill
+       from resizing as the data refreshes, right alignment pins the digits to
+       the chip edge, and the min-width keeps 1-3 digit counts from producing a
+       cramped pill next to a 4-digit one. */
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 2.5ch;
 }
 
 [data-theme="dark"] .tag-count {

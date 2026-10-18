@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import { initModelTypeDropdown } from '../../../static/js/components/controls/ModelTypeDropdown.js';
+import { i18n } from '../../../static/js/i18n/index.js';
 import { readTemplate } from '../utils/domFixtures.js';
 
 function renderDropdownDom() {
@@ -91,6 +92,31 @@ describe('ModelTypeDropdown', () => {
     expect(options[1].textContent).toBe('VAE (12)');
     expect(options[2].textContent).toBe('Upscaler (5)');
     expect(options[3].textContent).toBe('Text Encoder (30)');
+  });
+
+  it('abbreviates large counts and keeps the exact value in the option tooltip', async () => {
+    const originalLocale = i18n.currentLocale;
+    i18n.currentLocale = 'en';
+    try {
+      mockModelTypesResponse([
+        { type: 'lora', count: 19876 },
+        { type: 'vae', count: 12 },
+      ]);
+
+      await initModelTypeDropdown('loras');
+
+      const options = document.querySelectorAll('.model-type-option');
+      expect(options[1].textContent).toBe('LoRA (19.9K)');
+      expect(options[1].title).toBe('LoRA — 19,876 models');
+      // Every option carries its own tooltip, so hovering never depends on the
+      // magnitude and never falls back to the group's "Filter by model type".
+      expect(options[2].textContent).toBe('VAE (12)');
+      expect(options[2].title).toBe('VAE — 12 models');
+      // "All Types" is not a counted entry and keeps no tooltip of its own.
+      expect(options[0].title).toBe('');
+    } finally {
+      i18n.currentLocale = originalLocale;
+    }
   });
 
   it('ignores types without a known display name', async () => {
