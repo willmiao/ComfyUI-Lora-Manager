@@ -971,9 +971,9 @@
                 "randomAction": "Aleatorizar (barajar)"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "Filtrar por tipo de modelo",
+                "all": "Todos los tipos",
+                "multiple": "{count} tipos"
             },
             "refresh": {
                 "title": "Actualizar lista de modelos",

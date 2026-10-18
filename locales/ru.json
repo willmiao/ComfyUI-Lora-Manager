@@ -971,9 +971,9 @@
                 "randomAction": "Перемешать"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "Фильтровать по типу модели",
+                "all": "Все типы",
+                "multiple": "{count} тип(ов)"
             },
             "refresh": {
                 "title": "Обновить список моделей",

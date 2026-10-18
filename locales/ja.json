@@ -971,9 +971,9 @@
                 "randomAction": "シャッフル（ランダム）"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "モデルタイプで絞り込む",
+                "all": "すべてのタイプ",
+                "multiple": "{count} タイプ"
             },
             "refresh": {
                 "title": "モデルリストを更新",

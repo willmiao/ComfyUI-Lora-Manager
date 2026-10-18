@@ -971,9 +971,9 @@
                 "randomAction": "셔플 (무작위)"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "모델 유형으로 필터링",
+                "all": "모든 유형",
+                "multiple": "유형 {count}개"
             },
             "refresh": {
                 "title": "모델 목록 새로고침",

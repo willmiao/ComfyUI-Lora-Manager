@@ -971,9 +971,9 @@
                 "randomAction": "隨機排序（洗牌）"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "依模型類型篩選",
+                "all": "全部類型",
+                "multiple": "{count} 種類型"
             },
             "refresh": {
                 "title": "重新整理模型列表",

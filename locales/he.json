@@ -971,9 +971,9 @@
                 "randomAction": "ערבוב אקראי"
             },
             "modelType": {
-                "title": "[TODO: Translate] Filter by model type",
-                "all": "[TODO: Translate] All Types",
-                "multiple": "[TODO: Translate] {count} types"
+                "title": "סנן לפי סוג מודל",
+                "all": "כל הסוגים",
+                "multiple": "{count} סוגים"
             },
             "refresh": {
                 "title": "רענן רשימת מודלים",
