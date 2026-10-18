@@ -1,6 +1,13 @@
+from __future__ import annotations
+
 import asyncio
+import json
 import os
+import shutil
 import sqlite3
+import threading
+import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from types import MethodType
@@ -10,7 +17,20 @@ import pytest
 from py.services import model_scanner
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
-from py.services.model_scanner import CacheBuildResult, ModelScanner
+from py.services.model_scanner import (
+    CacheBuildResult,
+    ModelScanner,
+    ReconcileScope,
+    _ReconcileWalkTracker,
+    _count_cached_entries_per_root,
+    _group_roots_by_device,
+    _root_display_labels,
+)
+from py.services.pending_delete_service import (
+    PENDING_DELETE_DIR_NAME,
+    PENDING_DELETE_TTL_SECONDS,
+    _reset_pending_delete_service,
+)
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 from py.utils.civitai_utils import build_license_flags
 from py.utils.models import BaseModelMetadata
@@ -19,9 +39,27 @@ from py.utils.models import BaseModelMetadata
 class RecordingWebSocketManager:
     def __init__(self) -> None:
         self.payloads: List[Dict[str, Any]] = []
+        self.broadcasts: List[Dict[str, Any]] = []
 
     async def broadcast_init_progress(self, payload: Dict[str, Any]) -> None:
         self.payloads.append(payload)
+
+    async def broadcast(self, payload: Dict[str, Any]) -> None:
+        self.broadcasts.append(payload)
+
+
+def _root_label_names(labels) -> List[str]:
+    """The root names behind display labels.
+
+    ``_root_display_labels`` prefixes the drive on Windows ("C: loras") and may
+    grow a label leftwards to keep it unique ("parent/loras"), so a test that only
+    cares *which* root was walked compares the final path component.
+    """
+
+    return [
+        label.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1].rsplit(" ", 1)[-1]
+        for label in labels
+    ]
 
 
 def _normalize_path(path: Path) -> str:
@@ -104,6 +142,38 @@ def stub_register_service(monkeypatch):
     monkeypatch.setattr(model_scanner.ServiceRegistry, "register_service", noop)
 
 
+@pytest.fixture(autouse=True)
+def _reset_pending_delete_singleton() -> Iterator[None]:
+    """Reset the pending-delete singleton before and after each test."""
+    _reset_pending_delete_service()
+    yield
+    _reset_pending_delete_service()
+
+
+@pytest.fixture(autouse=True)
+def _stub_service_registry_getters(monkeypatch) -> None:
+    """Prevent pending-delete purge enumeration from building real scanners."""
+    from py.services.service_registry import ServiceRegistry
+
+    async def _none(*_args, **_kwargs) -> None:
+        return None
+
+    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", _none)
+
+
+class TwoRootScanner(DummyScanner):
+    """Scanner whose library spans two roots (primary + extra folder paths)."""
+
+    def __init__(self, primary: Path, extra: Path):
+        super().__init__(primary)
+        self._extra_root = str(extra)
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root, self._extra_root]
+
+
 def _create_files(root: Path) -> tuple[Path, Path, Path]:
     first = root / "one.txt"
     first.write_text("one", encoding="utf-8")
@@ -117,6 +187,61 @@ def _create_files(root: Path) -> tuple[Path, Path, Path]:
     skipped.write_text("skip", encoding="utf-8")
 
     return first, second, skipped
+
+
+@pytest.mark.asyncio
+async def test_calculate_folder_preserves_case_with_drive_letter_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    # The host may spell the root in a different case than the file path.
+    scanner._root = "c:/models/loras"
+    folder = scanner._calculate_folder("C:/Models/Loras/Krea 2/Kroma/Merges/model.safetensors")
+    assert folder == "Krea 2/Kroma/Merges"
+
+
+@pytest.mark.asyncio
+async def test_calculate_folder_preserves_case_with_backslash_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    scanner._root = "C:\\Models\\Loras"
+    folder = scanner._calculate_folder("C:\\Models\\Loras\\Krea 2\\model.safetensors")
+    assert folder == "Krea 2"
+
+
+@pytest.mark.asyncio
+async def test_calculate_folder_returns_empty_for_root_and_unknown_paths(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+    scanner._root = "C:/Models/Loras"
+    assert scanner._calculate_folder("C:/Models/Loras/model.safetensors") == ""
+    assert scanner._calculate_folder("D:/Elsewhere/model.safetensors") == ""
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_heals_folder_drift(tmp_path: Path):
+    """An incremental refresh repairs entries whose folder no longer matches
+    where the file actually sits (issue #1148): older versions could record a
+    wrong folder, and the sidebar drag-and-drop strips the folder off the file
+    path to find the library root, so the stale value made the next move nest
+    the target under the source directory."""
+    nested = tmp_path / "anima" / "character"
+    nested.mkdir(parents=True)
+    model = nested / "x.txt"
+    model.write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    item = next(i for i in scanner._cache.raw_data if i["file_path"].endswith("/x.txt"))
+    assert item["folder"] == "anima/character"
+    item["folder"] = ""  # pollution as written by the buggy versions
+
+    summary = await scanner._reconcile_cache()
+
+    assert item["folder"] == "anima/character"
+    assert summary["folder_repaired"] == 1
+    assert "anima/character" in scanner._cache.folders
+
+    # A second reconcile over the healed cache finds nothing left to repair.
+    summary = await scanner._reconcile_cache()
+    assert summary["folder_repaired"] == 0
 
 
 @pytest.mark.asyncio
@@ -358,6 +483,74 @@ async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch)
     assert scanner._tags_count == {'alpha': 1}
     assert ws_stub.payloads[-1]['stage'] == 'loading_cache'
     assert ws_stub.payloads[-1]['progress'] == 1
+
+
+@pytest.mark.asyncio
+async def test_load_persisted_cache_rebuilds_off_event_loop(tmp_path: Path, monkeypatch):
+    """The SQLite read and per-model rebuild must not run on the event loop."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    file_path = tmp_path / 'one.txt'
+    file_path.write_text('one', encoding='utf-8')
+    normalized = _normalize_path(file_path)
+
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'one',
+        'folder': '',
+        'size': 3,
+        'modified': 123.0,
+        'sha256': 'hash-one',
+        'base_model': 'test',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': True,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': ['alpha'],
+        'civitai': {'id': 11, 'modelId': 22, 'name': 'ver', 'trainedWords': ['abc']},
+    }
+
+    store.save_cache('dummy', [raw_model], {'hash-one': [normalized]}, [])
+
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+
+    scanner = DummyScanner(tmp_path)
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, 'ws_manager', ws_stub)
+
+    loop_thread = threading.get_ident()
+    worker_threads: List[int] = []
+
+    original_load_cache = store.load_cache
+    def tracking_load_cache(model_type):
+        worker_threads.append(threading.get_ident())
+        return original_load_cache(model_type)
+    monkeypatch.setattr(store, 'load_cache', tracking_load_cache)
+
+    original_adjust = scanner.adjust_cached_entry
+    def tracking_adjust(entry):
+        worker_threads.append(threading.get_ident())
+        return original_adjust(entry)
+    monkeypatch.setattr(scanner, 'adjust_cached_entry', tracking_adjust)
+
+    loaded = await scanner._load_persisted_cache('dummy')
+    assert loaded is True
+
+    # Both the SQLite read and the per-entry adjustment ran off the loop
+    assert len(worker_threads) == 2
+    assert all(tid != loop_thread for tid in worker_threads)
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 1
+    assert cache.raw_data[0]['file_path'] == normalized
 
 
 @pytest.mark.asyncio
@@ -629,6 +822,130 @@ async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_
 
 
 @pytest.mark.asyncio
+async def test_reconcile_cache_keeps_cached_path_when_walk_yields_a_live_alias(
+    tmp_path: Path,
+):
+    """A root-order / symlink change can make the walk produce a *different but
+    still live* business path for a file already in the cache. The realpath
+    alias map must keep the cached entry instead of re-processing the file and
+    swapping the path (which would re-read metadata and re-hash the weights)."""
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir()
+    extra_root = tmp_path / "extra"
+    extra_root.mkdir()
+    (extra_root / "one.txt").write_text("one", encoding="utf-8")
+    (loras_root / "link").symlink_to(extra_root, target_is_directory=True)
+
+    # `extra_root` comes first, so the cache entry is stored under its path.
+    scanner = MultiRootDummyScanner([extra_root, loras_root])
+    await scanner._initialize_cache()
+
+    cached_before = {item["file_path"] for item in scanner._cache.raw_data}
+    assert cached_before == {_normalize_path(extra_root / "one.txt")}
+
+    # The symlinked path now wins the walk; the file itself is unchanged.
+    scanner._roots = [str(loras_root), str(extra_root)]
+    processed: List[str] = []
+
+    async def _record_process(file_path: str, root_path: str, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert {item["file_path"] for item in cache.raw_data} == cached_before
+    assert processed == []
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_defers_realpath_to_cache_misses(
+    tmp_path: Path, monkeypatch
+):
+    """A no-change reconcile must not call realpath for unchanged files or for
+    every cached entry: both the alias map and the per-file realpath are only
+    needed for cache misses (they dominate the cost of a Refresh otherwise)."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    for i in range(5):
+        (root / f"model{i}.txt").write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    real_realpath = model_scanner.os.path.realpath
+    realpath_args: List[str] = []
+
+    def _recording_realpath(path, *args, **kwargs):
+        realpath_args.append(os.fspath(path))
+        return real_realpath(path, *args, **kwargs)
+
+    monkeypatch.setattr(model_scanner.os.path, "realpath", _recording_realpath)
+
+    await scanner._reconcile_cache()
+
+    model_files = {_normalize_path(path) for path in root.glob("*.txt")}
+    assert not (set(realpath_args) & model_files)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_cleans_pre_existing_duplicate_paths(tmp_path: Path):
+    """External code rewrites raw_data directly, so a reconcile must still drop
+    duplicate business paths even when nothing changed on disk: the O(1)
+    integrity check may only skip the pass for a provably clean cache."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    (root / "one.txt").write_text("one", encoding="utf-8")
+    (root / "two.txt").write_text("two", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    first_path = _normalize_path(root / "one.txt")
+    duplicate = dict(next(i for i in scanner._cache.raw_data if i["file_path"] == first_path))
+    duplicate["model_name"] = "duplicate-wins"
+    scanner._cache.raw_data.append(duplicate)
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 2
+    survivor = next(i for i in cache.raw_data if i["file_path"] == first_path)
+    assert survivor["model_name"] == "duplicate-wins"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_reads_model_roots_once_per_phase(tmp_path: Path, monkeypatch):
+    """get_model_roots() must be snapshotted once for the walk and once for the
+    new-file pass, not re-read for every new file."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    calls = 0
+    real_get_model_roots = scanner.get_model_roots
+
+    def _counting_get_model_roots() -> List[str]:
+        nonlocal calls
+        calls += 1
+        return real_get_model_roots()
+
+    monkeypatch.setattr(scanner, "get_model_roots", _counting_get_model_roots)
+
+    for i in range(3):
+        (root / f"new{i}.txt").write_text("x", encoding="utf-8")
+
+    await scanner._reconcile_cache()
+
+    assert calls == 2
+
+
+@pytest.mark.asyncio
 async def test_log_duplicate_filename_summary_logs_warning(tmp_path: Path, caplog):
     """When duplicate filenames exist, _log_duplicate_filename_summary should emit
     a single warning log with the conflict count and total file count."""
@@ -736,7 +1053,11 @@ def _make_cache_entry(**overrides) -> Dict[str, Any]:
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "civitai_deleted": False,
         "skip_metadata_refresh": False,
+        "source_platform": "",
+        "source_url": "",
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
         "license_flags": 113,
         "hash_status": "completed",
     }
@@ -775,6 +1096,8 @@ async def test_sync_cache_no_change(tmp_path: Path):
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -819,6 +1142,8 @@ async def test_sync_cache_in_place_update(tmp_path: Path):
         "tags": ["beta", "gamma"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -864,6 +1189,8 @@ async def test_sync_cache_not_in_cache_delegates(tmp_path: Path):
         "tags": [],
         "civitai": {},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -917,6 +1244,8 @@ async def test_sync_cache_conditional_resort_skipped(tmp_path: Path, monkeypatch
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -967,6 +1296,8 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -974,3 +1305,2052 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
     )
     assert changed is True
     assert resort_calls == 1
+
+
+# ── bulk_delete_models staging (undo-delete feature, todo 3) ───────────────
+
+
+def _make_bulk_scanner(root: Path, file_paths: List[Path]) -> DummyScanner:
+    """Build a DummyScanner whose cache mirrors the given files on disk."""
+    scanner = DummyScanner(root)
+    raw_data = []
+    for path in file_paths:
+        name = os.path.splitext(os.path.basename(path))[0]
+        raw_data.append(
+            {
+                "file_path": str(path),
+                "folder": "",
+                "sha256": f"hash-{name}",
+                "tags": ["alpha"] if "one" in name else ["beta"],
+                "model_name": name,
+                "file_name": name,
+                "size": 1,
+                "modified": 1.0,
+            }
+        )
+    scanner._cache = ModelCache(
+        raw_data=raw_data, folders=[], name_display_mode="model_name"
+    )
+    scanner._tags_count = {"alpha": 1, "beta": 1}
+    for entry in raw_data:
+        scanner._hash_index.add_entry(entry["sha256"], entry["file_path"])
+    return scanner
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_stages_two_files_into_single_batch(tmp_path: Path):
+    """Two-file bulk delete -> one merged batch id with both files staged."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["status"] == "success"
+    assert result["total_deleted"] == 2
+    assert result["cache_updated"] is True
+
+    # ONE batch id, no batch_ids array - the merge succeeded.
+    assert "batch_id" in result
+    assert "batch_ids" not in result
+    batch_id = result["batch_id"]
+    assert batch_id is not None
+    staging = root / PENDING_DELETE_DIR_NAME
+    batch_dir = staging / batch_id
+    assert batch_dir.is_dir()
+    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert sorted(os.path.basename(e["staged"]) for e in manifest["entries"]) == [
+        "one.txt",
+        "two.txt",
+    ]
+
+    # Manifest-only merge: each staged file physically remains in its OWN
+    # batch dir (one.txt in the winner, two.txt in the loser storage dir) -
+    # no file was moved, so no cross-volume IO ever happens.
+    assert (batch_dir / "one.txt").read_bytes() == b"one"
+    batch_dirs = [d.name for d in staging.iterdir() if d.is_dir()]
+    assert len(batch_dirs) == 2
+    assert batch_id in batch_dirs
+    staged_files = {
+        f.name
+        for bid in batch_dirs
+        for f in (staging / bid).iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    }
+    assert staged_files == {"one.txt", "two.txt"}
+
+    # The manifest carries the winner's cache snapshot for later undo.
+    assert manifest["model_snapshot"]["file_path"] == str(first)
+
+    # Originals gone; cache entries removed.
+    assert not first.exists()
+    assert not second.exists()
+    cached_paths = {item["file_path"] for item in scanner._cache.raw_data}
+    assert str(first) not in cached_paths
+    assert str(second) not in cached_paths
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_merged_manifest_reanchors_expiry(tmp_path: Path):
+    """Merged manifest expires_at is re-anchored to now+TTL at merge time."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    before = int(time.time())
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+    after = int(time.time())
+
+    batch_dir = root / PENDING_DELETE_DIR_NAME / result["batch_id"]
+    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
+    # expires_at >= staging completion time + TTL (re-anchor assertion).
+    assert manifest["expires_at"] >= after + PENDING_DELETE_TTL_SECONDS - 2
+    assert manifest["expires_at"] >= before + PENDING_DELETE_TTL_SECONDS
+    # Both files are entries of the merged manifest; manifest-only merge means
+    # each staged file stays where staging put it (still on disk, in its own
+    # batch dir).
+    assert len(manifest["entries"]) == 2
+    assert all(os.path.exists(entry["staged"]) for entry in manifest["entries"])
+    assert (batch_dir / "one.txt").exists()
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
+    tmp_path: Path, monkeypatch
+):
+    """Merge unresolvable -> batch_ids array of the intact constituent batches."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    # Simulate a merge that cannot resolve the winner batch (the only real
+    # merge failure mode since the merge no longer moves files): the caller
+    # must fall back to returning the constituent batch_ids array.
+    from py.services.pending_delete_service import get_pending_delete_service
+
+    service = await get_pending_delete_service()
+
+    async def _merge_unresolvable(_ids) -> None:
+        return None
+
+    monkeypatch.setattr(service, "merge_batches", _merge_unresolvable)
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["total_deleted"] == 2
+    # No single batch id - the constituent ids are returned instead.
+    assert "batch_id" not in result
+    assert "batch_ids" in result
+    assert len(result["batch_ids"]) == 2
+
+    # Both constituent batches are intact: dirs + manifests + staged files.
+    staging = root / PENDING_DELETE_DIR_NAME
+    batch_dirs = sorted(d.name for d in staging.iterdir() if d.is_dir())
+    assert sorted(result["batch_ids"]) == batch_dirs
+    for bid in result["batch_ids"]:
+        batch_dir = staging / bid
+        assert (batch_dir / "manifest.json").exists()
+    staged_files = [
+        f.name
+        for bid in result["batch_ids"]
+        for f in (staging / bid).iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    ]
+    assert sorted(staged_files) == ["one.txt", "two.txt"]
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_cancelled_after_one_staged_batch_present(
+    tmp_path: Path, monkeypatch
+):
+    """Cancelled mid-way -> status='cancelled' AND the staged subset undoable."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    real_rename = os.rename
+    rename_count = {"n": 0}
+
+    def cancelling_rename(src: str, dst: str) -> None:
+        rename_count["n"] += 1
+        result = real_rename(src, dst)
+        # After the first file is staged, request cancellation so the loop
+        # stops before the second file is processed.
+        if rename_count["n"] == 1:
+            scanner.cancel_task()
+        return result
+
+    monkeypatch.setattr(
+        "py.services.pending_delete_service.os.rename", cancelling_rename
+    )
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["status"] == "cancelled"
+    assert result["total_deleted"] == 1
+    assert "batch_id" in result
+    assert result["batch_id"] is not None
+    assert "batch_ids" not in result
+
+    # The staged subset is merged into one undoable batch.
+    batch_dir = root / PENDING_DELETE_DIR_NAME / result["batch_id"]
+    assert batch_dir.is_dir()
+    assert (batch_dir / "one.txt").read_bytes() == b"one"
+    assert not first.exists()
+    # The second file was never touched.
+    assert second.exists()
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_records_empty_directories_during_scan(tmp_path: Path):
+    _create_files(tmp_path)
+    (tmp_path / "empty").mkdir()
+    (tmp_path / "empty" / "nested_empty").mkdir()
+    (tmp_path / ".hidden").mkdir()
+    (tmp_path / "visible" / ".hidden_child").mkdir(parents=True)
+    (tmp_path / PENDING_DELETE_DIR_NAME).mkdir()
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    all_folders = await scanner.get_all_folders()
+
+    # cache.folders stays models-only
+    assert sorted(cache.folders) == ["", "nested"]
+
+    # Scan recording includes empty directories and stays a superset
+    assert set(cache.folders) <= set(all_folders)
+    assert "empty" in all_folders
+    assert "empty/nested_empty" in all_folders
+    assert "visible" in all_folders
+
+    # Hidden directories (any segment starting with '.') are excluded
+    assert not any(
+        segment.startswith(".")
+        for folder in all_folders
+        for segment in folder.split("/")
+    )
+    # The pending-delete staging dir is excluded
+    assert PENDING_DELETE_DIR_NAME not in all_folders
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_never_walks_filesystem(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    def failing_walk(*args, **kwargs):
+        raise AssertionError("get_all_folders must not walk the filesystem")
+
+    monkeypatch.setattr(model_scanner.os, "walk", failing_walk)
+
+    all_folders = await scanner.get_all_folders()
+    assert all_folders == ["" , "nested"]
+    # No backfill is scheduled when the scan already recorded the folders
+    assert scanner._all_folders_backfill_running is False
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_backfills_when_never_recorded(tmp_path: Path):
+    _create_files(tmp_path)
+    (tmp_path / "empty").mkdir()
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    # Simulate a cache hydrated from a persisted snapshot that predates
+    # folder recording.
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    # The cold path returns the models-only folders immediately...
+    all_folders = await scanner.get_all_folders()
+    assert set(all_folders) == {"", "nested"}
+    # ...and schedules a one-shot background walk to backfill the rest.
+    assert scanner._all_folders_backfill_running is True
+
+    for _ in range(200):
+        if not scanner._all_folders_backfill_running:
+            break
+        await asyncio.sleep(0.01)
+
+    assert scanner._all_folders_backfill_running is False
+    assert cache.all_folders is not None
+    assert "empty" in cache.all_folders
+    all_folders = await scanner.get_all_folders()
+    assert "empty" in all_folders
+
+
+@pytest.mark.asyncio
+async def test_add_known_folder_records_folder_and_parents(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    await scanner.add_known_folder("new/nested")
+
+    assert "new" in cache.all_folders
+    assert "new/nested" in cache.all_folders
+    # Models-only folder list is unaffected by empty directory creation
+    assert "new" not in cache.folders
+    # Idempotent: recording the same folder again keeps the list stable
+    await scanner.add_known_folder("new/nested")
+    assert cache.all_folders.count("new") == 1
+
+
+@pytest.mark.asyncio
+async def test_add_known_folder_noop_without_recorded_folders(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    # Legacy snapshot without recorded folders: the scheduled backfill walk
+    # discovers the directory from disk instead.
+    await scanner.add_known_folder("new")
+
+    assert cache.all_folders is None
+
+
+@pytest.mark.asyncio
+async def test_add_known_folder_ignores_empty_input(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    before = list(cache.all_folders)
+
+    await scanner.add_known_folder("")
+    await scanner.add_known_folder("/")
+
+    assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_drops_subtree_and_keeps_ancestors(tmp_path: Path):
+    _create_files(tmp_path)
+    (tmp_path / "nested" / "deep" / "leaf").mkdir(parents=True)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    await scanner.add_known_folder("nested/deep/leaf")
+    assert "nested/deep" in cache.all_folders
+
+    # The delete the call reports has happened on disk.
+    shutil.rmtree(tmp_path / "nested" / "deep")
+    await scanner.remove_known_folder("nested/deep", str(tmp_path / "nested" / "deep"))
+
+    assert "nested/deep" not in cache.all_folders
+    assert "nested/deep/leaf" not in cache.all_folders
+    # The ancestor directory still exists on disk in its own right
+    assert "nested" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_purges_stale_cache_entries(tmp_path: Path):
+    _, second, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "nested" in cache.folders
+
+    shutil.rmtree(tmp_path / "nested")
+    await scanner.remove_known_folder("nested", str(tmp_path / "nested"))
+
+    assert "nested" not in cache.all_folders
+    assert "nested" not in cache.folders
+    assert _normalize_path(second) not in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_legacy_call_prunes_the_entry_and_over_purges(
+    tmp_path: Path,
+):
+    # Callers that only know the relative folder keep the old purge behaviour:
+    # it matches by folder name, so a surviving twin in another root loses its
+    # model cards until the next scan. That is exactly why the delete flow hands
+    # over the removed directory's absolute path.
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "shared").mkdir(parents=True)
+    (extra / "shared").mkdir(parents=True)
+    twin_model = extra / "shared" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    (primary / "shared").rmdir()
+
+    await scanner.remove_known_folder("shared")
+
+    # The entry itself is disk-verified even on this path: the twin keeps it.
+    assert "shared" in cache.all_folders
+    # ... while the purge, lacking a path, cannot tell the copies apart.
+    assert _normalize_path(twin_model) not in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_keeps_a_twin_another_root_still_holds(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "test").mkdir(parents=True)
+    (extra / "test").mkdir(parents=True)
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "test" in cache.all_folders
+
+    # The user deleted the primary copy through the sidebar.
+    (primary / "test").rmdir()
+    await scanner.remove_known_folder("test", str(primary / "test"))
+
+    # The merged folder list is a union: the node stays while any root holds it,
+    # so it can no longer vanish and reappear on the next scan.
+    assert "test" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_drops_the_entry_once_no_root_holds_it(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "test").mkdir(parents=True)
+    (extra / "test").mkdir(parents=True)
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "test" in cache.all_folders
+
+    (primary / "test").rmdir()
+    (extra / "test").rmdir()
+    await scanner.remove_known_folder("test", str(primary / "test"))
+
+    assert "test" not in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_purges_only_the_deleted_root_cards(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "shared").mkdir(parents=True)
+    (extra / "shared").mkdir(parents=True)
+    twin_model = extra / "shared" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert _normalize_path(twin_model) in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+    # Empty copy in the primary root goes away.
+    (primary / "shared").rmdir()
+    await scanner.remove_known_folder("shared", str(primary / "shared"))
+
+    # Purging by the removed directory, not by its relative name: the twin's
+    # model card must survive in the other root.
+    assert _normalize_path(twin_model) in {
+        item["file_path"] for item in cache.raw_data
+    }
+    assert "shared" in cache.folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_noop_without_recorded_folders(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    # Legacy snapshot without recorded folders: nothing to prune, and the
+    # scheduled backfill walk rebuilds the list from disk.
+    await scanner.remove_known_folder("nested")
+
+    assert cache.all_folders is None
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_ignores_empty_input(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    before = list(cache.all_folders)
+
+    await scanner.remove_known_folder("")
+    await scanner.remove_known_folder("/")
+
+    assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_keeps_a_twin_in_another_root(tmp_path: Path):
+    primary = tmp_path / "primary"
+    extra = tmp_path / "extra"
+    (primary / "characters").mkdir(parents=True)
+    (extra / "characters").mkdir(parents=True)
+    twin_model = extra / "characters" / "twin.txt"
+    twin_model.write_text("twin", encoding="utf-8")
+
+    scanner = TwoRootScanner(primary, extra)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    twin_entry = next(
+        item for item in cache.raw_data
+        if item["file_path"] == _normalize_path(twin_model)
+    )
+
+    old_abs = _normalize_path(primary / "characters")
+    new_abs = _normalize_path(primary / "anime")
+    os.rename(primary / "characters", primary / "anime")
+
+    await scanner.rename_known_folder(
+        "characters", "anime", previous_path=old_abs, new_path=new_abs
+    )
+
+    # The renamed root contributes the new name; the other root still owns the
+    # old one, so both stay in the merged list.
+    assert "anime" in cache.all_folders
+    assert "characters" in cache.all_folders
+    # And the twin's records are untouched: its files never moved.
+    assert twin_entry["folder"] == "characters"
+    assert twin_entry["file_path"] == _normalize_path(twin_model)
+    assert "characters" in cache.folders
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_rekeys_folders_cache_and_sidecar(tmp_path: Path):
+    _, second, _ = _create_files(tmp_path)
+    nested = tmp_path / "nested"
+    preview = nested / "two.preview.png"
+    preview.write_text("png", encoding="utf-8")
+    (nested / "two.metadata.json").write_text(
+        json.dumps(
+            {
+                "file_path": _normalize_path(second),
+                "preview_url": _normalize_path(preview),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    entry = next(item for item in cache.raw_data if item["model_name"] == "two")
+    entry["preview_url"] = _normalize_path(preview)
+
+    renamed = tmp_path / "renamed"
+    old_abs = _normalize_path(nested)
+    new_abs = _normalize_path(renamed)
+    os.rename(nested, renamed)
+
+    changed = await scanner.rename_known_folder(
+        "nested", "renamed", previous_path=old_abs, new_path=new_abs
+    )
+
+    assert changed is True
+    assert "renamed" in cache.all_folders
+    assert "nested" not in cache.all_folders
+    assert "renamed" in cache.folders
+    assert "nested" not in cache.folders
+    assert entry["folder"] == "renamed"
+    assert entry["file_path"] == _normalize_path(renamed / "two.txt")
+    assert entry["preview_url"] == _normalize_path(renamed / "two.preview.png")
+    assert scanner._hash_index.get_path("hash-two") == _normalize_path(
+        renamed / "two.txt"
+    )
+
+    # The sidecar travelled with the directory and was re-pointed in place
+    payload = json.loads(
+        (renamed / "two.metadata.json").read_text(encoding="utf-8")
+    )
+    assert payload["file_path"] == _normalize_path(renamed / "two.txt")
+    assert payload["preview_url"] == _normalize_path(renamed / "two.preview.png")
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_handles_nested_targets(tmp_path: Path):
+    (tmp_path / "a" / "b" / "c").mkdir(parents=True)
+    model = tmp_path / "a" / "b" / "c" / "m.txt"
+    model.write_text("m", encoding="utf-8")
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    old_abs = _normalize_path(tmp_path / "a" / "b")
+    new_abs = _normalize_path(tmp_path / "a" / "z")
+    os.rename(tmp_path / "a" / "b", tmp_path / "a" / "z")
+
+    await scanner.rename_known_folder(
+        "a/b", "a/z", previous_path=old_abs, new_path=new_abs
+    )
+
+    assert "a/b" not in cache.all_folders
+    assert "a/b/c" not in cache.all_folders
+    assert "a/z" in cache.all_folders
+    assert "a/z/c" in cache.all_folders
+    # The parent is an untouched directory in its own right
+    assert "a" in cache.all_folders
+
+    entry = next(item for item in cache.raw_data if item["model_name"] == "m")
+    assert entry["folder"] == "a/z/c"
+    assert entry["file_path"] == _normalize_path(tmp_path / "a" / "z" / "c" / "m.txt")
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_keeps_unrelated_entries(tmp_path: Path):
+    first, _, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    old_abs = _normalize_path(tmp_path / "nested")
+    new_abs = _normalize_path(tmp_path / "renamed")
+    os.rename(tmp_path / "nested", tmp_path / "renamed")
+
+    await scanner.rename_known_folder(
+        "nested", "renamed", previous_path=old_abs, new_path=new_abs
+    )
+
+    root_entry = next(item for item in cache.raw_data if item["model_name"] == "one")
+    assert root_entry["folder"] == ""
+    assert root_entry["file_path"] == _normalize_path(first)
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_rekeys_excluded_models(tmp_path: Path):
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "one.txt").write_text("one", encoding="utf-8")
+    (nested / "skip-me.txt").write_text("skip", encoding="utf-8")
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    assert scanner._excluded_models == [_normalize_path(nested / "skip-me.txt")]
+
+    old_abs = _normalize_path(nested)
+    new_abs = _normalize_path(tmp_path / "renamed")
+    os.rename(nested, tmp_path / "renamed")
+
+    await scanner.rename_known_folder(
+        "nested", "renamed", previous_path=old_abs, new_path=new_abs
+    )
+
+    assert scanner._excluded_models == [
+        _normalize_path(tmp_path / "renamed" / "skip-me.txt")
+    ]
+
+
+@pytest.mark.asyncio
+async def test_rename_known_folder_ignores_unchanged_or_empty_names(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    before = list(cache.all_folders)
+
+    assert (
+        await scanner.rename_known_folder(
+            "nested",
+            "nested",
+            previous_path=_normalize_path(tmp_path / "nested"),
+            new_path=_normalize_path(tmp_path / "nested"),
+        )
+        is False
+    )
+    assert (
+        await scanner.rename_known_folder(
+            "",
+            "renamed",
+            previous_path=_normalize_path(tmp_path),
+            new_path=_normalize_path(tmp_path / "renamed"),
+        )
+        is False
+    )
+
+    assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_updated_after_move(tmp_path: Path):
+    first, _, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    await scanner._initialize_cache()
+
+    cached = await scanner.get_all_folders()
+    assert "new/deep" not in cached
+
+    # Simulate a move: target directories exist on disk (created by
+    # os.makedirs in move_model) and the cache entry is relocated.
+    (tmp_path / "new" / "deep").mkdir(parents=True)
+    original = _normalize_path(first)
+    new_path = _normalize_path(tmp_path / "new" / "deep" / "one.txt")
+    moved_metadata = {
+        "file_path": new_path,
+        "file_name": "one",
+        "model_name": "one",
+        "sha256": "hash-one",
+        "tags": ["alpha"],
+        "size": 1,
+        "modified": 1.0,
+    }
+
+    await scanner.update_single_model_cache(original, new_path, moved_metadata)
+
+    # The recorded folder list picked up the destination (and its parents)
+    all_folders = await scanner.get_all_folders()
+    cache = await scanner.get_cached_data()
+    assert sorted(cache.folders) == ["nested", "new/deep"]
+    assert "new" in all_folders
+    assert "new/deep" in all_folders
+    assert set(cache.folders) <= set(all_folders)
+
+
+@pytest.mark.asyncio
+async def test_all_folders_persisted_and_hydrated(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+
+    root = tmp_path / 'models'
+    root.mkdir()
+    (root / 'one.txt').write_text('one', encoding='utf-8')
+    (root / 'empty').mkdir()
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert cache.all_folders is not None
+    assert 'empty' in cache.all_folders
+
+    # The folder list (including the empty dir) survives in SQLite.
+    persisted = store.load_cache('dummy')
+    assert persisted is not None
+    assert persisted.all_folders is not None
+    assert 'empty' in persisted.all_folders
+
+    # A fresh scanner hydrates the recorded folders without any walk.
+    ModelScanner._instances.clear()
+    hydrated = DummyScanner(root)
+    scan_result, invalid = hydrated._rebuild_persisted_cache()
+    assert scan_result is not None
+    assert scan_result.all_folders == persisted.all_folders
+
+
+def test_all_folders_absent_in_legacy_snapshot(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    store = PersistentModelCache(db_path=str(tmp_path / 'cache.sqlite'))
+
+    normalized = _normalize_path(tmp_path / 'one.txt')
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'one',
+        'folder': '',
+        'size': 3,
+        'modified': 123.0,
+        'sha256': 'hash-one',
+        'tags': [],
+    }
+
+    # Save without folder data, mimicking a snapshot written before folder
+    # recording existed.
+    store.save_cache('dummy', [raw_model], {'hash-one': [normalized]}, [])
+
+    persisted = store.load_cache('dummy')
+    assert persisted is not None
+    assert persisted.all_folders is None
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_scan_progress(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages, "expected scan_progress broadcasts"
+
+    started = messages[0]
+    assert started["type"] == "scan_progress"
+    assert started["status"] == "started"
+    assert started["stage"] == "scan_folders"
+    assert started["progress"] == 0
+    assert started["model_type"] == "dummy"
+    assert started["pageType"] == "dummy"
+    assert started["full_rebuild"] is True
+
+    count_messages = [m for m in messages if m["stage"] == "count_models"]
+    assert count_messages and count_messages[0]["total"] == 3
+
+    process_messages = [
+        m for m in messages
+        if m["stage"] == "process_models" and m["status"] == "processing"
+    ]
+    assert process_messages, "expected at least one process_models update"
+    final_process = process_messages[-1]
+    assert final_process["processed"] == 3
+    assert final_process["total"] == 3
+    assert final_process["current_name"].endswith(".txt")
+    for message in process_messages:
+        assert 0 < message["progress"] <= 99
+
+    stages = [m["stage"] for m in messages]
+    assert "finalizing" in stages
+    completed = messages[-1]
+    assert completed["status"] == "completed"
+    assert completed["progress"] == 100
+    assert completed["elapsed_seconds"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_cancelled(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    original_process = DummyScanner._process_model_file
+
+    async def cancelling_process(self, file_path, root_path, **kwargs):
+        scanner.cancel_task()
+        return await original_process(self, file_path, root_path, **kwargs)
+
+    monkeypatch.setattr(DummyScanner, "_process_model_file", cancelling_process)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "cancelled"
+    assert messages[-1]["elapsed_seconds"] >= 0
+    assert not any(m["status"] == "completed" for m in messages)
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_error(tmp_path: Path, monkeypatch):
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    async def raising_gather(**_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(scanner, "_gather_model_data", raising_gather)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "error"
+    assert messages[-1]["error"] == "boom"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_scan_progress(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    new_file = tmp_path / "three.txt"
+    new_file.write_text("three", encoding="utf-8")
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages, "expected scan_progress broadcasts"
+
+    started = messages[0]
+    assert started["type"] == "scan_progress"
+    assert started["status"] == "started"
+    assert started["stage"] == "reconcile_scan"
+    assert started["progress"] == 0
+    assert started["full_rebuild"] is False
+
+    process_messages = [
+        m for m in messages
+        if m["stage"] == "process_new" and m["status"] == "processing"
+    ]
+    assert process_messages, "expected process_new progress updates"
+    assert process_messages[-1]["processed"] == 1
+    assert process_messages[-1]["total"] == 1
+    assert process_messages[-1]["current_name"] == "three.txt"
+
+    completed = messages[-1]
+    assert completed["status"] == "completed"
+    assert completed["progress"] == 100
+    assert completed["added"] == 1
+    assert completed["removed"] == 0
+    assert completed["elapsed_seconds"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_cancelled(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    new_file = tmp_path / "four.txt"
+    new_file.write_text("four", encoding="utf-8")
+
+    original_process = DummyScanner._process_model_file
+
+    async def cancelling_process(self, file_path, root_path, **kwargs):
+        scanner.cancel_task()
+        return await original_process(self, file_path, root_path, **kwargs)
+
+    monkeypatch.setattr(DummyScanner, "_process_model_file", cancelling_process)
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "cancelled"
+    assert messages[-1]["elapsed_seconds"] >= 0
+    assert not any(m["status"] == "completed" for m in messages)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_error(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    def raising_walk(*_args, **_kwargs):
+        raise RuntimeError("walk failed")
+
+    monkeypatch.setattr(model_scanner.os, "walk", raising_walk)
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "error"
+    assert messages[-1]["error"] == "walk failed"
+
+
+# --- reconcile walk: device grouping, parallel workers, walk progress -------
+
+
+def test_reconcile_walk_tracker_reports_weighted_progress():
+    tracker = _ReconcileWalkTracker(["/mnt/g", "/mnt/y"], {"/mnt/g": 100, "/mnt/y": 0})
+
+    snapshot = tracker.snapshot()
+    assert snapshot is not None
+    assert snapshot["progress"] == 0
+    assert snapshot["files_seen"] == 0
+    assert snapshot["roots_total"] == 2
+    assert snapshot["roots_done"] == 0
+    assert snapshot["active_roots"] == []
+    # No files seen yet: the total never drops below what was walked.
+    assert snapshot["total"] == 100
+
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 50)
+    snapshot = tracker.snapshot()
+    # Half of the 100-weight root, out of 101 total weight -> 24.75% of 50.
+    assert snapshot["progress"] == 24
+    assert snapshot["files_seen"] == 50
+    assert snapshot["active_roots"] == ["g"]
+    assert snapshot["current_name"] == "g"
+
+    # A root with no cached entries contributes one weight unit and only counts
+    # once it is finished.
+    tracker.finish_root("/mnt/g")
+    tracker.start_root("/mnt/y")
+    tracker.report("/mnt/y", 10)
+    snapshot = tracker.snapshot()
+    assert snapshot["roots_done"] == 1
+    assert snapshot["progress"] == int((100 / 101) * 50)
+    assert snapshot["active_roots"] == ["y"]
+
+    tracker.finish_root("/mnt/y")
+    snapshot = tracker.snapshot()
+    assert snapshot["progress"] == 50
+    assert snapshot["roots_done"] == 2
+    assert snapshot["files_seen"] == 60
+    # The estimate is the cached entry count, so it also covers new files.
+    assert snapshot["total"] == 100
+
+    # A library that grew past the estimate raises the reported total instead of
+    # overshooting it (the client ETA divides by it).
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 150)
+    assert tracker.snapshot()["total"] == 160
+
+    assert _ReconcileWalkTracker([], {}).snapshot() is None
+
+
+def test_reconcile_walk_tracker_snapshot_is_json_serializable():
+    """The snapshot goes straight into a WebSocket payload."""
+    tracker = _ReconcileWalkTracker(["/mnt/g"], {"/mnt/g": 2})
+    tracker.start_root("/mnt/g")
+    tracker.report("/mnt/g", 1)
+
+    snapshot = tracker.snapshot()
+    assert snapshot is not None
+    assert json.loads(json.dumps(snapshot)) == snapshot
+
+
+def test_group_roots_by_device_keeps_configured_order(tmp_path: Path, monkeypatch):
+    device_by_root = {"a": "dev1", "b": "dev1", "c": "dev2"}
+    monkeypatch.setattr(
+        model_scanner, "_root_device_key", lambda root: device_by_root[root]
+    )
+
+    assert _group_roots_by_device(["a", "b", "c"]) == [["a", "b"], ["c"]]
+
+    monkeypatch.undo()
+
+    # Real layout: roots under one temp dir share a device and stay sequential.
+    first = tmp_path / "one"
+    second = tmp_path / "two"
+    third = tmp_path / "three"
+    for path in (first, second, third):
+        path.mkdir()
+    assert _group_roots_by_device([str(first), str(second), str(third)]) == [
+        [str(first), str(second), str(third)]
+    ]
+
+
+def test_count_cached_entries_per_root_uses_longest_prefix():
+    counts = _count_cached_entries_per_root(
+        {
+            "/m/loras/a.txt",
+            "/m/loras/sub/b.txt",
+            "/m/loras2/c.txt",
+            "/somewhere/else/d.txt",
+        },
+        ["/m/loras", "/m/loras2"],
+    )
+
+    assert counts == {"/m/loras": 2, "/m/loras2": 1}
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="simulates a case-sensitive filesystem; Windows matches case itself",
+)
+async def test_reconcile_case_fold_fallback_is_indexed_not_linear(
+    tmp_path: Path, monkeypatch
+):
+    """The Windows case fallback must resolve through a lower-cased index built
+    once, not by scanning every cached path per miss (was O(files x cached))."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    for name in ("one", "two", "three"):
+        (root / f"{name}.txt").write_text(name, encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    # Rewrite the cached paths to a case variant that does not exist on disk:
+    # the realpath alias index cannot match it, so only the case-fold fallback
+    # can keep these entries.
+    for item in scanner._cache.raw_data:
+        stem = os.path.splitext(os.path.basename(item["file_path"]))[0]
+        item["file_name"] = stem.upper()
+        item["file_path"] = _normalize_path(root / f"{stem.upper()}.TXT")
+
+    monkeypatch.setattr(model_scanner, "_CASE_INSENSITIVE_PATHS", True)
+
+    builds = 0
+    real_build = model_scanner._build_casefold_index
+
+    def _counting_build(cached_paths):
+        nonlocal builds
+        builds += 1
+        return real_build(cached_paths)
+
+    monkeypatch.setattr(model_scanner, "_build_casefold_index", _counting_build)
+
+    processed: List[str] = []
+
+    async def _record_process(file_path, root_path, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert {item["file_path"] for item in cache.raw_data} == {
+        _normalize_path(root / "ONE.TXT"),
+        _normalize_path(root / "TWO.TXT"),
+        _normalize_path(root / "THREE.TXT"),
+    }
+    assert processed == []
+    assert builds == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_walks_different_devices_in_parallel(tmp_path: Path, monkeypatch):
+    """Roots on different devices are walked concurrently, and their results are
+    still merged in configured root order (not completion order)."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    monkeypatch.setattr(
+        model_scanner,
+        "_root_device_key",
+        lambda root: "dev-a" if str(root) == str(root_a) else "dev-b",
+    )
+
+    barrier = threading.Barrier(2, timeout=5)
+    overlap_violations: List[str] = []
+    real_walk = os.walk
+
+    def _walk_with_barrier(path, *args, **kwargs):
+        def _generate():
+            first = True
+            for entry in real_walk(path, *args, **kwargs):
+                if first:
+                    first = False
+                    try:
+                        barrier.wait()
+                    except threading.BrokenBarrierError:
+                        overlap_violations.append(str(path))
+                    if str(path) == str(root_a):
+                        # Root A is first in configured order but finishes last.
+                        time.sleep(0.05)
+                yield entry
+
+        return _generate()
+
+    monkeypatch.setattr(model_scanner.os, "walk", _walk_with_barrier)
+
+    new_a = root_a / "a_new.txt"
+    new_a.write_text("a", encoding="utf-8")
+    new_b = root_b / "b_new.txt"
+    new_b.write_text("b", encoding="utf-8")
+
+    processed: List[str] = []
+
+    async def _record_process(file_path, root_path, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    assert overlap_violations == [], "roots on different devices were not walked concurrently"
+    assert processed == [
+        _normalize_path(new_a),
+        _normalize_path(new_b),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_walk_broadcasts_per_root_progress(tmp_path: Path, monkeypatch):
+    root = tmp_path / "loras"
+    root.mkdir()
+    for i in range(4):
+        sub = root / f"dir{i}"
+        sub.mkdir()
+        (sub / "one.txt").write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+    monkeypatch.setattr(model_scanner, "_WALK_PROGRESS_INTERVAL_SECONDS", 0.01)
+
+    real_walk = os.walk
+
+    def _slow_walk(path, *args, **kwargs):
+        def _generate():
+            for entry in real_walk(path, *args, **kwargs):
+                time.sleep(0.05)
+                yield entry
+
+        return _generate()
+
+    monkeypatch.setattr(model_scanner.os, "walk", _slow_walk)
+
+    await scanner._reconcile_cache()
+
+    walk_messages = [
+        message
+        for message in ws_stub.broadcasts
+        if message["stage"] == "reconcile_scan" and message["status"] == "processing"
+    ]
+    # More than the final snapshot => the monitor ticked during the walk.
+    assert len(walk_messages) >= 2
+
+    # Intermediate ticks name the root being walked.
+    assert any(
+        _root_label_names(message["active_roots"]) == ["loras"]
+        for message in walk_messages
+    )
+
+    final = walk_messages[-1]
+    assert final["files_seen"] == 4
+    assert final["processed"] == final["files_seen"]
+    assert final["total"] >= final["files_seen"]
+    assert final["roots_total"] == 1
+    assert final["roots_done"] == 1
+    assert final["active_roots"] == []
+    assert _root_label_names([final["current_name"]]) == ["loras"]
+    assert 0 < final["progress"] <= 50
+    assert final["full_rebuild"] is False
+    assert walk_messages[0]["progress"] <= final["progress"]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_keeps_entries_of_an_offline_root(tmp_path: Path):
+    """A configured root that is gone (drive switched off) must not be treated
+    as deleted: its entries are kept and reported as unreachable instead."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+    file_a = root_a / "a0.txt"
+    file_a.write_text("a", encoding="utf-8")
+    file_b = root_b / "b0.txt"
+    file_b.write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+    assert len(scanner._cache.raw_data) == 2
+
+    root_b.rename(tmp_path / "b_offline")
+
+    summary = await scanner._reconcile_cache()
+
+    remaining = {item["file_path"] for item in scanner._cache.raw_data}
+    assert remaining == {_normalize_path(file_a), _normalize_path(file_b)}
+    assert scanner._hash_index.get_path("hash-b0") == _normalize_path(file_b)
+    assert scanner._hash_index.get_path("hash-a0") == _normalize_path(file_a)
+
+    assert summary is not None
+    assert summary["removed"] == 0
+    assert summary["kept_unreachable"] == 1
+    assert summary["unavailable_paths_total"] == 1
+    assert [entry["path"] for entry in summary["unavailable_paths"]] == [
+        _normalize_path(root_b)
+    ]
+    assert summary["unavailable_paths"][0]["reason"] == "root_unreachable"
+    assert [entry["path"] for entry in summary["skipped_roots"]] == [
+        _normalize_path(root_b)
+    ]
+
+
+# --- scoped scans (issue #1108) --------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reconcile_scoped_scan_leaves_other_roots_untouched(tmp_path: Path):
+    """Scanning one root must not add, remove or re-read anything in another."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+    (root_a / "a0.txt").write_text("a", encoding="utf-8")
+    (root_b / "b0.txt").write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    # Changes in B stay invisible while only A is scanned.
+    (root_b / "b0.txt").unlink()
+    (root_b / "b_new.txt").write_text("new", encoding="utf-8")
+    new_a = root_a / "a_new.txt"
+    new_a.write_text("new", encoding="utf-8")
+
+    summary = await scanner._reconcile_cache(scope=ReconcileScope(roots=(str(root_a),)))
+
+    assert summary is not None
+    assert summary["added"] == 1
+    assert summary["removed"] == 0
+    assert _root_label_names(summary["scanned_roots"]) == ["a"]
+
+    cached_paths = {item["file_path"] for item in scanner._cache.raw_data}
+    assert cached_paths == {
+        _normalize_path(root_a / "a0.txt"),
+        _normalize_path(new_a),
+        _normalize_path(root_b / "b0.txt"),
+    }
+
+
+@pytest.mark.asyncio
+async def test_reconcile_scoped_scan_removes_deleted_files_in_scope(tmp_path: Path):
+    """Deletions inside the scanned root still reconcile normally."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    root_a.mkdir()
+    root_b.mkdir()
+    deleted_a = root_a / "a0.txt"
+    deleted_a.write_text("a", encoding="utf-8")
+    (root_b / "b0.txt").write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    deleted_a.unlink()
+
+    summary = await scanner._reconcile_cache(scope=ReconcileScope(roots=(str(root_a),)))
+
+    assert summary is not None
+    assert summary["removed"] == 1
+    assert scanner._hash_index.get_path("hash-a0") is None
+    assert {item["file_path"] for item in scanner._cache.raw_data} == {
+        _normalize_path(root_b / "b0.txt")
+    }
+
+
+@pytest.mark.asyncio
+async def test_reconcile_folder_scope_keeps_folder_tree_outside_scope(tmp_path: Path):
+    """A folder-scoped scan must not collapse the recorded folder list to the
+    scanned subtree (the sidebar would lose every other folder)."""
+    root = tmp_path / "loras"
+    (root / "alpha").mkdir(parents=True)
+    (root / "beta").mkdir()
+    (root / "alpha" / "m.txt").write_text("m", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+    folders_before = set(scanner._cache.all_folders or [])
+    assert "beta" in folders_before
+
+    (root / "alpha" / "nested").mkdir()
+    (root / "alpha" / "m.txt").unlink()
+
+    summary = await scanner._reconcile_cache(scope=ReconcileScope(folder="alpha"))
+
+    assert summary is not None
+    assert summary["removed"] == 1
+    folders_after = set(scanner._cache.all_folders or [])
+    assert "beta" in folders_after
+    assert "alpha/nested" in folders_after
+    assert {item["file_path"] for item in scanner._cache.raw_data} == set()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_folder_scope_covers_every_root_holding_it(tmp_path: Path):
+    """The sidebar's unified tree has no root identity: a folder scope means
+    "this relative folder under every root that holds it"."""
+    primary = tmp_path / "primary"
+    usb = tmp_path / "usb"
+    for root in (primary, usb):
+        (root / "pack").mkdir(parents=True)
+        (root / "other").mkdir()
+        (root / "other" / "keep.txt").write_text("k", encoding="utf-8")
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    (usb / "pack" / "b.txt").write_text("b", encoding="utf-8")
+    # Only the primary root holds this folder; the usb copy is gone.
+    (primary / "only-primary").mkdir()
+    (primary / "only-primary" / "c.txt").write_text("c", encoding="utf-8")
+    (usb / "only-primary").mkdir()
+
+    scanner = MultiRootDummyScanner([primary, usb])
+    await scanner._initialize_cache()
+
+    (usb / "pack" / "b.txt").unlink()
+    (primary / "only-primary" / "c.txt").unlink()
+    (primary / "pack" / "new.txt").write_text("n", encoding="utf-8")
+
+    summary = await scanner._reconcile_cache(scope=ReconcileScope(folder="pack"))
+
+    assert summary is not None
+    assert summary["scope_label"] == "pack"
+    assert summary["added"] == 1
+    assert summary["removed"] == 1
+    paths = {item["file_path"] for item in scanner._cache.raw_data}
+    # Both copies of the scoped folder were walked...
+    assert _normalize_path(primary / "pack" / "new.txt") in paths
+    assert _normalize_path(usb / "pack" / "b.txt") not in paths
+    # ...and nothing outside it was touched, including the folder that only one
+    # root holds.
+    assert _normalize_path(usb / "other" / "keep.txt") in paths
+    assert _normalize_path(primary / "only-primary" / "c.txt") in paths
+
+
+async def _startup_filtered_scanner(tmp_path: Path, monkeypatch, configured_missing: Path):
+    """Scanner whose live root list lacks a root that the config still holds.
+
+    Models the startup case: the directory did not exist when the live list was
+    built (drive switched off), so `Config` filtered it out while its cached
+    entries are still there.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    configured_missing.mkdir(parents=True)
+    (configured_missing / "pack").mkdir()
+    (configured_missing / "pack" / "b.txt").write_text("b", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary, configured_missing])
+    await scanner._initialize_cache()
+    # The drive goes away before the process starts, as far as the live list is
+    # concerned: keep the roots the filter would have kept.
+    shutil.rmtree(configured_missing)
+    scanner._roots = [str(primary)]
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [str(primary), str(configured_missing)],
+    )
+    return scanner, primary, configured_missing
+
+
+@pytest.mark.asyncio
+async def test_describe_model_roots_reports_unavailable_configured_root(
+    tmp_path: Path, monkeypatch
+):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+
+    described = scanner.describe_model_roots()
+
+    assert [entry["path"] for entry in described] == [
+        _normalize_path(primary),
+        _normalize_path(missing),
+    ]
+    available, unavailable = described
+    assert available["reachable"] is True
+    assert available["available"] is True
+    # The missing root is reported with its cached count so the refresh menu can
+    # offer it as an offline row instead of hiding it until a restart.
+    assert unavailable["reachable"] is False
+    assert unavailable["available"] is False
+    assert unavailable["models"] == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_reports_root_filtered_out_at_startup(tmp_path: Path, monkeypatch):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, _primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+    kept_path = _normalize_path(missing / "pack" / "b.txt")
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    # Nothing is added or removed...
+    assert summary["added"] == 0
+    assert summary["removed"] == 0
+    # ...but the switched-off root is no longer silent: it is reported with the
+    # entries that were kept for it. Its label is what the shared label helper
+    # makes of the pair (drive-prefixed on Windows).
+    labels = model_scanner._root_display_labels([str(_primary), str(missing)])
+    assert summary["skipped_roots"] == [
+        {
+            "path": _normalize_path(missing),
+            "label": labels[str(missing)],
+            "reason": "root_unavailable",
+        }
+    ]
+    assert summary["kept_unreachable"] == 1
+    assert summary["unavailable_paths"] == [
+        {"path": _normalize_path(missing), "reason": "root_unavailable", "kept": 1}
+    ]
+    assert kept_path in {item["file_path"] for item in scanner._cache.raw_data}
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_stays_quiet_about_filtered_out_roots(tmp_path: Path, monkeypatch):
+    configured_missing = tmp_path / "drive-Z" / "loras"
+    scanner, primary, missing = await _startup_filtered_scanner(
+        tmp_path, monkeypatch, configured_missing
+    )
+
+    summary = await scanner._reconcile_cache(
+        scope=ReconcileScope(roots=(str(primary),))
+    )
+
+    assert summary is not None
+    # The caller asked for one root: a root it did not ask about is not its
+    # business, but its entries are still kept.
+    assert _root_label_names(summary["scanned_roots"]) == [primary.name]
+    assert "root_unavailable" not in {
+        entry["reason"] for entry in summary["skipped_roots"]
+    }
+    assert _normalize_path(missing / "pack" / "b.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_reconcile_keeps_entries_under_unreadable_dir(tmp_path: Path, monkeypatch):
+    """A directory os.walk cannot enter (permissions, I/O error, offline
+    junction) keeps its cached entries instead of losing them."""
+    root = tmp_path / "loras"
+    sub = root / "sub"
+    sub.mkdir(parents=True)
+    (sub / "m.txt").write_text("m", encoding="utf-8")
+    (root / "top.txt").write_text("t", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    real_scandir = os.scandir
+
+    def _failing_scandir(path=".", *args, **kwargs):
+        if os.path.normpath(str(path)) == os.path.normpath(str(sub)):
+            raise PermissionError(13, "Permission denied", str(sub))
+        return real_scandir(path, *args, **kwargs)
+
+    monkeypatch.setattr(model_scanner.os, "scandir", _failing_scandir)
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["removed"] == 0
+    assert summary["kept_unreachable"] == 1
+    assert summary["unavailable_paths"][0]["reason"] == "unreadable_dir"
+    assert _normalize_path(sub / "m.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_reconcile_keeps_entries_under_offline_first_level_symlink(
+    tmp_path: Path, monkeypatch
+):
+    """A known first-level symlink whose target is gone protects the entries
+    that live under the link path (the linked drive is switched off)."""
+    root = tmp_path / "loras"
+    linked = root / "linked"
+    linked.mkdir(parents=True)
+    (linked / "m.txt").write_text("m", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    # The linked folder goes away with its drive; config still knows the link.
+    linked.rename(tmp_path / "linked_offline")
+    monkeypatch.setattr(
+        model_scanner.config,
+        "iter_path_mappings",
+        lambda: [(str(tmp_path / "gone_target"), str(linked))],
+    )
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["removed"] == 0
+    assert summary["kept_unreachable"] == 1
+    assert summary["unavailable_paths"][0]["reason"] == "symlink_target_offline"
+    assert _normalize_path(linked / "m.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+
+
+def test_root_display_labels_dedupe_by_parent_segments(monkeypatch):
+    labels = _root_display_labels(["/mnt/usb/loras", "/mnt/ssd/loras"])
+    assert labels == {"/mnt/usb/loras": "usb/loras", "/mnt/ssd/loras": "ssd/loras"}
+
+    # Still colliding after one parent segment: keep growing leftwards.
+    labels = _root_display_labels(["/mnt/a/models/loras", "/mnt/b/models/loras"])
+    assert labels == {
+        "/mnt/a/models/loras": "a/models/loras",
+        "/mnt/b/models/loras": "b/models/loras",
+    }
+
+    # A single root keeps the short form.
+    assert _root_display_labels(["/mnt/usb/loras"]) == {"/mnt/usb/loras": "loras"}
+
+    # Windows drive prefixes disambiguate on their own.
+    def _fake_splitdrive(path):
+        for drive in ("G:", "H:"):
+            if path.startswith(drive):
+                return drive, path[len(drive):]
+        return "", path
+
+    monkeypatch.setattr(model_scanner.os.path, "splitdrive", _fake_splitdrive)
+    labels = _root_display_labels(["G:\\x\\loras", "H:\\y\\loras"])
+    assert labels == {"G:\\x\\loras": "G: loras", "H:\\y\\loras": "H: loras"}
+
+    # Identical renderings (trailing separator / duplicated config entry) grow to
+    # the full path and then fall back to a deterministic suffix instead of
+    # silently sharing a label.
+    labels = _root_display_labels(["/mnt/x/loras", "/mnt/x/loras/"])
+    assert labels == {
+        "/mnt/x/loras": "mnt/x/loras (1)",
+        "/mnt/x/loras/": "mnt/x/loras (2)",
+    }
+
+    long_root = "/mnt/" + "d" * 60 + "/loras"
+    label = _root_display_labels([long_root])[long_root]
+    assert len(label) <= 40
+    assert label.endswith("loras")
+
+
+@pytest.mark.asyncio
+async def test_scan_excludes_recipes_dir_from_all_folders(tmp_path: Path, monkeypatch):
+    """The default recipes dir lives under the first lora root; it is a
+    reserved directory and must never appear in the folder tree."""
+    _create_files(tmp_path)
+    recipes = tmp_path / "recipes"
+    (recipes / "sub").mkdir(parents=True)
+    # A stray weight file inside the recipes dir is not indexed either.
+    (recipes / "stray.txt").write_text("stray", encoding="utf-8")
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    assert not any("/recipes/" in item["file_path"] for item in cache.raw_data)
+    all_folders = await scanner.get_all_folders()
+    assert "recipes" not in all_folders
+    assert "recipes/sub" not in all_folders
+
+
+@pytest.mark.asyncio
+async def test_all_folders_backfill_excludes_recipes_dir(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    (tmp_path / "recipes").mkdir()
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    await scanner.get_all_folders()
+    for _ in range(200):
+        if not scanner._all_folders_backfill_running:
+            break
+        await asyncio.sleep(0.01)
+
+    assert scanner._all_folders_backfill_running is False
+    assert cache.all_folders is not None
+    assert "recipes" not in cache.all_folders
+    assert "nested" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_filters_recipes_dir_from_legacy_snapshots(
+    tmp_path: Path, monkeypatch
+):
+    """Snapshots persisted before the walk exclusion still carry the recipes
+    dir; readers filter it out until the next scan rewrites the list."""
+    _create_files(tmp_path)
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = sorted(
+        set(cache.all_folders or []) | {"recipes", "recipes/sub"},
+        key=lambda value: value.lower(),
+    )
+
+    all_folders = await scanner.get_all_folders()
+
+    assert "recipes" not in all_folders
+    assert "recipes/sub" not in all_folders
+    assert "nested" in all_folders
+
+
+def test_reconcile_walk_skips_the_recipes_dir(tmp_path: Path, monkeypatch):
+    (tmp_path / "recipes" / "sub").mkdir(parents=True)
+    (tmp_path / "keep").mkdir()
+    monkeypatch.setattr(model_scanner.config, "loras_roots", [str(tmp_path)])
+
+    result = model_scanner._walk_root_for_reconcile(
+        root_path=str(tmp_path),
+        file_extensions={".txt"},
+        cached_paths=set(),
+        path_to_item={},
+        lookups=model_scanner._CachedPathLookups(set()),
+        dir_claims=model_scanner._RealDirClaims(),
+        excluded_models=set(),
+        is_cancelled=lambda: False,
+        report_progress=lambda _files_seen: None,
+        expected_folder_of=lambda _path: "",
+    )
+
+    assert "keep" in result.discovered_folders
+    assert "recipes" not in result.discovered_folders
+    assert "recipes/sub" not in result.discovered_folders
+
+
+# --- the host's path spelling (issue #1146) ---------------------------------
+
+
+def _windows_spelling(path: Path) -> str:
+    """Return a path the way ComfyUI hands it over on Windows.
+
+    ``utils/extra_config.py`` normalizes every configured model folder with
+    ``os.path.normpath``, so on Windows the configured list is all backslashes
+    while the live root list is forward-slashed.
+    """
+    return str(path).replace("/", "\\")
+
+
+def _simulate_windows_separators(monkeypatch) -> None:
+    """Make ``os.sep`` a backslash, as it is on the reporting machine.
+
+    ``os.path`` stays ``posixpath`` (its separator is its own constant), so this
+    only changes code that folds separators through ``os.sep`` -- which is exactly
+    what turned the backslash twin into the live root's unreachable prefix on
+    Windows and stopped deleted models from being pruned. Without it that half of
+    #1145/#1146 can only be reproduced on Windows.
+    """
+    monkeypatch.setattr(os, "sep", "\\")
+
+
+async def _windows_spelling_scanner(tmp_path: Path, monkeypatch):
+    """Scanner configured with backslash roots plus a never-created output dir.
+
+    ``<output>/loras`` is what ComfyUI registers for its save nodes whether or not
+    the directory exists (``main.py`` calls ``add_model_folder_path`` with it
+    unconditionally).
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    never_created = tmp_path / "output" / "loras"
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [_windows_spelling(primary), _windows_spelling(never_created)],
+    )
+    _simulate_windows_separators(monkeypatch)
+    return scanner, primary, never_created
+
+
+@pytest.mark.asyncio
+async def test_describe_roots_folds_the_host_path_spelling(tmp_path: Path, monkeypatch):
+    """One directory is one root, whatever separator the host used."""
+    scanner, primary, _never_created = await _windows_spelling_scanner(
+        tmp_path, monkeypatch
+    )
+
+    described = scanner.describe_model_roots()
+
+    assert [entry["path"] for entry in described] == [_normalize_path(primary)]
+    assert described[0]["available"] is True
+    assert described[0]["reachable"] is True
+    assert described[0]["models"] == 1
+
+
+@pytest.mark.asyncio
+async def test_reconcile_does_not_shadow_a_backslash_configured_root(
+    tmp_path: Path, monkeypatch
+):
+    """A configured twin must not register its live root as unreachable.
+
+    ``_UnreachablePaths`` normalizes the prefixes it is given, so the backslash
+    spelling of a root the walk just read normalized to the same prefix: every
+    cached entry under it counted as "kept", which is what made the refresh toast
+    claim thousands of reachable models were inaccessible -- and what stopped
+    deleted models from ever being pruned.
+    """
+    scanner, primary, _never_created = await _windows_spelling_scanner(
+        tmp_path, monkeypatch
+    )
+    (primary / "pack" / "a.txt").unlink()
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["skipped_roots"] == []
+    assert summary["unavailable_paths"] == []
+    assert summary["kept_unreachable"] == 0
+    assert summary["removed"] == 1
+    assert scanner._cache.raw_data == []
+
+
+@pytest.mark.asyncio
+async def test_root_that_never_existed_is_not_reported(tmp_path: Path, monkeypatch):
+    """A registered directory that neither exists nor holds cache is not a root.
+
+    Only roots the user really configured and whose models are cached are worth an
+    offline row or a "models kept" notice.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    never_created = tmp_path / "output" / "loras"
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    monkeypatch.setattr(
+        scanner,
+        "get_configured_model_roots",
+        lambda: [str(primary), str(never_created)],
+    )
+
+    assert [entry["path"] for entry in scanner.describe_model_roots()] == [
+        _normalize_path(primary)
+    ]
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["skipped_roots"] == []
+    assert summary["kept_unreachable"] == 0
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_accepts_the_host_path_spelling(tmp_path: Path, monkeypatch):
+    """A caller may name a root the way the host spells it (issue #1146).
+
+    The Refresh menu sends back the path `/roots` rendered, but the browser
+    extension and scripts can pass what settings.json holds -- backslashes on
+    Windows -- and that must select the root rather than scan nothing.
+    """
+    primary = tmp_path / "primary"
+    (primary / "pack").mkdir(parents=True)
+    (primary / "pack" / "a.txt").write_text("a", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+
+    scope = ReconcileScope(roots=(_windows_spelling(primary),))
+    summary = await scanner._reconcile_cache(scope=scope)
+
+    assert summary is not None
+    assert _root_label_names(summary["scanned_roots"]) == [primary.name]
+
+
+@pytest.mark.asyncio
+async def test_external_folder_move_leaves_no_ghost(tmp_path: Path, monkeypatch):
+    """A folder moved with a file manager must leave no ghost (issue #1145).
+
+    Both reported symptoms share the cause fixed for #1146: while the configured
+    twin of a live root was registered as unreachable, the cached rows under the
+    old path were "kept" instead of pruned (the same model was then listed at its
+    old and its new location), and the walk could never be considered fully
+    verified -- so `all_folders` only ever grew and the deleted folder stayed in
+    the sidebar, even though the delete dialog correctly reported it as gone.
+    """
+    primary = tmp_path / "primary"
+    (primary / "Krea2" / "Women").mkdir(parents=True)
+    original = primary / "Krea2" / "Women" / "a.txt"
+    original.write_text("a", encoding="utf-8")
+
+    scanner = MultiRootDummyScanner([primary])
+    await scanner._initialize_cache()
+    assert "Krea2/Women" in await scanner.get_all_folders()
+
+    # What Dopus did: the folder is gone and its file lives somewhere else.
+    (primary / "Krea2" / "New").mkdir()
+    shutil.move(str(original), str(primary / "Krea2" / "New" / "a.txt"))
+    (primary / "Krea2" / "Women").rmdir()
+    monkeypatch.setattr(
+        scanner, "get_configured_model_roots", lambda: [_windows_spelling(primary)]
+    )
+    _simulate_windows_separators(monkeypatch)
+
+    summary = await scanner._reconcile_cache()
+
+    # One model, listed once: the old path is pruned and the new one added.
+    assert summary is not None
+    assert summary["removed"] == 1
+    assert summary["added"] == 1
+    assert summary["kept_unreachable"] == 0
+    assert [item["file_path"] for item in scanner._cache.raw_data] == [
+        _normalize_path(primary / "Krea2" / "New" / "a.txt")
+    ]
+    # ...and the folder record follows the filesystem instead of only growing.
+    all_folders = await scanner.get_all_folders()
+    assert "Krea2/Women" not in all_folders
+    assert "Krea2/New" in all_folders
+
+
+def test_unreachable_paths_cover_whole_folders():
+    """The folder refresh asks "could this specific entry have been read?"."""
+    unreachable = model_scanner._UnreachablePaths()
+    unreachable.add("/mnt/drive-z/loras", "root_unreachable", kept=1)
+    unreachable.add("/mnt/a/loras/locked", "unreadable_dir")
+
+    # A directory the walk could not enter covers itself and everything below it,
+    # whichever way the root is spelled.
+    assert unreachable.covers_folder("/mnt/a/loras", "locked") is True
+    assert unreachable.covers_folder("/mnt/a/loras", "locked/deep") is True
+    assert unreachable.covers_folder("\\mnt\\a\\loras", "locked/deep") is True
+
+    # A root that is unreadable as a whole does not: library-relative names carry
+    # no root, so it would cover every entry and keep every ghost alive (#1145).
+    assert unreachable.covers_folder("/mnt/drive-z/loras", "pack") is False
+
+    assert unreachable.covers_folder("/mnt/a/loras", "free") is False
+    assert unreachable.covers_folder("/mnt/a/loras", "locked_other") is False
+    assert unreachable.covers_folder("/mnt/a/loras", "") is False
+
+
+@pytest.mark.asyncio
+async def test_ghost_folder_cleared_while_another_root_is_offline(
+    tmp_path: Path, monkeypatch
+):
+    """A switched-off drive must not keep the other roots' ghosts alive (#1145).
+
+    Keeping the whole folder list whenever anything was unreadable is what made a
+    folder moved in a file manager outlive every refresh. Only the entries the
+    unreadable root can actually account for may be kept.
+    """
+    online = tmp_path / "online"
+    offline = tmp_path / "offline"
+    (online / "old" / "pack").mkdir(parents=True)
+    (online / "old" / "pack" / "a.txt").write_text("a", encoding="utf-8")
+    (offline / "keepme").mkdir(parents=True)
+    (offline / "keepme" / "b.txt").write_text("b", encoding="utf-8")
+    (offline / "empty_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([online, offline])
+    await scanner._initialize_cache()
+    assert "old/pack" in scanner._cache.all_folders
+    assert "keepme" in scanner._cache.all_folders
+
+    # The folder is moved externally...
+    (online / "new" / "pack").mkdir(parents=True)
+    shutil.move(
+        str(online / "old" / "pack" / "a.txt"),
+        str(online / "new" / "pack" / "a.txt"),
+    )
+    shutil.rmtree(online / "old")
+    # ...while the other drive is switched off.
+    shutil.rmtree(offline)
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary is not None
+    assert summary["added"] == 1
+    assert summary["removed"] == 1
+    assert summary["kept_unreachable"] == 1
+
+    folders = await scanner.get_all_folders()
+    assert "old" not in folders
+    assert "old/pack" not in folders
+    assert "new/pack" in folders
+    # The unreadable root keeps its model-bearing folders and its cached models
+    # (model-derived folders are always unioned in)...
+    assert "keepme" in folders
+    assert _normalize_path(offline / "keepme" / "b.txt") in {
+        item["file_path"] for item in scanner._cache.raw_data
+    }
+    # ...while an *empty* folder on it cannot be attributed to any root, so it is
+    # not kept alive. It comes back the next time that root is walked.
+    assert "empty_folder" not in folders
+
+
+@pytest.mark.asyncio
+async def test_scoped_scan_never_drops_folders_of_other_roots(tmp_path: Path):
+    """A scoped scan cannot speak for the roots it was not asked about."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    (root_a / "a_folder").mkdir(parents=True)
+    (root_b / "b_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    shutil.rmtree(root_a / "a_folder")
+    await scanner._reconcile_cache(scope=ReconcileScope(roots=(str(root_b),)))
+
+    folders = await scanner.get_all_folders()
+    assert "a_folder" in folders
+    assert "b_folder" in folders
+
+
+@pytest.mark.asyncio
+async def test_root_scoped_scan_of_every_root_still_cleans_folders(tmp_path: Path):
+    """Asking for every root is a full refresh: ghosts are dropped."""
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    (root_a / "a_folder").mkdir(parents=True)
+    (root_b / "b_folder").mkdir(parents=True)
+
+    scanner = MultiRootDummyScanner([root_a, root_b])
+    await scanner._initialize_cache()
+
+    shutil.rmtree(root_a / "a_folder")
+    await scanner._reconcile_cache(
+        scope=ReconcileScope(roots=(str(root_a), str(root_b)))
+    )
+
+    folders = await scanner.get_all_folders()
+    assert "a_folder" not in folders
+    assert "b_folder" in folders
+
+
+async def test_on_library_changed_schedules_refreeze_after_reinit(tmp_path: Path, monkeypatch):
+    """Re-init after a library change re-freezes the GC once it finishes (#1147)."""
+    scanner = DummyScanner(str(tmp_path))
+    calls: List[Any] = []
+
+    async def _noop_initialize(reconcile: bool = False) -> None:
+        calls.append(("init", reconcile))
+
+    monkeypatch.setattr(scanner, "initialize_in_background", _noop_initialize)
+    monkeypatch.setattr(
+        model_scanner,
+        "schedule_refreeze_after_rebuild",
+        lambda reason: calls.append(("freeze", reason)),
+    )
+
+    scanner.on_library_changed(reconcile=True)
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+
+    assert calls == [("init", True), ("freeze", "dummy library change")]

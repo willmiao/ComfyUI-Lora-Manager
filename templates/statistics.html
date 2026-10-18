@@ -5,7 +5,7 @@
 
 {% block head_scripts %}
 <!-- Add Chart.js for statistics page -->
-<script src="/loras_static/vendor/chart.js/chart.umd.js"></script>
+<script src="{{ rel_prefix }}loras_static/vendor/chart.js/chart.umd.js"></script>
 {% endblock %}
 
 {% block init_title %}{{ t('initialization.statistics.title') }}{% endblock %}
@@ -192,6 +192,6 @@
 
 {% block main_script %}
 {% if not is_initializing %}
-<script type="module" src="/loras_static/js/statistics.js?v={{ version }}"></script>
+<script type="module" src="{{ rel_prefix }}loras_static/js/statistics.js?v={{ version }}"></script>
 {% endif %}
 {% endblock %}

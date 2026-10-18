@@ -1,0 +1,15 @@
+/* Sidecar Migration Summary Modal — component styles only.
+   Stat cards, summary header and failure table styles are shared with the
+   metadata refresh result modal (metadata-refresh-result.css) and the batch
+   download summary modal (download-batch-summary.css); not redefined here. */
+
+.sidecar-migration-summary-modal {
+    max-width: 700px;
+}
+
+.sidecar-migration-location {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    word-break: break-all;
+}

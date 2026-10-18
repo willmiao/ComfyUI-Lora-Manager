@@ -2,6 +2,9 @@
     "common": {
         "cancel": "Annuler",
         "confirm": "Confirmer",
+        "reorder": {
+            "dragHandle": "Glisser pour réordonner"
+        },
         "actions": {
             "save": "Enregistrer",
             "cancel": "Annuler",
@@ -50,6 +53,28 @@
             "mb": "Mo",
             "gb": "Go",
             "tb": "To"
+        },
+        "scanProgress": {
+            "refreshing": "Actualisation des {type}...",
+            "fullRebuilding": "Reconstruction complète des {type}...",
+            "actionRefresh": "Actualisation",
+            "actionFullRebuild": "Reconstruction complète",
+            "actionRefreshLower": "l’actualisation",
+            "actionRebuildLower": "la reconstruction",
+            "stages": {
+                "scan_folders": "Scan des dossiers...",
+                "count_models": "{total} fichiers trouvés",
+                "process_models": "Traitement des modèles",
+                "reconcile_scan": "Vérification des modifications...",
+                "process_new": "Traitement des nouveaux modèles",
+                "finalizing": "Finalisation..."
+            },
+            "eta": {
+                "lessThanMinute": "Moins d’une minute restante",
+                "minutes": "~{minutes} min restantes",
+                "hours": "~{hours} h {minutes} min restantes"
+            },
+            "walkFiles": "{count} fichiers"
         }
     },
     "onboarding": {
@@ -67,15 +92,15 @@
         "steps": {
             "fetch": {
                 "title": "Récupérer les métadonnées des modèles",
-                "content": "Cliquez sur le bouton <strong>Récupérer</strong> pour télécharger les métadonnées et les images d'aperçu des modèles depuis Civitai."
+                "content": "Cliquez sur le bouton <strong>Récupérer</strong> pour télécharger les métadonnées et les images d'aperçu des modèles depuis CivitAI."
             },
             "download": {
                 "title": "Télécharger de nouveaux modèles",
-                "content": "Utilisez le bouton <strong>Télécharger</strong> pour télécharger des modèles directement à partir des URLs Civitai."
+                "content": "Utilisez le bouton <strong>Télécharger</strong> pour télécharger des modèles directement à partir des URLs CivitAI."
             },
             "bulk": {
                 "title": "Opérations groupées",
-                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations par lot. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span> pour sélectionner plusieurs modèles et effectuer des opérations groupées.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> sélectionne tous les modèles visibles, <span class=\"onboarding-shortcut\">Shift+Click</span> sélectionne une plage.<br>• <span class=\"onboarding-shortcut\">Esc</span> ou un clic sur une zone vide quitte le mode groupé."
             },
             "searchOptions": {
                 "title": "Options de recherche",
@@ -95,7 +120,19 @@
             },
             "contextMenu": {
                 "title": "Menu contextuel",
-                "content": "<strong>Clic droit</strong> sur une carte de modèle pour accéder à un menu contextuel avec des actions supplémentaires."
+                "content": "<strong>Clic droit</strong> sur n'importe quelle carte de modèle pour ouvrir un menu contextuel avec des actions sur la carte comme déplacer, supprimer ou modifier les métadonnées."
+            },
+            "marqueeSelect": {
+                "title": "Glisser pour sélectionner",
+                "content": "Maintenez le <strong>bouton gauche de la souris</strong> enfoncé sur une zone vide de la grille et glissez pour tracer un rectangle de sélection qui sélectionne plusieurs cartes à la fois."
+            },
+            "dragToSidebar": {
+                "title": "Organiser par glisser-déposer",
+                "content": "Glissez une carte de modèle sur un dossier de la barre latérale pour y déplacer le fichier. Cela fonctionne aussi avec plusieurs cartes sélectionnées en mode groupé."
+            },
+            "contextMenus": {
+                "title": "Plus de menus contextuels",
+                "content": "En mode groupé, <strong>faites un clic droit sur une carte sélectionnée</strong> pour accéder aux actions groupées. <strong>Faites un clic droit sur une zone vide</strong> de la page pour accéder aux actions globales comme la vérification des mises à jour et la gestion des modèles exclus."
             }
         }
     },
@@ -103,9 +140,10 @@
         "actions": {
             "addToFavorites": "Ajouter aux favoris",
             "removeFromFavorites": "Retirer des favoris",
-            "viewOnCivitai": "Voir sur Civitai",
-            "notAvailableFromCivitai": "Non disponible sur Civitai",
+            "viewOnCivitai": "Voir sur CivitAI",
+            "notAvailableFromCivitai": "Non disponible sur CivitAI",
             "viewOnHuggingFace": "Voir sur Hugging Face",
+            "viewOnSource": "Voir sur {source}",
             "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Maj+Clic: Remplacer)",
             "copyLoRASyntax": "Copier la syntaxe LoRA",
             "checkpointNameCopied": "Nom du checkpoint copié",
@@ -116,6 +154,7 @@
             "copyCheckpointName": "Copier le nom du checkpoint",
             "copyEmbeddingName": "Copier le nom de l'embedding",
             "embeddingNameCopied": "Syntaxe dembedding copiée",
+            "modelNameCopied": "Nom du modèle copié",
             "sendCheckpointToWorkflow": "Envoyer vers ComfyUI",
             "sendEmbeddingToWorkflow": "Envoyer vers ComfyUI"
         },
@@ -136,8 +175,8 @@
         },
         "exampleImages": {
             "checkError": "Erreur lors de la vérification des images d'exemple",
-            "missingHash": "Informations de hachage du modèle manquantes.",
-            "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur Civitai"
+            "missingHash": "Informations de hash du modèle manquantes.",
+            "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur CivitAI"
         },
         "badges": {
             "update": "Mise à jour",
@@ -163,7 +202,11 @@
             "loading": "Recherche de mises à jour pour {type}...",
             "success": "{count} mise(s) à jour trouvée(s) pour {type}",
             "none": "Tous les {type} sont à jour",
-            "error": "Échec de la vérification des mises à jour pour {type} : {message}"
+            "error": "Échec de la vérification des mises à jour pour {type} : {message}",
+            "gateEvents": {
+                "becameFree": "{count} version(s) que vous ne possédez pas sont devenues gratuites",
+                "newGate": "{count} version(s) sont désormais payantes"
+            }
         },
         "cleanupExampleImages": {
             "label": "Supprimer les dossiers d'exemples orphelins",
@@ -173,18 +216,18 @@
             "error": "Échec du nettoyage des dossiers d'images d'exemple : {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "Actualiser les métadonnées de licence",
+            "loading": "Actualisation des métadonnées de licence pour les {typePlural}...",
+            "success": "Métadonnées de licence mises à jour pour {count} {typePlural}",
+            "none": "Tous les {typePlural} possèdent déjà des métadonnées de licence",
+            "error": "Échec de l'actualisation des métadonnées de licence pour les {typePlural} : {message}"
         },
-        "repairRecipes": {
-            "label": "Réparer les données de recettes",
-            "loading": "Réparation des données de recettes...",
-            "success": "{count} recettes réparées avec succès.",
-            "cancelled": "Réparation annulée. {count} recettes ont été réparées.",
-            "error": "Échec de la réparation des recettes : {message}"
+        "rematchRecipes": {
+            "label": "Réassocier les Recipes aux modèles locaux",
+            "loading": "Réassociation des Recipes aux modèles locaux...",
+            "success": "{entries} entrées associées dans {recipes} Recipes",
+            "cancelled": "Réassociation annulée. {recipes} Recipes mises à jour ({entries} entrées)",
+            "error": "Échec de la réassociation des Recipes : {message}"
         },
         "manageExcludedModels": {
             "label": "Gérer les modèles exclus"
@@ -200,6 +243,7 @@
             "recipes": "Recipes",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "Autres",
             "statistics": "Statistiques"
         },
         "search": {
@@ -238,7 +282,7 @@
             "license": "Licence",
             "noCreditRequired": "Crédit non requis",
             "allowSellingGeneratedContent": "Vente autorisée",
-            "allowSellingGeneratedContentTooltip": "Autoriser la vente d\"images générées",
+            "allowSellingGeneratedContentTooltip": "Autoriser la vente d'images générées",
             "noCreditRequiredTooltip": "Utiliser le modèle sans créditer le créateur",
             "noTags": "Aucun tag",
             "tagSearchPlaceholder": "Rechercher des tags...",
@@ -249,7 +293,13 @@
             "any": "N'importe quel",
             "all": "Tous",
             "tagLogicAny": "Correspondre à n'importe quel tag (OU)",
-            "tagLogicAll": "Correspondre à tous les tags (ET)"
+            "tagLogicAll": "Correspondre à tous les tags (ET)",
+            "loraAvailability": "Disponibilité des LoRAs",
+            "availabilityReady": "Prêts à l'emploi",
+            "availabilityMissing": "Avec LoRAs manquants",
+            "availabilityDeleted": "Avec LoRAs supprimés",
+            "workflow": "Workflow",
+            "hasWorkflow": "Avec Workflow"
         },
         "theme": {
             "toggle": "Basculer le thème",
@@ -275,15 +325,21 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "Clé API Civitai",
-        "civitaiApiKeyPlaceholder": "Entrez votre clé API Civitai",
-        "civitaiApiKeyHelp": "Utilisée pour l'authentification lors du téléchargement de modèles depuis Civitai",
+        "civitaiApiKey": "Clé API CivitAI",
+        "civitaiApiKeyPlaceholder": "Entrez votre clé API CivitAI",
+        "civitaiApiKeyHelp": "Utilisée pour l'authentification lors du téléchargement de modèles depuis CivitAI",
         "civitaiApiKeyConfigured": "Configuré",
         "civitaiApiKeyNotConfigured": "Non configuré",
         "civitaiApiKeySet": "Configurer",
+        "huggingfaceApiKey": "Jeton d'accès Hugging Face",
+        "huggingfaceApiKeyPlaceholder": "Entrez votre jeton d'accès Hugging Face",
+        "huggingfaceApiKeyHelp": "Nécessaire pour télécharger depuis des dépôts Hugging Face restreints (gated) ou privés. Créez un jeton en lecture seule sur huggingface.co/settings/tokens, puis acceptez d'abord les conditions du dépôt sur sa page.",
+        "huggingfaceApiKeyConfigured": "Configuré",
+        "huggingfaceApiKeyNotConfigured": "Non configuré",
+        "huggingfaceApiKeySet": "Configurer",
         "civitaiHost": {
-            "label": "Hôte Civitai",
-            "help": "Choisissez quel site Civitai s'ouvre lorsque vous utilisez les liens « View on Civitai ».",
+            "label": "Hôte CivitAI",
+            "help": "Choisissez quel site CivitAI s'ouvre lorsque vous utilisez les liens « View on CivitAI ».",
             "options": {
                 "com": "civitai.com (SFW uniquement)",
                 "red": "civitai.red (sans restriction)"
@@ -303,9 +359,17 @@
             "placeholder": "Laisser vide pour utiliser aria2c depuis le PATH"
         },
         "aria2HelpLink": "Apprenez à configurer le backend de téléchargement aria2",
+        "unknownBaseModelRouting": {
+            "label": "Routage des modèles de base inconnus",
+            "help": "Détermine où vont les téléchargements de Checkpoint lorsque CivitAI signale un modèle de base qui n’est ni un Checkpoint connu (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) ni un modèle de diffusion connu. De nouvelles architectures de diffusion apparaissent fréquemment, donc les router vers les modèles de diffusion est généralement correct.",
+            "options": {
+                "diffusionModel": "Modèles de diffusion",
+                "checkpoint": "Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
-            "title": "Préférence d’hôte Civitai disponible",
-            "content": "Civitai utilise désormais civitai.com pour le contenu SFW et civitai.red pour le contenu sans restriction. Vous pouvez modifier dans les paramètres le site ouvert par défaut.",
+            "title": "Préférence d’hôte CivitAI disponible",
+            "content": "CivitAI utilise désormais civitai.com pour le contenu SFW et civitai.red pour le contenu sans restriction. Vous pouvez modifier dans les paramètres le site ouvert par défaut.",
             "openSettings": "Ouvrir les paramètres"
         },
         "openSettingsFileLocation": {
@@ -328,17 +392,22 @@
             "recipeSettings": "Recipes",
             "extraFolderPaths": "Chemins de dossiers supplémentaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
-            "priorityTags": "Étiquettes prioritaires",
+            "priorityTags": "Tags prioritaires",
             "versionScope": "Indicateurs de mise à jour",
+            "priceTracking": "Prix de téléchargement en Buzz",
             "exampleImages": "Images d'exemple",
             "autoOrganize": "Organisation automatique",
             "metadata": "Métadonnées",
-            "proxySettings": "Paramètres du proxy"
+            "sidecarStorage": "Stockage des fichiers sidecar",
+            "proxySettings": "Paramètres du proxy",
+            "sendToWorkflow": "Envoyer vers le workflow"
         },
         "nav": {
             "general": "Général",
             "interface": "Interface",
-            "library": "Bibliothèque"
+            "library": "Bibliothèque",
+            "organization": "Organisation",
+            "modelPaths": "Chemins de modèles"
         },
         "search": {
             "placeholder": "Rechercher dans les paramètres...",
@@ -385,6 +454,18 @@
                 "saveFailed": "Impossible d'enregistrer les chemins à ignorer : {message}"
             }
         },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "Types de nœuds exclus",
+                "placeholder": "Exemple : CheckpointLoaderSimple, MyCustomNode",
+                "help": "Noms de classe de nœuds ComfyUI qui n'apparaissent jamais comme cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
+            },
+            "titlePatterns": {
+                "label": "Motifs de titres de nœuds exclus",
+                "placeholder": "Exemple : negative, preview",
+                "help": "Les nœuds dont le titre contient l'un de ces fragments de texte (insensible à la casse) sont masqués des cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
+            }
+        },
         "backup": {
             "autoEnabled": "Sauvegardes automatiques",
             "autoEnabledHelp": "Crée un instantané local une fois par jour et conserve les plus récents selon la politique de rétention.",
@@ -413,7 +494,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "Ignorer les téléchargements pour certains modèles de base",
-            "help": "S’applique à tous les flux de téléchargement. Seuls les modèles de base pris en charge peuvent être sélectionnés ici.",
+            "help": "Lorsqu'elle est activée, les versions utilisant les modèles de base sélectionnés seront ignorées.",
             "searchPlaceholder": "Filtrer les modèles de base...",
             "empty": "Aucun modèle de base ne correspond à la recherche actuelle.",
             "summary": {
@@ -429,13 +510,51 @@
                 "saveFailed": "Impossible d’enregistrer les modèles de base exclus : {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "Règles de racine de téléchargement",
+            "help": "Route les téléchargements vers un autre dossier racine en fonction du modèle de base ou des tags du modèle.",
+            "description": "Les règles sont vérifiées dans l’ordre. La première correspondance l’emporte ; les téléchargements sans correspondance utilisent la racine par défaut.",
+            "defaultHint": "Par défaut : {root} — les téléchargements sans correspondance arrivent ici",
+            "defaultSuffix": "par défaut",
+            "addBaseModelRule": "Règle de modèle de base",
+            "addTagRule": "Règle de tag",
+            "removeRule": "Supprimer la règle",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "noRoots": "Aucune racine configurée pour ce type de modèle.",
+            "matchTypes": {
+                "baseModel": "Modèle de base",
+                "tag": "Tag"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "Tag"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "Sélectionner des modèles de base...",
+                "enterTags": "Saisir des tags...",
+                "more": "+{count} de plus"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "Impossible d’enregistrer les règles de racine de téléchargement : {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "Ignorer les versions de modèles précédemment téléchargées",
             "help": "Lorsque activé, LoRA Manager ignorera le téléchargement d'une version de modèle si le service d'historique des téléchargements enregistre cette version exacte comme déjà téléchargée. S'applique à tous les flux de téléchargement."
         },
         "layoutSettings": {
             "groupByModel": "Grouper par modèle",
-            "groupByModelHelp": "Lorsque activé, seule la version la plus récente de chaque modèle Civitai s'affiche sous forme de carte unique. Les versions plus anciennes sont masquées.",
+            "groupByModelHelp": "Lorsque activé, seule la version la plus récente de chaque modèle CivitAI s'affiche sous forme de carte unique. Les versions plus anciennes sont masquées.",
+            "stickyControls": "Garder la barre d'actions visible",
+            "stickyControlsHelp": "Lorsque activé, la barre d'actions (Actualiser, Télécharger, etc.) reste épinglée en haut lors du défilement, avec la navigation par fil d'Ariane.",
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
                 "default": "Par défaut",
@@ -449,8 +568,8 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Attention : Des densités plus élevées peuvent causer des problèmes de performance sur les systèmes avec des ressources limitées.",
-            "recipesLayout": "Disposition des recettes",
-            "recipesLayoutHelp": "Choisissez comment les cartes de recettes sont organisées : une grille uniforme ou une disposition masonry (style Pinterest) qui préserve le rapport d'aspect de chaque image.",
+            "recipesLayout": "Disposition des Recipes",
+            "recipesLayoutHelp": "Choisissez comment les cartes de Recipes sont organisées : une grille uniforme ou une disposition masonry (style Pinterest) qui préserve le rapport d'aspect de chaque image.",
             "recipesLayoutOptions": {
                 "grid": "Grille",
                 "masonry": "Masonry"
@@ -463,8 +582,16 @@
                 "hover": "Révéler au survol"
             },
             "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action",
+            "showcaseLayout": "Disposition des images d'exemple",
+            "showcaseLayoutHelp": "Choisissez comment les images d'exemple sont affichées dans la fenêtre modale du modèle : une galerie une image à la fois ou la liste verticale classique.",
+            "showcaseLayoutOptions": {
+                "gallery": "Galerie",
+                "vertical": "Liste verticale"
+            },
             "showVersionOnCard": "Afficher la version sur la carte",
             "showVersionOnCardHelp": "Afficher ou masquer le nom de version sur les cartes de modèle",
+            "showQuantizationOnCard": "Afficher la quantification sur la carte",
+            "showQuantizationOnCardHelp": "Afficher le niveau de quantification (ex. Q4_K_M, FP8) à côté du nom de version sur les cartes de modèle",
             "modelCardFooterAction": "Action du bouton de carte de modèle",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Ouvrir les images d'exemple",
@@ -478,7 +605,7 @@
             },
             "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle",
             "cardBlurAmount": "Flou de superposition des cartes",
-            "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de recettes (0 = aucun flou, 20 = flou maximal)."
+            "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de Recipes (0 = aucun flou, 20 = flou maximal)."
         },
         "folderSettings": {
             "activeLibrary": "Bibliothèque active",
@@ -493,16 +620,35 @@
             "defaultUnetRootHelp": "Définir le répertoire racine Diffusion Model (UNET) par défaut pour les téléchargements, imports et déplacements",
             "defaultEmbeddingRoot": "Racine Embedding",
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
-            "recipesPath": "Recipes Storage Path",
-            "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
+            "defaultVaeRoot": "Racine VAE",
+            "defaultVaeRootHelp": "Définir le répertoire racine VAE par défaut pour les téléchargements, imports et déplacements",
+            "defaultUpscalerRoot": "Racine Upscaler",
+            "defaultUpscalerRootHelp": "Définir le répertoire racine Upscaler par défaut pour les téléchargements, imports et déplacements",
+            "defaultTextEncoderRoot": "Racine Text Encoder",
+            "defaultTextEncoderRootHelp": "Définir le répertoire racine Text Encoder par défaut pour les téléchargements, imports et déplacements",
+            "defaultClipVisionRoot": "Racine CLIP Vision",
+            "defaultClipVisionRootHelp": "Définir le répertoire racine CLIP Vision par défaut pour les téléchargements, imports et déplacements",
+            "defaultControlnetRoot": "Racine ControlNet",
+            "defaultControlnetRootHelp": "Définir le répertoire racine ControlNet par défaut pour les téléchargements, imports et déplacements",
+            "enableOtherModels": "Gestion des autres modèles",
+            "enableOtherModelsHelp": "Lorsque cette option est désactivée, les dossiers VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet ne sont pas analysés, la page Autres modèles reste désactivée et ces types de modèles ne peuvent pas être téléchargés.",
+            "otherSubTypes": "Types de modèles gérés",
+            "otherSubTypesHelp": "Choisissez les catégories d’autres modèles analysées et affichées sur la page Autres modèles.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
+            "recipesPath": "Chemin de stockage des Recipes",
+            "recipesPathHelp": "Dossier personnalisé facultatif pour les Recipes enregistrées. Laissez vide pour utiliser le dossier recipes de la première racine LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
-            "recipesPathMigrating": "Migrating recipes storage...",
+            "recipesPathMigrating": "Migration du stockage des Recipes en cours...",
             "noDefault": "Aucun par défaut"
         },
         "extraFolderPaths": {
             "title": "Chemins de dossiers supplémentaires",
             "description": "Chemins racine de modèles supplémentaires exclusifs à LoRA Manager. Chargez des modèles depuis des emplacements en dehors des dossiers standard de ComfyUI, idéal pour les grandes bibliothèques qui ralentiraient autrement ComfyUI.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "Un redémarrage est requis pour appliquer les changements",
             "modelTypes": {
                 "lora": "Chemins LoRA",
                 "checkpoint": "Chemins Checkpoint",
@@ -518,29 +664,69 @@
                 "checkpointUnetOverlapInline": "Ce chemin est déjà utilisé pour un autre type de modèle. Utilisez des dossiers séparés pour les checkpoints et les modèles de diffusion."
             }
         },
+        "modelPaths": {
+            "title": "Chemins de la bibliothèque de modèles",
+            "description": "Dossiers racine que LoRA Manager analyse pour trouver vos modèles. Ce sont les emplacements de modèles principaux lus depuis settings.json en mode autonome.",
+            "restartRequired": "Un redémarrage est requis pour appliquer les changements",
+            "coreTypes": "Types de modèles principaux",
+            "otherTypes": "Autres types de modèles",
+            "otherTypesDisabledHint": "Aucun autre type de modèle n’est activé. Activez les types dont vous avez besoin ci-dessus pour configurer leurs dossiers.",
+            "saveSuccessRestart": "Chemins de la bibliothèque de modèles mis à jour. Redémarrage requis pour appliquer les changements.",
+            "pendingRestartNotice": "Changements de chemins enregistrés. Redémarrez LoRA Manager pour qu’ils prennent effet.",
+            "pendingRestartBannerTitle": "Redémarrage requis pour appliquer les changements de chemins",
+            "pendingRestartBannerMessage": "Les chemins de la bibliothèque de modèles ont été mis à jour. Redémarrez le serveur LoRA Manager pour analyser les nouveaux dossiers.",
+            "folderKeys": {
+                "loras": "Chemins LoRA",
+                "checkpoints": "Chemins Checkpoint",
+                "unet": "Chemins de modèle de diffusion",
+                "embeddings": "Chemins Embedding",
+                "vae": "Chemins VAE",
+                "upscale_models": "Chemins Upscaler",
+                "text_encoders": "Chemins Text Encoder",
+                "clip": "Chemins CLIP (hérité)",
+                "clip_vision": "Chemins CLIP Vision",
+                "controlnet": "Chemins ControlNet"
+            }
+        },
+        "directoryPicker": {
+            "title": "Parcourir les dossiers",
+            "selectFolder": "Sélectionner ce dossier",
+            "goUp": "Remonter",
+            "pathPlaceholder": "Saisir un chemin...",
+            "go": "Aller",
+            "emptyFolder": "Aucun sous-dossier",
+            "loadError": "Échec du chargement du dossier"
+        },
+        "pathValidation": {
+            "valid": "Le chemin est valide",
+            "pathNotFound": "Le chemin n’existe pas",
+            "notADirectory": "N’est pas un dossier",
+            "notReadable": "Le chemin n’est pas lisible",
+            "notWritable": "Le chemin n’est pas accessible en écriture"
+        },
         "priorityTags": {
-            "title": "Étiquettes prioritaires",
-            "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "title": "Tags prioritaires",
+            "description": "Personnalisez l'ordre de priorité des tags pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
             "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "Ouvrir l'aide sur les étiquettes prioritaires",
+            "helpLinkLabel": "Ouvrir l'aide sur les tags prioritaires",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
-            "saveSuccess": "Étiquettes prioritaires mises à jour.",
-            "saveError": "Échec de la mise à jour des étiquettes prioritaires.",
+            "saveSuccess": "Tags prioritaires mis à jour.",
+            "saveError": "Échec de la mise à jour des tags prioritaires.",
             "loadingSuggestions": "Chargement des suggestions...",
             "validation": {
                 "missingClosingParen": "L'entrée {index} n'a pas de parenthèse fermante.",
-                "missingCanonical": "L'entrée {index} doit inclure un nom d'étiquette canonique.",
-                "duplicateCanonical": "L'étiquette canonique \"{tag}\" apparaît plusieurs fois.",
-                "unknown": "Configuration d'étiquettes prioritaires invalide."
+                "missingCanonical": "L'entrée {index} doit inclure un nom de tag canonique.",
+                "duplicateCanonical": "Le tag canonique \"{tag}\" apparaît plusieurs fois.",
+                "unknown": "Configuration de tags prioritaires invalide."
             }
         },
         "downloadPathTemplates": {
             "title": "Modèles de chemin de téléchargement",
-            "help": "Configurer les structures de dossiers pour différents types de modèles lors du téléchargement depuis Civitai.",
+            "help": "Configurer les structures de dossiers pour différents types de modèles lors du téléchargement depuis CivitAI.",
             "availablePlaceholders": "Espaces réservés disponibles :",
             "templateOptions": {
                 "flatStructure": "Structure plate",
@@ -574,10 +760,26 @@
                 "validTemplate": "Modèle valide"
             }
         },
+        "filenameTemplates": {
+            "title": "Modèles de nom de fichier",
+            "help": "Configurer les noms de fichier des modèles téléchargés par type de modèle. Laisser vide pour conserver le nom de fichier d'origine. Le nom de fichier d'origine est toujours conservé dans les métadonnées du modèle.",
+            "availablePlaceholders": "Espaces réservés disponibles :",
+            "templatePlaceholder": "Entrez un modèle de nom de fichier (ex: {base_model}-{model_name}-{version_name})",
+            "applyButton": "Appliquer à la bibliothèque maintenant",
+            "applyHelp": "Renomme tous les fichiers existants de ce type de modèle selon le modèle. Attention : le renommage change le chemin relatif vu par les loaders ComfyUI, les workflows existants référençant l'ancien nom de fichier peuvent donc nécessiter une mise à jour. Le nom de fichier d'origine est conservé dans les métadonnées de chaque modèle.",
+            "confirmApply": "Renommer tous les fichiers existants de ce type de modèle selon le modèle de nom de fichier ? Cela change le chemin relatif vu par les loaders ComfyUI. Le nom de fichier d'origine est conservé dans les métadonnées de chaque modèle.",
+            "confirmRevert": "Restaurer les noms de fichier d'origine enregistrés de tous les fichiers précédemment renommés de ce type de modèle ? Cela change le chemin relatif vu par les loaders ComfyUI. Les fichiers sans nom de fichier d'origine enregistré sont ignorés.",
+            "validation": {
+                "restoreOriginal": "Valide (un modèle vide restaure les noms de fichier d'origine)",
+                "invalidChars": "Caractères invalides détectés (un nom de fichier ne peut pas contenir / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "Espace réservé invalide : {placeholder}",
+                "validTemplate": "Modèle valide"
+            }
+        },
         "exampleImages": {
             "downloadLocation": "Emplacement de téléchargement",
             "downloadLocationPlaceholder": "Entrez le chemin du dossier pour les images d'exemple",
-            "downloadLocationHelp": "Entrez le chemin du dossier où les images d'exemple de Civitai seront sauvegardées",
+            "downloadLocationHelp": "Entrez le chemin du dossier où les images d'exemple de CivitAI seront sauvegardées",
             "autoDownload": "Téléchargement automatique des images d'exemple",
             "autoDownloadHelp": "Télécharger automatiquement les images d'exemple pour les modèles qui n'en ont pas (nécessite que l'emplacement de téléchargement soit défini)",
             "openMode": "Action d’ouverture des images d’exemple",
@@ -610,7 +812,18 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "Masquer les mises à jour en accès anticipé",
-            "help": "Seulement les mises à jour en accès anticipé"
+            "help": "Lorsqu'elle est activée, les modèles qui n'ont que des mises à jour en accès anticipé n'afficheront pas le badge « Mise à jour disponible »."
+        },
+        "hidePaidUpdates": {
+            "label": "Masquer les mises à jour payantes",
+            "help": "Lorsque cette option est activée, les modèles n'ayant que des mises à jour payantes n'affichent pas le badge « Mise à jour disponible »"
+        },
+        "priceTracking": {
+            "help": "L'API publique de CivitAI ne publie pas les prix de téléchargement : ils sont donc lus sur la page du modèle - une requête supplémentaire par modèle payant, actualisée selon l'intervalle ci-dessous. Les prix sont affichés sur les versions que vous ne possédez pas encore.",
+            "enabled": "Afficher les prix de téléchargement des versions payantes",
+            "enabledHelp": "Lit le prix de téléchargement sur la page du modèle pour indiquer le coût des versions payantes et en accès anticipé, ainsi que la fin de l'accès anticipé",
+            "refreshHours": "Intervalle d'actualisation des prix (heures)",
+            "refreshHoursHelp": "Durée pendant laquelle un prix enregistré reste valide avant d'être relu"
         },
         "licenseIcons": {
             "useNewStyle": "Utiliser les icônes de licence mises à jour",
@@ -628,7 +841,7 @@
         },
         "metadataArchive": {
             "enableArchiveDb": "Activer la base de données d'archive des métadonnées",
-            "enableArchiveDbHelp": "Utiliser une base de données locale pour accéder aux métadonnées des modèles supprimés de Civitai.",
+            "enableArchiveDbHelp": "Utiliser une base de données locale pour accéder aux métadonnées des modèles supprimés de CivitAI.",
             "status": "Statut",
             "statusAvailable": "Disponible",
             "statusUnavailable": "Non disponible",
@@ -651,10 +864,42 @@
             "downloadComplete": "Téléchargement terminé avec succès",
             "enableCivarchiveApi": "Activer l'API CivArchive comme fournisseur de métadonnées",
             "enableCivarchiveApiHelp": "Lorsqu'elle est activée, l'API CivArchive est utilisée comme source de secours pour les métadonnées des modèles (par ex. pour les modèles supprimés de CivitAI). Désactivez pour éviter entièrement les limites de débit de CivArchive.",
+            "enableOpenmodeldbApi": "Activer OpenModelDB comme fournisseur de métadonnées",
+            "enableOpenmodeldbApiHelp": "Lorsqu’elle est activée, les métadonnées des Upscaler sont également recherchées dans le catalogue OpenModelDB (openmodeldb.info) lorsque CivitAI n’a aucune fiche. Le catalogue est mis en cache localement et actualisé quotidiennement.",
             "providerOrder": "Ordre de secours des fournisseurs de métadonnées",
             "providerOrderHelp": "L'API CivitAI est toujours essayée en premier. Choisissez l'ordre des autres fournisseurs lors de la recherche de métadonnées.",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+        },
+        "sidecarStorage": {
+            "mode": "Mode de stockage des fichiers sidecar",
+            "modeHelp": "Choisissez où sont stockés les fichiers sidecar .metadata.json et les images d’aperçu : à côté de chaque fichier de modèle, ou dans un seul dossier centralisé qui reflète la structure de votre bibliothèque. Les fichiers .civitai.info restent toujours à côté du fichier de modèle.",
+            "modeOptions": {
+                "alongside": "À côté des fichiers de modèle (par défaut)",
+                "centralized": "Stockage centralisé"
+            },
+            "path": "Chemin du stockage centralisé",
+            "pathHelp": "Dossier racine du stockage centralisé des fichiers sidecar. Laissez vide pour utiliser l’emplacement par défaut (<settings dir>/sidecars).",
+            "pathPlaceholder": "Vide = <settings dir>/sidecars",
+            "management": "Migration des fichiers sidecar",
+            "managementHelp": "Déplacez les fichiers sidecar .metadata.json et les images d’aperçu existants entre le stockage à côté des modèles et le stockage centralisé, selon le mode sélectionné. Changer de mode ne déplace pas les fichiers existants automatiquement.",
+            "migrateButton": "Migrer les fichiers sidecar maintenant",
+            "migratingButton": "Migration en cours...",
+            "migrating": "Migration des fichiers sidecar en cours...",
+            "migrateFailed": "Échec de la migration des fichiers sidecar : {message}",
+            "migrationDeferred": "Les fichiers sidecar existants n’ont pas été déplacés. Vous pouvez les migrer plus tard depuis Paramètres → Bibliothèque → Stockage des fichiers sidecar.",
+            "confirmToCentralized": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les déplacer maintenant dans le dossier de stockage centralisé ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
+            "confirmToAlongside": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les remettre maintenant à côté de leurs fichiers de modèle ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
+            "confirmToCentralizedManual": "Déplacer maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants dans le dossier de stockage centralisé ?",
+            "confirmToAlongsideManual": "Remettre maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants à côté de leurs fichiers de modèle ?",
+            "confirmRelocateRoot": "Le dossier de stockage centralisé a changé, mais les fichiers sidecar et les images d’aperçu existants se trouvent encore dans le dossier précédent. Les déplacer maintenant dans le nouveau dossier ?",
+            "effectivePathLabel": "Emplacement de stockage effectif :",
+            "openFolderButton": "Ouvrir le dossier",
+            "repoWarning": "L’emplacement de stockage effectif se trouve dans le dossier d’installation de LoRA Manager. Une réinstallation de l’extension ou une mise à jour propre peut le supprimer — définissez un chemin de stockage explicite en dehors du dossier d’installation.",
+            "openLocationSuccess": "Dossier de stockage des fichiers sidecar ouvert",
+            "openLocationCopied": "Chemin de stockage des fichiers sidecar copié dans le presse-papiers : {path}",
+            "openLocationClipboardFallback": "Copiez manuellement le chemin de stockage des fichiers sidecar : {path}",
+            "openLocationFailed": "Échec de l’ouverture du dossier de stockage des fichiers sidecar"
         },
         "proxySettings": {
             "enableProxy": "Activer le proxy au niveau de l'application",
@@ -689,7 +934,7 @@
                 "custom": "Personnalisé (compatible OpenAI)"
             },
             "apiBase": "URL de base de l'API",
-            "apiBaseHelp": "L'URL de base pour l'API LLM (ex. https://api.openai.com/v1). Laissez vide pour utiliser le fournisseur par défaut.",
+            "apiBaseHelp": "L'URL de base pour l'API LLM. Sélectionnez un préréglage ou saisissez une URL personnalisée. La liste déroulante affiche les préréglages de tous les fournisseurs pris en charge.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "Clé API",
             "apiKeyHelp": "Votre clé API du fournisseur LLM. Stockée localement, jamais envoyée à un serveur autre que votre fournisseur LLM choisi.",
@@ -725,13 +970,21 @@
                 "random": "Aléatoire",
                 "randomAction": "Aléatoire (mélanger)"
             },
+            "modelType": {
+                "title": "Filtrer par type de modèle",
+                "all": "Tous les types",
+                "multiple": "{count} types"
+            },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
                 "full": "Reconstruire le cache",
-                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers metadata — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
+                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers de métadonnées — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles.",
+                "scopeSection": "Analyser un seul dossier",
+                "rootOffline": "Hors ligne",
+                "rootModels": "{count} modèles"
             },
             "fetch": {
-                "title": "Récupérer les métadonnées depuis Civitai",
+                "title": "Récupérer les métadonnées depuis CivitAI",
                 "action": "Récupérer"
             },
             "download": {
@@ -767,7 +1020,7 @@
             "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
-            "repairMetadata": "Réparer les métadonnées de la sélection",
+            "rematchMetadata": "Réassocier la sélection aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
@@ -783,8 +1036,8 @@
             "downloadMissingExamples": "Télécharger les manquantes",
             "reprocessExamples": "Tout retraiter",
             "clear": "Effacer la sélection",
-            "skipMetadataRefreshCount": "Ignorer（{count} modèles）",
-            "resumeMetadataRefreshCount": "Reprendre（{count} modèles）",
+            "skipMetadataRefreshCount": "Ignorer({count} modèles)",
+            "resumeMetadataRefreshCount": "Reprendre({count} modèles)",
             "sendToWorkflow": "Envoyer au workflow",
             "sections": {
                 "workflow": "Workflow",
@@ -802,14 +1055,22 @@
                 "complete": "Auto-organisation terminée",
                 "error": "Erreur : {error}"
             },
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "filenameTemplateProgress": {
+                "initializing": "Initialisation de l'application du modèle de nom de fichier...",
+                "starting": "Application du modèle de nom de fichier pour {type}...",
+                "processing": "Traitement ({processed}/{total}) - {success} renommés, {skipped} ignorés, {failures} échecs",
+                "completed": "Terminé : {success} renommés, {skipped} ignorés, {failures} échecs",
+                "complete": "Application du modèle de nom de fichier terminée",
+                "error": "Erreur : {error}"
+            },
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         },
         "contextMenu": {
-            "refreshMetadata": "Actualiser les données Civitai",
+            "refreshMetadata": "Actualiser les données CivitAI",
             "checkUpdates": "Vérifier les mises à jour",
             "linkModel": "Lier le modèle",
-            "linkCivitai": "Relier à nouveau à Civitai",
-            "linkHuggingFace": "Lier à HuggingFace",
+            "linkCivitai": "Relier à nouveau à CivitAI",
+            "linkModelSource": "Lier à une source de modèle",
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
             "copyRecipeSyntax": "Copier la syntaxe de la recipe",
@@ -822,7 +1083,7 @@
             "replacePreview": "Remplacer l'aperçu",
             "setContentRating": "Définir la classification du contenu",
             "moveToFolder": "Déplacer vers un dossier",
-            "repairMetadata": "Réparer les métadonnées",
+            "rematchMetadata": "Réassocier aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "excludeModel": "Exclure le modèle",
             "restoreModel": "Restaurer le modèle",
@@ -831,26 +1092,139 @@
             "viewAllLoras": "Voir tous les LoRAs",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "deleteRecipe": "Supprimer la recipe",
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         }
     },
     "recipes": {
         "title": "LoRA Recipes",
         "actions": {
-            "sendCheckpoint": "Envoyer vers ComfyUI"
+            "sendCheckpoint": "Envoyer vers ComfyUI",
+            "sendRecipe": "Envoyer vers ComfyUI",
+            "copyRecipeSyntax": "Copier la syntaxe de la recipe",
+            "deleteRecipeWithShortcut": "Supprimer la Recipe (Del)"
+        },
+        "navigation": {
+            "label": "Navigation des Recipes",
+            "previousWithShortcut": "Recette précédente (←)",
+            "nextWithShortcut": "Recette suivante (→)"
+        },
+        "modal": {
+            "metadata": {
+                "id": "ID",
+                "baseModel": "Modèle de base",
+                "unknown": "Inconnu"
+            },
+            "actions": {
+                "openFileLocation": "Ouvrir l’emplacement du fichier",
+                "copyId": "Copier l’ID de la Recipe"
+            },
+            "openFileLocation": {
+                "success": "Emplacement du fichier ouvert avec succès",
+                "failed": "Échec de l’ouverture de l’emplacement du fichier",
+                "copied": "Chemin copié dans le presse-papiers: {{path}}",
+                "clipboardFallback": "Chemin: {{path}}"
+            }
+        },
+        "workflow": {
+            "sendWorkflow": "Envoyer le workflow vers ComfyUI",
+            "sent": "Workflow envoyé vers ComfyUI",
+            "sendFailed": "Échec de l'envoi du workflow vers ComfyUI",
+            "noWorkflow": "Aucun workflow intégré trouvé dans cette Recipe",
+            "hasWorkflow": "Contient un Workflow ComfyUI"
+        },
+        "status": {
+            "ready": "Prêt à l'emploi",
+            "missingCount": "{count} manquant(s)",
+            "deletedCount": "{count} supprimé(s)",
+            "downloadMissing": "Télécharger {count} LoRAs manquants",
+            "downloadMissingTooltip": "Cliquer pour télécharger les LoRAs manquants"
+        },
+        "loraStatus": {
+            "none": "Aucun LoRA dans cette Recipe",
+            "allAvailable": "Tous les LoRAs sont disponibles - Prêt à l'emploi",
+            "missing": "{missing} LoRA(s) manquant(s) sur {total}",
+            "missingAndUnavailable": "{missing} LoRA(s) manquant(s) sur {total}, {unavailable} indisponible(s) (supprimé(s) de la source ou hash irrésolvable)",
+            "partial": "{unavailable} LoRA(s) indisponible(s) sur {total} (supprimé(s) de la source ou hash irrésolvable) - ignoré(s) lors de l'utilisation de la Recipe",
+            "noneUsable": "Aucun LoRA utilisable - {unavailable} sur {total} supprimé(s) de la source ou hash irrésolvable"
+        },
+        "resources": {
+            "inLibrary": "Dans la bibliothèque",
+            "notInLibrary": "Pas dans la bibliothèque",
+            "deleted": "Supprimé",
+            "hashInvalid": "Hash irrésolu",
+            "inLibraryTooltip": "Ce modèle existe dans votre bibliothèque locale",
+            "notInLibraryTooltip": "Ce modèle n'est pas dans votre bibliothèque",
+            "deletedTooltip": "Ce LoRA a été supprimé de la source et ne peut plus être téléchargé",
+            "hashInvalidTooltip": "Ce hash de LoRA ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour",
+            "noLorasAssociated": "Aucune LoRA associée à cette Recipe",
+            "noLorasWhyToggle": "Pourquoi aucune LoRA ?",
+            "noLorasImportMethod": "Méthode d'import",
+            "noLorasInferredNote": "Raison possible (déduite) — cette Recipe a été importée avant l'enregistrement des diagnostics d'import.",
+            "noLorasChannels": {
+                "batch_import_url": "Import groupé (URL d'image)",
+                "batch_import_local": "Import groupé (fichier local)",
+                "url": "Import d'une URL d'image",
+                "local": "Import d'un fichier local",
+                "upload": "Téléversement d'image",
+                "widget": "Enregistrée depuis le Workflow",
+                "reimport_url": "Réimport (URL d'image)",
+                "reimport_local": "Réimport (fichier local)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "Les métadonnées de génération sont complètes et ne référencent aucune LoRA.",
+                "api_meta_no_lora_resources": "L'API source n'a renvoyé aucune donnée de ressource LoRA pour cette image. Les LoRAs affichées sur la page CivitAI peuvent provenir de données internes que l'API publique n'expose pas.",
+                "api_meta_missing": "L'API source n'a renvoyé aucune métadonnée de génération pour cette image.",
+                "no_embedded_metadata": "L'image ne contient aucune métadonnée de génération intégrée ; les informations LoRA n'ont donc pas pu être récupérées.",
+                "workflow_metadata_limited": "Les métadonnées intégrées à l'image sont un Workflow ComfyUI ; l'extraction des informations LoRA à partir des Workflows est limitée.",
+                "video_no_metadata": "Les fichiers vidéo ne contiennent pas de métadonnées de génération intégrées.",
+                "metadata_unsupported": "L'image contient des métadonnées dans un format non analysable.",
+                "unknown": "La raison n'a pas pu être déterminée à partir des données de la Recipe enregistrée."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "Champs de métadonnées de l'API",
+                "modelVersionIds": "IDs de version de modèle signalés",
+                "embeddedMetadata": "Métadonnées intégrées",
+                "present": "trouvées",
+                "absent": "aucune"
+            },
+            "download": "Télécharger",
+            "downloadLoraTooltip": "Télécharger ce LoRA",
+            "preparingDownload": "Préparation du téléchargement...",
+            "reconnect": "Reconnecter",
+            "reconnectTooltip": "Reconnecter avec un LoRA local",
+            "reconnectInstructions": "Entrez la syntaxe ou le nom du LoRA à reconnecter:",
+            "reconnectExample": "Exemple: <lora:name:1> ou simplement le nom",
+            "reconnectPlaceholder": "Entrez le nom ou la syntaxe du LoRA",
+            "reconnectSuggestionsLoading": "Recherche dans la bibliothèque locale...",
+            "reconnectSuggestionsEmpty": "Aucun LoRA correspondant dans votre bibliothèque locale",
+            "reconnectMatchSameHash": "Hash identique",
+            "reconnectMatchSameVersion": "Même version du modèle",
+            "reconnectMatchSimilarFilename": "Nom de fichier similaire",
+            "reconnectMatchSimilarName": "Nom similaire",
+            "undoReconnect": "Annuler",
+            "undoReconnectTooltip": "Restaurer l'association que cette entrée avait avant la reconnexion",
+            "undoReconnectTooltipNamed": "Restaurer vers {name} (l'association avant la reconnexion)",
+            "viewOnCivitai": "Voir sur CivitAI",
+            "openLoraDetails": "Voir {name} dans la bibliothèque LoRA",
+            "openCheckpointDetails": "Voir {name} dans la bibliothèque de modèles",
+            "checkpointDeletedTooltip": "Ce checkpoint a été supprimé de la source et ne peut plus être téléchargé - reconnectez-le avec un modèle local",
+            "checkpointHashInvalidTooltip": "Le hash de ce checkpoint ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour",
+            "reconnectCheckpoint": "Reconnecter",
+            "reconnectCheckpointTooltip": "Reconnecter avec un checkpoint local",
+            "checkpointReconnectInstructions": "Entrez le nom du checkpoint à reconnecter:",
+            "checkpointReconnectPlaceholder": "Entrez le nom du checkpoint",
+            "checkpointReconnectSuggestionsEmpty": "Aucun checkpoint correspondant dans votre bibliothèque locale"
         },
         "controls": {
             "import": {
                 "action": "Importer",
                 "title": "Importer une recipe depuis une image ou une URL",
-                "urlLocalPath": "URL / Chemin local",
-                "uploadImage": "Téléverser une image",
-                "urlSectionDescription": "Saisissez une URL d'image Civitai ou un chemin de fichier local pour l'importer comme recipe.",
+                "dropZoneLabel": "Téléverser une image",
+                "dropZoneHint": "Glissez-déposez une image ici, collez-la depuis le presse-papiers ou cliquez pour parcourir",
+                "orDivider": "ou glissez-déposez / collez une image",
                 "imageUrlOrPath": "URL d'image ou chemin de fichier :",
-                "urlPlaceholder": "https://civitai.com/images/... ou C:/chemin/vers/image.png",
+                "urlPlaceholder": "https://civitai.com/images/... ou https://civitai.red/images/... ou C:/chemin/vers/image.png",
                 "fetchImage": "Récupérer l'image",
-                "uploadSectionDescription": "Téléversez une image avec des métadonnées LoRA pour l'importer comme recipe.",
-                "selectImage": "Sélectionner une image",
                 "recipeName": "Nom de la recipe",
                 "recipeNamePlaceholder": "Entrez le nom de la recipe",
                 "tagsOptional": "Tags (optionnel)",
@@ -868,7 +1242,7 @@
                 "root": "Racine",
                 "browseFolders": "Parcourir les dossiers :",
                 "downloadAndSaveRecipe": "Télécharger et sauvegarder la recipe",
-                "importRecipeOnly": "Importer uniquement la recette",
+                "importRecipeOnly": "Importer uniquement la Recipe",
                 "importAndDownload": "Importer et télécharger",
                 "downloadMissingLoras": "Télécharger les LoRAs manquants",
                 "saveRecipe": "Sauvegarder la recipe",
@@ -878,7 +1252,7 @@
                 "downloadingLoras": "Téléchargement des LoRAs...",
                 "savingRecipe": "Sauvegarde de la recipe...",
                 "startingDownload": "Début du téléchargement pour le LoRA {current}/{total}",
-                "deletedFromCivitai": "Supprimé de Civitai",
+                "deletedFromCivitai": "Supprimé de CivitAI",
                 "inLibrary": "Dans la bibliothèque",
                 "notInLibrary": "Pas dans la bibliothèque",
                 "earlyAccessRequired": "Ce LoRA nécessite un paiement d'accès anticipé pour le téléchargement.",
@@ -895,11 +1269,13 @@
                 "errors": {
                     "selectImageFile": "Veuillez sélectionner un fichier image",
                     "enterUrlOrPath": "Veuillez entrer une URL ou un chemin de fichier",
+                    "invalidUrl": "Veuillez saisir une URL valide",
+                    "invalidInputFormat": "Veuillez saisir l'URL d'une image ou un chemin de fichier local",
                     "selectLoraRoot": "Veuillez sélectionner un répertoire racine LoRA"
                 }
             },
             "sort": {
-                "title": "Trier les recettes par...",
+                "title": "Trier les Recipes par...",
                 "name": "Nom",
                 "nameAsc": "A - Z",
                 "nameDesc": "Z - A",
@@ -908,7 +1284,9 @@
                 "dateAsc": "Plus ancien",
                 "lorasCount": "Nombre de LoRAs",
                 "lorasCountDesc": "Plus",
-                "lorasCountAsc": "Moins"
+                "lorasCountAsc": "Moins",
+                "opened": "Récemment ouverts",
+                "openedDesc": "Récemment ouverts"
             },
             "refresh": {
                 "title": "Actualiser la liste des recipes",
@@ -919,12 +1297,26 @@
             "favorites": {
                 "title": "Afficher uniquement les favoris",
                 "action": "Favoris"
+            },
+            "layout": {
+                "title": "Disposition des Recipes",
+                "grid": "Disposition en grille",
+                "masonry": "Disposition masonry (style Pinterest, préserve le rapport d'aspect de l'image)"
             }
         },
         "duplicates": {
+            "finding": "Recherche de Recipes en doublon...",
             "found": "Trouvé {count} groupes de doublons",
+            "noGroups": "Aucun groupe de doublons trouvé avec le critère de correspondance actuel",
             "keepLatest": "Garder les dernières versions",
-            "deleteSelected": "Supprimer la sélection"
+            "deleteSelected": "Supprimer la sélection",
+            "includePromptLabel": "Inclure le prompt dans la correspondance",
+            "basis": {
+                "loraCombo": "Correspondance : combinaison de LoRA",
+                "loraComboAndPrompt": "Correspondance : combinaison de LoRA + prompt",
+                "hintLoraCombo": "Les Recipes avec les mêmes LoRAs et des forces identiques sont regroupées.",
+                "hintPromptIncluded": "Les Recipes ne sont regroupées que si elles utilisent les mêmes LoRAs avec des forces identiques ET ont le même prompt."
+            }
         },
         "contextMenu": {
             "copyRecipe": {
@@ -946,77 +1338,72 @@
                 "getInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
             },
-            "repair": {
-                "starting": "Réparation des métadonnées de la recette...",
-                "success": "Métadonnées de la recette réparées avec succès",
-                "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
-                "failed": "Échec de la réparation de la recette : {message}",
-                "missingId": "Impossible de réparer la recette : ID de recette manquant"
-            },
             "reimport": {
-                "starting": "Ré-import de la recette depuis la source...",
+                "starting": "Ré-import de la Recipe depuis la source...",
                 "success": "Recette ré-importée avec succès",
-                "noSourceUrl": "La recette n'a pas d'URL source, ré-import impossible",
-                "failed": "Échec du ré-import de la recette : {message}",
-                "missingId": "Impossible de ré-importer la recette : ID de recette manquant"
+                "noSourceUrl": "La Recipe n'a pas d'URL source, ré-import impossible",
+                "failed": "Échec du ré-import de la Recipe : {message}",
+                "missingId": "Impossible de ré-importer la Recipe : ID de Recipe manquant"
             }
         },
         "batchImport": {
-            "title": "Batch Import Recipes",
-            "action": "Batch Import",
-            "urlList": "URL List",
-            "directory": "Directory",
-            "urlDescription": "Enter image URLs or local file paths (one per line). Each will be imported as a recipe.",
-            "directoryDescription": "Enter a directory path to import all images from that folder.",
-            "urlsLabel": "Image URLs or Local Paths",
+            "title": "Import groupé de Recipes",
+            "action": "Import groupé",
+            "urlList": "Liste d'URL",
+            "directory": "Dossier",
+            "urlDescription": "Saisissez des URL d'images ou des chemins de fichiers locaux (un par ligne). Chacun sera importé comme Recipe.",
+            "directoryDescription": "Saisissez un chemin de dossier pour importer toutes les images de ce dossier.",
+            "urlsLabel": "URL d'images ou chemins locaux",
             "urlsPlaceholder": "https://civitai.com/images/...\nhttps://civitai.com/images/...\nC:/path/to/image.png\n...",
-            "urlsHint": "Enter one URL or path per line",
-            "directoryPath": "Directory Path",
+            "urlsHint": "Saisissez une URL ou un chemin par ligne",
+            "directoryPath": "Chemin du dossier",
             "directoryPlaceholder": "/path/to/images/folder",
-            "browse": "Browse",
-            "recursive": "Include subdirectories",
-            "tagsOptional": "Tags (optional, applied to all recipes)",
-            "tagsPlaceholder": "Enter tags separated by commas",
-            "tagsHint": "Tags will be added to all imported recipes",
-            "skipNoMetadata": "Skip images without metadata",
-            "skipNoMetadataHelp": "Images without LoRA metadata will be skipped automatically.",
-            "start": "Start Import",
-            "startImport": "Start Import",
-            "importing": "Importing...",
-            "progress": "Progress",
+            "browse": "Parcourir",
+            "recursive": "Inclure les sous-dossiers",
+            "tagsOptional": "Tags (facultatif, appliqués à toutes les Recipes)",
+            "tagsPlaceholder": "Saisissez les tags séparés par des virgules",
+            "tagsHint": "Les tags seront ajoutés à toutes les Recipes importées",
+            "skipNoMetadata": "Ignorer les images sans métadonnées",
+            "skipNoMetadataHelp": "Les images sans métadonnées LoRA seront ignorées automatiquement.",
+            "start": "Démarrer l'import",
+            "startImport": "Démarrer l'import",
+            "importing": "Import en cours...",
+            "rateLimitedSlowdown": "Limite de débit atteinte — ralentissement...",
+            "rateLimitedHint": "Certains éléments ont été ignorés en raison des limites de débit du fournisseur de métadonnées. Relancez l'import plus tard pour réessayer.",
+            "progress": "Progression",
             "total": "Total",
-            "success": "Success",
-            "failed": "Failed",
-            "skipped": "Skipped",
-            "current": "Current",
-            "currentItem": "Current",
-            "preparing": "Preparing...",
-            "cancel": "Cancel",
-            "cancelImport": "Cancel",
-            "cancelled": "Import cancelled",
-            "completed": "Import completed",
-            "completedWithErrors": "Completed with errors",
-            "completedSuccess": "Successfully imported {count} recipe(s)",
-            "successCount": "Successful",
-            "failedCount": "Failed",
-            "skippedCount": "Skipped",
-            "totalProcessed": "Total processed",
-            "viewDetails": "View Details",
-            "newImport": "New Import",
-            "manualPathEntry": "Please enter the directory path manually. File browser is not available in this browser.",
-            "batchImportDirectorySelected": "Directory selected: {path}",
-            "batchImportManualEntryRequired": "File browser not available. Please enter the directory path manually.",
-            "backToParent": "Back to parent directory",
-            "folders": "Folders",
-            "folderCount": "{count} folders",
-            "imageFiles": "Image Files",
+            "success": "Réussis",
+            "failed": "Échecs",
+            "skipped": "Ignorés",
+            "current": "En cours",
+            "currentItem": "En cours",
+            "preparing": "Préparation...",
+            "cancel": "Annuler",
+            "cancelImport": "Annuler",
+            "cancelled": "Import annulé",
+            "completed": "Import terminé",
+            "completedWithErrors": "Terminé avec des erreurs",
+            "completedSuccess": "{count} Recipe(s) importée(s) avec succès",
+            "successCount": "Réussis",
+            "failedCount": "Échecs",
+            "skippedCount": "Ignorés",
+            "totalProcessed": "Total traité",
+            "viewDetails": "Voir les détails",
+            "newImport": "Nouvel import",
+            "manualPathEntry": "Veuillez saisir le chemin du dossier manuellement. Le sélecteur de fichiers n'est pas disponible dans ce navigateur.",
+            "batchImportDirectorySelected": "Dossier sélectionné : {path}",
+            "batchImportManualEntryRequired": "Sélecteur de fichiers indisponible. Veuillez saisir le chemin du dossier manuellement.",
+            "backToParent": "Dossier parent",
+            "folders": "Dossiers",
+            "folderCount": "{count} dossiers",
+            "imageFiles": "Fichiers image",
             "images": "images",
             "imageCount": "{count} images",
-            "selectFolder": "Select This Folder",
+            "selectFolder": "Sélectionner ce dossier",
             "errors": {
-                "enterUrls": "Please enter at least one URL or path",
-                "enterDirectory": "Please enter a directory path",
-                "startFailed": "Failed to start import: {message}"
+                "enterUrls": "Veuillez saisir au moins une URL ou un chemin",
+                "enterDirectory": "Veuillez saisir un chemin de dossier",
+                "startFailed": "Échec du démarrage de l'import : {message}"
             }
         }
     },
@@ -1024,7 +1411,7 @@
         "title": "Modèles Checkpoint",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "Modèle de diffusion"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Déplacer vers le dossier {otherType}",
@@ -1034,31 +1421,127 @@
     "embeddings": {
         "title": "Modèles Embedding"
     },
+    "other": {
+        "title": "Autres modèles",
+        "disabled": {
+            "title": "La gestion des autres modèles est désactivée",
+            "description": "Activez-la pour analyser et gérer les fichiers VAE, Upscaler, Text Encoder, CLIP Vision et ControlNet, et pour les télécharger depuis CivitAI.",
+            "enableButton": "Activer les autres modèles",
+            "hint": "Vous pourrez modifier les types de modèles gérés plus tard dans Paramètres > Bibliothèque.",
+            "enableFailed": "Échec de l’activation des autres modèles",
+            "downloadBlocked": "La gestion des autres modèles est désactivée pour ce type de modèle. Activez-la dans Paramètres > Bibliothèque pour télécharger ce fichier.",
+            "enableAction": "Activer les autres modèles"
+        },
+        "noPaths": {
+            "title": "Aucun dossier d’autres modèles trouvé",
+            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun dossier d’autres modèles n’a été trouvé. Ajoutez vos dossiers de modèles dans Paramètres → Chemins de modèles, puis redémarrez LoRA Manager.",
+            "hintStandalone": "Seuls les types de modèles activés sont analysés ; activez les types dont vous avez besoin dans Bibliothèque → Racines par défaut.",
+            "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
+            "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
+            "openSettings": "Ouvrir les paramètres",
+            "openModelPaths": "Configurer les dossiers de modèles",
+            "openSettingsFolder": "Ouvrir le dossier des paramètres"
+        }
+    },
     "sidebar": {
         "modelRoot": "Racine",
         "collapseAll": "Réduire tous les dossiers",
+        "collapseAllDisabled": "Non disponible en vue liste",
         "hideOnThisPage": "Masquer la barre latérale sur cette page",
         "showSidebar": "Afficher la barre latérale",
         "sidebarHiddenNotification": "Barre latérale masquée sur la page {page}",
-        "switchToListView": "Passer en vue liste",
-        "switchToTreeView": "Passer en vue arborescence",
+        "viewOptions": "Options d’affichage",
+        "treeView": "Vue arborescente",
+        "listView": "Vue liste",
         "recursiveOn": "Inclure les sous-dossiers",
-        "recursiveOff": "Dossier actuel uniquement",
-        "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
-        "collapseAllDisabled": "Non disponible en vue liste",
+        "createFolder": "Nouveau dossier",
+        "newSubfolder": "Nouveau sous-dossier",
+        "showEmptyFolders": "Afficher les dossiers vides",
+        "createFolderResult": {
+            "success": "Dossier \"{name}\" créé",
+            "failed": "Échec de la création du dossier : {message}",
+            "unsupported": "La création de dossiers n’est pas prise en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
+        },
+        "deleteFolder": "Supprimer le dossier",
+        "deleteFolderModal": {
+            "title": "Supprimer le dossier ?",
+            "message": "Le dossier et tout son contenu seront définitivement supprimés du disque.",
+            "folderLabel": "Dossier",
+            "emptyNote": "Ce dossier ne contient aucun modèle. Les autres fichiers qu’il contient seront également supprimés.",
+            "notEmptyTitle": "Le dossier n’est pas vide",
+            "notEmptyMessage": "Ce dossier contient encore des modèles. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "notEmptyMessageCount": "Ce dossier contient encore {count} fichier(s) de modèle. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "notEmptyMessageExcluded": "Ce dossier contient encore {count} fichier(s) de modèle, dont {excluded} sont exclus de la bibliothèque. Annulez leur exclusion dans « Gérer les modèles exclus » et supprimez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "missingTitle": "Dossier introuvable",
+            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
+            "removeFromList": "[TODO: Translate] Remove from list",
+            "symlinkTitle": "Le dossier est un lien symbolique",
+            "symlinkMessage": "Toutes les copies de ce dossier sont des liens symboliques ; supprimez le lien ou sa cible en dehors de LoRA Manager.",
+            "protectedTitle": "Dossier protégé",
+            "protectedMessage": "Ce dossier contient la bibliothèque de Recipes et ne peut pas être supprimé depuis LoRA Manager.",
+            "busyTitle": "Une suppression est encore en attente",
+            "checking": "Vérification du contenu du dossier...",
+            "confirm": "Supprimer le dossier",
+            "confirmMulti": "Supprimer {count} dossiers",
+            "deleting": "Suppression...",
+            "keptNote": "Les copies non cochées maintiennent ce dossier dans la barre latérale."
+        },
+        "deleteFolderResult": {
+            "success": "Dossier \"{name}\" supprimé",
+            "successWithFiles": "Dossier \"{name}\" supprimé, ainsi que {count} autre(s) élément(s)",
+            "restored": "Dossier restauré",
+            "failed": "Échec de la suppression du dossier : {message}",
+            "notEmpty": "Ce dossier contient encore des modèles. Actualisez la barre latérale et réessayez.",
+            "notEmptyWithCount": "Ce dossier contient encore {count} fichier(s) de modèle. Actualisez la barre latérale et réessayez.",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être supprimé depuis la barre latérale.",
+            "successMulti": "Dossier \"{name}\" supprimé de {count} racines de modèle",
+            "partial": "{count} copie(s) sur {total} supprimée(s) — {failed} en échec. Actualisez la barre latérale et réessayez."
+        },
+        "renameFolder": "Renommer le dossier",
+        "renameFolderResult": {
+            "success": "Dossier renommé en \"{name}\"",
+            "failed": "Échec du renommage du dossier : {message}",
+            "targetExists": "Un dossier portant ce nom existe déjà ici",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "Le renommage de dossiers n’est pas pris en charge sur cette page",
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être renommé depuis la barre latérale."
+        },
+        "folderRoot": {
+            "chooseTitle": "Ce dossier existe dans plusieurs racines de modèle",
+            "symlinkOption": "lien symbolique",
+            "rootsHint": "Sélectionnez les racines de modèle d’où supprimer ce dossier :",
+            "checkingStatus": "vérification...",
+            "okStatus": "aucun modèle",
+            "notEmptyStatus": "contient {count} fichier(s) de modèle — supprimez-les ou déplacez-les d’abord",
+            "notEmptyExcludedStatus": "contient {count} fichier(s) de modèle, dont {excluded} exclus de la bibliothèque",
+            "busyStatus": "une suppression est encore en attente",
+            "missingStatus": "n’existe plus sur le disque",
+            "symlinkStatus": "lien symbolique — impossible à supprimer ici",
+            "protectedStatus": "contient la bibliothèque de Recipes — impossible à supprimer ici",
+            "unknownStatus": "vérification impossible",
+            "deletedStatus": "supprimé"
+        },
+        "folderResult": {
+            "unresolved": "Impossible de déterminer quelle racine de modèle contient ce dossier. Actualisez la barre latérale et réessayez."
+        },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
             "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
-            "createFolderHint": "Relâcher pour créer un nouveau dossier",
             "newFolderName": "Nom du nouveau dossier",
-            "folderNameHint": "Appuyez sur Entrée pour confirmer, Échap pour annuler",
             "emptyFolderName": "Veuillez saisir un nom de dossier",
             "invalidFolderName": "Le nom du dossier contient des caractères invalides",
             "noDragState": "Aucune opération de glissement en attente trouvée"
         },
         "empty": {
             "noFolders": "Aucun dossier trouvé",
-            "dragHint": "Faites glisser des éléments ici pour créer des dossiers"
+            "createHint": "Cliquez sur le bouton Nouveau dossier ci-dessus pour créer des dossiers"
         },
         "folderUpdateCheck": {
             "label": "Vérifier les mises à jour dans ce dossier",
@@ -1066,6 +1549,10 @@
             "success": "{count} mise(s) à jour trouvée(s) pour les {type}s dans ce dossier",
             "none": "Tous les {type}s dans ce dossier sont à jour",
             "error": "Échec de la vérification des mises à jour {type} dans ce dossier : {message}"
+        },
+        "scanFolder": "Analyser ce dossier",
+        "scanFolderResult": {
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez."
         }
     },
     "statistics": {
@@ -1161,7 +1648,7 @@
             "lora": "LoRA",
             "locon": "LyCORIS",
             "dora": "DoRA",
-            "checkpoint": "Point de contrôle",
+            "checkpoint": "Checkpoint",
             "diffusion_model": "Modèle de diffusion",
             "embedding": "Embeddings"
         },
@@ -1186,9 +1673,9 @@
         "download": {
             "title": "Télécharger un modèle depuis une URL",
             "titleWithType": "Télécharger {type} depuis une URL",
-            "civitaiUrl": "URL Civitai :",
+            "civitaiUrl": "URL du modèle :",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Entrez une URL CivitAI, CivArchive ou Hugging Face par ligne. Prend en charge plusieurs URL pour le téléchargement par lot.",
+            "urlHint": "Entrez une URL CivitAI, CivArchive, Hugging Face ou ModelScope par ligne. Prend en charge plusieurs URL pour le téléchargement par lot.",
             "selectHfFiles": "Sélectionnez le(s) fichier(s) à télécharger depuis ce dépôt :",
             "selectAll": "Tout sélectionner",
             "fetchingRepoFiles": "Récupération des fichiers du dépôt...",
@@ -1198,6 +1685,14 @@
             "selectRootDirectory": "Sélectionner un répertoire racine",
             "selectModelRoot": "Sélectionner la racine du modèle :",
             "selectTypeRoot": "Sélectionner la racine {type} :",
+            "routingOverride": {
+                "label": "Type de destination :",
+                "tooltip": "Détecté automatiquement à partir des métadonnées du modèle. Changez si la détection est incorrecte ; changer désactive « Utiliser le chemin par défaut » pour ce téléchargement."
+            },
+            "routedByRule": {
+                "baseModel": "Routé par règle : modèle de base « {value} »",
+                "tag": "Routé par règle : tag « {value} »"
+            },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",
             "createNewFolder": "Créer un nouveau dossier",
@@ -1212,16 +1707,18 @@
             "downloaded": "Téléchargé",
             "downloadedTooltip": "Déjà téléchargé, mais il n'est actuellement pas dans votre bibliothèque.",
             "alreadyInLibrary": "Déjà dans la bibliothèque",
+            "partiallyDownloaded": "Téléchargé partiellement",
             "autoOrganizedPath": "[Auto-organisé par modèle de chemin]",
             "fileSelection": {
                 "title": "Choisir le format de fichier",
                 "files": "fichiers",
-                "select": "Choisir le fichier"
+                "select": "Choisir le fichier",
+                "inLibrary": "Dans la bibliothèque"
             },
             "errors": {
-                "invalidUrl": "Format d'URL Civitai invalide",
+                "invalidUrl": "Format d'URL de modèle invalide",
                 "noVersions": "Aucune version disponible pour ce modèle",
-                "mixedSources": "Impossible de mélanger les URL CivitAI et Hugging Face dans le même lot.",
+                "mixedSources": "Impossible de mélanger les URL CivitAI et Hugging Face / ModelScope dans le même lot.",
                 "noModelFiles": "Aucun fichier de modèle trouvé dans ce dépôt."
             },
             "status": {
@@ -1235,6 +1732,10 @@
             "progress": {
                 "currentFile": "Fichier actuel :",
                 "downloading": "Téléchargement : {name}",
+                "metadata": "Métadonnées : {name}",
+                "indexingFile": "Lecture du fichier de modèle...",
+                "fetchingSourceMetadata": "Récupération des métadonnées depuis {source}...",
+                "fetchingMetadata": "Récupération des métadonnées...",
                 "transferred": "Téléchargé : {downloaded} / {total}",
                 "transferredSimple": "Téléchargé : {downloaded}",
                 "transferredUnknown": "Téléchargé : --",
@@ -1257,21 +1758,26 @@
             }
         },
         "deleteModel": {
+            "freesSpace": "Libère {size}",
             "title": "Supprimer le modèle",
-            "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?"
+            "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?",
+            "recoverableWarning": "Le fichier sera définitivement supprimé après 20 secondes, sauf si vous annulez."
+        },
+        "deleteRecipe": {
+            "recoverableWarning": "Cette action peut être annulée pendant 20 secondes."
         },
         "excludeModel": {
             "title": "Exclure le modèle",
             "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
         },
         "deleteDuplicateRecipes": {
-            "title": "Supprimer les recipes dupliquées",
-            "message": "Êtes-vous sûr de vouloir supprimer les recipes dupliquées sélectionnées ?",
+            "title": "Supprimer les Recipes en double",
+            "message": "Êtes-vous sûr de vouloir supprimer les Recipes en double sélectionnées ?",
             "countMessage": "recipes seront définitivement supprimées."
         },
         "deleteDuplicateModels": {
-            "title": "Supprimer les modèles dupliqués",
-            "message": "Êtes-vous sûr de vouloir supprimer les modèles dupliqués sélectionnés ?",
+            "title": "Supprimer les modèles en double",
+            "message": "Êtes-vous sûr de vouloir supprimer les modèles en double sélectionnés ?",
             "countMessage": "modèles seront définitivement supprimés."
         },
         "clearCache": {
@@ -1295,8 +1801,36 @@
         "checkUpdates": {
             "title": "Vérifier les mises à jour pour tous les {typePlural} ?",
             "message": "Cette action vérifie les mises à jour pour tous les {typePlural} de votre bibliothèque. Les grandes collections peuvent prendre un peu plus de temps.",
-            "tip": "Besoin de procéder par étapes ? Passez en mode lot, sélectionnez les modèles souhaités puis utilisez \"Vérifier les mises à jour pour la sélection\".",
+            "tip": "Besoin de procéder par étapes ? Passez en mode groupé, sélectionnez les modèles souhaités puis utilisez \"Vérifier les mises à jour pour la sélection\".",
             "action": "Tout vérifier"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "Appliquer le modèle de nom de fichier à la bibliothèque ?",
+            "titleRevert": "Restaurer les noms de fichier d'origine ?",
+            "revertButton": "Restaurer les noms de fichier d'origine"
+        },
+        "sidecarMigrationConfirm": {
+            "titleToCentralized": "Déplacer les fichiers sidecar vers le stockage centralisé ?",
+            "titleToAlongside": "Remettre les fichiers sidecar à côté des fichiers de modèle ?",
+            "confirmButton": "Migrer maintenant",
+            "titleRelocateRoot": "Déplacer les fichiers sidecar vers le nouveau dossier de stockage ?",
+            "destination": "Destination : {path}",
+            "defaultLocationHint": "L’emplacement par défaut sera utilisé. Pour utiliser un dossier personnalisé, annulez, définissez le chemin de stockage ci-dessus, puis cliquez sur « Migrer les fichiers sidecar maintenant »."
+        },
+        "sidecarMigrationResult": {
+            "title": "Résumé de la migration des fichiers sidecar",
+            "completedSuccessfully": "Migration terminée avec succès",
+            "completedWithErrors": "Terminé avec {count} erreur(s)",
+            "statMoved": "Fichiers déplacés",
+            "statModels": "Modèles",
+            "statSkipped": "Ignorés",
+            "statConflicts": "Conflits résolus",
+            "statErrors": "Erreurs",
+            "failedItems": "Éléments en échec ({count})",
+            "columnModel": "Modèle",
+            "columnError": "Erreur",
+            "successMessage": "{moved} fichiers déplacés pour {models} modèles",
+            "location": "Emplacement de stockage : {path}"
         },
         "bulkAddTags": {
             "title": "Ajouter des tags à plusieurs modèles",
@@ -1318,17 +1852,52 @@
         },
         "bulkDownloadMissingLoras": {
             "title": "Télécharger les LoRAs manquants",
-            "message": "{uniqueCount} LoRAs manquants uniques trouvés (sur un total de {totalCount} dans les recettes sélectionnées).",
+            "message": "{uniqueCount} LoRAs manquants uniques trouvés (sur un total de {totalCount} dans les Recipes sélectionnées).",
             "previewTitle": "LoRAs à télécharger :",
             "moreItems": "...et {count} de plus",
             "note": "Les fichiers seront téléchargés en utilisant les modèles de chemins par défaut. Cela peut prendre un certain temps selon le nombre de LoRAs.",
             "downloadButton": "Télécharger {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "Réassocier les Recipes",
+            "messageGlobal": "Toutes les Recipes seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "messageSingle": "Cette Recipe sera analysée par rapport à votre bibliothèque de modèles locale.",
+            "messageBulk": "{count} Recipes sélectionnées seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "relaxedLabel": "Reconnecter aussi les modèles manquants par nom de fichier",
+            "relaxedDescription": "Ces modèles peuvent aussi être corrigés par téléchargement — le téléchargement est plus précis. Les correspondances peuvent associer une version différente ; elles seront listées pour vérification et peuvent être annulées.",
+            "confirmButton": "Réassocier"
+        },
+        "rematchResults": {
+            "undo": "Annuler",
+            "undone": "Annulé",
+            "undoFailed": "Échec de l'annulation de la réassociation : {message}"
+        },
+        "rematchSummary": {
+            "title": "Résumé de la réassociation",
+            "successMessage": "{entries} entrées associées",
+            "failed": "Échec de la réassociation",
+            "completedWithWarnings": "Réassociation terminée — vérification recommandée",
+            "cancelledNote": "Exécution annulée avant la fin — les décomptes sont partiels.",
+            "statMatched": "Entrées associées",
+            "statReview": "À vérifier",
+            "statUnresolved": "Sans correspondance",
+            "statErrors": "Erreurs",
+            "reviewSection": "Correspondances par nom de fichier à vérifier ({count})",
+            "columnRecipe": "Recipe",
+            "columnEntry": "Entrée",
+            "columnFile": "Fichier correspondant",
+            "columnUndo": "Annuler",
+            "copyReport": "Copier le rapport",
+            "close": "Fermer",
+            "scope_global": "Toutes les Recipes",
+            "scope_bulk": "Recipes sélectionnées",
+            "scope_single": "Une seule Recipe"
+        },
         "exampleAccess": {
             "title": "Images d'exemple locales",
             "message": "Aucune image d'exemple locale trouvée pour ce modèle. Options d'affichage :",
             "downloadOption": {
-                "title": "Télécharger depuis Civitai",
+                "title": "Télécharger depuis CivitAI",
                 "description": "Sauvegarder les exemples distants localement pour un usage hors ligne et un chargement plus rapide"
             },
             "importOption": {
@@ -1346,16 +1915,20 @@
             "pathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
             "root": "Racine"
         },
-        "linkHuggingFace": {
-            "title": "Lier à HuggingFace",
-            "infoText": "Collez l'URL du dépôt HuggingFace pour associer ce modèle à sa source. Cela permet l'enrichissement des métadonnées par IA.",
-            "urlLabel": "URL du dépôt HuggingFace :",
+        "linkModelSource": {
+            "title": "Lier à une source de modèle",
+            "infoText": "Collez l'URL de la page du modèle pour associer ce modèle à sa source. La liaison permet l'enrichissement des métadonnées par IA pour les modèles Hugging Face et ModelScope.",
+            "urlLabel": "URL de la page du modèle :",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Entrez l'URL complète du dépôt HuggingFace.",
+            "helpText": "Entrez l'URL complète de la page du modèle. Sites pris en charge :",
+            "enrichNote": "L'enrichissement par IA nécessite une fiche de modèle lisible. Les sites qui n'en exposent pas (actuellement TensorArt) ne peuvent être que liés.",
+            "urlRequired": "Veuillez saisir l'URL de la page du modèle.",
+            "invalidUrl": "URL non prise en charge. Sites pris en charge : Hugging Face, ModelScope, TensorArt.",
+            "linking": "Liaison de la source du modèle...",
             "confirmAction": "Enregistrer & lier"
         },
         "relinkCivitai": {
-            "title": "Relier à nouveau à Civitai",
+            "title": "Relier à nouveau à CivitAI",
             "warning": "Attention :",
             "warningText": "Il s'agit d'une opération potentiellement destructrice. Relier à nouveau va :",
             "warningList": {
@@ -1364,14 +1937,15 @@
                 "unintendedConsequences": "Peut avoir d'autres conséquences non prévues"
             },
             "proceedText": "Ne procédez que si vous êtes sûr que c'est ce que vous voulez.",
-            "urlLabel": "URL du modèle Civitai :",
-            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "urlLabel": "URL du modèle CivitAI :",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 ou https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "Collez n'importe quelle URL de modèle Civitai. Formats supportés :",
-                "format1": "https://civitai.com/models/649516",
-                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
-                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
-                "note": "Note : Si aucun modelVersionId n'est fourni, la dernière version sera utilisée."
+                "title": "Collez n'importe quelle URL de modèle CivitAI ou CivitArchive. Formats supportés :",
+                "format1": "https://civitai.com/models/12345",
+                "format2": "https://civitai.com/models/12345?modelVersionId=67890",
+                "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+                "note": "Note : Si aucun modelVersionId n'est fourni, la dernière version sera utilisée.",
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "Confirmer la re-liaison"
         },
@@ -1381,18 +1955,29 @@
                 "editFileName": "Modifier le nom de fichier",
                 "editBaseModel": "Modifier le modèle de base",
                 "editVersionName": "Modifier le nom de la version",
-                "viewOnCivitai": "Voir sur Civitai",
-                "viewOnCivitaiText": "Voir sur Civitai",
+                "viewOnCivitai": "Voir sur CivitAI",
+                "viewOnCivitaiText": "Voir sur CivitAI",
                 "viewOnHuggingFace": "Voir sur Hugging Face",
                 "viewOnHuggingFaceText": "Voir sur Hugging Face",
                 "viewCreatorProfile": "Voir le profil du créateur",
                 "openFileLocation": "Ouvrir l'emplacement du fichier",
+                "openSidecarLocation": "Ouvrir l'emplacement des métadonnées",
                 "sendToWorkflow": "Envoyer vers ComfyUI",
-                "sendToWorkflowText": "Envoyer vers ComfyUI"
+                "sendToWorkflowText": "Envoyer vers ComfyUI",
+                "copyHash": "Copier le hash",
+                "copyCivitaiId": "Copier l’ID Civitai",
+                "civitaiIdCopied": "ID Civitai copié dans le presse-papiers",
+                "deleteModelWithShortcut": "Supprimer le modèle (Del)"
             },
             "openFileLocation": {
                 "success": "Emplacement du fichier ouvert avec succès",
                 "failed": "Échec de l'ouverture de l'emplacement du fichier",
+                "copied": "Chemin copié dans le presse-papiers: {{path}}",
+                "clipboardFallback": "Chemin: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Emplacement des métadonnées ouvert avec succès",
+                "failed": "Échec de l'ouverture de l'emplacement des métadonnées",
                 "copied": "Chemin copié dans le presse-papiers: {{path}}",
                 "clipboardFallback": "Chemin: {{path}}"
             },
@@ -1405,13 +1990,16 @@
                 "location": "Emplacement",
                 "baseModel": "Modèle de base",
                 "size": "Taille",
+                "hashes": "Hashes",
+                "civitaiModelId": "ID du modèle",
+                "civitaiVersionId": "ID de version",
                 "unknown": "Inconnu",
                 "usageTips": "Conseils d'utilisation",
                 "additionalNotes": "Notes supplémentaires",
                 "notesHint": "Appuyez sur Entrée pour sauvegarder, Maj+Entrée pour nouvelle ligne",
                 "addNotesPlaceholder": "Ajoutez vos notes ici...",
                 "aboutThisVersion": "À propos de cette version",
-                "baseModelSearchPlaceholder": "Rechercher un modèle de base…",
+                "baseModelSearchPlaceholder": "Rechercher un modèle de base...",
                 "baseModelSuggested": "Suggéré",
                 "baseModelNoMatch": "Aucun modèle de base correspondant"
             },
@@ -1422,7 +2010,7 @@
                 "showLess": "Afficher moins"
             },
             "usageTips": {
-                "addPresetParameter": "Ajouter un paramètre prédéfini...",
+                "addPresetParameter": "Ajouter un paramètre préréglé...",
                 "strengthMin": "Force Min",
                 "strengthMax": "Force Max",
                 "strengthRange": "Gamme de force",
@@ -1431,7 +2019,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valeur",
                 "add": "Ajouter",
-                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y"
+                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y",
+                "invalidValue": "Veuillez saisir un nombre valide",
+                "saveFailed": "Échec de l'enregistrement du paramètre préréglé",
+                "added": "Paramètre préréglé ajouté",
+                "updated": "Paramètre préréglé mis à jour"
             },
             "triggerWords": {
                 "label": "Mots-clés",
@@ -1440,9 +2032,9 @@
                 "cancel": "Annuler la modification",
                 "save": "Sauvegarder les modifications",
                 "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
-                "editWord": "Modifier le mot déclencheur",
-                "editPlaceholder": "Modifier le mot déclencheur",
-                "copyWord": "Copier le mot-clé",
+                "editWord": "Modifier le mot-clé",
+                "editPlaceholder": "Modifier le mot-clé",
+                "copyOrEditWord": "Cliquez pour copier, double-cliquez pour modifier",
                 "deleteWord": "Supprimer le mot-clé",
                 "suggestions": {
                     "noSuggestions": "Aucune suggestion disponible",
@@ -1480,10 +2072,10 @@
                 "noNext": "Aucun modèle suivant"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "Vente d'images générées interdite",
+                "noRentCivit": "Aucune génération via CivitAI",
+                "noRent": "Aucun service de génération",
+                "noSell": "Vente de modèles interdite",
                 "creditRequired": "Crédit du créateur requis",
                 "noDerivatives": "Pas de fusion de partage",
                 "noReLicense": "Mêmes autorisations requises",
@@ -1495,6 +2087,32 @@
                 "recipes": "Chargement des recipes...",
                 "examples": "Chargement des exemples...",
                 "versions": "Chargement des versions..."
+            },
+            "showcase": {
+                "hiddenBySfw": "{count} masqué(s) par le paramètre « Contenu SFW uniquement »",
+                "showExamples": "Afficher les exemples",
+                "showCount": "Afficher les exemples ({count})",
+                "hideExamples": "Masquer les exemples",
+                "addExamples": "Ajouter des exemples",
+                "previousExample": "Exemple précédent ([)",
+                "nextExample": "Exemple suivant (])",
+                "noExamples": "Aucune image d'exemple disponible",
+                "addMoreExamples": "Ajouter d'autres exemples",
+                "dragDrop": "Glissez-déposez des images ou des vidéos ici",
+                "or": "ou",
+                "selectFiles": "Sélectionner des fichiers",
+                "supportedFormats": "Formats pris en charge : jpg, png, gif, webp, avif, jxl, mp4, webm",
+                "importing": "Importation des fichiers...",
+                "noSupportedFiles": "Aucun fichier pris en charge sélectionné. Veuillez sélectionner des fichiers image ou vidéo.",
+                "allFiltered": "Toutes les images d'exemple sont filtrées en raison des paramètres de contenu NSFW",
+                "sfwOnlyEnabled": "Vos paramètres sont actuellement configurés pour n'afficher que du contenu tout public",
+                "changeInSettings": "Vous pouvez modifier cela dans les paramètres",
+                "nsfwMature": "Contenu pour adultes",
+                "nsfwR": "Contenu classé R",
+                "nsfwX": "Contenu classé X",
+                "nsfwXxx": "Contenu classé XXX",
+                "layoutGallery": "Vue galerie",
+                "layoutList": "Vue liste"
             },
             "versions": {
                 "heading": "Versions du modèle",
@@ -1522,29 +2140,38 @@
                     "newer": "Version plus récente",
                     "newerTooltip": "Cette version est plus récente que votre dernière version locale",
                     "earlyAccess": "Accès anticipé",
-                    "earlyAccessTooltip": "Cette version nécessite actuellement l'accès anticipé Civitai",
+                    "earlyAccessTooltip": "Cette version nécessite actuellement l'accès anticipé CivitAI",
+                    "paid": "Payant",
+                    "paidTooltip": "Cette version nécessite un paiement pour être téléchargée",
+                    "priceSaleTooltip": "En promotion, normalement {list} Buzz",
+                    "priceBlueBuzzTooltip": "Peut aussi être payé avec des Blue Buzz",
+                    "freeNow": "Gratuit maintenant",
+                    "freeNowTooltip": "Cette version ne nécessite plus de paiement",
                     "ignored": "Ignorée",
                     "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version",
                     "onSiteOnly": "Uniquement sur Site",
-                    "onSiteOnlyTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai"
+                    "onSiteOnlyTooltip": "Cette version n'est disponible que pour la génération sur le site CivitAI",
+                    "earlyAccessTooltipUntil": "Accès anticipé jusqu'au {date}, téléchargement gratuit ensuite"
                 },
                 "actions": {
                     "download": "Télécharger",
                     "downloadTooltip": "Télécharger cette version",
-                    "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis Civitai",
-                    "downloadNotAllowedTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai",
+                    "downloadChooseFilesTooltip": "Choisir les fichiers à télécharger",
+                    "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis CivitAI",
+                    "downloadPaidTooltip": "Télécharger cette version payante depuis CivitAI",
+                    "downloadNotAllowedTooltip": "Cette version n'est disponible que pour la génération sur le site CivitAI",
                     "delete": "Supprimer",
                     "deleteTooltip": "Supprimer cette version locale",
                     "ignore": "Ignorer",
                     "unignore": "Ne plus ignorer",
                     "ignoreTooltip": "Ignorer les notifications de mise à jour pour cette version",
                     "unignoreTooltip": "Reprendre les notifications de mise à jour pour cette version",
-                    "viewVersionOnCivitai": "Voir la version sur Civitai",
+                    "viewVersionOnCivitai": "Voir la version sur CivitAI",
                     "earlyAccessTooltip": "Nécessite l'achat de l'accès anticipé",
                     "resumeModelUpdates": "Reprendre les mises à jour pour ce modèle",
                     "ignoreModelUpdates": "Ignorer les mises à jour pour ce modèle",
                     "viewLocalVersions": "Voir toutes les versions locales",
-                    "viewLocalTooltip": "Bientôt disponible"
+                    "viewLocalTooltip": "Afficher toutes les versions locales de ce modèle sur la page principale"
                 },
                 "filters": {
                     "label": "Filtre de base",
@@ -1560,8 +2187,8 @@
                 },
                 "empty": "Aucun historique de versions n'est disponible pour ce modèle pour le moment.",
                 "error": "Échec du chargement des versions.",
-                "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle Civitai.",
-                "hfGroupInfo": "Ceci est un groupe de modèles HuggingFace. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
+                "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle CivitAI.",
+                "sourceGroupInfo": "Ceci est un groupe de modèles {source}. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
                 "confirm": {
                     "delete": "Supprimer cette version de votre bibliothèque ?"
                 },
@@ -1579,6 +2206,7 @@
             "statSuccess": "Réussi",
             "statFailed": "Échoué",
             "statSkipped": "Ignoré",
+            "statOffline": "Lecteur hors ligne",
             "statTotal": "Total scanné",
             "statDuration": "Durée",
             "successMessage": "Tous les {count} {type}s mis à jour avec succès !",
@@ -1633,6 +2261,10 @@
             "title": "Initialisation du gestionnaire Embedding",
             "message": "Scan et construction du cache embedding. Cela peut prendre quelques minutes..."
         },
+        "other": {
+            "title": "Initialisation du gestionnaire Autres modèles",
+            "message": "Analyse et construction du cache de modèles. Cela peut prendre quelques minutes..."
+        },
         "recipes": {
             "title": "Initialisation du gestionnaire de recipes",
             "message": "Chargement et traitement des recipes. Cela peut prendre quelques minutes..."
@@ -1644,14 +2276,14 @@
         "tips": {
             "title": "Astuces et conseils",
             "civitai": {
-                "title": "Intégration Civitai",
-                "description": "Connectez votre compte Civitai : Visitez Avatar de profil → Paramètres → Clés API → Ajouter une clé API, puis collez-la dans les paramètres du gestionnaire LoRA.",
-                "alt": "Configuration API Civitai"
+                "title": "Intégration CivitAI",
+                "description": "Connectez votre compte CivitAI : Visitez Avatar de profil → Paramètres → Clés API → Ajouter une clé API, puis collez-la dans les paramètres du gestionnaire LoRA.",
+                "alt": "Configuration API CivitAI"
             },
             "download": {
                 "title": "Téléchargement facile",
-                "description": "Utilisez les URLs Civitai pour télécharger et installer rapidement de nouveaux modèles.",
-                "alt": "Téléchargement Civitai"
+                "description": "Utilisez les URLs CivitAI pour télécharger et installer rapidement de nouveaux modèles.",
+                "alt": "Téléchargement CivitAI"
             },
             "recipes": {
                 "title": "Sauvegarder les recipes",
@@ -1701,13 +2333,15 @@
             "recipeReplaced": "Recipe remplacée dans le workflow",
             "recipeFailedToSend": "Échec de l'envoi de la recipe au workflow",
             "noMatchingNodes": "Aucun nœud compatible disponible dans le workflow actuel",
+            "noPromptTargets": "Aucune cible de prompt compatible dans le workflow.\nFaites un clic droit sur un nœud dans ComfyUI → Marquer comme → Cible d'envoi du prompt",
             "noTargetNodeSelected": "Aucun nœud cible sélectionné",
             "modelUpdated": "Modèle mis à jour dans le workflow",
             "modelFailed": "Échec de la mise à jour du nœud modèle",
             "embeddingAdded": "Embedding ajouté au workflow",
             "embeddingFailed": "Échec de l'ajout de l'embedding",
             "promptSent": "Prompt envoyé au workflow",
-            "promptFailed": "Échec de l'envoi du prompt"
+            "promptFailed": "Échec de l'envoi du prompt",
+            "nodeTypeExcluded": "Type de nœud \"{type}\" exclu des cibles d'envoi"
         },
         "nodeSelector": {
             "recipe": "Recipe",
@@ -1717,7 +2351,8 @@
             "replace": "Remplacer",
             "append": "Ajouter",
             "selectTargetNode": "Sélectionner le nœud cible",
-            "sendToAll": "Envoyer à tous"
+            "sendToAll": "Envoyer à tous",
+            "excludeNodeType": "Ne plus suggérer ce type de nœud"
         },
         "exampleImages": {
             "opened": "Dossier d'images d'exemple ouvert",
@@ -1738,10 +2373,52 @@
         "tabs": {
             "gettingStarted": "Commencer",
             "updateVlogs": "Vlogs de mise à jour",
-            "documentation": "Documentation"
+            "documentation": "Documentation",
+            "shortcuts": "Raccourcis"
         },
         "gettingStarted": {
-            "title": "Premiers pas avec le Gestionnaire LoRA"
+            "title": "Premiers pas avec le Gestionnaire LoRA",
+            "replayTutorial": "Rejouer le tutoriel"
+        },
+        "shortcuts": {
+            "title": "Raccourcis clavier et souris",
+            "groups": {
+                "general": "Général",
+                "actions": "Actions",
+                "selection": "Sélection et mode groupé",
+                "navigation": "Navigation",
+                "modelModal": "Modale Modèle / Recipe",
+                "mediaViewer": "Visionneuse de médias / Galerie d'exemples"
+            },
+            "keys": {
+                "click": "Clic",
+                "drag": "Glisser",
+                "rightClick": "Clic droit",
+                "letter": "Lettre",
+                "swipe": "Balayage"
+            },
+            "entries": {
+                "focusSearch": "Donner le focus au champ de recherche",
+                "closeModal": "Fermer la fenêtre modale / le panneau",
+                "openShortcuts": "Ouvrir ce panneau de raccourcis",
+                "refresh": "Actualiser la liste des modèles",
+                "fetchMetadata": "Récupérer les métadonnées depuis CivitAI (pages de modèles uniquement)",
+                "downloadModel": "Télécharger un modèle (pages de modèles uniquement)",
+                "toggleBulkMode": "Activer/désactiver le mode groupé",
+                "selectAll": "Sélectionner tous les modèles visibles",
+                "rangeSelect": "Sélection d'une plage",
+                "marqueeSelect": "Sélection par glisser-déposer des cartes (sur une zone vide de la grille)",
+                "exitBulkMode": "Quitter le mode groupé",
+                "bulkActions": "Sur une carte sélectionnée : menu des actions groupées",
+                "globalActions": "Sur une zone vide de la page : menu des actions globales (vérification des mises à jour, gestion des modèles exclus)",
+                "scrollPages": "Faire défiler les pages",
+                "jumpAlphabet": "Sauter via la barre alphabétique",
+                "prevNext": "Modèle précédent / suivant",
+                "deleteEntry": "Supprimer",
+                "cycleMedia": "Parcourir les médias ([ / ] dans la galerie d'exemples)",
+                "swipeTouch": "Parcourir les médias sur les appareils tactiles",
+                "closeViewer": "Fermer la visionneuse"
+            }
         },
         "updateVlogs": {
             "title": "Dernières mises à jour",
@@ -1758,7 +2435,8 @@
             "settings": "Paramètres & Configuration",
             "extensions": "Extensions",
             "newBadge": "NOUVEAU"
-        }
+        },
+        "newContentBadge": "NOUVEAU"
     },
     "update": {
         "title": "Vérifier les mises à jour",
@@ -1834,7 +2512,7 @@
             "submitGithubIssue": "Soumettre un problème sur GitHub",
             "joinDiscord": "Rejoindre Discord",
             "youtubeChannel": "Chaîne YouTube",
-            "civitaiProfile": "Profil Civitai",
+            "civitaiProfile": "Profil CivitAI",
             "supportKofi": "Soutenir sur Ko-fi",
             "supportPatreon": "Soutenir sur Patreon"
         },
@@ -1877,12 +2555,16 @@
             "downloadPartialSuccess": "{completed} sur {total} LoRAs téléchargés",
             "downloadPartialWithAccess": "{completed} sur {total} LoRAs téléchargés. {accessFailures} ont échoué en raison de restrictions d'accès. Vérifiez votre clé API dans les paramètres ou le statut d'accès anticipé.",
             "pleaseSelectVersion": "Veuillez sélectionner une version",
+            "pleaseSelectFile": "Veuillez sélectionner au moins un fichier",
             "versionExists": "Cette version existe déjà dans votre bibliothèque",
             "downloadCompleted": "Téléchargement terminé avec succès",
             "downloadSkippedByBaseModel": "Téléchargement ignoré, car le modèle de base {baseModel} est exclu",
             "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
+            "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
+            "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",
+            "filenameTemplateFailed": "Échec de l'application du modèle de nom de fichier : {error}",
             "noModelsSelected": "Aucun modèle sélectionné"
         },
         "recipes": {
@@ -1903,18 +2585,24 @@
             "negativePromptUpdated": "Prompt négatif mis à jour avec succès",
             "promptEditorHint": "Appuyez sur Entrée pour sauvegarder, Maj+Entrée pour nouvelle ligne",
             "noRecipeId": "Aucun ID de recipe disponible",
-            "sendToWorkflowFailed": "Échec de l'envoi de la recette vers le workflow : {message}",
+            "sendToWorkflowFailed": "Échec de l'envoi de la Recipe vers le workflow : {message}",
             "copyFailed": "Erreur lors de la copie de la syntaxe de la recipe : {message}",
-            "createError": "Erreur lors de la création du Recipe ：{message}",
-            "createFailed": "Échec de la création du Recipe ：{error}",
+            "createError": "Erreur lors de la création du Recipe  : {message}",
+            "createFailed": "Échec de la création du Recipe  : {error}",
             "createMissingData": "Données requises manquantes pour créer le Recipe",
             "created": "Recipe créé avec succès",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
+            "unresolvableMarkedForReconnect": "{count} entrées irrésolubles marquées — elles peuvent maintenant être reconnectées à un LoRA local.",
+            "noPreviousRecipe": "Aucune Recipe précédente",
+            "noNextRecipe": "Aucune Recipe suivante",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
             "preparingForDownloadFailed": "Erreur lors de la préparation des LoRAs pour le téléchargement",
             "enterLoraName": "Veuillez entrer un nom ou une syntaxe LoRA",
             "reconnectedSuccessfully": "LoRA reconnecté avec succès",
+            "reconnectBaseModelMismatch": "Reconnexion effectuée, mais les modèles de base diffèrent (Recipe : {recipe}, LoRA : {lora}) — ils sont compatibles au niveau architectural",
             "reconnectFailed": "Erreur lors de la reconnexion du LoRA : {message}",
+            "loraRestored": "LoRA restauré à son association précédente",
+            "loraRestoreFailed": "Erreur lors de la restauration du LoRA : {message}",
             "noPromptToSend": "Aucun prompt à envoyer",
             "cannotSend": "Impossible d'envoyer la recipe : ID de recipe manquant",
             "sendFailed": "Échec de l'envoi de la recipe vers le workflow",
@@ -1922,6 +2610,16 @@
             "missingCheckpointPath": "Chemin du checkpoint indisponible",
             "missingCheckpointInfo": "Informations sur le checkpoint manquantes",
             "downloadCheckpointFailed": "Échec du téléchargement du checkpoint : {message}",
+            "enterCheckpointName": "Veuillez saisir un nom de checkpoint",
+            "checkpointReconnectedSuccessfully": "Checkpoint reconnecté avec succès",
+            "reconnectCheckpointBaseModelMismatch": "Reconnexion effectuée, mais les modèles de base diffèrent (Recipe : {recipe}, checkpoint : {checkpoint}) — ils sont compatibles au niveau architectural",
+            "checkpointReconnectFailed": "Erreur lors de la reconnexion du checkpoint : {message}",
+            "checkpointRestored": "Checkpoint restauré à son association précédente",
+            "checkpointRestoreFailed": "Erreur lors de la restauration du checkpoint : {message}",
+            "checkpointDownloadUnavailable": "Ce checkpoint ne peut pas être téléchargé sans identifiants CivitAI - essayez de le reconnecter avec un checkpoint local",
+            "missingLoraDownloadInfo": "Informations de téléchargement manquantes pour ce LoRA",
+            "hashNotFoundOnCivitai": "Ce hash de LoRA ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour ou le hash est invalide",
+            "downloadLoraFailed": "Échec du téléchargement du LoRA : {message}",
             "cannotDelete": "Impossible de supprimer la recipe : ID de recipe manquant",
             "deleteConfirmationError": "Erreur lors de l'affichage de la confirmation de suppression",
             "deletedSuccessfully": "Recipe supprimée avec succès",
@@ -1936,27 +2634,31 @@
             "processingError": "Erreur de traitement : {message}",
             "folderBrowserError": "Erreur lors du chargement du navigateur de dossiers : {message}",
             "recipeSaveFailed": "Échec de la sauvegarde de la recipe : {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "Recipe enregistrée avec succès",
             "importFailed": "Échec de l'importation : {message}",
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
             "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers",
-            "batchImportFailed": "Failed to start batch import: {message}",
-            "batchImportCancelling": "Cancelling batch import...",
-            "batchImportCancelFailed": "Failed to cancel batch import: {message}",
-            "batchImportNoUrls": "Please enter at least one URL or file path",
-            "batchImportNoDirectory": "Please enter a directory path",
-            "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}",
-            "noRecipesSelected": "Aucune recette sélectionnée",
-            "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
-            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} recettes sélectionnées",
-            "repairBulkFailed": "Échec de la réparation des recettes sélectionnées : {message}",
-            "reimporting": "Ré-import de la recette depuis la source...",
+            "batchImportFailed": "Échec du démarrage de l'import groupé : {message}",
+            "batchImportCancelling": "Annulation de l'import groupé...",
+            "batchImportCancelFailed": "Échec de l'annulation de l'import groupé : {message}",
+            "batchImportNoUrls": "Veuillez saisir au moins une URL ou un chemin de fichier",
+            "batchImportNoDirectory": "Veuillez saisir un chemin de dossier",
+            "batchImportRateLimited": "Limite de débit du fournisseur de métadonnées atteinte — les requêtes sont ralenties et certains éléments peuvent être ignorés. Vous pouvez relancer l'import plus tard.",
+            "batchImportBrowseFailed": "Échec de la navigation dans le dossier : {message}",
+            "batchImportDirectorySelected": "Dossier sélectionné : {path}",
+            "noRecipesSelected": "Aucune Recipe sélectionnée",
+            "rematchSkipped": "Aucune des {total} Recipes sélectionnées ne nécessite de réassociation",
+            "rematchFailed": "Échec de la réassociation des Recipes sélectionnées : {message}",
+            "reimporting": "Ré-import de la Recipe depuis la source...",
+            "reimportingViaExtension": "Ré-import de la Recipe {current}/{total} via l’extension du navigateur...",
             "reimportSuccess": "Recette ré-importée avec succès",
             "reimportBulkComplete": "Ré-import terminé : {completed} ré-importé(s), {failed} échec(s) (sur {total})",
-            "reimportBulkFailed": "Échec du ré-import de certaines recettes",
-            "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les recettes sélectionnées",
-            "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres."
+            "reimportBulkFailed": "Échec du ré-import de certaines Recipes",
+            "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les Recipes sélectionnées",
+            "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres.",
+            "workflowSent": "Workflow envoyé vers ComfyUI",
+            "workflowSendFailed": "Échec de l'envoi du workflow vers ComfyUI: {error}",
+            "workflowNoWorkflow": "Aucun workflow intégré trouvé dans cette Recipe"
         },
         "models": {
             "noModelsSelected": "Aucun modèle sélectionné",
@@ -1993,8 +2695,8 @@
             "bulkUpdatesChecking": "Vérification des mises à jour pour les {type} sélectionnés...",
             "bulkUpdatesSuccess": "Mises à jour disponibles pour {count} {type} sélectionnés",
             "bulkUpdatesNone": "Aucune mise à jour trouvée pour les {type} sélectionnés",
-            "bulkUpdatesMissing": "Les {type} sélectionnés ne sont pas liés aux mises à jour Civitai",
-            "bulkUpdatesPartialMissing": "{missing} {type} sélectionnés sans lien Civitai ignorés",
+            "bulkUpdatesMissing": "Les {type} sélectionnés ne sont pas liés aux mises à jour CivitAI",
+            "bulkUpdatesPartialMissing": "{missing} {type} sélectionnés sans lien CivitAI ignorés",
             "bulkUpdatesFailed": "Échec de la vérification des mises à jour pour les {type} sélectionnés : {message}",
             "invalidCharactersRemoved": "Caractères invalides supprimés du nom de fichier",
             "filenameCannotBeEmpty": "Le nom de fichier ne peut pas être vide",
@@ -2023,19 +2725,22 @@
             "checkpointRootsFailed": "Échec du chargement des racines checkpoint : {message}",
             "unetRootsFailed": "Échec du chargement des racines Diffusion Model : {message}",
             "embeddingRootsFailed": "Échec du chargement des racines embedding : {message}",
+            "otherRootsFailed": "Échec du chargement des racines des autres modèles : {message}",
             "mappingsUpdated": "Mappages de chemin de modèle de base mis à jour ({count} mappage{plural})",
             "mappingsCleared": "Mappages de chemin de modèle de base effacés",
             "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
             "downloadTemplatesUpdated": "Modèles de chemin de téléchargement mis à jour",
             "downloadTemplatesFailed": "Échec de la sauvegarde des modèles de chemin de téléchargement : {message}",
-            "recipesPathUpdated": "Recipes storage path updated",
-            "recipesPathSaveFailed": "Failed to update recipes storage path: {message}",
+            "filenameTemplatesUpdated": "Modèles de nom de fichier mis à jour",
+            "filenameTemplatesFailed": "Échec de la sauvegarde des modèles de nom de fichier : {message}",
+            "recipesPathUpdated": "Chemin de stockage des Recipes mis à jour",
+            "recipesPathSaveFailed": "Échec de la mise à jour du chemin de stockage des Recipes : {message}",
             "settingsUpdated": "Paramètres mis à jour : {setting}",
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
             "displayDensitySet": "Densité d'affichage définie sur {density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "Échec du chargement des bibliothèques : {message}",
+            "libraryActivateFailed": "Échec de l'activation de la bibliothèque : {message}",
             "languageChangeFailed": "Échec du changement de langue : {message}",
             "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
             "cacheClearFailed": "Échec du vidage du cache : {error}",
@@ -2052,7 +2757,7 @@
             "deleted": "Préréglage \"{name}\" supprimé",
             "applied": "Préréglage \"{name}\" appliqué",
             "overwritten": "Préréglage \"{name}\" remplacé",
-            "restored": "Paramètres par défaut restaurés"
+            "restored": "Préréglages par défaut restaurés"
         },
         "error": {
             "presetNameEmpty": "Le nom du préréglage ne peut pas être vide",
@@ -2087,6 +2792,14 @@
             "updateFailed": "Échec de la mise à jour des mots-clés",
             "copyFailed": "Échec de la copie"
         },
+        "undo": {
+            "action": "Annuler",
+            "deleted": "Supprimé : {name}",
+            "deletedBulk": "{count} élément(s) supprimé(s)",
+            "expired": "La fenêtre d'annulation a expiré. L'élément a été définitivement supprimé.",
+            "failed": "Échec de l'annulation : {error}",
+            "restored": "Élément restauré"
+        },
         "virtual": {
             "loadFailed": "Échec du chargement des éléments",
             "loadMoreFailed": "Échec du chargement de plus d'éléments",
@@ -2112,13 +2825,16 @@
         "contextMenu": {
             "contentRatingSet": "Classification du contenu définie sur {level}",
             "contentRatingFailed": "Échec de la définition de la classification du contenu : {message}",
-            "relinkSuccess": "Modèle relié à Civitai avec succès",
+            "relinkSuccess": "Modèle relié à CivitAI avec succès",
             "relinkFailed": "Erreur : {message}",
             "linkHfSuccess": "Modèle lié à HuggingFace avec succès",
             "linkHfFailed": "Erreur : {message}",
+            "linkCivArchSuccess": "Modèle relié via CivitArchive avec succès",
             "fetchMetadataFirst": "Veuillez d'abord récupérer les métadonnées depuis CivitAI",
             "noCivitaiInfo": "Aucune information CivitAI disponible",
-            "missingHash": "Hash du modèle non disponible"
+            "missingHash": "Hash du modèle non disponible",
+            "enrichNeedsSource": "Liez d'abord ce modèle à une source de modèle (Lier le modèle → Lier à une source de modèle)",
+            "enrichUnsupportedSource": "L'enrichissement par IA n'est pas disponible pour les modèles {source}"
         },
         "exampleImages": {
             "pathUpdated": "Chemin des images d'exemple mis à jour avec succès",
@@ -2150,6 +2866,7 @@
             "fileRenameFailed": "Échec du renommage du fichier : {error}",
             "previewUpdated": "Aperçu mis à jour avec succès",
             "previewUploadFailed": "Échec du téléchargement de l'image d'aperçu",
+            "previewDropInvalid": "Type de fichier non pris en charge : {name}. Déposez plutôt une image ou une vidéo MP4.",
             "refreshComplete": "{action} terminé",
             "refreshFailed": "Échec de {action} des {type}s",
             "metadataRefreshed": "Métadonnées actualisées avec succès",
@@ -2174,9 +2891,12 @@
             "bulkMoveSuccess": "{successCount} {type}s déplacés avec succès",
             "exampleImagesDownloadSuccess": "Images d'exemple téléchargées avec succès !",
             "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "Échec du déplacement de l'élément : {message}",
             "copiedToClipboard": "Copié dans le presse-papiers",
-            "downloadStarted": "Téléchargement démarré"
+            "downloadStarted": "Téléchargement démarré",
+            "refreshCompleteScoped": "{scope} analysé : {added} nouveau(x), {removed} supprimé(s)",
+            "refreshKeptUnreachable": "{count} modèles conservés : {paths} inaccessible(s)",
+            "scanRootUnreachable": "{scope} est actuellement inaccessible. Aucune modification n’a été apportée."
         },
         "agent": {
             "llmNotConfigured": "Fournisseur d'IA non configuré. Activez-le dans Paramètres → Fournisseur d'IA.",
@@ -2204,29 +2924,32 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API Key"
+                "title": "Clé API CivitAI"
             },
             "cache_health": {
-                "title": "Model Cache Health"
+                "title": "État du cache de modèles"
             },
             "filename_conflicts": {
-                "title": "Duplicate Filename Conflicts"
+                "title": "Conflits de noms de fichiers en double"
+            },
+            "sidecar_mirror_orphans": {
+                "title": "Fichiers sidecar centralisés"
             },
             "ui_version": {
-                "title": "UI Version"
+                "title": "Version de l'interface"
             }
         },
         "actions": {
             "runAgain": "Relancer",
             "exportBundle": "Exporter le lot",
-            "open-settings": "Open Settings",
-            "open-settings-syntax-format": "Switch to Full Path Syntax",
-            "repair-cache": "Rebuild Cache",
-            "resolve-filename-conflicts": "Resolve Conflicts",
-            "reload-page": "Reload UI"
+            "open-settings": "Ouvrir les paramètres",
+            "open-settings-syntax-format": "Passer à la syntaxe de chemin complet",
+            "repair-cache": "Reconstruire le cache",
+            "resolve-filename-conflicts": "Résoudre les conflits",
+            "reload-page": "Recharger l'interface"
         },
         "labels": {
-            "conflicts": "Conflicts",
+            "conflicts": "Conflits",
             "version": "Version"
         },
         "toast": {
@@ -2241,7 +2964,7 @@
     },
     "conflictConfirm": {
         "title": "Résoudre les conflits de noms de fichiers",
-        "message": "Renommer en ajoutant un hachage de 4 caractères à chaque nom de fichier en double.",
+        "message": "Renommer en ajoutant un hash de 4 caractères à chaque nom de fichier en double.",
         "note": "Cette opération renomme les fichiers sur le disque. Les références de modèle dans les workflows existants peuvent nécessiter une mise à jour si vous utilisez le format de syntaxe A1111.",
         "detail": "Exemple : <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
         "impact": "Renommera <strong>{count}</strong> fichier(s) dans <strong>{groups}</strong> groupe(s) de doublons",
@@ -2257,10 +2980,10 @@
             "seconds": "secondes"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "title": "Soutenez l'avenir de LoRA Manager ❤️",
+            "content": "LoRA Manager est un projet passion mené à plein temps par un développeur solo. Votre soutien sur Ko-fi aide à couvrir les coûts de développement, à publier de nouvelles mises à jour et débloque une clé de licence pour l'extension LM CivitAI en guise de remerciement. Chaque contribution compte vraiment.",
+            "supportCta": "Soutenir sur Ko-fi",
+            "learnMore": "Tutoriel de l'extension LM CivitAI"
         },
         "cacheHealth": {
             "corrupted": {
@@ -2275,6 +2998,17 @@
             "rebuilding": "Reconstruction du cache...",
             "rebuildFailed": "Échec de la reconstruction du cache : {error}",
             "retry": "Réessayer"
+        },
+        "otherModels": {
+            "title": "La gestion des autres modèles est disponible",
+            "content": "Analysez et gérez les fichiers VAE, Upscaler, Text Encoder, CLIP Vision et ControlNet, et téléchargez-les depuis CivitAI, le tout depuis une page dédiée.",
+            "enable": "Activer les autres modèles",
+            "openSettings": "Ouvrir les paramètres"
+        },
+        "pager": {
+            "previous": "Message précédent",
+            "next": "Message suivant",
+            "position": "Message {current} sur {total}"
         }
     }
 }

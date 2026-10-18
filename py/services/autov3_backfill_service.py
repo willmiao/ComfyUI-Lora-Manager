@@ -27,6 +27,8 @@ import os
 import threading
 from typing import TYPE_CHECKING, Optional
 
+from ..utils.sidecar_paths import get_metadata_path
+
 if TYPE_CHECKING:  # pragma: no cover - type-check only; runtime imports are local
     from .model_scanner import ModelScanner
 
@@ -41,7 +43,7 @@ def _resolve_autov3(file_path: str) -> str:
     safetensors header hash. Returns ``''`` when neither is available.
     """
     try:
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         if os.path.exists(metadata_path):
             with open(metadata_path, "r", encoding="utf-8") as handle:
                 payload = json.load(handle)

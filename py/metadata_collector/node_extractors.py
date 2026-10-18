@@ -40,7 +40,7 @@ class GenericNodeExtractor(NodeMetadataExtractor):
     * ``MODEL`` output: common input fields (ckpt_name, unet_name, etc.)
       are checked for a model file name and stored as checkpoint metadata.
     * ``CONDITIONING`` output: common text input fields are checked for
-      prompt text and stored as prompt metadata.
+      prompt text, and conditioning inputs are tracked through transforms.
     """
 
     # Input field names that carry a model path in loader-style nodes.
@@ -73,7 +73,7 @@ class GenericNodeExtractor(NodeMetadataExtractor):
                     _store_checkpoint_metadata(metadata, node_id, name)
                     return
 
-        # — CONDITIONING encoder detection (CLIPTextEncode, Flux, custom) —
+        # — CONDITIONING encoder / transform detection —
         if "CONDITIONING" in return_types or any("CONDITIONING" in str(t) for t in return_types):
             text = None
             for field in GenericNodeExtractor._TEXT_FIELDS:
@@ -81,12 +81,14 @@ class GenericNodeExtractor(NodeMetadataExtractor):
                 if val and isinstance(val, str) and val.strip():
                     text = val.strip()
                     break
-            if text:
-                prompt_data = metadata.setdefault(PROMPTS, {})
-                prompt_data[node_id] = {
-                    "text": text,
-                    "node_id": node_id,
-                }
+
+            input_conditionings = _collect_conditioning_inputs(inputs)
+            if text or input_conditionings:
+                prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
+                if text:
+                    prompt_metadata["text"] = text
+                if input_conditionings:
+                    prompt_metadata["orig_conditionings"] = input_conditionings
 
     @staticmethod
     def update(node_id, outputs, metadata, return_types=None):
@@ -98,11 +100,26 @@ class GenericNodeExtractor(NodeMetadataExtractor):
             return
         if node_id not in metadata.get(PROMPTS, {}):
             return
-        if outputs and isinstance(outputs, list) and len(outputs) > 0:
-            if isinstance(outputs[0], tuple) and len(outputs[0]) > 0:
-                cond = outputs[0][0]
-                if cond is not None:
-                    metadata[PROMPTS][node_id]["conditioning"] = cond
+        output_tuple = _first_output_tuple(outputs)
+        if not output_tuple or len(output_tuple) < 1:
+            return
+
+        conditioning_index = _first_conditioning_index(return_types)
+        if conditioning_index is None or len(output_tuple) <= conditioning_index:
+            return
+
+        output_conditioning = output_tuple[conditioning_index]
+        if output_conditioning is None:
+            return
+
+        prompt_metadata = metadata[PROMPTS][node_id]
+        prompt_metadata["conditioning"] = output_conditioning
+        _record_conditioning_source(
+            metadata,
+            node_id,
+            output_conditioning,
+            prompt_metadata.get("orig_conditionings", []),
+        )
 
 class CheckpointLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
@@ -417,6 +434,34 @@ def _first_output_tuple(outputs):
     return None
 
 
+def _first_conditioning_index(return_types):
+    """Return the index of the first CONDITIONING output slot, or None."""
+    if not return_types:
+        return None
+    for index, return_type in enumerate(return_types):
+        if "CONDITIONING" in str(return_type):
+            return index
+    return None
+
+
+def _collect_conditioning_inputs(inputs):
+    """Collect conditioning object inputs (``conditioning*`` keys).
+
+    Primitive values (None, str, int, float, bool) are excluded so scalar
+    fields like ``conditioning_strength`` are not mistaken for conditioning
+    objects during provenance tracking.
+    """
+    if not inputs:
+        return []
+    return [
+        value
+        for input_name, value in inputs.items()
+        if input_name.startswith("conditioning")
+        and value is not None
+        and not isinstance(value, (str, int, float, bool))
+    ]
+
+
 def _record_conditioning_source(
     metadata, node_id, output_conditioning, input_conditionings
 ):
@@ -428,6 +473,14 @@ def _record_conditioning_source(
     ]
     if not sources:
         return
+
+    # Identity-preserving selectors return one of their inputs unchanged:
+    # only that input contributed to the output, so record it alone instead
+    # of treating every input as a combination source.
+    for conditioning in sources:
+        if id(conditioning) == id(output_conditioning):
+            sources = [conditioning]
+            break
 
     prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
     prompt_metadata.setdefault("conditioning_sources", []).append(
@@ -508,13 +561,7 @@ class ConditioningCombineExtractor(NodeMetadataExtractor):
         if not inputs:
             return
 
-        input_conditionings = []
-        for input_name in inputs:
-            if (
-                input_name.startswith("conditioning")
-                and inputs[input_name] is not None
-            ):
-                input_conditionings.append(inputs[input_name])
+        input_conditionings = _collect_conditioning_inputs(inputs)
 
         if input_conditionings:
             prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
@@ -537,6 +584,20 @@ class ConditioningCombineExtractor(NodeMetadataExtractor):
         )
 
 
+def _get_model_link_source(metadata, node_id):
+    """Return the upstream node id feeding this node's MODEL input link."""
+    prompt = metadata.get("current_prompt")
+    original_prompt = getattr(prompt, "original_prompt", None)
+    if not original_prompt or node_id not in original_prompt:
+        return None
+    node_inputs = original_prompt[node_id].get("inputs", {})
+    for key in ("MODEL", "model"):
+        link = node_inputs.get(key)
+        if isinstance(link, list) and link:
+            return str(link[0])
+    return None
+
+
 class SetNodeExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -544,6 +605,20 @@ class SetNodeExtractor(NodeMetadataExtractor):
             return
 
         variable_name = _get_node_variable_name(metadata, node_id, inputs)
+
+        # Record MODEL passthrough as a variable reference so trace_model_path
+        # can follow the matching GetNode back to the real loader — Set/Get
+        # links are virtual and absent from the API prompt.
+        if variable_name:
+            source_node_id = _get_model_link_source(metadata, node_id)
+            if source_node_id is not None:
+                metadata.setdefault(MODELS, {})[node_id] = {
+                    "type": "model_variable",
+                    "variable_name": variable_name,
+                    "source_node_id": source_node_id,
+                    "node_id": node_id,
+                }
+
         conditioning = inputs.get("CONDITIONING")
         if conditioning is None:
             conditioning = inputs.get("conditioning")
@@ -814,6 +889,65 @@ class TSCKSamplerAdvancedExtractor(KSamplerAdvancedExtractor, TSCSamplerBaseExtr
 
     # Update method is inherited from TSCSamplerBaseExtractor
 
+class KreaTwoStageSamplerExtractor(BaseSamplerExtractor):
+    """Extractor for Krea Two/Three Stage Samplers (Auryg/Krea-2-Two-Stage-Sampler).
+
+    The node samples in two (or three) stages with per-stage settings
+    (stage1_steps/stage2_steps, stage1_cfg/stage2_cfg, ...). The canonical
+    metadata fields consumed by ``extract_generation_params`` (steps, cfg,
+    sampler_name, scheduler) are derived from the base stage (stage 1; the
+    three-stage variant reuses stage 1 settings for stage 3), while the full
+    per-stage breakdown is preserved in the raw parameters.
+    """
+
+    # All per-stage parameter keys present on both node variants.
+    _STAGE_PARAM_KEYS = (
+        "stage1_steps", "stage1_cfg", "stage1_sampler_name", "stage1_scheduler",
+        "stage2_steps", "stage2_cfg", "stage2_sampler_name", "stage2_scheduler",
+    )
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        BaseSamplerExtractor.extract_sampling_params(
+            node_id,
+            inputs,
+            metadata,
+            ("seed", "handoff_percent", "stage3_handoff_percent")
+            + KreaTwoStageSamplerExtractor._STAGE_PARAM_KEYS,
+        )
+
+        # Derive the canonical fields expected by extract_generation_params.
+        sampling_params = metadata[SAMPLING][node_id]["parameters"]
+        if "stage1_steps" in sampling_params or "stage2_steps" in sampling_params:
+            sampling_params["steps"] = (
+                (sampling_params.get("stage1_steps") or 0)
+                + (sampling_params.get("stage2_steps") or 0)
+            )
+        if "stage1_cfg" in sampling_params:
+            sampling_params["cfg"] = sampling_params["stage1_cfg"]
+        if "stage1_sampler_name" in sampling_params:
+            sampling_params["sampler_name"] = sampling_params["stage1_sampler_name"]
+        if "stage1_scheduler" in sampling_params:
+            sampling_params["scheduler"] = sampling_params["stage1_scheduler"]
+
+        BaseSamplerExtractor.extract_conditioning(node_id, inputs, metadata)
+
+        # Prefer the final generation resolution; latent dims are the fallback.
+        BaseSamplerExtractor.extract_latent_dimensions(node_id, inputs, metadata)
+        final_width = inputs.get("final_width")
+        final_height = inputs.get("final_height")
+        if final_width and final_height:
+            if SIZE not in metadata:
+                metadata[SIZE] = {}
+            metadata[SIZE][node_id] = {
+                "width": final_width,
+                "height": final_height,
+                "node_id": node_id,
+            }
+
 class LoraLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -852,6 +986,37 @@ class ImageSizeExtractor(NodeMetadataExtractor):
             "width": width,
             "height": height,
             "node_id": node_id
+        }
+
+class KreaDualResolutionSelectorExtractor(NodeMetadataExtractor):
+    """Extract base resolution from Krea Dual Resolution Selector outputs
+    (Auryg/Krea-2-Two-Stage-Sampler).
+
+    The node computes base/final dimensions at runtime from aspect ratio and
+    megapixel settings, so the values are only available in the update phase
+    (outputs: base_width, base_height, final_width, final_height, seed).
+    """
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        # Dimensions are computed at runtime; nothing to do here.
+        pass
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        output_tuple = _first_output_tuple(outputs)
+        if not output_tuple or len(output_tuple) < 2:
+            return
+        width, height = output_tuple[0], output_tuple[1]
+        if not isinstance(width, int) or not isinstance(height, int):
+            return
+
+        if SIZE not in metadata:
+            metadata[SIZE] = {}
+        metadata[SIZE][node_id] = {
+            "width": width,
+            "height": height,
+            "node_id": node_id,
         }
 
 class RgthreePowerLoraLoaderExtractor(NodeMetadataExtractor):
@@ -1255,6 +1420,8 @@ NODE_EXTRACTORS = {
     "ClownsharKSampler_Beta": SamplerExtractor,
     "TSC_KSampler": TSCKSamplerExtractor,   # Efficient Nodes
     "TSC_KSamplerAdvanced": TSCKSamplerAdvancedExtractor,  # Efficient Nodes
+    "KreaTwoStageSampler": KreaTwoStageSamplerExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
+    "KreaThreeStageSampler": KreaTwoStageSamplerExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
     "KSamplerBasicPipe": KSamplerBasicPipeExtractor,    # comfyui-impact-pack
     "KSamplerAdvancedBasicPipe": KSamplerAdvancedBasicPipeExtractor,    # comfyui-impact-pack
     "KSampler_inspire_pipe": KSamplerBasicPipeExtractor,    # comfyui-inspire-pack
@@ -1306,6 +1473,7 @@ NODE_EXTRACTORS = {
     "GetNode": GetNodeExtractor,
     # Latent
     "EmptyLatentImage": ImageSizeExtractor,
+    "KreaDualResolutionSelector": KreaDualResolutionSelectorExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
     # Flux
     "FluxGuidance": FluxGuidanceExtractor,      # Add FluxGuidance
     "CFGGuider": CFGGuiderExtractor,            # Add CFGGuider

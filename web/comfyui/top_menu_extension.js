@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { lmUrl } from "./base_path.js";
 
 const BUTTON_TOOLTIP = "Launch LoRA Manager (Shift+Click opens in new window)";
 const LORA_MANAGER_PATH = "/loras";
@@ -9,7 +10,7 @@ const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 const MIN_VERSION_FOR_ACTION_BAR = [1, 33, 9];
 
 const openLoraManager = (event) => {
-    const url = `${window.location.origin}${LORA_MANAGER_PATH}`;
+    const url = `${window.location.origin}${lmUrl(LORA_MANAGER_PATH)}`;
 
     if (event.shiftKey) {
         window.open(url, "_blank", NEW_WINDOW_FEATURES);
@@ -29,7 +30,7 @@ const getComfyUIFrontendVersion = async () => {
     }
 
     try {
-        const response = await fetch("/system_stats");
+        const response = await fetch(lmUrl("/system_stats"));
         const data = await response.json();
         
         if (data?.system?.comfyui_frontend_version) {
@@ -80,7 +81,7 @@ const supportsActionBarButtons = async () => {
 
 const fetchVersionInfo = async () => {
     try {
-        const response = await fetch("/api/lm/version-info");
+        const response = await fetch(lmUrl("/api/lm/version-info"));
         const data = await response.json();
 
         if (data.success) {

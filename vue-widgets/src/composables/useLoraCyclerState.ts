@@ -1,5 +1,6 @@
 import { ref, watch, computed } from 'vue'
 import type { ComponentWidget, CyclerConfig, LoraPoolConfig } from './types'
+import { lmApiUrl } from '@/utils/basePath'
 
 export interface CyclerLoraItem {
   file_name: string
@@ -173,7 +174,7 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
         requestBody.pool_config = poolConfig.filters
       }
 
-      const response = await fetch('/api/lm/loras/cycler-list', {
+      const response = await fetch(lmApiUrl('/api/lm/loras/cycler-list'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

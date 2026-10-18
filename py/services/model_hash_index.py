@@ -1,6 +1,8 @@
 from typing import Dict, Optional, Set, List
 import os
 
+from ..utils.constants import is_empty_placeholder_hash
+
 class ModelHashIndex:
     """Index for looking up models by hash or filename"""
     
@@ -81,6 +83,8 @@ class ModelHashIndex:
         # mapping. First-time registrations stay O(1).
         if autov3:
             autov3 = autov3.lower()
+            if is_empty_placeholder_hash(autov3):
+                autov3 = None
         if is_re_registration and (existing_hash != sha256 or autov3):
             stale_autov3_keys = [
                 key for key, mapped_path in self._autov3_to_path.items()
@@ -93,7 +97,7 @@ class ModelHashIndex:
 
     def add_autov3(self, autov3: str, file_path: str) -> None:
         """Add or update an AutoV3-only index entry (used when only AutoV3 is known)"""
-        if not autov3:
+        if not autov3 or is_empty_placeholder_hash(autov3):
             return
         autov3 = autov3.lower()
         self._autov3_to_path[autov3] = file_path
@@ -250,6 +254,8 @@ class ModelHashIndex:
     
     def has_hash(self, hash_value: str) -> bool:
         """Check if hash exists in index (SHA256, AutoV2, or AutoV3)"""
+        if is_empty_placeholder_hash(hash_value):
+            return False
         normalized = hash_value.lower()
         if normalized in self._hash_to_path:
             return True
@@ -261,6 +267,8 @@ class ModelHashIndex:
 
     def get_path(self, hash_value: str) -> Optional[str]:
         """Get file path for a hash (SHA256, AutoV2, or AutoV3)"""
+        if is_empty_placeholder_hash(hash_value):
+            return None
         normalized = hash_value.lower()
         path = self._hash_to_path.get(normalized)
         if path is not None:

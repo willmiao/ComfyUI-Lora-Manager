@@ -1,10 +1,11 @@
 import { showToast, openCivitai, openHuggingFace, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
+import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
-import { toggleShowcase } from './showcase/ShowcaseView.js';
+import { hasCivitaiSource } from './utils.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
@@ -64,10 +65,16 @@ function handleModelCardEvent_internal(event, modelType) {
 
     if (event.target.closest('.fa-globe')) {
         event.stopPropagation();
-        if (card.dataset.from_civitai === 'true') {
+        // CivitAI wins when the model actually has CivitAI data; otherwise fall
+        // back to the linked external source. Relying on `from_civitai` here
+        // made the two sources mutually exclusive whenever one of them was
+        // (re)linked (#1094).
+        if (card.dataset.has_civitai === 'true') {
             openCivitai(card.dataset.filepath);
-        } else if (card.dataset.hf_url) {
+        } else if (card.dataset.source_platform === 'huggingface' && card.dataset.hf_url) {
             openHuggingFace(card.dataset.hf_url);
+        } else if (card.dataset.source_url) {
+            openModelSource(card.dataset.source_url);
         }
         return true; // Stop propagation
     }
@@ -109,7 +116,10 @@ function handleModelCardEvent_internal(event, modelType) {
     }
 
     // If no specific element was clicked, handle the card click (show modal or toggle selection)
-    handleCardClick(card, modelType);
+    if (state.bulkMode && event.shiftKey) {
+        event.preventDefault(); // keep shift+click from extending a text selection
+    }
+    handleCardClick(card, modelType, event.shiftKey);
     return false; // Continue with other handlers (e.g., bulk selection)
 }
 
@@ -248,6 +258,11 @@ function handleCopyAction(card, modelType) {
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         const message = translate('modelCard.actions.embeddingNameCopied', {}, 'Embedding syntax copied');
         copyToClipboard(embeddingCode, message);
+    } else {
+        // Other model types (VAE, upscalers, ...) - copy the file name
+        const fileName = card.dataset.file_name;
+        const message = translate('modelCard.actions.modelNameCopied', {}, 'Model name copied');
+        copyToClipboard(fileName, message);
     }
 }
 
@@ -289,12 +304,12 @@ function handleViewLocalVersionsFromCard(card, modelType) {
     }
 }
 
-function handleCardClick(card, modelType) {
+function handleCardClick(card, modelType, extendSelection = false) {
     const pageState = getCurrentPageState();
 
     if (state.bulkMode) {
         // Toggle selection using the bulk manager
-        bulkManager.toggleCardSelection(card);
+        bulkManager.toggleCardSelection(card, extendSelection);
     } else if (pageState && pageState.duplicatesMode) {
         // In duplicates mode, don't open modal when clicking cards
         return;
@@ -304,10 +319,21 @@ function handleCardClick(card, modelType) {
     }
 }
 
+// Preview URL is not in the dataset; read it from the card's rendered media
+function getCardPreviewUrl(card) {
+    const cardMedia = card.querySelector('.card-preview img, .card-preview video');
+    if (!cardMedia) return '';
+    return cardMedia.tagName === 'VIDEO'
+        ? (cardMedia.dataset.src || '')
+        : (cardMedia.src || '');
+}
+
 async function showModelModalFromCard(card, modelType) {
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
+        autov3: card.dataset.autov3 || '',
+        preview_url: getCardPreviewUrl(card),
         file_path: card.dataset.filepath,
         model_name: card.dataset.name,
         file_name: card.dataset.file_name,
@@ -315,6 +341,8 @@ async function showModelModalFromCard(card, modelType) {
         modified: card.dataset.modified,
         file_size: parseInt(card.dataset.file_size || '0'),
         from_civitai: card.dataset.from_civitai === 'true',
+        source_platform: card.dataset.source_platform || '',
+        source_url: card.dataset.source_url || '',
         hf_url: card.dataset.hf_url || '',
         base_model: card.dataset.base_model,
         notes: card.dataset.notes || '',
@@ -397,6 +425,8 @@ function showExampleAccessModal(card, modelType) {
             // Get the model data from card dataset (works for both lora and checkpoint)
             const modelMeta = {
                 sha256: card.dataset.sha256,
+                autov3: card.dataset.autov3 || '',
+                preview_url: getCardPreviewUrl(card),
                 file_path: card.dataset.filepath,
                 model_name: card.dataset.name,
                 file_name: card.dataset.file_name,
@@ -404,6 +434,8 @@ function showExampleAccessModal(card, modelType) {
                 modified: card.dataset.modified,
                 file_size: card.dataset.file_size,
                 from_civitai: card.dataset.from_civitai === 'true',
+                source_platform: card.dataset.source_platform || '',
+                source_url: card.dataset.source_url || '',
                 hf_url: card.dataset.hf_url || '',
                 base_model: card.dataset.base_model,
                 notes: card.dataset.notes,
@@ -421,30 +453,18 @@ function showExampleAccessModal(card, modelType) {
             // Show the model modal
             await showModelModal(modelMeta, modelType);
 
-            // Scroll to import area after modal is visible
+            // Reveal the import entry once the modal content has rendered
             setTimeout(() => {
-                const importArea = document.querySelector('.example-import-area');
+                // Gallery mode: the import button is always visible — expand the zone
+                const importBtn = document.querySelector('#modelModal .gallery-import-btn');
+                if (importBtn) {
+                    importBtn.click();
+                    return;
+                }
+                // Empty state: the import area is the whole tab content — scroll to it
+                const importArea = document.querySelector('#modelModal .example-import-area');
                 if (importArea) {
-                    const showcaseTab = document.getElementById('showcase-tab');
-                    if (showcaseTab) {
-                        // First make sure showcase tab is visible
-                        const tabBtn = document.querySelector('.tab-btn[data-tab="showcase"]');
-                        if (tabBtn && !tabBtn.classList.contains('active')) {
-                            tabBtn.click();
-                        }
-
-                        // Then toggle showcase if collapsed
-                        const carousel = showcaseTab.querySelector('.carousel');
-                        if (carousel && carousel.classList.contains('collapsed')) {
-                            const scrollIndicator = showcaseTab.querySelector('.scroll-indicator');
-                            if (scrollIndicator) {
-                                toggleShowcase(scrollIndicator);
-                            }
-                        }
-
-                        // Finally scroll to the import area
-                        importArea.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    importArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }, 500);
         };
@@ -457,8 +477,12 @@ function showExampleAccessModal(card, modelType) {
 export function createModelCard(model, modelType) {
     const card = document.createElement('div');
     card.className = 'model-card';  // Reuse the same class for styling
+    // Always draggable (move-to-folder in the sidebar). Accidental micro-drags
+    // from click jitter are rendered harmless by the preview-drop handlers
+    // below, which ignore internal card drags via MODEL_CARD_DRAG_MIME_TYPE.
     card.draggable = true;
     card.dataset.sha256 = model.sha256;
+    card.dataset.autov3 = model.autov3 || '';
     card.dataset.filepath = model.file_path;
     card.dataset.name = model.model_name;
     card.dataset.file_name = model.file_name;
@@ -466,12 +490,19 @@ export function createModelCard(model, modelType) {
     card.dataset.modified = model.modified;
     card.dataset.file_size = model.file_size;
     card.dataset.from_civitai = model.from_civitai;
+    // Independent of `from_civitai`: a model can have both CivitAI data and an
+    // HF link, and the card globe must keep pointing at CivitAI when it does.
+    card.dataset.has_civitai = hasCivitaiSource(model.civitai) ? 'true' : 'false';
     card.dataset.usage_count = String(model.usage_count);
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
     card.dataset.exclude = model.exclude ? 'true' : 'false';
-    card.dataset.hf_url = model.hf_url || '';
+    const modelSourceInfo = getModelSourceInfo(model);
+    card.dataset.source_url = modelSourceInfo?.url || '';
+    card.dataset.source_platform = modelSourceInfo?.platform || '';
+    // Legacy alias: only Hugging Face models expose `hf_url`.
+    card.dataset.hf_url = modelSourceInfo?.platform === 'huggingface' ? modelSourceInfo.url : '';
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
     card.dataset.skip_metadata_refresh = model.skip_metadata_refresh ? 'true' : 'false';
@@ -489,11 +520,12 @@ export function createModelCard(model, modelType) {
     const modelId = civitaiData?.modelId ?? civitaiData?.model_id;
     if (modelId !== undefined && modelId !== null && modelId !== '') {
         card.dataset.modelId = modelId;
-    } else if (model.hf_url) {
-        // For HF-only models, derive a group key from hf_url for version grouping
-        const match = model.hf_url.match(/https?:\/\/huggingface\.co\/([^/]+\/[^/]+)/);
-        if (match) {
-            card.dataset.modelId = 'hf:' + match[1];
+    } else {
+        // For externally-sourced models, derive a group key from the source
+        // identity for version grouping (ms:<model_id>, ta:<id>).
+        const sourceGroupKey = getModelSourceGroupKey(model);
+        if (sourceGroupKey) {
+            card.dataset.modelId = sourceGroupKey;
         }
     }
 
@@ -539,8 +571,9 @@ export function createModelCard(model, modelType) {
         card.classList.add('excluded-model');
     }
 
-    // Apply selection state if in bulk mode and this card is in the selected set (LoRA only)
-    if (modelType === MODEL_TYPES.LORA && state.bulkMode && state.selectedLoras.has(model.file_path)) {
+    // state.selectedModels resolves to the active page's set (selectedLoras
+    // included) - do not narrow this back to selectedLoras/LORA-only.
+    if (state.bulkMode && state.selectedModels.has(model.file_path)) {
         card.classList.add('selected');
     }
 
@@ -587,21 +620,24 @@ export function createModelCard(model, modelType) {
     const favoriteTitle = isFavorite ?
         translate('modelCard.actions.removeFromFavorites', {}, 'Remove from favorites') :
         translate('modelCard.actions.addToFavorites', {}, 'Add to favorites');
-    const globeTitle = model.from_civitai ?
+    const hasCivitai = hasCivitaiSource(model.civitai);
+    const globeTitle = hasCivitai ?
         translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
-        model.hf_url ?
-            translate('modelCard.actions.viewOnHuggingFace', {}, 'View on Hugging Face') :
+        modelSourceInfo ?
+            getModelSourceViewTitle(modelSourceInfo) :
             translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
-    const globeEnabled = model.from_civitai || !!model.hf_url;
+    const globeEnabled = hasCivitai || !!modelSourceInfo;
     let sendTitle;
     let copyTitle;
     if (modelType === MODEL_TYPES.LORA) {
         sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
         copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
     } else if (modelType === MODEL_TYPES.CHECKPOINT) {
+        // Checkpoint send sets the widget value directly; no append/replace modes.
         sendTitle = translate('modelCard.actions.sendCheckpointToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyCheckpointName', {}, 'Copy checkpoint name');
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
+        // Embedding send always appends to the prompt; no replace mode.
         sendTitle = translate('modelCard.actions.sendEmbeddingToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyEmbeddingName', {}, 'Copy embedding name');
     } else {
@@ -649,7 +685,7 @@ export function createModelCard(model, modelType) {
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ?
             `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
-            `<img src="${versionedPreviewUrl}" alt="${model.model_name}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
+            `<img draggable="false" src="${versionedPreviewUrl}" alt="${model.model_name}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
         }
             <div class="card-header">
                 ${shouldBlur ?
@@ -699,12 +735,14 @@ export function createModelCard(model, modelType) {
                             const autoTags = model.auto_tags || [];
                             const hlTags = autoTags.filter(t => t === 'HIGH' || t === 'LOW');
                             const hasVersionName = model.civitai?.name;
+                            const quantization = typeof model.quantization === 'string' && model.quantization
+                                ? model.quantization : null;
                             // When group_by_model is active and model has multiple versions,
                             // show clickable version count instead of version name (and hide badges)
                             const isGroupByModel = state.global.settings.group_by_model;
                             const versionCount = model.version_count;
                             const showVersionCount = isGroupByModel && versionCount > 1;
-                            if (!hlTags.length && !hasVersionName && !showVersionCount) return '';
+                            if (!hlTags.length && !hasVersionName && !showVersionCount && !quantization) return '';
                             const density = state.global.settings.display_density || 'default';
                             const shortLabels = density === 'medium' || density === 'compact';
                             // Don't show HIGH/LOW badges when showing version count (confusing in grouped mode)
@@ -714,6 +752,9 @@ export function createModelCard(model, modelType) {
                                 const titleAttr = shortLabels ? ` title="${t}"` : '';
                                 return `<span class="${cls}"${titleAttr}>${label}</span>`;
                             }).join('') : '';
+                            // Suppress the quant badge in grouped mode too (a group mixes quants)
+                            const quantBadge = !showVersionCount && quantization
+                                ? `<span class="quant-badge">${quantization}</span>` : '';
                             let versionHtml = '';
                             if (showVersionCount) {
                                 const countLabel = translate('modelCard.footer.versionCount', { count: versionCount }, `${versionCount} versions`);
@@ -721,7 +762,7 @@ export function createModelCard(model, modelType) {
                             } else if (hasVersionName) {
                                 versionHtml = `<span class="version-name civitai-version">${model.civitai.name}</span>`;
                             }
-                            return `<span class="badge-version-unit">${badges}${versionHtml}</span>`;
+                            return `<span class="badge-version-unit">${badges}${versionHtml}${quantBadge}</span>`;
                         })()}
                         ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}
                     </div>
@@ -740,6 +781,54 @@ export function createModelCard(model, modelType) {
     if (videoElement) {
         configureModelCardVideo(videoElement, autoplayOnHover);
     }
+
+    // Dropping an image/video onto the card replaces the model preview via the
+    // existing replace-preview endpoint (overwrites file on disk, refreshes card).
+    // Internal card drags (move-to-folder) are tagged with a custom MIME type by
+    // SidebarManager and must be ignored here entirely: no highlight, no upload.
+    const isInternalCardDrag = (event) =>
+        Boolean(event.dataTransfer?.types?.includes(MODEL_CARD_DRAG_MIME_TYPE));
+
+    const preventDragDefaults = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+        card.addEventListener(eventName, (event) => {
+            if (isInternalCardDrag(event)) return;
+            preventDragDefaults(event);
+            card.classList.add('drag-over');
+        });
+    });
+
+    card.addEventListener('dragleave', (event) => {
+        if (isInternalCardDrag(event)) return;
+        preventDragDefaults(event);
+        card.classList.remove('drag-over');
+    });
+
+    card.addEventListener('drop', (event) => {
+        if (isInternalCardDrag(event)) return;
+        preventDragDefaults(event);
+        card.classList.remove('drag-over');
+
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        // Keep in sync with the accept list of the preview file picker (image/* + video/mp4).
+        if (!file.type.startsWith('image/') && file.type !== 'video/mp4') {
+            showToast('toast.api.previewDropInvalid', { name: file.name || '' }, 'error');
+            return;
+        }
+
+        const filePath = card.dataset.filepath;
+        if (!filePath) return;
+
+        // uploadPreview handles loading state, card refresh and error toasts internally.
+        getModelApiClient().uploadPreview(filePath, file);
+    });
 
     return card;
 }

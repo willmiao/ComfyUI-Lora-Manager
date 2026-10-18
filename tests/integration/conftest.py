@@ -42,7 +42,6 @@ def sample_recipe_data() -> Dict[str, Any]:
         "created_date": 1700000000.0,
         "modified": 1700000100.0,
         "favorite": False,
-        "repair_version": 1,
         "preview_nsfw_level": 0,
         "loras": [
             {"hash": "lora1hash", "file_name": "test_lora1", "strength": 0.8},

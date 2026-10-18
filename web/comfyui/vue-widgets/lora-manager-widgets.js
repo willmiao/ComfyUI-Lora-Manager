@@ -1105,7 +1105,7 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.last-used-preview[data-v-b940502e] {
+.last-used-preview[data-v-7db61bc9] {
   position: absolute;
   bottom: 100%;
   right: 0;
@@ -1113,7 +1113,7 @@ to { transform: rotate(360deg);
   z-index: 100;
   width: 280px;
 }
-.last-used-preview__content[data-v-b940502e] {
+.last-used-preview__content[data-v-7db61bc9] {
   background: var(--comfy-menu-bg, #1a1a1a);
   border: 1px solid var(--border-color, #444);
   border-radius: 6px;
@@ -1123,7 +1123,7 @@ to { transform: rotate(360deg);
   flex-direction: column;
   gap: 4px;
 }
-.last-used-preview__item[data-v-b940502e] {
+.last-used-preview__item[data-v-7db61bc9] {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1131,7 +1131,7 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 6px;
 }
-.last-used-preview__thumb[data-v-b940502e] {
+.last-used-preview__thumb[data-v-7db61bc9] {
   width: 28px;
   height: 28px;
   object-fit: cover;
@@ -1139,37 +1139,37 @@ to { transform: rotate(360deg);
   flex-shrink: 0;
   background: rgba(0, 0, 0, 0.2);
 }
-.last-used-preview__thumb--placeholder[data-v-b940502e] {
+.last-used-preview__thumb--placeholder[data-v-7db61bc9] {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--fg-color, #fff);
   opacity: 0.2;
 }
-.last-used-preview__thumb--placeholder svg[data-v-b940502e] {
+.last-used-preview__thumb--placeholder svg[data-v-7db61bc9] {
   width: 14px;
   height: 14px;
 }
-.last-used-preview__info[data-v-b940502e] {
+.last-used-preview__info[data-v-7db61bc9] {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
-.last-used-preview__name[data-v-b940502e] {
+.last-used-preview__name[data-v-7db61bc9] {
   font-size: 11px;
   color: var(--fg-color, #fff);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.last-used-preview__strength[data-v-b940502e] {
+.last-used-preview__strength[data-v-7db61bc9] {
   font-size: 10px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.last-used-preview__more[data-v-b940502e] {
+.last-used-preview__more[data-v-7db61bc9] {
   font-size: 11px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
@@ -1957,10 +1957,10 @@ to { transform: rotate(360deg);
   opacity: 1;
 }
 
-.search-container[data-v-83f6f852] {
+.search-container[data-v-ed10780a] {
   position: relative;
 }
-.search-icon[data-v-83f6f852] {
+.search-icon[data-v-ed10780a] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -1970,7 +1970,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-83f6f852] {
+.search-input[data-v-ed10780a] {
   width: 100%;
   padding: 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -1981,14 +1981,14 @@ to { transform: rotate(360deg);
   outline: none;
   box-sizing: border-box;
 }
-.search-input[data-v-83f6f852]:focus {
+.search-input[data-v-ed10780a]:focus {
   border-color: rgba(66, 153, 225, 0.6);
 }
-.search-input[data-v-83f6f852]::placeholder {
+.search-input[data-v-ed10780a]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.clear-button[data-v-83f6f852] {
+.clear-button[data-v-ed10780a] {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -2005,22 +2005,22 @@ to { transform: rotate(360deg);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.clear-button[data-v-83f6f852]:hover {
+.clear-button[data-v-ed10780a]:hover {
   opacity: 0.8;
 }
-.clear-button svg[data-v-83f6f852] {
+.clear-button svg[data-v-ed10780a] {
   width: 12px;
   height: 12px;
   color: var(--fg-color, #fff);
 }
-.lora-list[data-v-83f6f852] {
+.lora-list[data-v-ed10780a] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   max-height: 400px;
   overflow-y: auto;
 }
-.lora-item[data-v-83f6f852] {
+.lora-item[data-v-ed10780a] {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2030,14 +2030,14 @@ to { transform: rotate(360deg);
   transition: all 0.15s;
   border-left: 3px solid transparent;
 }
-.lora-item[data-v-83f6f852]:hover {
+.lora-item[data-v-ed10780a]:hover {
   background: rgba(66, 153, 225, 0.15);
 }
-.lora-item.active[data-v-83f6f852] {
+.lora-item.active[data-v-ed10780a] {
   background: rgba(66, 153, 225, 0.25);
   border-left-color: rgba(66, 153, 225, 0.8);
 }
-.lora-index[data-v-83f6f852] {
+.lora-index[data-v-ed10780a] {
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   font-size: 12px;
   color: rgba(226, 232, 240, 0.5);
@@ -2045,7 +2045,7 @@ to { transform: rotate(360deg);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.lora-name[data-v-83f6f852] {
+.lora-name[data-v-ed10780a] {
   flex: 1;
   font-size: 13px;
   color: var(--fg-color, #fff);
@@ -2053,7 +2053,7 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.current-badge[data-v-83f6f852] {
+.current-badge[data-v-ed10780a] {
   font-size: 11px;
   padding: 2px 8px;
   background: rgba(66, 153, 225, 0.3);
@@ -2062,14 +2062,14 @@ to { transform: rotate(360deg);
   color: rgba(191, 219, 254, 1);
   font-weight: 500;
 }
-.lora-item.no-lora-item .lora-name[data-v-83f6f852] {
+.lora-item.no-lora-item .lora-name[data-v-ed10780a] {
   font-style: italic;
   color: rgba(226, 232, 240, 0.6);
 }
-.lora-item.no-lora-item:hover .lora-name[data-v-83f6f852] {
+.lora-item.no-lora-item:hover .lora-name[data-v-ed10780a] {
   color: rgba(226, 232, 240, 0.8);
 }
-.no-results[data-v-83f6f852] {
+.no-results[data-v-ed10780a] {
   padding: 32px 20px;
   text-align: center;
   color: var(--fg-color, #fff);
@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-55e3316e] {
+.autocomplete-text-widget[data-v-793d67d2] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-55e3316e] {
+.input-wrapper[data-v-793d67d2] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-55e3316e] {
+.text-input[data-v-793d67d2] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2152,7 +2152,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-55e3316e] {
+.text-input.vue-dom-mode[data-v-793d67d2] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2161,14 +2161,14 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-55e3316e]:focus {
+.text-input[data-v-793d67d2]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-55e3316e] {
+.clear-button[data-v-793d67d2] {
   position: absolute;
-  right: 6px;
+  right: calc(6px + var(--lm-vscrollbar-width, 0px));
   bottom: 6px;  /* Changed from top to bottom */
   width: 18px;
   height: 18px;
@@ -2189,31 +2189,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-55e3316e] {
+.input-wrapper:hover .clear-button[data-v-793d67d2] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-55e3316e]:hover {
+.clear-button[data-v-793d67d2]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-55e3316e] {
+.clear-button svg[data-v-793d67d2] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e] {
-  right: 8px;
+.text-input.vue-dom-mode ~ .clear-button[data-v-793d67d2] {
+  right: calc(8px + var(--lm-vscrollbar-width, 0px));
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-793d67d2]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-55e3316e] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-793d67d2] {
   width: 14px;
   height: 14px;
 }
@@ -2481,8 +2481,9 @@ to { transform: rotate(360deg);
   }
 })();
 var _a;
-import { app as app$1 } from "../../../scripts/app.js";
-import { api as api$1 } from "../../../scripts/api.js";
+import { app } from "../../../scripts/app.js";
+import { api } from "../../../scripts/api.js";
+import "../settings.js";
 /**
 * @vue/shared v3.5.26
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -11052,7 +11053,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
 const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["__scopeId", "data-v-8da8aa4b"]]);
 const _hoisted_1$k = { class: "section" };
 const _hoisted_2$j = { class: "section__header" };
-const _hoisted_3$h = { class: "section__content" };
+const _hoisted_3$g = { class: "section__content" };
 const _hoisted_4$f = {
   key: 0,
   class: "section__placeholder"
@@ -11082,7 +11083,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$h, [
+        createBaseVNode("div", _hoisted_3$g, [
           __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$f, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$d, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
@@ -11101,7 +11102,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
 const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["__scopeId", "data-v-12f059e2"]]);
 const _hoisted_1$j = { class: "section" };
 const _hoisted_2$i = { class: "section__columns" };
-const _hoisted_3$g = { class: "section__column" };
+const _hoisted_3$f = { class: "section__column" };
 const _hoisted_4$e = { class: "section__column-header" };
 const _hoisted_5$c = { class: "section__column-content" };
 const _hoisted_6$c = {
@@ -11137,7 +11138,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$i, [
-          createBaseVNode("div", _hoisted_3$g, [
+          createBaseVNode("div", _hoisted_3$f, [
             createBaseVNode("div", _hoisted_4$e, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
@@ -11183,7 +11184,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
 const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-b869b780"]]);
 const _hoisted_1$i = { class: "section" };
 const _hoisted_2$h = { class: "section__columns" };
-const _hoisted_3$f = { class: "section__column" };
+const _hoisted_3$e = { class: "section__column" };
 const _hoisted_4$d = { class: "section__column-header" };
 const _hoisted_5$b = { class: "section__content" };
 const _hoisted_6$b = {
@@ -11231,7 +11232,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$h, [
-          createBaseVNode("div", _hoisted_3$f, [
+          createBaseVNode("div", _hoisted_3$e, [
             createBaseVNode("div", _hoisted_4$d, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
@@ -11299,7 +11300,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
 const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-af9caf84"]]);
 const _hoisted_1$h = { class: "section" };
 const _hoisted_2$g = { class: "section__header" };
-const _hoisted_3$e = { class: "section__toggle" };
+const _hoisted_3$d = { class: "section__toggle" };
 const _hoisted_4$c = ["checked"];
 const _hoisted_5$a = { class: "section__columns" };
 const _hoisted_6$a = { class: "section__column" };
@@ -11355,7 +11356,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("div", _hoisted_1$h, [
         createBaseVNode("div", _hoisted_2$g, [
           _cache[4] || (_cache[4] = createBaseVNode("span", { class: "section__title" }, "NAME PATTERNS", -1)),
-          createBaseVNode("label", _hoisted_3$e, [
+          createBaseVNode("label", _hoisted_3$d, [
             createBaseVNode("input", {
               type: "checkbox",
               checked: __props.useRegex,
@@ -11439,7 +11440,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
 const NamePatternsSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-9995b5ed"]]);
 const _hoisted_1$g = { class: "section" };
 const _hoisted_2$f = { class: "section__toggles" };
-const _hoisted_3$d = { class: "toggle-item" };
+const _hoisted_3$c = { class: "toggle-item" };
 const _hoisted_4$b = ["aria-checked"];
 const _hoisted_5$9 = { class: "toggle-item" };
 const _hoisted_6$9 = ["aria-checked"];
@@ -11457,7 +11458,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
         createBaseVNode("div", _hoisted_2$f, [
-          createBaseVNode("label", _hoisted_3$d, [
+          createBaseVNode("label", _hoisted_3$c, [
             _cache[3] || (_cache[3] = createBaseVNode("span", {
               class: "toggle-item__label",
               title: "Use the model without crediting the creator"
@@ -11497,7 +11498,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
 const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-07ddd3df"]]);
 const _hoisted_1$f = { class: "preview" };
 const _hoisted_2$e = { class: "preview__title" };
-const _hoisted_3$c = ["disabled"];
+const _hoisted_3$b = ["disabled"];
 const _hoisted_4$a = {
   key: 0,
   class: "preview__tooltip"
@@ -11556,7 +11557,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$c)
+          ])], 10, _hoisted_3$b)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
@@ -11668,7 +11669,7 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
 const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-83235a00"]]);
 const _hoisted_1$d = { class: "lora-pool-modal__header" };
 const _hoisted_2$c = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$b = { class: "lora-pool-modal__title" };
+const _hoisted_3$a = { class: "lora-pool-modal__title" };
 const _hoisted_4$9 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
@@ -11728,7 +11729,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
               }, [
                 createBaseVNode("div", _hoisted_1$d, [
                   createBaseVNode("div", _hoisted_2$c, [
-                    createBaseVNode("h3", _hoisted_3$b, toDisplayString(__props.title), 1),
+                    createBaseVNode("h3", _hoisted_3$a, toDisplayString(__props.title), 1),
                     __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$9, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
@@ -11756,7 +11757,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
 const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-7b4de03d"]]);
 const _hoisted_1$c = { class: "search-container" };
 const _hoisted_2$b = { class: "model-list" };
-const _hoisted_3$a = ["checked", "onChange"];
+const _hoisted_3$9 = ["checked", "onChange"];
 const _hoisted_4$8 = { class: "model-checkbox-visual" };
 const _hoisted_5$6 = {
   key: 0,
@@ -11866,7 +11867,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$a),
+                }, null, 40, _hoisted_3$9),
                 createBaseVNode("span", _hoisted_4$8, [
                   isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$6, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
@@ -11887,7 +11888,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
 const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-e02ca44a"]]);
 const _hoisted_1$b = { class: "search-container" };
 const _hoisted_2$a = ["onClick"];
-const _hoisted_3$9 = {
+const _hoisted_3$8 = {
   key: 0,
   class: "no-results"
 };
@@ -12031,7 +12032,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                 onClick: ($event) => toggleTag(tag.tag)
               }, toDisplayString(tag.tag), 11, _hoisted_2$a);
             }), 128)),
-            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$9, " No tags found ")) : createCommentVNode("", true),
+            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$8, " No tags found ")) : createCommentVNode("", true),
             hasMoreTags.value ? (openBlock(), createElementBlock("div", _hoisted_4$7, " Scroll to load more... ")) : createCommentVNode("", true)
           ], 544)
         ]),
@@ -12046,7 +12047,7 @@ const _hoisted_2$9 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$8 = { class: "tree-node__checkbox-label" };
+const _hoisted_3$7 = { class: "tree-node__checkbox-label" };
 const _hoisted_4$6 = ["checked"];
 const _hoisted_5$5 = {
   key: 0,
@@ -12107,7 +12108,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
           ])) : (openBlock(), createElementBlock("span", _hoisted_2$9)),
-          createBaseVNode("label", _hoisted_3$8, [
+          createBaseVNode("label", _hoisted_3$7, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
@@ -12153,7 +12154,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
 const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-90187dd4"]]);
 const _hoisted_1$9 = { class: "search-container" };
 const _hoisted_2$8 = { class: "folder-tree" };
-const _hoisted_3$7 = {
+const _hoisted_3$6 = {
   key: 1,
   class: "no-results"
 };
@@ -12252,7 +12253,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$7, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$6, " No folders found "))
           ])
         ]),
         _: 1
@@ -12261,11 +12262,18 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-046dcbf4"]]);
+function getLmBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmApiUrl(path) {
+  return `${getLmBasePath()}${path}`;
+}
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
     try {
-      const response = await fetch(`/api/lm/loras/base-models?limit=${limit}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/base-models?limit=${limit}`));
       const data = await response.json();
       return data.base_models || [];
     } catch (error) {
@@ -12275,7 +12283,7 @@ function useLoraPoolApi() {
   };
   const fetchTags = async (limit = 0) => {
     try {
-      const response = await fetch(`/api/lm/loras/top-tags?limit=${limit}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/top-tags?limit=${limit}`));
       const data = await response.json();
       return data.tags || [];
     } catch (error) {
@@ -12285,7 +12293,7 @@ function useLoraPoolApi() {
   };
   const fetchFolderTree = async () => {
     try {
-      const response = await fetch("/api/lm/loras/unified-folder-tree");
+      const response = await fetch(lmApiUrl("/api/lm/loras/unified-folder-tree"));
       const data = await response.json();
       return transformFolderTree(data.tree || {});
     } catch (error) {
@@ -12333,7 +12341,7 @@ function useLoraPoolApi() {
       if (params.namePatternsUseRegex !== void 0) {
         urlParams.set("name_pattern_use_regex", String(params.namePatternsUseRegex));
       }
-      const response = await fetch(`/api/lm/loras/list?${urlParams}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/list?${urlParams}`));
       const data = await response.json();
       return {
         items: data.items || [],
@@ -12658,7 +12666,7 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
 const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-ed73eab5"]]);
 const _hoisted_1$8 = { class: "last-used-preview" };
 const _hoisted_2$7 = { class: "last-used-preview__content" };
-const _hoisted_3$6 = ["src", "onError"];
+const _hoisted_3$5 = ["src", "onError"];
 const _hoisted_4$5 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
@@ -12681,7 +12689,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     const previewUrls = ref({});
     const fetchPreviewUrl = async (loraName) => {
       try {
-        const response = await fetch(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`);
+        const response = await fetch(lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`));
         if (response.ok) {
           const data = await response.json();
           if (data.preview_url) {
@@ -12710,7 +12718,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$6)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$5)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -12731,7 +12739,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-b940502e"]]);
+const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-7db61bc9"]]);
 const _hoisted_1$7 = { class: "slider-handle__value" };
 const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "SingleSlider",
@@ -13151,7 +13159,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
 const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-e0c8dc9f"]]);
 const _hoisted_1$5 = { class: "randomizer-settings" };
 const _hoisted_2$5 = { class: "setting-section" };
-const _hoisted_3$5 = { class: "count-mode-tabs" };
+const _hoisted_3$4 = { class: "count-mode-tabs" };
 const _hoisted_4$4 = ["checked"];
 const _hoisted_5$3 = ["checked"];
 const _hoisted_6$3 = { class: "slider-container" };
@@ -13216,7 +13224,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$5, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3$5, [
+          createBaseVNode("div", _hoisted_3$4, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -13527,7 +13535,7 @@ function useLoraRandomizerState(widget) {
       if (poolConfig) {
         requestBody.pool_config = poolConfig.filters || {};
       }
-      const response = await fetch("/api/lm/loras/random-sample", {
+      const response = await fetch(lmApiUrl("/api/lm/loras/random-sample"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -13847,7 +13855,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
 const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-ca6e8cec"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$4 = { class: "setting-section progress-section" };
-const _hoisted_3$4 = { class: "progress-label" };
+const _hoisted_3$3 = { class: "progress-label" };
 const _hoisted_4$3 = ["title"];
 const _hoisted_5$2 = { class: "progress-counter" };
 const _hoisted_6$2 = { class: "progress-index" };
@@ -13972,7 +13980,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
               class: normalizeClass(["progress-info", { disabled: __props.isPauseDisabled }]),
               onClick: handleOpenSelector
             }, [
-              createBaseVNode("span", _hoisted_3$4, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
+              createBaseVNode("span", _hoisted_3$3, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
               createBaseVNode("span", {
                 class: normalizeClass(["progress-name clickable", { disabled: __props.isPauseDisabled, "no-lora": __props.isNoLora }]),
                 title: __props.currentLoraFilename
@@ -14172,7 +14180,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
 const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-f0663be4"]]);
 const _hoisted_1$3 = { class: "search-container" };
 const _hoisted_2$3 = { class: "lora-list" };
-const _hoisted_3$3 = ["onMouseenter", "onClick"];
+const _hoisted_3$2 = ["onMouseenter", "onClick"];
 const _hoisted_4$2 = { class: "lora-index" };
 const _hoisted_5$1 = ["title"];
 const _hoisted_6$1 = {
@@ -14237,7 +14245,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
     const customPreviewUrlResolver = async (modelName) => {
       const response = await fetch(
-        `/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`
+        lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`)
       );
       if (!response.ok) {
         throw new Error("Failed to fetch preview URL");
@@ -14353,7 +14361,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   title: item.lora.file_name
                 }, toDisplayString(item.lora.file_name), 9, _hoisted_5$1),
                 __props.currentIndex === item.index ? (openBlock(), createElementBlock("span", _hoisted_6$1, "Current")) : createCommentVNode("", true)
-              ], 42, _hoisted_3$3);
+              ], 42, _hoisted_3$2);
             }), 128)),
             filteredList.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_7$1, " No LoRAs found ")) : createCommentVNode("", true)
           ])
@@ -14363,7 +14371,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraListModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-83f6f852"]]);
+const LoraListModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-ed10780a"]]);
 function useLoraCyclerState(widget) {
   let isRestoring = false;
   const currentIndex = ref(1);
@@ -14490,7 +14498,7 @@ function useLoraCyclerState(widget) {
       if (poolConfig == null ? void 0 : poolConfig.filters) {
         requestBody.pool_config = poolConfig.filters;
       }
-      const response = await fetch("/api/lm/loras/cycler-list", {
+      const response = await fetch(lmApiUrl("/api/lm/loras/cycler-list"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -14969,7 +14977,7 @@ const _hoisted_2$2 = {
   class: "json-content",
   ref: "contentRef"
 };
-const _hoisted_3$2 = ["innerHTML"];
+const _hoisted_3$1 = ["innerHTML"];
 const _hoisted_4$1 = {
   key: 1,
   class: "placeholder"
@@ -15064,7 +15072,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           hasMetadata.value ? (openBlock(), createElementBlock("pre", {
             key: 0,
             innerHTML: highlightedJson.value
-          }, null, 8, _hoisted_3$2)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
+          }, null, 8, _hoisted_3$1)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
         ], 512)
       ]);
     };
@@ -15137,8 +15145,7 @@ function useAutocomplete(textareaRef, modelType = "loras", options = {}) {
   };
 }
 const _hoisted_1$1 = { class: "autocomplete-text-widget" };
-const _hoisted_2$1 = { class: "input-wrapper" };
-const _hoisted_3$1 = ["placeholder", "spellcheck"];
+const _hoisted_2$1 = ["placeholder", "spellcheck"];
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "AutocompleteTextWidget",
   props: {
@@ -15156,8 +15163,35 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     const onModeChange = (event) => {
       const customEvent = event;
       isVueDomMode.value = customEvent.detail.isVueDomMode;
+      updateVScrollbarWidth();
     };
     const textareaRef = ref(null);
+    const inputWrapperRef = ref(null);
+    const vScrollbarWidth = ref(0);
+    let scrollbarResizeObserver = null;
+    const updateVScrollbarWidth = () => {
+      const ta = textareaRef.value;
+      if (!ta) return;
+      const overflowsY = ta.scrollHeight > ta.clientHeight;
+      vScrollbarWidth.value = overflowsY ? ta.offsetWidth - ta.clientWidth : 0;
+    };
+    const observeScrollbarWidth = () => {
+      unobserveScrollbarWidth();
+      const ta = textareaRef.value;
+      if (!ta || typeof ResizeObserver === "undefined") {
+        return;
+      }
+      scrollbarResizeObserver = new ResizeObserver(() => {
+        updateVScrollbarWidth();
+      });
+      scrollbarResizeObserver.observe(ta);
+    };
+    const unobserveScrollbarWidth = () => {
+      if (scrollbarResizeObserver) {
+        scrollbarResizeObserver.disconnect();
+        scrollbarResizeObserver = null;
+      }
+    };
     const hasText = ref(false);
     const showClearButton = computed(() => hasText.value);
     useAutocomplete(
@@ -15168,7 +15202,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     const updateHasTextState = () => {
       hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
     };
-    const onInput = () => {
+    const onInput = (event) => {
+      updateVScrollbarWidth();
+      if (event.inputType === "historyUndo") {
+        const ta = textareaRef.value;
+        if (ta && ta.selectionStart === 0 && ta.selectionEnd === ta.value.length) {
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      }
       updateHasTextState();
       if (textareaRef.value && typeof props.widget.callback === "function") {
         props.widget.callback(textareaRef.value.value);
@@ -15205,25 +15246,34 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       }
     };
     const onExternalValueChange = () => {
+      updateVScrollbarWidth();
       updateHasTextState();
     };
     const setupWidgetOnSetValue = () => {
       if (props.widget) {
         props.widget.onSetValue = (value) => {
           hasText.value = value.length > 0;
+          updateVScrollbarWidth();
         };
       }
     };
     const clearText = () => {
-      if (textareaRef.value) {
-        textareaRef.value.value = "";
-        hasText.value = false;
-        textareaRef.value.focus();
-        if (typeof props.widget.callback === "function") {
-          props.widget.callback("");
-        }
-        textareaRef.value.dispatchEvent(new Event("input"));
+      const ta = textareaRef.value;
+      if (!ta || ta.value.length === 0) return;
+      ta.focus();
+      ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try {
+        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, "");
+      } catch {
+        ok = false;
       }
+      if (ok) {
+        hasText.value = false;
+        return;
+      }
+      ta.value = "";
+      ta.dispatchEvent(new Event("input"));
     };
     onMounted(() => {
       if (textareaRef.value) {
@@ -15253,9 +15303,12 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         props.widget.callback(textareaRef.value.value);
       }
       setupWidgetOnSetValue();
+      updateVScrollbarWidth();
+      observeScrollbarWidth();
       document.addEventListener("lora-manager:vue-mode-change", onModeChange);
     });
     onUnmounted(() => {
+      unobserveScrollbarWidth();
       if (props.widget.inputEl === textareaRef.value) {
         props.widget.inputEl = void 0;
       }
@@ -15272,7 +15325,12 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$1, [
-        createBaseVNode("div", _hoisted_2$1, [
+        createBaseVNode("div", {
+          ref_key: "inputWrapperRef",
+          ref: inputWrapperRef,
+          class: "input-wrapper",
+          style: normalizeStyle({ "--lm-vscrollbar-width": vScrollbarWidth.value + "px" })
+        }, [
           createBaseVNode("textarea", {
             ref_key: "textareaRef",
             ref: textareaRef,
@@ -15283,7 +15341,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
             "data-capture-wheel": "true",
             onInput,
             onWheel
-          }, null, 46, _hoisted_3$1),
+          }, null, 46, _hoisted_2$1),
           showClearButton.value ? (openBlock(), createElementBlock("button", {
             key: 0,
             type: "button",
@@ -15311,12 +15369,12 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               })
             ], -1)
           ])])) : createCommentVNode("", true)
-        ])
+        ], 4)
       ]);
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-55e3316e"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-793d67d2"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -15657,88 +15715,6 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
     onCleanup == null ? void 0 : onCleanup();
   };
 }
-const LORA_PROVIDER_NODE_TYPES$1 = [
-  "Lora Stacker (LoraManager)",
-  "Lora Randomizer (LoraManager)",
-  "Lora Cycler (LoraManager)",
-  "Create Hook LoRA (LoraManager)"
-];
-const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
-  "Lora Stack Combiner (LoraManager)"
-];
-const LORA_CHAIN_NODE_TYPES$1 = [
-  ...LORA_PROVIDER_NODE_TYPES$1,
-  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
-];
-function isLoraStackAggregatorNode$1(comfyClass) {
-  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
-}
-function getActiveLorasFromNodeByType(node) {
-  const comfyClass = node == null ? void 0 : node.comfyClass;
-  if (comfyClass === "Lora Cycler (LoraManager)") {
-    return extractFromCyclerConfig(node);
-  }
-  if (isLoraStackAggregatorNode$1(comfyClass)) {
-    return /* @__PURE__ */ new Set();
-  }
-  return extractFromLorasWidget(node);
-}
-function extractFromLorasWidget(node) {
-  var _a2;
-  const activeLoraNames = /* @__PURE__ */ new Set();
-  const lorasWidget = node.lorasWidget || ((_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras"));
-  if (lorasWidget == null ? void 0 : lorasWidget.value) {
-    lorasWidget.value.forEach((lora) => {
-      if (lora.active) {
-        activeLoraNames.add(lora.name);
-      }
-    });
-  }
-  return activeLoraNames;
-}
-function extractFromCyclerConfig(node) {
-  var _a2, _b;
-  const activeLoraNames = /* @__PURE__ */ new Set();
-  const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
-  if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
-    activeLoraNames.add(cyclerWidget.value.current_lora_filename);
-  }
-  return activeLoraNames;
-}
-function isNodeActive(mode) {
-  return mode === void 0 || mode === 0 || mode === 3;
-}
-function setupModeChangeHandler(node, onModeChange) {
-  let _mode = node.mode;
-  Object.defineProperty(node, "mode", {
-    get() {
-      return _mode;
-    },
-    set(value) {
-      const oldValue = _mode;
-      _mode = value;
-      if (oldValue !== value) {
-        onModeChange(value, oldValue);
-      }
-    }
-  });
-}
-function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
-  return (newMode, _oldMode) => {
-    const isNodeCurrentlyActive = isNodeActive(newMode);
-    const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
-    if (nodeSpecificCallback) {
-      nodeSpecificCallback(activeLoraNames);
-    }
-    updateDownstreamLoaders2(node);
-  };
-}
-const app = {};
-const api = {
-  fetchApi: (...args) => fetch(...args),
-  addEventListener: (eventName, handler) => document.addEventListener(eventName, handler),
-  removeEventListener: (eventName, handler) => document.removeEventListener(eventName, handler)
-};
 let _loraSyntaxFormatCache = null;
 let _loraSyntaxFormatRefreshPromise = null;
 async function _fetchLoraSyntaxFormat() {
@@ -15782,25 +15758,103 @@ function _initLoraSyntaxFormatReactive() {
   });
 }
 _initLoraSyntaxFormatReactive();
+const AUTOCOMPLETE_METADATA_WIDGET_PREFIX = "__lm_autocomplete_meta_";
+const LORA_MANAGER_WIDGET_IDS_PROPERTY$1 = "__lm_widget_ids";
+function stripAutocompleteLastAccepted(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  if (!("lastAccepted" in value)) {
+    return value;
+  }
+  const stripped = { ...value };
+  delete stripped.lastAccepted;
+  return stripped;
+}
+function stripAutocompleteMetadataFromNodes(nodes) {
+  var _a2;
+  if (!Array.isArray(nodes)) {
+    return;
+  }
+  for (const node of nodes) {
+    if (!node || typeof node !== "object") {
+      continue;
+    }
+    const widgetIds = (_a2 = node.properties) == null ? void 0 : _a2[LORA_MANAGER_WIDGET_IDS_PROPERTY$1];
+    if (Array.isArray(node.widgets_values) && Array.isArray(widgetIds)) {
+      for (let i2 = 0; i2 < node.widgets_values.length && i2 < widgetIds.length; i2++) {
+        if (typeof widgetIds[i2] === "string" && widgetIds[i2].startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          node.widgets_values[i2] = stripAutocompleteLastAccepted(node.widgets_values[i2]);
+        }
+      }
+    }
+    const named = node.widgets_values_named;
+    if (named && typeof named === "object") {
+      for (const [key, value] of Object.entries(named)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          named[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+}
+function stripAutocompleteMetadataFromPromptResult(result) {
+  var _a2;
+  if (!result || typeof result !== "object") {
+    return result;
+  }
+  const workflow = result.workflow;
+  if (workflow && typeof workflow === "object") {
+    stripAutocompleteMetadataFromNodes(workflow.nodes);
+    const subgraphs = (_a2 = workflow.definitions) == null ? void 0 : _a2.subgraphs;
+    if (Array.isArray(subgraphs)) {
+      for (const subgraph of subgraphs) {
+        stripAutocompleteMetadataFromNodes(subgraph == null ? void 0 : subgraph.nodes);
+      }
+    }
+  }
+  const output = result.output;
+  if (output && typeof output === "object") {
+    for (const nodeOutput of Object.values(output)) {
+      const inputs = nodeOutput == null ? void 0 : nodeOutput.inputs;
+      if (!inputs || typeof inputs !== "object") {
+        continue;
+      }
+      for (const [key, value] of Object.entries(inputs)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          inputs[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+  return result;
+}
+function getComfyUIBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmUrl(path) {
+  return `${getComfyUIBasePath()}${path}`;
+}
 const ROOT_GRAPH_ID = "root";
-const LORA_PROVIDER_NODE_TYPES = [
+const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
   "Lora Cycler (LoraManager)",
   "Create Hook LoRA (LoraManager)"
 ];
-const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
   "Lora Stack Combiner (LoraManager)"
 ];
-const LORA_CHAIN_NODE_TYPES = [
-  ...LORA_PROVIDER_NODE_TYPES,
-  ...LORA_STACK_AGGREGATOR_NODE_TYPES
+const LORA_CHAIN_NODE_TYPES$1 = [
+  ...LORA_PROVIDER_NODE_TYPES$1,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
 ];
-function isLoraStackAggregatorNode(comfyClass) {
-  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+function isLoraStackAggregatorNode$1(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
 }
 function isLoraChainNode(comfyClass) {
-  return LORA_CHAIN_NODE_TYPES.includes(comfyClass);
+  return LORA_CHAIN_NODE_TYPES$1.includes(comfyClass);
 }
 function isMapLike(collection) {
   return collection && typeof collection.entries === "function" && typeof collection.values === "function";
@@ -15837,6 +15891,50 @@ function getLinkFromGraph(graph, linkId) {
     return graph.links.get(linkId) || null;
   }
   return graph.links[linkId] || null;
+}
+function findModeAccessor(node) {
+  let proto = Object.getPrototypeOf(node);
+  while (proto && proto !== Object.prototype) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
+    if (descriptor && (descriptor.get || descriptor.set)) {
+      return descriptor;
+    }
+    proto = Object.getPrototypeOf(proto);
+  }
+  return null;
+}
+function interceptModeChange(node, onModeChange) {
+  const delegate = findModeAccessor(node);
+  if (delegate && typeof delegate.get === "function" && typeof delegate.set === "function") {
+    Object.defineProperty(node, "mode", {
+      configurable: true,
+      get() {
+        return delegate.get.call(this);
+      },
+      set(value) {
+        const oldValue = delegate.get.call(this);
+        delegate.set.call(this, value);
+        if (oldValue !== value) {
+          onModeChange(value, oldValue);
+        }
+      }
+    });
+    return;
+  }
+  let currentMode = node.mode;
+  Object.defineProperty(node, "mode", {
+    configurable: true,
+    get() {
+      return currentMode;
+    },
+    set(value) {
+      const oldValue = currentMode;
+      currentMode = value;
+      if (oldValue !== value) {
+        onModeChange(value, oldValue);
+      }
+    }
+  });
 }
 function isLoraStackInput(input) {
   return (input == null ? void 0 : input.type) === "LORA_STACK";
@@ -15895,7 +15993,7 @@ function getActiveLorasFromNode(node) {
     }
     return activeLoraNames;
   }
-  if (isLoraStackAggregatorNode(node.comfyClass)) {
+  if (isLoraStackAggregatorNode$1(node.comfyClass)) {
     return activeLoraNames;
   }
   let lorasWidget = node.lorasWidget;
@@ -15939,7 +16037,7 @@ function updateConnectedTriggerWords(node, loraNames) {
     if (nodeIds.length === 0) {
       return;
     }
-    fetch("/api/lm/loras/get_trigger_words", {
+    fetch(lmUrl("/api/lm/loras/get_trigger_words"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -16006,6 +16104,70 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
     }
   }
 }
+const LORA_PROVIDER_NODE_TYPES = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)"
+];
+const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+  "Lora Stack Combiner (LoraManager)"
+];
+const LORA_CHAIN_NODE_TYPES = [
+  ...LORA_PROVIDER_NODE_TYPES,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES
+];
+function isLoraStackAggregatorNode(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+}
+function getActiveLorasFromNodeByType(node) {
+  const comfyClass = node == null ? void 0 : node.comfyClass;
+  if (comfyClass === "Lora Cycler (LoraManager)") {
+    return extractFromCyclerConfig(node);
+  }
+  if (isLoraStackAggregatorNode(comfyClass)) {
+    return /* @__PURE__ */ new Set();
+  }
+  return extractFromLorasWidget(node);
+}
+function extractFromLorasWidget(node) {
+  var _a2;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const lorasWidget = node.lorasWidget || ((_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras"));
+  if (lorasWidget == null ? void 0 : lorasWidget.value) {
+    lorasWidget.value.forEach((lora) => {
+      if (lora.active) {
+        activeLoraNames.add(lora.name);
+      }
+    });
+  }
+  return activeLoraNames;
+}
+function extractFromCyclerConfig(node) {
+  var _a2, _b;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
+  if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+    activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+  }
+  return activeLoraNames;
+}
+function isNodeActive(mode) {
+  return mode === void 0 || mode === 0 || mode === 3;
+}
+function setupModeChangeHandler(node, onModeChange) {
+  interceptModeChange(node, onModeChange);
+}
+function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
+  return (newMode, _oldMode) => {
+    const isNodeCurrentlyActive = isNodeActive(newMode);
+    const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
+    if (nodeSpecificCallback) {
+      nodeSpecificCallback(activeLoraNames);
+    }
+    updateDownstreamLoaders2(node);
+  };
+}
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
 const LORA_POOL_WIDGET_MIN_HEIGHT = 520;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
@@ -16024,11 +16186,17 @@ const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
 const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
 const LORA_MANAGER_WIDGET_IDS_PROPERTY = "__lm_widget_ids";
+const originalGraphToPrompt = app.graphToPrompt.bind(app);
+app.graphToPrompt = async (...args) => {
+  const result = await originalGraphToPrompt(...args);
+  stripAutocompleteMetadataFromPromptResult(result);
+  return result;
+};
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
     if (event.button === 1) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseDown === "function") {
         canvas.processMouseDown(event);
       }
@@ -16036,7 +16204,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointermove", (event) => {
     if ((event.buttons & 4) === 4) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseMove === "function") {
         canvas.processMouseMove(event);
       }
@@ -16044,7 +16212,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointerup", (event) => {
     if (event.button === 1) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseUp === "function") {
         canvas.processMouseUp(event);
       }
@@ -16057,7 +16225,6 @@ function createAutocompleteTextWidgetInstanceId() {
   autocompleteTextWidgetInstanceId += 1;
   return autocompleteTextWidgetInstanceId;
 }
-let addLorasWidgetCache = null;
 function createLoraPoolWidget(node) {
   const container = document.createElement("div");
   container.id = `lora-pool-widget-${node.id}`;
@@ -16080,6 +16247,11 @@ function createLoraPoolWidget(node) {
         internalValue = v2;
       },
       serialize: true,
+      // Keep LM DOM widgets out of the right-side Properties Panel: the panel
+      // falls back to WidgetLegacy for unknown widget types and writes
+      // widget.width onto the real widget, squashing the canvas overlay
+      // (ComfyUI_frontend #11574).
+      hideInPanel: true,
       // Per dev guide: providing getMinHeight via options allows the system to
       // skip expensive DOM measurements during rendering loop, improving performance
       getMinHeight() {
@@ -16148,6 +16320,7 @@ function createLoraRandomizerWidget(node) {
         internalValue = v2;
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
       }
@@ -16163,7 +16336,7 @@ function createLoraRandomizerWidget(node) {
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
     node,
-    api: api$1
+    api
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -16229,6 +16402,7 @@ function createLoraCyclerWidget(node) {
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_CYCLER_WIDGET_MIN_HEIGHT;
       }
@@ -16238,7 +16412,7 @@ function createLoraCyclerWidget(node) {
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
     node,
-    api: api$1
+    api
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -16287,6 +16461,7 @@ function createJsonDisplayWidget(node) {
       },
       serialize: false,
       // Display-only widget - don't save metadata in workflows
+      hideInPanel: true,
       getMinHeight() {
         return JSON_DISPLAY_WIDGET_MIN_HEIGHT;
       }
@@ -16426,13 +16601,13 @@ function applyAutocompleteTextLayoutFix(widget, _container, isVueMode) {
 }
 const initVueDomModeListener = () => {
   var _a2, _b;
-  if ((_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
-    app$1.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
+  if ((_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
+    app.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
       requestAnimationFrame(() => {
         var _a3, _b2, _c, _d, _e2, _f;
-        const isVueDomMode = ((_c = (_b2 = (_a3 = app$1.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
-        if ((_d = app$1.graph) == null ? void 0 : _d.nodes) {
-          for (const node of app$1.graph.nodes) {
+        const isVueDomMode = ((_c = (_b2 = (_a3 = app.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
+        if ((_d = app.graph) == null ? void 0 : _d.nodes) {
+          for (const node of app.graph.nodes) {
             const textWidget = (_e2 = node.widgets) == null ? void 0 : _e2.find(
               (w2) => w2.type === "AUTOCOMPLETE_TEXT_LORAS"
             );
@@ -16447,7 +16622,7 @@ const initVueDomModeListener = () => {
             const grid = nodeEl.querySelector('[data-testid="node-widgets"]');
             if (!grid) continue;
             const nodeId = nodeEl.getAttribute("data-node-id");
-            const node = (_a4 = app$1.graph) == null ? void 0 : _a4.getNodeById(nodeId);
+            const node = (_a4 = app.graph) == null ? void 0 : _a4.getNodeById(nodeId);
             if (!node) continue;
             const rows = [];
             let needsFix = false;
@@ -16468,7 +16643,7 @@ const initVueDomModeListener = () => {
             }
           }
         });
-        (_f = app$1.canvas) == null ? void 0 : _f.setDirty(true, true);
+        (_f = app.canvas) == null ? void 0 : _f.setDirty(true, true);
         document.dispatchEvent(new CustomEvent("lora-manager:vue-mode-change", {
           detail: { isVueDomMode }
         }));
@@ -16476,12 +16651,12 @@ const initVueDomModeListener = () => {
     });
   }
 };
-if ((_a = app$1.ui) == null ? void 0 : _a.settings) {
+if ((_a = app.ui) == null ? void 0 : _a.settings) {
   initVueDomModeListener();
 } else {
   const checkAppReady = setInterval(() => {
     var _a2;
-    if ((_a2 = app$1.ui) == null ? void 0 : _a2.settings) {
+    if ((_a2 = app.ui) == null ? void 0 : _a2.settings) {
       initVueDomModeListener();
       clearInterval(checkAppReady);
     }
@@ -16512,6 +16687,7 @@ function createLoraInfoWidget(node) {
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_INFO_WIDGET_MIN_HEIGHT;
       }
@@ -16520,8 +16696,8 @@ function createLoraInfoWidget(node) {
   const vueApp = createApp(LoraInfoWidget, {
     widget,
     node,
-    api: api$1,
-    app: app$1,
+    api,
+    app,
     isVueMode: typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode
   });
   vueApp.use(PrimeVue, {
@@ -16605,6 +16781,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT;
       },
@@ -16616,7 +16793,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     }
   );
   widget.metadataWidget = metadataWidget;
-  const spellcheck = ((_c = (_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
+  const spellcheck = ((_c = (_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
   const maxHeight = modelType === "loras" ? AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT : void 0;
   const vueApp = createApp(AutocompleteTextWidget, {
     widget,
@@ -16654,7 +16831,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   const minHeight = modelType === "loras" ? void 0 : AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT;
   return { widget, minWidth, minHeight };
 }
-app$1.registerExtension({
+app.registerExtension({
   name: "LoraManager.VueWidgets",
   getCustomWidgets() {
     return {
@@ -16669,81 +16846,6 @@ app$1.registerExtension({
       // @ts-ignore
       CYCLER_CONFIG(node) {
         return createLoraCyclerWidget(node);
-      },
-      // @ts-ignore
-      async LORAS(node) {
-        if (!addLorasWidgetCache) {
-          const module = await import(
-            /* @vite-ignore */
-            "../loras_widget.js"
-          );
-          addLorasWidgetCache = module.addLorasWidget;
-        }
-        const isRandomizerNode = node.comfyClass === "Lora Randomizer (LoraManager)";
-        const callback = isRandomizerNode ? () => {
-          updateDownstreamLoaders(node);
-        } : null;
-        const opts = {
-          isRandomizerNode
-        };
-        if (isRandomizerNode) {
-          opts.onSelectionChange = async (selection) => {
-            var _a2, _b, _c, _d, _e2;
-            if (!(selection == null ? void 0 : selection.name) || !(selection == null ? void 0 : selection.active)) return;
-            const infoNodes = [];
-            if (node.outputs) {
-              for (const output of node.outputs) {
-                if (!((_a2 = output == null ? void 0 : output.links) == null ? void 0 : _a2.length)) continue;
-                for (const linkId of output.links) {
-                  const links = (_b = node.graph) == null ? void 0 : _b.links;
-                  if (!links) continue;
-                  const link = Array.isArray(links) ? links[linkId] : (_c = links.get) == null ? void 0 : _c.call(links, linkId);
-                  if (!link) continue;
-                  const targetNode = (_e2 = (_d = node.graph) == null ? void 0 : _d.getNodeById) == null ? void 0 : _e2.call(_d, link.target_id);
-                  if ((targetNode == null ? void 0 : targetNode.comfyClass) === "Lora Info (LoraManager)") {
-                    infoNodes.push(targetNode);
-                  }
-                }
-              }
-            }
-            if (infoNodes.length === 0) return;
-            for (const infoNode of infoNodes) {
-              infoNode.__loraInfoReqId = (infoNode.__loraInfoReqId || 0) + 1;
-            }
-            const reqIdSnapshot = /* @__PURE__ */ new Map();
-            for (const infoNode of infoNodes) {
-              reqIdSnapshot.set(infoNode, infoNode.__loraInfoReqId);
-            }
-            let infoData;
-            try {
-              const response = await api$1.fetchApi(
-                `/lm/loras/get-notes?name=${encodeURIComponent(selection.name)}`,
-                { method: "GET" }
-              );
-              if (response == null ? void 0 : response.ok) {
-                const data = await response.json();
-                infoData = {
-                  name: selection.name,
-                  notes: (data == null ? void 0 : data.notes) || "",
-                  filePath: (data == null ? void 0 : data.file_path) || ""
-                };
-              } else {
-                infoData = { name: selection.name, notes: "[Error loading notes]", filePath: "" };
-              }
-            } catch {
-              infoData = { name: selection.name, notes: "[Error loading notes]", filePath: "" };
-            }
-            for (const infoNode of infoNodes) {
-              if (infoNode.__loraInfoReqId !== reqIdSnapshot.get(infoNode)) {
-                continue;
-              }
-              if (typeof infoNode._setLoraInfo === "function") {
-                infoNode._setLoraInfo(infoData);
-              }
-            }
-          };
-        }
-        return addLorasWidgetCache(node, "loras", opts, callback);
       },
       // Autocomplete text widget for LoRAs (used by Lora Loader, Lora Stacker, WanVideo Lora Select)
       // @ts-ignore
@@ -16793,7 +16895,7 @@ app$1.registerExtension({
         return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
       };
     }
-    if (LORA_CHAIN_NODE_TYPES$1.includes(comfyClass)) {
+    if (LORA_CHAIN_NODE_TYPES.includes(comfyClass)) {
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);

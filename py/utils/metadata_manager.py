@@ -7,7 +7,9 @@ from typing import Any, Dict, Optional, Type, Union, cast
 
 from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
+from .gguf_utils import detect_quantization
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
+from .sidecar_paths import get_metadata_path, get_preview_dir, resolve_metadata_path
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class MetadataManager:
             - metadata: BaseModelMetadata instance or None
             - should_skip: True if corrupted metadata file exists and model should be skipped
         """
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         
         # Check if metadata file exists
         if not os.path.exists(metadata_path):
@@ -56,6 +58,32 @@ class MetadataManager:
             return None, True  # should_skip = True
 
     @staticmethod
+    def _fill_local_file_facts(payload: Dict[str, Any], file_path: str) -> None:
+        """Fill missing local file facts (``file_name``/``size``/``modified``) from disk.
+
+        These three fields are part of the required metadata schema but describe
+        the local file, not remote metadata. Payloads rebuilt by the self-heal
+        refresh flow (sidecar deleted, then recreated from remote data) lack
+        them, which makes the recreated sidecar unparseable by
+        ``BaseModelMetadata.from_dict`` and causes the scanner to skip the model.
+        Fill them from the actual file whenever absent.
+        """
+        if not file_path:
+            return
+        if payload.get("file_name") and "size" in payload and "modified" in payload:
+            return
+        try:
+            stat_result = os.stat(file_path)
+        except OSError:
+            return
+        if not payload.get("file_name"):
+            payload["file_name"] = os.path.splitext(os.path.basename(file_path))[0]
+        if "size" not in payload:
+            payload["size"] = stat_result.st_size
+        if "modified" not in payload:
+            payload["modified"] = stat_result.st_mtime
+
+    @staticmethod
     async def load_metadata_payload(file_path: str) -> Dict[str, Any]:
         """
         Load metadata and return it as a dictionary, including any unknown fields.
@@ -72,11 +100,7 @@ class MetadataManager:
                 payload.update(unknown_fields)
         else:
             if not should_skip:
-                metadata_path = (
-                    file_path
-                    if file_path.endswith(".metadata.json")
-                    else f"{os.path.splitext(file_path)[0]}.metadata.json"
-                )
+                metadata_path = resolve_metadata_path(file_path)
                 if os.path.exists(metadata_path):
                     try:
                         with open(metadata_path, "r", encoding="utf-8") as handle:
@@ -96,6 +120,11 @@ class MetadataManager:
 
         if file_path:
             payload.setdefault("file_path", normalize_path(file_path))
+            # Required schema fields that are local filesystem facts. When the
+            # sidecar is missing (e.g. deleted and being recreated by the
+            # self-heal refresh flow), restore them so the recreated sidecar
+            # and cache entries stay parseable.
+            MetadataManager._fill_local_file_facts(payload, file_path)
 
         return payload
 
@@ -104,6 +133,14 @@ class MetadataManager:
         """
         Replace the provided model data with the authoritative payload from disk.
         Preserves the cached folder entry if present.
+
+        When the sidecar is missing entirely (self-heal after manual deletion),
+        the disk payload is nearly empty and the cache snapshot is the only
+        source for the schema fields required by ``BaseModelMetadata.from_dict``
+        (file_name/model_name/size/modified/sha256/base_model/preview_url), so
+        every missing key is restored from it to keep any recreated sidecar
+        parseable and avoid data loss on failed refreshes. When the sidecar
+        exists, disk data stays authoritative and no cache key is resurrected.
         """
 
         file_path = model_data.get("file_path")
@@ -111,12 +148,29 @@ class MetadataManager:
             return model_data
 
         folder = model_data.get("folder")
+        metadata_path = get_metadata_path(file_path)
+        sidecar_exists = os.path.exists(metadata_path)
+        cached = model_data.copy()
         payload = await MetadataManager.load_metadata_payload(file_path)
         if folder is not None:
             payload["folder"] = folder
 
         model_data.clear()
         model_data.update(payload)
+
+        if not sidecar_exists:
+            for key, value in cached.items():
+                if key not in model_data and key != "folder":
+                    model_data[key] = value
+            # The schema defines `modified` as the import timestamp; keep the
+            # cache's value over the stat-derived fallback from
+            # load_metadata_payload.
+            if "modified" in cached:
+                model_data["modified"] = cached["modified"]
+
+        # file_name/size are local file facts; prefer fresh stat values over
+        # the possibly stale cache snapshot.
+        MetadataManager._fill_local_file_facts(model_data, file_path)
         return model_data
     
     @staticmethod
@@ -132,15 +186,14 @@ class MetadataManager:
           bool: Success or failure
         """
         # Determine if the input is a metadata path or a model file path
-        if path.endswith('.metadata.json'):
-            metadata_path = path
-        else:
-            # Use existing logic for model file paths
-            file_path = path
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = resolve_metadata_path(path)
         temp_path = f"{metadata_path}.tmp"
         
         try:
+            # Centralized sidecar mirrors may not exist yet (unlike the model's
+            # own directory in alongside mode, which always does).
+            os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+
             # Convert to dict if needed
             if isinstance(metadata, BaseModelMetadata):
                 metadata_dict = metadata.to_dict()
@@ -155,7 +208,12 @@ class MetadataManager:
                 metadata_dict['file_path'] = normalize_path(metadata_dict['file_path'])
             if 'preview_url' in metadata_dict:
                 metadata_dict['preview_url'] = normalize_path(metadata_dict['preview_url'])
-            
+
+            # Local file facts are required schema fields; fill them when a
+            # payload rebuilt without them (e.g. self-heal) is being persisted.
+            if metadata_dict.get("file_path"):
+                MetadataManager._fill_local_file_facts(metadata_dict, metadata_dict["file_path"])
+
             # Write to temporary file first
             with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(metadata_dict, f, indent=2, ensure_ascii=False)
@@ -198,10 +256,9 @@ class MetadataManager:
             
         try:
             base_name = os.path.splitext(os.path.basename(file_path))[0]
-            dir_path = os.path.dirname(file_path)
-            
+
             # Find preview image
-            preview_url = find_preview_file(base_name, dir_path)
+            preview_url = find_preview_file(base_name, get_preview_dir(file_path))
             
             # Calculate file hash
             start_hash_time = time.perf_counter()
@@ -214,6 +271,10 @@ class MetadataManager:
             # large files. At creation time we always know the checked state:
             # store "" when no recognized hash is embedded (checked-unavailable).
             autov3 = calculate_autov3(real_path)
+
+            # Quantization detection is likewise header-only (GGUF file_type /
+            # safetensors dtypes). "" = checked, no quantization detected.
+            quantization = detect_quantization(real_path)
             
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
@@ -264,6 +325,7 @@ class MetadataManager:
             
             # Record the AutoV3 state explicitly ("" = checked, no value).
             metadata.autov3 = autov3 or ""
+            metadata.quantization = quantization or ""
 
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)
@@ -325,15 +387,16 @@ class MetadataManager:
         # Check if preview exists at the current location
         preview_url = metadata.preview_url
         if preview_url:
-            # Get directory parts of both paths
-            file_dir = os.path.dirname(file_path)
+            # Get directory parts of both paths; the preview directory is the
+            # sidecar/preview dir (the model's own dir in alongside mode, the
+            # centralized mirror otherwise).
+            file_dir = get_preview_dir(file_path)
             preview_dir = os.path.dirname(preview_url)
             
             # Update preview if it doesn't exist OR if model and preview are in different directories
             if not os.path.exists(preview_url) or file_dir != preview_dir:
                 base_name = os.path.splitext(os.path.basename(file_path))[0]
-                dir_path = os.path.dirname(file_path)
-                new_preview_url = find_preview_file(base_name, dir_path)
+                new_preview_url = find_preview_file(base_name, file_dir)
                 if new_preview_url:
                     metadata.preview_url = normalize_path(new_preview_url)
                     need_update = True

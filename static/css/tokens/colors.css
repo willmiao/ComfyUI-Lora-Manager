@@ -24,6 +24,13 @@
   --color-accent-border: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.25);
   --color-accent-transparent: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.6);
 
+  /* Text/icon color on top of a solid accent background. The accent is a
+     mid-to-bright color (L 52-72%) in every theme/preset, so a dark,
+     low-chroma color of the same hue reads far better than white or the
+     page text color (WCAG: dark on L60% accent ≈ 4.4:1, white ≈ 3.5:1).
+     Derived from --color-accent-h so every preset picks it up. */
+  --color-accent-contrast: oklch(20% 0.02 var(--color-accent-h));
+
   --color-warning: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
   --color-warning-bg: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.15);
   --color-warning-border: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.3);
@@ -44,6 +51,10 @@
   --color-skip-refresh-bg: oklch(82% 0.12 var(--color-warning-h));
   --color-skip-refresh-text: oklch(35% 0.02 var(--color-warning-h));
   --color-skip-refresh-glow: oklch(82% 0.12 var(--color-warning-h) / 0.15);
+
+  --color-workflow-bg: oklch(72% 0.18 var(--color-accent-h));
+  --color-workflow-text: oklch(28% 0.03 var(--color-accent-h));
+  --color-workflow-glow: oklch(72% 0.18 var(--color-accent-h) / 0.28);
 }
 
 :root {
@@ -78,7 +89,18 @@
   --favorite-glow: oklch(65% 0.15 85 / 0.5);
 }
 
-[data-theme="dark"] {
+/* Opaque variants of the elevated surfaces. The elevated tokens are
+   translucent; a layer stacked on top of an elevated surface (sticky modal
+   footers, sticky table headers) must use the solid variant, otherwise the
+   translucent layer double-composites over the surface and shows as a
+   visible seam in light themes. Derived here so every theme/preset override
+   of the source tokens is picked up automatically. */
+:root {
+  --bg-elevated-solid: oklch(from var(--bg-elevated) l c h / 1);
+  --surface-elevated-solid: oklch(from var(--surface-elevated) l c h / 1);
+}
+
+:root[data-theme="dark"] {
   --bg-base: #1a1a1a;
   --bg-elevated: oklch(25% 0.02 256 / 0.98);
   --bg-overlay: oklch(0% 0 0 / 0.75);
@@ -110,6 +132,10 @@
   --color-info-text: oklch(98% 0.02 var(--color-info-h));
   --color-info-glow: oklch(62% 0.18 var(--color-info-h) / 0.4);
 
+  --color-workflow-bg: oklch(62% 0.18 var(--color-accent-h));
+  --color-workflow-text: oklch(98% 0.02 var(--color-accent-h));
+  --color-workflow-glow: oklch(62% 0.18 var(--color-accent-h) / 0.4);
+
   --color-error-bg: color-mix(in oklch, var(--color-error) 15%, transparent);
   --color-error-border: color-mix(in oklch, var(--color-error) 40%, transparent);
 
@@ -118,7 +144,7 @@
 
 /* ── Preset: Nord ──────────────────────────────────────────── */
 
-[data-theme-preset="nord"] {
+:root[data-theme-preset="nord"] {
   --color-accent-h: 213;
   --color-accent-c: 0.18;
   --color-accent-l: 62%;
@@ -152,7 +178,7 @@
   --favorite-glow: oklch(72% 0.14 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="nord"] {
+:root[data-theme="dark"][data-theme-preset="nord"] {
   --color-accent-h: 213;
   --color-accent-c: 0.18;
   --color-accent-l: 68%;
@@ -188,7 +214,7 @@
 
 /* ── Preset: Midnight ───────────────────────────────────────── */
 
-[data-theme-preset="midnight"] {
+:root[data-theme-preset="midnight"] {
   --color-accent-h: 300;
   --color-accent-c: 0.15;
   --color-accent-l: 52%;
@@ -222,7 +248,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="midnight"] {
+:root[data-theme="dark"][data-theme-preset="midnight"] {
   --color-accent-h: 300;
   --color-accent-c: 0.14;
   --color-accent-l: 68%;
@@ -258,7 +284,7 @@
 
 /* ── Preset: Monokai ───────────────────────────────────────── */
 
-[data-theme-preset="monokai"] {
+:root[data-theme-preset="monokai"] {
   --color-accent-h: 190;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -291,7 +317,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="monokai"] {
+:root[data-theme="dark"][data-theme-preset="monokai"] {
   --color-accent-h: 190;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -326,7 +352,7 @@
 
 /* ── Preset: Dracula ───────────────────────────────────────── */
 
-[data-theme-preset="dracula"] {
+:root[data-theme-preset="dracula"] {
   --color-accent-h: 265;
   --color-accent-c: 0.24;
   --color-accent-l: 68%;
@@ -359,7 +385,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="dracula"] {
+:root[data-theme="dark"][data-theme-preset="dracula"] {
   --color-accent-h: 265;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -394,7 +420,7 @@
 
 /* ── Preset: Solarized ─────────────────────────────────────── */
 
-[data-theme-preset="solarized"] {
+:root[data-theme-preset="solarized"] {
   --color-accent-h: 175;
   --color-accent-c: 0.18;
   --color-accent-l: 55%;
@@ -429,7 +455,7 @@
   --favorite-glow: oklch(68% 0.16 75 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="solarized"] {
+:root[data-theme="dark"][data-theme-preset="solarized"] {
   --color-accent-h: 175;
   --color-accent-c: 0.18;
   --color-accent-l: 60%;

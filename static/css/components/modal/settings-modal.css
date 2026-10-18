@@ -15,7 +15,7 @@
 
 .settings-toggle:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -86,13 +86,13 @@
 }
 
 .settings-nav-item:hover {
-    background: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
     color: var(--lora-accent);
 }
 
 .settings-nav-item.active {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     font-weight: 600;
 }
 
@@ -160,7 +160,7 @@
 .settings-search-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .settings-search-input::placeholder {
@@ -193,7 +193,7 @@
 
 /* Search Highlight Styles */
 .settings-search-highlight {
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.3);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.3);
     color: var(--lora-accent);
     padding: 0 2px;
     border-radius: 2px;
@@ -265,7 +265,7 @@
 }
 
 .settings-action-link:focus-visible {
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.2);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.2);
 }
 
 /* Settings Links */
@@ -296,7 +296,7 @@
 
 .settings-link:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -364,7 +364,7 @@
 .api-key-input input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .api-key-input .toggle-visibility {
@@ -491,7 +491,7 @@
 .text-input-wrapper input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 /* Dark theme specific adjustments */
@@ -577,7 +577,7 @@
 .base-model-skip-search:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .base-model-skip-list {
@@ -602,11 +602,12 @@
 
 .base-model-skip-option:hover {
     border-color: var(--lora-accent);
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.05);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.05);
 }
 
 .base-model-skip-option input {
     margin: 0;
+    accent-color: var(--lora-accent);
 }
 
 .base-model-skip-option span {
@@ -620,10 +621,150 @@
     opacity: 0.75;
 }
 
-.priority-tags-input:focus {
+.download-root-rule-group {
+    margin-bottom: var(--space-3);
+}
+
+.download-root-rule-group:last-child {
+    margin-bottom: 0;
+}
+
+.download-root-rule-group-header {
+    font-weight: 600;
+    font-size: 0.95em;
+    margin-bottom: var(--space-1);
+}
+
+.download-root-rule-toggle {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.download-root-rule-root {
+    width: 100%;
+    min-width: 0;
+}
+
+.download-root-rule-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.rule-move-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+}
+
+.rule-move-btn:hover:not(:disabled) {
+    border-color: var(--lora-accent);
+    color: var(--lora-accent);
+}
+
+.rule-move-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.download-root-rules-hint {
+    font-size: 0.9em;
+    opacity: 0.6;
+    padding: 4px 0;
+}
+
+.download-root-rule-default-hint {
+    padding-top: 0;
+    overflow-wrap: anywhere;
+}
+
+.download-root-rule-panel {
+    margin-top: var(--space-1);
+}
+
+/* Rule rows have 4 children (chip, summary toggle, root select, actions);
+   override the 3-column .mapping-controls grid so the chip keeps its
+   natural width and the actions stay on the same row. The compound
+   selector wins over .mapping-controls regardless of source order. */
+.mapping-controls.download-root-rule-controls {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+}
+
+.download-root-rule-match-chip {
+    justify-self: start;
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.8;
+    align-self: center;
+    cursor: default;
+}
+
+.download-root-rule-match-chip.is-tag {
+    border-color: var(--lora-accent);
+    color: var(--lora-accent);
+}
+
+.download-root-rule-chevron {
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: transform 0.15s ease;
+}
+
+.download-root-rule-toggle[aria-expanded="true"] .download-root-rule-chevron {
+    transform: rotate(180deg);
+}
+
+.download-root-rule-add-row {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.download-root-rule-add-row .add-mapping-btn {
+    flex: 1;
+}
+
+.download-root-rule-tag-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--settings-bg);
+    color: var(--text-color);
+}
+
+.download-root-rule-tag-input:focus {
     border-color: var(--lora-accent);
     outline: none;
     box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
+.priority-tags-input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .priority-tags-item {
@@ -681,7 +822,7 @@
 
 .priority-tags-example code {
     font-family: var(--font-mono);
-    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.12);
+    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.12);
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
     display: inline-block;
@@ -747,13 +888,13 @@
 }
 
 .priority-tags-input.settings-input-error {
-    border-color: var(--danger-color, #dc2626);
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+    border-color: var(--lora-error);
+    box-shadow: 0 0 0 2px rgba(from var(--lora-error) r g b / 0.12);
 }
 
 .settings-input-error-message {
     font-size: 0.8em;
-    color: var(--danger-color, #dc2626);
+    color: var(--lora-error);
     display: none;
 }
 
@@ -909,6 +1050,93 @@
 .select-control select:focus {
     border-color: var(--lora-accent);
     outline: none;
+}
+
+/* Recipes layout segmented control with visual previews */
+.layout-options-control {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.layout-options {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.layout-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.layout-option:hover,
+.layout-option:focus-visible {
+    border-color: var(--lora-accent);
+    outline: none;
+}
+
+.layout-option.active {
+    border-color: var(--lora-accent);
+    background-color: rgba(from var(--lora-accent) r g b / 0.12);
+    color: var(--lora-accent);
+}
+
+.layout-option-label {
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.layout-option-preview {
+    width: 72px;
+    height: 44px;
+    padding: 4px;
+    border-radius: var(--border-radius-xs);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+}
+
+.layout-option-preview span {
+    background: currentColor;
+    opacity: 0.4;
+    border-radius: 1px;
+}
+
+.layout-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 3px;
+}
+
+.layout-preview-masonry {
+    display: flex;
+    gap: 3px;
+    align-items: flex-start;
+}
+
+.layout-preview-masonry span {
+    flex: 1;
+    height: 100%;
+}
+
+.layout-preview-masonry span:nth-child(2) {
+    height: 60%;
+}
+
+.layout-preview-masonry span:nth-child(3) {
+    height: 80%;
 }
 
 /* Range Slider Control */
@@ -1181,7 +1409,7 @@ input:checked + .toggle-slider:before {
     gap: 6px;
     padding: 6px 12px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
@@ -1228,7 +1456,7 @@ input:checked + .toggle-slider:before {
 .path-value-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .remove-mapping-btn {
@@ -1355,7 +1583,7 @@ input:checked + .toggle-slider:before {
 .placeholder-tag {
     display: inline-block;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: var(--font-mono);
@@ -1381,6 +1609,9 @@ input:checked + .toggle-slider:before {
 
 .template-custom-input {
     width: 96%;
+    /* Space from the label/apply-button row above; the row has no bottom
+       margin, so without this the input sits flush against the button. */
+    margin-top: var(--space-1);
     padding: 6px 10px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
@@ -1395,7 +1626,7 @@ input:checked + .toggle-slider:before {
 .template-custom-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .template-custom-input::placeholder {
@@ -1474,55 +1705,9 @@ input:checked + .toggle-slider:before {
     opacity: 1;
 }
 
-/* Tooltip using data-tooltip attribute */
-.info-icon[data-tooltip] {
-    position: relative;
-}
-
-.info-icon[data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: normal;
-    font-family: var(--font-body);
-    white-space: normal;
-    max-width: 220px;
-    width: max-content;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    pointer-events: none;
-    z-index: 10000;
-    line-height: 1.4;
-    box-shadow: var(--shadow-elevated);
-    text-transform: none;
-}
-
-.info-icon[data-tooltip]:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* Fix tooltip overflow on left edge - when icon is near left side of modal */
-.settings-subsection-header .info-icon[data-tooltip]::after {
-    left: 0;
-    transform: translateX(0);
-}
-
-.settings-subsection-header .info-icon[data-tooltip]::before {
-    left: 12px;
-}
-
-/* Dark theme adjustments for tooltip - Fully opaque */
-[data-theme="dark"] .info-icon[data-tooltip]::after {
-    background: rgba(40, 40, 40, 0.95);
-    box-shadow: var(--shadow-dark-lg);
-}
+/* Help tooltips are rendered by static/js/utils/tooltip.js into <body> instead
+   of a pseudo-element, so the scrollable settings pane cannot clip them - see
+   static/css/components/tooltip.css. */
 
 /* Extra Folder Paths - Single input layout */
 .extra-folder-path-row {
@@ -1559,7 +1744,7 @@ input:checked + .toggle-slider:before {
 .extra-folder-path-row .path-controls .extra-folder-path-input:focus {
     border-color: var(--lora-accent);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
 }
 
 .extra-folder-path-row .path-controls .extra-folder-path-input.has-error {
@@ -1603,6 +1788,87 @@ input:checked + .toggle-slider:before {
 .extra-folder-path-row .path-controls .remove-path-btn:hover {
     background: var(--lora-error);
     color: white;
+}
+
+/* Browse (directory picker) button — boxed accent style used on the dynamic
+   extra-folder-path / model-path rows, mirroring .remove-path-btn. Static
+   path fields use the .inset variant below instead. */
+#settingsModal .browse-path-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--lora-accent);
+    background: transparent;
+    color: var(--lora-accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+}
+
+#settingsModal .browse-path-btn:hover {
+    background: var(--lora-accent);
+    color: var(--text-on-accent);
+}
+
+/* Inset variant (static path fields): the button floats inside the right
+   edge of the input, so the setting row keeps its single-control look and
+   narrow columns never push it onto a second line. */
+#settingsModal .browse-path-btn.inset {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    opacity: 0.55;
+}
+
+#settingsModal .browse-path-btn.inset:hover {
+    background: transparent;
+    color: var(--lora-accent);
+    opacity: 1;
+}
+
+#settingsModal input.has-inset-browse {
+    padding-right: 34px;
+}
+
+/* Advisory path validation feedback (wraps below the input row) */
+#settingsModal .text-input-wrapper,
+#settingsModal .path-control {
+    flex-wrap: wrap;
+}
+
+#settingsModal .path-control > .text-input-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.path-validation {
+    display: none;
+    flex-basis: 100%;
+    width: 100%;
+    margin-top: 4px;
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: var(--lora-error);
+}
+
+.path-validation.visible {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.path-validation.valid {
+    color: var(--lora-success);
 }
 
 /* Highlight animation for setting items targeted from Doctor actions */
@@ -1656,4 +1922,76 @@ input:checked + .toggle-slider:before {
     opacity: 0.45;
     font-style: italic;
     user-select: none;
+}
+
+/* Other Models opt-in: sub_type checkbox row */
+.other-subtype-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 14px;
+}
+
+.other-subtype-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+    color: var(--text-color);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.other-subtype-checkbox input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--lora-accent);
+}
+
+.other-subtype-toggles.is-disabled {
+    opacity: 0.5;
+}
+
+.other-subtype-toggles.is-disabled .other-subtype-checkbox {
+    cursor: default;
+}
+
+/* Disabled default-root selects for switched-off sub_types / feature */
+.select-control select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Standalone Model Paths: pending-restart cues */
+.settings-nav-item.has-pending-restart {
+    position: relative;
+}
+
+.settings-nav-item.has-pending-restart::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--lora-warning, #e67e22);
+}
+
+.model-paths-restart-notice {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--lora-warning, #e67e22);
+    background: rgba(230, 126, 34, 0.08);
+    color: var(--lora-warning, #e67e22);
+    font-size: 0.85em;
+    line-height: 1.4;
+    align-items: center;
+    gap: 8px;
+}
+
+.model-paths-restart-notice.visible {
+    display: flex;
 }

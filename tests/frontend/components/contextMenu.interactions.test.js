@@ -143,6 +143,16 @@ async function flushAsyncTasks() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+// The real RematchModalManager runs against the mocked modalManager; the
+// global rematch menu action now opens the options dialog first and only
+// starts once confirmOptions() is invoked (the user clicking Rematch).
+async function getRematchModalManager() {
+  const { rematchModalManager } = await import(
+    '../../../static/js/managers/RematchModalManager.js'
+  );
+  return rematchModalManager;
+}
+
 function createDeferred() {
   let resolve;
   let reject;
@@ -246,13 +256,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -284,7 +300,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -292,9 +307,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -328,7 +340,7 @@ describe('Interaction-level regression coverage', () => {
     await new Promise((resolve) => setTimeout(resolve, 60));
     await flushAsyncTasks();
 
-    expect(modalManagerMock.showModal).toHaveBeenCalledWith('recipeModal');
+    expect(modalManagerMock.showModal).toHaveBeenCalledWith('recipeModal', null, null, expect.any(Function));
 
     const editIcon = document.querySelector('#recipeModalTitle .edit-icon');
     editIcon.dispatchEvent(new Event('click', { bubbles: true }));
@@ -370,13 +382,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -408,7 +426,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -416,9 +433,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -464,13 +478,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -502,7 +522,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -510,9 +529,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -573,13 +589,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -611,7 +633,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -619,9 +640,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -662,13 +680,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -700,7 +724,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -708,9 +731,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -765,13 +785,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -803,7 +829,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -811,9 +836,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -885,13 +907,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -923,7 +951,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -931,9 +958,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1019,13 +1043,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1057,7 +1087,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1067,9 +1096,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1138,7 +1164,7 @@ describe('Interaction-level regression coverage', () => {
         <div id="recipeLorasList"></div>
         <span id="recipeLorasCount"></span>
         <button id="viewRecipeLorasBtn"></button>
-        <button id="copyRecipeSyntaxBtn"></button>
+        
       </div>
     `;
 
@@ -1191,7 +1217,7 @@ describe('Interaction-level regression coverage', () => {
         <div id="recipeLorasList"></div>
         <span id="recipeLorasCount"></span>
         <button id="viewRecipeLorasBtn"></button>
-        <button id="copyRecipeSyntaxBtn"></button>
+        
       </div>
     `;
 
@@ -1255,13 +1281,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1293,7 +1325,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1303,9 +1334,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1368,13 +1396,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1406,7 +1440,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1416,9 +1449,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1486,13 +1516,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1524,7 +1560,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1532,9 +1567,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1594,13 +1626,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1632,7 +1670,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1640,9 +1677,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1711,13 +1745,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1749,7 +1789,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1757,9 +1796,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1808,13 +1844,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1846,7 +1888,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1932,13 +1973,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1970,7 +2017,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -2185,5 +2231,489 @@ describe('Interaction-level regression coverage', () => {
     contextMenu.showMenu(100, 100, card);
     document.querySelector('[data-action="download-examples-force"]').dispatchEvent(new Event('click', { bubbles: true }));
     expect(downloadExampleImagesApiMock).toHaveBeenCalledWith(['abc123hash'], null, { force: true });
+  });
+
+  it('runs global recipe rematch with polling and opens the summary modal', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+    window.recipesPage = { refresh: vi.fn() };
+
+    // Menu item is recipes-page only
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+    expect(rematchItem.classList.contains('hidden')).toBe(false);
+    stateStub.currentPageType = 'loras';
+    menu.showMenu(100, 200);
+    expect(rematchItem.classList.contains('hidden')).toBe(true);
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'completed', rematched: 2, skipped: 1, errors: 0, total: 3, matched_recipes: 2, matched_entries: 5, unresolved_recipes: 1, unresolved_entries: 1 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    // The click only opens the options dialog — nothing starts yet.
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(rematchItem.classList.contains('disabled')).toBe(false);
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
+    expect(rematchItem.classList.contains('disabled')).toBe(true);
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+    await runPromise;
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, '/api/lm/recipes/rematch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relaxed: false }),
+    });
+    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/lm/recipes/rematch-progress');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    expect(progressUI.showCancelButton).toHaveBeenCalledTimes(1);
+    // A non-noop run opens the summary modal instead of toasting; the
+    // progress overlay completes without a message.
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'globalContextMenu.rematchRecipes.success',
+      expect.anything(),
+      expect.anything()
+    );
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    // unresolved_entries > 0 forces the warning header
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-success .stat-card-value').textContent).toBe('5');
+    expect(summaryModal.querySelector('.stat-card-skipped .stat-card-value').textContent).toBe('0');
+    expect(summaryModal.querySelector('.stat-card-total .stat-card-value').textContent).toBe('1');
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('0');
+    expect(window.recipesPage.refresh).toHaveBeenCalledTimes(1);
+    expect(rematchItem.classList.contains('disabled')).toBe(false);
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete window.recipesPage;
+    delete stateStub.currentPageType;
+  });
+
+  it('opens the summary modal with a warning header when a global rematch completes with failures', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+    window.recipesPage = { refresh: vi.fn() };
+
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'completed', rematched: 2, skipped: 0, errors: 2, total: 3, matched_recipes: 2, matched_entries: 5, unresolved_recipes: 0, unresolved_entries: 0 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+    await runPromise;
+
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('2');
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete window.recipesPage;
+    delete stateStub.currentPageType;
+  });
+
+  it('opens the summary modal with an error header when every recipe in a global rematch failed', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+    window.recipesPage = { refresh: vi.fn() };
+
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'completed', rematched: 0, skipped: 0, errors: 3, total: 3, matched_recipes: 0, matched_entries: 0, unresolved_recipes: 0, unresolved_entries: 0 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+    await runPromise;
+
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('error')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('3');
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete window.recipesPage;
+    delete stateStub.currentPageType;
+  });
+
+  it('opens the summary modal listing unresolved entries when a global rematch found no local matches', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+    window.recipesPage = { refresh: vi.fn() };
+
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'completed', rematched: 0, skipped: 2, errors: 0, total: 3, matched_recipes: 0, matched_entries: 0, unresolved_recipes: 1, unresolved_entries: 2 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+    await runPromise;
+
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-total .stat-card-value').textContent).toBe('2');
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete window.recipesPage;
+    delete stateStub.currentPageType;
+  });
+
+  it('opens the summary modal marked as cancelled when a global rematch is cancelled', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'cancelled', rematched: 1, skipped: 0, errors: 0, total: 3, matched_recipes: 1, matched_entries: 2, unresolved_recipes: 0, unresolved_entries: 0 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+    await runPromise;
+
+    expect(progressUI.complete).toHaveBeenCalledWith('Rematch cancelled. 1 recipes updated (2 entries).');
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.rematch-cancelled-note')).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-success .stat-card-value').textContent).toBe('2');
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete stateStub.currentPageType;
+  });
+
+  it('opens the relink modal from the relink-civitai menu action', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu">
+        <div class="context-menu-item has-submenu" data-has-submenu="link-model">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="relink-civitai"></div>
+          </div>
+        </div>
+      </div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+    const showModalSpy = vi.spyOn(contextMenu, 'showRelinkCivitaiModal').mockImplementation(() => {});
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    document.querySelector('[data-action="relink-civitai"]').dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(showModalSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an unsupported relink URL with an inline error and no fetch', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://example.com/models/123456';
+    await contextMenu._boundRelinkHandler();
+
+    expect(document.getElementById('civitaiModelUrlError').textContent)
+      .toBe('Invalid URL format. Expected: https://civitai.com/models/{modelId} or https://civarchive.com/models/{modelId}');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(modalManagerMock.closeModal).not.toHaveBeenCalled();
+  });
+
+  it('posts a valid CivitArchive URL to the relink endpoint with the civarchive source', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    }));
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civarchive.com/models/123456?modelVersionId=789012';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(modalManagerMock.closeModal).toHaveBeenCalledWith('relinkCivitaiModal');
+    expect(loadingManagerStub.showSimpleLoading).toHaveBeenCalledWith('Re-linking via CivitArchive...');
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/loras/relink-civitai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_path: '/models/test.safetensors',
+        model_id: '123456',
+        model_version_id: '789012',
+        source: 'civarchive',
+      }),
+    });
+    expect(showToastMock).toHaveBeenCalledWith('toast.contextMenu.linkCivArchSuccess', {}, 'success');
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+    expect(loadingManagerStub.hide).toHaveBeenCalled();
+  });
+
+  it('posts a Civitai URL without a source key so backend defaults apply', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    }));
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423?modelVersionId=777';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/loras/relink-civitai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_path: '/models/test.safetensors',
+        model_id: '65423',
+        model_version_id: '777',
+      }),
+    });
+    expect(showToastMock).toHaveBeenCalledWith('toast.contextMenu.relinkSuccess', {}, 'success');
+  });
+
+  it('derives relink endpoint prefixes for all model types', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    contextMenu.modelType = 'lora';
+    expect(contextMenu.getModelTypePrefix()).toBe('loras');
+    contextMenu.modelType = 'checkpoint';
+    expect(contextMenu.getModelTypePrefix()).toBe('checkpoints');
+    contextMenu.modelType = 'embedding';
+    expect(contextMenu.getModelTypePrefix()).toBe('embeddings');
+    contextMenu.modelType = 'unknown';
+    expect(contextMenu.getModelTypePrefix()).toBe('loras');
   });
 });

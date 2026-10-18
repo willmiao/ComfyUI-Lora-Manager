@@ -41,14 +41,14 @@ export class BulkContextMenu extends BaseContextMenu {
         const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
-        const repairMetadataItem = this.menu.querySelector('[data-action="repair-metadata"]');
         const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
+        const rematchMetadataItem = this.menu.querySelector('[data-action="rematch-metadata"]');
 
-        if (repairMetadataItem) {
-            repairMetadataItem.style.display = config.repairMetadata ? 'flex' : 'none';
-        }
         if (reimportMetadataItem) {
             reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
+        }
+        if (rematchMetadataItem) {
+            rematchMetadataItem.style.display = config.rematchMetadata ? 'flex' : 'none';
         }
 
         const isEmbeddings = currentModelType === 'embeddings';
@@ -139,8 +139,8 @@ export class BulkContextMenu extends BaseContextMenu {
 
         const downloadExampleImagesSubmenu = this.menu.querySelector('[data-has-submenu="download-example-images"]');
         if (downloadExampleImagesSubmenu) {
-            // Show on model pages (loras, checkpoints, embeddings), hide on recipes
-            downloadExampleImagesSubmenu.style.display = ['loras', 'checkpoints', 'embeddings'].includes(currentModelType) ? 'flex' : 'none';
+            // Show on model pages (loras, checkpoints, embeddings, other), hide on recipes
+            downloadExampleImagesSubmenu.style.display = ['loras', 'checkpoints', 'embeddings', 'other'].includes(currentModelType) ? 'flex' : 'none';
         }
 
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');
@@ -279,8 +279,8 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
                 break;
-            case 'repair-metadata':
-                bulkManager.repairSelectedRecipes();
+            case 'rematch-metadata':
+                bulkManager.rematchSelectedRecipes();
                 break;
             case 'reimport-metadata':
                 bulkManager.reimportSelectedRecipes();

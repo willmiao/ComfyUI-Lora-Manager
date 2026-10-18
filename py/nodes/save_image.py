@@ -686,7 +686,7 @@ class SaveImageLM:
             os.path.basename(name),
             os.path.splitext(os.path.basename(name))[0],
         ]
-        for model in getattr(cache, "raw_data", []):
+        for model in list(getattr(cache, "raw_data", [])):
             file_name = model.get("file_name")
             if file_name in candidates:
                 return model
@@ -862,6 +862,14 @@ class SaveImageLM:
         }
         if checkpoint_entry:
             recipe_data["checkpoint"] = checkpoint_entry
+
+        # The recipe image is the WebP produced above from the output file;
+        # reuse the same metadata extraction to record workflow presence.
+        try:
+            metadata = ExifUtils._load_structured_metadata(image_path)
+            recipe_data["has_workflow"] = bool(metadata.get("workflow"))
+        except Exception:
+            recipe_data["has_workflow"] = False
 
         json_path = os.path.normpath(
             os.path.join(recipes_dir, f"{recipe_id}.recipe.json")

@@ -19,6 +19,10 @@ export class DownloadManager {
             return;
         }
 
+        console.log(
+            `[RecipeImport] Saving recipe "${this.importManager.recipeName}" (download-only=${isDownloadOnly}, skipDownload=${skipDownload})`
+        );
+
         try {
             // Show progress indicator
             const loadingMessage = skipDownload 
@@ -61,6 +65,22 @@ export class DownloadManager {
                     raw_metadata: this.importManager.recipeData.raw_metadata || {},
                 };
 
+                // Pass analysis diagnostics through so the backend can record
+                // why the recipe ended up with no LoRAs (recipe modal panel).
+                const diagnostics = this.importManager.recipeData.diagnostics;
+                if (diagnostics && typeof diagnostics === 'object') {
+                    completeMetadata.diagnostics = diagnostics;
+                }
+
+                // A ComfyUI workflow recovered from the source's original
+                // rendition: CivitAI's optimized preview is re-encoded and
+                // metadata-free, so the workflow travels as data and the
+                // backend embeds it into the stored image.
+                const workflow = this.importManager.recipeData.workflow;
+                if (workflow) {
+                    completeMetadata.workflow = workflow;
+                }
+
                 // Preserve preview_nsfw_level from analysis so the saved
                 // recipe applies the correct NSFW blur on the preview image.
                 const nsfwLevel = this.importManager.recipeData.preview_nsfw_level;
@@ -102,6 +122,7 @@ export class DownloadManager {
                 if (!result.success) {
                     // Handle save error
                     console.error("Failed to save recipe:", result.error);
+                    console.log('[RecipeImport] Save failed; closing import modal.');
                     showToast('toast.recipes.recipeSaveFailed', { error: result.error }, 'error');
                     // Close modal
                     modalManager.closeModal('importModal');
@@ -112,6 +133,7 @@ export class DownloadManager {
             // Check if we need to download LoRAs (skip if skipDownload is true)
             let failedDownloads = 0;
             if (!skipDownload && this.importManager.downloadableLoRAs && this.importManager.downloadableLoRAs.length > 0) {
+                console.log(`[RecipeImport] Downloading ${this.importManager.downloadableLoRAs.length} missing LoRA(s)...`);
                 await this.downloadMissingLoras();
             }
 
@@ -127,6 +149,7 @@ export class DownloadManager {
             }
 
             modalManager.closeModal('importModal');
+            console.log(`[RecipeImport] Recipe "${this.importManager.recipeName}" saved successfully.`);
 
             if (isDownloadOnly && state.virtualScroller) {
                 const recipeId = this.importManager.recipeId;

@@ -1,15 +1,24 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 
 const showToastMock = vi.fn();
+const showActionToastMock = vi.fn();
+const handleUndoDeleteMock = vi.fn();
 const resetAndReloadMock = vi.fn();
 
 vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   showToast: showToastMock,
+  showActionToast: showActionToastMock,
+}));
+
+vi.mock('../../../static/js/utils/undoHelpers.js', () => ({
+  handleUndoDelete: handleUndoDeleteMock,
 }));
 
 vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
   resetAndReload: resetAndReloadMock,
 }));
+
+vi.mock('../../../static/js/utils/modalUtils.js', () => ({}));
 
 const { ModelDuplicatesManager } = await import('../../../static/js/components/ModelDuplicatesManager.js');
 const { state } = await import('../../../static/js/state/index.js');
@@ -228,5 +237,122 @@ describe('ModelDuplicatesManager verification state', () => {
     expect(manager.mismatchedFiles.has(carPath)).toBe(true);
     expect(manager.verifiedGroups.has('stale-group-hash')).toBe(false);
     expect(manager.verifiedGroups.has('visible-hash')).toBe(true);
+  });
+});
+
+describe('ModelDuplicatesManager confirmDeleteDuplicates undo flows', () => {
+  function mockDeleteAndRecheck(deletePayload) {
+    global.fetch = vi.fn((url) => {
+      if (String(url).includes('bulk-delete')) {
+        return Promise.resolve({
+          ok: true,
+          statusText: 'OK',
+          json: async () => deletePayload,
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        statusText: 'OK',
+        json: async () => ({ success: true, duplicates: [] }),
+      });
+    });
+  }
+
+  function lastActionToastOptions() {
+    const call = showActionToastMock.mock.calls[showActionToastMock.mock.calls.length - 1];
+    return call[3];
+  }
+
+  beforeEach(() => {
+    handleUndoDeleteMock.mockResolvedValue(true);
+    state.virtualScroller = { enable: vi.fn(), disable: vi.fn() };
+    globalThis.modalManager = { showModal: vi.fn(), closeModal: vi.fn() };
+  });
+
+  afterEach(() => {
+    state.virtualScroller = null;
+    delete globalThis.modalManager;
+  });
+
+  it('shows the undo action toast with the batch id and refreshes models on undo', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({ success: true, total_deleted: 1, batch_id: 'model-batch-1' });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(carPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showActionToastMock).toHaveBeenCalledTimes(1);
+    expect(showActionToastMock).toHaveBeenCalledWith(
+      'toast.undo.deletedBulk',
+      { count: 1 },
+      'success',
+      expect.objectContaining({
+        actionText: 'toast.undo.action',
+        onAction: expect.any(Function),
+      })
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.duplicates.deleteSuccess',
+      expect.anything(),
+      expect.anything()
+    );
+
+    // The existing reset + find-duplicates re-check path still runs
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+    // No remaining duplicates -> duplicate mode exited
+    expect(manager.inDuplicateMode).toBe(false);
+
+    lastActionToastOptions().onAction();
+
+    expect(handleUndoDeleteMock).toHaveBeenCalledTimes(1);
+    expect(handleUndoDeleteMock).toHaveBeenCalledWith('model-batch-1', expect.any(Function));
+
+    const refreshFn = handleUndoDeleteMock.mock.calls[0][1];
+    resetAndReloadMock.mockClear();
+    refreshFn();
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('undoes the batch_ids fallback sequentially with one final refresh and restored toast', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({ success: true, total_deleted: 2, batch_ids: ['mb-1', 'mb-2'] });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(carPath);
+    manager.selectedForDeletion.add(copyPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showActionToastMock).toHaveBeenCalledTimes(1);
+    resetAndReloadMock.mockClear();
+    await lastActionToastOptions().onAction();
+
+    expect(handleUndoDeleteMock).toHaveBeenCalledTimes(2);
+    expect(handleUndoDeleteMock.mock.calls[0]).toEqual(['mb-1', null, { showToast: false, refresh: false }]);
+    expect(handleUndoDeleteMock.mock.calls[1]).toEqual(['mb-2', null, { showToast: false, refresh: false }]);
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+    expect(showToastMock).toHaveBeenCalledTimes(1);
+    expect(showToastMock).toHaveBeenCalledWith('toast.undo.restored', {}, 'success');
+  });
+
+  it('keeps the legacy success toast when the response carries no batch field', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({ success: true, total_deleted: 1 });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(carPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showActionToastMock).not.toHaveBeenCalled();
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.duplicates.deleteSuccess',
+      { count: 1, type: 'loras' },
+      'success'
+    );
   });
 });

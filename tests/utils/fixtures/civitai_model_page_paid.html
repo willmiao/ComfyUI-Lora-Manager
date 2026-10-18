@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--
+  Trimmed stand-in for a CivitAI model page, mirroring the shape verified against
+  civitai.com / civitai.red. Values are synthetic; the structure (unrelated query
+  first, then the model.getById query, tombstones included) is what matters.
+-->
+<html>
+  <head>
+    <title>Fixture model</title>
+  </head>
+  <body>
+    <script id="__NEXT_DATA__" type="application/json">
+      {
+        "props": {
+          "pageProps": {
+            "trpcState": {
+              "json": {
+                "queries": [
+                  {
+                    "queryKey": [["common", "getEntityAccess"], { "entityId": 1001 }],
+                    "state": { "data": [] }
+                  },
+                  {
+                    "queryKey": [
+                      ["model", "getById"],
+                      { "input": { "id": 4242, "browsingLevel": 1 }, "type": "query" }
+                    ],
+                    "state": {
+                      "data": {
+                        "id": 4242,
+                        "name": "Fixture model",
+                        "modelVersions": [
+                          {
+                            "id": 1001,
+                            "name": "permanent paid",
+                            "canDownload": false,
+                            "paidAccess": {
+                              "endsAt": null,
+                              "timeframeDays": null,
+                              "terms": {
+                                "download": { "price": 5000 },
+                                "generation": { "price": 100, "trialLimit": 5 }
+                              },
+                              "sale": null
+                            }
+                          },
+                          {
+                            "id": 1002,
+                            "name": "timed gate on sale",
+                            "canDownload": false,
+                            "paidAccess": {
+                              "endsAt": "2999-10-10T13:10:17.404Z",
+                              "timeframeDays": 7,
+                              "terms": {
+                                "download": { "price": 125 },
+                                "generation": { "trialLimit": 10 },
+                                "acceptsBlueBuzz": true
+                              },
+                              "sale": {
+                                "listTerms": { "download": { "price": 125 } },
+                                "buyerTerms": { "download": { "price": 100 } },
+                                "endsAt": "2999-09-01T00:00:00.000Z",
+                                "discountType": "percent",
+                                "discountAmount": 20
+                              }
+                            }
+                          },
+                          {
+                            "id": 1003,
+                            "name": "timed gate with no recorded end",
+                            "canDownload": false,
+                            "paidAccess": {
+                              "endsAt": null,
+                              "timeframeDays": 7,
+                              "terms": { "download": { "price": 300 } },
+                              "sale": null
+                            }
+                          },
+                          {
+                            "id": 1004,
+                            "name": "lapsed gate (tombstone)",
+                            "canDownload": true,
+                            "paidAccess": {
+                              "endsAt": "2000-08-27T16:56:57.438Z",
+                              "timeframeDays": 3,
+                              "terms": { "download": { "price": 200 } },
+                              "sale": null
+                            }
+                          },
+                          {
+                            "id": 1005,
+                            "name": "never gated",
+                            "canDownload": true,
+                            "paidAccess": null
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

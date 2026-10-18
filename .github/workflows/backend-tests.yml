@@ -91,3 +91,62 @@ jobs:
           name: backend-coverage
           path: coverage/backend
           if-no-files-found: warn
+
+  pytest-windows:
+    # Windows-only regressions cannot be caught by the Linux job: model roots,
+    # sidecars and symlink handling all branch on `os.sep`/`os.name`. Issue #1146
+    # (every configured root counted twice and shadowed as unreachable) shipped
+    # because the suite only ever ran on Ubuntu.
+    #
+    # Informational for now: the flag comes off once the suite is Windows-clean.
+    name: Run pytest on Windows (informational)
+    runs-on: windows-latest
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Report symlink support
+        # Symlinked model roots are part of the suite; os.symlink needs Developer
+        # Mode (or an elevated shell) on Windows. Reported, not enforced, so a
+        # runner without it still shows the real test results.
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import tempfile
+
+          root = pathlib.Path(tempfile.mkdtemp(prefix="lm-symlink-check-"))
+          target = root / "target"
+          target.mkdir()
+          link = root / "link"
+          try:
+              link.symlink_to(target, target_is_directory=True)
+          except OSError as exc:
+              print(f"symlinks unavailable: {exc}")
+          else:
+              print(
+                  f"islink={os.path.islink(link)} isdir={os.path.isdir(link)} "
+                  f"realpath={os.path.realpath(link)}"
+              )
+          PY
+        shell: bash
+
+      - name: Run pytest
+        run: python -m pytest -q

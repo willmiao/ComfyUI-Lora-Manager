@@ -71,10 +71,18 @@ class MetadataOverwriteLM:
                     },
                 ),
                 "sampler": (
-                    "STRING",
+                    "STRING,SAMPLER",
                     {
                         "default": "",
-                        "tooltip": "Sampler name. Only overwrites when non-empty.",
+                        "widgetType": "STRING",
+                        "tooltip": (
+                            "Sampler name. Fill in the name manually or "
+                            "connect a SAMPLER output (e.g. KSamplerSelect) "
+                            "— the sampler name is then extracted "
+                            "automatically. Note: ddim is recorded as "
+                            "euler (ComfyUI internal representation). "
+                            "Only overwrites when non-empty."
+                        ),
                     },
                 ),
                 "scheduler": (
@@ -164,6 +172,8 @@ class MetadataOverwriteLM:
         The ``model`` field accepts either a manual string or a wired MODEL
         (ModelPatcher) connection; in the latter case the underlying model
         name is extracted from the patcher's ``cached_patcher_init`` and
-        stored as a ComfyUI-style relative path.
+        stored as a ComfyUI-style relative path.  The ``sampler`` field
+        likewise accepts a manual string or a wired SAMPLER (KSAMPLER)
+        connection, from which the sampler name is extracted automatically.
         """
         return (collect_overwrite_params(kwargs),)

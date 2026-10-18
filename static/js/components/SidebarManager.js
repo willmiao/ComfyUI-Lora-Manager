@@ -6,15 +6,33 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
-import { showToast } from '../utils/uiHelpers.js';
+import { modalManager } from '../managers/ModalManager.js';
+import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
+import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
+
+// Pages whose folder sidebar starts hidden. "other" downloads default to a flat
+// layout (no subfolders are created), so on a fresh library the tree is empty
+// there and the sidebar would only consume horizontal space. The preference is
+// still persisted per page once the user toggles it, and the edge indicator
+// makes the hidden sidebar discoverable/recoverable.
+const SIDEBAR_DEFAULT_HIDDEN_PAGES = new Set(['other']);
+
+// Hover a collapsed folder this long while dragging to auto-expand it.
+const DRAG_HOVER_EXPAND_DELAY_MS = 600;
+
+// Distance from the tree container's top/bottom edge that starts
+// auto-scrolling during a drag, and the scroll speed per animation frame.
+const SIDEBAR_AUTOSCROLL_ZONE_PX = 48;
+const SIDEBAR_AUTOSCROLL_SPEED_PX = 12;
 
 export class SidebarManager {
     constructor() {
         this.pageControls = null;
         this.pageType = null;
         this.treeData = {};
+        this.folderTreeLoaded = false;
         this.selectedPath = '';
         this.expandedNodes = new Set();
         this.apiClient = null;
@@ -27,14 +45,39 @@ export class SidebarManager {
         this.draggedRootPath = null;
         this.draggedFromBulk = false;
         this.dragHandlersInitialized = false;
-        this.sidebarDragHandlersInitialized = false;
         this.folderTreeElement = null;
         this.currentDropTarget = null;
         this.lastPageControls = null;
         this.isDisabledByPage = false;
         this.initializationPromise = null;
         this.isCreatingFolder = false;
-        this._pendingDragState = null; // 用于保存拖拽创建文件夹时的状态
+        this.showEmptyFolders = true;
+        this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
+        this.emptyFolderCount = null; // null = not known yet (no models-only list)
+        this._createFolderBasePath = null;
+        this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
+        this._renameFolderPath = null;
+        this._renameFolderNode = null;
+        // Absolute path the pending delete will hit, and the node it came from:
+        // the tree path is relative to *some* root, so only the resolved
+        // absolute path may be handed to the delete API.
+        this._pendingDeleteFolderPath = null;
+        this._pendingDeleteFolderRelative = null;
+        this._deleteFolderCandidates = [];
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
+        this._deleteFolderModalWired = false;
+        // Bumped on every modal open/close so a late dry-run answer can never
+        // repaint a modal the user has already dismissed or retargeted.
+        this._deleteFolderProbeToken = 0;
+
+        // Drag-and-drop transient state: the custom drag image element, the
+        // pending hover-to-expand timer, and the edge auto-scroll loop.
+        this._dragPreviewElement = null;
+        this._dragExpandTimer = null;
+        this._dragExpandPath = null;
+        this._autoScrollFrame = null;
+        this._autoScrollDirection = 0;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -47,16 +90,15 @@ export class SidebarManager {
         this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
         this.handleFolderListClick = this.handleFolderListClick.bind(this);
         this.handleRecursiveToggle = this.handleRecursiveToggle.bind(this);
+        this.handleEmptyFoldersToggle = this.handleEmptyFoldersToggle.bind(this);
+        this.handleCreateFolderButton = this.handleCreateFolderButton.bind(this);
+        this.handleViewOptionsButton = this.handleViewOptionsButton.bind(this);
         this.handleCardDragStart = this.handleCardDragStart.bind(this);
         this.handleCardDragEnd = this.handleCardDragEnd.bind(this);
         this.handleFolderDragEnter = this.handleFolderDragEnter.bind(this);
         this.handleFolderDragOver = this.handleFolderDragOver.bind(this);
         this.handleFolderDragLeave = this.handleFolderDragLeave.bind(this);
         this.handleFolderDrop = this.handleFolderDrop.bind(this);
-        this.handleSidebarDragEnter = this.handleSidebarDragEnter.bind(this);
-        this.handleSidebarDragOver = this.handleSidebarDragOver.bind(this);
-        this.handleSidebarDragLeave = this.handleSidebarDragLeave.bind(this);
-        this.handleSidebarDrop = this.handleSidebarDrop.bind(this);
         this.handleCreateFolderSubmit = this.handleCreateFolderSubmit.bind(this);
         this.handleCreateFolderCancel = this.handleCreateFolderCancel.bind(this);
         this.handleHideToggle = this.handleHideToggle.bind(this);
@@ -105,16 +147,7 @@ export class SidebarManager {
         this.clearAllDropHighlights();
         this.resetDragState();
         this.hideCreateFolderInput();
-
-        // Cleanup sidebar drag handlers
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && this.sidebarDragHandlersInitialized) {
-            sidebar.removeEventListener('dragenter', this.handleSidebarDragEnter);
-            sidebar.removeEventListener('dragover', this.handleSidebarDragOver);
-            sidebar.removeEventListener('dragleave', this.handleSidebarDragLeave);
-            sidebar.removeEventListener('drop', this.handleSidebarDrop);
-            this.sidebarDragHandlersInitialized = false;
-        }
+        this.hideRenameFolderInput();
 
         this.hideSidebarHiddenIndicator();
 
@@ -129,6 +162,14 @@ export class SidebarManager {
         this.apiClient = null;
         this.isInitialized = false;
         this.recursiveSearchEnabled = true;
+        this.showEmptyFolders = true;
+        this.nonEmptyFolders = null;
+        this.emptyFolderCount = null;
+        this._createFolderBasePath = null;
+        this._createFolderTempChildren = null;
+        this._renameFolderPath = null;
+        this._renameFolderNode = null;
+        this._pendingDeleteFolderPath = null;
 
         // Reset container margin
         const container = document.querySelector('.container');
@@ -144,16 +185,10 @@ export class SidebarManager {
     }
 
     removeEventHandlers() {
-        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         const folderTree = document.getElementById('sidebarFolderTree');
         const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         const sidebarHeader = document.getElementById('sidebarHeader');
-        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
 
-        if (collapseAllBtn) {
-            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
-        }
         if (folderTree) {
             folderTree.removeEventListener('click', this.handleTreeClick);
             folderTree.removeEventListener('contextmenu', this.handleTreeContextMenu);
@@ -172,11 +207,20 @@ export class SidebarManager {
         // Remove resize event handler
         window.removeEventListener('resize', this.updateContainerMargin);
 
-        if (displayModeToggleBtn) {
-            displayModeToggleBtn.removeEventListener('click', this.handleDisplayModeToggle);
+        const viewOptionsBtn = document.getElementById('sidebarViewOptions');
+        if (viewOptionsBtn) {
+            viewOptionsBtn.removeEventListener('click', this.handleViewOptionsButton);
         }
-        if (recursiveToggleBtn) {
-            recursiveToggleBtn.removeEventListener('click', this.handleRecursiveToggle);
+        this._closeViewOptionsMenu();
+
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.removeEventListener('click', this.handleCreateFolderButton);
+        }
+
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
+        if (collapseAllBtn) {
+            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
         }
 
         const hideToggle = document.getElementById('sidebarHideToggle');
@@ -212,16 +256,6 @@ export class SidebarManager {
 
             this.folderTreeElement = folderTree;
         }
-
-        // Add sidebar-level drag handlers for creating new folders
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && !this.sidebarDragHandlersInitialized) {
-            sidebar.addEventListener('dragenter', this.handleSidebarDragEnter);
-            sidebar.addEventListener('dragover', this.handleSidebarDragOver);
-            sidebar.addEventListener('dragleave', this.handleSidebarDragLeave);
-            sidebar.addEventListener('drop', this.handleSidebarDrop);
-            this.sidebarDragHandlersInitialized = true;
-        }
     }
 
     handleCardDragStart(event) {
@@ -252,11 +286,19 @@ export class SidebarManager {
         if (dataTransfer) {
             dataTransfer.effectAllowed = 'move';
             dataTransfer.setData('text/plain', filePaths.join(','));
+            // Tag the drag as an internal card drag so preview-drop handlers on
+            // other cards ignore it (no highlight, no preview replacement).
+            dataTransfer.setData(MODEL_CARD_DRAG_MIME_TYPE, filePaths.join(','));
             try {
                 dataTransfer.setData('application/json', JSON.stringify({ filePaths }));
             } catch (error) {
                 // Ignore serialization errors
             }
+
+            // Replace the browser's default full-card snapshot with a small
+            // chip (thumbnail + name + count) so the drag image does not
+            // cover the folder tree the user is aiming at.
+            this._setDragPreviewImage(event, card, filePaths.length);
         }
 
         card.classList.add('dragging');
@@ -266,6 +308,8 @@ export class SidebarManager {
         if (sidebar) {
             sidebar.classList.add('dragging-active');
         }
+
+        this._startSidebarAutoScroll();
     }
 
     handleCardDragEnd(event) {
@@ -273,15 +317,175 @@ export class SidebarManager {
         if (card) {
             card.classList.remove('dragging');
         }
-        
+
         // Remove dragging state from sidebar
         const sidebar = document.getElementById('folderSidebar');
         if (sidebar) {
             sidebar.classList.remove('dragging-active');
         }
-        
+
+        this._removeDragPreviewImage();
+        this._cancelDragExpand();
+        this._stopSidebarAutoScroll();
         this.clearAllDropHighlights();
         this.resetDragState();
+    }
+
+    /**
+     * Swap the default drag image (a full-size snapshot of the card) for a
+     * compact chip: preview thumbnail, model name, and a count badge for
+     * bulk drags. The chip is anchored below-right of the cursor so it never
+     * covers the folder row the pointer is hovering.
+     */
+    _setDragPreviewImage(event, card, count) {
+        const dataTransfer = event.dataTransfer;
+        if (!dataTransfer || typeof dataTransfer.setDragImage !== 'function') return;
+
+        this._removeDragPreviewImage();
+
+        const chip = document.createElement('div');
+        chip.className = 'model-card-drag-chip';
+
+        // A blurred (mature-content) preview stays hidden in the chip too.
+        const isBlurred = Boolean(card.querySelector('.card-preview.blurred'));
+        const previewImg = card.querySelector('.card-preview img');
+        if (previewImg && previewImg.src && !isBlurred) {
+            const thumb = document.createElement('img');
+            thumb.className = 'model-card-drag-chip-thumb';
+            thumb.src = previewImg.src;
+            thumb.alt = '';
+            chip.appendChild(thumb);
+        } else {
+            const icon = document.createElement('i');
+            const isVideo = Boolean(card.querySelector('.card-preview video'));
+            icon.className = `model-card-drag-chip-icon fas ${isVideo ? 'fa-film' : 'fa-image'}`;
+            chip.appendChild(icon);
+        }
+
+        const name = document.createElement('span');
+        name.className = 'model-card-drag-chip-name';
+        name.textContent = card.dataset.name || card.dataset.file_name || '';
+        chip.appendChild(name);
+
+        if (count > 1) {
+            const badge = document.createElement('span');
+            badge.className = 'model-card-drag-chip-count';
+            badge.textContent = `×${count}`;
+            chip.appendChild(badge);
+        }
+
+        document.body.appendChild(chip);
+        this._dragPreviewElement = chip;
+
+        try {
+            // Negative offsets place the chip below-right of the cursor.
+            dataTransfer.setDragImage(chip, -12, -12);
+        } catch (error) {
+            // A failed setDragImage keeps the default image; still fine.
+        }
+    }
+
+    _removeDragPreviewImage() {
+        if (this._dragPreviewElement) {
+            this._dragPreviewElement.remove();
+            this._dragPreviewElement = null;
+        }
+    }
+
+    /**
+     * Expand a collapsed tree folder after a short hover during a drag, so
+     * nested folders can be dropped into without a separate click.
+     */
+    _scheduleDragExpand(folderElement) {
+        if (this.displayMode !== 'tree') return;
+
+        const treeNode = folderElement.classList.contains('sidebar-tree-node')
+            ? folderElement
+            : folderElement.closest('.sidebar-tree-node');
+        const path = treeNode?.dataset.path;
+        if (!treeNode || !path) return;
+        if (this.expandedNodes.has(path)) return;
+        if (!treeNode.querySelector(':scope > .sidebar-tree-children')) return;
+
+        if (this._dragExpandTimer && this._dragExpandPath === path) return;
+
+        this._cancelDragExpand();
+        this._dragExpandPath = path;
+        this._dragExpandTimer = setTimeout(() => {
+            this._dragExpandTimer = null;
+            this._dragExpandPath = null;
+
+            // Re-validate against the live DOM: the drag may have ended or the
+            // tree may have re-rendered while the timer was pending.
+            if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+            const folderTree = this.folderTreeElement || document.getElementById('sidebarFolderTree');
+            const node = folderTree
+                ? [...folderTree.querySelectorAll('.sidebar-tree-node')].find(el => el.dataset.path === path)
+                : null;
+            if (!node || this.expandedNodes.has(path)) return;
+
+            this.expandedNodes.add(path);
+            // Toggle in place instead of re-rendering so the drop highlight
+            // and the hover position survive the expansion.
+            node.querySelector(':scope > .sidebar-tree-node-content > .sidebar-tree-expand-icon')
+                ?.classList.add('expanded');
+            node.querySelector(':scope > .sidebar-tree-children')?.classList.add('expanded');
+            this.saveExpandedState();
+        }, DRAG_HOVER_EXPAND_DELAY_MS);
+    }
+
+    _cancelDragExpand() {
+        if (this._dragExpandTimer) {
+            clearTimeout(this._dragExpandTimer);
+            this._dragExpandTimer = null;
+        }
+        this._dragExpandPath = null;
+    }
+
+    _startSidebarAutoScroll() {
+        this._stopSidebarAutoScroll();
+        this._autoScrollDirection = 0;
+
+        if (typeof requestAnimationFrame !== 'function') return;
+
+        const step = () => {
+            if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) {
+                this._autoScrollFrame = null;
+                return;
+            }
+            if (this._autoScrollDirection !== 0) {
+                const container = this.folderTreeElement?.closest('.sidebar-tree-container');
+                if (container) {
+                    container.scrollTop += this._autoScrollDirection * SIDEBAR_AUTOSCROLL_SPEED_PX;
+                }
+            }
+            this._autoScrollFrame = requestAnimationFrame(step);
+        };
+        this._autoScrollFrame = requestAnimationFrame(step);
+    }
+
+    _stopSidebarAutoScroll() {
+        if (this._autoScrollFrame !== null && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this._autoScrollFrame);
+        }
+        this._autoScrollFrame = null;
+        this._autoScrollDirection = 0;
+    }
+
+    _updateAutoScrollDirection(clientY) {
+        const container = this.folderTreeElement?.closest('.sidebar-tree-container');
+        if (!container || typeof clientY !== 'number') {
+            this._autoScrollDirection = 0;
+            return;
+        }
+        const rect = container.getBoundingClientRect();
+        if (clientY < rect.top + SIDEBAR_AUTOSCROLL_ZONE_PX) {
+            this._autoScrollDirection = -1;
+        } else if (clientY > rect.bottom - SIDEBAR_AUTOSCROLL_ZONE_PX) {
+            this._autoScrollDirection = 1;
+        } else {
+            this._autoScrollDirection = 0;
+        }
     }
 
     getRootPathFromCard(card) {
@@ -306,11 +510,48 @@ export class SidebarManager {
         }
 
         const suffix = `/${normalizedFolder}`;
-        if (directory.endsWith(suffix)) {
+        // Case-insensitive: a cached folder may differ from the file path in
+        // case alone, which is the same directory on Windows/macOS.
+        if (directory.toLowerCase().endsWith(suffix.toLowerCase())) {
             return directory.slice(0, -suffix.length);
         }
 
-        return directory;
+        // Folder and file path disagree (stale cache entry): returning the
+        // file's own directory here would make the move nest the target under
+        // the source folder (issue #1148). Let the caller resolve the root
+        // from the library roots instead.
+        return null;
+    }
+
+    /**
+     * Resolve the library root a dragged file lives under.
+     *
+     * Prefers the authoritative root list (longest root prefixing the file
+     * path) over the card heuristic, which silently derives a wrong root when
+     * the cached folder disagrees with the file path (issue #1148).
+     */
+    async _resolveMoveRoot(filePath) {
+        try {
+            if (typeof this.apiClient?.fetchModelRoots === 'function') {
+                const rootsData = await this.apiClient.fetchModelRoots();
+                const roots = rootsData?.roots || [];
+                const normalizedFile = (filePath || '').replace(/\\/g, '/').toLowerCase();
+                let best = '';
+                for (const root of roots) {
+                    const normalizedRoot = (root || '').replace(/\\/g, '/').replace(/\/+$/, '');
+                    if (!normalizedRoot) continue;
+                    const key = normalizedRoot.toLowerCase();
+                    if ((normalizedFile === key || normalizedFile.startsWith(key + '/')) &&
+                        normalizedRoot.length > best.length) {
+                        best = normalizedRoot;
+                    }
+                }
+                if (best) return best;
+            }
+        } catch (error) {
+            console.warn('[SidebarManager] Failed to resolve move root from library roots:', error);
+        }
+        return this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
     }
 
     combineRootAndRelativePath(root, relative) {
@@ -368,6 +609,7 @@ export class SidebarManager {
 
         this.setDropTargetHighlight(folderElement, true);
         this.currentDropTarget = folderElement;
+        this._scheduleDragExpand(folderElement);
     }
 
     handleFolderDragOver(event) {
@@ -381,6 +623,8 @@ export class SidebarManager {
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'move';
         }
+
+        this._updateAutoScrollDirection(event.clientY);
     }
 
     handleFolderDragLeave(event) {
@@ -395,6 +639,15 @@ export class SidebarManager {
             if (this.currentDropTarget === folderElement) {
                 this.currentDropTarget = null;
             }
+            if (this._dragExpandPath && folderElement.dataset.path === this._dragExpandPath) {
+                this._cancelDragExpand();
+            }
+        }
+
+        // Pointer left the tree entirely: stop any edge auto-scroll.
+        const folderTree = this.folderTreeElement || document.getElementById('sidebarFolderTree');
+        if (folderTree && (!relatedTarget || !folderTree.contains(relatedTarget))) {
+            this._autoScrollDirection = 0;
         }
     }
 
@@ -409,6 +662,8 @@ export class SidebarManager {
 
         this.setDropTargetHighlight(folderElement, false);
         this.currentDropTarget = null;
+        this._cancelDragExpand();
+        this._autoScrollDirection = 0;
 
         const targetPath = folderElement.dataset.path || '';
 
@@ -440,7 +695,7 @@ export class SidebarManager {
             return false;
         }
 
-        const rootPath = this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
+        const rootPath = await this._resolveMoveRoot(this.draggedFilePaths[0]);
         console.log('[SidebarManager] rootPath:', rootPath);
         if (!rootPath) {
             console.log('[SidebarManager] performDragMove returning false - no rootPath');
@@ -540,350 +795,141 @@ export class SidebarManager {
         this.draggedFromBulk = false;
     }
 
-    // Version of performDragMove that accepts state as parameters (for create folder submit)
-    async performDragMoveWithState(targetRelativePath, draggedFilePaths, draggedRootPath, draggedFromBulk) {
-        console.log('[SidebarManager] performDragMoveWithState called with:', { targetRelativePath, draggedFilePaths, draggedRootPath, draggedFromBulk });
-
-        if (!draggedFilePaths || draggedFilePaths.length === 0) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - no draggedFilePaths');
-            return false;
-        }
-
-        if (!this.apiClient) {
-            this.apiClient = this.pageControls?.getSidebarApiClient?.()
-                || this.pageControls?.sidebarApiClient
-                || getModelApiClient();
-        }
-
-        if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - supportsMove is false');
-            showToast('toast.models.moveFailed', { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
-            return false;
-        }
-
-        const rootPath = draggedRootPath ? draggedRootPath.replace(/\\/g, '/') : '';
-        console.log('[SidebarManager] rootPath:', rootPath);
-        if (!rootPath) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - no rootPath');
-            showToast(
-                'toast.models.moveFailed',
-                { message: translate('sidebar.dragDrop.unableToResolveRoot', {}, 'Unable to determine destination path for move.') },
-                'error'
-            );
-            return false;
-        }
-
-        const destination = this.combineRootAndRelativePath(rootPath, targetRelativePath);
-        const useBulkMove = draggedFromBulk || draggedFilePaths.length > 1;
-
-        try {
-            console.log('[SidebarManager] calling apiClient.move, useBulkMove:', useBulkMove);
-            let movedFiles = []; // Array of { original_file_path, new_file_path }
-
-            if (useBulkMove) {
-                const results = await this.apiClient.moveBulkModels(draggedFilePaths, destination);
-                movedFiles = (results || [])
-                    .filter(r => r.success)
-                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
-            } else {
-                const result = await this.apiClient.moveSingleModel(draggedFilePaths[0], destination);
-                if (result) {
-                    movedFiles.push({
-                        original_file_path: result.original_file_path || draggedFilePaths[0],
-                        new_file_path: result.new_file_path
-                    });
-                }
-            }
-            console.log('[SidebarManager] apiClient.move successful');
-
-            // Update VirtualScroller in-place instead of full reload
-            if (movedFiles.length > 0 && state.virtualScroller) {
-                const pageState = getCurrentPageState();
-                const normalizedActive = (pageState.activeFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
-                const isRecursive = pageState.searchOptions?.recursive ?? true;
-                const isFolderFiltered = pageState.activeFolder !== null;
-
-                const normalizedTarget = targetRelativePath.replace(/\\/g, '/').replace(/\/$/, '');
-
-                // Determine if items in the target folder are visible in the current view
-                let itemsRemainVisible = true;
-                if (isFolderFiltered) {
-                    if (isRecursive) {
-                        itemsRemainVisible = normalizedActive === '' ||
-                            normalizedTarget === normalizedActive ||
-                            normalizedTarget.startsWith(normalizedActive + '/');
-                    } else {
-                        itemsRemainVisible = normalizedTarget === normalizedActive;
-                    }
-                }
-
-                if (itemsRemainVisible) {
-                    // Items stay visible — update each item's file_path to reflect new location
-                    for (const moved of movedFiles) {
-                        if (moved.original_file_path && moved.new_file_path) {
-                            state.virtualScroller.updateSingleItem(moved.original_file_path, {
-                                file_path: moved.new_file_path,
-                                folder: normalizedTarget
-                            });
-                        }
-                    }
-                } else {
-                    // Items no longer visible in current folder — remove from VirtualScroller
-                    const pathsToRemove = movedFiles
-                        .map(m => m.original_file_path)
-                        .filter(Boolean);
-                    if (pathsToRemove.length > 0) {
-                        state.virtualScroller.removeMultipleItemsByFilePath(pathsToRemove);
-                    }
-                }
-            }
-
-            // Refresh sidebar folder tree only (no model data reload)
-            await this.refresh();
-
-            if (draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
-                bulkManager.toggleBulkMode();
-            }
-
-            console.log('[SidebarManager] performDragMoveWithState returning true');
-            return true;
-        } catch (error) {
-            console.error('[SidebarManager] Error moving model(s) via drag-and-drop:', error);
-            showToast('toast.models.moveFailed', { message: error.message || 'Unknown error' }, 'error');
-            console.log('[SidebarManager] performDragMoveWithState returning false due to error');
-            return false;
-        }
-    }
-
-    // ===== Sidebar-level drag handlers for creating new folders =====
-
-    handleSidebarDragEnter(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        if (!sidebar) return;
-
-        // Only show create folder zone if not hovering over an existing folder
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            this.hideCreateFolderZone();
-            return;
-        }
-
-        // Check if drag is within the sidebar tree container area
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (treeContainer && treeContainer.contains(event.target)) {
-            event.preventDefault();
-            this.showCreateFolderZone();
-        }
-    }
-
-    handleSidebarDragOver(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            this.hideCreateFolderZone();
-            return;
-        }
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (treeContainer && treeContainer.contains(event.target)) {
-            event.preventDefault();
-            if (event.dataTransfer) {
-                event.dataTransfer.dropEffect = 'move';
-            }
-        }
-    }
-
-    handleSidebarDragLeave(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        if (!sidebar) return;
-
-        const relatedTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null;
-
-        // Only hide if leaving the sidebar entirely
-        if (!relatedTarget || !sidebar.contains(relatedTarget)) {
-            this.hideCreateFolderZone();
-        }
-    }
-
-    async handleSidebarDrop(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            // Let the folder drop handler take over
-            return;
-        }
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer || !treeContainer.contains(event.target)) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Show create folder input
-        this.showCreateFolderInput();
-    }
-
-    showCreateFolderZone() {
-        if (this.isCreatingFolder) return;
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer) return;
-
-        let zone = document.getElementById('sidebarCreateFolderZone');
-        if (!zone) {
-            zone = document.createElement('div');
-            zone.id = 'sidebarCreateFolderZone';
-            zone.className = 'sidebar-create-folder-zone';
-            zone.innerHTML = `
-                <div class="sidebar-create-folder-content">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>${translate('sidebar.dragDrop.createFolderHint', {}, 'Release to create new folder')}</span>
-                </div>
-            `;
-            treeContainer.appendChild(zone);
-        }
-
-        zone.classList.add('active');
-    }
-
-    hideCreateFolderZone() {
-        const zone = document.getElementById('sidebarCreateFolderZone');
-        if (zone) {
-            zone.classList.remove('active');
-        }
-    }
-
-    showCreateFolderInput() {
-        console.log('[SidebarManager] showCreateFolderInput called');
-        this.isCreatingFolder = true;
-        
-        // 立即保存拖拽状态，防止后续事件（如blur）清空状态
-        this._pendingDragState = {
-            filePaths: this.draggedFilePaths ? [...this.draggedFilePaths] : null,
-            rootPath: this.draggedRootPath,
-            fromBulk: this.draggedFromBulk
-        };
-        console.log('[SidebarManager] saved pending drag state:', this._pendingDragState);
-        
-        this.hideCreateFolderZone();
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer) return;
-
-        // Remove existing input if any
+    showCreateFolderInput(basePath = null) {
+        // Remove any existing input first — hideCreateFolderInput() also
+        // clears isCreatingFolder, so it must run before the flag is set.
         this.hideCreateFolderInput();
+        this.isCreatingFolder = true;
 
-        const inputContainer = document.createElement('div');
-        inputContainer.id = 'sidebarCreateFolderInput';
-        inputContainer.className = 'sidebar-create-folder-input-container';
-        inputContainer.innerHTML = `
-            <div class="sidebar-create-folder-input-wrapper">
-                <i class="fas fa-folder-plus"></i>
-                <input type="text" 
-                       class="sidebar-create-folder-input" 
-                       placeholder="${translate('sidebar.dragDrop.newFolderName', {}, 'New folder name')}" 
-                       autofocus />
-                <button class="sidebar-create-folder-btn sidebar-create-folder-confirm" title="${translate('common.confirm', {}, 'Confirm')}">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button class="sidebar-create-folder-btn sidebar-create-folder-cancel" title="${translate('common.cancel', {}, 'Cancel')}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="sidebar-create-folder-hint">
-                ${translate('sidebar.dragDrop.folderNameHint', {}, 'Press Enter to confirm, Escape to cancel')}
-            </div>
-        `;
+        // The folder is created under the given base path; falls back to the
+        // currently selected folder or the root.
+        this._createFolderBasePath = basePath !== null ? basePath : (this.selectedPath || '');
 
-        treeContainer.appendChild(inputContainer);
-
-        // Focus input
-        const input = inputContainer.querySelector('.sidebar-create-folder-input');
-        if (input) {
-            input.focus();
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (!folderTree) {
+            this.isCreatingFolder = false;
+            return;
         }
 
-        // Bind events
-        const confirmBtn = inputContainer.querySelector('.sidebar-create-folder-confirm');
-        const cancelBtn = inputContainer.querySelector('.sidebar-create-folder-cancel');
+        // Inline row at the creation location, file-explorer style: the new
+        // folder will appear exactly where the input row is shown.
+        const row = this._buildCreateFolderRow();
+        this._insertCreateFolderRow(folderTree, row);
+        row.scrollIntoView?.({ block: 'nearest' });
 
-        // Flag to prevent blur from canceling when clicking buttons
-        let isButtonClick = false;
+        const input = row.querySelector('.sidebar-create-folder-input');
+        if (!input) return;
+        input.focus();
 
-        confirmBtn?.addEventListener('mousedown', () => { 
-            isButtonClick = true; 
-            console.log('[SidebarManager] confirmBtn mousedown - isButtonClick set to true');
-        });
-        cancelBtn?.addEventListener('mousedown', () => { 
-            isButtonClick = true; 
-            console.log('[SidebarManager] cancelBtn mousedown - isButtonClick set to true');
-        });
-
-        confirmBtn?.addEventListener('click', (e) => {
-            console.log('[SidebarManager] confirmBtn click event triggered');
-            this.handleCreateFolderSubmit();
-        });
-        cancelBtn?.addEventListener('click', () => {
-            console.log('[SidebarManager] cancelBtn click event triggered');
-            this.handleCreateFolderCancel();
-        });
-        input?.addEventListener('keydown', (e) => {
-            console.log('[SidebarManager] input keydown:', e.key);
+        input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                console.log('[SidebarManager] Enter pressed, calling handleCreateFolderSubmit');
                 this.handleCreateFolderSubmit();
             } else if (e.key === 'Escape') {
-                console.log('[SidebarManager] Escape pressed, calling handleCreateFolderCancel');
                 this.handleCreateFolderCancel();
             }
         });
-        input?.addEventListener('blur', () => {
-            console.log('[SidebarManager] input blur event - isButtonClick:', isButtonClick);
-            // Delay to allow button clicks to process first
+        // Clicking away cancels creation, mirroring file-explorer behavior
+        input.addEventListener('blur', () => {
             setTimeout(() => {
-                console.log('[SidebarManager] blur timeout - isButtonClick:', isButtonClick, 'activeElement:', document.activeElement?.className);
-                if (!isButtonClick && document.activeElement !== confirmBtn && document.activeElement !== cancelBtn) {
-                    console.log('[SidebarManager] blur timeout - calling handleCreateFolderCancel');
+                if (this.isCreatingFolder) {
                     this.handleCreateFolderCancel();
-                } else {
-                    console.log('[SidebarManager] blur timeout - NOT canceling (button click detected)');
                 }
-                isButtonClick = false;
-            }, 200);
+            }, 100);
         });
     }
 
-    hideCreateFolderInput() {
-        console.log('[SidebarManager] hideCreateFolderInput called');
-        const inputContainer = document.getElementById('sidebarCreateFolderInput');
-        console.log('[SidebarManager] inputContainer:', inputContainer);
-        if (inputContainer) {
-            inputContainer.remove();
-            console.log('[SidebarManager] inputContainer removed');
+    _buildCreateFolderRow() {
+        const isListMode = this.displayMode === 'list';
+        const row = document.createElement('div');
+        row.id = 'sidebarCreateFolderInput';
+        row.className = 'sidebar-create-folder-node';
+        row.innerHTML = `
+            <div class="${isListMode ? 'sidebar-node-content' : 'sidebar-tree-node-content'} sidebar-create-folder-row">
+                ${isListMode ? '' : `
+                <div class="sidebar-tree-expand-icon sidebar-create-folder-spacer">
+                    <i class="fas fa-chevron-right"></i>
+                </div>`}
+                <i class="fas fa-folder-plus sidebar-tree-folder-icon"></i>
+                <input type="text"
+                       class="sidebar-create-folder-input"
+                       placeholder="${translate('sidebar.dragDrop.newFolderName', {}, 'New folder name')}" />
+            </div>
+        `;
+        return row;
+    }
+
+    _insertCreateFolderRow(folderTree, row) {
+        const parentPath = this._createFolderBasePath;
+
+        if (this.displayMode === 'list') {
+            if (parentPath) {
+                const parentItem = [...folderTree.querySelectorAll('.sidebar-folder-item')]
+                    .find(item => item.dataset.path === parentPath);
+                if (parentItem) {
+                    parentItem.after(row);
+                    return;
+                }
+            }
+            folderTree.appendChild(row);
+            return;
         }
+
+        if (parentPath) {
+            // Expand the parent so the row is visible, then insert as its
+            // first child.
+            if (!this.expandedNodes.has(parentPath)) {
+                this.expandedNodes.add(parentPath);
+                this.saveExpandedState();
+                this.renderTree();
+            }
+            const parentNode = [...folderTree.querySelectorAll('.sidebar-tree-node')]
+                .find(node => node.dataset.path === parentPath);
+            if (parentNode) {
+                let children = parentNode.querySelector(':scope > .sidebar-tree-children');
+                if (!children) {
+                    // Leaf folder: renderTree() only creates a children
+                    // container for nodes with subfolders, so add one.
+                    children = document.createElement('div');
+                    children.className = 'sidebar-tree-children expanded';
+                    parentNode.appendChild(children);
+                    this._createFolderTempChildren = children;
+                }
+                children.prepend(row);
+                return;
+            }
+        }
+
+        // Root creation (or parent not currently visible): append at top level
+        folderTree.appendChild(row);
+    }
+
+    hideCreateFolderInput() {
+        // Clear the flag first so the input's blur handler does not treat
+        // removing the row as a cancel.
         this.isCreatingFolder = false;
-        console.log('[SidebarManager] isCreatingFolder set to false');
+
+        const row = document.getElementById('sidebarCreateFolderInput');
+        if (row) {
+            row.remove();
+        }
+
+        // Remove the temporary children container if it is still empty
+        if (this._createFolderTempChildren) {
+            const container = this._createFolderTempChildren;
+            this._createFolderTempChildren = null;
+            if (container.isConnected && container.children.length === 0) {
+                container.remove();
+            }
+        }
     }
 
     async handleCreateFolderSubmit() {
-        console.log('[SidebarManager] handleCreateFolderSubmit called');
         const input = document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input');
-        console.log('[SidebarManager] input element:', input);
         if (!input) {
-            console.log('[SidebarManager] input not found, returning');
             return;
         }
 
         const folderName = input.value.trim();
-        console.log('[SidebarManager] folderName:', folderName);
         if (!folderName) {
             showToast('sidebar.dragDrop.emptyFolderName', {}, 'warning');
             return;
@@ -895,52 +941,1417 @@ export class SidebarManager {
             return;
         }
 
-        // Build target path - use selected path as parent, or root if none selected
-        const parentPath = this.selectedPath || '';
+        // Build target path - use the base path captured when the input was
+        // opened (context-menu folder or current selection), or root
+        const parentPath = this._createFolderBasePath || '';
         const targetRelativePath = parentPath ? `${parentPath}/${folderName}` : folderName;
-        console.log('[SidebarManager] targetRelativePath:', targetRelativePath);
-
-        // 使用 showCreateFolderInput 时保存的拖拽状态
-        const pendingState = this._pendingDragState;
-        console.log('[SidebarManager] using pending drag state:', pendingState);
-        
-        if (!pendingState || !pendingState.filePaths || pendingState.filePaths.length === 0) {
-            console.log('[SidebarManager] no pending drag state found, cannot proceed');
-            showToast('sidebar.dragDrop.noDragState', {}, 'error');
-            this.hideCreateFolderInput();
-            return;
-        }
 
         this.hideCreateFolderInput();
 
-        // Perform the move with saved state
-        console.log('[SidebarManager] calling performDragMove with pending state');
-        const success = await this.performDragMoveWithState(targetRelativePath, pendingState.filePaths, pendingState.rootPath, pendingState.fromBulk);
-        console.log('[SidebarManager] performDragMove result:', success);
+        await this._createFolder(targetRelativePath, parentPath);
+    }
 
-        if (success) {
-            // Expand the parent folder to show the new folder
+    async _createFolder(targetRelativePath, parentPath) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.createFolder !== 'function') {
+            showToast('sidebar.createFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const root = await this._createFolderRoot(parentPath);
+            if (!root) {
+                showToast('sidebar.createFolderResult.noRoot', {}, 'error');
+                return false;
+            }
+
+            const absolutePath = this.combineRootAndRelativePath(root, targetRelativePath);
+            const result = await this.apiClient.createFolder(absolutePath);
+
+            // A newly created folder is empty by definition. If the user turned
+            // empty-folder display off, switch it back on so the folder they
+            // just asked for is actually visible in the tree.
+            if (!this.showEmptyFolders) {
+                this.showEmptyFolders = true;
+                setStorageItem(`${this.pageType}_showEmptyFolders`, true);
+                this.updateViewOptionsMenu();
+            }
+
+            // Expand the parent folder to reveal the new node
             if (parentPath) {
                 this.expandedNodes.add(parentPath);
                 this.saveExpandedState();
             }
-            // Refresh the tree to show the newly created folder
-            // restoreSelectedFolder() inside refresh() will maintain the current active folder
+
             await this.refresh();
+
+            showToast('sidebar.createFolderResult.success', { name: result.folder || targetRelativePath }, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error creating folder:', error);
+            showToast('sidebar.createFolderResult.failed', { message: error.message || 'Unknown error' }, 'error');
+            return false;
+        }
+    }
+
+    _resolveDefaultRoot(roots) {
+        if (!roots || roots.length === 0) {
+            return '';
         }
 
-        // 清理待处理的拖拽状态
-        this._pendingDragState = null;
-        this.resetDragState();
-        this.clearAllDropHighlights();
+        const defaultRoot = this._configuredDefaultRoot();
+        if (defaultRoot && roots.includes(defaultRoot)) {
+            return defaultRoot;
+        }
+
+        return roots[0];
+    }
+
+    /** The library's configured default root (may be empty or not a known root). */
+    _configuredDefaultRoot() {
+        const singularName = this.apiClient?.apiConfig?.config?.singularName;
+        if (!singularName) return '';
+        return state.global?.settings?.[`default_${singularName}_root`] || '';
+    }
+
+    /**
+     * Map a tree-relative folder onto the concrete directories it stands for.
+     *
+     * The unified tree merges every model root into one relative-path
+     * namespace, so a node does not carry the root it came from: the same
+     * relative folder can exist under several roots, or only under one that is
+     * not the default root. Folder operations take an absolute business path,
+     * so they ask the backend which directories the node maps to instead of
+     * prefixing a root (which is how a folder sitting right there used to fail
+     * with "Folder no longer exists", and how a same-named folder in another
+     * root could be the one that got deleted).
+     *
+     * @returns {Promise<{candidates: Array<object>, defaultRoot: string}>}
+     *   Candidates are ordered with the default root first; an empty list means
+     *   no root holds the directory on disk (a stale tree node).
+     * @throws {Error} When the folder cannot be resolved *and* the library has
+     *   several roots — guessing between them is exactly the bug this avoids.
+     */
+    async _resolveFolderCandidates(relativePath) {
+        const defaultRoot = this._configuredDefaultRoot();
+
+        if (typeof this.apiClient.resolveFolder === 'function') {
+            try {
+                const response = await this.apiClient.resolveFolder(relativePath);
+                return {
+                    candidates: this._orderCandidates(
+                        Array.isArray(response?.candidates) ? response.candidates : [],
+                        defaultRoot
+                    ),
+                    defaultRoot,
+                };
+            } catch (error) {
+                // Fall through to the root-prefix fallback below, which is only
+                // trustworthy while a single root is configured.
+                console.error('[SidebarManager] Failed to resolve the folder path:', error);
+            }
+        }
+
+        const rootsData = await this.apiClient.fetchModelRoots();
+        const roots = rootsData?.roots || [];
+        if (roots.length > 1) {
+            const error = new Error('Unable to determine which model root holds this folder');
+            error.code = 'unresolved';
+            throw error;
+        }
+
+        const root = this._resolveDefaultRoot(roots);
+        if (!root) return { candidates: [], defaultRoot };
+
+        // Single root (or no resolver at all): the prefix is unambiguous, but
+        // it is an assumption — the backend still decides on disk.
+        return {
+            candidates: [{
+                folder_path: this.combineRootAndRelativePath(root, relativePath),
+                root,
+                is_symlink: false,
+                assumed: true,
+            }],
+            defaultRoot,
+        };
+    }
+
+    /** Order candidates with the default root first, keeping the rest stable. */
+    _orderCandidates(candidates, defaultRoot) {
+        if (!defaultRoot) return [...candidates];
+        return [...candidates].sort((a, b) => {
+            const aPreferred = a?.root === defaultRoot ? 0 : 1;
+            const bPreferred = b?.root === defaultRoot ? 0 : 1;
+            return aPreferred - bPreferred;
+        });
+    }
+
+    /**
+     * The candidate an operation preselects: the default root's copy when it has
+     * one, otherwise the first. Symlinked candidates are never preselected —
+     * folder operations refuse them.
+     */
+    _preferredCandidate(candidates, defaultRoot) {
+        const selectable = (candidates || []).filter((candidate) => !candidate?.is_symlink);
+        if (selectable.length === 0) return null;
+        const preferredRoot = defaultRoot || this._configuredDefaultRoot();
+        return selectable.find((candidate) => candidate.root === preferredRoot) || selectable[0];
+    }
+
+    async _resolveFolderCandidatesSafe(relativePath) {
+        try {
+            return await this._resolveFolderCandidates(relativePath);
+        } catch (error) {
+            console.error('[SidebarManager] Folder resolution failed:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Root a new folder is created under.
+     *
+     * A folder created inside an existing node belongs next to it, so the
+     * parent's own root wins when the parent resolves to exactly one directory.
+     * Everything else (root-level creation, an ambiguous or unreadable parent)
+     * keeps the old behaviour: the library's configured default root.
+     */
+    async _createFolderRoot(parentPath) {
+        if (parentPath) {
+            const resolution = await this._resolveFolderCandidatesSafe(parentPath);
+            const selectable = (resolution?.candidates || []).filter(
+                (candidate) => !candidate.is_symlink
+            );
+            if (selectable.length === 1) {
+                return selectable[0].root;
+            }
+        }
+
+        const rootsData = await this.apiClient.fetchModelRoots();
+        return this._resolveDefaultRoot(rootsData?.roots || []);
     }
 
     handleCreateFolderCancel() {
         this.hideCreateFolderInput();
-        // 清理待处理的拖拽状态
-        this._pendingDragState = null;
-        this.resetDragState();
-        this.clearAllDropHighlights();
+    }
+
+    // ===== Folder rename (inline row, file-explorer style) =====
+
+    /**
+     * Turn the folder node at *path* into an editable row.
+     *
+     * Mirrors the create-folder inline row (Enter confirms, Escape/blur
+     * cancels) but is inserted where the node sits and hides that node while
+     * editing, so the tree does not jump.
+     *
+     * The node is relative to the merged tree, so the directories it stands for
+     * are resolved first: a folder that exists under several roots gets a root
+     * picker in the row (renaming the wrong copy is worse than asking), while
+     * the ordinary single-root node keeps the plain input.
+     */
+    async showRenameFolderInput(path) {
+        if (!path) return;
+
+        this.hideRenameFolderInput();
+
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (!folderTree) return;
+
+        const node = this._findFolderNodeElement(folderTree, path);
+        if (!node) return;
+
+        const resolution = await this._resolveFolderCandidatesSafe(path);
+        // The tree may have re-rendered while the resolver was in flight.
+        if (!node.isConnected) return;
+
+        const candidates = resolution?.candidates || [];
+        if (candidates.length === 0) {
+            showToast('sidebar.renameFolderResult.missing', {}, 'warning');
+            return;
+        }
+
+        const selected = this._preferredCandidate(candidates, resolution?.defaultRoot);
+        if (!selected) {
+            showToast('sidebar.renameFolderResult.symlink', {}, 'warning');
+            return;
+        }
+
+        const row = this._buildRenameFolderRow(
+            this._folderLeafName(path), candidates, selected.folder_path
+        );
+        node.parentElement.insertBefore(row, node);
+        node.style.display = 'none';
+
+        this._renameFolderNode = node;
+        this._renameFolderPath = path;
+
+        const input = row.querySelector('.sidebar-rename-folder-input');
+        if (!input) return;
+        input.focus();
+        input.select();
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                this.handleRenameFolderSubmit();
+            } else if (e.key === 'Escape') {
+                this.handleRenameFolderCancel();
+            }
+        });
+        // Clicking away cancels, mirroring the create-folder row
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (this._renameFolderPath) {
+                    this.handleRenameFolderCancel();
+                }
+            }, 100);
+        });
+    }
+
+    _buildRenameFolderRow(currentName, candidates = [], selectedPath = '') {
+        const isListMode = this.displayMode === 'list';
+        const row = document.createElement('div');
+        row.id = 'sidebarRenameFolderInput';
+        row.className = 'sidebar-create-folder-node sidebar-rename-folder-node';
+        row.innerHTML = `
+            <div class="${isListMode ? 'sidebar-node-content' : 'sidebar-tree-node-content'} sidebar-create-folder-row">
+                ${isListMode ? '' : `
+                <div class="sidebar-tree-expand-icon sidebar-create-folder-spacer">
+                    <i class="fas fa-chevron-right"></i>
+                </div>`}
+                <i class="fas fa-i-cursor sidebar-tree-folder-icon"></i>
+                <input type="text"
+                       class="sidebar-create-folder-input sidebar-rename-folder-input"
+                       aria-label="${escapeAttribute(translate('sidebar.renameFolder', {}, 'Rename folder'))}"
+                       value="${escapeAttribute(currentName)}" />
+                ${this._folderRootSelectHtml(candidates, selectedPath)}
+            </div>
+        `;
+        return row;
+    }
+
+    /**
+     * Root picker markup for an ambiguous folder, or '' when there is nothing to
+     * choose (single candidate) — a `<select>` only appears when the same
+     * relative folder exists under more than one root.
+     */
+    _folderRootSelectHtml(candidates, selectedPath) {
+        if (!candidates || candidates.length < 2) return '';
+
+        const options = candidates.map((candidate) => {
+            const selected = candidate.folder_path === selectedPath ? ' selected' : '';
+            // A symlinked directory cannot be renamed or deleted here, but it
+            // still explains why the node exists at all.
+            const disabled = candidate.is_symlink ? ' disabled' : '';
+            const suffix = candidate.is_symlink
+                ? ` (${translate('sidebar.folderRoot.symlinkOption', {}, 'symbolic link')})`
+                : '';
+            return `<option value="${escapeAttribute(candidate.folder_path)}"${selected}${disabled}>`
+                + `${escapeHtml(candidate.folder_path + suffix)}</option>`;
+        }).join('');
+
+        return `
+            <select class="sidebar-folder-root-select"
+                    title="${escapeAttribute(translate('sidebar.folderRoot.chooseTitle', {}, 'This folder exists in more than one model root'))}"
+                    aria-label="${escapeAttribute(translate('sidebar.folderRoot.chooseTitle', {}, 'This folder exists in more than one model root'))}">
+                ${options}
+            </select>
+        `;
+    }
+
+    _findFolderNodeElement(folderTree, path) {
+        return [...folderTree.querySelectorAll('.sidebar-tree-node, .sidebar-folder-item')]
+            .find(element => element.dataset.path === path) || null;
+    }
+
+    _folderLeafName(path) {
+        if (!path) return '';
+        const index = path.lastIndexOf('/');
+        return index === -1 ? path : path.slice(index + 1);
+    }
+
+    hideRenameFolderInput() {
+        // Clear the flag first so the input's blur handler does not treat
+        // removing the row as a cancel.
+        this._renameFolderPath = null;
+
+        const row = document.getElementById('sidebarRenameFolderInput');
+        if (row) {
+            row.remove();
+        }
+
+        const node = this._renameFolderNode;
+        this._renameFolderNode = null;
+        if (node && node.isConnected) {
+            node.style.display = '';
+        }
+    }
+
+    handleRenameFolderCancel() {
+        this.hideRenameFolderInput();
+    }
+
+    async handleRenameFolderSubmit() {
+        const row = document.getElementById('sidebarRenameFolderInput');
+        const input = row?.querySelector('.sidebar-rename-folder-input');
+        const path = this._renameFolderPath;
+        if (!input || !path) {
+            return;
+        }
+
+        // Read the root picker (present only for an ambiguous node) before the
+        // row is removed: it holds the copy the user chose to rename.
+        const selectedPath = row.querySelector('.sidebar-folder-root-select')?.value || null;
+
+        const newName = input.value.trim();
+        if (!newName) {
+            showToast('sidebar.dragDrop.emptyFolderName', {}, 'warning');
+            return;
+        }
+
+        if (/[\\/:*?"<>|]/.test(newName)) {
+            showToast('sidebar.dragDrop.invalidFolderName', {}, 'error');
+            return;
+        }
+
+        this.hideRenameFolderInput();
+
+        if (newName === this._folderLeafName(path)) {
+            return;
+        }
+
+        await this._renameFolder(path, newName, selectedPath);
+    }
+
+    async _renameFolder(relativePath, newName, absolutePath = null) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.renameFolder !== 'function') {
+            showToast('sidebar.renameFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            let target = absolutePath;
+            if (!target) {
+                const resolution = await this._resolveFolderCandidates(relativePath);
+                const selected = this._preferredCandidate(
+                    resolution?.candidates, resolution?.defaultRoot
+                );
+                if (!selected) {
+                    const empty = (resolution?.candidates || []).length === 0;
+                    showToast(
+                        empty
+                            ? 'sidebar.renameFolderResult.missing'
+                            : 'sidebar.renameFolderResult.symlink',
+                        {},
+                        'warning'
+                    );
+                    return false;
+                }
+                target = selected.folder_path;
+            }
+
+            const result = await this.apiClient.renameFolder(target, newName);
+
+            // Carry the user's place across the rename: the persisted
+            // selection and the expanded set would otherwise point at a folder
+            // the refreshed tree no longer contains.
+            const newPath = result.folder || this._siblingFolderPath(relativePath, newName);
+            this._rekeyFolderPath(relativePath, newPath);
+
+            await this.refresh();
+
+            showToast('sidebar.renameFolderResult.success', { name: newName }, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error renaming folder:', error);
+            if (error?.code === 'target_exists') {
+                showToast('sidebar.renameFolderResult.targetExists', {}, 'warning');
+            } else if (error?.code === 'busy') {
+                showToast('sidebar.renameFolderResult.busy', {}, 'warning');
+            } else if (error?.code === 'missing') {
+                showToast('sidebar.renameFolderResult.missing', {}, 'warning');
+            } else if (error?.code === 'unresolved') {
+                showToast('sidebar.folderResult.unresolved', {}, 'error');
+            } else {
+                showToast(
+                    'sidebar.renameFolderResult.failed',
+                    { message: error?.message || 'Unknown error' },
+                    'error'
+                );
+            }
+            return false;
+        }
+    }
+
+    _siblingFolderPath(relativePath, newName) {
+        const index = relativePath.lastIndexOf('/');
+        const parent = index === -1 ? '' : relativePath.slice(0, index);
+        return parent ? `${parent}/${newName}` : newName;
+    }
+
+    _rekeyFolderPath(previousPath, newPath) {
+        if (!previousPath || !newPath || previousPath === newPath) return;
+
+        const prefix = `${previousPath}/`;
+        const newPrefix = `${newPath}/`;
+        const rekey = (value) => {
+            if (value === previousPath) return newPath;
+            if (value.startsWith(prefix)) return newPrefix + value.slice(prefix.length);
+            return value;
+        };
+
+        if (this.expandedNodes.size > 0) {
+            this.expandedNodes = new Set([...this.expandedNodes].map(rekey));
+            this.saveExpandedState();
+        }
+
+        if (this.selectedPath) {
+            const rekeyed = rekey(this.selectedPath);
+            if (rekeyed !== this.selectedPath) {
+                this.selectedPath = rekeyed;
+                if (this.pageControls?.pageState) {
+                    this.pageControls.pageState.activeFolder = rekeyed;
+                }
+                setStorageItem(`${this.pageType}_activeFolder`, rekeyed);
+            }
+        }
+    }
+
+    /**
+     * Open the folder delete modal for *path*.
+     *
+     * Two things are settled before the user can confirm. The node is first
+     * resolved to the directories it actually stands for: the tree merges every
+     * model root, so "delete this node" must not be answered with a path
+     * fabricated from the default root (see `_resolveFolderCandidates`). The
+     * models-only set that dims empty nodes is then corrected by a dry run of
+     * the very delete being confirmed: it is built from scanned, non-excluded
+     * models, while the backend walks the folder on disk and refuses on any
+     * weight file — excluded ones included. When several roots hold the folder,
+     * the modal offers each directory and re-checks the one the user picks.
+     */
+    async showDeleteFolderModal(path) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        // Defensive: the modal may have been absent when listeners were wired.
+        this._wireDeleteFolderModal();
+
+        // Opening the modal — or targeting another folder — retires any
+        // in-flight check from a previous open.
+        const token = ++this._deleteFolderProbeToken;
+
+        const holdsModels = this.nonEmptyFolders ? this.nonEmptyFolders.has(path) : false;
+        const prediction = holdsModels
+            ? {
+                state: 'blocked',
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessage',
+                messageFallback: 'This folder still contains models. Delete or move them first.',
+            }
+            : { state: 'confirm' };
+
+        this._pendingDeleteFolderRelative = path;
+        this._pendingDeleteFolderPath = null;
+        this._deleteFolderCandidates = [];
+
+        const probePending = this._supportsFolderManagement()
+            && typeof this.apiClient.deleteFolder === 'function';
+
+        this._renderDeleteFolderModal(path, prediction.state, {
+            ...prediction,
+            checking: probePending,
+        });
+
+        modalManager.showModal('deleteFolderModal');
+
+        if (!probePending) return;
+
+        await this._resolveDeleteFolderTarget(path, token, prediction);
+    }
+
+    /**
+     * Resolve the node, then check the directory the delete would hit.
+     *
+     * Resolution failing (an older client, a request error) keeps the previous
+     * behaviour: the tree prediction is shown and the real delete reports its
+     * own error. A library with several roots never falls back to guessing one
+     * — that guess is the bug this path exists to remove.
+     */
+    async _resolveDeleteFolderTarget(relativePath, token, prediction) {
+        const resolution = await this._resolveFolderCandidatesSafe(relativePath);
+        if (token !== this._deleteFolderProbeToken) return;
+
+        if (!resolution) {
+            this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
+            return;
+        }
+
+        const candidates = resolution.candidates || [];
+        this._deleteFolderCandidates = candidates;
+
+        if (candidates.length === 0) {
+            this._renderDeleteFolderModal(relativePath, 'missing', {});
+            return;
+        }
+
+        if (candidates.length > 1) {
+            // The node stands for several directories: offer them as a list the
+            // user can narrow down, instead of silently picking one.
+            await this._openMultiRootDelete(relativePath, candidates, token);
+            return;
+        }
+
+        if (candidates[0].is_symlink) {
+            // The backend refuses symlinked directories; asking it anyway would
+            // come back as a codeless error and repaint a confirm button.
+            this._renderDeleteFolderModal(relativePath, 'symlink', {});
+            return;
+        }
+
+        await this._probeDeleteFolder(relativePath, candidates[0], token, prediction);
+    }
+
+    /**
+     * Dry-run the delete against one resolved directory and paint the verdict.
+     *
+     * The dry run is authoritative: it walks the folder on disk and applies the
+     * same guard the real delete uses, so it catches everything the sidebar
+     * prediction cannot know — excluded models, weight files no scanner indexes
+     * (a lora folder holding only a `.gguf`, say) and files added after the
+     * last scan. A check that fails for any other reason falls back to the
+     * prediction, leaving the real delete to report its own error.
+     */
+    async _probeDeleteFolder(relativePath, candidate, token, prediction) {
+        const absolutePath = candidate.folder_path;
+        this._pendingDeleteFolderPath = absolutePath;
+
+        const options = { selectedPath: absolutePath };
+
+        try {
+            await this.apiClient.deleteFolder(absolutePath, { dryRun: true });
+            if (token !== this._deleteFolderProbeToken) return;
+            this._renderDeleteFolderModal(relativePath, 'confirm', options);
+        } catch (error) {
+            if (token !== this._deleteFolderProbeToken) return;
+            if (error?.code === 'not_empty') {
+                this._renderDeleteFolderModal(relativePath, 'blocked', {
+                    ...this._notEmptyBlocker(error?.manifest),
+                    ...options,
+                });
+            } else if (error?.code === 'protected') {
+                this._renderDeleteFolderModal(relativePath, 'protected', options);
+            } else if (error?.code === 'busy') {
+                this._renderDeleteFolderModal(relativePath, 'busy', options);
+            } else if (error?.code === 'missing') {
+                this._renderDeleteFolderModal(relativePath, 'missing', {});
+            } else {
+                this._renderDeleteFolderModal(relativePath, prediction.state, {
+                    ...prediction,
+                    ...options,
+                });
+            }
+        }
+    }
+
+    /**
+     * Open the multi-root form of the modal: one checkbox per directory the node
+     * stands for, each checked by default and each checked against the backend
+     * on its own.
+     *
+     * Deleting "the folder" in a merged tree means deleting every copy the user
+     * keeps selected — picking exactly one was an artefact of the single-target
+     * API, not of what the tree shows. The rows are built once and only their
+     * status text is updated afterwards: re-rendering the list on every click
+     * made the modal jump and stole the focus of the checkbox being clicked.
+     */
+    async _openMultiRootDelete(relativePath, candidates, token) {
+        this._deleteFolderCandidates = candidates.map((candidate) => ({
+            ...candidate,
+            // A symlinked copy cannot be removed from here, so it starts
+            // unselected; everything else is selected because the node the user
+            // right-clicked represents all of them.
+            checked: !candidate.is_symlink,
+            status: candidate.is_symlink ? 'symlink' : 'checking',
+            modelCount: 0,
+            excludedCount: 0,
+        }));
+
+        this._renderMultiRootDeleteModal(relativePath);
+
+        await Promise.all(this._deleteFolderCandidates.map(
+            (entry) => this._probeDeleteCandidateRow(entry, token)
+        ));
+
+        if (token !== this._deleteFolderProbeToken) return;
+        this._refreshDeleteFolderConfirm();
+    }
+
+    /** Paint the modal shell for an ambiguous node; rows carry the detail. */
+    _renderMultiRootDeleteModal(relativePath) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const info = modal.querySelector('[data-role="info"]');
+        const roots = modal.querySelector('[data-role="roots"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+
+        this._pendingDeleteFolderPath = null;
+
+        // The modal-level text stays generic: what differs between the copies is
+        // per-row, and swapping these strings around was half of the jumping.
+        title.textContent = translate('sidebar.deleteFolderModal.title', {}, 'Delete folder?');
+        message.textContent = translate(
+            'sidebar.deleteFolderModal.message', {},
+            'The folder and everything inside it will be permanently removed from disk.'
+        );
+        // The relative path is the node the user acted on; every absolute path
+        // lives on its row below, so none of them is singled out as "the" one.
+        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(relativePath)}`;
+        info.innerHTML = pathLine;
+
+        if (roots) {
+            roots.replaceChildren(this._buildDeleteFolderRootList());
+        }
+
+        confirmBtn.style.display = '';
+        confirmBtn.disabled = true;
+        modal.dataset.state = 'multi';
+    }
+
+    /**
+     * Build the checkbox list once per modal open and remember the nodes so the
+     * probes can update a row without touching its neighbours.
+     */
+    _buildDeleteFolderRootList() {
+        const list = document.createElement('div');
+        list.className = 'folder-root-picker';
+
+        const heading = document.createElement('div');
+        heading.className = 'folder-root-picker-title';
+        heading.textContent = translate(
+            'sidebar.folderRoot.rootsHint', {},
+            'Select the model roots to delete this folder from:'
+        );
+        list.appendChild(heading);
+
+        this._deleteFolderRootRows = new Map();
+
+        for (const entry of this._deleteFolderCandidates) {
+            const row = document.createElement('label');
+            row.className = 'folder-root-option';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = 'deleteFolderRoot';
+            checkbox.value = entry.folder_path;
+            checkbox.checked = entry.checked;
+
+            const body = document.createElement('span');
+            body.className = 'folder-root-body';
+
+            const path = document.createElement('span');
+            path.className = 'folder-root-path';
+            path.textContent = entry.folder_path;
+
+            const status = document.createElement('span');
+            status.className = 'folder-root-status';
+
+            body.append(path, status);
+            row.append(checkbox, body);
+            list.appendChild(row);
+
+            this._deleteFolderRootRows.set(entry.folder_path, { row, checkbox, status });
+        }
+
+        // Always present (reserved height) so warning about the unchecked copies
+        // does not resize the modal the moment a box is clicked.
+        const keptNote = document.createElement('div');
+        keptNote.className = 'folder-root-kept-note';
+        list.appendChild(keptNote);
+        this._deleteFolderKeptNote = keptNote;
+
+        for (const entry of this._deleteFolderCandidates) {
+            this._updateDeleteFolderRow(entry);
+        }
+
+        return list;
+    }
+
+    /**
+     * Check one copy against the delete guard and record the verdict on its row.
+     *
+     * This is the same dry run the single-target modal does, so the checkbox a
+     * user can tick is never one the backend would refuse.
+     */
+    async _probeDeleteCandidateRow(entry, token) {
+        try {
+            await this.apiClient.deleteFolder(entry.folder_path, { dryRun: true });
+            if (token !== this._deleteFolderProbeToken) return;
+            entry.status = 'ok';
+        } catch (error) {
+            if (token !== this._deleteFolderProbeToken) return;
+            if (error?.code === 'not_empty') {
+                entry.status = 'not_empty';
+                entry.modelCount = Number(error?.manifest?.model_count) || 0;
+                entry.excludedCount = Number(error?.manifest?.excluded_model_count) || 0;
+                entry.checked = false;
+            } else if (error?.code === 'protected') {
+                entry.status = 'protected';
+                entry.checked = false;
+            } else if (error?.code === 'busy') {
+                entry.status = 'busy';
+                entry.checked = false;
+            } else if (error?.code === 'missing') {
+                entry.status = 'missing';
+                entry.checked = false;
+            } else {
+                // Unknown failure: keep it selected and let the real delete
+                // report its own error, exactly like the single-target probe.
+                entry.status = 'unknown';
+            }
+        }
+
+        this._updateDeleteFolderRow(entry);
+    }
+
+    /** Repaint one row in place (never rebuild it — that is what jumped). */
+    _updateDeleteFolderRow(entry) {
+        const nodes = this._deleteFolderRootRows?.get(entry.folder_path);
+        if (!nodes) return;
+
+        const selectable = this._isCandidateDeletable(entry);
+        nodes.row.classList.toggle('disabled', !selectable);
+        nodes.checkbox.disabled = !selectable;
+        nodes.checkbox.checked = entry.checked;
+        nodes.status.textContent = this._deleteFolderRowStatus(entry);
+        nodes.status.classList.toggle(
+            'blocked',
+            entry.status === 'not_empty' || entry.status === 'protected'
+        );
+    }
+
+    /** Whether a probed copy may be selected for deletion. */
+    _isCandidateDeletable(entry) {
+        return entry.status === 'ok' || entry.status === 'unknown' || entry.status === 'checking';
+    }
+
+    _deleteFolderRowStatus(entry) {
+        switch (entry.status) {
+            case 'checking':
+                return translate('sidebar.folderRoot.checkingStatus', {}, 'checking...');
+            case 'not_empty':
+                return entry.excludedCount > 0
+                    ? translate(
+                        'sidebar.folderRoot.notEmptyExcludedStatus',
+                        { count: entry.modelCount, excluded: entry.excludedCount },
+                        `contains ${entry.modelCount} model file(s), ${entry.excludedCount} of them excluded from the library`
+                    )
+                    : translate(
+                        'sidebar.folderRoot.notEmptyStatus',
+                        { count: entry.modelCount },
+                        `contains ${entry.modelCount} model file(s) — delete or move them first`
+                    );
+            case 'busy':
+                return translate('sidebar.folderRoot.busyStatus', {}, 'a deletion is still pending');
+            case 'missing':
+                return translate('sidebar.folderRoot.missingStatus', {}, 'no longer exists on disk');
+            case 'protected':
+                return translate(
+                    'sidebar.folderRoot.protectedStatus', {},
+                    'holds the recipe library — cannot be deleted here'
+                );
+            case 'symlink':
+                return translate(
+                    'sidebar.folderRoot.symlinkStatus', {},
+                    'symbolic link — cannot be deleted here'
+                );
+            case 'unknown':
+                return translate('sidebar.folderRoot.unknownStatus', {}, 'could not be checked');
+            case 'deleted':
+                return translate('sidebar.folderRoot.deletedStatus', {}, 'deleted');
+            default:
+                return translate('sidebar.folderRoot.okStatus', {}, 'no models');
+        }
+    }
+
+    /** Toggle one copy's checkbox; nothing is re-rendered. */
+    _toggleDeleteFolderCandidate(absolutePath, checked) {
+        const entry = (this._deleteFolderCandidates || [])
+            .find((candidate) => candidate.folder_path === absolutePath);
+        if (!entry || !this._isCandidateDeletable(entry)) return;
+
+        entry.checked = checked;
+        this._refreshDeleteFolderConfirm();
+    }
+
+    /**
+     * Reflect the current selection on the confirm button, and explain the dead
+     * end when nothing can be removed at all.
+     */
+    _refreshDeleteFolderConfirm() {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+        const candidates = this._deleteFolderCandidates || [];
+
+        const pending = candidates.some((entry) => entry.status === 'checking');
+        const deletable = candidates.filter((entry) => this._isCandidateDeletable(entry));
+        const selected = deletable.filter((entry) => entry.checked);
+        const blocked = candidates.filter((entry) => entry.status === 'not_empty');
+
+        if (this._deleteFolderKeptNote) {
+            // Deleting a subset leaves the sidebar node in place (the other root
+            // still holds the folder), which is the surprise this warns about.
+            this._deleteFolderKeptNote.textContent = selected.length < deletable.length
+                ? translate(
+                    'sidebar.deleteFolderModal.keptNote', {},
+                    'Unchecked copies keep this folder in the sidebar.'
+                )
+                : '';
+        }
+
+        if (!pending && deletable.length === 0) {
+            // Not one copy can be removed: say why, using the blocking rows.
+            title.textContent = translate(
+                'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
+            );
+            message.textContent = blocked.length > 0
+                ? translate(
+                    'sidebar.deleteFolderModal.notEmptyMessage', {},
+                    'This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.'
+                )
+                : translate(
+                    'sidebar.deleteFolderModal.missingMessage', {},
+                    'This folder no longer exists on disk. Refresh the sidebar and try again.'
+                );
+            confirmBtn.style.display = 'none';
+            confirmBtn.disabled = true;
+            return;
+        }
+
+        title.textContent = translate('sidebar.deleteFolderModal.title', {}, 'Delete folder?');
+        message.textContent = translate(
+            'sidebar.deleteFolderModal.message', {},
+            'The folder and everything inside it will be permanently removed from disk.'
+        );
+        confirmBtn.style.display = '';
+        confirmBtn.disabled = pending || selected.length === 0;
+        confirmBtn.textContent = selected.length > 1
+            ? translate(
+                'sidebar.deleteFolderModal.confirmMulti',
+                { count: selected.length },
+                `Delete ${selected.length} folders`
+            )
+            : translate('sidebar.deleteFolderModal.confirm', {}, 'Delete folder');
+    }
+
+    /**
+     * Delete every selected copy, then report once.
+     *
+     * Each copy keeps its own guard: a copy that grew models since the check is
+     * refused by the backend and counted as a failure rather than taking the
+     * successful ones down with it.
+     */
+    async _deleteCheckedDeleteFolders(relativePath) {
+        const targets = (this._deleteFolderCandidates || [])
+            .filter((entry) => entry.checked && this._isCandidateDeletable(entry))
+            .map((entry) => ({ path: entry.folder_path, entry }));
+        if (targets.length === 0) return false;
+
+        const confirmBtn = document.querySelector(
+            '#deleteFolderModal [data-action="confirm-delete-folder"]'
+        );
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = translate(
+                'sidebar.deleteFolderModal.deleting', {}, 'Deleting...'
+            );
+        }
+
+        const deleted = [];
+        const failed = [];
+        for (const target of targets) {
+            try {
+                const result = await this.apiClient.deleteFolder(target.path);
+                deleted.push({ path: target.path, result });
+                this._markDeleteFolderRowDone(target.entry);
+            } catch (error) {
+                console.error('[SidebarManager] Error deleting folder:', target.path, error);
+                failed.push({ path: target.path, error });
+            }
+        }
+
+        this.hideDeleteFolderModal();
+
+        // Drop the node (and its subtree) from the persisted expand state
+        // before refreshing, otherwise stale keys accumulate forever.
+        this._forgetRemovedFolder(relativePath);
+        await this.refresh();
+
+        if (deleted.length === 0) {
+            this._reportDeleteFolderFailure(failed[0]?.error);
+            return false;
+        }
+
+        if (failed.length > 0) {
+            showToast(
+                'sidebar.deleteFolderResult.partial',
+                { count: deleted.length, total: targets.length, failed: failed.length },
+                'warning'
+            );
+            return true;
+        }
+
+        this._reportFoldersDeleted(relativePath, deleted);
+        return true;
+    }
+
+    _markDeleteFolderRowDone(entry) {
+        entry.checked = false;
+        entry.status = 'deleted';
+        this._updateDeleteFolderRow(entry);
+    }
+
+    /** One toast for a multi-copy delete, with an undo that restores every copy. */
+    _reportFoldersDeleted(relativePath, deleted) {
+        const restorable = deleted.every((entry) => entry.result?.restorable);
+
+        if (restorable) {
+            showActionToast(
+                deleted.length > 1
+                    ? 'sidebar.deleteFolderResult.successMulti'
+                    : 'sidebar.deleteFolderResult.success',
+                deleted.length > 1
+                    ? { name: relativePath, count: deleted.length }
+                    : { name: relativePath },
+                'success',
+                {
+                    actionText: translate('toast.undo.action', {}, 'Undo'),
+                    // The undo recreates every directory that was removed.
+                    onAction: () => this._restoreDeletedFolder(
+                        deleted.map((entry) => entry.path), relativePath
+                    ),
+                }
+            );
+            return;
+        }
+
+        const items = deleted.reduce(
+            (total, entry) => total + (entry.result?.file_count || 0) + (entry.result?.dir_count || 0),
+            0
+        );
+        showToast(
+            'sidebar.deleteFolderResult.successWithFiles',
+            { name: relativePath, count: items },
+            'success'
+        );
+    }
+
+    /** Shared failure reporting for one or many refused copies. */
+    _reportDeleteFolderFailure(error) {
+        if (error?.code === 'not_empty') {
+            // The dry run normally catches this before the user can confirm;
+            // reaching here means the folder changed in between.
+            const modelCount = Number(error?.manifest?.model_count) || 0;
+            if (modelCount > 0) {
+                showToast(
+                    'sidebar.deleteFolderResult.notEmptyWithCount',
+                    { count: modelCount },
+                    'warning'
+                );
+            } else {
+                showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+            }
+        } else if (error?.code === 'busy') {
+            showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
+        } else if (error?.code === 'missing') {
+            showToast('sidebar.deleteFolderResult.missing', {}, 'warning');
+        } else if (error?.code === 'exists') {
+            showToast('sidebar.deleteFolderResult.exists', {}, 'warning');
+        } else if (error?.code === 'unresolved') {
+            showToast('sidebar.folderResult.unresolved', {}, 'error');
+        } else {
+            showToast(
+                'sidebar.deleteFolderResult.failed',
+                { message: error?.message || 'Unknown error' },
+                'error'
+            );
+        }
+    }
+
+    /**
+     * Paint one state of the folder delete modal.
+     *
+     * `state` is 'confirm' (deletion may proceed), 'blocked' (models would be
+     * cascaded over, which the backend refuses), 'busy' (a staged delete is
+     * still pending inside the folder), 'missing' (no root holds the node's
+     * directory any more), 'symlink' (every copy is a symbolic link, which the
+     * backend refuses to remove) or 'protected' (the folder holds the recipe
+     * library, which the backend refuses to remove). `checking` keeps the
+     * confirm button disabled while the authoritative server-side check runs.
+     *
+     * This is the single-target form, used when the node maps to at most one
+     * directory; an ambiguous node renders the multi-root list instead (see
+     * `_renderMultiRootDeleteModal`).
+     */
+    _renderDeleteFolderModal(path, state, options = {}) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const info = modal.querySelector('[data-role="info"]');
+        const roots = modal.querySelector('[data-role="roots"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+        const checking = Boolean(options.checking);
+        const selectedPath = options.selectedPath || '';
+
+        const displayPath = selectedPath || path;
+        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(displayPath)}`;
+        const extraLines = [];
+
+        // Anything the chooser owned is stale once this form is painted.
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
+        if (roots) roots.replaceChildren();
+
+        if (state === 'confirm') {
+            // Only a resolved directory may be deleted: without one the
+            // confirmation goes back through resolution in `_deleteFolder`.
+            this._pendingDeleteFolderPath = selectedPath || null;
+            title.textContent = translate(
+                'sidebar.deleteFolderModal.title', {}, 'Delete folder?'
+            );
+            message.textContent = translate(
+                'sidebar.deleteFolderModal.message', {},
+                'The folder and everything inside it will be permanently removed from disk.'
+            );
+            if (!checking) {
+                // While the check runs the "no models" claim is still only the
+                // sidebar's prediction, so it is not repeated as a fact.
+                extraLines.push(escapeHtml(translate(
+                    'sidebar.deleteFolderModal.emptyNote', {}, 'This folder contains no models.'
+                )));
+            }
+            confirmBtn.style.display = '';
+            confirmBtn.disabled = checking;
+            confirmBtn.textContent = translate(
+                'sidebar.deleteFolderModal.confirm', {}, 'Delete folder'
+            );
+        } else {
+            this._pendingDeleteFolderPath = null;
+            confirmBtn.style.display = 'none';
+            confirmBtn.disabled = true;
+            if (state === 'busy') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.busyTitle', {}, 'A deletion is still pending'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderResult.busy', {},
+                    'A deletion is still pending inside this folder. Wait for the undo window to expire.'
+                );
+            } else if (state === 'missing') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.missingTitle', {}, 'Folder not found'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.missingMessage', {},
+                    'This folder no longer exists on disk. You can remove it from the list.'
+                );
+                // There is nothing left to delete, but the records are what keeps
+                // the ghost node in the tree: offer to drop them (issue #1145).
+                // The confirm re-resolves the node, finds no directory and takes
+                // the forget path.
+                confirmBtn.style.display = '';
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = translate(
+                    'sidebar.deleteFolderModal.removeFromList', {}, 'Remove from list'
+                );
+            } else if (state === 'symlink') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.symlinkTitle', {}, 'Folder is a symbolic link'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.symlinkMessage', {},
+                    'Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.'
+                );
+            } else if (state === 'protected') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.protectedTitle', {}, 'Folder is protected'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderModal.protectedMessage', {},
+                    'This folder holds the recipe library and cannot be deleted from LoRA Manager.'
+                );
+            } else {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
+                );
+                message.textContent = translate(
+                    options.messageKey || 'sidebar.deleteFolderModal.notEmptyMessage',
+                    options.messageParams || {},
+                    options.messageFallback
+                        || 'This folder still contains models. Delete or move them first.'
+                );
+            }
+        }
+
+        if (checking) {
+
+            extraLines.push(escapeHtml(translate(
+                'sidebar.deleteFolderModal.checking', {}, 'Checking the folder contents...'
+            )));
+        }
+
+        info.innerHTML = [pathLine, ...extraLines].join('<br>');
+        modal.dataset.state = state;
+    }
+
+    /**
+     * Message for a refused delete, split by whether the blocking models are
+     * excluded from the library — the case where the sidebar legitimately shows
+     * the folder as empty, which is exactly what used to be unexplained.
+     */
+    _notEmptyBlocker(manifest) {
+        const modelCount = Number(manifest?.model_count) || 0;
+        const excludedCount = Number(manifest?.excluded_model_count) || 0;
+
+        if (modelCount > 0 && excludedCount > 0) {
+            return {
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessageExcluded',
+                messageParams: { count: modelCount, excluded: excludedCount },
+                messageFallback: `This folder still contains ${modelCount} model file(s), `
+                    + `${excludedCount} of them excluded from the library. Un-exclude and `
+                    + 'delete them first — deleting a folder never cascades over model files.',
+            };
+        }
+        if (modelCount > 0) {
+            return {
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessageCount',
+                messageParams: { count: modelCount },
+                messageFallback: `This folder still contains ${modelCount} model file(s). `
+                    + 'Delete or move them first — deleting a folder never cascades over model files.',
+            };
+        }
+        return {
+            messageKey: 'sidebar.deleteFolderModal.notEmptyMessage',
+            messageFallback: 'This folder still contains models. Delete or move them first.',
+        };
+    }
+
+    hideDeleteFolderModal() {
+        this._pendingDeleteFolderPath = null;
+        this._pendingDeleteFolderRelative = null;
+        this._deleteFolderCandidates = [];
+        this._deleteFolderRootRows = new Map();
+        this._deleteFolderKeptNote = null;
+        // Retire any in-flight check so a late answer cannot repaint a modal
+        // the user already dismissed.
+        this._deleteFolderProbeToken += 1;
+        modalManager.closeModal('deleteFolderModal');
+    }
+
+    async handleDeleteFolderConfirm() {
+        const relativePath = this._pendingDeleteFolderRelative;
+        const multiRoot = (this._deleteFolderCandidates || []).length > 1;
+        if (multiRoot) {
+            // The selection lives on the rows, so the multi-copy path reads it
+            // before the modal state is cleared.
+            return this._deleteCheckedDeleteFolders(relativePath);
+        }
+
+        const absolutePath = this._pendingDeleteFolderPath;
+        this.hideDeleteFolderModal();
+
+        if (!relativePath) return false;
+
+        // The absolute path is absent when the target could not be resolved
+        // before confirming (older client, failed request); `_deleteFolder`
+        // then resolves it itself rather than trusting a fabricated root.
+        return this._deleteFolder(relativePath, absolutePath);
+    }
+
+    async _deleteFolder(relativePath, absolutePath = null) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.deleteFolder !== 'function') {
+            showToast('sidebar.deleteFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            let target = absolutePath;
+            if (!target) {
+                const resolution = await this._resolveFolderCandidates(relativePath);
+                const selected = this._preferredCandidate(
+                    resolution?.candidates, resolution?.defaultRoot
+                );
+                if (!selected) {
+                    const empty = (resolution?.candidates || []).length === 0;
+                    if (empty) {
+                        // No root holds the directory any more: there is nothing
+                        // to delete, so drop the records that keep the node in
+                        // the tree (issue #1145).
+                        return this._forgetFolder(relativePath);
+                    }
+                    showToast(
+                        'sidebar.deleteFolderResult.symlink',
+                        {},
+                        'warning'
+                    );
+                    return false;
+                }
+                target = selected.folder_path;
+            }
+
+            const result = await this.apiClient.deleteFolder(target);
+
+            // Drop the node (and its subtree) from the persisted expand state
+            // before refreshing, otherwise stale keys accumulate forever. A
+            // selection inside the removed subtree is left to
+            // restoreSelectedFolder(), which falls back to the root and
+            // reloads the grid when the folder is gone from the fresh tree.
+            this._forgetRemovedFolder(relativePath);
+
+            await this.refresh();
+
+            const name = result.folder || relativePath;
+            if (result.code === 'missing') {
+                // The directory was already gone when the delete ran (a race with
+                // the file manager, or a row in the multi-root list): only its
+                // records were dropped, so nothing was deleted and there is
+                // nothing to undo.
+                showToast(
+                    'sidebar.deleteFolderResult.forgotten', { name }, 'success'
+                );
+            } else if (result.restorable) {
+                // A truly empty folder is reproducible one-for-one, so offer
+                // the same 20s undo affordance the model delete flow uses.
+                showActionToast('sidebar.deleteFolderResult.success', { name }, 'success', {
+                    actionText: translate('toast.undo.action', {}, 'Undo'),
+                    // The undo recreates the very directory that was removed, so
+                    // it has to carry the resolved path — not a root guess.
+                    onAction: () => this._restoreDeletedFolder(target, relativePath),
+                });
+            } else {
+                showToast(
+                    'sidebar.deleteFolderResult.successWithFiles',
+                    { name, count: (result.file_count || 0) + (result.dir_count || 0) },
+                    'success'
+                );
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error deleting folder:', error);
+            this._reportDeleteFolderFailure(error);
+            return false;
+        }
+    }
+
+    /**
+     * Clear a folder node whose directory is gone from every root (issue #1145).
+     *
+     * A folder moved or deleted with a file manager leaves the sidebar holding a
+     * node that no delete can clear, because there is nothing left to remove. The
+     * delete affordance falls back to this instead of refusing: the backend drops
+     * the folder record and the cached models under it, and answers `exists` if
+     * the directory turned out to be back on disk (then it is a delete again).
+     */
+    async _forgetFolder(relativePath) {
+        if (
+            !this._supportsFolderManagement()
+            || typeof this.apiClient.forgetFolder !== 'function'
+        ) {
+            showToast('sidebar.deleteFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const result = await this.apiClient.forgetFolder(relativePath);
+            this._forgetRemovedFolder(relativePath);
+            await this.refresh();
+            showToast(
+                'sidebar.deleteFolderResult.forgotten',
+                { name: result.folder || relativePath },
+                'success'
+            );
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error forgetting folder:', error);
+            this._reportDeleteFolderFailure(error);
+            return false;
+        }
+    }
+
+    /**
+     * Recreate removed directories through the create-folder API.
+     *
+     * Accepts one path or the list a multi-copy delete removed, so the undo of
+     * a multi-root delete restores every directory it took.
+     */
+    async _restoreDeletedFolder(absolutePath, relativePath) {
+        const paths = Array.isArray(absolutePath) ? absolutePath : [absolutePath];
+        try {
+            for (const path of paths) {
+                await this.apiClient.createFolder(path);
+            }
+            this._forgetRemovedFolder(relativePath);
+            await this.refresh();
+            showToast('sidebar.deleteFolderResult.restored', {}, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error restoring deleted folder:', error);
+            showToast('toast.undo.failed', { error: error?.message || '' }, 'error');
+            return false;
+        }
+    }
+
+    _forgetRemovedFolder(folderPath) {
+        if (!folderPath) return;
+
+        const prefix = `${folderPath}/`;
+        let changed = false;
+        for (const node of Array.from(this.expandedNodes)) {
+            if (node === folderPath || node.startsWith(prefix)) {
+                this.expandedNodes.delete(node);
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.saveExpandedState();
+        }
+    }
+
+    _wireDeleteFolderModal() {
+        if (this._deleteFolderModalWired) return;
+
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        modal.addEventListener('click', (event) => {
+            const item = event.target.closest('[data-action]');
+            if (!item) return;
+            const action = item.dataset.action;
+            if (action === 'cancel-delete-folder') {
+                this.hideDeleteFolderModal();
+            } else if (action === 'confirm-delete-folder') {
+                this.handleDeleteFolderConfirm();
+            }
+        });
+
+        // Ticking a root adds that copy to the pending delete. Nothing is
+        // re-rendered here: the row the user just clicked keeps its focus, and
+        // the modal keeps its height.
+        modal.addEventListener('change', (event) => {
+            const input = event.target instanceof Element
+                ? event.target.closest('input[name="deleteFolderRoot"]')
+                : null;
+            if (!input) return;
+            this._toggleDeleteFolderCandidate(input.value, input.checked);
+        });
+
+        this._deleteFolderModalWired = true;
     }
 
     saveSelectedFolder() {
@@ -967,16 +2378,35 @@ export class SidebarManager {
             sidebarHeader.addEventListener('click', this.handleSidebarHeaderClick);
         }
 
+        // View options menu button
+        const viewOptionsBtn = document.getElementById('sidebarViewOptions');
+        if (viewOptionsBtn) {
+            viewOptionsBtn.addEventListener('click', this.handleViewOptionsButton);
+        }
+
+        // View options menu items
+        const viewOptionsMenu = document.getElementById('sidebarViewOptionsMenu');
+        if (viewOptionsMenu) {
+            viewOptionsMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item || item.classList.contains('disabled')) return;
+                const action = item.dataset.action;
+                if (action) {
+                    this.handleViewOptionsAction(action);
+                }
+            });
+        }
+
+        // Create folder button
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.addEventListener('click', this.handleCreateFolderButton);
+        }
+
         // Collapse all button
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         if (collapseAllBtn) {
             collapseAllBtn.addEventListener('click', this.handleCollapseAll);
-        }
-
-        // Recursive toggle button
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
-        if (recursiveToggleBtn) {
-            recursiveToggleBtn.addEventListener('click', this.handleRecursiveToggle);
         }
 
         // Tree click handler
@@ -1013,12 +2443,6 @@ export class SidebarManager {
         // Add dedicated resize listener for container margin updates
         window.addEventListener('resize', this.updateContainerMargin);
 
-        // Display mode toggle button
-        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
-        if (displayModeToggleBtn) {
-            displayModeToggleBtn.addEventListener('click', this.handleDisplayModeToggle);
-        }
-
         // Sidebar folder context menu click handler
         const sidebarFolderMenu = document.getElementById('sidebarFolderContextMenu');
         if (sidebarFolderMenu) {
@@ -1037,6 +2461,9 @@ export class SidebarManager {
         if (hideToggle) {
             hideToggle.addEventListener('click', this.handleHideToggle);
         }
+
+        // Folder delete confirmation modal buttons
+        this._wireDeleteFolderModal();
     }
 
     handleDocumentClick(event) {
@@ -1059,7 +2486,7 @@ export class SidebarManager {
     }
 
     handleCollapseAll(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
         this.expandedNodes.clear();
         this.renderFolderDisplay();
         this.saveExpandedState();
@@ -1121,6 +2548,7 @@ export class SidebarManager {
             recipes: 'Recipes',
             checkpoints: 'Checkpoints',
             embeddings: 'Embeddings',
+            other: 'Other Models',
         };
         return names[this.pageType] || this.pageType;
     }
@@ -1160,18 +2588,141 @@ export class SidebarManager {
 
     async loadFolderTree() {
         try {
+            const supportsEmptyFolders = this._supportsFolderManagement();
+            // The full folder list (including empty directories) and the
+            // models-only list are both always fetched: the first is the
+            // single source of truth for the tree and for the empty-folder
+            // count, the second is what "empty" is measured against. The
+            // `showEmptyFolders` preference only gates rendering, so the
+            // view-options menu can report the count (and hide the toggle
+            // when there are none) while empty folders stay hidden.
             if (this.displayMode === 'tree') {
-                const response = await this.apiClient.fetchUnifiedFolderTree();
-                this.treeData = response.tree || {};
+                const [treeResponse, foldersResponse] = await Promise.all([
+                    supportsEmptyFolders
+                        ? this.apiClient.fetchUnifiedFolderTree({ includeEmpty: true })
+                        : this.apiClient.fetchUnifiedFolderTree(),
+                    supportsEmptyFolders ? this.apiClient.fetchModelFolders() : Promise.resolve(null),
+                ]);
+                this.treeData = treeResponse.tree || {};
+                this.nonEmptyFolders = foldersResponse
+                    ? this._buildNonEmptyFolderSet(foldersResponse.folders || [])
+                    : null;
+                this.emptyFolderCount = this._computeEmptyFolderCount();
             } else {
-                const response = await this.apiClient.fetchModelFolders();
-                this.foldersList = response.folders || [];
+                const [allFoldersResponse, foldersResponse] = await Promise.all([
+                    this.apiClient.fetchModelFolders(
+                        supportsEmptyFolders ? { includeEmpty: true } : undefined
+                    ),
+                    supportsEmptyFolders ? this.apiClient.fetchModelFolders() : Promise.resolve(null),
+                ]);
+                this.foldersList = allFoldersResponse.folders || [];
+                this.nonEmptyFolders = foldersResponse
+                    ? this._buildNonEmptyFolderSet(foldersResponse.folders || [])
+                    : null;
+                this.emptyFolderCount = this._computeEmptyFolderCount();
             }
+            this.folderTreeLoaded = true;
             this.renderFolderDisplay();
         } catch (error) {
+            this.folderTreeLoaded = false;
+            this.emptyFolderCount = null;
             console.error('Failed to load folder data:', error);
             this.renderEmptyState();
         }
+    }
+
+    _supportsFolderManagement() {
+        return Boolean(this.apiClient?.apiConfig?.config?.supportsFolderManagement);
+    }
+
+    // The models-only folder list only contains directories that directly
+    // hold model files. Expand it with every ancestor prefix so a folder
+    // whose subtree contains models (e.g. "a" with models in "a/b") is not
+    // dimmed as empty — the "empty" style means "no models anywhere below".
+    _buildNonEmptyFolderSet(folders) {
+        const set = new Set();
+        for (const folder of folders) {
+            set.add(folder);
+            if (!folder) continue;
+            const parts = folder.split('/');
+            for (let i = 1; i < parts.length; i++) {
+                set.add(parts.slice(0, i).join('/'));
+            }
+        }
+        return set;
+    }
+
+    /**
+     * Whether a folder should render in the dimmed "empty" style.
+     *
+     * The full folder list is always loaded so the empty-folder count is
+     * available, but the dimmed styling (like the folders themselves) is only
+     * shown while the show-empty-folders preference is on.
+     */
+    _isRenderedEmptyFolder(path) {
+        if (!this.showEmptyFolders || !this.nonEmptyFolders) return false;
+        return !this.nonEmptyFolders.has(path);
+    }
+
+    // Apply the show-empty-folders preference to the flat folder list. When
+    // the models-only set is unknown the list is passed through unchanged, so
+    // the filter can never hide everything.
+    _filterVisibleFolders(folders) {
+        const list = folders || [];
+        if (this.showEmptyFolders || !this.nonEmptyFolders) return list;
+        return list.filter((folder) => !folder || this.nonEmptyFolders.has(folder));
+    }
+
+    /**
+     * How many directories in the current view hold no models anywhere in
+     * their subtree, or null when the models-only list is unavailable
+     * (unsupported page or a failed request). Null keeps the view-options
+     * menu in its "not sure yet" state instead of claiming there are none.
+     */
+    _computeEmptyFolderCount() {
+        if (!this.nonEmptyFolders) return null;
+        const known = this.displayMode === 'tree'
+            ? this._collectTreePaths()
+            : this._collectListPaths();
+        return known.filter((path) => path && !this.nonEmptyFolders.has(path)).length;
+    }
+
+    // Every folder path present in the current tree, including intermediate
+    // nodes that only exist to nest other folders.
+    _collectTreePaths() {
+        const paths = [];
+        const walk = (node, prefix) => {
+            for (const [name, children] of Object.entries(node || {})) {
+                const path = prefix ? `${prefix}/${name}` : name;
+                paths.push(path);
+                walk(children, path);
+            }
+        };
+        walk(this.treeData, '');
+        return paths;
+    }
+
+    // Every folder path in the flat list view. Unlike the tree, that list
+    // already carries full paths, so no prefix expansion is needed.
+    _collectListPaths() {
+        return (this.foldersList || []).filter(Boolean);
+    }
+
+    folderExistsInTree(path) {
+        if (!path) return true;
+
+        if (this.displayMode === 'tree') {
+            let node = this.treeData;
+            for (const segment of path.split('/')) {
+                if (!node || typeof node !== 'object' || !(segment in node)) {
+                    return false;
+                }
+                node = node[segment];
+            }
+            return true;
+        }
+
+        return this.foldersList.includes(path);
     }
 
     renderFolderDisplay() {
@@ -1204,6 +2755,7 @@ export class SidebarManager {
             const hasChildren = Object.keys(children).length > 0;
             const isExpanded = this.expandedNodes.has(currentPath);
             const isSelected = this.selectedPath === currentPath;
+            const isEmpty = this._isRenderedEmptyFolder(currentPath);
 
             const escapedPath = escapeAttribute(currentPath);
             const escapedFolderName = escapeHtml(folderName);
@@ -1211,12 +2763,12 @@ export class SidebarManager {
 
             return `
                 <div class="sidebar-tree-node" data-path="${escapedPath}">
-                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
+                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}" data-path="${escapedPath}">
                         <div class="sidebar-tree-expand-icon ${isExpanded ? 'expanded' : ''}" 
                              style="${hasChildren ? '' : 'opacity: 0; pointer-events: none;'}">
                             <i class="fas fa-chevron-right"></i>
                         </div>
-                        <i class="fas fa-folder sidebar-tree-folder-icon"></i>
+                        <i class="fas fa-folder${isEmpty ? '-open' : ''} sidebar-tree-folder-icon"></i>
                         <div class="sidebar-tree-folder-name" title="${escapedTitle}">${escapedFolderName}</div>
                     </div>
                     ${hasChildren ? `
@@ -1233,14 +2785,18 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
 
+        // Only pages with folder management (model libraries) offer the
+        // header create button; other pages just show the empty label.
+        const hintHtml = this._supportsFolderManagement() ? `
+                <div class="sidebar-empty-hint">
+                    <i class="fas fa-hand-pointer"></i>
+                    ${translate('sidebar.empty.createHint', {}, 'Click the New Folder button above to create folders')}
+                </div>` : '';
+
         folderTree.innerHTML = `
             <div class="sidebar-tree-placeholder">
                 <i class="fas fa-folder-open"></i>
-                <div>${translate('sidebar.empty.noFolders', {}, 'No folders found')}</div>
-                <div class="sidebar-empty-hint">
-                    <i class="fas fa-hand-pointer"></i>
-                    ${translate('sidebar.empty.dragHint', {}, 'Drag items here to create folders')}
-                </div>
+                <div>${translate('sidebar.empty.noFolders', {}, 'No folders found')}</div>${hintHtml}
             </div>
         `;
     }
@@ -1249,22 +2805,29 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
 
-        if (!this.foldersList || this.foldersList.length === 0) {
+        // Unlike the tree — where the backend simply omits empty directories
+        // when the preference is off — the flat list is always loaded in full
+        // (the empty-folder count and the delete guard need it), so empty
+        // entries are filtered out here instead.
+        const visibleFolders = this._filterVisibleFolders(this.foldersList);
+
+        if (visibleFolders.length === 0) {
             this.renderEmptyState();
             return;
         }
 
-        const foldersHtml = this.foldersList.map(folder => {
+        const foldersHtml = visibleFolders.map(folder => {
             const displayName = folder === '' ? '/' : folder;
             const isSelected = this.selectedPath === folder;
+            const isEmpty = this._isRenderedEmptyFolder(folder);
             const escapedPath = escapeAttribute(folder);
             const escapedDisplayName = escapeHtml(displayName);
             const escapedTitle = escapeAttribute(displayName);
 
             return `
                 <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
-                    <div class="sidebar-node-content" data-path="${escapedPath}">
-                        <i class="fas fa-folder sidebar-folder-icon"></i>
+                    <div class="sidebar-node-content ${isEmpty ? 'empty' : ''}" data-path="${escapedPath}">
+                        <i class="fas fa-folder${isEmpty ? '-open' : ''} sidebar-folder-icon"></i>
                         <div class="sidebar-folder-name" title="${escapedTitle}">${escapedDisplayName}</div>
                     </div>
                 </div>
@@ -1275,6 +2838,9 @@ export class SidebarManager {
     }
 
     handleTreeClick(event) {
+        // Clicks on the inline create-folder row must not select/toggle nodes
+        if (event.target.closest('.sidebar-create-folder-node')) return;
+
         if (this.displayMode === 'list') {
             this.handleFolderListClick(event);
             return;
@@ -1309,6 +2875,9 @@ export class SidebarManager {
     }
 
     handleTreeContextMenu(event) {
+        // No context menu on the inline create-folder row
+        if (event.target.closest('.sidebar-create-folder-node')) return;
+
         const nodeContent = event.target.closest('.sidebar-tree-node, .sidebar-folder-item');
         if (!nodeContent) return;
 
@@ -1323,9 +2892,23 @@ export class SidebarManager {
 
     _showFolderContextMenu(x, y, path) {
         this._closeFolderContextMenu();
+        this._closeViewOptionsMenu();
 
         const menu = document.getElementById('sidebarFolderContextMenu');
         if (!menu) return;
+
+        // The folder operations are only available on pages backed by model
+        // library roots (recipes have virtual folders only). Their dividers are
+        // collapsed afterwards so such a page shows the update check alone
+        // instead of dangling separators.
+        const supportsFolderManagement = this._supportsFolderManagement();
+        for (const action of ['scan-folder', 'create-subfolder', 'rename-folder', 'delete-folder']) {
+            const item = menu.querySelector(`[data-action="${action}"]`);
+            if (item) {
+                item.style.display = supportsFolderManagement ? '' : 'none';
+            }
+        }
+        this._updateContextMenuSeparators(menu);
 
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
@@ -1343,6 +2926,40 @@ export class SidebarManager {
         setTimeout(() => {
             document.addEventListener('click', this._folderContextCloseHandler);
         }, 0);
+    }
+
+    /**
+     * Hide separators that no longer divide anything.
+     *
+     * Context-menu entries are gated per page, so a divider can end up
+     * leading, trailing or doubled once its group is hidden — the recipes page,
+     * for example, keeps only "check for updates". A separator survives only
+     * when a visible entry sits on both of its sides, and a run of consecutive
+     * separators collapses to a single line.
+     */
+    _updateContextMenuSeparators(menu) {
+        const children = [...menu.children];
+        const isSeparator = (element) => element.classList.contains('context-menu-separator');
+        const visibleIndexes = children
+            .map((element, index) => (!isSeparator(element) && element.style.display !== 'none' ? index : -1))
+            .filter((index) => index !== -1);
+
+        const first = visibleIndexes[0];
+        const last = visibleIndexes[visibleIndexes.length - 1];
+        let inSeparatorRun = false;
+
+        children.forEach((element, index) => {
+            if (!isSeparator(element)) {
+                inSeparatorRun = false;
+                return;
+            }
+            const keep = visibleIndexes.length >= 2
+                && index > first
+                && index < last
+                && !inSeparatorRun;
+            element.style.display = keep ? '' : 'none';
+            inSeparatorRun = true;
+        });
     }
 
     _closeFolderContextMenu() {
@@ -1372,6 +2989,18 @@ export class SidebarManager {
 
     async _performFolderAction(action, path) {
         switch (action) {
+            case 'create-subfolder':
+                this.showCreateFolderInput(path);
+                break;
+            case 'rename-folder':
+                await this.showRenameFolderInput(path);
+                break;
+            case 'delete-folder':
+                this.showDeleteFolderModal(path);
+                break;
+            case 'scan-folder':
+                await this.scanFolder(path);
+                break;
             case 'check-folder-updates':
                 try {
                     await performFolderUpdateCheck(path);
@@ -1382,6 +3011,31 @@ export class SidebarManager {
             default:
                 console.warn('Unknown folder action:', action);
         }
+    }
+
+    /**
+     * Scan the clicked folder (and its subtree) only.
+     *
+     * The sidebar tree is a merged relative-path namespace, so the scan is
+     * addressed by the relative folder and the backend walks that path under
+     * every root that holds it — the same resolution the folder operations use.
+     * Nothing outside the folder is re-read or removed, which is what makes this
+     * safe to use while another drive is switched off.
+     */
+    async scanFolder(relativePath) {
+        const resolution = await this._resolveFolderCandidatesSafe(relativePath);
+        if (!resolution || resolution.candidates.length === 0) {
+            showToast('sidebar.scanFolderResult.missing', {}, 'warning');
+            return;
+        }
+
+        const controls = this.pageControls || this.lastPageControls;
+        if (!controls || typeof controls.refreshModels !== 'function') {
+            console.error('[SidebarManager] No page controls registered for a folder scan');
+            return;
+        }
+
+        await controls.refreshModels(false, { folder: relativePath });
     }
 
     handleBreadcrumbClick(event) {
@@ -1456,18 +3110,17 @@ export class SidebarManager {
     }
 
     handleDisplayModeToggle(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
         this.displayMode = this.displayMode === 'tree' ? 'list' : 'tree';
-        this.updateDisplayModeButton();
+        this.updateViewOptionsMenu();
         this.updateCollapseAllButton();
-        this.updateRecursiveToggleButton();
         this.updateSearchRecursiveOption();
         this.saveDisplayMode();
         this.loadFolderTree(); // Reload with new display mode
     }
 
     async handleRecursiveToggle(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
 
         if (this.displayMode !== 'tree') {
             return;
@@ -1476,7 +3129,7 @@ export class SidebarManager {
         this.recursiveSearchEnabled = !this.recursiveSearchEnabled;
         setStorageItem(`${this.pageType}_recursiveSearch`, this.recursiveSearchEnabled);
         this.updateSearchRecursiveOption();
-        this.updateRecursiveToggleButton();
+        this.updateViewOptionsMenu();
 
         if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
             try {
@@ -1487,59 +3140,168 @@ export class SidebarManager {
         }
     }
 
-    updateDisplayModeButton() {
-        const displayModeBtn = document.getElementById('sidebarDisplayModeToggle');
-        if (displayModeBtn) {
-            const icon = displayModeBtn.querySelector('i');
-            if (this.displayMode === 'tree') {
-                icon.className = 'fas fa-sitemap';
-                displayModeBtn.title = translate('sidebar.switchToListView');
-            } else {
-                icon.className = 'fas fa-list';
-                displayModeBtn.title = translate('sidebar.switchToTreeView');
+    handleEmptyFoldersToggle(event) {
+        event?.stopPropagation();
+
+        if (!this._supportsFolderManagement()) {
+            return;
+        }
+
+        this.showEmptyFolders = !this.showEmptyFolders;
+        setStorageItem(`${this.pageType}_showEmptyFolders`, this.showEmptyFolders);
+        this.updateViewOptionsMenu();
+        // Both folder lists are already loaded (the count needs them), so
+        // showing/hiding empty folders is a pure re-render.
+        this.renderFolderDisplay();
+    }
+
+    handleCreateFolderButton(event) {
+        event.stopPropagation();
+
+        if (!this._supportsFolderManagement()) {
+            return;
+        }
+
+        this.showCreateFolderInput();
+    }
+
+    handleViewOptionsButton(event) {
+        event.stopPropagation();
+
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (!menu) return;
+
+        if (menu.style.display === 'block') {
+            this._closeViewOptionsMenu();
+            return;
+        }
+
+        this._closeFolderContextMenu();
+        this.updateViewOptionsMenu();
+
+        const anchor = event.currentTarget;
+        const rect = anchor.getBoundingClientRect();
+        menu.style.display = 'block';
+        // Right-align the menu under the button so it stays within the sidebar
+        menu.style.left = `${Math.max(8, rect.right - menu.offsetWidth)}px`;
+        menu.style.top = `${rect.bottom + 4}px`;
+
+        this._viewOptionsCloseHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                this._closeViewOptionsMenu();
             }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', this._viewOptionsCloseHandler);
+        }, 0);
+    }
+
+    _closeViewOptionsMenu() {
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+        if (this._viewOptionsCloseHandler) {
+            document.removeEventListener('click', this._viewOptionsCloseHandler);
+            this._viewOptionsCloseHandler = null;
+        }
+    }
+
+    handleViewOptionsAction(action) {
+        switch (action) {
+            case 'view-mode-tree':
+                if (this.displayMode !== 'tree') {
+                    this.handleDisplayModeToggle();
+                }
+                this._closeViewOptionsMenu();
+                break;
+            case 'view-mode-list':
+                if (this.displayMode !== 'list') {
+                    this.handleDisplayModeToggle();
+                }
+                this._closeViewOptionsMenu();
+                break;
+            case 'toggle-recursive':
+                // Keep the menu open so view preferences can be combined
+                this.handleRecursiveToggle();
+                break;
+            case 'toggle-empty-folders':
+                this.handleEmptyFoldersToggle();
+                break;
+            default:
+                console.warn('Unknown view options action:', action);
+        }
+    }
+
+    updateFolderManagementButtons() {
+        const supported = this._supportsFolderManagement();
+
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.style.display = supported ? '' : 'none';
+        }
+
+        this.updateViewOptionsMenu();
+    }
+
+    updateViewOptionsMenu() {
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (!menu) return;
+
+        const setCheck = (action, checked) => {
+            const check = menu.querySelector(`[data-action="${action}"] .check-indicator`);
+            if (check) {
+                check.style.display = checked ? 'block' : 'none';
+            }
+        };
+        const setDisabled = (action, disabled) => {
+            const item = menu.querySelector(`[data-action="${action}"]`);
+            if (item) {
+                item.classList.toggle('disabled', disabled);
+            }
+        };
+
+        const isTreeMode = this.displayMode === 'tree';
+        setCheck('view-mode-tree', isTreeMode);
+        setCheck('view-mode-list', !isTreeMode);
+        setCheck('toggle-recursive', isTreeMode && this.recursiveSearchEnabled);
+        setDisabled('toggle-recursive', !isTreeMode);
+
+        // Empty-folder display requires a model library backend, and the
+        // toggle is only worth showing when there actually are empty folders
+        // to reveal/hide. `null` means the folder data has not loaded yet, in
+        // which case the item is kept visible rather than guessed at.
+        const supportsFolderManagement = this._supportsFolderManagement();
+        const hasEmptyFolders = !supportsFolderManagement
+            || this.emptyFolderCount === null
+            || this.emptyFolderCount > 0;
+        setCheck('toggle-empty-folders', this.showEmptyFolders && supportsFolderManagement);
+
+        const emptyFoldersItem = menu.querySelector('[data-action="toggle-empty-folders"]');
+        if (emptyFoldersItem) {
+            emptyFoldersItem.style.display = supportsFolderManagement && hasEmptyFolders ? '' : 'none';
+        }
+
+        // Surface the count so the preference's effect is visible without
+        // opening the menu against a large library.
+        const emptyFoldersCount = document.getElementById('sidebarEmptyFoldersCount');
+        if (emptyFoldersCount) {
+            emptyFoldersCount.textContent = this.emptyFolderCount
+                ? `(${this.emptyFolderCount})`
+                : '';
         }
     }
 
     updateCollapseAllButton() {
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
-        if (collapseAllBtn) {
-            if (this.displayMode === 'list') {
-                collapseAllBtn.disabled = true;
-                collapseAllBtn.classList.add('disabled');
-                collapseAllBtn.title = translate('sidebar.collapseAllDisabled');
-            } else {
-                collapseAllBtn.disabled = false;
-                collapseAllBtn.classList.remove('disabled');
-                collapseAllBtn.title = translate('sidebar.collapseAll');
-            }
-        }
-    }
+        if (!collapseAllBtn) return;
 
-    updateRecursiveToggleButton() {
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
-        if (!recursiveToggleBtn) return;
-
-        const icon = recursiveToggleBtn.querySelector('i');
         const isTreeMode = this.displayMode === 'tree';
-        const isActive = isTreeMode && this.recursiveSearchEnabled;
-
-        recursiveToggleBtn.classList.toggle('active', isActive);
-        recursiveToggleBtn.classList.toggle('disabled', !isTreeMode);
-        recursiveToggleBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        recursiveToggleBtn.setAttribute('aria-disabled', isTreeMode ? 'false' : 'true');
-
-        if (icon) {
-            icon.className = 'fas fa-code-branch';
-        }
-
-        if (!isTreeMode) {
-            recursiveToggleBtn.title = translate('sidebar.recursiveUnavailable');
-        } else if (this.recursiveSearchEnabled) {
-            recursiveToggleBtn.title = translate('sidebar.recursiveOn');
-        } else {
-            recursiveToggleBtn.title = translate('sidebar.recursiveOff');
-        }
+        collapseAllBtn.disabled = !isTreeMode;
+        collapseAllBtn.classList.toggle('disabled', !isTreeMode);
+        collapseAllBtn.title = isTreeMode
+            ? translate('sidebar.collapseAll')
+            : translate('sidebar.collapseAllDisabled', {}, 'Not available in list view');
     }
 
     updateSearchRecursiveOption() {
@@ -1760,16 +3522,23 @@ export class SidebarManager {
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
-        this.isDisabledByPage = getStorageItem(`${this.pageType}_sidebarDisabled`, false);
+        this.isDisabledByPage = getStorageItem(
+            `${this.pageType}_sidebarDisabled`,
+            SIDEBAR_DEFAULT_HIDDEN_PAGES.has(this.pageType)
+        );
 
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
         this.recursiveSearchEnabled = recursiveSearchEnabled;
+        // Empty folders are shown by default so the sidebar matches the
+        // destination picker (which lists them too) instead of silently hiding
+        // a folder that a download just landed in. New folders created from the
+        // header stay visible for the same reason.
+        this.showEmptyFolders = getStorageItem(`${this.pageType}_showEmptyFolders`, true);
 
-        this.updateDisplayModeButton();
-        this.updateCollapseAllButton();
         this.updateSearchRecursiveOption();
-        this.updateRecursiveToggleButton();
+        this.updateFolderManagementButtons();
+        this.updateCollapseAllButton();
     }
 
     /**
@@ -1780,7 +3549,7 @@ export class SidebarManager {
     _migrateOldSettings() {
         if (getStorageItem('_sidebar_migration_done')) return;
 
-        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings'];
+        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other'];
 
         // 1. Migrate global hide setting to per-page
         if (state?.global?.settings?.show_folder_sidebar === false) {
@@ -1805,7 +3574,31 @@ export class SidebarManager {
     restoreSelectedFolder() {
         const activeFolder = getStorageItem(`${this.pageType}_activeFolder`);
         if (activeFolder && typeof activeFolder === 'string') {
-            this.selectedPath = activeFolder;
+            // Fall back to the root when the persisted folder no longer
+            // exists in the freshly loaded tree (e.g. it was moved or
+            // deleted); otherwise the grid stays empty with a phantom
+            // breadcrumb. Skip validation when the tree failed to load so a
+            // transient API error doesn't wipe the saved location.
+            if (this.folderTreeLoaded && !this.folderExistsInTree(activeFolder)) {
+                console.warn(`Persisted folder "${activeFolder}" not found in folder tree, falling back to root`);
+                this.selectedPath = '';
+                if (this.pageControls?.pageState) {
+                    this.pageControls.pageState.activeFolder = '';
+                }
+                setStorageItem(`${this.pageType}_activeFolder`, '');
+                // When the reset happens after initialization (e.g. via
+                // refresh() after a drag move emptied the folder), reload the
+                // listing so the grid shows the root contents instead of
+                // staying empty. Skipped during initialize() — the first load
+                // picks up the cleared filter on its own.
+                if (this.isInitialized && typeof this.pageControls?.resetAndReload === 'function') {
+                    this.pageControls.resetAndReload().catch((error) => {
+                        console.error('Failed to reload after resetting folder selection:', error);
+                    });
+                }
+            } else {
+                this.selectedPath = activeFolder;
+            }
             this.updateTreeSelection();
             this.updateBreadcrumbs();
             this.updateSidebarHeader();

@@ -9,7 +9,10 @@ description: Inspect ComfyUI LoRA Manager runtime configuration and local diagno
 
 - Treat runtime state as local user data. Prefer read-only inspection unless the user explicitly asks for mutation.
 - Never print secret-like settings values. Redact keys containing `key`, `token`, `secret`, `password`, `auth`, or `credential`, including `civitai_api_key`.
-- Resolve paths from the runtime configuration before guessing. In this environment the settings file is normally `/home/miao/.config/ComfyUI-LoRA-Manager/settings.json`, but portable settings can override this through the repository `settings.json`.
+- Resolve paths from the runtime configuration before guessing. Settings-directory precedence (highest first):
+  1. **Explicit override** — env `LORA_MANAGER_SETTINGS_DIR` or standalone `--settings-path` (also accepted by the inspect script as `--settings-path DIR`). Pins EVERYTHING (`settings.json`, `cache/`, `wildcards/`, `backups/`, `logs/`, `stats/`) under the given directory; bypasses portable mode and the user config dir. Common when inspecting a sandboxed/E2E instance.
+  2. **Portable** — repository `<repo-root>/settings.json` with `"use_portable_settings": true` (or `LORA_MANAGER_PORTABLE=1`): settings dir = `<repo-root>`.
+  3. **Default** — `~/.config/ComfyUI-LoRA-Manager` on this machine (`platformdirs.user_config_dir("ComfyUI-LoRA-Manager", appauthor=False)`).
 - Use the active library when selecting per-library caches and paths. Read `active_library` from settings; fall back to `default` if missing.
 - Normalize and expand `~` before comparing paths. Symlinks are common in this repo.
 
@@ -32,9 +35,17 @@ python .agents/skills/lora-manager-runtime-context/scripts/inspect_runtime_conte
 python .agents/skills/lora-manager-runtime-context/scripts/inspect_runtime_context.py sqlite --db /path/to/cache.sqlite --limit 3
 ```
 
+To inspect a sandboxed/E2E instance that pins its settings directory:
+
+```bash
+# --settings-path DIR (or LORA_MANAGER_SETTINGS_DIR) works with every subcommand:
+python .agents/skills/lora-manager-runtime-context/scripts/inspect_runtime_context.py \
+  --settings-path /tmp/opencode/<plan>-e2e/settings summary
+```
+
 ## Runtime Path Rules
 
-- Settings directory: use `py/utils/settings_paths.py`. Default platform path is `platformdirs.user_config_dir("ComfyUI-LoRA-Manager", appauthor=False)`.
+- Settings directory: resolve via `py/utils/settings_paths.py` — `get_settings_dir()` honors the `LORA_MANAGER_SETTINGS_DIR` / programmatic override first, then portable mode, then `platformdirs.user_config_dir("ComfyUI-LoRA-Manager", appauthor=False)`. The inspect script mirrors this precedence in `resolve_settings_path()`.
 - Settings file: `<settings_dir>/settings.json`.
 - Cache root: `<settings_dir>/cache`.
 - Canonical cache files:

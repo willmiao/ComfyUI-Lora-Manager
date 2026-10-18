@@ -177,6 +177,11 @@ class ExifUtils:
                 return brotli_meta
 
         with Image.open(image_path) as img:
+            # PNG text chunks may legally follow IDAT. Pillow reads those only
+            # when loading the image, so inspecting info immediately after open
+            # can incorrectly report a metadata-free image.
+            if img.format == "PNG":
+                img.load()
             info = getattr(img, "info", {}) or {}
 
             if "parameters" in info:
@@ -192,6 +197,18 @@ class ExifUtils:
                     metadata["comment"] = ExifUtils._decode_user_comment(
                         exif[piexif.ExifIFD.UserComment]
                     )
+
+            # ComfyUI's WebP exporter stores JSON in EXIF Make/Model with
+            # prompt:/workflow: prefixes instead of UserComment.
+            exif = img.getexif()
+            for tag in (piexif.ImageIFD.Make, piexif.ImageIFD.Model):
+                text = ExifUtils._decode_exif_text(exif.get(tag))
+                if not text:
+                    continue
+                for key in ("prompt", "workflow"):
+                    prefix = key + ":"
+                    if text.startswith(prefix) and not metadata[key]:
+                        metadata[key] = text[len(prefix):].rstrip("\x00")
 
             try:
                 exif_dict = piexif.load(image_path)
@@ -324,32 +341,134 @@ class ExifUtils:
 
             metadata_fields = ExifUtils._load_structured_metadata(image_path)
             metadata_fields["parameters"] = metadata
-
-            with Image.open(image_path) as img:
-                img_format = img.format
-
-                if img_format == "PNG":
-                    png_info = ExifUtils._build_pnginfo(img, metadata_fields)
-                    img.save(image_path, format="PNG", pnginfo=png_info)
-                    return image_path
-
-                exif_bytes = ExifUtils._build_exif_bytes(
-                    metadata_fields, img.info.get("exif")
-                )
-                save_kwargs: dict[str, Any] = {"exif": exif_bytes}
-                if img_format == "WEBP":
-                    save_kwargs["quality"] = 85
-
-                img.save(image_path, format=img_format, **save_kwargs)
-
-            return image_path
+            return ExifUtils._write_structured_metadata(image_path, metadata_fields)
         except Exception as e:
             logger.error(f"Error updating metadata in {image_path}: {e}")
             return image_path
-            
+
     @staticmethod
-    def append_recipe_metadata(image_path, recipe_data) -> str:
-        """Append recipe metadata to an image's EXIF data"""
+    def _write_structured_metadata(
+        image_path: str, metadata_fields: dict[str, Optional[str]]
+    ) -> str:
+        """Write structured metadata fields back into an image.
+
+        PNG keeps them as text chunks (``parameters``/``prompt``/``workflow``);
+        every other supported container stores them in EXIF, where the workflow
+        travels in ``ImageDescription`` behind a ``Workflow:`` prefix (see
+        :meth:`_build_exif_bytes`).
+        """
+        with Image.open(image_path) as img:
+            img_format = img.format
+
+            if img_format == "PNG":
+                png_info = ExifUtils._build_pnginfo(img, metadata_fields)
+                img.save(image_path, format="PNG", pnginfo=png_info)
+                return image_path
+
+            exif_bytes = ExifUtils._build_exif_bytes(
+                metadata_fields, img.info.get("exif")
+            )
+            save_kwargs: dict[str, Any] = {"exif": exif_bytes}
+            if img_format == "WEBP":
+                save_kwargs["quality"] = 85
+
+            img.save(image_path, format=img_format, **save_kwargs)
+
+        return image_path
+
+    @staticmethod
+    def normalise_workflow(workflow: Any) -> Optional[str]:
+        """Coerce a workflow payload into the JSON string metadata form.
+
+        Accepts the string form stored in image chunks as well as already
+        decoded dict/list payloads; anything else yields ``None``.
+        """
+        if isinstance(workflow, str):
+            return workflow or None
+        if isinstance(workflow, (dict, list)):
+            try:
+                return json.dumps(workflow)
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    @staticmethod
+    def _merge_workflow(
+        metadata_fields: Optional[dict[str, Optional[str]]], workflow: Any
+    ) -> Optional[dict[str, Optional[str]]]:
+        """Add a caller-supplied workflow to extracted metadata fields.
+
+        Returns ``metadata_fields`` untouched when there is nothing to add, and
+        never overwrites a workflow the source image already carries.
+        """
+        workflow_json = ExifUtils.normalise_workflow(workflow)
+        if not workflow_json:
+            return metadata_fields
+        if metadata_fields is None:
+            metadata_fields = {
+                "parameters": None,
+                "prompt": None,
+                "workflow": None,
+                "comment": None,
+            }
+        if not metadata_fields.get("workflow"):
+            metadata_fields["workflow"] = workflow_json
+        return metadata_fields
+
+    @staticmethod
+    def embed_workflow(image_path: str, workflow: Any) -> str:
+        """Embed a ComfyUI workflow into an image that does not carry one.
+
+        Recipe imports recover the workflow from the source's original
+        rendition (CivitAI's optimized preview is re-encoded and metadata-free)
+        and hand it over as data rather than as image bytes. Images that
+        already embed a workflow are left untouched.
+
+        WebP files are patched at the byte level so preview pixels are not
+        re-encoded a second time.
+        """
+        workflow_json = ExifUtils.normalise_workflow(workflow)
+        if not image_path or not workflow_json:
+            return image_path
+
+        ext = os.path.splitext(image_path)[1].lower()
+        if ext in ['.mp4', '.webm', '.avif', '.jxl']:
+            return image_path
+
+        try:
+            metadata_fields = ExifUtils._load_structured_metadata(image_path)
+            if metadata_fields.get("workflow"):
+                return image_path
+            metadata_fields["workflow"] = workflow_json
+
+            if ext == '.webp':
+                try:
+                    exif_bytes = ExifUtils._build_exif_bytes(metadata_fields)
+                    with open(image_path, "rb") as file_obj:
+                        image_bytes = file_obj.read()
+                    updated = ExifUtils._replace_webp_exif(image_bytes, exif_bytes)
+                    with open(image_path, "wb") as file_obj:
+                        file_obj.write(updated)
+                    return image_path
+                except ValueError:
+                    # Container without an EXIF chunk: fall through to a full
+                    # rewrite so the workflow is still embedded.
+                    pass
+
+            return ExifUtils._write_structured_metadata(image_path, metadata_fields)
+        except Exception as e:
+            logger.error(f"Error embedding workflow in {image_path}: {e}")
+            return image_path
+
+    @staticmethod
+    def append_recipe_metadata(image_path, recipe_data, pixel_preserving=False) -> str:
+        """Append recipe metadata to an image's EXIF data
+
+        When ``pixel_preserving`` is True (and the image is a WebP) only the
+        EXIF container is rewritten at the byte level, so the preview pixels
+        are never re-encoded. Local re-import uses this because its source is
+        the recipe's own already-optimized preview image.
+        """
         try:
             if image_path:
                 ext = os.path.splitext(image_path)[1].lower()
@@ -417,12 +536,70 @@ class ExifUtils:
             
             # Append to existing metadata or create new one
             new_metadata = f"{metadata} \n {recipe_metadata_marker}" if metadata else recipe_metadata_marker
-            
+
+            # Write back to the image. Re-import keeps the already-optimized
+            # preview pixels untouched and updates only the WebP EXIF chunk
+            # instead of re-encoding the whole image.
+            if pixel_preserving and image_path.lower().endswith(".webp"):
+                metadata_fields = ExifUtils._load_structured_metadata(image_path)
+                metadata_fields["parameters"] = new_metadata
+                exif_bytes = ExifUtils._build_exif_bytes(metadata_fields)
+                with open(image_path, "rb") as file_obj:
+                    image_bytes = file_obj.read()
+                try:
+                    updated = ExifUtils._replace_webp_exif(image_bytes, exif_bytes)
+                except ValueError:
+                    # Container without an EXIF chunk; fall back to re-encoding.
+                    return ExifUtils.update_image_metadata(image_path, new_metadata)
+                with open(image_path, "wb") as file_obj:
+                    file_obj.write(updated)
+                return image_path
+
             # Write back to the image
             return ExifUtils.update_image_metadata(image_path, new_metadata)
         except Exception as e:
             logger.error(f"Error appending recipe metadata: {e}", exc_info=True)
             return image_path
+
+    @staticmethod
+    def _replace_webp_exif(image_bytes: bytes, exif_bytes: bytes) -> bytes:
+        """Replace the EXIF chunk of a WebP file without re-encoding pixels."""
+        if image_bytes[:4] != b"RIFF" or image_bytes[8:12] != b"WEBP":
+            raise ValueError("Not a WebP file")
+        # The WebP EXIF chunk stores raw TIFF data; strip the JPEG-style
+        # "Exif\\0\\0" prefix that piexif.dump may prepend.
+        tiff = exif_bytes[6:] if exif_bytes[:6] == b"Exif\x00\x00" else exif_bytes
+
+        out = bytearray(image_bytes[:12])
+        pos = 12
+        exif_payload = None
+        while pos + 8 <= len(image_bytes):
+            fourcc = image_bytes[pos : pos + 4]
+            size = struct.unpack("<I", image_bytes[pos + 4 : pos + 8])[0]
+            chunk_data = image_bytes[pos + 8 : pos + 8 + size]
+            pad = size % 2
+            if fourcc == b"EXIF":
+                exif_payload = tiff
+            else:
+                out += (
+                    fourcc
+                    + struct.pack("<I", size)
+                    + chunk_data
+                    + (b"\x00" * pad)
+                )
+            pos += 8 + size + pad
+
+        if exif_payload is None:
+            raise ValueError("WebP has no EXIF chunk")
+
+        out += (
+            b"EXIF"
+            + struct.pack("<I", len(exif_payload))
+            + exif_payload
+            + (b"\x00" * (len(exif_payload) % 2))
+        )
+        out[4:8] = struct.pack("<I", len(out) - 8)
+        return bytes(out)
 
     @staticmethod
     def remove_recipe_metadata(user_comment):
@@ -469,7 +646,7 @@ class ExifUtils:
             return None
 
     @staticmethod
-    def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False):
+    def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False, workflow=None):
         """
         Optimize an image by resizing and converting to WebP format
         
@@ -479,10 +656,19 @@ class ExifUtils:
             format: Output format (default: webp)
             quality: Output quality (0-100)
             preserve_metadata: Whether to preserve EXIF metadata
+            workflow: Optional ComfyUI workflow (JSON string, dict or list) to
+                embed when the source image does not carry one. Used by import
+                paths that recover the workflow from a higher-fidelity source
+                (e.g. CivitAI's original rendition) while the preview pixels
+                come from a metadata-free optimized rendition.
             
         Returns:
             Tuple of (optimized_image_data, extension)
         """
+        # A supplied workflow can only survive when metadata is embedded, so
+        # treat it as an implicit request for preservation.
+        if workflow is not None:
+            preserve_metadata = True
         try:
             if isinstance(image_data, str) and os.path.exists(image_data):
                 ext = os.path.splitext(image_data)[1].lower()
@@ -546,6 +732,12 @@ class ExifUtils:
                     logger.warning(f"Failed to extract metadata, continuing without it: {e}")
                     # Continue without metadata
 
+            # Merge in a workflow recovered elsewhere (e.g. from CivitAI's
+            # original rendition). The source image wins when it already has
+            # one, and this is what lets the metadata-free optimized preview
+            # still end up with the workflow embedded.
+            metadata_fields = ExifUtils._merge_workflow(metadata_fields, workflow)
+
             # Calculate new height to maintain aspect ratio
             width, height = img.size
             new_height = int(height * (target_width / width))
@@ -605,8 +797,8 @@ class ExifUtils:
                             temp_file.write(optimized_data)
                         
                         try:
-                            ExifUtils.update_image_metadata(
-                                temp_path, metadata_fields.get("parameters") or ""
+                            ExifUtils._write_structured_metadata(
+                                temp_path, metadata_fields
                             )
                             # Read back the file
                             with open(temp_path, 'rb') as f:

@@ -7,11 +7,21 @@ import logging
 import asyncio
 from copy import deepcopy
 from typing import Any, Optional, Dict, Tuple, List, cast
+from .connectivity_guard import is_expected_offline_error
 from .model_metadata_provider import CivArchiveModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
 from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
+
+#: ``source`` values on CivArchive file entries that belong to a foreign
+#: ecosystem with its own model/version ID space (e.g. "civision" indexes
+#: ModelScope-hosted files). Feeding those IDs into the CivitAI-ID-based
+#: /models/{id} endpoint resolves to an unrelated CivitAI model, so entries
+#: carrying one of these sources are skipped before any lookup happens.
+#: Entries with no ``source`` stay eligible — the post-resolution hash check
+#: in ``_resolve_version_from_files`` is the real correctness guard.
+_FOREIGN_ECOSYSTEM_SOURCES = frozenset({"civision"})
 
 class CivArchiveClient:
     _instance = None
@@ -35,8 +45,44 @@ class CivArchiveClient:
         if hasattr(self, '_initialized'):
             return
         self._initialized = True
-        
+
         self.base_url = "https://civarchive.com/api"
+        # hash (lowercased) -> SourceRef for foreign-ecosystem file entries seen
+        # during hash lookups (e.g. civision entries carrying a ModelScope URL).
+        # Recorded while resolving, consumed by the sync service to link the
+        # model to its real source instead of leaving it "not found".
+        self._foreign_source_refs: Dict[str, Any] = {}
+
+    def _remember_foreign_source_ref(
+        self,
+        expected_hash: Optional[str],
+        file_data: Dict[str, Any],
+    ) -> None:
+        """Record a resolvable source URL from a foreign-ecosystem file entry"""
+        if not expected_hash:
+            return
+        url = file_data.get("url")
+        if not isinstance(url, str) or not url.strip():
+            return
+        try:
+            from .model_sources.registry import detect_source
+        except Exception:  # pragma: no cover - defensive import guard
+            return
+        ref = detect_source(url.strip())
+        if ref is None:
+            return
+        key = expected_hash.strip().lower()
+        self._foreign_source_refs[key] = ref
+        # Bound the map; entries are consumed via pop_foreign_source_ref but a
+        # caller that never asks must not grow it without limit.
+        while len(self._foreign_source_refs) > 64:
+            self._foreign_source_refs.pop(next(iter(self._foreign_source_refs)))
+
+    def pop_foreign_source_ref(self, model_hash: str) -> Any:
+        """Return (and forget) the foreign source ref recorded for *model_hash*"""
+        if not model_hash:
+            return None
+        return self._foreign_source_refs.pop(model_hash.strip().lower(), None)
 
     async def _request_json(
         self,
@@ -46,7 +92,11 @@ class CivArchiveClient:
         """Call CivArchive API and return JSON payload"""
         success, payload = await self._make_request(path, params=params)
         if not success:
-            error = payload if isinstance(payload, str) else "Request failed"
+            # Normalize empty-string failure payloads (e.g. a throttled
+            # connection dropped without a message) so callers never see a
+            # falsy error alongside a None payload — that combination used to
+            # crash downstream None.get() calls.
+            error = payload if isinstance(payload, str) and payload else "Request failed"
             return None, error
         if not isinstance(payload, dict):
             return None, "Invalid response structure"
@@ -296,14 +346,47 @@ class CivArchiveClient:
 
         return version_copy
 
-    async def _resolve_version_from_files(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    @staticmethod
+    def _version_contains_hash(version: Dict[str, Any], expected_hash: str) -> bool:
+        """Check whether any file of the resolved version matches the queried hash"""
+        expected = expected_hash.strip().upper()
+        if not expected:
+            return False
+        files = version.get("files")
+        if not isinstance(files, list):
+            return False
+        for file_data in files:
+            if not isinstance(file_data, dict):
+                continue
+            hashes = file_data.get("hashes")
+            if isinstance(hashes, dict):
+                sha256 = hashes.get("SHA256") or hashes.get("sha256")
+                if isinstance(sha256, str) and sha256.strip().upper() == expected:
+                    return True
+        return False
+
+    async def _resolve_version_from_files(
+        self,
+        payload: Dict[str, Any],
+        expected_hash: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Fallback to fetch version data when only file metadata is available"""
+        if not isinstance(payload, dict):
+            return None
         data = self._normalize_payload(payload)
         files = data.get("files") or payload.get("files") or []
         if not isinstance(files, list):
             files = [files]
         for file_data in files:
             if not isinstance(file_data, dict):
+                continue
+            source = file_data.get("source")
+            if isinstance(source, str) and source.strip().lower() in _FOREIGN_ECOSYSTEM_SOURCES:
+                self._remember_foreign_source_ref(expected_hash, file_data)
+                logger.debug(
+                    "Skipping CivArchive file entry from foreign ecosystem source=%s",
+                    source,
+                )
                 continue
             model_id = file_data.get("model_id") or file_data.get("modelId")
             version_id = file_data.get("model_version_id") or file_data.get("modelVersionId")
@@ -325,6 +408,18 @@ class CivArchiveClient:
                 continue
             resolved = await self.get_model_version(model_id, version_id)
             if resolved:
+                if expected_hash and not self._version_contains_hash(resolved, expected_hash):
+                    # The version endpoint resolves modelVersionId globally,
+                    # ignoring the model id in the path, so foreign-ecosystem
+                    # IDs can resolve to an unrelated CivitAI version. Only a
+                    # hash match proves the resolved version is the right one.
+                    logger.debug(
+                        "Discarding CivArchive version %s/%s: resolved files do not match hash %s",
+                        model_id,
+                        version_id,
+                        expected_hash[:10],
+                    )
+                    continue
                 return resolved
         return None
 
@@ -332,17 +427,23 @@ class CivArchiveClient:
         """Find model by SHA256 hash value using CivArchive API"""
         try:
             payload, error = await self._request_json(f"/sha256/{model_hash.lower()}")
-            if error:
-                if "not found" in error.lower():
+            # Treat a missing payload as an error even when the error string is
+            # falsy; passing None into the split/transform helpers below used to
+            # crash with "'NoneType' object has no attribute 'get'".
+            if error is not None or payload is None:
+                if error and "not found" in error.lower():
                     return None, "Model not found"
-                return None, error
+                return None, error or "Request failed"
 
             context, version_data, fallback_files = self._split_context(cast(Dict[str, Any], payload))
             transformed = self._transform_version(context, version_data, fallback_files)
             if transformed:
                 return transformed, None
 
-            resolved = await self._resolve_version_from_files(cast(Dict[str, Any], payload))
+            resolved = await self._resolve_version_from_files(
+                cast(Dict[str, Any], payload),
+                expected_hash=model_hash,
+            )
             if resolved:
                 return resolved, None
 
@@ -352,7 +453,14 @@ class CivArchiveClient:
         except RateLimitError:
             raise
         except Exception as e:
-            logger.error(f"Error fetching CivArchive model by hash {model_hash[:10]}: {e}")
+            if is_expected_offline_error(str(e)):
+                logger.debug(
+                    "Skipping CivArchive model by hash %s while offline: %s",
+                    model_hash[:10],
+                    e,
+                )
+            else:
+                logger.error(f"Error fetching CivArchive model by hash {model_hash[:10]}: {e}")
             return None, str(e)
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
@@ -362,7 +470,14 @@ class CivArchiveClient:
             if error or payload is None:
                 if error and "not found" in error.lower():
                     return None
-                logger.error(f"Error fetching CivArchive model versions for {model_id}: {error}")
+                if is_expected_offline_error(error):
+                    logger.debug(
+                        "Skipping CivArchive model versions fetch for %s while offline: %s",
+                        model_id,
+                        error,
+                    )
+                else:
+                    logger.error(f"Error fetching CivArchive model versions for {model_id}: {error}")
                 return None
 
             data = self._normalize_payload(payload)
@@ -426,7 +541,19 @@ class CivArchiveClient:
             if error or payload is None:
                 if error and "not found" in error.lower():
                     return None
-                logger.error(f"Error fetching CivArchive model version via API {model_id}/{version_id}: {error}")
+                # The connectivity guard short-circuits requests during its
+                # offline cooldown; that is an expected, transient state, so
+                # log it as DEBUG instead of spamming one ERROR per request
+                # (batch imports can hit this thousands of times).
+                if is_expected_offline_error(error):
+                    logger.debug(
+                        "Skipping CivArchive model version fetch %s/%s while offline: %s",
+                        model_id,
+                        version_id,
+                        error,
+                    )
+                else:
+                    logger.error(f"Error fetching CivArchive model version via API {model_id}/{version_id}: {error}")
                 return None
 
             context, version_data, fallback_files = self._split_context(payload)

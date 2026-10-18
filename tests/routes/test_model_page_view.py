@@ -55,10 +55,10 @@ async def test_model_page_view_reads_version_per_request():
     )
 
     view._get_app_version = lambda: "1.0.2-old"
-    first = await view.handle(SimpleNamespace())  # pyright: ignore[reportArgumentType]
+    first = await view.handle(SimpleNamespace(path="/loras"))  # pyright: ignore[reportArgumentType]
 
     view._get_app_version = lambda: "1.0.2-new"
-    second = await view.handle(SimpleNamespace())  # pyright: ignore[reportArgumentType]
+    second = await view.handle(SimpleNamespace(path="/loras"))  # pyright: ignore[reportArgumentType]
 
     assert first.text == "1.0.2-old"
     assert second.text == "1.0.2-new"

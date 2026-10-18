@@ -28,8 +28,14 @@ export class Combobox {
      * @param {string[]} [options.presets=[]] Static preset values shown in dropdown.
      * @param {(inputValue: string) => Promise<string[]>} [options.fetchOptions]
      *        Async function returning dynamic suggestions for the current input.
-     * @param {string} [options.placeholder] Placeholder text for the empty state.
+     * @param {string} [options.placeholder] Placeholder text for the input and the
+     *        dropdown empty state (see emptyText to override the latter).
+     * @param {string} [options.emptyText] Text for the dropdown empty state;
+     *        defaults to `placeholder`, then 'No options'. Unlike `placeholder`
+     *        it never touches the input element.
      * @param {(value: string) => void} [options.onSelect] Callback when an option is chosen.
+     * @param {(value: string) => void} [options.onCommit] Callback when Enter is
+     *        pressed without a highlighted option (free-text commit).
      */
     constructor(inputElement, options = {}) {
         if (!inputElement || inputElement.tagName !== 'INPUT') {
@@ -41,7 +47,9 @@ export class Combobox {
         this.presets = Array.isArray(options.presets) ? [...options.presets] : [];
         this.fetchOptions = typeof options.fetchOptions === 'function' ? options.fetchOptions : null;
         this.placeholder = options.placeholder || '';
+        this.emptyText = options.emptyText || '';
         this.onSelect = typeof options.onSelect === 'function' ? options.onSelect : null;
+        this.onCommit = typeof options.onCommit === 'function' ? options.onCommit : null;
 
         // Internal state
         this._isOpen = false;
@@ -109,19 +117,24 @@ export class Combobox {
     // ---- event wiring ----
 
     _bindEvents() {
-        this.input.addEventListener('focus', () => {
+        // Keep references so destroy() can detach input listeners — callers
+        // may destroy a Combobox while its input stays in the DOM.
+        this._focusHandler = () => {
             if (this._suppressInputOpen) return;
             this._open();
-        });
+        };
+        this.input.addEventListener('focus', this._focusHandler);
 
-        this.input.addEventListener('input', () => {
+        this._inputHandler = () => {
             if (this._suppressInputOpen) return;
             this._open();          // no-op if already open
             this._refresh();       // re-filter by current input value
             this._scheduleFetch();
-        });
+        };
+        this.input.addEventListener('input', this._inputHandler);
 
-        this.input.addEventListener('keydown', (event) => this._onKeyDown(event));
+        this._keyDownHandler = (event) => this._onKeyDown(event);
+        this.input.addEventListener('keydown', this._keyDownHandler);
 
         // Click an option (delegated)
         this.panel.addEventListener('click', (event) => {
@@ -167,6 +180,9 @@ export class Combobox {
                 event.preventDefault();
                 this._open();
                 this._setActiveIndex(0);
+            } else if (event.key === 'Enter' && typeof this.onCommit === 'function') {
+                event.preventDefault();
+                this.onCommit(this.input.value);
             }
             return;
         }
@@ -184,11 +200,17 @@ export class Combobox {
 
             case 'Enter':
                 // Only intercept Enter to pick an option when one is actively
-                // highlighted; otherwise let the input's default behavior
-                // (form submit / free-text commit) proceed.
+                // highlighted; otherwise commit the free-text value (when an
+                // onCommit handler is registered) and let the input's default
+                // behavior proceed otherwise.
                 if (this._activeIndex >= 0 && this._activeIndex < this._renderedOptions.length) {
                     event.preventDefault();
                     this._choose(this._renderedOptions[this._activeIndex]);
+                } else if (typeof this.onCommit === 'function') {
+                    event.preventDefault();
+                    const value = this.input.value;
+                    this._close();
+                    this.onCommit(value);
                 }
                 break;
 
@@ -254,7 +276,7 @@ export class Combobox {
         if (items.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'lm-combobox-empty';
-            empty.textContent = this.placeholder ? this.placeholder : 'No options';
+            empty.textContent = this.emptyText || this.placeholder || 'No options';
             this.panel.appendChild(empty);
             this._activeIndex = -1;
             return;
@@ -333,9 +355,17 @@ export class Combobox {
         if (this.panel && this.panel.parentNode) {
             this.panel.parentNode.removeChild(this.panel);
         }
+        this.input.removeEventListener('focus', this._focusHandler);
+        this.input.removeEventListener('input', this._inputHandler);
+        this.input.removeEventListener('keydown', this._keyDownHandler);
         document.removeEventListener('mousedown', this._outsideClickHandler);
         window.removeEventListener('resize', this._resizeHandler);
         window.removeEventListener('scroll', this._resizeHandler, true);
+    }
+
+    /** Whether the dropdown panel is currently open. */
+    isOpen() {
+        return this._isOpen;
     }
 
     _choose(value) {

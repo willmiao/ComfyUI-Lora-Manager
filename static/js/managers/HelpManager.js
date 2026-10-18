@@ -1,23 +1,16 @@
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { onboardingManager } from './OnboardingManager.js';
 
 /**
  * Manages help modal functionality and tutorial update notifications
  */
 export class HelpManager {
     constructor() {
-        this.lastViewedTimestamp = getStorageItem('help_last_viewed', 0);
-        this.latestContentTimestamp = new Date('2025-10-11').getTime(); // Will be updated from server or config
+        // Version of the help content the user has seen. Compared against the
+        // data-help-content-version marker rendered into the help modal markup,
+        // so badge state is always derived from the content actually served.
+        this.viewedContentVersion = getStorageItem('help_viewed_content_version', null);
         this.isInitialized = false;
-        
-        // Default latest content data - could be fetched from server
-        this.latestVideoData = {
-            timestamp: new Date('2024-06-09').getTime(), // Default timestamp
-            walkthrough: {
-                id: 'hvKw31YpE-U',
-                title: 'Getting Started with LoRA Manager'
-            },
-            playlistUpdated: true
-        };
     }
 
     /**
@@ -33,9 +26,6 @@ export class HelpManager {
         
         // Check if we need to show the badge
         this.updateHelpBadge();
-        
-        // Fetch latest video data (could be implemented to fetch from remote source)
-        this.fetchLatestVideoData();
         
         this.isInitialized = true;
         return this;
@@ -55,77 +45,147 @@ export class HelpManager {
         const tabButtons = document.querySelectorAll('.help-tabs .tab-btn');
         tabButtons.forEach(button => {
             button.addEventListener('click', (event) => {
-                // Remove active class from all buttons and panes
-                document.querySelectorAll('.help-tabs .tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.querySelectorAll('.help-content .tab-pane').forEach(pane => {
-                    pane.classList.remove('active');
-                });
-                
-                // Add active class to clicked button
-                event.currentTarget.classList.add('active');
-                
-                // Show corresponding tab content
-                const tabId = event.currentTarget.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                this.activateHelpTab(event.currentTarget.getAttribute('data-tab'));
             });
         });
+
+        // Replay tutorial button in the Getting Started tab
+        const replayTutorialBtn = document.getElementById('replayTutorialBtn');
+        if (replayTutorialBtn) {
+            replayTutorialBtn.addEventListener('click', () => {
+                // Close the help modal, then restart the onboarding tutorial
+                if (window.modalManager) {
+                    window.modalManager.closeModal('helpModal');
+                }
+                onboardingManager.reset();
+                onboardingManager.startTutorial();
+            });
+        }
+
+        // Global "?" shortcut opens the help modal on the Shortcuts tab
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== '?') return;
+            if (this.isTypingContext(event.target)) return;
+            if (window.modalManager?.isAnyModalOpen()) return;
+
+            event.preventDefault();
+            this.openHelpModal('shortcuts');
+        });
+    }
+
+    /**
+     * Check if the event target is a text entry context where "?" is literal input
+     */
+    isTypingContext(target) {
+        if (!(target instanceof Element)) return false;
+
+        const tagName = target.tagName?.toLowerCase();
+        return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+    }
+
+    /**
+     * Activate a specific help modal tab by its data-tab id
+     * @param {string} tabId - The tab id (matches data-tab and pane element id)
+     */
+    activateHelpTab(tabId) {
+        const tabButton = document.querySelector(`.help-tabs .tab-btn[data-tab="${tabId}"]`);
+        const tabPane = document.getElementById(tabId);
+        if (!tabButton || !tabPane) return;
+
+        // Remove active class from all buttons and panes
+        document.querySelectorAll('.help-tabs .tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.help-content .tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+
+        // Activate the requested tab
+        tabButton.classList.add('active');
+        tabPane.classList.add('active');
     }
     
     /**
      * Open the help modal
+     * @param {string} [tabId] - Optional tab id to activate after opening
      */
-    openHelpModal() {
+    openHelpModal(tabId) {
         // Use modalManager to open the help modal
-        if (window.modalManager) {
-            window.modalManager.toggleModal('helpModal');
-            
-            // Add visual indicator to Documentation tab if there's new content
-            this.updateDocumentationTabIndicator();
-            
-            // Update the last viewed timestamp
-            this.markContentAsViewed();
-            
-            // Hide the badge
-            this.hideHelpBadge();
+        if (!window.modalManager) return;
+
+        const hadNewContent = this.hasNewContent();
+
+        window.modalManager.toggleModal('helpModal');
+
+        if (tabId) {
+            this.activateHelpTab(tabId);
         }
+
+        // Only acknowledge the content as viewed when the user opened the
+        // modal while it actually contained new content. Opening a stale
+        // (pre-upgrade) page must not suppress the badge after a refresh.
+        if (hadNewContent) {
+            this.updateNewContentTabIndicators();
+            this.markContentAsViewed();
+        }
+
+        // Hide the badge
+        this.hideHelpBadge();
     }
 
     /**
-     * Add visual indicator to Documentation tab for new content
+     * Add visual indicator to tabs that received new content
      */
-    updateDocumentationTabIndicator() {
-        const docTab = document.querySelector('.tab-btn[data-tab="documentation"]');
-        if (docTab && this.hasNewContent()) {
-            docTab.classList.add('has-new-content');
+    updateNewContentTabIndicators() {
+        if (!this.hasNewContent()) return;
+
+        // Tabs updated in the 2026-09-03 discoverability release:
+        // getting-started (Replay Tutorial button) and shortcuts (new cheat-sheet tab)
+        const NEW_CONTENT_TABS = ['getting-started', 'shortcuts'];
+        NEW_CONTENT_TABS.forEach(tabId => {
+            const tab = document.querySelector(`.help-tabs .tab-btn[data-tab="${tabId}"]`);
+            if (tab) {
+                tab.classList.add('has-new-content');
+            }
+        });
+
+        // Point the indicator at the specific new element inside the
+        // Getting Started tab, and scroll it into view so it is not lost
+        // below the fold of the modal body.
+        const replayBtn = document.getElementById('replayTutorialBtn');
+        if (replayBtn) {
+            replayBtn.classList.add('has-new-content');
+            const gettingStartedActive = document.querySelector('#getting-started.tab-pane.active');
+            if (gettingStartedActive && typeof replayBtn.scrollIntoView === 'function') {
+                replayBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
     }
     
     /**
-     * Mark content as viewed by saving current timestamp
+     * Mark content as viewed by persisting the version rendered in the DOM.
+     * No-op when the served markup carries no version marker (stale assets),
+     * so viewing old content never suppresses the badge for new content.
      */
     markContentAsViewed() {
-        this.lastViewedTimestamp = Date.now();
-        setStorageItem('help_last_viewed', this.lastViewedTimestamp);
+        const currentVersion = this.getCurrentContentVersion();
+        if (!currentVersion) return;
+
+        this.viewedContentVersion = currentVersion;
+        setStorageItem('help_viewed_content_version', this.viewedContentVersion);
     }
-    
+
     /**
-     * Fetch latest video data (could be implemented to actually fetch from a remote source)
+     * Read the help content version from the rendered modal markup
+     * @returns {string|null} Version marker, or null if the served markup has none
      */
-    fetchLatestVideoData() {
-        // In a real implementation, you'd fetch this from your server
-        // For now, we'll just use the hardcoded data from constructor
-        
-        // Update the timestamp with the latest data
-        this.latestContentTimestamp = Math.max(this.latestContentTimestamp, this.latestVideoData.timestamp);
-        
-        // Check again if we need to show the badge with this new data
-        this.updateHelpBadge();
+    getCurrentContentVersion() {
+        const marker = document.querySelector('[data-help-content-version]');
+        return marker ? marker.getAttribute('data-help-content-version') : null;
     }
-    
+
     /**
-     * Update help badge visibility based on timestamps
+     * Update help badge visibility based on viewed vs. served content version
      */
     updateHelpBadge() {
         if (this.hasNewContent()) {
@@ -134,13 +194,13 @@ export class HelpManager {
             this.hideHelpBadge();
         }
     }
-    
+
     /**
-     * Check if there's new content the user hasn't seen
+     * Check if the served help content is newer than what the user has viewed
      */
     hasNewContent() {
-        // If user has never viewed the help, or the content is newer than last viewed
-        return this.lastViewedTimestamp === 0 || this.latestContentTimestamp > this.lastViewedTimestamp;
+        const currentVersion = this.getCurrentContentVersion();
+        return Boolean(currentVersion) && currentVersion !== this.viewedContentVersion;
     }
     
     /**

@@ -38,7 +38,17 @@ function cleanupLoraSyntax(text) {
     return "";
   }
 
-  let cleaned = text
+  // Protect <lora:...> tags with placeholders before cleanup: names inside
+  // the tags may legitimately contain repeated spaces or commas (e.g.
+  // "test -  0021"), and collapsing them breaks file resolution at runtime.
+  const protectedTags = [];
+  LORA_PATTERN.lastIndex = 0;
+  const masked = text.replace(LORA_PATTERN, (match) => {
+    protectedTags.push(match);
+    return `\u0000${protectedTags.length - 1}\u0000`;
+  });
+
+  let cleaned = masked
     .replace(/\s+/g, " ")
     .replace(/,\s*,+/g, ",")
     .replace(/\s*,\s*/g, ",")
@@ -51,7 +61,9 @@ function cleanupLoraSyntax(text) {
   cleaned = cleaned.replace(/(^,)|(,$)/g, "");
   cleaned = cleaned.replace(/,\s*/g, ", ");
 
-  return cleaned.trim();
+  return cleaned
+    .trim()
+    .replace(/\u0000(\d+)\u0000/g, (_, index) => protectedTags[Number(index)]);
 }
 
 export function applyLoraValuesToText(originalText, loras) {

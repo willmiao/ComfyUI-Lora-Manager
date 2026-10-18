@@ -82,7 +82,9 @@ class StubUpdateService:
         self.bulk_calls = []
         self.bulk_error = bulk_error
 
-    async def has_updates_bulk(self, model_type, model_ids, hide_early_access: bool = False):
+    async def has_updates_bulk(
+        self, model_type, model_ids, hide_early_access: bool = False, hide_paid: bool = False
+    ):
         self.bulk_calls.append((model_type, list(model_ids)))
         if self.bulk_error:
             raise RuntimeError("bulk failure")
@@ -94,7 +96,9 @@ class StubUpdateService:
             results[model_id] = result
         return results
 
-    async def has_update(self, model_type, model_id, hide_early_access: bool = False):
+    async def has_update(
+        self, model_type, model_id, hide_early_access: bool = False, hide_paid: bool = False
+    ):
         self.calls.append((model_type, model_id))
         result = self.decisions.get(model_id, False)
         if isinstance(result, Exception):
@@ -1259,39 +1263,8 @@ async def test_get_model_civitai_url_falls_back_when_host_setting_is_not_a_strin
     }
 
 
-class TestHfGroupKey:
-    """Tests for _extract_hf_group_key and _extract_group_key."""
-
-    # --- _extract_hf_group_key ---
-
-    def test_hf_group_key_valid_url(self):
-        """Standard HF URL returns hf:user/repo."""
-        item = {"hf_url": "https://huggingface.co/unsloth/qwen-edit"}
-        assert BaseModelService._extract_hf_group_key(item) == "hf:unsloth/qwen-edit"
-
-    def test_hf_group_key_url_with_subpath(self):
-        """URL with subpath still extracts just owner/repo."""
-        item = {"hf_url": "https://huggingface.co/user/repo/resolve/main/file.safetensors"}
-        assert BaseModelService._extract_hf_group_key(item) == "hf:user/repo"
-
-    def test_hf_group_key_empty_url(self):
-        """Empty hf_url returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": ""}) is None
-
-    def test_hf_group_key_no_url(self):
-        """Missing hf_url key returns None."""
-        assert BaseModelService._extract_hf_group_key({}) is None
-
-    def test_hf_group_key_none_url(self):
-        """None hf_url returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": None}) is None
-
-    def test_hf_group_key_invalid_url(self):
-        """Malformed HF URL returns None."""
-        assert BaseModelService._extract_hf_group_key({"hf_url": "not-a-url"}) is None
-        assert BaseModelService._extract_hf_group_key({"hf_url": "https://example.com"}) is None
-
-    # --- _extract_group_key ---
+class TestSourceGroupKey:
+    """Tests for _extract_group_key (CivitAI id, then site-native source identity)."""
 
     def test_group_key_civitai_only(self):
         """CivitAI modelId returned as int."""
@@ -1299,30 +1272,64 @@ class TestHfGroupKey:
         assert BaseModelService._extract_group_key(item) == 123
 
     def test_group_key_hf_only(self):
-        """HF-only item returns hf:user/repo string."""
+        """HF-linked items never group: a repository is not a model identity."""
         item = {"hf_url": "https://huggingface.co/user/repo"}
-        assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+        assert BaseModelService._extract_group_key(item) is None
 
     def test_group_key_civitai_preferred(self):
-        """CivitAI modelId takes precedence over hf_url."""
+        """CivitAI modelId takes precedence over any source identity."""
         item = {
             "civitai": {"modelId": 456},
-            "hf_url": "https://huggingface.co/other/repo",
+            "source_url": "https://tensor.art/models/789",
         }
         assert BaseModelService._extract_group_key(item) == 456
 
     def test_group_key_neither(self):
-        """No CivitAI or HF returns None."""
+        """No CivitAI or groupable source returns None."""
         assert BaseModelService._extract_group_key({}) is None
         assert BaseModelService._extract_group_key({"some": "data"}) is None
 
     def test_group_key_civitai_none_model_id(self):
-        """civitai.modelId=None falls through to HF."""
+        """civitai.modelId=None falls through to the source identity."""
         item = {
             "civitai": {"modelId": None},
-            "hf_url": "https://huggingface.co/user/repo",
+            "source_url": "https://tensor.art/models/789",
         }
-        assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+        assert BaseModelService._extract_group_key(item) == "ta:789"
+
+    def test_group_key_modelscope_uses_published_model_id(self):
+        """ModelScope groups under ms:<modelId> once enrichment recorded it."""
+        item = {
+            "source_platform": "modelscope",
+            "source_url": "https://modelscope.cn/models/u/r",
+            "source_model_id": "555",
+        }
+        assert BaseModelService._extract_group_key(item) == "ms:555"
+
+    def test_group_key_modelscope_unenriched_stays_standalone(self):
+        """Without source_model_id there is no key — never repo-level grouping."""
+        item = {
+            "source_platform": "modelscope",
+            "source_url": "https://modelscope.cn/models/u/r",
+        }
+        assert BaseModelService._extract_group_key(item) is None
+
+    def test_group_key_modelscope_identity_crosses_repos(self):
+        """Same published-model id groups across repos; same repo does not."""
+
+        def ms_item(repo, model_id):
+            return {
+                "source_platform": "modelscope",
+                "source_url": f"https://modelscope.cn/models/{repo}",
+                "source_model_id": model_id,
+            }
+
+        assert BaseModelService._extract_group_key(
+            ms_item("alice/collection", "555")
+        ) == BaseModelService._extract_group_key(ms_item("bob/mirror", "555"))
+        assert BaseModelService._extract_group_key(
+            ms_item("alice/collection", "555")
+        ) != BaseModelService._extract_group_key(ms_item("alice/collection", "777"))
 
 
 class TestApplyHashFilters:
@@ -1390,3 +1397,71 @@ class TestApplyHashFilters:
         result = await service._apply_hash_filters(data, {})
 
         assert result == data
+
+
+class FolderTreeCache:
+    def __init__(self, folders):
+        self.folders = list(folders)
+
+
+class FolderTreeScanner:
+    def __init__(self, cache, all_folders=None):
+        self._cache = cache
+        self._all_folders = list(all_folders) if all_folders is not None else None
+
+    async def get_cached_data(self, *_, **__):
+        return self._cache
+
+    async def get_all_folders(self):
+        if self._all_folders is None:
+            raise AssertionError("get_all_folders should not be called")
+        return list(self._all_folders)
+
+    def get_model_roots(self):
+        return ["/models/loras"]
+
+
+def _make_folder_tree_service(folders, all_folders=None):
+    cache = FolderTreeCache(folders)
+    scanner = FolderTreeScanner(cache, all_folders)
+    settings = StubSettings({})
+    return DummyService(
+        model_type="stub",
+        scanner=scanner,
+        metadata_class=BaseModelMetadata,
+        cache_repository=ModelCacheRepository(scanner),
+        filter_set=ModelFilterSet(settings),
+        search_strategy=SearchStrategy(),
+        settings_provider=settings,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_defaults_to_models_only_folders():
+    service = _make_folder_tree_service(["a/b"])
+
+    tree = await service.get_unified_folder_tree()
+
+    assert tree == {"a": {"b": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty", "empty/dir"])
+
+    tree = await service.get_unified_folder_tree(include_empty=True)
+
+    assert tree == {"a": {"b": {}}, "empty": {"dir": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty"])
+
+    default_tree = await service.get_folder_tree("/models/loras")
+    include_empty_tree = await service.get_folder_tree(
+        "/models/loras", include_empty=True
+    )
+
+    assert default_tree == {"a": {"b": {}}}
+    assert include_empty_tree == {"a": {"b": {}}, "empty": {}}

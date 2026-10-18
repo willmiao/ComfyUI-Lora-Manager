@@ -1,12 +1,13 @@
 import { ref } from 'vue'
 import type { BaseModelOption, TagOption, FolderTreeNode, LoraItem } from './types'
+import { lmApiUrl } from '@/utils/basePath'
 
 export function useLoraPoolApi() {
   const isLoading = ref(false)
 
   const fetchBaseModels = async (limit = 50): Promise<BaseModelOption[]> => {
     try {
-      const response = await fetch(`/api/lm/loras/base-models?limit=${limit}`)
+      const response = await fetch(lmApiUrl(`/api/lm/loras/base-models?limit=${limit}`))
       const data = await response.json()
       return data.base_models || []
     } catch (error) {
@@ -17,7 +18,7 @@ export function useLoraPoolApi() {
 
   const fetchTags = async (limit = 0): Promise<TagOption[]> => {
     try {
-      const response = await fetch(`/api/lm/loras/top-tags?limit=${limit}`)
+      const response = await fetch(lmApiUrl(`/api/lm/loras/top-tags?limit=${limit}`))
       const data = await response.json()
       return data.tags || []
     } catch (error) {
@@ -28,7 +29,7 @@ export function useLoraPoolApi() {
 
   const fetchFolderTree = async (): Promise<FolderTreeNode[]> => {
     try {
-      const response = await fetch('/api/lm/loras/unified-folder-tree')
+      const response = await fetch(lmApiUrl('/api/lm/loras/unified-folder-tree'))
       const data = await response.json()
       return transformFolderTree(data.tree || {})
     } catch (error) {
@@ -102,7 +103,7 @@ export function useLoraPoolApi() {
         urlParams.set('name_pattern_use_regex', String(params.namePatternsUseRegex))
       }
 
-      const response = await fetch(`/api/lm/loras/list?${urlParams}`)
+      const response = await fetch(lmApiUrl(`/api/lm/loras/list?${urlParams}`))
       const data = await response.json()
 
       return {

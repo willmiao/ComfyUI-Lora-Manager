@@ -795,3 +795,225 @@ async def test_explicit_targets_fill_partial_example_gaps(
 @pytest.fixture
 def settings_manager():
     return get_settings_manager()
+
+
+async def _run_single_model_download(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+    model_metadata: dict[str, Any],
+    *,
+    get_updated_model=None,
+):
+    """Shared harness: run one download pass over a single lora model."""
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    images_root = tmp_path / "examples"
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
+
+    scanner = StubScanner([model_metadata.copy()])
+    _patch_scanner(monkeypatch, scanner)
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    if get_updated_model is None:
+        async def get_updated_model(_hash, _scanner):
+            return model_metadata
+
+    async def fake_get_downloader():
+        return object()
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(get_updated_model),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    result = await manager.start_download({"model_types": ["lora"], "delay": 0})
+    assert result["success"] is True
+    if manager._download_task is not None:
+        await asyncio.wait_for(manager._download_task, timeout=1)
+
+    return manager, images_root
+
+
+async def test_model_without_civitai_metadata_stays_pending(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """Metadata not fetched yet is retryable: the model must NOT be blacklisted."""
+
+    model_hash = "c" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "No Metadata Yet",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+    }
+
+    manager, images_root = await _run_single_model_download(
+        monkeypatch, tmp_path, settings_manager, model_metadata
+    )
+
+    assert model_hash not in manager._progress["failed_models"]
+    assert model_hash not in manager._progress["processed_models"]
+
+    saved = json.loads((images_root / ".download_progress.json").read_text(encoding="utf-8"))
+    assert model_hash not in saved["failed_models"]
+
+
+async def test_model_with_imageless_civitai_metadata_marked_failed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """Provider metadata exists but carries no images: permanently failed."""
+
+    model_hash = "d" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Imageless Entry",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai": {"id": 123, "name": "Imageless Entry"},
+    }
+
+    manager, _ = await _run_single_model_download(
+        monkeypatch, tmp_path, settings_manager, model_metadata
+    )
+
+    assert model_hash in manager._progress["failed_models"]
+
+
+async def test_civitai_deleted_model_marked_failed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """Models confirmed absent from CivitAI stay on the failed list."""
+
+    model_hash = "e" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Deleted From CivitAI",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai_deleted": True,
+        "from_civitai": False,
+    }
+
+    manager, _ = await _run_single_model_download(
+        monkeypatch, tmp_path, settings_manager, model_metadata
+    )
+
+    assert model_hash in manager._progress["failed_models"]
+
+
+async def test_processing_error_does_not_blacklist_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """Transient errors must leave the model pending instead of blacklisting it."""
+
+    model_hash = "f" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Transient Error",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai": {"images": [{"url": "https://example.com/one.png"}]},
+    }
+
+    async def failing_get_updated_model(_hash, _scanner):
+        raise RuntimeError("boom")
+
+    manager, _ = await _run_single_model_download(
+        monkeypatch,
+        tmp_path,
+        settings_manager,
+        model_metadata,
+        get_updated_model=failing_get_updated_model,
+    )
+
+    assert model_hash not in manager._progress["failed_models"]
+    assert manager._progress["last_error"]
+
+
+def test_unblock_failed_example_image_models_updates_file_and_memory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    images_root = tmp_path / "examples"
+    images_root.mkdir()
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
+
+    model_hash = "a" * 64
+    other_hash = "b" * 64
+    progress_file = images_root / ".download_progress.json"
+    progress_file.write_text(
+        json.dumps(
+            {
+                "processed_models": [other_hash],
+                "failed_models": [model_hash, other_hash],
+                "rate_limited_models": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    manager._progress["failed_models"] = {model_hash, other_hash}
+    monkeypatch.setattr(download_module, "_default_download_manager", manager)
+
+    removed = download_module.unblock_failed_example_image_models([model_hash.upper()])
+    assert removed == 1
+
+    saved = json.loads(progress_file.read_text(encoding="utf-8"))
+    assert saved["failed_models"] == [other_hash]
+    assert saved["processed_models"] == [other_hash]
+    assert manager._progress["failed_models"] == {other_hash}
+
+    # Second call is a no-op and does not rewrite the file
+    assert download_module.unblock_failed_example_image_models([model_hash]) == 0
+
+
+def test_unblock_failed_example_image_models_without_progress_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    images_root = tmp_path / "examples"
+    images_root.mkdir()
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
+
+    assert download_module.unblock_failed_example_image_models(["a" * 64]) == 0

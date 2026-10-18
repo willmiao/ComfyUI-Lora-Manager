@@ -101,7 +101,9 @@ async def test_fallback_retries_same_provider_on_rate_limit(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
-    """After exhausting retries on primary, fallback should continue to secondary."""
+    """#1085: a rate-limited network provider no longer fails over to another
+    network provider (that just spreads the flood); local providers such as
+    sqlite remain as a last resort."""
     sleep_mock = AsyncMock()
     monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
     monkeypatch.setattr(provider_module.random, "uniform", lambda *_: 0.0)
@@ -114,13 +116,26 @@ async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
         rate_limit_retry_limit=2,
     )
 
-    # After Change A: no longer raises; falls through to secondary
+    result, error = await fallback.get_model_by_hash("abc")
+
+    # Secondary is a network provider: it must NOT be consulted after the 429.
+    assert result is None
+    assert error == "Rate limited"
+    assert primary.calls == 2          # retry_limit exhausted on primary
+    assert secondary.calls == 0        # no network failover
+
+    # A local sqlite provider behind the rate-limited one is still allowed.
+    sqlite = TrackingProvider()
+    fallback = FallbackMetadataProvider(
+        [("primary", AlwaysRateLimitedProvider()), ("sqlite", sqlite)],
+        rate_limit_retry_limit=2,
+    )
+
     result, error = await fallback.get_model_by_hash("abc")
 
     assert error is None
     assert result == {"id": "secondary"}
-    assert primary.calls == 2          # retry_limit exhausted on primary
-    assert secondary.calls == 1        # secondary IS called now
+    assert sqlite.calls == 1
 
 
 @pytest.mark.asyncio
@@ -192,3 +207,62 @@ async def test_retry_helper_retries_normally_for_small_retry_after(monkeypatch):
     result, _ = await helper.run("test", succeeding)
     assert result == {"ok": True}
     assert calls == 2  # Retried once (small retry_after)
+
+
+class MiniCapableProvider(ModelMetadataProvider):
+    """Provider that serves raw file names via the mini endpoint (#1100)."""
+
+    def __init__(self, payload=None) -> None:
+        self.payload = payload
+        self.calls = []
+
+    async def get_model_by_hash(self, model_hash: str):
+        return None, None
+
+    async def get_model_versions(self, model_id: str):
+        return None
+
+    async def get_model_version(self, model_id=None, version_id=None):
+        return None
+
+    async def get_model_version_info(self, version_id: str):
+        return None, None
+
+    async def get_user_models(self, username: str, cursor=None):
+        return None
+
+    async def get_version_file_mini(self, version_id: int, file_id: int):
+        self.calls.append((version_id, file_id))
+        return self.payload
+
+
+@pytest.mark.asyncio
+async def test_base_provider_get_version_file_mini_defaults_to_none():
+    provider = TrackingProvider()
+    assert await provider.get_version_file_mini(1, 2) is None
+
+
+@pytest.mark.asyncio
+async def test_fallback_get_version_file_mini_returns_first_hit():
+    primary = TrackingProvider()  # base default: None
+    secondary = MiniCapableProvider({"fileName": "raw.safetensors"})
+
+    fallback = FallbackMetadataProvider(
+        [("primary", primary), ("secondary", secondary)],
+    )
+
+    result = await fallback.get_version_file_mini(10, 20)
+
+    assert result == {"fileName": "raw.safetensors"}
+    assert secondary.calls == [(10, 20)]
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_retrying_provider_delegates_get_version_file_mini():
+    inner = MiniCapableProvider({"fileName": "raw.safetensors"})
+    wrapper = RateLimitRetryingProvider(inner, label="inner")
+
+    result = await wrapper.get_version_file_mini(10, 20)
+
+    assert result == {"fileName": "raw.safetensors"}
+    assert inner.calls == [(10, 20)]

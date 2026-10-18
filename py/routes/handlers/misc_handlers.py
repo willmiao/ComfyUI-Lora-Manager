@@ -23,6 +23,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from urllib.parse import quote
 from typing import Any, Awaitable, Callable, Dict, Mapping, Protocol, Sequence
 
 from aiohttp import web
@@ -45,7 +46,10 @@ from ...services.llm_service import (
     get_provider_model_ids,
 )
 from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
+from ...services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
+from ...services.websocket_progress_callback import WebSocketBroadcastCallback
 from ...utils.models import BaseModelMetadata
+from ...utils.civitai_utils import build_civitai_model_page_url
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
     DEFAULT_NODE_COLOR,
@@ -53,16 +57,30 @@ from ...utils.constants import (
     PREVIEW_EXTENSIONS,
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
+    VALID_OTHER_CIVITAI_TYPES,
+    folder_path_schema,
 )
-from .hf_handlers import HfHandler
+from .model_source_handlers import ModelSourceHandler
 from .agent_handlers import AgentHandler
+from .download_routing_handlers import DownloadRoutingHandler
+from .model_handlers import ModelCivitaiHandler
 from ...utils.civitai_utils import rewrite_preview_url
+from ...utils.directory_browser import browse_directory
 from ...utils.example_images_paths import (
     find_non_compliant_items_in_example_images_root,
     is_valid_example_images_root,
 )
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.session_logging import get_standalone_session_log_snapshot
+from ...utils.sidecar_paths import (
+    describe_sidecar_root,
+    get_configured_sidecar_root,
+    get_metadata_path,
+    get_preview_dir,
+    get_sidecar_dir,
+    get_storage_mode,
+    get_unmatched_sidecar_components,
+)
 from ...utils.usage_stats import UsageStats
 from .base_model_handlers import BaseModelHandlerSet
 
@@ -418,6 +436,40 @@ def _wsl_to_windows_path(wsl_path: str) -> str | None:
         return None
 
 
+def _has_gui_display() -> bool:
+    """Check whether a GUI session is reachable for xdg-open."""
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def _select_in_linux_file_manager(file_path: str) -> bool:
+    """Reveal ``file_path`` selected in the desktop file manager.
+
+    Uses the freedesktop ``org.freedesktop.FileManager1.ShowItems`` DBus
+    interface, which is supported by GNOME Files (Nautilus), KDE Dolphin,
+    Nemo, Caja, and recent Thunar.  Returns ``False`` when the interface is
+    unavailable so the caller can fall back to plain ``xdg-open``.
+    """
+    uri = "file://" + quote(file_path)
+    try:
+        result = subprocess.run(
+            [
+                "dbus-send",
+                "--session",
+                "--print-reply",
+                "--dest=org.freedesktop.FileManager1",
+                "/org/freedesktop/FileManager1",
+                "org.freedesktop.FileManager1.ShowItems",
+                f"array:string:{uri}",
+                "string:",
+            ],
+            capture_output=True,
+            timeout=5,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return False
+    return result.returncode == 0
+
+
 class PromptServerProtocol(Protocol):
     """Subset of PromptServer used by the handlers."""
 
@@ -565,6 +617,7 @@ class NodeRegistry:
             "widget_names": widget_names,
             "mode": node.get("mode"),
             "marker_role": node.get("marker_role"),
+            "exclude_send": bool(node.get("exclude_send")),
         }
 
     # ------------------------------------------------------------------
@@ -648,8 +701,71 @@ class NodeRegistry:
 
 
 class HealthCheckHandler:
+    def __init__(
+        self,
+        scanner_getters: Mapping[str, Callable[[], Awaitable[Any]]] | None = None,
+    ) -> None:
+        self._scanner_getters = scanner_getters or {
+            "lora": ServiceRegistry.get_lora_scanner,
+            "checkpoint": ServiceRegistry.get_checkpoint_scanner,
+            "embedding": ServiceRegistry.get_embedding_scanner,
+            "other": ServiceRegistry.get_other_scanner,
+            "recipe": ServiceRegistry.get_recipe_scanner,
+        }
+
+    def _active_scanner_getters(
+        self,
+    ) -> Mapping[str, Callable[[], Awaitable[Any]]]:
+        """Drop the opt-in other scanner while Other Models is disabled."""
+        getters = self._scanner_getters
+        if "other" not in getters:
+            return getters
+        if get_settings_manager().is_other_models_enabled():
+            return getters
+        return {name: getter for name, getter in getters.items() if name != "other"}
+
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
+
+    async def get_init_status(self, request: web.Request) -> web.Response:
+        """Report aggregate scanner initialization status.
+
+        Used by the initialization page's polling fallback when the
+        /ws/init-progress WebSocket is unavailable. Omits pageType so every
+        page accepts the update and only reloads once all scanners are done.
+        """
+        pending: list[str] = []
+        for name, getter in self._active_scanner_getters().items():
+            try:
+                scanner = await getter()
+            except Exception:
+                pending.append(name)
+                continue
+            cache_ready = getattr(scanner, "_cache", None) is not None
+            is_initializing = getattr(scanner, "is_initializing", None)
+            busy = (
+                is_initializing()
+                if callable(is_initializing)
+                else bool(getattr(scanner, "_is_initializing", False))
+            )
+            if busy or not cache_ready:
+                pending.append(name)
+
+        if pending:
+            return web.json_response(
+                {
+                    "status": "initializing",
+                    "stage": "processing",
+                    "details": "Initializing: " + ", ".join(pending),
+                }
+            )
+        return web.json_response(
+            {
+                "status": "complete",
+                "progress": 100,
+                "details": "Initialization complete",
+            }
+        )
 
 
 class SupportersHandler:
@@ -704,9 +820,18 @@ class DoctorHandler:
                 ("lora", "LoRAs", ServiceRegistry.get_lora_scanner),
                 ("checkpoint", "Checkpoints", ServiceRegistry.get_checkpoint_scanner),
                 ("embedding", "Embeddings", ServiceRegistry.get_embedding_scanner),
+                ("other", "Other Models", ServiceRegistry.get_other_scanner),
             )
         )
         self._app_version_getter = app_version_getter
+
+    def _active_scanner_factories(
+        self,
+    ) -> Sequence[tuple[str, str, Callable[[], Awaitable[Any]]]]:
+        """Drop the opt-in other scanner while Other Models is disabled."""
+        if self._settings.is_other_models_enabled():
+            return self._scanner_factories
+        return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
 
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
@@ -716,6 +841,7 @@ class DoctorHandler:
                 await self._check_civitai_api_key(),
                 await self._check_cache_health(),
                 await self._check_filename_conflicts(),
+                self._check_sidecar_mirror_orphans(),
                 self._check_ui_version(client_version, app_version),
             ]
 
@@ -755,7 +881,7 @@ class DoctorHandler:
         repaired: list[dict[str, Any]] = []
         failures: list[dict[str, str]] = []
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             try:
                 scanner = await factory()
                 await scanner.get_cached_data(force_refresh=True, rebuild_cache=True)
@@ -787,7 +913,7 @@ class DoctorHandler:
         renamed: list[dict[str, Any]] = []
 
         try:
-            for model_type, label, factory in self._scanner_factories:
+            for model_type, label, factory in self._active_scanner_factories():
                 try:
                     scanner = await factory()
                     hash_index = getattr(scanner, "_hash_index", None)
@@ -861,15 +987,24 @@ class DoctorHandler:
 
                             os.rename(path, new_path)
 
-                            for suffix in (".metadata.json", ".civitai.info"):
-                                old_sidecar = old_base_no_ext + suffix
-                                new_sidecar = new_base_no_ext + suffix
-                                if os.path.exists(old_sidecar):
-                                    os.rename(old_sidecar, new_sidecar)
+                            old_metadata_path = get_metadata_path(path)
+                            new_metadata_path = get_metadata_path(new_path)
+                            if os.path.exists(old_metadata_path):
+                                os.rename(old_metadata_path, new_metadata_path)
+
+                            old_sidecar = old_base_no_ext + ".civitai.info"
+                            new_sidecar = new_base_no_ext + ".civitai.info"
+                            if os.path.exists(old_sidecar):
+                                os.rename(old_sidecar, new_sidecar)
 
                             for preview_ext in PREVIEW_EXTENSIONS:
-                                old_preview = old_base_no_ext + preview_ext
-                                new_preview = new_base_no_ext + preview_ext
+                                old_preview = os.path.join(
+                                    get_preview_dir(path), base_name + preview_ext
+                                )
+                                new_preview = os.path.join(
+                                    get_preview_dir(new_path),
+                                    candidate_base + preview_ext,
+                                )
                                 if os.path.exists(old_preview):
                                     os.rename(old_preview, new_preview)
 
@@ -881,7 +1016,10 @@ class DoctorHandler:
                                     old_preview_url = entry["preview_url"].replace("\\", "/")
                                     preview_ext = os.path.splitext(old_preview_url)[1]
                                     if preview_ext:
-                                        entry["preview_url"] = (new_base_no_ext + preview_ext).replace(os.sep, "/")
+                                        entry["preview_url"] = os.path.join(
+                                            get_preview_dir(new_path),
+                                            candidate_base + preview_ext,
+                                        ).replace(os.sep, "/")
                                 await scanner.update_single_model_cache(
                                     path, new_path, entry
                                 )
@@ -939,6 +1077,71 @@ class DoctorHandler:
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error exporting doctor bundle: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    def _check_sidecar_mirror_orphans(self) -> dict[str, Any]:
+        """Flag centralized sidecars stranded by a moved/removed model root.
+
+        Centralized sidecars live under a per-root mirror directory. A root
+        that was moved, renamed, or dropped from the configuration leaves its
+        mirror behind; without this check the loss is silent, because the
+        scanner simply rebuilds default metadata at the new location.
+        """
+
+        actions = [{"id": "open-settings", "label": "Open Settings"}]
+        try:
+            mode = get_storage_mode()
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            logger.debug("Doctor: sidecar mode lookup failed: %s", exc)
+            mode = "alongside"
+
+        if mode != "centralized":
+            return {
+                "id": "sidecar_mirror_orphans",
+                "title": "Centralized Sidecars",
+                "status": "ok",
+                "summary": "Sidecar metadata is stored alongside the models.",
+                "details": [],
+                "actions": actions,
+            }
+
+        try:
+            orphans = get_unmatched_sidecar_components()
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            logger.warning("Doctor: sidecar orphan check failed: %s", exc)
+            orphans = []
+
+        if not orphans:
+            return {
+                "id": "sidecar_mirror_orphans",
+                "title": "Centralized Sidecars",
+                "status": "ok",
+                "summary": "Every mirrored sidecar directory is linked to a model root.",
+                "details": [f"Root: {describe_sidecar_root().get('root', '')}"],
+                "actions": actions,
+            }
+
+        details = [
+            "Metadata (favorites, notes, tags, usage tips) for these models is on disk but is not being read.",
+            "This usually means a model root was moved, renamed, or removed. Restore the original root path in Settings; the mirror is re-linked automatically.",
+        ]
+        details.extend(
+            f"{item['component']} — last known root: {item['last_path'] or 'unknown'}"
+            for item in orphans[:5]
+        )
+        if len(orphans) > 5:
+            details.append(f"… and {len(orphans) - 5} more")
+        return {
+            "id": "sidecar_mirror_orphans",
+            "title": "Centralized Sidecars",
+            "status": "warning",
+            "summary": (
+                f"{len(orphans)} sidecar "
+                f"director{'y' if len(orphans) == 1 else 'ies'} could not be "
+                "linked to a configured model root."
+            ),
+            "details": details,
+            "actions": actions,
+        }
 
     async def _check_civitai_api_key(self) -> dict[str, Any]:
         api_key = (self._settings.get("civitai_api_key", "") or "").strip()
@@ -1019,7 +1222,7 @@ class DoctorHandler:
         overall_status = "ok"
         summary = "All model caches look healthy."
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             try:
                 scanner = await factory()
                 persisted = None
@@ -1104,7 +1307,7 @@ class DoctorHandler:
         total_conflict_groups = 0
         total_conflict_files = 0
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             # Duplicate filename detection targets LoRAs which use basename-only
             # syntax (<lora:name:strength>). Checkpoints/embeddings reference
             # models via relative paths with extensions, so conflicts there would
@@ -1424,6 +1627,7 @@ class SettingsHandler:
             # Sensitive — never expose the actual value to the frontend;
             # frontend receives a boolean instead (*_set).
             "civitai_api_key",
+            "huggingface_api_key",
             "llm_api_key",
         }
     )
@@ -1482,11 +1686,66 @@ class SettingsHandler:
             # Sensitive fields: only expose a boolean indicating whether set
             raw_key = self._settings.get("civitai_api_key")
             response_data["civitai_api_key_set"] = bool(raw_key)
+            raw_hf_key = self._settings.get("huggingface_api_key")
+            response_data["huggingface_api_key_set"] = bool(raw_hf_key)
             raw_llm_key = self._settings.get("llm_api_key")
             response_data["llm_api_key_set"] = bool(raw_llm_key)
+            # Derived capability flag (not persisted): whether the host exposes
+            # any other-model folder at all. Standalone installs only know the
+            # folder_paths keys present in settings.json, so the announcement
+            # banner uses this to avoid promising a page that cannot list
+            # anything.
+            try:
+                availability = config.get_other_models_availability()
+                response_data["other_models_paths_available"] = bool(
+                    availability.get("available")
+                )
+            except Exception as availability_error:  # pragma: no cover - defensive
+                logger.debug(
+                    "Could not resolve Other Models availability: %s",
+                    availability_error,
+                )
+                response_data["other_models_paths_available"] = None
+            standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+            response_data["standalone_mode"] = standalone_mode
+            if standalone_mode:
+                # Standalone reads its model roots exclusively from
+                # settings.json, so the Model Paths settings UI needs the
+                # current values plus the editable-key schema. In plugin mode
+                # the paths come from the ComfyUI host and stay hidden.
+                folder_paths = self._settings.get("folder_paths") or {}
+                # A fresh install is seeded from settings.json.example, whose
+                # folder_paths are documentation placeholders — hide them so
+                # the UI starts with empty editors instead of fake paths.
+                get_placeholders = getattr(
+                    self._settings, "get_template_folder_path_placeholders", None
+                )
+                placeholders = get_placeholders() if get_placeholders else set()
+                if placeholders:
+                    folder_paths = {
+                        key: [p for p in paths if p not in placeholders]
+                        if isinstance(paths, list)
+                        else paths
+                        for key, paths in folder_paths.items()
+                    }
+                response_data["folder_paths"] = folder_paths
+                response_data["folder_path_schema"] = folder_path_schema()
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file
+            # Resolved centralized sidecar root (mode-independent): lets the
+            # settings UI show where sidecars actually live, including when the
+            # path setting is empty and the default kicks in. inside_repo flags
+            # the portable-mode hazard (root inside the plugin folder).
+            try:
+                sidecar_info = describe_sidecar_root()
+                response_data["sidecar_storage_root"] = sidecar_info["root"]
+                response_data["sidecar_storage_root_is_default"] = sidecar_info["is_default"]
+                response_data["sidecar_storage_root_in_repo"] = sidecar_info["inside_repo"]
+            except Exception as sidecar_error:  # pragma: no cover - defensive
+                logger.debug(
+                    "Could not resolve sidecar storage info: %s", sidecar_error
+                )
             messages_getter: Any = getattr(self._settings, "get_startup_messages", None)
             messages = list(messages_getter()) if messages_getter else []
             return web.json_response(
@@ -1581,6 +1840,7 @@ class SettingsHandler:
                 if key in (
                     "enable_metadata_archive_db",
                     "enable_civarchive_api",
+                    "enable_openmodeldb_api",
                     "metadata_provider_order",
                 ):
                     await self._metadata_provider_updater()
@@ -2013,6 +2273,7 @@ class ServiceRegistryAdapter:
     get_embedding_scanner: Callable[[], Awaitable[Any]]
     get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
     get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
+    get_other_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_other_scanner
 
 
 class ModelLibraryHandler:
@@ -2037,6 +2298,8 @@ class ModelLibraryHandler:
             return "checkpoint"
         if normalized in {"embedding", "textualinversion"}:
             return "embedding"
+        if normalized in VALID_OTHER_CIVITAI_TYPES:
+            return "other"
         return None
 
     async def _get_scanner_for_type(self, model_type: str | None):
@@ -2047,6 +2310,13 @@ class ModelLibraryHandler:
             return normalized_type, await self._service_registry.get_checkpoint_scanner()
         if normalized_type == "embedding":
             return normalized_type, await self._service_registry.get_embedding_scanner()
+        if normalized_type == "other":
+            # Opt-in feature: the other scanner only resolves while the master
+            # switch is on, so callers keep returning the legacy "required"
+            # error (400) when it is off.
+            if not get_settings_manager().is_other_models_enabled():
+                return None, None
+            return normalized_type, await self._service_registry.get_other_scanner()
         return None, None
 
     async def _get_download_history_service(self):
@@ -2060,6 +2330,63 @@ class ModelLibraryHandler:
             entry.setdefault("hasBeenDownloaded", True)
             enriched.append(entry)
         return enriched
+
+    @staticmethod
+    async def _get_downloaded_files(
+        scanner: Any, model_version_id: int
+    ) -> list[dict[str, Any]]:
+        """Return per-file downloaded state for a version in the library.
+
+        This handler has no CivitAI version payload, so the remote file list
+        is taken from the local entries' cached ``civitai`` metadata (the
+        full version payload persisted at download time, see
+        ``BaseModelMetadata.from_civitai_info``) and matched with the same
+        D2 rule used by ``get_civitai_versions`` (#1058). Local entries that
+        cannot be matched to a known remote file (e.g. missing metadata or
+        renamed files) are still reported with ``fileId`` set to None.
+        Returns ``[{fileId, fileName, filePath}]``.
+        """
+        try:
+            cache = await scanner.get_cached_data()
+        except Exception:  # pragma: no cover - defensive fallback
+            logger.debug(
+                "Failed to read cache for downloaded files of version %s",
+                model_version_id,
+                exc_info=True,
+            )
+            return []
+
+        files_getter = getattr(cache, "get_files_by_version_id", None)
+        local_entries = files_getter(model_version_id) if files_getter else []
+        if not local_entries:
+            return []
+
+        version_payload: Mapping[str, Any] = {}
+        for entry in local_entries:
+            civitai = entry.get("civitai") if isinstance(entry, Mapping) else None
+            if isinstance(civitai, Mapping) and isinstance(civitai.get("files"), list):
+                version_payload = civitai
+                break
+
+        downloaded = ModelCivitaiHandler._match_downloaded_files(
+            version_payload, local_entries
+        )
+
+        # Surface local files that D2 could not map to a known remote file
+        matched_paths = {item.get("filePath") for item in downloaded}
+        for entry in local_entries:
+            if not isinstance(entry, Mapping):
+                continue
+            if entry.get("file_path") in matched_paths:
+                continue
+            downloaded.append(
+                {
+                    "fileId": None,
+                    "fileName": entry.get("file_name"),
+                    "filePath": entry.get("file_path"),
+                }
+            )
+        return downloaded
 
     async def check_model_exists(self, request: web.Request) -> web.Response:
         try:
@@ -2081,6 +2408,11 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
+            # Opt-in: probe the other scanner only while Other Models is enabled,
+            # so the disabled behaviour stays byte-identical to the legacy one.
+            other_scanner = None
+            if get_settings_manager().is_other_models_enabled():
+                other_scanner = await self._service_registry.get_other_scanner()
 
             if model_version_id_str:
                 try:
@@ -2096,9 +2428,11 @@ class ModelLibraryHandler:
 
                 exists = False
                 model_type = None
+                matched_scanner = None
                 if await lora_scanner.check_model_version_exists(model_version_id):
                     exists = True
                     model_type = "lora"
+                    matched_scanner = lora_scanner
                 elif (
                     checkpoint_scanner
                     and await checkpoint_scanner.check_model_version_exists(
@@ -2107,6 +2441,7 @@ class ModelLibraryHandler:
                 ):
                     exists = True
                     model_type = "checkpoint"
+                    matched_scanner = checkpoint_scanner
                 elif (
                     embedding_scanner
                     and await embedding_scanner.check_model_version_exists(
@@ -2115,6 +2450,14 @@ class ModelLibraryHandler:
                 ):
                     exists = True
                     model_type = "embedding"
+                    matched_scanner = embedding_scanner
+                elif (
+                    other_scanner
+                    and await other_scanner.check_model_version_exists(model_version_id)
+                ):
+                    exists = True
+                    model_type = "other"
+                    matched_scanner = other_scanner
 
                 if exists:
                     return web.json_response(
@@ -2123,13 +2466,16 @@ class ModelLibraryHandler:
                             "exists": True,
                             "modelType": model_type,
                             "hasBeenDownloaded": False,
+                            "downloadedFiles": await self._get_downloaded_files(
+                                matched_scanner, model_version_id
+                            ),
                         }
                     )
 
                 history_service = await self._get_download_history_service()
                 has_been_downloaded = False
                 history_type = None
-                for candidate_type in ("lora", "checkpoint", "embedding"):
+                for candidate_type in ("lora", "checkpoint", "embedding", "other"):
                     if await history_service.has_been_downloaded(
                         candidate_type,
                         model_version_id,
@@ -2144,12 +2490,14 @@ class ModelLibraryHandler:
                         "exists": False,
                         "modelType": history_type,
                         "hasBeenDownloaded": has_been_downloaded,
+                        "downloadedFiles": [],
                     }
                 )
 
             lora_versions = await lora_scanner.get_model_versions_by_id(model_id)
             checkpoint_versions = []
             embedding_versions = []
+            other_versions = []
             if not lora_versions and checkpoint_scanner:
                 checkpoint_versions = await checkpoint_scanner.get_model_versions_by_id(
                     model_id
@@ -2158,6 +2506,13 @@ class ModelLibraryHandler:
                 embedding_versions = await embedding_scanner.get_model_versions_by_id(
                     model_id
                 )
+            if (
+                not lora_versions
+                and not checkpoint_versions
+                and not embedding_versions
+                and other_scanner
+            ):
+                other_versions = await other_scanner.get_model_versions_by_id(model_id)
 
             model_type = None
             versions = []
@@ -2189,9 +2544,18 @@ class ModelLibraryHandler:
                         "downloadedVersionIds": [],
                     }
                 )
+            if other_versions:
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "other",
+                        "versions": self._with_downloaded_flag(other_versions),
+                        "downloadedVersionIds": [],
+                    }
+                )
 
             history_service = await self._get_download_history_service()
-            for candidate_type in ("lora", "checkpoint", "embedding"):
+            for candidate_type in ("lora", "checkpoint", "embedding", "other"):
                 candidate_downloaded_version_ids = (
                     await history_service.get_downloaded_version_ids(
                         candidate_type,
@@ -2246,6 +2610,11 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
+            # Opt-in: keep the other probe last so model cards for lora /
+            # checkpoint / embedding ids are unaffected by the extra scanner.
+            other_scanner = None
+            if get_settings_manager().is_other_models_enabled():
+                other_scanner = await self._service_registry.get_other_scanner()
 
             results: list[dict[str, Any]] = []
             for model_id in model_ids:
@@ -2277,6 +2646,17 @@ class ModelLibraryHandler:
                             "modelId": model_id,
                             "modelType": "embedding",
                             "versions": self._with_downloaded_flag(embedding_versions),
+                            "downloadedVersionIds": [],
+                        })
+                        continue
+
+                if other_scanner:
+                    other_versions = await other_scanner.get_model_versions_by_id(model_id)
+                    if other_versions:
+                        results.append({
+                            "modelId": model_id,
+                            "modelType": "other",
+                            "versions": self._with_downloaded_flag(other_versions),
                             "downloadedVersionIds": [],
                         })
                         continue
@@ -2428,8 +2808,8 @@ class ModelLibraryHandler:
             embedding_scanner = await self._service_registry.get_embedding_scanner()
 
             found_type = None
-            file_path = None
             found_cache = None
+            entries: list = []
 
             for model_type, scanner in (
                 ("lora", lora_scanner),
@@ -2440,27 +2820,43 @@ class ModelLibraryHandler:
                 if cache and model_version_id in cache.version_index:
                     found_type = model_type
                     found_cache = cache
-                    entry = cache.version_index[model_version_id]
-                    file_path = entry.get("file_path")
+                    # A version can have several local files (#1058); collect
+                    # them all so the delete below covers every file.
+                    files_getter = getattr(cache, "get_files_by_version_id", None)
+                    if files_getter is not None:
+                        entries = files_getter(model_version_id)
+                    else:
+                        entries = [cache.version_index[model_version_id]]
                     break
 
-            if not file_path:
+            file_paths = [
+                entry.get("file_path")
+                for entry in entries
+                if isinstance(entry, dict) and entry.get("file_path")
+            ]
+
+            if not file_paths:
                 return web.json_response(
                     {"success": False, "error": "Model version not found in any scanner cache"},
                     status=404,
                 )
 
-            target_dir = os.path.dirname(file_path)
-            base_name = os.path.basename(file_path)
-            file_name, extension = os.path.splitext(base_name)
-            await delete_model_artifacts(target_dir, file_name, main_extension=extension)
+            for file_path in file_paths:
+                target_dir = os.path.dirname(file_path)
+                base_name = os.path.basename(file_path)
+                file_name, extension = os.path.splitext(base_name)
+                await delete_model_artifacts(target_dir, file_name, main_extension=extension)
 
             if found_cache:
+                removed_paths = set(file_paths)
                 found_cache.raw_data = [
                     item
                     for item in found_cache.raw_data
-                    if item.get("file_path") != file_path
+                    if item.get("file_path") not in removed_paths
                 ]
+                rebuild = getattr(found_cache, "rebuild_version_index", None)
+                if rebuild is not None:
+                    rebuild()
                 await found_cache.resort()
 
             scanner_map = {
@@ -2483,6 +2879,7 @@ class ModelLibraryHandler:
                     "success": True,
                     "modelType": found_type,
                     "modelVersionId": model_version_id,
+                    "deletedFiles": len(file_paths),
                 }
             )
         except Exception as exc:
@@ -2516,9 +2913,10 @@ class ModelLibraryHandler:
 
             try:
                 response = await metadata_provider.get_model_versions(model_id)
-            except ResourceNotFoundError:
+            except ResourceNotFoundError as exc:
                 return web.json_response(
-                    {"success": False, "error": "Model not found"}, status=404
+                    {"success": False, "error": str(exc) or "Model not found"},
+                    status=404,
                 )
             if not response or not response.get("modelVersions"):
                 return web.json_response(
@@ -2531,12 +2929,40 @@ class ModelLibraryHandler:
 
             normalized_type, scanner = await self._get_scanner_for_type(model_type)
             if not normalized_type:
+                # The lookup cannot be served as a fully interactive list. Two
+                # cases share this branch: a CivitAI type with no scanner at all
+                # (Wildcards, Workflows, Hypernetwork, Poses, AestheticGradient)
+                # and an Other-model type while the opt-in master switch is off.
+                # Answer 200 with the CivitAI list marked read-only plus a
+                # machine-readable reason, so clients can still show the
+                # versions and explain why the actions are missing. Legacy
+                # clients keep working: they only read `success`/`versions`.
+                reason = (
+                    "other_models_disabled"
+                    if self._normalize_model_type(model_type) == "other"
+                    else "model_type_unsupported"
+                )
                 return web.json_response(
                     {
-                        "success": False,
-                        "error": f'Model type "{model_type}" is not supported',
-                    },
-                    status=400,
+                        "success": True,
+                        "modelId": model_id,
+                        "modelName": model_name,
+                        "modelType": model_type,
+                        "supported": False,
+                        "reason": reason,
+                        "versions": [
+                            {
+                                "id": version.get("id"),
+                                "name": version.get("name", ""),
+                                "thumbnailUrl": version.get("images")[0]["url"]
+                                if version.get("images")
+                                else None,
+                                "inLibrary": False,
+                                "hasBeenDownloaded": False,
+                            }
+                            for version in versions
+                        ],
+                    }
                 )
 
             if not scanner:
@@ -2578,6 +3004,7 @@ class ModelLibraryHandler:
                     "modelId": model_id,
                     "modelName": model_name,
                     "modelType": model_type,
+                    "supported": True,
                     "versions": enriched_versions,
                 }
             )
@@ -2652,12 +3079,32 @@ class ModelLibraryHandler:
                 model_type.lower() for model_type in CIVITAI_USER_MODEL_TYPES
             }
             lora_type_aliases = {model_type.lower() for model_type in VALID_LORA_TYPES}
+            other_type_aliases = {
+                model_type.lower() for model_type in VALID_OTHER_CIVITAI_TYPES
+            }
+
+            # Acquire the other scanner lazily so adapters without it only
+            # fail when the payload actually contains other-type models.
+            # While the opt-in feature is off the scanner still exists (its
+            # cache is empty), so other types simply report inLibrary=False.
+            needs_other_scanner = any(
+                isinstance(model, dict)
+                and str(model.get("type", "")).lower() in other_type_aliases
+                for model in models
+            )
+            other_scanner = None
+            if needs_other_scanner:
+                other_scanner = await self._service_registry.get_other_scanner()
 
             type_scanner_map: Dict[str, Any] = {
                 **{alias: lora_scanner for alias in lora_type_aliases},
                 "checkpoint": checkpoint_scanner,
                 "textualinversion": embedding_scanner,
             }
+            if other_scanner is not None:
+                type_scanner_map.update(
+                    {alias: other_scanner for alias in other_type_aliases}
+                )
 
             versions: list[dict[str, Any]] = []
             history_service = await self._get_download_history_service()
@@ -2681,12 +3128,17 @@ class ModelLibraryHandler:
                 "embedding",
                 model_ids,
             )
+            other_downloaded = await history_service.get_downloaded_version_ids_bulk(
+                "other",
+                model_ids,
+            )
             downloaded_version_map: Dict[str, Dict[int, set[int]]] = {
                 "lora": lora_downloaded,
                 "locon": lora_downloaded,
                 "dora": lora_downloaded,
                 "checkpoint": checkpoint_downloaded,
                 "textualinversion": embedding_downloaded,
+                **{alias: other_downloaded for alias in VALID_OTHER_CIVITAI_TYPES},
             }
             for model in models:
                 if not isinstance(model, dict):
@@ -3029,10 +3481,79 @@ class FileSystemHandler:
             elif sys.platform == "darwin":
                 subprocess.Popen(["open", path])
             else:
+                if not _has_gui_display():
+                    # Headless/SSH session: xdg-open cannot open a file
+                    # manager, so hand the path to the browser for copying
+                    # instead of reporting a success that never happened.
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "message": "Headless session: path available for copying",
+                            "path": path,
+                            "mode": "clipboard",
+                        }
+                    )
                 subprocess.Popen(["xdg-open", path])
 
         return web.json_response(
             {"success": True, "message": f"Opened folder: {path}", "path": path}
+        )
+
+    async def _reveal_file(self, file_path: str) -> web.Response:
+        """Open the platform file manager with ``file_path`` selected."""
+        if os.name == "nt":
+            subprocess.Popen(["explorer", "/select,", file_path])
+        elif os.name == "posix":
+            if _is_docker():
+                return web.json_response(
+                    {
+                        "success": True,
+                        "message": "Running in Docker: Path available for copying",
+                        "path": file_path,
+                        "mode": "clipboard",
+                    }
+                )
+            elif _is_wsl():
+                windows_path = _wsl_to_windows_path(file_path)
+                if windows_path:
+                    subprocess.Popen(["explorer.exe", "/select,", windows_path])
+                else:
+                    logger.error(
+                        "Failed to convert WSL path to Windows path: %s", file_path
+                    )
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "Failed to open file location: path conversion error",
+                        },
+                        status=500,
+                    )
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", file_path])
+            else:
+                if not _has_gui_display():
+                    # Headless/SSH session: no file manager to open, so
+                    # hand the path to the browser for copying instead
+                    # of reporting a success that never happened.
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "message": "Headless session: path available for copying",
+                            "path": file_path,
+                            "mode": "clipboard",
+                        }
+                    )
+                selected = _select_in_linux_file_manager(file_path)
+                if not selected:
+                    folder = os.path.dirname(file_path)
+                    subprocess.Popen(["xdg-open", folder])
+
+        return web.json_response(
+            {
+                "success": True,
+                "message": f"Opened folder and selected file: {file_path}",
+                "path": file_path,
+            }
         )
 
     async def open_file_location(self, request: web.Request) -> web.Response:
@@ -3050,47 +3571,47 @@ class FileSystemHandler:
                     {"success": False, "error": "File does not exist"}, status=404
                 )
 
-            if os.name == "nt":
-                subprocess.Popen(["explorer", "/select,", file_path])
-            elif os.name == "posix":
-                if _is_docker():
-                    return web.json_response(
-                        {
-                            "success": True,
-                            "message": "Running in Docker: Path available for copying",
-                            "path": file_path,
-                            "mode": "clipboard",
-                        }
-                    )
-                elif _is_wsl():
-                    windows_path = _wsl_to_windows_path(file_path)
-                    if windows_path:
-                        subprocess.Popen(["explorer.exe", "/select,", windows_path])
-                    else:
-                        logger.error(
-                            "Failed to convert WSL path to Windows path: %s", file_path
-                        )
-                        return web.json_response(
-                            {
-                                "success": False,
-                                "error": "Failed to open file location: path conversion error",
-                            },
-                            status=500,
-                        )
-                elif sys.platform == "darwin":
-                    subprocess.Popen(["open", "-R", file_path])
-                else:
-                    folder = os.path.dirname(file_path)
-                    subprocess.Popen(["xdg-open", folder])
-
-            return web.json_response(
-                {
-                    "success": True,
-                    "message": f"Opened folder and selected file: {file_path}",
-                }
-            )
+            return await self._reveal_file(file_path)
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to open file location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def open_model_sidecar_location(self, request: web.Request) -> web.Response:
+        """Reveal the model's ``.metadata.json`` sidecar in the file manager.
+
+        Sidecar/preview path derivation must go through
+        :mod:`py.utils.sidecar_paths` so centralized storage mode resolves to
+        the mirror tree.  When the sidecar has not been written yet, the
+        containing sidecar directory is opened instead.
+        """
+        try:
+            data = await request.json()
+            file_path = data.get("file_path")
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "Missing file_path parameter"},
+                    status=400,
+                )
+            file_path = os.path.abspath(file_path)
+            if not os.path.isfile(file_path):
+                return web.json_response(
+                    {"success": False, "error": "File does not exist"}, status=404
+                )
+
+            metadata_path = get_metadata_path(file_path)
+            if os.path.isfile(metadata_path):
+                return await self._reveal_file(metadata_path)
+
+            sidecar_dir = get_sidecar_dir(file_path)
+            if os.path.isdir(sidecar_dir):
+                return await self._open_path(sidecar_dir)
+
+            return web.json_response(
+                {"success": False, "error": "Sidecar does not exist yet"},
+                status=404,
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to open sidecar location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def open_settings_location(self, request: web.Request) -> web.Response:
@@ -3140,6 +3661,18 @@ class FileSystemHandler:
                     subprocess.Popen(["open", "-R", settings_file])
                 else:
                     folder = os.path.dirname(settings_file)
+                    if not _has_gui_display():
+                        # Headless/SSH session: xdg-open cannot open a file
+                        # manager, so hand the path to the browser for copying
+                        # instead of reporting a success that never happened.
+                        return web.json_response(
+                            {
+                                "success": True,
+                                "message": "Headless session: path available for copying",
+                                "path": settings_file,
+                                "mode": "clipboard",
+                            }
+                        )
                     subprocess.Popen(["xdg-open", folder])
 
             return web.json_response(
@@ -3171,6 +3704,94 @@ class FileSystemHandler:
             return await self._open_path(wildcards_dir)
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to open wildcards location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def open_sidecar_location(self, request: web.Request) -> web.Response:
+        """Open the centralized sidecar storage root in the file manager."""
+
+        try:
+            root = get_configured_sidecar_root()
+            if not root:
+                return web.json_response(
+                    {"success": False, "error": "Sidecar storage root is not resolvable"},
+                    status=404,
+                )
+            # Create on demand so the button also works before the first
+            # migration/download has materialized the directory.
+            os.makedirs(root, exist_ok=True)
+            return await self._open_path(root)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to open sidecar location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def browse_directory(self, request: web.Request) -> web.Response:
+        """Browse a directory for the settings-UI directory picker."""
+        try:
+            data = await request.json()
+            payload, status = browse_directory(data.get("path", ""))
+            return web.json_response(payload, status=status)
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to browse directory: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def validate_path(self, request: web.Request) -> web.Response:
+        """Validate a filesystem path for the settings UI.
+
+        A well-formed request always returns HTTP 200; invalid paths are
+        reported via ``error_code`` in the payload. HTTP 400 is reserved for
+        malformed requests (missing path, invalid JSON).
+        """
+        try:
+            data = await request.json()
+            raw_path = data.get("path")
+            expect = data.get("expect", "directory")
+
+            if not raw_path or not isinstance(raw_path, str):
+                return web.json_response(
+                    {"success": False, "error": "Missing path parameter"}, status=400
+                )
+
+            # Business path convention: abspath only, never realpath.
+            path = os.path.abspath(os.path.expanduser(raw_path))
+
+            exists = os.path.exists(path)
+            is_directory = os.path.isdir(path) if exists else False
+            readable = bool(exists and os.access(path, os.R_OK))
+            writable = bool(exists and os.access(path, os.W_OK))
+
+            error_code = None
+            if not exists:
+                error_code = "path_not_found"
+            elif expect == "directory" and not is_directory:
+                error_code = "not_a_directory"
+            elif expect == "file" and not os.path.isfile(path):
+                error_code = "not_a_file"
+            elif not readable:
+                error_code = "not_readable"
+            elif not writable:
+                error_code = "not_writable"
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "path": path,
+                    "exists": exists,
+                    "is_directory": is_directory,
+                    "readable": readable,
+                    "writable": writable,
+                    "error_code": error_code,
+                }
+            )
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to validate path: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -3725,6 +4346,64 @@ class NodeRegistryHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class SidecarMigrationHandler:
+    """Migrate sidecar metadata and previews between storage layouts."""
+
+    _VALID_DIRECTIONS = ("to_centralized", "to_alongside", "relocate_root")
+
+    def __init__(
+        self,
+        *,
+        use_case_factory: Callable[[], SidecarMigrationUseCase] = SidecarMigrationUseCase,
+        progress_callback_factory: Callable[[], Any] = WebSocketBroadcastCallback,
+    ) -> None:
+        self._use_case_factory = use_case_factory
+        self._progress_callback_factory = progress_callback_factory
+
+    async def migrate_sidecars(self, request: web.Request) -> web.Response:
+        """Run a sidecar migration; accepts POST JSON or GET query params."""
+        try:
+            if request.method == "GET":
+                params: Mapping[str, Any] = request.query
+            else:
+                try:
+                    params = await request.json()
+                except Exception:  # empty/invalid body: fall back to query
+                    params = request.query
+
+            direction = str(params.get("direction") or "").strip()
+            if direction not in self._VALID_DIRECTIONS:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "direction must be 'to_centralized', 'to_alongside' or 'relocate_root'",
+                    },
+                    status=400,
+                )
+
+            force = params.get("force") in (True, 1, "true", "1")
+            old_root = str(params.get("old_root") or "").strip()
+            if direction == "relocate_root" and not old_root:
+                return web.json_response(
+                    {"success": False, "error": "old_root is required for relocate_root"},
+                    status=400,
+                )
+
+            use_case = self._use_case_factory()
+            progress_cb = self._progress_callback_factory()
+            result = await use_case.execute_with_error_handling(
+                direction=direction,
+                progress_cb=progress_cb,
+                force=force,
+                old_root=old_root,
+            )
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            logger.error("Sidecar migration failed: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
 class MiscHandlerSet:
     """Aggregate handlers into a lookup compatible with the registrar."""
 
@@ -3748,8 +4427,10 @@ class MiscHandlerSet:
         doctor: DoctorHandler,
         example_workflows: ExampleWorkflowsHandler,
         base_model: BaseModelHandlerSet,
-        hf_handler: Any = None,
+        model_source_handler: Any = None,
         agent_handler: Any = None,
+        download_routing: Any = None,
+        sidecar_migration: Any = None,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -3768,14 +4449,17 @@ class MiscHandlerSet:
         self.doctor = doctor
         self.example_workflows = example_workflows
         self.base_model = base_model
-        self.hf_handler = hf_handler
+        self.model_source_handler = model_source_handler
         self.agent_handler = agent_handler
+        self.download_routing = download_routing
+        self.sidecar_migration = sidecar_migration
 
     def to_route_mapping(
         self,
     ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         return {
             "health_check": self.health.health_check,
+            "get_init_status": self.health.get_init_status,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
@@ -3814,19 +4498,31 @@ class MiscHandlerSet:
             "open_settings_location": self.filesystem.open_settings_location,
             "open_backup_location": self.filesystem.open_backup_location,
             "open_wildcards_location": self.filesystem.open_wildcards_location,
+            "open_sidecar_location": self.filesystem.open_sidecar_location,
+            "open_model_sidecar_location": self.filesystem.open_model_sidecar_location,
+            "browse_directory": self.filesystem.browse_directory,
+            "validate_path": self.filesystem.validate_path,
             "search_custom_words": self.custom_words.search_custom_words,
             "search_wildcards": self.wildcards.search_wildcards,
             "get_supporters": self.supporters.get_supporters,
             "get_example_workflows": self.example_workflows.get_example_workflows,
             "get_example_workflow": self.example_workflows.get_example_workflow,
             # Hugging Face handlers
-            "get_hf_repo_files": self.hf_handler.get_hf_repo_files,
-            "download_hf_model": self.hf_handler.download_hf_model,
-            "set_hf_url": self.hf_handler.set_hf_url,
+            # External model sources (Hugging Face / ModelScope)
+            "list_model_source_files": self.model_source_handler.list_model_source_files,
+            "download_model_source": self.model_source_handler.download_model_source,
+            "get_hf_repo_files": self.model_source_handler.list_model_source_files,
+            "download_hf_model": self.model_source_handler.download_model_source,
+            "set_hf_url": self.model_source_handler.set_hf_url,
+            "get_model_sources": self.model_source_handler.get_model_sources,
             # Agent skill handlers
             "get_agent_skills": self.agent_handler.get_agent_skills,
             "execute_agent_skill": self.agent_handler.execute_agent_skill,
             "cancel_agent_skill": self.agent_handler.cancel_agent_skill,
+            # Download routing handler
+            "get_download_routing": self.download_routing.get_download_routing,
+            # Sidecar migration handler
+            "migrate_sidecars": self.sidecar_migration.migrate_sidecars,
             # Base model handlers
             "get_base_models": self.base_model.get_base_models,
             "refresh_base_models": self.base_model.refresh_base_models,
@@ -3840,6 +4536,7 @@ def build_service_registry_adapter() -> ServiceRegistryAdapter:
         get_lora_scanner=ServiceRegistry.get_lora_scanner,
         get_checkpoint_scanner=ServiceRegistry.get_checkpoint_scanner,
         get_embedding_scanner=ServiceRegistry.get_embedding_scanner,
+        get_other_scanner=ServiceRegistry.get_other_scanner,
         get_downloaded_version_history_service=ServiceRegistry.get_downloaded_version_history_service,
         get_backup_service=ServiceRegistry.get_backup_service,
     )

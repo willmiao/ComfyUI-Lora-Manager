@@ -1,0 +1,241 @@
+import { describe, it, expect } from 'vitest';
+import { DownloadManager } from '../../../static/js/managers/DownloadManager.js';
+
+describe('DownloadManager.detectUrlType — external model source URLs', () => {
+
+    it('detects HF resolve URL with file', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/dx8152/Flux2-Klein-9B-Consistency/resolve/main/Flux2-Klein-9B-consistency-V2.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'huggingface',
+            repo: 'dx8152/Flux2-Klein-9B-Consistency',
+            revision: 'main',
+            filename: 'Flux2-Klein-9B-consistency-V2.safetensors',
+        });
+    });
+
+    it('detects HF resolve URL with subdirectory file', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/user/repo/resolve/main/subdir/model.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'huggingface',
+            repo: 'user/repo',
+            revision: 'main',
+            filename: 'subdir/model.safetensors',
+        });
+    });
+
+    it('detects HF repo URL (full URL)', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/dx8152/Flux2-Klein-9B-Consistency'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'huggingface',
+            repo: 'dx8152/Flux2-Klein-9B-Consistency',
+        });
+    });
+
+    it('detects HF repo URL (bare user/repo)', () => {
+        const result = DownloadManager.detectUrlType('dx8152/Flux2-Klein-9B-Consistency');
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'huggingface',
+            repo: 'dx8152/Flux2-Klein-9B-Consistency',
+        });
+    });
+
+    it('detects HF repo URL with trailing slash', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/user/repo/'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'huggingface',
+            repo: 'user/repo',
+        });
+    });
+
+    it('detects HF blob (web preview) URL as resolve', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/Comfy-Org/z_image_turbo/blob/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'huggingface',
+            repo: 'Comfy-Org/z_image_turbo',
+            revision: 'main',
+            filename: 'split_files/diffusion_models/z_image_turbo_bf16.safetensors',
+        });
+    });
+
+    it('detects CivitAI URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.com/models/123/some-model'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
+    it('detects CivitAI URL on civitai.red domain', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.red/models/12345/my-model'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
+    it('detects CivitAI URL on civitai.green domain', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.green/models/67890/another-model'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
+    it('detects CivArchive URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civarchive.com/models/456'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
+    it('detects direct HTTP URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://example.com/file.zip'
+        );
+        expect(result).toEqual({ type: 'direct-http' });
+    });
+
+    it('returns null for invalid input', () => {
+        expect(DownloadManager.detectUrlType('')).toBeNull();
+        expect(DownloadManager.detectUrlType('   ')).toBeNull();
+    });
+
+    it('returns null for unrecognized path', () => {
+        expect(DownloadManager.detectUrlType('justrandomtext')).toBeNull();
+    });
+
+    it('prefers HF resolve over repo when both match', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/user/repo/resolve/main/file.safetensors'
+        );
+        expect(result?.type).toBe('model-source-file');
+    });
+
+    it('prefers CivitAI over HF when both match', () => {
+        // CivitAI check comes first in detectUrlType
+        // This URL should be detected as CivitAI, not HF
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.com/models/123?huggingface.co/test/repo'
+        );
+        expect(result?.type).toBe('civitai');
+    });
+
+    it('detects a ModelScope repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/jj3550945163/Krea-2-LORA'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope',
+            repo: 'jj3550945163/Krea-2-LORA',
+        });
+    });
+
+    it('detects a ModelScope file URL with revision and subdirectory', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/AI-ModelScope/stable-diffusion-v1-5/resolve/master/vae/diffusion_pytorch_model.bin'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'modelscope',
+            repo: 'AI-ModelScope/stable-diffusion-v1-5',
+            revision: 'master',
+            filename: 'vae/diffusion_pytorch_model.bin',
+        });
+    });
+
+    it('detects a ModelScope view sub-page as a repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.cn/models/user/repo/summary'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope',
+            repo: 'user/repo',
+        });
+    });
+
+    it('does not treat a bare owner/name as ModelScope', () => {
+        // The shorthand has always meant Hugging Face; ModelScope needs its host.
+        const result = DownloadManager.detectUrlType('user/repo');
+        expect(result.platform).toBe('huggingface');
+    });
+
+    // modelscope.ai is a separate catalogue from modelscope.cn, not an alias,
+    // so it carries its own platform id all the way to the backend.
+    it('detects a ModelScope International repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope-ai',
+            repo: 'referall13/EM1',
+        });
+    });
+
+    it('detects a ModelScope International repo URL without the www prefix', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.ai/models/ErLubu/krea2_style_260911_02'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope-ai',
+            repo: 'ErLubu/krea2_style_260911_02',
+        });
+    });
+
+    it('detects a ModelScope International file URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1/resolve/master/EM1_c1-st1000.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'modelscope-ai',
+            repo: 'referall13/EM1',
+            revision: 'master',
+            filename: 'EM1_c1-st1000.safetensors',
+        });
+    });
+
+    it('keeps the two ModelScope deployments distinct', () => {
+        const mainland = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/referall13/EM1'
+        );
+        const intl = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1'
+        );
+        expect(mainland.platform).toBe('modelscope');
+        expect(intl.platform).toBe('modelscope-ai');
+    });
+
+    it('detects an OpenModelDB model URL with its flat id', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://openmodeldb.info/models/4x-UltraSharp'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'openmodeldb',
+            repo: '4x-UltraSharp',
+        });
+    });
+
+    it('rejects path traversal in either platform', () => {
+        expect(
+            DownloadManager.detectUrlType('https://modelscope.cn/models/../etc/passwd')
+        ).toBeNull();
+    });
+});

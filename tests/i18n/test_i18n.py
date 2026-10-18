@@ -248,3 +248,43 @@ def test_static_sources_only_use_existing_translations(
         "Static sources reference missing translation keys: "
         f"{missing_keys[:20]}" + ("..." if len(missing_keys) > 20 else "")
     )
+
+
+# The reference file is hand-maintained with 2-space indent; every other locale
+# is written by scripts/sync_translation_keys.py with 4-space indent. Both keep
+# raw non-ASCII and exactly one trailing newline.
+REFERENCE_INDENT = 2
+TRANSLATION_INDENT = 4
+
+
+def test_locale_files_keep_their_maintained_layout():
+    """A re-serialising edit must fail here instead of landing as a huge diff.
+
+    Loading a locale with ``json.load`` and dumping it back with a different
+    ``indent`` rewrites every line: changing two strings once produced a
+    26k-line diff that had to be reverted and redone in place. Values belong in
+    place (a targeted text edit), keys belong to ``sync_translation_keys.py``.
+    """
+
+    offenders = []
+    for locale in EXPECTED_LOCALES:
+        path = LOCALES_DIR / f"{locale}.json"
+        raw = path.read_text(encoding="utf-8")
+        indent = REFERENCE_INDENT if locale == "en" else TRANSLATION_INDENT
+        canonical = (
+            json.dumps(
+                json.loads(raw),
+                indent=indent,
+                ensure_ascii=False,
+                separators=(",", ": "),
+            )
+            + "\n"
+        )
+        if raw != canonical:
+            offenders.append(path.name)
+
+    assert not offenders, (
+        "these locale files were reformatted: "
+        f"{offenders}. Keep en.json at indent=2 and the others at indent=4 "
+        "(ensure_ascii=False, one trailing newline) and edit values in place."
+    )

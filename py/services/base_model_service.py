@@ -7,7 +7,7 @@ import logging
 import os
 import time
 
-from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES
+from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES, VALID_OTHER_SUB_TYPES
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
 from ..utils.usage_stats import UsageStats
@@ -21,11 +21,13 @@ from .model_query import (
     resolve_sub_type,
 )
 from .settings_manager import get_settings_manager
+from .model_sources import source_group_key
 from ..utils.civitai_utils import build_civitai_model_page_url
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from .model_scanner import ReconcileScope
     from .model_update_service import ModelUpdateService
 
 
@@ -633,6 +635,13 @@ class BaseModelService(ABC):
         except Exception:
             hide_early_access = False
 
+        # Check user setting for hiding permanent paid updates
+        hide_paid = False
+        try:
+            hide_paid = bool(self.settings.get("hide_paid_updates", False))
+        except Exception:
+            hide_paid = False
+
         records = None
         resolved: Optional[Dict[int, bool]] = None
         if same_base_mode:
@@ -641,7 +650,10 @@ class BaseModelService(ABC):
                 try:
                     records = await cast(Awaitable[Any], record_method(self.model_type, ordered_ids))
                     resolved = {
-                        model_id: record.has_update(hide_early_access=hide_early_access)
+                        model_id: record.has_update(
+                            hide_early_access=hide_early_access,
+                            hide_paid=hide_paid,
+                        )
                         for model_id, record in records.items()
                     }
                 except Exception as exc:
@@ -663,6 +675,7 @@ class BaseModelService(ABC):
                         self.model_type,
                         ordered_ids,
                         hide_early_access=hide_early_access,
+                        hide_paid=hide_paid,
                     ))
                 except Exception as exc:
                     logger.error(
@@ -677,7 +690,10 @@ class BaseModelService(ABC):
         if resolved is None:
             tasks = [
                 self.update_service.has_update(
-                    self.model_type, model_id, hide_early_access=hide_early_access
+                    self.model_type,
+                    model_id,
+                    hide_early_access=hide_early_access,
+                    hide_paid=hide_paid,
                 )
                 for model_id in ordered_ids
             ]
@@ -717,6 +733,7 @@ class BaseModelService(ABC):
                         threshold_version,
                         base_model,
                         hide_early_access=hide_early_access,
+                        hide_paid=hide_paid,
                     )
                 else:
                     flag = default_flag
@@ -725,31 +742,30 @@ class BaseModelService(ABC):
         return annotated
 
     @staticmethod
-    def _extract_hf_group_key(item: Dict[str, Any]) -> Optional[str]:
-        """Extract `hf:{owner}/{repo}` from item's ``hf_url``, or None."""
-        hf_url = item.get("hf_url") if isinstance(item, dict) else None
-        if not hf_url or not isinstance(hf_url, str):
-            return None
-        m = re.match(
-            r"https?://huggingface\.co/([^/]+/[^/]+)", hf_url.strip()
-        )
-        if not m:
-            return None
-        return f"hf:{m.group(1)}"
+    def _extract_source_group_key(item: Dict[str, Any]) -> Optional[str]:
+        """Return the external-source group key for *item*, or None.
+
+        Only sources with a site-native model identity yield a key:
+        ModelScope groups by its published-model id (``ms:{id}``), TensorArt
+        by its numeric model id (``ta:{id}``); Hugging Face models never
+        group (see :meth:`ModelSource.group_key`).
+        """
+        return source_group_key(item)
 
     @staticmethod
     def _extract_group_key(item: Dict[str, Any]) -> Union[int, str, None]:
-        """Return the group identity key: CivitAI modelId (int) or HF repo (str).
+        """Return the group identity key.
 
         Preference order:
         1. CivitAI ``modelId`` (int)
-        2. HF repo identity ``hf:{owner}/{repo}`` (str)
+        2. External model source identity, e.g. ``ms:{model_id}``,
+           ``ta:{model_id}`` (str)
         3. ``None`` (no known grouping source)
         """
         mid = BaseModelService._extract_model_id(item)
         if mid is not None:
             return mid
-        return BaseModelService._extract_hf_group_key(item)
+        return BaseModelService._extract_source_group_key(item)
 
     @staticmethod
     def _extract_model_id(item: Dict[str, Any]) -> Optional[int]:
@@ -889,6 +905,11 @@ class BaseModelService(ABC):
                 and normalized_type not in VALID_CHECKPOINT_SUB_TYPES
             ):
                 continue
+            if (
+                self.model_type == "other"
+                and normalized_type not in VALID_OTHER_SUB_TYPES
+            ):
+                continue
 
             type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
 
@@ -916,12 +937,33 @@ class BaseModelService(ABC):
         return self.scanner.get_hash_by_path(file_path)
 
     async def scan_models(
-        self, force_refresh: bool = False, rebuild_cache: bool = False
-    ):
-        """Trigger model scanning"""
-        return await self.scanner.get_cached_data(
-            force_refresh=force_refresh, rebuild_cache=rebuild_cache
+        self,
+        force_refresh: bool = False,
+        rebuild_cache: bool = False,
+        scope: Optional["ReconcileScope"] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Trigger model scanning, optionally restricted to a scope.
+
+        Returns the reconcile summary (added / removed / repaired / skipped
+        roots / kept entries) for incremental scans, ``None`` for a full
+        rebuild.
+        """
+        await self.scanner.get_cached_data(
+            force_refresh=force_refresh, rebuild_cache=rebuild_cache, scope=scope
         )
+        return self.scanner.last_reconcile_summary
+
+    def describe_model_roots(self) -> List[Dict[str, Any]]:
+        """Describe configured roots (label / reachability / cached count).
+
+        Pure read: callers that want a drive which was plugged in after startup to
+        appear as a normal row call :meth:`refresh_model_roots` first.
+        """
+        return self.scanner.describe_model_roots()
+
+    def refresh_model_roots(self) -> List[str]:
+        """Admit configured roots that became readable again (append-only)."""
+        return self.scanner.refresh_model_roots()
 
     async def get_model_info_by_name(self, name: str):
         """Get model information by name"""
@@ -957,14 +999,25 @@ class BaseModelService(ABC):
         )
         return {k: data[k] for k in fields if k in data}
 
-    async def get_folder_tree(self, model_root: str) -> Dict[str, Any]:
+    async def _get_tree_folders(self, cache, include_empty: bool) -> List[str]:
+        """Return the folder list backing folder tree responses.
+
+        With ``include_empty`` the directories are enumerated live from the
+        filesystem (including empty ones) via the scanner; otherwise the
+        models-only ``cache.folders`` list is used unchanged.
+        """
+        if include_empty:
+            return await self.scanner.get_all_folders()
+        return cache.folders
+
+    async def get_folder_tree(self, model_root: str, include_empty: bool = False) -> Dict[str, Any]:
         """Get hierarchical folder tree for a specific model root"""
         cache = await self.scanner.get_cached_data()
 
         # Build tree structure from folders
         tree = {}
 
-        for folder in cache.folders:
+        for folder in await self._get_tree_folders(cache, include_empty):
             # Check if this folder belongs to the specified model root
             folder_belongs_to_root = False
             for root in self.scanner.get_model_roots():
@@ -986,7 +1039,7 @@ class BaseModelService(ABC):
 
         return tree
 
-    async def get_unified_folder_tree(self) -> Dict[str, Any]:
+    async def get_unified_folder_tree(self, include_empty: bool = False) -> Dict[str, Any]:
         """Get unified folder tree across all model roots"""
         cache = await self.scanner.get_cached_data()
 
@@ -996,7 +1049,7 @@ class BaseModelService(ABC):
         # Get all model roots for path normalization
         model_roots = self.scanner.get_model_roots()
 
-        for folder in cache.folders:
+        for folder in await self._get_tree_folders(cache, include_empty):
             if not folder:  # Skip empty folders
                 continue
 
@@ -1269,6 +1322,27 @@ class BaseModelService(ABC):
             path_for_sorting,
         )
 
+    @staticmethod
+    def _relative_path_folder_group_sort_key(
+        relative_path: str, include_terms: List[str]
+    ) -> tuple:
+        """Group paths by folder, then sort by relevance within each group.
+
+        Folders are ordered alphabetically (case-insensitive) by their full
+        folder path, with root-level files (empty folder) first. Within a
+        folder, paths keep the relevance ordering of
+        ``_relative_path_sort_key``. This keeps same-folder entries together
+        in the autocomplete dropdown instead of interleaving them by filename.
+        """
+        path_for_sorting = BaseModelService._remove_model_extension(
+            relative_path.lower()
+        )
+        folder = path_for_sorting.rpartition(os.sep)[0]
+
+        return (folder,) + BaseModelService._relative_path_sort_key(
+            relative_path, include_terms
+        )
+
     async def search_relative_paths(
         self,
         search_term: str,
@@ -1378,9 +1452,13 @@ class BaseModelService(ABC):
             ):
                 matching_paths.append(relative_path)
 
-        # Sort by relevance (prefix and earliest hits first, then by length and alphabetically)
+        # Group by folder (root first, then alphabetically) and sort by
+        # relevance (prefix and earliest hits, then length and alphabetically)
+        # within each folder group.
         matching_paths.sort(
-            key=lambda relative: self._relative_path_sort_key(relative, include_terms)
+            key=lambda relative: self._relative_path_folder_group_sort_key(
+                relative, include_terms
+            )
         )
 
         # Apply offset and limit

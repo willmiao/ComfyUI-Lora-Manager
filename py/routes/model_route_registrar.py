@@ -40,10 +40,23 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/{prefix}/verify-duplicates", "verify_duplicates"),
     RouteDefinition("POST", "/api/lm/{prefix}/move_model", "move_model"),
     RouteDefinition("POST", "/api/lm/{prefix}/move_models_bulk", "move_models_bulk"),
+    RouteDefinition("POST", "/api/lm/{prefix}/create-folder", "create_folder"),
+    RouteDefinition("POST", "/api/lm/{prefix}/delete-folder", "delete_folder"),
+    # Forgetting a folder that is gone from disk is a state change, so it takes
+    # GET with query params too (the browser extension is GET-only by convention).
+    RouteDefinition("POST", "/api/lm/{prefix}/forget-folder", "forget_folder"),
+    RouteDefinition("GET", "/api/lm/{prefix}/forget-folder", "forget_folder"),
+    RouteDefinition("POST", "/api/lm/{prefix}/rename-folder", "rename_folder"),
     RouteDefinition("GET", "/api/lm/{prefix}/auto-organize", "auto_organize_models"),
     RouteDefinition("POST", "/api/lm/{prefix}/auto-organize", "auto_organize_models"),
     RouteDefinition(
         "GET", "/api/lm/{prefix}/auto-organize-progress", "get_auto_organize_progress"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/{prefix}/apply-filename-template", "apply_filename_template"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/{prefix}/apply-filename-template", "apply_filename_template"
     ),
     RouteDefinition("GET", "/api/lm/{prefix}/top-tags", "get_top_tags"),
     RouteDefinition("GET", "/api/lm/{prefix}/search-tags", "search_tags"),
@@ -52,6 +65,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/{prefix}/scan", "scan_models"),
     RouteDefinition("GET", "/api/lm/{prefix}/roots", "get_model_roots"),
     RouteDefinition("GET", "/api/lm/{prefix}/folders", "get_folders"),
+    RouteDefinition("GET", "/api/lm/{prefix}/resolve-folder", "resolve_folder"),
     RouteDefinition("GET", "/api/lm/{prefix}/folder-tree", "get_folder_tree"),
     RouteDefinition(
         "GET", "/api/lm/{prefix}/unified-folder-tree", "get_unified_folder_tree"
@@ -68,6 +82,8 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
         "GET", "/api/lm/{prefix}/model-description", "get_model_description"
     ),
     RouteDefinition("GET", "/api/lm/{prefix}/relative-paths", "get_relative_paths"),
+    RouteDefinition("PUT", "/api/lm/{prefix}/active-filters", "update_active_filters"),
+    RouteDefinition("GET", "/api/lm/{prefix}/active-filters", "get_active_filters"),
     RouteDefinition(
         "GET", "/api/lm/{prefix}/civitai/versions/{model_id}", "get_civitai_versions"
     ),

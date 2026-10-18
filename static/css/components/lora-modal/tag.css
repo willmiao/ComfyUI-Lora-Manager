@@ -62,7 +62,7 @@
 
 .model-tag-more {
   background: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   border-radius: var(--border-radius-xs);
   padding: 2px 8px;
   font-size: 0.75em;

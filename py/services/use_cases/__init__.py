@@ -20,6 +20,11 @@ from .example_images import (
     ImportExampleImagesUseCase,
     ImportExampleImagesValidationError,
 )
+from .filename_template_use_case import FilenameTemplateUseCase
+from .sidecar_migration_use_case import (
+    SidecarMigrationProgressReporter,
+    SidecarMigrationUseCase,
+)
 
 __all__ = [
     "AutoOrganizeInProgressError",
@@ -34,4 +39,7 @@ __all__ = [
     "DownloadExampleImagesUseCase",
     "ImportExampleImagesUseCase",
     "ImportExampleImagesValidationError",
+    "FilenameTemplateUseCase",
+    "SidecarMigrationProgressReporter",
+    "SidecarMigrationUseCase",
 ]

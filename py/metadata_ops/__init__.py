@@ -36,6 +36,7 @@ SCANNER_TYPE_MAP: dict[str, str] = {
     "get_lora_scanner": "lora",
     "get_checkpoint_scanner": "checkpoint",
     "get_embedding_scanner": "embedding",
+    "get_other_scanner": "other",
 }
 
 SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
@@ -80,8 +81,8 @@ async def _find_scanner_for_model(
 
 
 async def identify_model_type(model_path: str) -> str:
-    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``, or
-    ``\"embedding\"``) for *model_path*.
+    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``,
+    ``\"embedding\"``, or ``\"other\"``) for *model_path*.
 
     Falls back to ``\"lora\"`` when unknown.
     """
@@ -171,12 +172,16 @@ async def download_preview(
     """
     from ..services.downloader import get_downloader
     from ..utils.exif_utils import ExifUtils
+    from ..utils.sidecar_paths import get_preview_dir
 
     if not url or not url.strip():
         return None
 
     base_name = os.path.splitext(os.path.basename(model_path))[0]
-    preview_dir = os.path.dirname(model_path)
+    preview_dir = get_preview_dir(model_path)
+    # Centralized mirrors may not exist yet (unlike the model's own directory
+    # in alongside mode).
+    os.makedirs(preview_dir, exist_ok=True)
     output_path = os.path.join(preview_dir, base_name + ".webp")
 
     downloader = await get_downloader()

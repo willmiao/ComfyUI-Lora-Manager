@@ -7,6 +7,10 @@ import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { FilterPresetManager, EMPTY_WILDCARD_MARKER } from './FilterPresetManager.js';
 
+// LoRA availability statuses available on the recipes page. No statuses
+// selected (the default) means no filtering.
+const LORA_AVAILABILITY_STATUSES = ['ready', 'missing', 'deleted'];
+
 export class FilterManager {
     constructor(options = {}) {
         this.options = {
@@ -72,6 +76,16 @@ export class FilterManager {
         // Add click handlers for license filter tags if supported on this page
         if (this.shouldShowLicenseFilters()) {
             this.initializeLicenseFilters();
+        }
+
+        // Add click handlers for LoRA availability tags (recipes page only)
+        if (this.shouldShowLoraAvailabilityFilter()) {
+            this.initializeLoraAvailabilityFilters();
+        }
+
+        // Add click handler for the has-workflow chip (recipes page only)
+        if (this.shouldShowLoraAvailabilityFilter()) {
+            this.initializeHasWorkflowFilter();
         }
 
         // Initialize tag logic toggle
@@ -421,6 +435,65 @@ export class FilterManager {
         });
     }
 
+    initializeLoraAvailabilityFilters() {
+        const availabilityTags = document.querySelectorAll('.lora-availability-tag');
+        availabilityTags.forEach(tag => {
+            tag.addEventListener('click', async () => {
+                const status = tag.dataset.availability;
+                const selected = this.filters.loraAvailability || [];
+
+                if (selected.includes(status)) {
+                    this.filters.loraAvailability = selected.filter(value => value !== status);
+                    tag.classList.remove('active');
+                } else {
+                    this.filters.loraAvailability = [...selected, status];
+                    tag.classList.add('active');
+                }
+
+                this.updateActiveFiltersCount();
+                await this.applyFilters(false);
+            });
+        });
+
+        // Update selections based on stored filters
+        this.updateLoraAvailabilitySelections();
+    }
+
+    updateLoraAvailabilitySelections() {
+        const availabilityTags = document.querySelectorAll('.lora-availability-tag');
+        const selected = this.filters.loraAvailability || [];
+        availabilityTags.forEach(tag => {
+            if (selected.includes(tag.dataset.availability)) {
+                tag.classList.add('active');
+            } else {
+                tag.classList.remove('active');
+            }
+        });
+    }
+
+    initializeHasWorkflowFilter() {
+        const hasWorkflowTags = document.querySelectorAll('.has-workflow-tag');
+        hasWorkflowTags.forEach(tag => {
+            tag.addEventListener('click', async () => {
+                this.filters.hasWorkflow = !this.filters.hasWorkflow;
+                tag.classList.toggle('active', this.filters.hasWorkflow);
+
+                this.updateActiveFiltersCount();
+                await this.applyFilters(false);
+            });
+        });
+
+        // Update selections based on stored filters
+        this.updateHasWorkflowSelection();
+    }
+
+    updateHasWorkflowSelection() {
+        const hasWorkflowTags = document.querySelectorAll('.has-workflow-tag');
+        hasWorkflowTags.forEach(tag => {
+            tag.classList.toggle('active', Boolean(this.filters.hasWorkflow));
+        });
+    }
+
     createBaseModelTags() {
         const baseModelTagsContainer = document.getElementById('baseModelTags');
         if (!baseModelTagsContainer) return;
@@ -466,18 +539,21 @@ export class FilterManager {
         filteredModels.forEach(model => {
             const tag = document.createElement('div');
             tag.className = 'filter-tag base-model-tag';
-            tag.dataset.baseModel = model.name;
+            // Display name may differ from the filter value (e.g. the "Unknown"
+            // bucket shows "Unknown" but filters via a dedicated marker).
+            const filterValue = model.value ?? model.name;
+            tag.dataset.baseModel = filterValue;
             tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
 
             tag.addEventListener('click', async () => {
                 tag.classList.toggle('active');
 
                 if (tag.classList.contains('active')) {
-                    if (!this.filters.baseModel.includes(model.name)) {
-                        this.filters.baseModel.push(model.name);
+                    if (!this.filters.baseModel.includes(filterValue)) {
+                        this.filters.baseModel.push(filterValue);
                     }
                 } else {
-                    this.filters.baseModel = this.filters.baseModel.filter(m => m !== model.name);
+                    this.filters.baseModel = this.filters.baseModel.filter(m => m !== filterValue);
                 }
 
                 this.updateActiveFiltersCount();
@@ -555,6 +631,8 @@ export class FilterManager {
                     }
 
                     this.updateActiveFiltersCount();
+                    // Keep the controls-bar quick switcher in sync (no-op when absent)
+                    window.modelTypeDropdown?.syncFromFilters?.();
                     await this.applyFilters(false);
                 });
 
@@ -681,6 +759,12 @@ export class FilterManager {
         }
         this.updateModelTypeSelections();
 
+        // Update LoRA availability tags if visible on this page
+        if (this.shouldShowLoraAvailabilityFilter()) {
+            this.updateLoraAvailabilitySelections();
+            this.updateHasWorkflowSelection();
+        }
+
         const autoTagEls = document.querySelectorAll('.auto-tag-filter');
         autoTagEls.forEach(el => {
             const tag = el.dataset.autoTag;
@@ -699,6 +783,8 @@ export class FilterManager {
                 tag.classList.remove('active');
             }
         });
+        // Keep the controls-bar quick switcher in sync (no-op when absent)
+        window.modelTypeDropdown?.syncFromFilters?.();
     }
 
     updateActiveFiltersCount() {
@@ -708,7 +794,10 @@ export class FilterManager {
         const modelTypeFilterCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
         const baseModelCount = this.filters.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER).length;
-        const totalActiveFilters = baseModelCount + tagFilterCount + autoTagFilterCount + licenseFilterCount + modelTypeFilterCount;
+        // Active when at least one availability status is deselected
+        const loraAvailabilityCount = this.filters.loraAvailability?.length ?? 0;
+        const hasWorkflowCount = this.filters.hasWorkflow ? 1 : 0;
+        const totalActiveFilters = baseModelCount + tagFilterCount + autoTagFilterCount + licenseFilterCount + modelTypeFilterCount + loraAvailabilityCount + hasWorkflowCount;
 
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
@@ -750,7 +839,7 @@ export class FilterManager {
         // Call the appropriate manager's load method based on page type
         if (this.currentPage === 'recipes' && window.recipeManager) {
             await window.recipeManager.loadRecipes(true);
-        } else if (this.currentPage === 'loras' || this.currentPage === 'embeddings' || this.currentPage === 'checkpoints') {
+        } else if (this.currentPage === 'loras' || this.currentPage === 'embeddings' || this.currentPage === 'checkpoints' || this.currentPage === 'other') {
             // For models page, reset the page and reload
             await getModelApiClient().loadMoreWithVirtualScroll(true, false);
         }
@@ -805,6 +894,8 @@ export class FilterManager {
             autoTags: {},
             license: {},
             modelTypes: [],
+            loraAvailability: [],
+            hasWorkflow: false,
             tagLogic: 'any'
         });
 
@@ -848,7 +939,7 @@ export class FilterManager {
         // Reload data using the appropriate method for the current page
         if (this.currentPage === 'recipes' && window.recipeManager) {
             await window.recipeManager.loadRecipes(true);
-        } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings') {
+        } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings' || this.currentPage === 'other') {
             await getModelApiClient().loadMoreWithVirtualScroll(true, true);
         }
 
@@ -891,12 +982,15 @@ export class FilterManager {
         const modelTypeCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
         const baseModelCount = this.filters.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER).length;
+        const loraAvailabilityCount = this.filters.loraAvailability?.length ?? 0;
         return (
             baseModelCount > 0 ||
             tagCount > 0 ||
             autoTagCount > 0 ||
             licenseCount > 0 ||
-            modelTypeCount > 0
+            modelTypeCount > 0 ||
+            loraAvailabilityCount > 0 ||
+            Boolean(this.filters.hasWorkflow)
         );
     }
 
@@ -909,12 +1003,41 @@ export class FilterManager {
             autoTags: this.normalizeTagFilters(source.autoTags),
             license: this.shouldShowLicenseFilters() ? this.normalizeLicenseFilters(source.license) : {},
             modelTypes: this.normalizeModelTypeFilters(source.modelTypes),
+            loraAvailability: this.normalizeLoraAvailabilityFilters(source.loraAvailability),
+            hasWorkflow: Boolean(source.hasWorkflow),
             tagLogic: source.tagLogic || 'any'
         };
     }
 
     shouldShowLicenseFilters() {
         return this.currentPage !== 'recipes';
+    }
+
+    shouldShowLoraAvailabilityFilter() {
+        return this.currentPage === 'recipes';
+    }
+
+    normalizeLoraAvailabilityFilters(loraAvailability) {
+        // Default to no statuses selected (= no filtering)
+        if (!Array.isArray(loraAvailability)) {
+            return [];
+        }
+
+        const seen = new Set();
+        return loraAvailability.reduce((acc, status) => {
+            if (typeof status !== 'string') {
+                return acc;
+            }
+
+            const normalized = status.trim().toLowerCase();
+            if (!LORA_AVAILABILITY_STATUSES.includes(normalized) || seen.has(normalized)) {
+                return acc;
+            }
+
+            seen.add(normalized);
+            acc.push(normalized);
+            return acc;
+        }, []);
     }
 
     normalizeTagFilters(tagFilters) {
@@ -994,6 +1117,8 @@ export class FilterManager {
             autoTags: { ...(this.filters.autoTags || {}) },
             license: { ...(this.filters.license || {}) },
             modelTypes: [...(this.filters.modelTypes || [])],
+            loraAvailability: [...(this.filters.loraAvailability || [])],
+            hasWorkflow: Boolean(this.filters.hasWorkflow),
             tagLogic: this.filters.tagLogic || 'any',
             search: pageState?.filters?.search ?? ''
         };

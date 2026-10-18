@@ -1,7 +1,8 @@
 import { api } from "../../scripts/api.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
+import { lmUrl } from "./base_path.js";
 
-const LICENSE_ICON_PATH = "/loras_static/images/tabler/";
+const LICENSE_ICON_PATH = lmUrl("/loras_static/images/tabler/");
 const LICENSE_FLAG_BITS = {
   allowNoCredit: 1 << 0,
   allowOnImages: 1 << 1,

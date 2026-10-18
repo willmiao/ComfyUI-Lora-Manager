@@ -1,6 +1,6 @@
 import os
 from ..utils.utils import get_lora_info
-from .utils import FlexibleOptionalInputType, any_type, apply_lora_syntax_format, extract_lora_name, get_loras_list
+from .utils import FlexibleOptionalInputType, any_type, apply_lora_syntax_format, extract_lora_name, get_loras_list, validate_lora_entries
 
 import logging
 
@@ -18,16 +18,22 @@ class LoraStackerLM:
                     "placeholder": "Search LoRAs to add...",
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                 }),
+                "loras": ("LORAS", {}),
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("LORA_STACK", "STRING", "STRING")
     RETURN_NAMES = ("LORA_STACK", "trigger_words", "active_loras")
     FUNCTION = "stack_loras"
     
-    def stack_loras(self, text, **kwargs):
-        """Stacks multiple LoRAs based on the kwargs input without loading them."""
+    def stack_loras(self, text, loras, **kwargs):
+        """Stacks multiple LoRAs based on the widget input without loading them."""
         stack = []
         active_loras = []
         all_trigger_words = []
@@ -42,8 +48,8 @@ class LoraStackerLM:
                 _, trigger_words = get_lora_info(lora_name)
                 all_trigger_words.extend(trigger_words)
         
-        # Process loras from kwargs with support for both old and new formats
-        loras_list = get_loras_list(kwargs)
+        # Process loras from the widget with support for both old and new formats
+        loras_list = get_loras_list({"loras": loras})
         for lora in loras_list:
             if not lora.get('active', False):
                 continue

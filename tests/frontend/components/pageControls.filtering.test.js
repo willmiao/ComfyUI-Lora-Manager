@@ -43,6 +43,12 @@ vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   showToast: showToastMock,
   openCivitaiByMetadata: openCivitaiByMetadataMock,
   updatePanelPositions: updatePanelPositionsMock,
+  // Faithful stand-in for the real helper in uiHelpers.js
+  isTypingContext: (target) => {
+    if (!(target instanceof Element)) return false;
+    const tagName = target.tagName?.toLowerCase();
+    return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+  },
 }));
 
 vi.mock('../../../static/js/managers/DownloadManager.js', () => ({
@@ -348,6 +354,49 @@ describe('FilterManager tag and base model filters', () => {
 
     expect(getCurrentPageState().filters.baseModel).toEqual([]);
     expect(baseModelChip.classList.contains('active')).toBe(false);
+  });
+
+  it('filters recipes by the unknown base model bucket via its marker value', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [
+          { name: 'Unknown', value: '__unknown__', count: 3 },
+          { name: 'SDXL', count: 2 },
+        ],
+      }),
+    });
+
+    renderControlsDom('recipes');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('recipes');
+    const { getCurrentPageState } = stateModule;
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    const loadRecipesMock = vi.fn().mockResolvedValue(undefined);
+    window.recipeManager = { loadRecipes: loadRecipesMock };
+
+    new FilterManager({ page: 'recipes' });
+
+    await vi.waitFor(() => {
+      const chip = document.querySelector('[data-base-model="__unknown__"]');
+      expect(chip).not.toBeNull();
+    });
+
+    const unknownChip = document.querySelector('[data-base-model="__unknown__"]');
+    // Display label is "Unknown" even though the filter value is the marker
+    expect(unknownChip.textContent).toContain('Unknown');
+
+    unknownChip.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(loadRecipesMock).toHaveBeenCalledTimes(1));
+
+    expect(getCurrentPageState().filters.baseModel).toEqual(['__unknown__']);
+    expect(unknownChip.classList.contains('active')).toBe(true);
+
+    const storageKey = 'lora_manager_recipes_filters';
+    const storedFilters = JSON.parse(localStorage.getItem(storageKey));
+    expect(storedFilters.baseModel).toEqual(['__unknown__']);
   });
 
   it('filters base model chips locally without changing selected state', async () => {
@@ -1156,5 +1205,88 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
 
       vi.useRealTimers();
     });
+  });
+});
+
+describe('PageControls action keyboard shortcuts', () => {
+  async function setupLorasControls() {
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { LorasControls } = await import('../../../static/js/components/controls/LorasControls.js');
+    return new LorasControls();
+  }
+
+  function keydownEvent(key, { target = document.body, ...init } = {}) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+    Object.defineProperty(event, 'target', { value: target });
+    return event;
+  }
+
+  it('registers a pageControls-actions keydown handler with the event manager', async () => {
+    await setupLorasControls();
+
+    const { eventManager } = await import('../../../static/js/utils/EventManager.js');
+    const keydownHandlers = eventManager.handlers.get('keydown') || [];
+    expect(keydownHandlers.some((h) => h.source === 'pageControls-actions')).toBe(true);
+  });
+
+  it('triggers refresh, fetch, and download via the R / F / D keys', async () => {
+    const controls = await setupLorasControls();
+
+    expect(controls.handleActionShortcut(keydownEvent('r'))).toBe(true);
+    expect(refreshModelsMock).toHaveBeenCalledWith(false);
+
+    expect(controls.handleActionShortcut(keydownEvent('f'))).toBe(true);
+    expect(fetchCivitaiMetadataMock).toHaveBeenCalledTimes(1);
+
+    expect(controls.handleActionShortcut(keydownEvent('d'))).toBe(true);
+    expect(downloadManagerMock.showDownloadModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles a real keydown dispatched on the document', async () => {
+    await setupLorasControls();
+
+    const event = new KeyboardEvent('keydown', { key: 'r', bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(refreshModelsMock).toHaveBeenCalledWith(false);
+  });
+
+  it('ignores R / F / D while typing in an input', async () => {
+    const controls = await setupLorasControls();
+
+    const input = document.getElementById('searchInput');
+    for (const key of ['r', 'f', 'd']) {
+      const event = keydownEvent(key, { target: input });
+      expect(controls.handleActionShortcut(event)).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+    }
+
+    expect(refreshModelsMock).not.toHaveBeenCalled();
+    expect(fetchCivitaiMetadataMock).not.toHaveBeenCalled();
+    expect(downloadManagerMock.showDownloadModal).not.toHaveBeenCalled();
+  });
+
+  it('ignores R / F / D when combined with modifier keys', async () => {
+    const controls = await setupLorasControls();
+
+    const event = keydownEvent('r', { ctrlKey: true });
+    expect(controls.handleActionShortcut(event)).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(refreshModelsMock).not.toHaveBeenCalled();
+  });
+
+  it('passes the event through when the action button does not exist', async () => {
+    const controls = await setupLorasControls();
+
+    // Recipes page has no fetch/download buttons
+    document.querySelector('[data-action="fetch"]').closest('.control-group').remove();
+
+    const event = keydownEvent('f');
+    expect(controls.handleActionShortcut(event)).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(fetchCivitaiMetadataMock).not.toHaveBeenCalled();
   });
 });

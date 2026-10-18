@@ -11,9 +11,11 @@ from typing import Any, Dict, List, Optional
 
 from ..utils.models import CheckpointMetadata
 from ..utils.file_utils import find_preview_file, normalize_path, calculate_autov3
+from ..utils.gguf_utils import detect_quantization
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_preview_dir, is_centralized
 from ..config import config
-from .model_scanner import ModelScanner
+from .model_scanner import ModelScanner, _is_excluded_dir
 from .model_hash_index import ModelHashIndex
 
 logger = logging.getLogger(__name__)
@@ -61,15 +63,18 @@ class CheckpointScanner(ModelScanner):
                 return None
 
             base_name = os.path.splitext(os.path.basename(file_path))[0]
-            dir_path = os.path.dirname(file_path)
 
             # Find preview image
-            preview_url = find_preview_file(base_name, dir_path)
+            preview_url = find_preview_file(base_name, get_preview_dir(file_path))
 
             # AutoV3 reads only the safetensors header, so it is cheap even for
             # large checkpoints; record the checked state at creation time ("" =
             # checked but unavailable).
             autov3 = calculate_autov3(real_path)
+
+            # Quantization detection is likewise header-only (GGUF file_type /
+            # safetensors dtypes). "" = checked, no quantization detected.
+            quantization = detect_quantization(real_path)
 
             # Create metadata WITHOUT calculating hash
             metadata = CheckpointMetadata(
@@ -87,6 +92,7 @@ class CheckpointScanner(ModelScanner):
                 from_civitai=False,  # Mark as local model since no hash yet
                 hash_status="pending",  # Mark hash as pending
                 autov3=autov3 or "",
+                quantization=quantization or "",
             )
 
             # Save the created metadata
@@ -322,13 +328,19 @@ class CheckpointScanner(ModelScanner):
 
     async def _find_pending_models_from_filesystem(self) -> List[Dict[str, Any]]:
         """Scan filesystem for checkpoint metadata files with pending hash status."""
+        # Centralized mode stores sidecars in the mirror tree, not next to the
+        # models; walk the mirror instead of the model folders.
+        if is_centralized():
+            return self._find_pending_models_in_sidecar_mirror()
+
         pending_models = []
 
         for root_path in self.get_model_roots():
             if not os.path.exists(root_path):
                 continue
 
-            for dirpath, _dirnames, filenames in os.walk(root_path):
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
                 for filename in filenames:
                     if not filename.endswith(".metadata.json"):
                         continue
@@ -409,6 +421,10 @@ class CheckpointScanner(ModelScanner):
 
         return None
 
+    def resolve_sub_type_for_path(self, file_path: Optional[str]) -> Optional[str]:
+        """Resolve sub_type from the configured root that contains the file."""
+        return self._resolve_sub_type(self._find_root_for_file(file_path))
+
     def adjust_metadata(self, metadata, file_path, root_path):
         """Adjust metadata during scanning to set sub_type."""
         sub_type = self._resolve_sub_type(root_path)
@@ -418,9 +434,7 @@ class CheckpointScanner(ModelScanner):
 
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         """Adjust entries loaded from the persisted cache to ensure sub_type is set."""
-        sub_type = self._resolve_sub_type(
-            self._find_root_for_file(entry.get("file_path"))
-        )
+        sub_type = self.resolve_sub_type_for_path(entry.get("file_path"))
         if sub_type:
             entry["sub_type"] = sub_type
         return entry

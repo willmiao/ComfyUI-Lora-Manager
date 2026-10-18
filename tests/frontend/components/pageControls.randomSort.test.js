@@ -1,4 +1,5 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
+import { applySortToSelect } from '../../../static/js/components/controls/SortDropdown.js';
 
 const resetAndReloadMock = vi.fn();
 const getModelApiClientMock = vi.fn();
@@ -12,6 +13,12 @@ vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   showToast: vi.fn(),
   openCivitaiByMetadata: vi.fn(),
   updatePanelPositions: vi.fn(),
+  // Faithful stand-in for the real helper in uiHelpers.js
+  isTypingContext: (target) => {
+    if (!(target instanceof Element)) return false;
+    const tagName = target.tagName?.toLowerCase();
+    return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+  },
 }));
 
 vi.mock('../../../static/js/managers/DownloadManager.js', () => ({
@@ -190,7 +197,7 @@ describe('Random sort option', () => {
     sortSelect.value = 'random';
     sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
     await Promise.resolve();
-    controls.applySortToSelect('name:desc');
+    applySortToSelect('name:desc');
 
     expect(sortSelect.value).toBe('name:desc');
     expect(randomOpt.value).toBe('random');

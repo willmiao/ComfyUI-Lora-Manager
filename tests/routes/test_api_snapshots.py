@@ -117,8 +117,20 @@ class TestSettingsHandlerSnapshots:
     """Snapshot tests for SettingsHandler responses."""
 
     @pytest.mark.asyncio
-    async def test_get_settings_response_format(self, snapshot: SnapshotAssertion):
+    async def test_get_settings_response_format(
+        self, snapshot: SnapshotAssertion, monkeypatch: pytest.MonkeyPatch
+    ):
         """Verify get_settings response format matches snapshot."""
+        # Pin the resolved sidecar root: it derives from the machine-specific
+        # settings directory, which would make the snapshot non-deterministic.
+        monkeypatch.setattr(
+            "py.routes.handlers.misc_handlers.describe_sidecar_root",
+            lambda: {
+                "root": "/sidecars",
+                "is_default": True,
+                "inside_repo": False,
+            },
+        )
         settings_service = DummySettings({
             "civitai_api_key": "test-key",
             "language": "en",

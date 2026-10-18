@@ -82,6 +82,57 @@
     </div>
 </div>
 
+<!-- Filename Template Apply/Revert Confirmation Modal
+     Self-managed by SettingsManager (NOT registered with ModalManager): it
+     stacks above the settings modal, like the directory picker. -->
+<div id="filenameTemplateConfirmModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-filename-template">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" data-action="confirm-filename-template"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Sidecar Migration Confirmation Modal
+     Self-managed by SettingsManager (NOT registered with ModalManager): it
+     stacks above the settings modal, like the directory picker. -->
+<div id="sidecarMigrationConfirmModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <p class="delete-message sidecar-migration-destination" data-role="destination" style="display: none;"></p>
+        <p class="delete-message sidecar-migration-hint" data-role="default-location-hint" style="display: none;"></p>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-sidecar-migration">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" data-action="confirm-sidecar-migration"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar Folder Delete Confirmation Modal -->
+<!-- Shared by five states: 'confirm' (model-free folder), 'blocked' (the
+     subtree still holds models, so a cascade delete is refused), 'busy' (a
+     staged delete is still pending), 'missing' (the directory is gone from
+     disk) and 'symlink' (every copy is a symbolic link). The roots container
+     holds the checkbox list shown when the same relative folder exists under
+     several library roots: each copy is guarded on its own and the ticked ones
+     are all deleted, since only the absolute paths tell those copies apart. -->
+<div id="deleteFolderModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title">{{ t('sidebar.deleteFolderModal.title') }}</h2>
+        <p class="delete-message" data-role="message">{{ t('sidebar.deleteFolderModal.message') }}</p>
+        <div class="delete-model-info" data-role="info"></div>
+        <div class="delete-folder-roots" data-role="roots"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-delete-folder">{{ t('common.actions.cancel') }}</button>
+            <button class="delete-btn" data-action="confirm-delete-folder">{{ t('sidebar.deleteFolderModal.confirm') }}</button>
+        </div>
+    </div>
+</div>
+
 <!-- Bulk Download Missing LoRAs Confirmation Modal -->
 <div id="bulkDownloadMissingLorasModal" class="modal">
     <div class="modal-content">
@@ -122,6 +173,37 @@
             <button class="primary-btn" id="resolveConflictsConfirmBtn" onclick="doctorManager.confirmResolveConflicts()">
                 <i class="fas fa-check"></i>
                 {{ t('conflictConfirm.confirm') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Rematch Options Modal -->
+<div id="rematchOptionsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.rematchOptions.title') }}</h2>
+            <span class="close" onclick="rematchModalManager.cancelOptions()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p class="confirmation-message" id="rematchOptionsMessage"></p>
+            <label class="rematch-option-card" for="rematchOptionsRelaxed">
+                <input type="checkbox" id="rematchOptionsRelaxed">
+                <span class="rematch-option-checkmark" aria-hidden="true"></span>
+                <span class="rematch-option-text">
+                    <span class="rematch-option-title">{{ t('modals.rematchOptions.relaxedLabel') }}</span>
+                    <span class="rematch-option-caveat">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                        {{ t('modals.rematchOptions.relaxedDescription') }}
+                    </span>
+                </span>
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="rematchModalManager.cancelOptions()">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="rematchOptionsConfirmBtn" onclick="rematchModalManager.confirmOptions()">
+                <i class="fas fa-sync-alt"></i>
+                {{ t('modals.rematchOptions.confirmButton') }}
             </button>
         </div>
     </div>

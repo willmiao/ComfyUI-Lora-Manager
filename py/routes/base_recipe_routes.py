@@ -32,6 +32,7 @@ from .handlers.recipe_handlers import (
     RecipePageView,
     RecipeQueryHandler,
     RecipeSharingHandler,
+    RecipeWorkflowHandler,
 )
 from .recipe_route_registrar import ROUTE_DEFINITIONS
 
@@ -200,6 +201,18 @@ class BaseRecipeRoutes:
             sharing_service=sharing_service,
         )
 
+        # Lazy import: standalone mode replaces the ``server`` module with a
+        # mock, so resolve PromptServer at handler-set build time instead of
+        # module import time. The handler's standalone check guards UX.
+        from server import PromptServer  # pyright: ignore[reportMissingImports]
+
+        workflow = RecipeWorkflowHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            prompt_server=PromptServer,
+            logger=logger,
+        )
+
         from ..services.websocket_manager import ws_manager
 
         batch_import_service = BatchImportService(
@@ -224,4 +237,5 @@ class BaseRecipeRoutes:
             analysis=analysis,
             sharing=sharing,
             batch_import=batch_import,
+            workflow=workflow,
         )

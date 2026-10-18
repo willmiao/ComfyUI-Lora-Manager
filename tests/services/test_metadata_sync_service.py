@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
-from py.services.errors import RateLimitError
-from py.services.metadata_sync_service import MetadataSyncService
+from py.services.errors import MetadataPersistError, RateLimitError
+from py.services.metadata_sync_service import MetadataSyncService, _merge_ordered_unique
 
 
 class DummySettings:
@@ -110,6 +110,49 @@ async def test_update_model_metadata_merges_and_persists():
         "path/to/model.metadata.json",
         result,
     )
+
+
+def test_merge_ordered_unique_keeps_first_seen_order():
+    assert _merge_ordered_unique(["b", "a"], ["a", "c", "b", "d"]) == [
+        "b",
+        "a",
+        "c",
+        "d",
+    ]
+    assert _merge_ordered_unique([], ["x"]) == ["x"]
+    assert _merge_ordered_unique(["x"], []) == ["x"]
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_preserves_trained_word_order():
+    """Trigger word order (prompt order) must survive a metadata refresh."""
+
+    helpers = build_service()
+
+    local = {
+        "civitai": {"trainedWords": ["zeta style", "alpha", "beta"]},
+        "model_name": "Local",
+    }
+    remote = {
+        "source": "api",
+        "trainedWords": ["beta", "gamma", "alpha"],
+        "model": {"name": "Remote Model"},
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    # Saved order first, newly discovered words appended, duplicates dropped
+    assert result["civitai"]["trainedWords"] == [
+        "zeta style",
+        "alpha",
+        "beta",
+        "gamma",
+    ]
 
 
 @pytest.mark.asyncio
@@ -243,6 +286,107 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_update_model_metadata_raises_when_sidecar_write_fails():
+    """A failed sidecar write must surface instead of being swallowed."""
+    helpers = build_service()
+    helpers.metadata_manager.save_metadata.return_value = False
+
+    with pytest.raises(MetadataPersistError):
+        await helpers.service.update_model_metadata(
+            "path/to/model.metadata.json",
+            {"civitai": {}, "model_name": "Local"},
+            {"source": "api", "model": {"name": "Remote"}, "images": []},
+            helpers.default_provider,
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_unblocks_example_image_failures(monkeypatch):
+    """Persisting fresh provider metadata re-enables example image downloads."""
+    helpers = build_service()
+
+    from py.utils import example_images_download_manager as download_module
+
+    calls: list[list[str]] = []
+
+    def fake_unblock(hashes, library_name=None):
+        calls.append(list(hashes))
+        return len(hashes)
+
+    monkeypatch.setattr(
+        download_module, "unblock_failed_example_image_models", fake_unblock
+    )
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        {"sha256": "A" * 64, "model_name": "Local"},
+        {"source": "api", "model": {"name": "Remote"}, "images": []},
+        helpers.default_provider,
+    )
+
+    assert result["model_name"] == "Remote"
+    assert calls == [["a" * 64]]
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_without_hash_skips_unblock(monkeypatch):
+    helpers = build_service()
+
+    from py.utils import example_images_download_manager as download_module
+
+    def fail_unblock(hashes, library_name=None):  # pragma: no cover - must not run
+        raise AssertionError("unblock must not run without a sha256")
+
+    monkeypatch.setattr(
+        download_module, "unblock_failed_example_image_models", fail_unblock
+    )
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        {"model_name": "Local"},
+        {"source": "api", "model": {"name": "Remote"}, "images": []},
+        helpers.default_provider,
+    )
+
+    assert result["model_name"] == "Remote"
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_reports_sidecar_write_failure(tmp_path):
+    """Fetch fails the item (and leaves the cache untouched) when the sidecar
+    cannot be written, so the model stays eligible for the next run."""
+    helpers = build_service()
+    helpers.metadata_manager.save_metadata.return_value = False
+
+    civitai_payload = {
+        "source": "api",
+        "model": {"name": "Remote", "description": "", "tags": ["tag"]},
+        "images": [],
+        "baseModel": "sdxl",
+    }
+    helpers.default_provider.get_model_by_hash.return_value = (civitai_payload, None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="abc",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False
+    assert "sidecar" in (error or "")
+    update_cache.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_keeps_deleted_flag_false_for_archive_source(tmp_path):
     helpers = build_service()
 
@@ -332,6 +476,151 @@ async def test_fetch_and_update_model_returns_friendly_offline_message(tmp_path)
     assert error is not None
     assert OFFLINE_FRIENDLY_MESSAGE in error
     update_cache.assert_not_awaited()
+
+
+def _foreign_ref():
+    from py.services.model_sources import SourceRef
+
+    return SourceRef(
+        platform="modelscope-ai",
+        source_id="arbinshado/Kiara-Krea",
+        url="https://www.modelscope.ai/models/arbinshado/Kiara-Krea",
+    )
+
+
+def _wire_foreign_source(monkeypatch, *, context, hydrate_result=None):
+    """Patch the source-registry pieces _try_link_foreign_source consumes."""
+    from unittest.mock import Mock
+
+    fake_source = SimpleNamespace(
+        fetch_card_context_by_hash=AsyncMock(return_value=context),
+    )
+    hydrate = AsyncMock(return_value=hydrate_result or [])
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.get_source", lambda _platform: fake_source
+    )
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.hydrate_from_source", hydrate
+    )
+    monkeypatch.setattr(
+        "py.services.metadata_sync_service.shared_source_cache", lambda *_args: None
+    )
+    return SimpleNamespace(source=fake_source, hydrate=hydrate, Mock=Mock)
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_links_foreign_source_when_not_found(tmp_path, monkeypatch):
+    """CivArchive knows the file only as a foreign-ecosystem entry: the model
+    gets linked to its real source and hydrated instead of flagged deleted."""
+    ref = _foreign_ref()
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=lambda _hash: ref,
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+    wired = _wire_foreign_source(monkeypatch, context=SimpleNamespace(model_name="Kiara-Krea"), hydrate_result=["model_name"])
+
+    model_path = tmp_path / "Kiara-Krea_c1-st4000.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Kiara-Krea_c1-st4000",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="f3a5370b",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is True and error is None
+    assert model_data["source_url"] == ref.url
+    assert model_data["source_platform"] == "modelscope-ai"
+    assert model_data["from_civitai"] is False
+    assert "civitai_deleted" not in model_data
+    helpers.metadata_manager.save_metadata.assert_awaited()
+    update_cache.assert_awaited()
+    wired.hydrate.assert_awaited_once()
+    assert wired.hydrate.await_args.kwargs["ref"] is ref
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_skips_foreign_link_when_hash_not_published(tmp_path, monkeypatch):
+    """The strict hash gate rejects the link: the repository does not publish
+    this exact file, so normal not-found handling takes over."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=lambda _hash: _foreign_ref(),
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+    wired = _wire_foreign_source(monkeypatch, context=None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert ok is False
+    assert "source_url" not in model_data
+    assert model_data["from_civitai"] is False
+    assert model_data["civitai_deleted"] is True
+    wired.hydrate.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_never_relinks_a_model_with_external_source(tmp_path, monkeypatch):
+    """A model already linked to an external source keeps that link."""
+    from unittest.mock import Mock
+
+    pop_ref = Mock(return_value=_foreign_ref())
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+        pop_foreign_source_ref=pop_ref,
+    )
+    helpers = build_service(
+        default_provider=provider,
+        provider_selector=AsyncMock(return_value=provider),
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data: Dict[str, Any] = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+        "source_url": "https://huggingface.co/some/user",
+        "source_platform": "huggingface",
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert ok is False
+    assert model_data["source_url"] == "https://huggingface.co/some/user"
+    pop_ref.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -560,6 +849,131 @@ async def test_relink_metadata_raises_when_version_missing():
             model_version_id=None,
         )
 
+
+@pytest.mark.asyncio
+async def test_relink_metadata_uses_named_civarchive_provider(tmp_path):
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(
+            return_value={
+                "files": [
+                    {
+                        "primary": True,
+                        "type": "Model",
+                        "hashes": {"SHA256": "ABCDEF"},
+                    }
+                ],
+                "model": {"name": "Archived"},
+                "images": [],
+            }
+        ),
+    )
+
+    async def select_provider(name: str):
+        return civarchive_provider if name == "civarchive_api" else default_provider
+
+    provider_selector = AsyncMock(side_effect=select_provider)
+    helpers = build_service(
+        default_provider=default_provider,
+        provider_selector=provider_selector,
+    )
+
+    metadata = {"model_name": "Local", "sha256": "original"}
+    result = await helpers.service.relink_metadata(
+        file_path=str(tmp_path / "model.safetensors"),
+        metadata=metadata,
+        model_id=1,
+        model_version_id=2,
+        provider_name="civarchive_api",
+    )
+
+    assert result["model_name"] == "Archived"
+    assert result["sha256"] == "original"
+    provider_selector.assert_awaited_with("civarchive_api")
+    civarchive_provider.get_model_version.assert_awaited_once_with(1, 2)
+    helpers.default_provider_factory.assert_not_awaited()
+    helpers.metadata_manager.save_metadata.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_relink_metadata_raises_when_version_missing_with_civarchive():
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(return_value=None),
+    )
+
+    async def select_provider(name: str):
+        return civarchive_provider if name == "civarchive_api" else default_provider
+
+    provider_selector = AsyncMock(side_effect=select_provider)
+    helpers = build_service(
+        default_provider=default_provider,
+        provider_selector=provider_selector,
+    )
+
+    with pytest.raises(ValueError, match="CivitArchive"):
+        await helpers.service.relink_metadata(
+            file_path="/tmp/model.safetensors",
+            metadata={},
+            model_id=9,
+            model_version_id=None,
+            provider_name="civarchive_api",
+        )
+
+
+@pytest.mark.asyncio
+async def test_relink_metadata_raises_friendly_error_when_provider_unavailable():
+    provider_selector = AsyncMock(
+        side_effect=ValueError("Provider 'civarchive_api' is not registered")
+    )
+    helpers = build_service(provider_selector=provider_selector)
+
+    with pytest.raises(ValueError, match="CivitArchive is not available or not enabled"):
+        await helpers.service.relink_metadata(
+            file_path="/tmp/model.safetensors",
+            metadata={},
+            model_id=9,
+            model_version_id=None,
+            provider_name="civarchive_api",
+        )
+
+
+@pytest.mark.asyncio
+async def test_relink_metadata_default_call_uses_default_provider_factory(tmp_path):
+    helpers = build_service()
+    helpers.default_provider.get_model_version.return_value = {
+        "files": [
+            {
+                "primary": True,
+                "type": "Model",
+                "hashes": {"SHA256": "ABCDEF"},
+            }
+        ],
+        "model": {"name": "Remote"},
+        "images": [],
+    }
+
+    result = await helpers.service.relink_metadata(
+        file_path=str(tmp_path / "model.safetensors"),
+        metadata={"model_name": "Local", "sha256": "original"},
+        model_id=1,
+        model_version_id=None,
+    )
+
+    assert result["model_name"] == "Remote"
+    assert result["sha256"] == "original"
+    helpers.default_provider_factory.assert_awaited_once()
+    helpers.provider_selector.assert_not_awaited()
+    helpers.metadata_manager.save_metadata.assert_awaited_once()
+
 @pytest.mark.asyncio
 async def test_fetch_and_update_model_persists_db_checked_when_sqlite_fails(tmp_path):
     """
@@ -687,3 +1101,56 @@ async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archi
     
     helpers.metadata_manager.save_metadata.assert_awaited()
     update_cache.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_keeps_sqlite_last_resort_after_civarchive_rate_limit(tmp_path):
+    """A CivArchive 429 must not block the local sqlite last resort (#1085)."""
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(
+            side_effect=RateLimitError("limited", retry_after=30)
+        ),
+        get_model_version=AsyncMock(),
+    )
+    sqlite_payload = {
+        "source": "archive_db",
+        "model": {"name": "Recovered", "description": "", "tags": []},
+        "images": [],
+        "baseModel": "sdxl",
+    }
+    sqlite_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(sqlite_payload, None)),
+        get_model_version=AsyncMock(),
+    )
+
+    async def select_provider(name: str):
+        if name == "civarchive_api":
+            return civarchive_provider
+        if name == "sqlite":
+            return sqlite_provider
+        raise AssertionError(f"unexpected provider request: {name}")
+
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": True},
+        provider_selector=AsyncMock(side_effect=select_provider),
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "db_checked": False,
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="cafe",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    civarchive_provider.get_model_by_hash.assert_awaited_once()
+    sqlite_provider.get_model_by_hash.assert_awaited_once()
+    assert model_data["metadata_source"] == "archive_db"

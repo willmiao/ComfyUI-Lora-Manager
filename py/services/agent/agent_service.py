@@ -19,16 +19,21 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import aiohttp
-
-import os
-
 from ...config import config
 from ..llm_service import LLMService
+from ..model_sources import (
+    ModelCardContext,
+    ModelSourceCache,
+    get_source,
+    resolve_source_ref,
+    source_label,
+)
+from ..model_sources.hydration import load_model_card, resolve_site_base_model
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
@@ -255,6 +260,11 @@ class AgentService:
         llm = await self._ensure_llm()
         llm_configured = llm.is_configured() if skill.llm_required else True
 
+        # A collection repository holds many model files under one source id;
+        # this memo keeps the README and the repository metadata from being
+        # re-fetched once per file.  It lives for this run only.
+        source_cache = ModelSourceCache()
+
         for model_path in model_paths:
             model_filename = os.path.basename(model_path)
             logger.info(
@@ -267,24 +277,50 @@ class AgentService:
                 from ...metadata_ops import read_metadata
                 metadata = await read_metadata(model_path)
 
-                # Fast-fail: enrich_hf_metadata requires hf_url to have HF README context
-                if skill_name == "enrich_hf_metadata" and not metadata.get("hf_url", ""):
-                    logger.info(
-                        "[%s] SKIP %s — no hf_url in metadata",
-                        skill_name, model_filename,
-                    )
-                    skipped_count += 1
-                    skip_model = True
+                # Fast-fail: enrich_hf_metadata needs an external model source
+                # that exposes an accessible model card.
+                if skill_name == "enrich_hf_metadata":
+                    skip_reason = self._enrichment_skip_reason(metadata)
+                    if skip_reason:
+                        logger.info(
+                            "[%s] SKIP %s — %s",
+                            skill_name, model_filename, skip_reason,
+                        )
+                        skipped_count += 1
+                        skip_model = True
 
                 if not skip_model:
-                    prompt_vars: Dict[str, Any] = {"model_path": model_path}
-                    if skill.llm_required and llm_configured:
-                        prompt_vars = await self._build_prompt_context(
-                            skill_name, model_path, metadata, registry, llm,
+                    # The site's own data is deterministic and must land whether
+                    # or not an LLM is available: a user without a key still gets
+                    # the author summary, the example images and the tags.
+                    source_vars, source_context = await self._load_source_card(
+                        model_path, metadata, cache=source_cache,
+                    )
+                    resolved_base_model = ""
+                    if skill_name == "enrich_hf_metadata" and not (
+                        metadata.get("base_model") or ""
+                    ).strip():
+                        resolved_base_model = await self._resolve_site_base_model(
+                            source_context,
                         )
 
                     llm_response: Optional[Dict[str, Any]] = None
-                    if skill.llm_required and llm_configured:
+                    if skill.llm_required and not llm_configured:
+                        # Without a provider the deterministic model-source data
+                        # still lands; the LLM-only fields simply stay untouched.
+                        logger.info(
+                            "[%s] No LLM configured for %s — applying %s data only",
+                            skill_name, model_filename,
+                            "model-source"
+                            if not source_context.is_empty()
+                            else "README",
+                        )
+                    elif skill.llm_required:
+                        prompt_vars = await self._build_prompt_context(
+                            skill_name, model_path, metadata, registry, llm,
+                            source_vars=source_vars,
+                            source_context=source_context,
+                        )
                         prompt_template = registry.load_prompt(skill_name)
                         rendered = _render_prompt(prompt_template, prompt_vars)
                         llm_response = await llm.chat_completion_json(
@@ -307,7 +343,9 @@ class AgentService:
                         model_path=model_path,
                         llm_output=llm_response or {},
                         metadata=metadata,
-                        readme_content=prompt_vars.get("readme_content_full", ""),
+                        readme_content=source_vars.get("readme_content_full", ""),
+                        source_context=source_context,
+                        resolved_base_model=resolved_base_model,
                     )
 
                     if model_result.get("success", True):
@@ -359,6 +397,28 @@ class AgentService:
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _enrichment_skip_reason(metadata: Dict[str, Any]) -> str:
+        """Return why ``enrich_hf_metadata`` cannot run, or ``""`` if it can.
+
+        Distinguishes the three cases the user can act on: no source linked,
+        a source we don't know, and a known source whose model card is not
+        reachable from the backend (TensorArt).
+        """
+
+        ref = resolve_source_ref(metadata)
+        if ref is None:
+            return "no model source linked (source_url missing)"
+        source = get_source(ref.platform)
+        if source is None:
+            return f"unsupported model source platform '{ref.platform}'"
+        if not source.supports_enrichment:
+            return (
+                f"{source.label} does not expose a model card to the backend; "
+                "AI metadata enrichment is not available for this source"
+            )
+        return ""
+
+    @staticmethod
     def _format_base_models(models: List[str]) -> str:
         """Format the base model list as a flat, one-per-line list.
 
@@ -368,6 +428,82 @@ class AgentService:
         """
         return "\n".join(f"- {m}" for m in models)
 
+    async def _load_source_card(
+        self,
+        model_path: str,
+        metadata: Dict[str, Any],
+        *,
+        cache: Optional[ModelSourceCache] = None,
+    ) -> tuple[Dict[str, Any], ModelCardContext]:
+        """Fetch the model card and site-published extras for one model.
+
+        Runs for every source-backed enrichment regardless of LLM
+        availability, because everything it returns is deterministic data that
+        should be applied even without a configured provider.
+
+        *cache* is the per-run memo created by :meth:`execute_skill`.  The
+        README is repository-wide, so it is fetched once per source id; only
+        successful reads are memoised, leaving a transient failure to be
+        retried for the next file.
+        """
+
+        variables: Dict[str, Any] = {
+            "asset_base_url": "",
+            "source_description": "",
+            "source_base_model": "",
+            "source_official_tags": "",
+            "source_example_images": "",
+            "source_trigger_words": "",
+            "readme_content": "(README not available)",
+            "readme_content_full": "",
+        }
+
+        ref = resolve_source_ref(metadata)
+        source = get_source(ref.platform) if ref is not None else None
+        if ref is None or source is None or not source.supports_enrichment:
+            return variables, ModelCardContext()
+
+        raw_basename = os.path.splitext(os.path.basename(model_path))[0]
+        variables["asset_base_url"] = source.asset_base_url(ref.source_id)
+
+        readme = await load_model_card(source, ref.source_id, cache)
+
+        # Sites such as ModelScope keep part of the model card outside the
+        # README (author summary, curated tags, per-file example images).  The
+        # recorded hash identifies the file even after the user renames it.
+        card_context = await source.fetch_model_card_context(
+            ref.source_id,
+            os.path.basename(model_path),
+            sha256=(metadata.get("sha256") or "").strip(),
+            cache=cache,
+        )
+        variables["source_description"] = card_context.description
+        variables["source_base_model"] = card_context.base_model
+        variables["source_official_tags"] = "\n".join(
+            f"- {tag}" for tag in card_context.official_tags
+        )
+        variables["source_example_images"] = "\n".join(
+            f"- {url}" for url in card_context.example_images
+        )
+        variables["source_trigger_words"] = ", ".join(card_context.trigger_words)
+
+        # Trim README to the section relevant to this model file
+        # (collection repos often have multiple models in one README).
+        if readme and raw_basename:
+            trimmed = extract_relevant_section(readme, raw_basename)
+            cleaned = clean_readme_for_llm(trimmed) if trimmed else ""
+        else:
+            cleaned = clean_readme_for_llm(readme) if readme else ""
+        variables["readme_content"] = cleaned if cleaned else "(README not available)"
+        variables["readme_content_full"] = readme or ""
+
+        return variables, card_context
+
+    async def _resolve_site_base_model(self, source_context: ModelCardContext) -> str:
+        """Resolve the site's base-model hints to a canonical name, or ``""``."""
+
+        return await resolve_site_base_model(source_context)
+
     async def _build_prompt_context(
         self,
         skill_name: str,
@@ -375,19 +511,45 @@ class AgentService:
         metadata: Dict[str, Any],
         registry: SkillRegistry,
         llm: Any,
+        *,
+        source_vars: Optional[Dict[str, Any]] = None,
+        source_context: Optional[ModelCardContext] = None,
     ) -> Dict[str, Any]:
         """Gather variables for the skill's prompt template.
 
-        Reads metadata, fetches the HF README (if applicable), lists available
+        Reads metadata, fetches the model card (unless a pre-fetched
+        *source_vars* / *source_context* pair is supplied), lists available
         base models, loads user priority tags, and returns a dict that maps to
         ``{{variable}}`` placeholders in ``prompt.md``.
         """
         from ...metadata_ops import identify_model_type, list_base_models
         from ..settings_manager import SettingsManager
 
+        if source_vars is None or source_context is None:
+            source_vars, source_context = await self._load_source_card(
+                model_path, metadata,
+            )
+
         context: Dict[str, Any] = {
             "model_path": model_path,
             "model_basename": "",
+            # Canonical external-source variables
+            "source_url": "",
+            "source_id": "",
+            "source_platform": "",
+            "source_label": "",
+            "asset_base_url": "",
+            # Site-provided card extras (see ModelSource.fetch_model_card_context)
+            "source_description": "",
+            "source_base_model": "",
+            "source_official_tags": "",
+            "source_example_images": "",
+            "source_trigger_words": "",
+            # Carrier for the structured context handed to the post-processor;
+            # never rendered into the prompt.
+            "source_context": ModelCardContext(),
+            # Legacy Hugging Face aliases (kept so older prompt templates and
+            # third-party skills keep rendering)
             "hf_url": "",
             "repo": "",
             "readme_content": "",
@@ -407,26 +569,33 @@ class AgentService:
             "base_model": metadata.get("base_model", ""),
             "tags": metadata.get("tags", []),
             "modelDescription": metadata.get("modelDescription", ""),
-            "trainedWords": metadata.get("trainedWords", []),
             "sha256": (metadata.get("sha256") or "")[:16] + "..." if metadata.get("sha256") else "",
             "size": metadata.get("size", 0),
         }
 
-        hf_url = metadata.get("hf_url", "")
-        context["hf_url"] = hf_url
-        repo = self._extract_repo_from_url(hf_url) if hf_url else ""
-        context["repo"] = repo or ""
-        if repo:
-            readme = await self._fetch_readme(repo)
-            # Trim README to the section relevant to this model file
-            # (collection repos often have multiple models in one README).
-            if readme and raw_basename:
-                trimmed = extract_relevant_section(readme, raw_basename)
-                cleaned = clean_readme_for_llm(trimmed) if trimmed else ""
-            else:
-                cleaned = clean_readme_for_llm(readme) if readme else ""
-            context["readme_content"] = cleaned if cleaned else "(README not available)"
-            context["readme_content_full"] = readme or ""
+        ref = resolve_source_ref(metadata)
+        if ref is not None:
+            context["source_url"] = ref.url
+            context["source_id"] = ref.source_id
+            context["source_platform"] = ref.platform
+            context["source_label"] = source_label(ref.platform, ref.platform)
+            if ref.platform == "huggingface":
+                context["hf_url"] = ref.url
+            context["repo"] = ref.source_id
+
+        source = get_source(ref.platform) if ref is not None else None
+        if ref is not None and source is not None and source.supports_enrichment:
+            # Values fetched once by _load_source_card and shared with the
+            # post-processor, so the network is not hit twice per model.
+            context["asset_base_url"] = source_vars["asset_base_url"]
+            context["source_context"] = source_context
+            context["source_description"] = source_vars["source_description"]
+            context["source_base_model"] = source_vars["source_base_model"]
+            context["source_official_tags"] = source_vars["source_official_tags"]
+            context["source_example_images"] = source_vars["source_example_images"]
+            context["source_trigger_words"] = source_vars["source_trigger_words"]
+            context["readme_content"] = source_vars["readme_content"]
+            context["readme_content_full"] = source_vars["readme_content_full"]
 
         try:
             raw_models = await list_base_models()
@@ -459,20 +628,14 @@ class AgentService:
 
     @staticmethod
     async def _fetch_readme(repo: str) -> str:
-        """Fetch README.md from HuggingFace (tries ``main``, then ``master``)."""
-        async with aiohttp.ClientSession(
-            headers={"User-Agent": "ComfyUI-LoRA-Manager/1.0"},
-            timeout=aiohttp.ClientTimeout(total=30),
-        ) as session:
-            for branch in ("main", "master"):
-                url = f"https://huggingface.co/{repo}/raw/{branch}/README.md"
-                try:
-                    async with session.get(url) as resp:
-                        if resp.status == 200:
-                            return await resp.text()
-                except Exception as exc:
-                    logger.debug("Failed to fetch README from %s: %s", url, exc)
-        return ""
+        """Fetch a Hugging Face README (tries ``main``, then ``master``).
+
+        Kept for backward compatibility; new code should go through the
+        model-source registry so every supported site works.
+        """
+        from ..model_sources import HuggingFaceSource
+
+        return await HuggingFaceSource().fetch_model_card(repo)
 
     async def _emit_progress(
         self,

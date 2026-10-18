@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 from py.utils import example_images_metadata as metadata_module
+from tests.utils.test_video_dimension_probe import build_mp4, build_webm
 
 
 class StubScanner:
@@ -217,3 +218,127 @@ async def test_update_metadata_from_local_examples_generates_entries(monkeypatch
     )
     assert success is True
     assert model_data["civitai"]["images"]
+
+
+async def test_update_metadata_after_import_uses_real_video_dimensions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, patch_metadata_manager
+):
+    """Regression: imported videos must not fall back to the 720x1280 default.
+
+    See issue #1115 — landscape videos were stored as portrait, so the showcase
+    viewer letterboxed them into a 9:16 container.
+    """
+
+    model_hash = "d" * 64
+    model_file = tmp_path / "video-model.safetensors"
+    model_file.write_text("content", encoding="utf-8")
+    model_data = {
+        "model_name": "VideoExample",
+        "file_path": str(model_file),
+        "civitai": {},
+    }
+    scanner = StubScanner([model_data])
+
+    video_path = tmp_path / "custom_abc.mp4"
+    video_path.write_bytes(build_mp4(1280, 720))
+
+    monkeypatch.setattr(metadata_module.ExifUtils, "extract_image_metadata", staticmethod(lambda _path: None))
+
+    _regular, custom = await metadata_module.MetadataUpdater.update_metadata_after_import(
+        model_hash,
+        model_data,
+        scanner,
+        [(str(video_path), "abc")],
+    )
+
+    assert custom[0]["type"] == "video"
+    assert (custom[0]["width"], custom[0]["height"]) == (1280, 720)
+    assert patch_metadata_manager[-1][1]["civitai"]["customImages"][0]["width"] == 1280
+
+
+async def test_update_metadata_after_import_uses_real_webm_dimensions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, patch_metadata_manager
+):
+    model_hash = "e" * 64
+    model_file = tmp_path / "webm-model.safetensors"
+    model_file.write_text("content", encoding="utf-8")
+    model_data = {
+        "model_name": "WebmExample",
+        "file_path": str(model_file),
+        "civitai": {},
+    }
+
+    video_path = tmp_path / "custom_def.webm"
+    video_path.write_bytes(build_webm(480, 832))
+
+    monkeypatch.setattr(metadata_module.ExifUtils, "extract_image_metadata", staticmethod(lambda _path: None))
+
+    _regular, custom = await metadata_module.MetadataUpdater.update_metadata_after_import(
+        model_hash,
+        model_data,
+        StubScanner([model_data]),
+        [(str(video_path), "def")],
+    )
+
+    assert (custom[0]["width"], custom[0]["height"]) == (480, 832)
+
+
+async def test_update_metadata_after_import_falls_back_for_unreadable_video(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, patch_metadata_manager
+):
+    """An unparsable video keeps the legacy placeholder rather than failing."""
+
+    model_hash = "f" * 64
+    model_file = tmp_path / "broken-model.safetensors"
+    model_file.write_text("content", encoding="utf-8")
+    model_data = {
+        "model_name": "BrokenExample",
+        "file_path": str(model_file),
+        "civitai": {},
+    }
+
+    video_path = tmp_path / "custom_ghi.mp4"
+    video_path.write_bytes(b"\x00\x00\x00\x20ftypisom" + b"\xff" * 32)
+
+    monkeypatch.setattr(metadata_module.ExifUtils, "extract_image_metadata", staticmethod(lambda _path: None))
+
+    _regular, custom = await metadata_module.MetadataUpdater.update_metadata_after_import(
+        model_hash,
+        model_data,
+        StubScanner([model_data]),
+        [(str(video_path), "ghi")],
+    )
+
+    assert (custom[0]["width"], custom[0]["height"]) == (720, 1280)
+
+
+async def test_update_metadata_from_local_examples_uses_real_video_dimensions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    model_hash = "1" * 64
+    model_dir = tmp_path / model_hash
+    model_dir.mkdir()
+    (model_dir / "clip.mp4").write_bytes(build_mp4(1920, 1080))
+    model_data: Dict[str, Any] = {
+        "model_name": "LocalVideo",
+        "civitai": {},
+        "file_path": str(tmp_path / "model.safetensors"),
+    }
+
+    async def fake_save(path, metadata):
+        return True
+
+    monkeypatch.setattr(metadata_module.MetadataManager, "save_metadata", staticmethod(fake_save))
+
+    success = await metadata_module.MetadataUpdater.update_metadata_from_local_examples(
+        model_hash,
+        model_data,
+        "lora",
+        StubScanner([model_data]),
+        str(model_dir),
+    )
+
+    assert success is True
+    entry = model_data["civitai"]["images"][0]
+    assert entry["type"] == "video"
+    assert (entry["width"], entry["height"]) == (1920, 1080)

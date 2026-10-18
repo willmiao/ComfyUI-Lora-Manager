@@ -144,7 +144,7 @@
   font-size: 0.7em;
   font-weight: 600;
   background-color: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: 8px;
@@ -165,6 +165,29 @@
 /* Dark theme adjustments for new content badge */
 [data-theme="dark"] .new-content-badge {
   box-shadow: var(--shadow-lg);
+}
+
+/* Replay Tutorial button: badge hidden until the button is flagged as new content */
+.replay-tutorial-btn .new-content-badge {
+  display: none;
+  background-color: rgba(255, 255, 255, 0.22);
+  color: var(--text-on-accent);
+  box-shadow: none;
+  margin-left: 2px;
+}
+
+.replay-tutorial-btn.has-new-content .new-content-badge {
+  display: inline-flex;
+}
+
+/* One-time attention pulse when the button is flagged as new content */
+@keyframes new-content-glow {
+  0% { box-shadow: 0 0 0 0 oklch(from var(--lora-accent) l c h / 55%); }
+  100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+.replay-tutorial-btn.has-new-content {
+  animation: new-content-glow 1.2s ease-out 3;
 }
 
 /* Update video list styles */
@@ -204,7 +227,7 @@
   font-size: 0.75em;
   font-weight: 500;
   background-color: var(--lora-accent);
-  color: var(--lora-text);
+  color: var(--text-on-accent);
   padding: 4px 8px;
   border-radius: 12px;
   margin-left: 10px;
@@ -283,7 +306,7 @@
   cursor: pointer;
   transition: var(--transition-base);
   background-color: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   text-decoration: none;
   border: none;
 }
@@ -304,4 +327,87 @@
 /* Dark theme adjustments */
 [data-theme="dark"] .video-container {
   background-color: var(--surface-hover);
+}
+/* Replay tutorial button styles */
+.help-actions {
+  margin-top: var(--space-3);
+}
+
+.replay-tutorial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-base);
+  background-color: var(--lora-accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+
+.replay-tutorial-btn:hover {
+  background-color: oklch(from var(--lora-accent) l c h / 85%);
+}
+
+/* Shortcuts tab styles */
+.shortcuts-section {
+  margin-bottom: var(--space-3);
+}
+
+.shortcuts-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-1);
+}
+
+.shortcuts-list {
+  list-style-type: none;
+  padding-left: var(--space-3);
+}
+
+.shortcuts-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--space-1);
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+.shortcut-sep {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin: 0 1px;
+}
+
+.shortcuts-list kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--shortcut-text);
+  background: var(--shortcut-bg);
+  border: 1px solid var(--shortcut-border);
+  box-shadow: var(--shortcut-shadow);
+  border-radius: var(--border-radius-xs, 3px);
+  line-height: 1;
+}
+
+.shortcut-description {
+  font-size: 0.9em;
+  opacity: 0.85;
 }

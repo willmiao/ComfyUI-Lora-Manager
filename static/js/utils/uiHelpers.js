@@ -133,15 +133,33 @@ export async function copyToClipboard(text, successMessage = null) {
   }
 }
 
-export function showToast(key, params = {}, type = 'info', fallback = null) {
-  // Plain messages (contain spaces) are not i18n dot-notation keys — use verbatim
-  // to avoid spurious "Translation key not found" warnings from i18next
-  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
-  const message = isPlainMessage ? key : translate(key, params, fallback);
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.textContent = message;
+/**
+ * Build a toast element (internal — not exported).
+ * @param {string} message - Already-resolved message text
+ * @param {string} type - Toast type (info/success/warning/error)
+ * @returns {HTMLElement} The toast element (not yet attached to the DOM)
+ */
+// Only these carry styling (icon + accent border). An unknown type is coerced
+// to `info` instead of ending up as a bare `.toast` box — a wrong argument
+// order at a call site used to leak the message itself into the class list.
+const TOAST_TYPES = new Set(['info', 'success', 'warning', 'error', 'copy']);
 
+function createToastElement(message, type) {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${TOAST_TYPES.has(type) ? type : 'info'}`;
+  toast.textContent = message;
+  return toast;
+}
+
+/**
+ * Attach a toast to the shared container, position it, and schedule its
+ * dismissal (internal — not exported).
+ * @param {HTMLElement} toast - The toast element to display
+ * @param {number} durationMs - How long the toast stays visible
+ * @param {Function} [onDismiss] - Optional callback fired once when dismissal begins
+ * @returns {Function} Manual dismiss function (idempotent)
+ */
+function appendToast(toast, durationMs, onDismiss = null) {
   // Get or create toast container
   let toastContainer = document.querySelector('.toast-container');
   if (!toastContainer) {
@@ -161,35 +179,172 @@ export function showToast(key, params = {}, type = 'info', fallback = null) {
   // Set position based on existing toasts
   toast.style.top = `${topOffset + (toastIndex * (toast.offsetHeight || 60 + spacing))}px`;
 
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
 
-    // Set timeout based on type
-    let timeout = 2000; // Default (info)
-    if (type === 'warning' || type === 'error') {
-      timeout = 5000;
+    if (typeof onDismiss === 'function') {
+      onDismiss();
     }
 
-    setTimeout(() => {
-      toast.classList.remove('show');
-      toast.addEventListener('transitionend', () => {
-        toast.remove();
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => {
+      toast.remove();
 
-        // Reposition remaining toasts
-        if (toastContainer) {
-          const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
-          remainingToasts.forEach((t, index) => {
-            t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
-          });
+      // Reposition remaining toasts
+      if (toastContainer) {
+        const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
+        remainingToasts.forEach((t, index) => {
+          t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
+        });
 
-          // Remove container if empty
-          if (remainingToasts.length === 0) {
-            toastContainer.remove();
-          }
+        // Remove container if empty
+        if (remainingToasts.length === 0) {
+          toastContainer.remove();
         }
-      });
-    }, timeout);
+      }
+    });
+  };
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+    setTimeout(dismiss, durationMs);
   });
+
+  return dismiss;
+}
+
+export function showToast(key, params = {}, type = 'info', fallback = null) {
+  // Plain messages (contain spaces) are not i18n dot-notation keys — use verbatim
+  // to avoid spurious "Translation key not found" warnings from i18next
+  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
+  const message = isPlainMessage ? key : translate(key, params, fallback);
+  const toast = createToastElement(message, type);
+
+  // Set timeout based on type
+  let duration = 2000; // Default (info)
+  if (type === 'warning' || type === 'error') {
+    duration = 5000;
+  }
+
+  appendToast(toast, duration);
+}
+
+/**
+ * Show a toast with an action button (e.g. Undo) and an optional countdown.
+ * The message accepts the same key/plain-string contract as showToast, so
+ * callers may pass either an i18n key or an already-translated string.
+ * @param {string} key - i18n key or plain message
+ * @param {Object} [params] - i18n interpolation params
+ * @param {string} [type] - Toast type (info/success/warning/error)
+ * @param {Object} [options]
+ * @param {string} [options.actionText] - Label for the action button (button omitted when empty)
+ * @param {Function} [options.onAction] - Callback invoked at most once on button click
+ * @param {number} [options.durationMs=20000] - How long the toast stays visible
+ * @param {boolean} [options.countdown=true] - Show a ticking `(N)s` countdown
+ */
+export function showActionToast(key, params = {}, type = 'info', options = {}) {
+  const { actionText, onAction, durationMs = 20000, countdown = true } = options;
+
+  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
+  const message = isPlainMessage ? key : translate(key, params);
+  const toast = createToastElement(message, type);
+
+  let countdownInterval = null;
+  const clearCountdown = () => {
+    if (countdownInterval !== null) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  };
+
+  // The interval must be cleared on EVERY dismiss path (timeout, countdown end,
+  // manual button click) — the onDismiss hook covers the appendToast timeout path.
+  const dismiss = appendToast(toast, durationMs, clearCountdown);
+
+  let actionFired = false;
+  if (actionText) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'toast-action-btn';
+    button.textContent = actionText;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      // Guard against double-click firing the action twice
+      if (actionFired) return;
+      actionFired = true;
+
+      clearCountdown();
+      if (typeof onAction === 'function') {
+        onAction();
+      }
+      dismiss();
+    });
+    toast.append(button);
+  }
+
+  if (countdown) {
+    const countdownEl = document.createElement('span');
+    countdownEl.className = 'toast-countdown';
+    let remainingSeconds = Math.max(0, Math.ceil(durationMs / 1000));
+    countdownEl.textContent = `(${remainingSeconds}s)`;
+    toast.append(countdownEl);
+
+    countdownInterval = setInterval(() => {
+      remainingSeconds -= 1;
+      countdownEl.textContent = `(${Math.max(remainingSeconds, 0)}s)`;
+      if (remainingSeconds <= 0) {
+        clearCountdown();
+        dismiss();
+      }
+    }, 1000);
+  }
+
+  // Manual close button: hides the toast early without firing onAction. The
+  // backend undo window keeps running and the batch is purged when it expires.
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'toast-close-btn';
+  closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', translate('common.actions.close'));
+  closeBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    clearCountdown();
+    dismiss();
+  });
+  toast.append(closeBtn);
+}
+
+/**
+ * Check whether the event target is a text-entry context (input, textarea,
+ * select, or contenteditable) where single-letter shortcuts should be treated
+ * as literal input.
+ * @param {EventTarget|null} target - The DOM event target
+ * @returns {boolean}
+ */
+export function isTypingContext(target) {
+  if (!(target instanceof Element)) return false;
+
+  const tagName = target.tagName?.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+}
+
+/**
+ * Decide whether a download failure means the model is unrecoverable.
+ *
+ * The hash-invalid flag (and the resulting rematch/reconnect candidacy) is
+ * only set when CivitAI explicitly says the model cannot be resolved — never
+ * for transient transport errors (network, 5xx).
+ * @param {*} message - The error message carried by the failed download
+ * @returns {boolean}
+ */
+export function isUnresolvableDownloadError(message) {
+  if (!message) {
+    return false;
+  }
+  const text = String(message).toLowerCase();
+  return /(not found|no longer available|deleted|removed|404|410|gone)/.test(text);
 }
 
 export function restoreFolderFilter() {
@@ -573,6 +728,48 @@ async function fetchWorkflowRegistry() {
   }
 }
 
+/**
+ * Check whether a registry node is excluded from send-to-workflow targets.
+ *
+ * Precedence:
+ *  1. Per-node exclusion (right-click → "Exclude from Send Targets") always wins.
+ *  2. An explicit per-node marker ("Mark as →") exempts the node from the
+ *     global exclusion lists — the user pointed at this exact node.
+ *  3. Global exclusion lists from settings: exact comfy-class matches and
+ *     case-insensitive title substrings.
+ */
+function isNodeExcludedFromSendTargets(node) {
+  if (!node) {
+    return false;
+  }
+  if (node.exclude_send === true) {
+    return true;
+  }
+  if (node.marker_role) {
+    return false;
+  }
+
+  const exclusions = state?.global?.settings?.send_to_workflow_exclusions;
+  if (!exclusions || typeof exclusions !== 'object') {
+    return false;
+  }
+
+  const nodeClasses = Array.isArray(exclusions.node_classes) ? exclusions.node_classes : [];
+  const nodeClass = node.comfy_class || node.type_name;
+  if (nodeClass && nodeClasses.includes(nodeClass)) {
+    return true;
+  }
+
+  const titlePatterns = Array.isArray(exclusions.title_patterns) ? exclusions.title_patterns : [];
+  const title = typeof node.title === 'string' ? node.title.toLowerCase() : '';
+  return titlePatterns.some((pattern) => {
+    if (typeof pattern !== 'string' || !pattern.trim()) {
+      return false;
+    }
+    return title.includes(pattern.trim().toLowerCase());
+  });
+}
+
 function filterRegistryNodes(nodes = {}, predicate) {
   if (typeof nodes !== 'object' || nodes === null) {
     return {};
@@ -580,6 +777,9 @@ function filterRegistryNodes(nodes = {}, predicate) {
 
   return Object.fromEntries(
     Object.entries(nodes).filter(([, node]) => {
+      if (isNodeExcludedFromSendTargets(node)) {
+        return false;
+      }
       try {
         return predicate(node);
       } catch (error) {
@@ -987,6 +1187,9 @@ export async function sendEmbeddingToWorkflow(embeddingCode, onComplete = null) 
     if (!isNodeEnabled(node)) {
       return false;
     }
+    if (node.capabilities?.text_widget_connected === true) {
+      return false;
+    }
     return (
       node.capabilities?.has_text_widget === true ||
       node.marker_role === "send_prompt_target"
@@ -995,7 +1198,15 @@ export async function sendEmbeddingToWorkflow(embeddingCode, onComplete = null) 
 
   const nodeKeys = Object.keys(textNodes);
   if (nodeKeys.length === 0) {
-    showToast('uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    showToast(
+      translate(
+        'uiHelpers.workflow.noPromptTargets',
+        {},
+        'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+      ),
+      {},
+      'warning'
+    );
     return false;
   }
 
@@ -1047,6 +1258,11 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
     if (!isNodeEnabled(node)) {
       return false;
     }
+    // A node whose text widget is backed by a connected input cannot have its
+    // text changed via the widget — execution reads the linked input.
+    if (node.capabilities?.text_widget_connected === true) {
+      return false;
+    }
     return (
       node.capabilities?.has_text_widget === true ||
       node.marker_role === "send_prompt_target"
@@ -1055,7 +1271,12 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
 
   const nodeKeys = Object.keys(textNodes);
   if (nodeKeys.length === 0) {
-    showToast(options.missingNodesMessage || 'uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    const defaultHint = translate(
+      'uiHelpers.workflow.noPromptTargets',
+      {},
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+    showToast(options.missingNodesMessage || defaultHint, {}, 'warning');
     return false;
   }
 
@@ -1247,6 +1468,11 @@ function showNodeSelector(nodes, options = {}) {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
     const bgColor = node.bgcolor || DEFAULT_NODE_COLOR;
     const graphLabel = node.graph_name ? ` (${node.graph_name})` : '';
+    const nodeClass = node.comfy_class || node.type_name || '';
+    const excludeTitle = translate('uiHelpers.nodeSelector.excludeNodeType', {}, 'Never suggest this node type');
+    const excludeButton = nodeClass
+      ? `<button type="button" class="node-item-exclude" data-exclude-class="${nodeClass.replace(/"/g, '&quot;')}" title="${excludeTitle}"><i class="fas fa-eye-slash"></i></button>`
+      : '';
 
     return `
       <div class="node-item" data-node-id="${nodeKey}">
@@ -1254,6 +1480,7 @@ function showNodeSelector(nodes, options = {}) {
           <i class="${iconClass}"></i>
         </div>
         <span>#${node.id}${graphLabel} ${node.title}</span>
+        ${excludeButton}
       </div>
     `;
   }).join('');
@@ -1298,6 +1525,62 @@ function showNodeSelector(nodes, options = {}) {
 }
 
 /**
+ * Add a comfy node class to the send-to-workflow exclusion list (persisted via
+ * settings), then drop matching items from the open node selector.
+ */
+async function excludeNodeClassFromSelector(comfyClass) {
+  if (!comfyClass) {
+    return;
+  }
+
+  const current = state?.global?.settings?.send_to_workflow_exclusions;
+  const updated = {
+    node_classes: Array.isArray(current?.node_classes) ? [...current.node_classes] : [],
+    title_patterns: Array.isArray(current?.title_patterns) ? [...current.title_patterns] : [],
+  };
+  if (!updated.node_classes.includes(comfyClass)) {
+    updated.node_classes.push(comfyClass);
+  }
+
+  try {
+    const response = await fetch('/api/lm/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ send_to_workflow_exclusions: updated }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.success === false) {
+      throw new Error(data?.error || 'Failed to save setting');
+    }
+  } catch (error) {
+    console.error('Failed to save send-to-workflow exclusion:', error);
+    showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+    return;
+  }
+
+  state.global.settings.send_to_workflow_exclusions = updated;
+  showToast('uiHelpers.workflow.nodeTypeExcluded', { type: comfyClass }, 'success');
+
+  // Remove matching candidates from the open selector.
+  const nodes = nodeSelectorState.currentNodes || {};
+  for (const [nodeKey, node] of Object.entries(nodes)) {
+    if ((node.comfy_class || node.type_name) === comfyClass) {
+      delete nodes[nodeKey];
+    }
+  }
+  document.querySelectorAll('#nodeSelector .node-item-exclude').forEach((button) => {
+    if (button.dataset.excludeClass === comfyClass) {
+      button.closest('.node-item')?.remove();
+    }
+  });
+
+  if (Object.keys(nodes).length === 0) {
+    hideNodeSelector();
+    showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
+  }
+}
+
+/**
  * Setup event listeners for node selector using event manager
  * @param {HTMLElement} selector - The selector element
  */
@@ -1318,6 +1601,13 @@ function setupNodeSelectorEvents(selector) {
 
   // Register node selection handler with event manager  
   eventManager.addHandler('click', 'nodeSelector-selection', async (e) => {
+    const excludeButton = e.target.closest('.node-item-exclude');
+    if (excludeButton) {
+      e.stopPropagation();
+      await excludeNodeClassFromSelector(excludeButton.dataset.excludeClass);
+      return true; // Stop propagation
+    }
+
     const nodeItem = e.target.closest('.node-item');
     if (!nodeItem) return false; // Continue with other handlers
 

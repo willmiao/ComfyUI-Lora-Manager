@@ -1,11 +1,13 @@
 // Create the new hierarchical state structure
 import { getStorageItem, getMapFromStorage } from '../utils/storageHelpers.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
-import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
+import { DEFAULT_PATH_TEMPLATES, DEFAULT_FILENAME_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
 
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
     civitai_api_key_set: false,
+    huggingface_api_key: '',
+    huggingface_api_key_set: false,
     civitai_host: 'civitai.com',
     download_backend: 'python',
     aria2c_path: '',
@@ -14,6 +16,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     show_only_sfw: false,
     enable_metadata_archive_db: false,
     enable_civarchive_api: true,
+    enable_openmodeldb_api: true,
     metadata_provider_order: 'civitai_archive_sqlite',
     proxy_enabled: false,
     proxy_type: 'http',
@@ -24,9 +27,13 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_lora_root: '',
     default_checkpoint_root: '',
     default_embedding_root: '',
+    default_other_roots: {},
+    enable_other_models: false,
+    enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},
     download_path_templates: {},
+    download_filename_templates: {},
     example_images_path: '',
     example_images_open_mode: 'system',
     example_images_local_root: '',
@@ -40,24 +47,35 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     display_density: 'default',
     recipes_layout: 'grid',
     card_info_display: 'always',
+    showcase_layout: 'gallery',
     model_name_display: 'model_name',
     lora_syntax_format: 'legacy',
     model_card_footer_action: 'example_images',
     show_version_on_card: true,
+    show_quantization_on_card: true,
     include_trigger_words: false,
     compact_mode: false,
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
     version_grouping: 'same_base',
     hide_early_access_updates: false,
+    hide_paid_updates: false,
+    price_tracking_enabled: false,
+    price_check_ttl_hours: 24,
     auto_organize_exclusions: [],
     metadata_refresh_skip_paths: [],
+    send_to_workflow_exclusions: { node_classes: [], title_patterns: [] },
     skip_previously_downloaded_model_versions: false,
     download_skip_base_models: [],
+    download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
+    unknown_base_model_routing: 'diffusion_model',
     backup_auto_enabled: true,
     backup_retention_count: 5,
+    sidecar_storage_mode: 'alongside',
+    sidecar_storage_path: '',
     strip_lora_on_copy: false,
     use_new_license_icons: true,
     group_by_model: false,
+    sticky_controls: false,
     llm_provider: 'openai',
     llm_api_key: '',
     llm_api_base: '',
@@ -69,7 +87,18 @@ export function createDefaultSettings() {
         ...DEFAULT_SETTINGS_BASE,
         base_model_path_mappings: {},
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
+        download_filename_templates: { ...DEFAULT_FILENAME_TEMPLATES },
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
+        default_other_roots: {},
+        download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
+        enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
+        send_to_workflow_exclusions: { node_classes: [], title_patterns: [] },
+        // Standalone-only fields populated by GET /api/lm/settings; in plugin
+        // mode the backend omits folder_paths/folder_path_schema and these
+        // defaults apply.
+        standalone_mode: false,
+        folder_paths: {},
+        folder_path_schema: [],
     };
 }
 
@@ -77,6 +106,7 @@ export function createDefaultSettings() {
 const loraPreviewVersions = getMapFromStorage('loras_preview_versions');
 const checkpointPreviewVersions = getMapFromStorage('checkpoints_preview_versions');
 const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions');
+const otherPreviewVersions = getMapFromStorage('other_preview_versions');
 
 export const state = {
     // Global state
@@ -146,6 +176,7 @@ export const state = {
                 tags: {},
                 license: {},
                 modelTypes: [],
+                loraAvailability: [],
                 search: ''
             },
             pageSize: 20,
@@ -207,6 +238,43 @@ export const state = {
                 tags: false,
                 creator: false,
                 recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
+            },
+            bulkMode: false,
+            selectedModels: new Set(),
+            metadataCache: new Map(),
+            showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
+            duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
+        },
+
+        [MODEL_TYPES.OTHER]: {
+            currentPage: 1,
+            isLoading: false,
+            hasMore: true,
+            sortBy: 'name',
+            activeFolder: getStorageItem(`${MODEL_TYPES.OTHER}_activeFolder`),
+            previewVersions: otherPreviewVersions,
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.OTHER}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],

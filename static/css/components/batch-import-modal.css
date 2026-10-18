@@ -31,6 +31,10 @@
 /* Textarea Styling */
 #batchUrlInput {
     width: 100%;
+    /* Content-box sizing made the border box wider than the modal's content
+       box, so the right border/halo fell outside the clipped area and was cut
+       off. Include padding and border in the declared width. */
+    box-sizing: border-box;
     min-height: 120px;
     padding: 12px;
     border: 1px solid var(--border-color);
@@ -89,7 +93,7 @@
     content: '\f00c';
     font-family: 'Font Awesome 6 Free', sans-serif;
     font-weight: 900;
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     font-size: 12px;
 }
 
@@ -116,7 +120,7 @@
     white-space: nowrap;
     padding: 8px 16px;
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
@@ -130,7 +134,7 @@
 /* Dark theme adjustments for input-with-button */
 [data-theme="dark"] .input-with-button button {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 [data-theme="dark"] .input-with-button button:hover {

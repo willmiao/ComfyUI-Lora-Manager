@@ -2,6 +2,9 @@
     "common": {
         "cancel": "ביטול",
         "confirm": "אישור",
+        "reorder": {
+            "dragHandle": "גרור כדי לשנות סדר"
+        },
         "actions": {
             "save": "שמירה",
             "cancel": "ביטול",
@@ -50,6 +53,28 @@
             "mb": "MB",
             "gb": "GB",
             "tb": "TB"
+        },
+        "scanProgress": {
+            "refreshing": "מרענן {type}...",
+            "fullRebuilding": "בונה מחדש את כל ה-{type}...",
+            "actionRefresh": "רענון",
+            "actionFullRebuild": "רענון מלא",
+            "actionRefreshLower": "רענון",
+            "actionRebuildLower": "רענון מלא",
+            "stages": {
+                "scan_folders": "סורק תיקיות...",
+                "count_models": "נמצאו {total} קבצים",
+                "process_models": "מעבד מודלים",
+                "reconcile_scan": "בודק שינויים...",
+                "process_new": "מעבד מודלים חדשים",
+                "finalizing": "מסיים..."
+            },
+            "eta": {
+                "lessThanMinute": "נותרה פחות מדקה",
+                "minutes": "נותרו ~{minutes} דקות",
+                "hours": "נותרו ~{hours} שעות ו-{minutes} דקות"
+            },
+            "walkFiles": "{count} קבצים"
         }
     },
     "onboarding": {
@@ -66,16 +91,16 @@
         },
         "steps": {
             "fetch": {
-                "title": "אחזור מטא-דאטה של מודלים",
-                "content": "לחץ על כפתור <strong>אחזר</strong> כדי להוריד מטא-דאטה של מודלים ותמונות תצוגה מקדימה מ-Civitai."
+                "title": "אחזור מטא-נתונים של מודלים",
+                "content": "לחץ על כפתור <strong>אחזר</strong> כדי להוריד מטא-נתונים של מודלים ותמונות תצוגה מקדימה מ-CivitAI."
             },
             "download": {
                 "title": "הורדת מודלים חדשים",
-                "content": "השתמש בכפתור <strong>הורד</strong> כדי להוריד מודלים ישירות מכתובות URL של Civitai."
+                "content": "השתמש בכפתור <strong>הורד</strong> כדי להוריד מודלים ישירות מכתובות URL של CivitAI."
             },
             "bulk": {
                 "title": "פעולות בכמות גדולה",
-                "content": "היכנס למצב פעולות בכמות גדולה על ידי לחיצה על כפתור זה או על <span class=\"onboarding-shortcut\">B</span>. בחר מספר מודלים ובצע פעולות אצווה. השתמש ב-<span class=\"onboarding-shortcut\">Ctrl+A</span> כדי לבחור את כל המודלים הגלויים."
+                "content": "היכנס למצב פעולות בכמות גדולה על ידי לחיצה על כפתור זה או על <span class=\"onboarding-shortcut\">B</span> כדי לבחור מספר מודלים ולבצע פעולות בכמות גדולה.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> בחר את כל המודלים הגלויים, <span class=\"onboarding-shortcut\">Shift+Click</span> בחר טווח.<br>• <span class=\"onboarding-shortcut\">Esc</span> או לחיצה על אזור ריק מוציאים ממצב בכמות גדולה."
             },
             "searchOptions": {
                 "title": "אפשרויות חיפוש",
@@ -91,11 +116,23 @@
             },
             "modelCards": {
                 "title": "כרטיסי מודל",
-                "content": "<strong>לחיצה בודדת</strong> על כרטיס מודל כדי להציג מידע מפורט ולערוך מטא-דאטה. חפש את סמל העיפרון בעת ריחוף מעל שדות הניתנים לעריכה."
+                "content": "<strong>לחיצה בודדת</strong> על כרטיס מודל כדי להציג מידע מפורט ולערוך מטא-נתונים. חפש את סמל העיפרון בעת ריחוף מעל שדות הניתנים לעריכה."
             },
             "contextMenu": {
                 "title": "תפריט הקשר",
-                "content": "<strong>לחיצה ימנית</strong> על כל כרטיס מודל לתפריט הקשר עם פעולות נוספות."
+                "content": "<strong>לחיצה ימנית</strong> על כל כרטיס מודל לתפריט הקשר עם פעולות כרטיס כמו העברה, מחיקה או עריכת מטא-נתונים."
+            },
+            "marqueeSelect": {
+                "title": "גרור כדי לבחור",
+                "content": "החזק את <strong>לחצן העכבר השמאלי</strong> לחוץ על אזור ריק של הרשת וגרור כדי לצייר מסגרת בחירה שבוחרת מספר כרטיסים בבת אחת."
+            },
+            "dragToSidebar": {
+                "title": "ארגון באמצעות גרירה",
+                "content": "גרור כרטיס מודל אל תיקייה בסרגל הצד כדי להעביר את הקובץ לשם. פעולה זו עובדת גם עם מספר כרטיסים נבחרים במצב בכמות גדולה."
+            },
+            "contextMenus": {
+                "title": "תפריטי הקשר נוספים",
+                "content": "במצב בכמות גדולה, <strong>לחץ לחיצה ימנית על כרטיס נבחר</strong> לפעולות בכמות גדולה. <strong>לחץ לחיצה ימנית על אזור ריק</strong> בדף לפעולות גלובליות כמו בדיקת עדכונים וניהול מודלים מוחרגים."
             }
         }
     },
@@ -103,9 +140,10 @@
         "actions": {
             "addToFavorites": "הוסף למועדפים",
             "removeFromFavorites": "הסר מהמועדפים",
-            "viewOnCivitai": "הצג ב-Civitai",
-            "notAvailableFromCivitai": "לא זמין מ-Civitai",
+            "viewOnCivitai": "הצג ב-CivitAI",
+            "notAvailableFromCivitai": "לא זמין מ-CivitAI",
             "viewOnHuggingFace": "צפייה ב-Hugging Face",
+            "viewOnSource": "צפייה ב-{source}",
             "sendToWorkflow": "שלח ל-ComfyUI (לחיצה: הוסף, Shift+לחיצה: החלף)",
             "copyLoRASyntax": "העתק תחביר LoRA",
             "checkpointNameCopied": "שם Checkpoint הועתק",
@@ -116,6 +154,7 @@
             "copyCheckpointName": "העתק שם Checkpoint",
             "copyEmbeddingName": "העתק שם Embedding",
             "embeddingNameCopied": "תחביר Embedding הועתק",
+            "modelNameCopied": "שם המודל הועתק",
             "sendCheckpointToWorkflow": "שלח ל-ComfyUI",
             "sendEmbeddingToWorkflow": "שלח ל-ComfyUI"
         },
@@ -137,7 +176,7 @@
         "exampleImages": {
             "checkError": "שגיאה בבדיקת תמונות דוגמה",
             "missingHash": "חסר מידע hash של המודל.",
-            "noRemoteImagesAvailable": "אין תמונות דוגמה מרוחקות זמינות למודל זה ב-Civitai"
+            "noRemoteImagesAvailable": "אין תמונות דוגמה מרוחקות זמינות למודל זה ב-CivitAI"
         },
         "badges": {
             "update": "עדכון",
@@ -163,7 +202,11 @@
             "loading": "בודק עדכונים עבור {type}...",
             "success": "נמצאו {count} עדכונים עבור {type}",
             "none": "כל ה-{type} מעודכנים",
-            "error": "נכשל בבדיקת העדכונים עבור {type}: {message}"
+            "error": "נכשל בבדיקת העדכונים עבור {type}: {message}",
+            "gateEvents": {
+                "becameFree": "{count} גרסאות שאין לך הפכו לחינמיות",
+                "newGate": "{count} גרסאות דורשות כעת תשלום"
+            }
         },
         "cleanupExampleImages": {
             "label": "נקה תיקיות תמונות דוגמה",
@@ -173,24 +216,24 @@
             "error": "ניקוי תיקיות תמונות הדוגמה נכשל: {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "רענן מטא-נתוני רישיון",
+            "loading": "מרענן מטא-נתוני רישיון עבור {typePlural}...",
+            "success": "עודכנו מטא-נתוני רישיון עבור {count} {typePlural}",
+            "none": "לכל ה-{typePlural} כבר יש מטא-נתוני רישיון",
+            "error": "לא ניתן היה לרענן את מטא-נתוני הרישיון עבור {typePlural}: {message}"
         },
-        "repairRecipes": {
-            "label": "תיקון נתוני מתכונים",
-            "loading": "מתקן נתוני מתכונים...",
-            "success": "תוקנו בהצלחה {count} מתכונים.",
-            "cancelled": "תיקון בוטל. {count} מתכונים תוקנו.",
-            "error": "תיקון המתכונים נכשל: {message}"
+        "rematchRecipes": {
+            "label": "התאמה מחדש של מתכונים למודלים מקומיים",
+            "loading": "מתבצעת התאמה מחדש של מתכונים למודלים מקומיים...",
+            "success": "הותאמו {entries} פריטים ב־{recipes} מתכונים",
+            "cancelled": "ההתאמה בוטלה. עודכנו {recipes} מתכונים ({entries} פריטים)",
+            "error": "ההתאמה מחדש של המתכונים נכשלה: {message}"
         },
         "manageExcludedModels": {
             "label": "ניהול מודלים מוחרגים"
         },
         "groupByModel": {
-            "label": "קיבוץ לפי דגם"
+            "label": "קיבוץ לפי מודל"
         }
     },
     "header": {
@@ -200,6 +243,7 @@
             "recipes": "מתכונים",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "אחרים",
             "statistics": "סטטיסטיקה"
         },
         "search": {
@@ -215,7 +259,7 @@
                 "title": "כותרת מתכון",
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
-                "prompt": "הנחיה"
+                "prompt": "פרומפט"
             }
         },
         "filter": {
@@ -229,7 +273,7 @@
             "presetDeleteTooltip": "מחק קביעה מראש",
             "presetDeleteConfirm": "למחוק קביעה מראש \"{name}\"?",
             "presetDeleteConfirmClick": "לחץ שוב לאישור",
-            "presetOverwriteConfirm": "הפריסט \"{name}\" כבר קיים. לדרוס?",
+            "presetOverwriteConfirm": "קביעה מראש \"{name}\" כבר קיימת. לדרוס?",
             "presetNamePlaceholder": "שם קביעה מראש...",
             "baseModel": "מודל בסיס",
             "baseModelSearchPlaceholder": "חפש מודלי בסיס...",
@@ -249,7 +293,13 @@
             "any": "כלשהו",
             "all": "כל התגים",
             "tagLogicAny": "התאם כל תג (או)",
-            "tagLogicAll": "התאם את כל התגים (וגם)"
+            "tagLogicAll": "התאם את כל התגים (וגם)",
+            "loraAvailability": "זמינות LoRA",
+            "availabilityReady": "מוכנים לשימוש",
+            "availabilityMissing": "עם LoRAs חסרים",
+            "availabilityDeleted": "עם LoRAs שנמחקו",
+            "workflow": "workflow",
+            "hasWorkflow": "עם workflow"
         },
         "theme": {
             "toggle": "החלף ערכת נושא",
@@ -275,15 +325,21 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "מפתח API של Civitai",
-        "civitaiApiKeyPlaceholder": "הזן את מפתח ה-API שלך מ-Civitai",
-        "civitaiApiKeyHelp": "משמש לאימות בעת הורדת מודלים מ-Civitai",
+        "civitaiApiKey": "מפתח API של CivitAI",
+        "civitaiApiKeyPlaceholder": "הזן את מפתח ה-API שלך מ-CivitAI",
+        "civitaiApiKeyHelp": "משמש לאימות בעת הורדת מודלים מ-CivitAI",
         "civitaiApiKeyConfigured": "מוגדר",
         "civitaiApiKeyNotConfigured": "לא מוגדר",
         "civitaiApiKeySet": "הגדר",
+        "huggingfaceApiKey": "אסימון גישה של Hugging Face",
+        "huggingfaceApiKeyPlaceholder": "הזן את אסימון הגישה שלך מ-Hugging Face",
+        "huggingfaceApiKeyHelp": "נדרש להורדה ממאגרי Hugging Face מוגבלים (gated) או פרטיים. צור אסימון לקריאה-בלבד בכתובת huggingface.co/settings/tokens ואשר תחילה את תנאי המאגר בעמוד שלו.",
+        "huggingfaceApiKeyConfigured": "מוגדר",
+        "huggingfaceApiKeyNotConfigured": "לא מוגדר",
+        "huggingfaceApiKeySet": "הגדר",
         "civitaiHost": {
-            "label": "מארח Civitai",
-            "help": "בחר איזה אתר של Civitai ייפתח בעת שימוש בקישורי \"View on Civitai\".",
+            "label": "מארח CivitAI",
+            "help": "בחר איזה אתר של CivitAI ייפתח בעת שימוש בקישורי \"View on CivitAI\".",
             "options": {
                 "com": "civitai.com (SFW בלבד)",
                 "red": "civitai.red (ללא הגבלות)"
@@ -303,9 +359,17 @@
             "placeholder": "השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH"
         },
         "aria2HelpLink": "למד כיצד להגדיר את מנוע ההורדה aria2",
+        "unknownBaseModelRouting": {
+            "label": "ניתוב מודל בסיס לא מוכר",
+            "help": "קובע לאן מועברות הורדות של Checkpoint כאשר CivitAI מדווח על מודל בסיס שהוא לא Checkpoint מוכר (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) ולא מודל דיפוזיה מוכר. ארכיטקטורות דיפוזיה חדשות מופיעות לעיתים קרובות, ולכן ניתוב שלהן למודלי דיפוזיה הוא בדרך כלל הנכון.",
+            "options": {
+                "diffusionModel": "מודלי דיפוזיה",
+                "checkpoint": "Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
-            "title": "העדפת מארח Civitai זמינה",
-            "content": "Civitai משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",
+            "title": "העדפת מארח CivitAI זמינה",
+            "content": "CivitAI משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",
             "openSettings": "פתח הגדרות"
         },
         "openSettingsFileLocation": {
@@ -330,15 +394,20 @@
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "priorityTags": "תגיות עדיפות",
             "versionScope": "תגי עדכון",
+            "priceTracking": "מחירי הורדה ב-Buzz",
             "exampleImages": "תמונות דוגמה",
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
-            "proxySettings": "הגדרות פרוקסי"
+            "sidecarStorage": "אחסון קובצי לוואי",
+            "proxySettings": "הגדרות פרוקסי",
+            "sendToWorkflow": "שליחה ל-workflow"
         },
         "nav": {
             "general": "כללי",
             "interface": "ממשק",
-            "library": "ספרייה"
+            "library": "ספרייה",
+            "organization": "ארגון",
+            "modelPaths": "נתיבי מודלים"
         },
         "search": {
             "placeholder": "חיפוש בהגדרות...",
@@ -385,6 +454,18 @@
                 "saveFailed": "לא ניתן לשמור נתיבי דילוג: {message}"
             }
         },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "סוגי צמתים מוחרגים",
+                "placeholder": "דוגמה: CheckpointLoaderSimple, MyCustomNode",
+                "help": "שמות מחלקה של צמתים ב-ComfyUI שלעולם לא מופיעים כיעדי שליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
+            },
+            "titlePatterns": {
+                "label": "תבניות כותרת של צמתים מוחרגים",
+                "placeholder": "דוגמה: negative, preview",
+                "help": "צמתים שכותרתם מכילה אחד מקטעי הטקסט האלה (ללא תלות ברישיות) מוסתרים מיעדי השליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
+            }
+        },
         "backup": {
             "autoEnabled": "גיבויים אוטומטיים",
             "autoEnabledHelp": "יוצר צילום מצב מקומי פעם ביום ושומר את הצילומים האחרונים לפי מדיניות השמירה.",
@@ -413,7 +494,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "דלג על הורדות עבור מודלי בסיס",
-            "help": "חל על כל תהליכי ההורדה. ניתן לבחור כאן רק מודלי בסיס נתמכים.",
+            "help": "כשהאפשרות מופעלת, גרסאות המשתמשות במודלי הבסיס שנבחרו ידולגו.",
             "searchPlaceholder": "סנן מודלי בסיס...",
             "empty": "אין מודלי בסיס התואמים לחיפוש הנוכחי.",
             "summary": {
@@ -429,13 +510,51 @@
                 "saveFailed": "לא ניתן לשמור את מודלי הבסיס המוחרגים: {message}"
             }
         },
+        "downloadRootRules": {
+            "title": "כללי שורש להורדות",
+            "help": "מנתב הורדות לתיקיית שורש אחרת בהתאם למודל הבסיס או לתגיות של המודל.",
+            "description": "הכללים נבדקים לפי הסדר. ההתאמה הראשונה מנצחת; הורדות ללא התאמה משתמשות בשורש ברירת המחדל.",
+            "defaultHint": "ברירת מחדל: {root} — הורדות ללא התאמה מגיעות לכאן",
+            "defaultSuffix": "ברירת מחדל",
+            "addBaseModelRule": "כלל מודל בסיס",
+            "addTagRule": "כלל תגית",
+            "removeRule": "הסר כלל",
+            "moveUp": "הזז למעלה",
+            "moveDown": "הזז למטה",
+            "noRoots": "לא הוגדרו שורשים עבור סוג מודל זה.",
+            "matchTypes": {
+                "baseModel": "מודל בסיס",
+                "tag": "תגית"
+            },
+            "matchTypeChips": {
+                "baseModel": "BM",
+                "tag": "תגית"
+            },
+            "tagPlaceholder": "character, style, realistic",
+            "summary": {
+                "selectBaseModels": "בחר מודלי בסיס...",
+                "enterTags": "הזן תגיות...",
+                "more": "+{count} נוספים"
+            },
+            "types": {
+                "loras": "LoRA",
+                "checkpoints": "Checkpoint",
+                "unet": "Diffusion Model",
+                "embeddings": "Embedding"
+            },
+            "validation": {
+                "saveFailed": "לא ניתן לשמור את כללי השורש להורדות: {message}"
+            }
+        },
         "skipPreviouslyDownloadedModelVersions": {
             "label": "דלג על גרסאות מודלים שהורדו בעבר",
             "help": "כאשר מופעל, LoRA Manager ידלג על הורדת גרסת מודל אם שירות היסטוריית ההורדות רושם את הגרסה המדויקת הזו ככבר שהורדה. חל על כל תהליכי ההורדה."
         },
         "layoutSettings": {
-            "groupByModel": "קיבוץ לפי דגם",
-            "groupByModelHelp": "כאשר מופעל, רק הגרסה העדכנית ביותר של כל דגם Civitai מוצגת ככרטיס בודד. גרסאות ישנות יותר מוסתרות.",
+            "groupByModel": "קיבוץ לפי מודל",
+            "groupByModelHelp": "כאשר מופעל, רק הגרסה העדכנית ביותר של כל מודל CivitAI מוצגת ככרטיס בודד. גרסאות ישנות יותר מוסתרות.",
+            "stickyControls": "השארת סרגל הפעולות גלוי",
+            "stickyControlsHelp": "כאשר מופעל, סרגל הפעולות (רענון, הורדה וכו') נשאר מוצמד לחלק העליון בעת גלילה, יחד עם ניווט פירורי הלחם.",
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {
                 "default": "ברירת מחדל",
@@ -463,8 +582,16 @@
                 "hover": "חשוף בריחוף"
             },
             "cardInfoDisplayHelp": "בחר מתי להציג מידע על המודל וכפתורי פעולה",
+            "showcaseLayout": "פריסת תמונות דוגמה",
+            "showcaseLayoutHelp": "בחר כיצד יוצגו תמונות הדוגמה בחלון המודל: גלריה המציגה תמונה אחת בכל פעם או הרשימה האנכית הקלאסית.",
+            "showcaseLayoutOptions": {
+                "gallery": "גלריה",
+                "vertical": "רשימה אנכית"
+            },
             "showVersionOnCard": "הצג גרסה בכרטיס",
             "showVersionOnCardHelp": "הצג או הסתר את שם הגרסה בכרטיסי המודל",
+            "showQuantizationOnCard": "הצג קוונטיזציה בכרטיס",
+            "showQuantizationOnCardHelp": "הצג את רמת הקוונטיזציה (למשל Q4_K_M, FP8) לצד שם הגרסה בכרטיסי המודל",
             "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
             "modelCardFooterActionOptions": {
                 "exampleImages": "פתח תמונות דוגמה",
@@ -493,6 +620,25 @@
             "defaultUnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Diffusion Model (UNET) להורדות, ייבוא והעברות",
             "defaultEmbeddingRoot": "תיקיית שורש Embedding",
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
+            "defaultVaeRoot": "תיקיית שורש VAE",
+            "defaultVaeRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של VAE להורדות, ייבוא והעברות",
+            "defaultUpscalerRoot": "תיקיית שורש Upscaler",
+            "defaultUpscalerRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Upscaler להורדות, ייבוא והעברות",
+            "defaultTextEncoderRoot": "תיקיית שורש Text Encoder",
+            "defaultTextEncoderRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Text Encoder להורדות, ייבוא והעברות",
+            "defaultClipVisionRoot": "תיקיית שורש CLIP Vision",
+            "defaultClipVisionRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של CLIP Vision להורדות, ייבוא והעברות",
+            "defaultControlnetRoot": "תיקיית שורש ControlNet",
+            "defaultControlnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של ControlNet להורדות, ייבוא והעברות",
+            "enableOtherModels": "ניהול מודלים אחרים",
+            "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
+            "otherSubTypes": "סוגי מודלים מנוהלים",
+            "otherSubTypesHelp": "בחר אילו קטגוריות של מודלים אחרים ייסרקו ויוצגו בעמוד המודלים האחרים.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "נתיב אחסון מתכונים",
             "recipesPathHelp": "ספרייה מותאמת אישית אופציונלית למתכונים שנשמרו. השאר ריק כדי להשתמש בתיקיית recipes של שורש LoRA הראשון.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -502,7 +648,7 @@
         "extraFolderPaths": {
             "title": "נתיבי תיקיות נוספים",
             "description": "נתיבי שורש מודלים נוספים בלעדיים ל-LoRA Manager. טען מודלים ממיקומים מחוץ לתיקיות הסטנדרטיות של ComfyUI - אידיאלי לספריות גדולות שאחרת יאטו את ComfyUI.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "נדרש אתחול כדי שהשינוי ייכנס לתוקף",
             "modelTypes": {
                 "lora": "נתיבי LoRA",
                 "checkpoint": "נתיבי Checkpoint",
@@ -517,6 +663,46 @@
                 "checkpointUnetOverlap": "לא ניתן להשתמש באותו נתיב עבור checkpoints ומודלי דיפוזיה: {paths}",
                 "checkpointUnetOverlapInline": "הנתיב הזה כבר נמצא בשימוש עבור סוג מודל אחר. יש להשתמש בתיקיות נפרדות עבור checkpoints ומודלי דיפוזיה."
             }
+        },
+        "modelPaths": {
+            "title": "נתיבי ספריית המודלים",
+            "description": "תיקיות שורש ש-LoRA Manager סורק לאיתור המודלים שלך. אלו מיקומי המודלים הראשיים הנקראים מ-settings.json במצב עצמאי.",
+            "restartRequired": "נדרש אתחול כדי שהשינוי ייכנס לתוקף",
+            "coreTypes": "סוגי מודלים מרכזיים",
+            "otherTypes": "סוגי מודלים אחרים",
+            "otherTypesDisabledHint": "לא מופעלים סוגי מודלים אחרים. הפעל למעלה את הסוגים הדרושים לך כדי להגדיר את התיקיות שלהם.",
+            "saveSuccessRestart": "נתיבי ספריית המודלים עודכנו. נדרשת הפעלה מחדש כדי להחיל את השינויים.",
+            "pendingRestartNotice": "שינויי הנתיבים נשמרו. הפעל מחדש את LoRA Manager כדי שייכנסו לתוקף.",
+            "pendingRestartBannerTitle": "נדרשת הפעלה מחדש כדי להחיל את שינויי הנתיבים",
+            "pendingRestartBannerMessage": "נתיבי ספריית המודלים עודכנו. הפעל מחדש את שרת LoRA Manager כדי לסרוק את התיקיות החדשות.",
+            "folderKeys": {
+                "loras": "נתיבי LoRA",
+                "checkpoints": "נתיבי Checkpoint",
+                "unet": "נתיבי מודל דיפוזיה",
+                "embeddings": "נתיבי Embedding",
+                "vae": "נתיבי VAE",
+                "upscale_models": "נתיבי Upscaler",
+                "text_encoders": "נתיבי Text Encoder",
+                "clip": "נתיבי CLIP (ישן)",
+                "clip_vision": "נתיבי CLIP Vision",
+                "controlnet": "נתיבי ControlNet"
+            }
+        },
+        "directoryPicker": {
+            "title": "עיון בתיקיות",
+            "selectFolder": "בחר תיקייה זו",
+            "goUp": "למעלה",
+            "pathPlaceholder": "הזן נתיב...",
+            "go": "עבור",
+            "emptyFolder": "אין תתי-תיקיות",
+            "loadError": "טעינת התיקייה נכשלה"
+        },
+        "pathValidation": {
+            "valid": "הנתיב תקין",
+            "pathNotFound": "הנתיב לא קיים",
+            "notADirectory": "לא תיקייה",
+            "notReadable": "הנתיב לא ניתן לקריאה",
+            "notWritable": "הנתיב לא ניתן לכתיבה"
         },
         "priorityTags": {
             "title": "תגיות עדיפות",
@@ -540,7 +726,7 @@
         },
         "downloadPathTemplates": {
             "title": "תבניות נתיב הורדה",
-            "help": "הגדר מבני תיקיות לסוגי מודלים שונים בעת הורדה מ-Civitai.",
+            "help": "הגדר מבני תיקיות לסוגי מודלים שונים בעת הורדה מ-CivitAI.",
             "availablePlaceholders": "מצייני מקום זמינים:",
             "templateOptions": {
                 "flatStructure": "מבנה שטוח",
@@ -574,10 +760,26 @@
                 "validTemplate": "תבנית תקינה"
             }
         },
+        "filenameTemplates": {
+            "title": "תבניות שמות קבצים",
+            "help": "הגדר שמות קבצים למודלים שהורדו לפי סוג מודל. השאר ריק כדי לשמור על שמות הקבצים המקוריים בעת ההורדה; החלת תבנית ריקה משחזרת את שמות הקבצים המקוריים המתועדים של מודלים ששונה שמם בעבר. שם הקובץ המקורי תמיד נשמר במטא-נתונים של המודל.",
+            "availablePlaceholders": "מצייני מקום זמינים:",
+            "templatePlaceholder": "הזן תבנית שם קובץ (למשל, {base_model}-{model_name}-{version_name})",
+            "applyButton": "החל על הספרייה כעת",
+            "applyHelp": "משנה את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית; עם תבנית ריקה, משחזר במקום זאת את שמות הקבצים המקוריים המתועדים. אזהרה: שינוי שם משנה את הנתיב היחסי שרואים הטוענים של ComfyUI, ולכן workflows קיימים המפנים לשם הקובץ הישן עשויים לדרוש עדכון. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmApply": "לשנות את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית שם הקובץ? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmRevert": "לשחזר את שמות הקבצים המקוריים המתועדים של כל הקבצים ששונה שמם בעבר מסוג מודל זה? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. קבצים ללא שם קובץ מקורי מתועד ידולגו.",
+            "validation": {
+                "restoreOriginal": "תקין (תבנית ריקה משחזרת שמות קבצים מקוריים)",
+                "invalidChars": "זוהו תווים לא חוקיים (שם קובץ אינו יכול להכיל / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "מציין מקום לא חוקי: {placeholder}",
+                "validTemplate": "תבנית תקינה"
+            }
+        },
         "exampleImages": {
             "downloadLocation": "מיקום הורדה",
             "downloadLocationPlaceholder": "הזן נתיב תיקייה לתמונות דוגמה",
-            "downloadLocationHelp": "הזן את נתיב התיקייה שבו יישמרו תמונות דוגמה מ-Civitai",
+            "downloadLocationHelp": "הזן את נתיב התיקייה שבו יישמרו תמונות דוגמה מ-CivitAI",
             "autoDownload": "הורדה אוטומטית של תמונות דוגמה",
             "autoDownloadHelp": "הורד אוטומטית תמונות דוגמה למודלים שאין להם (דורש הגדרת מיקום הורדה)",
             "openMode": "פעולת פתיחת תמונות דוגמה",
@@ -596,21 +798,32 @@
             "uriTemplatePlaceholders": "מצייני מקום זמינים: {{local_path}}, {{encoded_local_path}}, {{relative_path}}, {{encoded_relative_path}}, {{file_uri}}, {{encoded_file_uri}}",
             "openModeWikiLink": "למידע נוסף על מצבי פתיחה מרחוק",
             "optimizeImages": "מטב תמונות שהורדו",
-            "optimizeImagesHelp": "מטב תמונות דוגמה כדי להקטין את גודל הקובץ ולשפר את מהירות הטעינה (מטא-דאטה תישמר)",
+            "optimizeImagesHelp": "מטב תמונות דוגמה כדי להקטין את גודל הקובץ ולשפר את מהירות הטעינה (מטא-נתונים תישמר)",
             "download": "הורד",
             "restartRequired": "דורש הפעלה מחדש"
         },
         "versionGrouping": {
             "label": "אסטרטגיית תגי עדכון",
-            "help": "בחרו אם תוויות העדכון יוצגו רק כאשר גרסה חדשה חולקת את אותו דגם בסיס כמו הקבצים המקומיים שלכם או בכל מקרה שבו קיימת גרסה חדשה עבור אותו דגם.",
+            "help": "בחרו אם תוויות העדכון יוצגו רק כאשר גרסה חדשה חולקת את אותו מודל בסיס כמו הקבצים המקומיים שלכם או בכל מקרה שבו קיימת גרסה חדשה עבור אותו מודל.",
             "options": {
-                "sameBase": "התאמת עדכונים לפי דגם בסיס",
+                "sameBase": "התאמת עדכונים לפי מודל בסיס",
                 "any": "תוויות לכל עדכון זמין"
             }
         },
         "hideEarlyAccessUpdates": {
             "label": "הסתר עדכוני גישה מוקדמת",
-            "help": "רק עדכוני גישה מוקדמת"
+            "help": "כשהאפשרות מופעלת, מודלים עם עדכוני גישה מוקדמת בלבד לא יציגו תג «עדכון זמין»."
+        },
+        "hidePaidUpdates": {
+            "label": "הסתר עדכונים בתשלום",
+            "help": "כשאפשרות זו מופעלת, מודלים עם עדכונים בתשלום בלבד לא יציגו את תגית 'עדכון זמין'"
+        },
+        "priceTracking": {
+            "help": "ה-API הציבורי של CivitAI אינו מפרסם מחירי הורדה, ולכן הם נקראים מדף המודל - בקשה נוספת אחת לכל מודל בתשלום, ברענון לפי המרווח שלמטה. המחירים מוצגים רק בגרסאות שאין לך עדיין.",
+            "enabled": "הצג מחירי הורדה של גרסאות בתשלום",
+            "enabledHelp": "קורא את מחיר ההורדה מדף המודל כדי להציג כמה עולות גרסאות בתשלום וגרסאות בגישה מוקדמת, ומתי מסתיימת הגישה המוקדמת",
+            "refreshHours": "מרווח רענון המחירים (שעות)",
+            "refreshHoursHelp": "כמה זמן מחיר שמור נחשב מעודכן לפני קריאה חוזרת"
         },
         "licenseIcons": {
             "useNewStyle": "השתמש בסמלי רישיון מעודכנים",
@@ -627,34 +840,66 @@
             }
         },
         "metadataArchive": {
-            "enableArchiveDb": "הפעל מסד נתונים של ארכיון מטא-דאטה",
-            "enableArchiveDbHelp": "השתמש במסד נתונים מקומי כדי לגשת למטא-דאטה של מודלים שנמחקו מ-Civitai.",
+            "enableArchiveDb": "הפעל מסד נתונים של ארכיון מטא-נתונים",
+            "enableArchiveDbHelp": "השתמש במסד נתונים מקומי כדי לגשת למטא-נתונים של מודלים שנמחקו מ-CivitAI.",
             "status": "סטטוס",
             "statusAvailable": "זמין",
             "statusUnavailable": "לא זמין",
             "enabled": "מופעל",
             "management": "ניהול מסד נתונים",
-            "managementHelp": "הורד או הסר את מסד הנתונים של ארכיון המטא-דאטה",
+            "managementHelp": "הורד או הסר את מסד הנתונים של ארכיון המטא-נתונים",
             "downloadButton": "הורד מסד נתונים",
             "downloadingButton": "מוריד...",
             "downloadedButton": "הורד",
             "removeButton": "הסר מסד נתונים",
             "removingButton": "מסיר...",
-            "downloadSuccess": "מסד הנתונים של ארכיון המטא-דאטה הורד בהצלחה",
-            "downloadError": "הורדת מסד הנתונים של ארכיון המטא-דאטה נכשלה",
-            "removeSuccess": "מסד הנתונים של ארכיון המטא-דאטה הוסר בהצלחה",
-            "removeError": "הסרת מסד הנתונים של ארכיון המטא-דאטה נכשלה",
-            "removeConfirm": "האם אתה בטוח שברצונך להסיר את מסד הנתונים של ארכיון המטא-דאטה? פעולה זו תמחק את קובץ מסד הנתונים המקומי ותצטרך להוריד אותו שוב כדי להשתמש בתכונה זו.",
+            "downloadSuccess": "מסד הנתונים של ארכיון המטא-נתונים הורד בהצלחה",
+            "downloadError": "הורדת מסד הנתונים של ארכיון המטא-נתונים נכשלה",
+            "removeSuccess": "מסד הנתונים של ארכיון המטא-נתונים הוסר בהצלחה",
+            "removeError": "הסרת מסד הנתונים של ארכיון המטא-נתונים נכשלה",
+            "removeConfirm": "האם אתה בטוח שברצונך להסיר את מסד הנתונים של ארכיון המטא-נתונים? פעולה זו תמחק את קובץ מסד הנתונים המקומי ותצטרך להוריד אותו שוב כדי להשתמש בתכונה זו.",
             "preparing": "מכין הורדה...",
             "connecting": "מתחבר לשרת ההורדות...",
             "completed": "הושלם",
             "downloadComplete": "ההורדה הושלמה בהצלחה",
             "enableCivarchiveApi": "הפעל את CivArchive API כספק מטא-נתונים",
             "enableCivarchiveApiHelp": "כאשר מופעל, CivArchive API משמש כמקור גיבוי למטא-נתונים של מודלים (למשל עבור מודלים שנמחקו מ-CivitAI). כבה כדי להימנע לחלוטין ממגבלות הקצב של CivArchive.",
+            "enableOpenmodeldbApi": "הפעל את OpenModelDB כספק מטא-נתונים",
+            "enableOpenmodeldbApiHelp": "כאשר מופעל, מטא-נתונים של Upscaler מחופשים גם בקטלוג OpenModelDB (openmodeldb.info) כאשר ל-CivitAI אין רשומה. הקטלוג נשמר במטמון מקומי ומתרענן מדי יום.",
             "providerOrder": "סדר ספקי מטא-נתונים לגיבוי",
             "providerOrderHelp": "CivitAI API תמיד מנוסה ראשון. בחר את סדר הספקים הנותרים בעת חיפוש מטא-נתונים.",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+        },
+        "sidecarStorage": {
+            "mode": "מצב אחסון קובצי לוואי",
+            "modeHelp": "בחר היכן יאוחסנו קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה: לצד כל קובץ מודל, או בתיקייה מרכזית אחת שמשקפת את מבנה הספרייה שלך. קובצי .civitai.info נשארים תמיד לצד קובץ המודל.",
+            "modeOptions": {
+                "alongside": "לצד קובצי המודלים (ברירת מחדל)",
+                "centralized": "אחסון מרכזי"
+            },
+            "path": "נתיב האחסון המרכזי",
+            "pathHelp": "תיקיית השורש של אחסון קובצי הלוואי המרכזי. השאר ריק כדי להשתמש במיקום ברירת המחדל <settings dir>/sidecars.",
+            "pathPlaceholder": "ריק = <settings dir>/sidecars",
+            "management": "העברת קובצי לוואי",
+            "managementHelp": "העבר קובצי לוואי .metadata.json ותמונות תצוגה מקדימה קיימים בין אחסון לצד המודלים לאחסון המרכזי, בהתאם למצב שנבחר. שינוי המצב אינו מעביר קבצים קיימים באופן אוטומטי.",
+            "migrateButton": "העבר קובצי לוואי כעת",
+            "migratingButton": "מעביר...",
+            "migrating": "מעביר קובצי לוואי...",
+            "migrateFailed": "העברת קובצי הלוואי נכשלה: {message}",
+            "migrationDeferred": "קובצי הלוואי הקיימים לא הועברו. ניתן להעביר אותם מאוחר יותר דרך הגדרות > ספרייה > אחסון קובצי לוואי.",
+            "confirmToCentralized": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להעביר אותם כעת לתיקיית האחסון המרכזי? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
+            "confirmToAlongside": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להחזיר אותם כעת לצד קובצי המודל שלהם? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
+            "confirmToCentralizedManual": "להעביר כעת את קובצי הלוואי .metadata.json ואת תמונות התצוגה המקדימה הקיימים לתיקיית האחסון המרכזי?",
+            "confirmToAlongsideManual": "להחזיר כעת את קובצי הלוואי .metadata.json ואת תמונות התצוגה המקדימה הקיימים לצד קובצי המודל שלהם?",
+            "confirmRelocateRoot": "תיקיית האחסון המרכזי השתנתה, אך קובצי הלוואי ותמונות התצוגה המקדימה הקיימים עדיין נמצאים בתיקייה הקודמת. להעביר אותם כעת לתיקייה החדשה?",
+            "effectivePathLabel": "מיקום האחסון בפועל:",
+            "openFolderButton": "פתח תיקייה",
+            "repoWarning": "מיקום האחסון בפועל נמצא בתוך תיקיית ההתקנה של LoRA Manager. התקנה מחדש של התוסף או עדכון נקי עלולים למחוק אותו — הגדר נתיב אחסון מפורש מחוץ לתיקיית ההתקנה.",
+            "openLocationSuccess": "תיקיית אחסון קובצי הלוואי נפתחה",
+            "openLocationCopied": "נתיב אחסון קובצי הלוואי הועתק ללוח: {path}",
+            "openLocationClipboardFallback": "העתק את נתיב אחסון קובצי הלוואי ידנית: {path}",
+            "openLocationFailed": "פתיחת תיקיית אחסון קובצי הלוואי נכשלה"
         },
         "proxySettings": {
             "enableProxy": "הפעל פרוקסי ברמת האפליקציה",
@@ -689,7 +934,7 @@
                 "custom": "מותאם אישית (תואם OpenAI)"
             },
             "apiBase": "כתובת בסיס API",
-            "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM (לדוגמה https://api.openai.com/v1). השאר ריק לשימוש בברירת המחדל של הספק.",
+            "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM. בחר קביעה מראש או הזן כתובת URL מותאמת אישית. התפריט הנפתח מציג קביעות מוגדרות מראש עבור כל הספקים הנתמכים.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "מפתח API",
             "apiKeyHelp": "מפתח ה-API של ספק ה-LLM שלך. נשמר מקומית, לעולם לא נשלח לשרת כלשהו מלבד ספק ה-LLM שבחרת.",
@@ -725,13 +970,21 @@
                 "random": "אקראי",
                 "randomAction": "ערבוב אקראי"
             },
+            "modelType": {
+                "title": "סנן לפי סוג מודל",
+                "all": "כל הסוגים",
+                "multiple": "{count} סוגים"
+            },
             "refresh": {
                 "title": "רענן רשימת מודלים",
                 "full": "בניית מטמון מחדש",
-                "fullTooltip": "טוען מחדש את כל פרטי המודלים מקבצי המטא-דאטה – לשימוש אם הספרייה נראית לא מעודכנת או לאחר עריכות ידניות."
+                "fullTooltip": "טוען מחדש את כל פרטי המודלים מקבצי המטא-נתונים – לשימוש אם הספרייה נראית לא מעודכנת או לאחר עריכות ידניות.",
+                "scopeSection": "סרוק תיקייה אחת בלבד",
+                "rootOffline": "לא זמין",
+                "rootModels": "{count} מודלים"
             },
             "fetch": {
-                "title": "אחזר מטא-דאטה מ-Civitai",
+                "title": "אחזר מטא-נתונים מ-CivitAI",
                 "action": "אחזר"
             },
             "download": {
@@ -740,7 +993,7 @@
             },
             "bulk": {
                 "title": "פעולות בכמות גדולה",
-                "action": "כמות גדולה"
+                "action": "פעולות בכמות גדולה"
             },
             "duplicates": {
                 "title": "מצא כפילויות",
@@ -751,7 +1004,7 @@
                 "action": "מועדפים"
             },
             "updates": {
-                "title": "הצג רק דגמים עם עדכונים זמינים",
+                "title": "הצג רק מודלים עם עדכונים זמינים",
                 "action": "עדכונים",
                 "menuLabel": "הצגת אפשרויות עדכון",
                 "check": "בדוק עדכונים",
@@ -766,8 +1019,8 @@
             "setBaseModel": "הגדר מודל בסיס לכל",
             "setContentRating": "הגדר דירוג תוכן לכל המודלים",
             "copyAll": "העתק את כל התחבירים",
-            "refreshAll": "רענן את כל המטא-דאטה",
-            "repairMetadata": "תקן מטא-דאטה עבור הנבחרים",
+            "refreshAll": "רענן את כל המטא-נתונים",
+            "rematchMetadata": "התאמה מחדש של הנבחרים למודלים מקומיים",
             "reimportMetadata": "ייבא מחדש ממקור",
             "checkUpdates": "בדוק עדכונים לבחירה",
             "moveAll": "העבר הכל לתיקייה",
@@ -783,8 +1036,8 @@
             "downloadMissingExamples": "הורדת חסרים",
             "reprocessExamples": "עיבוד מחדש של הכול",
             "clear": "נקה בחירה",
-            "skipMetadataRefreshCount": "דילוג（{count} מודלים）",
-            "resumeMetadataRefreshCount": "המשך（{count} מודלים）",
+            "skipMetadataRefreshCount": "דילוג({count} מודלים)",
+            "resumeMetadataRefreshCount": "המשך({count} מודלים)",
             "sendToWorkflow": "שלח ל-Workflow",
             "sections": {
                 "workflow": "Workflow",
@@ -802,14 +1055,22 @@
                 "complete": "ארגון אוטומטי הושלם",
                 "error": "שגיאה: {error}"
             },
-            "enrichHfAgent": "העשרת HF מטא-דאטה (AI)"
+            "filenameTemplateProgress": {
+                "initializing": "מאתחל החלת תבנית שם קובץ...",
+                "starting": "מחיל תבנית שם קובץ על {type}...",
+                "processing": "מעבד ({processed}/{total}) - {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "completed": "הושלם: {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "complete": "החלת תבנית שם הקובץ הושלמה",
+                "error": "שגיאה: {error}"
+            },
+            "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         },
         "contextMenu": {
-            "refreshMetadata": "רענן נתוני Civitai",
+            "refreshMetadata": "רענן נתוני CivitAI",
             "checkUpdates": "בדוק עדכונים",
             "linkModel": "קישור מודל",
-            "linkCivitai": "קשר מחדש ל-Civitai",
-            "linkHuggingFace": "קישור ל-HuggingFace",
+            "linkCivitai": "קשר מחדש ל-CivitAI",
+            "linkModelSource": "קישור למקור מודל",
             "copySyntax": "העתק תחביר LoRA",
             "copyFilename": "העתק שם קובץ מודל",
             "copyRecipeSyntax": "העתק תחביר מתכון",
@@ -822,7 +1083,7 @@
             "replacePreview": "החלף תצוגה מקדימה",
             "setContentRating": "הגדר דירוג תוכן",
             "moveToFolder": "העבר לתיקייה",
-            "repairMetadata": "תיקון מטא-דאטה",
+            "rematchMetadata": "התאמה מחדש למודלים מקומיים",
             "reimportMetadata": "ייבא מחדש ממקור",
             "excludeModel": "החרג מודל",
             "restoreModel": "שחזור מודל",
@@ -831,26 +1092,139 @@
             "viewAllLoras": "הצג את כל ה-LoRAs",
             "downloadMissingLoras": "הורד LoRAs חסרים",
             "deleteRecipe": "מחק מתכון",
-            "enrichHfAgent": "העשרת HF מטא-דאטה (AI)"
+            "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         }
     },
     "recipes": {
         "title": "מתכוני LoRA",
         "actions": {
-            "sendCheckpoint": "שלח ל-ComfyUI"
+            "sendCheckpoint": "שלח ל-ComfyUI",
+            "sendRecipe": "שלח ל-ComfyUI",
+            "copyRecipeSyntax": "העתק תחביר מתכון",
+            "deleteRecipeWithShortcut": "מחק מתכון (Del)"
+        },
+        "navigation": {
+            "label": "ניווט מתכונים",
+            "previousWithShortcut": "המתכון הקודם (←)",
+            "nextWithShortcut": "המתכון הבא (→)"
+        },
+        "modal": {
+            "metadata": {
+                "id": "ID",
+                "baseModel": "מודל בסיס",
+                "unknown": "לא ידוע"
+            },
+            "actions": {
+                "openFileLocation": "פתח מיקום קובץ",
+                "copyId": "העתק מזהה מתכון"
+            },
+            "openFileLocation": {
+                "success": "מיקום הקובץ נפתח בהצלחה",
+                "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
+            }
+        },
+        "workflow": {
+            "sendWorkflow": "שלח workflow ל-ComfyUI",
+            "sent": "ה-workflow נשלח ל-ComfyUI",
+            "sendFailed": "שליחת ה-workflow ל-ComfyUI נכשלה",
+            "noWorkflow": "לא נמצא workflow מוטבע במתכון זה",
+            "hasWorkflow": "מכיל workflow של ComfyUI"
+        },
+        "status": {
+            "ready": "מוכן לשימוש",
+            "missingCount": "{count} חסרים",
+            "deletedCount": "{count} נמחקו",
+            "downloadMissing": "הורד {count} LoRAs חסרים",
+            "downloadMissingTooltip": "לחץ כדי להוריד LoRAs חסרים"
+        },
+        "loraStatus": {
+            "none": "אין LoRAs במתכון הזה",
+            "allAvailable": "כל ה-LoRAs זמינים - מוכן לשימוש",
+            "missing": "{missing} מתוך {total} LoRAs חסרים",
+            "missingAndUnavailable": "{missing} מתוך {total} LoRAs חסרים, {unavailable} לא זמינים (נמחקו מהמקור או hash שלא ניתן לפתור)",
+            "partial": "{unavailable} מתוך {total} LoRAs לא זמינים (נמחקו מהמקור או hash שלא ניתן לפתור) - ידולגו בעת שימוש במתכון",
+            "noneUsable": "אין LoRAs שמישים - {unavailable} מתוך {total} נמחקו מהמקור או hash שלא ניתן לפתור"
+        },
+        "resources": {
+            "inLibrary": "בספרייה",
+            "notInLibrary": "לא בספרייה",
+            "deleted": "נמחק",
+            "hashInvalid": "hash לא ניתן לפתרון",
+            "inLibraryTooltip": "מודל זה קיים בספרייה המקומית שלך",
+            "notInLibraryTooltip": "מודל זה לא נמצא בספרייה שלך",
+            "deletedTooltip": "LoRA זה נמחק מהמקור ואינו זמין יותר להורדה",
+            "hashInvalidTooltip": "לא ניתן לפתור את ה-hash של ה-LoRA ב-CivitAI - ייתכן שהמודל עודכן",
+            "noLorasAssociated": "אין LoRAs המשויכים למתכון זה",
+            "noLorasWhyToggle": "למה אין LoRAs?",
+            "noLorasImportMethod": "שיטת ייבוא",
+            "noLorasInferredNote": "סיבה אפשרית (משוערת) — מתכון זה יובא לפני שנרשמו אבחוני ייבוא.",
+            "noLorasChannels": {
+                "batch_import_url": "ייבוא בכמות גדולה (URL של תמונה)",
+                "batch_import_local": "ייבוא בכמות גדולה (קובץ מקומי)",
+                "url": "ייבוא מ-URL של תמונה",
+                "local": "ייבוא קובץ מקומי",
+                "upload": "העלאת תמונה",
+                "widget": "נשמר מה-workflow",
+                "reimport_url": "ייבוא מחדש (URL של תמונה)",
+                "reimport_local": "ייבוא מחדש (קובץ מקומי)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "מטא-הנתונים של היצירה שלמים ואינם מפנים ל-LoRAs כלשהם.",
+                "api_meta_no_lora_resources": "ה-API של המקור לא החזיר נתוני משאבי LoRA עבור תמונה זו. LoRAs המוצגים בעמוד CivitAI עשויים להגיע מנתונים פנימיים שה-API הציבורי אינו חושף.",
+                "api_meta_missing": "ה-API של המקור לא החזיר מטא-נתוני יצירה עבור תמונה זו.",
+                "no_embedded_metadata": "לתמונה אין מטא-נתוני יצירה מוטבעים, ולכן לא ניתן היה לשחזר את מידע ה-LoRA.",
+                "workflow_metadata_limited": "המטא-נתונים המוטבעים של התמונה הם workflow של ComfyUI; חילוץ מידע LoRA מתוך workflows מוגבל.",
+                "video_no_metadata": "קבצי וידאו אינם נושאים מטא-נתוני יצירה מוטבעים.",
+                "metadata_unsupported": "התמונה מכילה מטא-נתונים בפורמט שלא ניתן לנתח.",
+                "unknown": "לא ניתן היה לקבוע את הסיבה מנתוני המתכון השמורים."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "שדות מטא-נתונים של API",
+                "modelVersionIds": "מספר מזהי גרסת מודל שדווחו",
+                "embeddedMetadata": "מטא-נתונים מוטבעים",
+                "present": "נמצאו",
+                "absent": "אין"
+            },
+            "download": "הורדה",
+            "downloadLoraTooltip": "הורד את ה-LoRA הזה",
+            "preparingDownload": "מכין את ההורדה...",
+            "reconnect": "חבר מחדש",
+            "reconnectTooltip": "חבר מחדש עם LoRA מקומי",
+            "reconnectInstructions": "הזן תחביר או שם של LoRA לחיבור מחדש:",
+            "reconnectExample": "דוגמה: <lora:name:1> או רק את השם",
+            "reconnectPlaceholder": "הזן שם או תחביר של LoRA",
+            "reconnectSuggestionsLoading": "מחפש בספרייה המקומית...",
+            "reconnectSuggestionsEmpty": "לא נמצאו LoRAs תואמים בספרייה המקומית שלך",
+            "reconnectMatchSameHash": "אותו hash",
+            "reconnectMatchSameVersion": "אותה גרסת מודל",
+            "reconnectMatchSimilarFilename": "שם קובץ דומה",
+            "reconnectMatchSimilarName": "שם דומה",
+            "undoReconnect": "בטל",
+            "undoReconnectTooltip": "שחזר את השיוך שהיה לרשומה זו לפני החיבור מחדש",
+            "undoReconnectTooltipNamed": "שחזר ל-{name} (השיוך לפני החיבור מחדש)",
+            "viewOnCivitai": "הצג ב-CivitAI",
+            "openLoraDetails": "הצג את {name} בספריית ה-LoRA",
+            "openCheckpointDetails": "הצג את {name} בספריית המודלים",
+            "checkpointDeletedTooltip": "Checkpoint זה נמחק מהמקור ואינו זמין עוד להורדה - חבר אותו מחדש עם מודל מקומי",
+            "checkpointHashInvalidTooltip": "לא ניתן לפתור את ה-hash של Checkpoint זה ב-CivitAI - ייתכן שהמודל עודכן",
+            "reconnectCheckpoint": "חבר מחדש",
+            "reconnectCheckpointTooltip": "חבר מחדש עם Checkpoint מקומי",
+            "checkpointReconnectInstructions": "הזן שם של Checkpoint לחיבור מחדש:",
+            "checkpointReconnectPlaceholder": "הזן שם של Checkpoint",
+            "checkpointReconnectSuggestionsEmpty": "לא נמצאו Checkpoints תואמים בספרייה המקומית שלך"
         },
         "controls": {
             "import": {
                 "action": "ייבא",
                 "title": "ייבא מתכון מתמונה או כתובת URL",
-                "urlLocalPath": "URL / נתיב מקומי",
-                "uploadImage": "העלה תמונה",
-                "urlSectionDescription": "הזן כתובת URL של תמונה מ-Civitai או נתיב קובץ מקומי לייבוא כמתכון.",
+                "dropZoneLabel": "העלאת תמונה",
+                "dropZoneHint": "גררו ושחררו תמונה כאן, הדביקו מהלוח או לחצו לעיון",
+                "orDivider": "או גררו ושחררו / הדביקו תמונה",
                 "imageUrlOrPath": "URL של תמונה או נתיב קובץ:",
-                "urlPlaceholder": "https://civitai.com/images/... או C:/path/to/image.png",
+                "urlPlaceholder": "https://civitai.com/images/... או https://civitai.red/images/... או C:/path/to/image.png",
                 "fetchImage": "אחזר תמונה",
-                "uploadSectionDescription": "העלה תמונה עם מטא-דאטה של LoRA לייבוא כמתכון.",
-                "selectImage": "בחר תמונה",
                 "recipeName": "שם המתכון",
                 "recipeNamePlaceholder": "הזן שם מתכון",
                 "tagsOptional": "תגיות (אופציונלי)",
@@ -874,11 +1248,11 @@
                 "saveRecipe": "שמור מתכון",
                 "loraCountInfo": "({existing}/{total} בספרייה)",
                 "processingInput": "מעבד קלט...",
-                "analyzingMetadata": "מנתח מטא-דאטה של תמונה...",
+                "analyzingMetadata": "מנתח מטא-נתונים של תמונה...",
                 "downloadingLoras": "מוריד LoRAs...",
                 "savingRecipe": "שומר מתכון...",
                 "startingDownload": "מתחיל הורדה עבור LoRA {current}/{total}",
-                "deletedFromCivitai": "נמחק מ-Civitai",
+                "deletedFromCivitai": "נמחק מ-CivitAI",
                 "inLibrary": "בספרייה",
                 "notInLibrary": "לא בספרייה",
                 "earlyAccessRequired": "LoRA זה דורש תשלום גישה מוקדמת להורדה.",
@@ -895,6 +1269,8 @@
                 "errors": {
                     "selectImageFile": "אנא בחר קובץ תמונה",
                     "enterUrlOrPath": "אנא הזן URL או נתיב קובץ",
+                    "invalidUrl": "נא להזין כתובת URL תקינה",
+                    "invalidInputFormat": "נא להזין כתובת URL של תמונה או נתיב קובץ מקומי",
                     "selectLoraRoot": "אנא בחר ספריית שורש של LoRA"
                 }
             },
@@ -908,7 +1284,9 @@
                 "dateAsc": "הכי ישן",
                 "lorasCount": "מספר LoRAs",
                 "lorasCountDesc": "הכי הרבה",
-                "lorasCountAsc": "הכי פחות"
+                "lorasCountAsc": "הכי פחות",
+                "opened": "נפתחו לאחרונה",
+                "openedDesc": "נפתחו לאחרונה"
             },
             "refresh": {
                 "title": "רענן רשימת מתכונים",
@@ -919,12 +1297,26 @@
             "favorites": {
                 "title": "הצג מועדפים בלבד",
                 "action": "מועדפים"
+            },
+            "layout": {
+                "title": "פריסת מתכונים",
+                "grid": "פריסת רשת",
+                "masonry": "פריסת Masonry (בסגנון Pinterest, שומרת על יחס הגובה-רוחב של התמונה)"
             }
         },
         "duplicates": {
+            "finding": "סורק למציאת מתכונים כפולים...",
             "found": "נמצאו {count} קבוצות כפולות",
+            "noGroups": "לא נמצאו קבוצות כפולות לפי קריטריון ההתאמה הנוכחי",
             "keepLatest": "שמור גרסאות אחרונות",
-            "deleteSelected": "מחק נבחרים"
+            "deleteSelected": "מחק נבחרים",
+            "includePromptLabel": "כלול פרומפט בהתאמה",
+            "basis": {
+                "loraCombo": "התאמה לפי: שילוב LoRA",
+                "loraComboAndPrompt": "התאמה לפי: שילוב LoRA + פרומפט",
+                "hintLoraCombo": "מתכונים עם אותם LoRAs בעוצמות זהות מקובצים יחד.",
+                "hintPromptIncluded": "מתכונים מקובצים רק כאשר הם משתמשים באותם LoRAs בעוצמות זהות ויש להם אותה פרומפט."
+            }
         },
         "contextMenu": {
             "copyRecipe": {
@@ -946,13 +1338,6 @@
                 "getInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",
                 "prepareError": "שגיאה בהכנת LoRAs להורדה: {message}"
             },
-            "repair": {
-                "starting": "מתקן מטא-דאטה של מתכון...",
-                "success": "מטא-דאטה של מתכון תוקן בהצלחה",
-                "skipped": "המתכון כבר בגרסה העדכנית ביותר, אין צורך בתיקון",
-                "failed": "תיקון המתכון נכשל: {message}",
-                "missingId": "לא ניתן לתקן את המתכון: חסר מזהה מתכון"
-            },
             "reimport": {
                 "starting": "מייבא מתכון מחדש מהמקור...",
                 "success": "המתכון יובא מחדש בהצלחה",
@@ -962,61 +1347,63 @@
             }
         },
         "batchImport": {
-            "title": "Batch Import Recipes",
-            "action": "Batch Import",
-            "urlList": "URL List",
-            "directory": "Directory",
-            "urlDescription": "Enter image URLs or local file paths (one per line). Each will be imported as a recipe.",
-            "directoryDescription": "Enter a directory path to import all images from that folder.",
-            "urlsLabel": "Image URLs or Local Paths",
+            "title": "ייבוא מתכונים בכמות גדולה",
+            "action": "ייבוא בכמות גדולה",
+            "urlList": "רשימת URL",
+            "directory": "תיקייה",
+            "urlDescription": "הזן כתובות URL של תמונות או נתיבי קבצים מקומיים (אחד בכל שורה). כל אחד ייובא כמתכון.",
+            "directoryDescription": "הזן נתיב תיקייה כדי לייבא את כל התמונות מתיקייה זו.",
+            "urlsLabel": "כתובות URL של תמונות או נתיבים מקומיים",
             "urlsPlaceholder": "https://civitai.com/images/...\nhttps://civitai.com/images/...\nC:/path/to/image.png\n...",
-            "urlsHint": "Enter one URL or path per line",
-            "directoryPath": "Directory Path",
+            "urlsHint": "הזן כתובת URL או נתיב אחד בכל שורה",
+            "directoryPath": "נתיב תיקייה",
             "directoryPlaceholder": "/path/to/images/folder",
-            "browse": "Browse",
-            "recursive": "Include subdirectories",
-            "tagsOptional": "Tags (optional, applied to all recipes)",
-            "tagsPlaceholder": "Enter tags separated by commas",
-            "tagsHint": "Tags will be added to all imported recipes",
-            "skipNoMetadata": "Skip images without metadata",
-            "skipNoMetadataHelp": "Images without LoRA metadata will be skipped automatically.",
-            "start": "Start Import",
-            "startImport": "Start Import",
-            "importing": "Importing...",
-            "progress": "Progress",
-            "total": "Total",
-            "success": "Success",
-            "failed": "Failed",
-            "skipped": "Skipped",
-            "current": "Current",
-            "currentItem": "Current",
-            "preparing": "Preparing...",
-            "cancel": "Cancel",
-            "cancelImport": "Cancel",
-            "cancelled": "Import cancelled",
-            "completed": "Import completed",
-            "completedWithErrors": "Completed with errors",
-            "completedSuccess": "Successfully imported {count} recipe(s)",
-            "successCount": "Successful",
-            "failedCount": "Failed",
-            "skippedCount": "Skipped",
-            "totalProcessed": "Total processed",
-            "viewDetails": "View Details",
-            "newImport": "New Import",
-            "manualPathEntry": "Please enter the directory path manually. File browser is not available in this browser.",
-            "batchImportDirectorySelected": "Directory selected: {path}",
-            "batchImportManualEntryRequired": "File browser not available. Please enter the directory path manually.",
-            "backToParent": "Back to parent directory",
-            "folders": "Folders",
-            "folderCount": "{count} folders",
-            "imageFiles": "Image Files",
-            "images": "images",
-            "imageCount": "{count} images",
-            "selectFolder": "Select This Folder",
+            "browse": "עיון",
+            "recursive": "כלול תיקיות משנה",
+            "tagsOptional": "תגיות (אופציונלי, יחולו על כל המתכונים)",
+            "tagsPlaceholder": "הזן תגיות מופרדות בפסיקים",
+            "tagsHint": "התגיות יתווספו לכל המתכונים שייובאו",
+            "skipNoMetadata": "דלג על תמונות ללא מטא-נתונים",
+            "skipNoMetadataHelp": "תמונות ללא מטא-נתונים של LoRA ידולגו אוטומטית.",
+            "start": "התחל ייבוא",
+            "startImport": "התחל ייבוא",
+            "importing": "מייבא...",
+            "rateLimitedSlowdown": "הושגה מגבלת קצב — מואט...",
+            "rateLimitedHint": "חלק מהפריטים דולגו עקב מגבלות קצב של ספק המטא-נתונים. הפעל שוב את הייבוא מאוחר יותר כדי לנסות שוב.",
+            "progress": "התקדמות",
+            "total": "סה\"כ",
+            "success": "הצליחו",
+            "failed": "נכשלו",
+            "skipped": "דולגו",
+            "current": "נוכחי",
+            "currentItem": "נוכחי",
+            "preparing": "מכין...",
+            "cancel": "ביטול",
+            "cancelImport": "ביטול",
+            "cancelled": "הייבוא בוטל",
+            "completed": "הייבוא הושלם",
+            "completedWithErrors": "הושלם עם שגיאות",
+            "completedSuccess": "יובאו בהצלחה {count} מתכונים",
+            "successCount": "הצליחו",
+            "failedCount": "נכשלו",
+            "skippedCount": "דולגו",
+            "totalProcessed": "סה\"כ עובדו",
+            "viewDetails": "הצג פרטים",
+            "newImport": "ייבוא חדש",
+            "manualPathEntry": "אנא הזן את נתיב התיקייה ידנית. דפדפן הקבצים אינו זמין בדפדפן זה.",
+            "batchImportDirectorySelected": "נבחרה תיקייה: {path}",
+            "batchImportManualEntryRequired": "דפדפן הקבצים אינו זמין. אנא הזן את נתיב התיקייה ידנית.",
+            "backToParent": "חזרה לתיקיית האב",
+            "folders": "תיקיות",
+            "folderCount": "{count} תיקיות",
+            "imageFiles": "קובצי תמונה",
+            "images": "תמונות",
+            "imageCount": "{count} תמונות",
+            "selectFolder": "בחר תיקייה זו",
             "errors": {
-                "enterUrls": "Please enter at least one URL or path",
-                "enterDirectory": "Please enter a directory path",
-                "startFailed": "Failed to start import: {message}"
+                "enterUrls": "אנא הזן לפחות כתובת URL אחת או נתיב אחד",
+                "enterDirectory": "אנא הזן נתיב תיקייה",
+                "startFailed": "לא ניתן היה להתחיל את הייבוא: {message}"
             }
         }
     },
@@ -1024,7 +1411,7 @@
         "title": "מודלי Checkpoint",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "מודל דיפוזיה"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "העבר לתיקיית {otherType}",
@@ -1034,31 +1421,127 @@
     "embeddings": {
         "title": "מודלי Embedding"
     },
+    "other": {
+        "title": "מודלים אחרים",
+        "disabled": {
+            "title": "ניהול המודלים האחרים כבוי",
+            "description": "הפעל כדי לסרוק ולנהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, ולהוריד אותם מ-CivitAI.",
+            "enableButton": "הפעל מודלים אחרים",
+            "hint": "ניתן לשנות את סוגי המודלים המנוהלים מאוחר יותר בהגדרות > ספרייה.",
+            "enableFailed": "הפעלת המודלים האחרים נכשלה",
+            "downloadBlocked": "ניהול המודלים האחרים מושבת עבור סוג מודל זה. הפעל אותו בהגדרות > ספרייה כדי להוריד קובץ זה.",
+            "enableAction": "הפעל מודלים אחרים"
+        },
+        "noPaths": {
+            "title": "לא נמצאו תיקיות של מודלים אחרים",
+            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך לא נמצאו תיקיות של מודלים אחרים. הוסף את תיקיות המודלים שלך תחת הגדרות > נתיבי מודלים, ולאחר מכן הפעל מחדש את LoRA Manager.",
+            "hintStandalone": "נסרקים רק סוגי מודלים מופעלים; הפעל את הסוגים הדרושים לך תחת ספרייה > תיקיות ברירת מחדל.",
+            "descriptionComfyUI": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את תיקיות המודלים המתאימות לנתיבי המודלים של ComfyUI וטען מחדש עמוד זה.",
+            "hintComfyUI": "מודלים אחרים נקראים מתיקיות vae, upscale_models, text_encoders, clip_vision ו-controlnet של ComfyUI.",
+            "openSettings": "פתח הגדרות",
+            "openModelPaths": "הגדר תיקיות מודלים",
+            "openSettingsFolder": "פתח תיקיית הגדרות"
+        }
+    },
     "sidebar": {
         "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
+        "collapseAllDisabled": "לא זמין בתצוגת רשימה",
         "hideOnThisPage": "הסתר סרגל צד בדף זה",
         "showSidebar": "הצג סרגל צד",
         "sidebarHiddenNotification": "סרגל הצד מוסתר בדף {page}",
-        "switchToListView": "עבור לתצוגת רשימה",
-        "switchToTreeView": "תצוגת עץ",
+        "viewOptions": "אפשרויות תצוגה",
+        "treeView": "תצוגת עץ",
+        "listView": "תצוגת רשימה",
         "recursiveOn": "כלול תיקיות משנה",
-        "recursiveOff": "רק התיקייה הנוכחית",
-        "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
-        "collapseAllDisabled": "לא זמין בתצוגת רשימה",
+        "createFolder": "תיקייה חדשה",
+        "newSubfolder": "תיקיית משנה חדשה",
+        "showEmptyFolders": "הצג תיקיות ריקות",
+        "createFolderResult": {
+            "success": "התיקייה \"{name}\" נוצרה",
+            "failed": "יצירת התיקייה נכשלה: {message}",
+            "unsupported": "יצירת תיקיות אינה נתמכת בדף זה",
+            "noRoot": "לא הוגדר שורש מודלים"
+        },
+        "deleteFolder": "מחק תיקייה",
+        "deleteFolderModal": {
+            "title": "למחוק את התיקייה?",
+            "message": "התיקייה וכל תוכנה יימחקו לצמיתות מהדיסק.",
+            "folderLabel": "תיקייה",
+            "emptyNote": "אין מודלים בתיקייה זו. קבצים אחרים שבה יימחקו גם הם.",
+            "notEmptyTitle": "התיקייה אינה ריקה",
+            "notEmptyMessage": "בתיקייה זו עדיין יש מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "notEmptyMessageCount": "בתיקייה זו עדיין יש {count} קובצי מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "notEmptyMessageExcluded": "בתיקייה זו עדיין יש {count} קובצי מודלים, שמהם {excluded} מוחרגים מהספרייה. בטל את ההחרגה ב«ניהול מודלים מוחרגים» ומחק אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "missingTitle": "התיקייה לא נמצאה",
+            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
+            "removeFromList": "[TODO: Translate] Remove from list",
+            "symlinkTitle": "התיקייה היא קישור סמלי",
+            "symlinkMessage": "כל העותקים של תיקייה זו הם קישורים סמליים; מחק את הקישור או את היעד שלו מחוץ ל-LoRA Manager.",
+            "protectedTitle": "תיקייה מוגנת",
+            "protectedMessage": "תיקייה זו מכילה את ספריית המתכונים ולא ניתן למחוק אותה מתוך LoRA Manager.",
+            "busyTitle": "מחיקה עדיין ממתינה",
+            "checking": "בודק את תוכן התיקייה...",
+            "confirm": "מחק תיקייה",
+            "confirmMulti": "מחק {count} תיקיות",
+            "deleting": "מוחק...",
+            "keptNote": "עותקים שלא סומנו ישאירו את התיקייה הזו בסרגל הצד."
+        },
+        "deleteFolderResult": {
+            "success": "התיקייה \"{name}\" נמחקה",
+            "successWithFiles": "התיקייה \"{name}\" נמחקה יחד עם {count} פריטים נוספים",
+            "restored": "התיקייה שוחזרה",
+            "failed": "מחיקת התיקייה נכשלה: {message}",
+            "notEmpty": "בתיקייה זו עדיין יש מודלים. רענן את סרגל הצד ונסה שוב.",
+            "notEmptyWithCount": "בתיקייה זו עדיין יש {count} קובצי מודלים. רענן את סרגל הצד ונסה שוב.",
+            "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
+            "unsupported": "מחיקת תיקיות אינה נתמכת בדף זה",
+            "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
+            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
+            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "symlink": "תיקייה זו היא קישור סמלי; לא ניתן למחוק אותה מסרגל הצד.",
+            "successMulti": "התיקייה \"{name}\" נמחקה מ-{count} שורשי מודלים",
+            "partial": "נמחקו {count} מתוך {total} עותקים — {failed} לא נמחקו. רענן את סרגל הצד ונסה שוב."
+        },
+        "renameFolder": "שנה שם תיקייה",
+        "renameFolderResult": {
+            "success": "שם התיקייה שונה ל-\"{name}\"",
+            "failed": "שינוי שם התיקייה נכשל: {message}",
+            "targetExists": "תיקייה בשם זה כבר קיימת כאן",
+            "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
+            "unsupported": "שינוי שם תיקיות אינו נתמך בדף זה",
+            "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
+            "symlink": "תיקייה זו היא קישור סמלי; לא ניתן לשנות את שמה מסרגל הצד."
+        },
+        "folderRoot": {
+            "chooseTitle": "תיקייה זו קיימת ביותר משורש מודלים אחד",
+            "symlinkOption": "קישור סמלי",
+            "rootsHint": "בחר את שורשי המודלים שמהם למחוק את התיקייה הזו:",
+            "checkingStatus": "בודק...",
+            "okStatus": "אין מודלים",
+            "notEmptyStatus": "מכיל {count} קובצי מודלים — מחק או העבר אותם תחילה",
+            "notEmptyExcludedStatus": "מכיל {count} קובצי מודלים, שמהם {excluded} מוחרגים מהספרייה",
+            "busyStatus": "מחיקה עדיין ממתינה",
+            "missingStatus": "אינו קיים עוד בדיסק",
+            "symlinkStatus": "קישור סמלי — לא ניתן למחוק כאן",
+            "protectedStatus": "מכילה את ספריית המתכונים — לא ניתן למחוק כאן",
+            "unknownStatus": "לא ניתן היה לבדוק",
+            "deletedStatus": "נמחקה"
+        },
+        "folderResult": {
+            "unresolved": "לא ניתן לקבוע באיזה שורש מודלים נמצאת התיקייה הזו. רענן את סרגל הצד ונסה שוב."
+        },
         "dragDrop": {
             "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
             "moveUnsupported": "העברה אינה נתמכת עבור פריט זה.",
-            "createFolderHint": "שחרר כדי ליצור תיקייה חדשה",
             "newFolderName": "שם תיקייה חדשה",
-            "folderNameHint": "הקש Enter לאישור, Escape לביטול",
             "emptyFolderName": "אנא הזן שם תיקייה",
             "invalidFolderName": "שם התיקייה מכיל תווים לא חוקיים",
             "noDragState": "לא נמצאה פעולת גרירה ממתינה"
         },
         "empty": {
             "noFolders": "לא נמצאו תיקיות",
-            "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות"
+            "createHint": "לחץ על כפתור תיקייה חדשה למעלה כדי ליצור תיקיות"
         },
         "folderUpdateCheck": {
             "label": "בדוק עדכונים בתיקייה זו",
@@ -1066,6 +1549,10 @@
             "success": "נמצאו {count} עדכון/ים עבור {type}s בתיקייה זו",
             "none": "כל ה-{type}s בתיקייה זו מעודכנים",
             "error": "נכשל בבדיקת עדכוני {type} בתיקייה: {message}"
+        },
+        "scanFolder": "סרוק תיקייה זו",
+        "scanFolderResult": {
+            "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב."
         }
     },
     "statistics": {
@@ -1078,16 +1565,16 @@
             "insights": "תובנות"
         },
         "metrics": {
-            "totalModels": "סה\"כ דגמים",
+            "totalModels": "סה\"כ מודלים",
             "totalStorage": "סה\"כ אחסון",
             "totalGenerations": "סה\"כ יצירות",
             "usageRate": "שיעור שימוש",
             "loras": "LoRA",
-            "checkpoints": "נקודות ביקורת",
-            "embeddings": "הטמעות",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
             "uniqueTags": "תגיות ייחודיות",
-            "unusedModels": "דגמים שאינם בשימוש",
-            "avgUsesPerModel": "ממוצע שימושים/דגם"
+            "unusedModels": "מודלים שאינם בשימוש",
+            "avgUsesPerModel": "ממוצע שימושים/מודל"
         },
         "usage": {
             "mostUsedLoras": "LoRAs הנפוצים ביותר",
@@ -1117,9 +1604,9 @@
             },
             "unusedCheckpoints": {
                 "detected": {
-                    "title": "התגלו נקודות ביקורת שאינן בשימוש",
-                    "description": "{percent}% מנקודות הביקורת שלך ({count}/{total}) מעולם לא נעשה בהן שימוש.",
-                    "suggestion": "בדוק ושקול להסיר נקודות ביקורת שאינך צריך עוד."
+                    "title": "התגלו Checkpoints שאינן בשימוש",
+                    "description": "{percent}% מ-Checkpoints שלך ({count}/{total}) מעולם לא נעשה בהן שימוש.",
+                    "suggestion": "בדוק ושקול להסיר Checkpoints שאינך צריך עוד."
                 }
             },
             "unusedEmbeddings": {
@@ -1152,7 +1639,7 @@
             "date": "תאריך",
             "usageCount": "מספר שימושים",
             "fileSizeBytes": "גודל קובץ (בתים)",
-            "models": "דגמים",
+            "models": "מודלים",
             "loraUsage": "שימוש ב-LoRA",
             "checkpointUsage": "שימוש ב-Checkpoint",
             "embeddingUsage": "שימוש ב-Embedding"
@@ -1161,20 +1648,20 @@
             "lora": "LoRA",
             "locon": "LyCORIS",
             "dora": "DoRA",
-            "checkpoint": "נקודת ביקורת",
+            "checkpoint": "Checkpoint",
             "diffusion_model": "מודל דיפוזיה",
-            "embedding": "הטמעות"
+            "embedding": "Embedding"
         },
         "placeholders": {
             "loading": "טוען...",
-            "noModels": "לא נמצאו דגמים",
+            "noModels": "לא נמצאו מודלים",
             "errorLoading": "שגיאה בטעינת נתונים",
             "noStorageData": "אין נתוני אחסון זמינים",
             "rootFolder": "שורש",
             "chartLibraryMissing": "הגרף דורש את ספריית Chart.js"
         },
         "tooltips": {
-            "tagCount": "{tag}: {count} דגמים",
+            "tagCount": "{tag}: {count} מודלים",
             "chartUsage": "{name}: {size}, {count} שימושים",
             "chartPercentage": "{label}: {value} ({pct}%)"
         }
@@ -1186,9 +1673,9 @@
         "download": {
             "title": "הורד מודל מכתובת URL",
             "titleWithType": "הורד {type} מכתובת URL",
-            "civitaiUrl": "כתובת URL של Civitai:",
+            "civitaiUrl": "כתובת URL של מודל:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "יש להזין כתובת URL אחת של CivitAI, CivArchive או Hugging Face בכל שורה. תומך במספר כתובות URL להורדה בקבוצה.",
+            "urlHint": "יש להזין כתובת URL אחת של CivitAI, CivArchive, Hugging Face או ModelScope בכל שורה. תומך במספר כתובות URL להורדה בקבוצה.",
             "selectHfFiles": "בחר קבצים להורדה ממאגר זה:",
             "selectAll": "בחר הכל",
             "fetchingRepoFiles": "מביא קבצים מהמאגר...",
@@ -1198,6 +1685,14 @@
             "selectRootDirectory": "בחר ספריית שורש",
             "selectModelRoot": "בחר שורש מודל:",
             "selectTypeRoot": "בחר שורש {type}:",
+            "routingOverride": {
+                "label": "סוג יעד:",
+                "tooltip": "זוהה אוטומטית ממטא-נתוני המודל. החלף אם הזיהוי שגוי; החלפה מכבה את «השתמש בנתיב ברירת מחדל» עבור הורדה זו."
+            },
+            "routedByRule": {
+                "baseModel": "נותב לפי כלל: מודל בסיס «{value}»",
+                "tag": "נותב לפי כלל: תגית «{value}»"
+            },
             "targetFolderPath": "נתיב תיקיית יעד:",
             "browseFolders": "דפדף בתיקיות:",
             "createNewFolder": "צור תיקייה חדשה",
@@ -1212,16 +1707,18 @@
             "downloaded": "הורד",
             "downloadedTooltip": "הורד בעבר, אך הוא אינו נמצא כרגע בספרייה שלך.",
             "alreadyInLibrary": "כבר בספרייה",
+            "partiallyDownloaded": "הורד חלקית",
             "autoOrganizedPath": "[מאורגן אוטומטית לפי תבנית נתיב]",
             "fileSelection": {
                 "title": "בחר פורמט קובץ",
                 "files": "קבצים",
-                "select": "בחר קובץ"
+                "select": "בחר קובץ",
+                "inLibrary": "בספרייה"
             },
             "errors": {
-                "invalidUrl": "פורמט URL של Civitai לא חוקי",
+                "invalidUrl": "פורמט URL של מודל לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה",
-                "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face באותה קבוצה.",
+                "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face / ModelScope באותה קבוצה.",
                 "noModelFiles": "לא נמצאו קבצי מודל במאגר זה."
             },
             "status": {
@@ -1235,6 +1732,10 @@
             "progress": {
                 "currentFile": "הקובץ הנוכחי:",
                 "downloading": "מוריד: {name}",
+                "metadata": "מטא-נתונים: {name}",
+                "indexingFile": "קורא קובץ מודל...",
+                "fetchingSourceMetadata": "מביא מטא-נתונים מ-{source}...",
+                "fetchingMetadata": "מביא מטא-נתונים...",
                 "transferred": "הורד: {downloaded} / {total}",
                 "transferredSimple": "הורד: {downloaded}",
                 "transferredUnknown": "הורד: --",
@@ -1257,8 +1758,13 @@
             }
         },
         "deleteModel": {
+            "freesSpace": "מפנה {size}",
             "title": "מחק מודל",
-            "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?"
+            "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?",
+            "recoverableWarning": "הקובץ יימחק לצמיתות לאחר 20 שניות, אלא אם תבטלו את הפעולה."
+        },
+        "deleteRecipe": {
+            "recoverableWarning": "ניתן לבטל פעולה זו תוך 20 שניות."
         },
         "excludeModel": {
             "title": "החרג מודל",
@@ -1295,8 +1801,36 @@
         "checkUpdates": {
             "title": "לבדוק עדכונים לכל ה-{typePlural}?",
             "message": "הפעולה תבדוק עדכונים עבור כל ה-{typePlural} בספרייה שלך. באוספים גדולים זה עלול לקחת מעט יותר זמן.",
-            "tip": "רוצים לחלק למנות קטנות? עברו למצב קבוצתי, בחרו את המודלים הדרושים ואז השתמשו ב\"בדוק עדכונים לנבחרים\".",
+            "tip": "רוצים לחלק למנות קטנות? עברו למצב בכמות גדולה, בחרו את המודלים הדרושים ואז השתמשו ב\"בדוק עדכונים לנבחרים\".",
             "action": "בדוק הכל"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "להחיל תבנית שם קובץ על הספרייה?",
+            "titleRevert": "לשחזר שמות קבצים מקוריים?",
+            "revertButton": "שחזר שמות קבצים מקוריים"
+        },
+        "sidecarMigrationConfirm": {
+            "titleToCentralized": "להעביר את קובצי הלוואי לאחסון המרכזי?",
+            "titleToAlongside": "להחזיר את קובצי הלוואי לצד קובצי המודל?",
+            "confirmButton": "העבר כעת",
+            "titleRelocateRoot": "להעביר את קובצי הלוואי לתיקיית האחסון החדשה?",
+            "destination": "יעד: {path}",
+            "defaultLocationHint": "נעשה שימוש במיקום ברירת המחדל. כדי להשתמש בתיקייה מותאמת אישית, בטל, הגדר את נתיב האחסון למעלה ולאחר מכן לחץ על «העבר קובצי לוואי כעת»."
+        },
+        "sidecarMigrationResult": {
+            "title": "סיכום העברת קובצי לוואי",
+            "completedSuccessfully": "ההעברה הושלמה בהצלחה",
+            "completedWithErrors": "הושלם עם {count} שגיאות",
+            "statMoved": "קבצים שהועברו",
+            "statModels": "מודלים",
+            "statSkipped": "דולגו",
+            "statConflicts": "קונפליקטים שנפתרו",
+            "statErrors": "שגיאות",
+            "failedItems": "פריטים שנכשלו ({count})",
+            "columnModel": "מודל",
+            "columnError": "שגיאה",
+            "successMessage": "הועברו {moved} קבצים עבור {models} מודלים",
+            "location": "מיקום אחסון: {path}"
         },
         "bulkAddTags": {
             "title": "הוסף תגיות למספר מודלים",
@@ -1324,11 +1858,46 @@
             "note": "הקבצים יורדו באמצעות תבניות נתיב ברירת מחדל. זה עשוי לקחת זמן בהתאם למספר ה-LoRAs.",
             "downloadButton": "הורד {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "התאמה מחדש של מתכונים",
+            "messageGlobal": "כל המתכונים ייסרקו מול ספריית המודלים המקומית שלך.",
+            "messageSingle": "מתכון זה ייסרק מול ספריית המודלים המקומית שלך.",
+            "messageBulk": "{count} מתכונים שנבחרו ייסרקו מול ספריית המודלים המקומית שלך.",
+            "relaxedLabel": "חבר מחדש גם מודלים חסרים לפי שם קובץ",
+            "relaxedDescription": "אפשר לתקן את המודלים האלה גם על ידי הורדה — ההורדה מדויקת יותר. ההתאמות עשויות לקשר לגרסה אחרת; הן יוצגו לסקירה וניתן לבטל אותן.",
+            "confirmButton": "התאם מחדש"
+        },
+        "rematchResults": {
+            "undo": "בטל",
+            "undone": "בוטל",
+            "undoFailed": "ביטול ההתאמה מחדש נכשל: {message}"
+        },
+        "rematchSummary": {
+            "title": "סיכום התאמה מחדש",
+            "successMessage": "הותאמו {entries} פריטים",
+            "failed": "ההתאמה מחדש נכשלה",
+            "completedWithWarnings": "ההתאמה מחדש הושלמה — מומלץ לסקור",
+            "cancelledNote": "ההתאמה בוטלה לפני שהסתיימה — המספרים חלקיים.",
+            "statMatched": "פריטים שהותאמו",
+            "statReview": "טעוני סקירה",
+            "statUnresolved": "ללא התאמה",
+            "statErrors": "שגיאות",
+            "reviewSection": "התאמות לפי שם קובץ לסקירה ({count})",
+            "columnRecipe": "מתכון",
+            "columnEntry": "פריט",
+            "columnFile": "הקובץ שהותאם",
+            "columnUndo": "בטל",
+            "copyReport": "העתק דוח",
+            "close": "סגור",
+            "scope_global": "כל המתכונים",
+            "scope_bulk": "מתכונים שנבחרו",
+            "scope_single": "מתכון בודד"
+        },
         "exampleAccess": {
             "title": "תמונות דוגמה מקומיות",
             "message": "לא נמצאו תמונות דוגמה מקומיות למודל זה. אפשרויות צפייה:",
             "downloadOption": {
-                "title": "הורד מ-Civitai",
+                "title": "הורד מ-CivitAI",
                 "description": "שמור דוגמאות מרוחקות באופן מקומי לשימוש לא מקוון וטעינה מהירה יותר"
             },
             "importOption": {
@@ -1346,32 +1915,37 @@
             "pathPlaceholder": "הקלד נתיב תיקייה או בחר מהעץ למטה...",
             "root": "שורש"
         },
-        "linkHuggingFace": {
-            "title": "קישור ל-HuggingFace",
-            "infoText": "הדבק את כתובת ה-URL של מאגר HuggingFace כדי לשייך מודל זה למקורו. פעולה זו מאפשרת העשרת מטא-דאטה באמצעות AI.",
-            "urlLabel": "כתובת URL של מאגר HuggingFace:",
+        "linkModelSource": {
+            "title": "קישור למקור מודל",
+            "infoText": "הדבק את כתובת ה-URL של עמוד המודל כדי לשייך מודל זה למקורו. הקישור מאפשר העשרת מטא-נתונים באמצעות AI עבור מודלים של Hugging Face ו-ModelScope.",
+            "urlLabel": "כתובת URL של עמוד המודל:",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "הזן את כתובת ה-URL המלאה של מאגר HuggingFace.",
+            "helpText": "הזן את כתובת ה-URL המלאה של עמוד המודל. אתרים נתמכים:",
+            "enrichNote": "העשרת AI דורשת כרטיס מודל קריא. אתרים שאינם חושפים אותו (נכון להיום TensorArt) ניתנים לקישור בלבד.",
+            "urlRequired": "הזן כתובת URL של עמוד המודל.",
+            "invalidUrl": "כתובת URL לא נתמכת. אתרים נתמכים: Hugging Face, ModelScope, TensorArt.",
+            "linking": "מקשר את מקור המודל...",
             "confirmAction": "שמור וקשר"
         },
         "relinkCivitai": {
-            "title": "קשר מחדש ל-Civitai",
+            "title": "קשר מחדש ל-CivitAI",
             "warning": "אזהרה:",
             "warningText": "זוהי פעולה שעלולה להיות הרסנית. קישור מחדש יגרום ל:",
             "warningList": {
-                "overrideMetadata": "דריסת מטא-דאטה קיימת",
+                "overrideMetadata": "דריסת מטא-נתונים קיימת",
                 "modifyHash": "שינוי פוטנציאלי של ה-hash של המודל",
                 "unintendedConsequences": "עלולות להיות השלכות לא רצויות אחרות"
             },
             "proceedText": "המשך רק אם אתה בטוח שזה מה שאתה רוצה.",
-            "urlLabel": "כתובת URL של מודל ב-Civitai:",
-            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "urlLabel": "כתובת URL של מודל ב-CivitAI:",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 או https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "הדבק כל כתובת URL של מודל מ-Civitai. פורמטים נתמכים:",
-                "format1": "https://civitai.com/models/649516",
-                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
-                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
-                "note": "הערה: אם לא סופק modelVersionId, תילקח הגרסה האחרונה."
+                "title": "הדבק כל כתובת URL של מודל מ-CivitAI או מ-CivitArchive. פורמטים נתמכים:",
+                "format1": "https://civitai.com/models/12345",
+                "format2": "https://civitai.com/models/12345?modelVersionId=67890",
+                "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+                "note": "הערה: אם לא סופק modelVersionId, תילקח הגרסה האחרונה.",
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "אשר קישור מחדש"
         },
@@ -1381,18 +1955,29 @@
                 "editFileName": "ערוך שם קובץ",
                 "editBaseModel": "ערוך מודל בסיס",
                 "editVersionName": "ערוך שם גרסה",
-                "viewOnCivitai": "הצג ב-Civitai",
-                "viewOnCivitaiText": "הצג ב-Civitai",
+                "viewOnCivitai": "הצג ב-CivitAI",
+                "viewOnCivitaiText": "הצג ב-CivitAI",
                 "viewOnHuggingFace": "צפייה ב-Hugging Face",
                 "viewOnHuggingFaceText": "צפייה ב-Hugging Face",
                 "viewCreatorProfile": "הצג פרופיל יוצר",
                 "openFileLocation": "פתח מיקום קובץ",
+                "openSidecarLocation": "פתח מיקום מטא-נתונים",
                 "sendToWorkflow": "שלח ל-ComfyUI",
-                "sendToWorkflowText": "שלח ל-ComfyUI"
+                "sendToWorkflowText": "שלח ל-ComfyUI",
+                "copyHash": "העתק hash",
+                "copyCivitaiId": "העתק מזהה Civitai",
+                "civitaiIdCopied": "מזהה Civitai הועתק ללוח העריכה",
+                "deleteModelWithShortcut": "מחק מודל (Del)"
             },
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
                 "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "מיקום המטא-נתונים נפתח בהצלחה",
+                "failed": "פתיחת מיקום המטא-נתונים נכשלה",
                 "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
                 "clipboardFallback": "נתיב: {{path}}"
             },
@@ -1405,13 +1990,16 @@
                 "location": "מיקום",
                 "baseModel": "מודל בסיס",
                 "size": "גודל",
+                "hashes": "hashes",
+                "civitaiModelId": "מזהה מודל",
+                "civitaiVersionId": "מזהה גרסה",
                 "unknown": "לא ידוע",
                 "usageTips": "טיפים לשימוש",
                 "additionalNotes": "הערות נוספות",
                 "notesHint": "לחץ Enter לשמירה, Shift+Enter לשורה חדשה",
                 "addNotesPlaceholder": "הוסף את ההערות שלך כאן...",
                 "aboutThisVersion": "אודות גרסה זו",
-                "baseModelSearchPlaceholder": "חפש מודל בסיס…",
+                "baseModelSearchPlaceholder": "חפש מודל בסיס...",
                 "baseModelSuggested": "מוצע",
                 "baseModelNoMatch": "אין מודלי בסיס תואמים"
             },
@@ -1431,7 +2019,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "ערך",
                 "add": "הוסף",
-                "invalidRange": "פורמט טווח לא תקין. השתמש ב-x.x-y.y"
+                "invalidRange": "פורמט טווח לא תקין. השתמש ב-x.x-y.y",
+                "invalidValue": "נא להזין מספר תקין",
+                "saveFailed": "שמירת הפרמטר הקבוע מראש נכשלה",
+                "added": "הפרמטר הקבוע מראש נוסף",
+                "updated": "הפרמטר הקבוע מראש עודכן"
             },
             "triggerWords": {
                 "label": "מילות טריגר",
@@ -1442,7 +2034,7 @@
                 "addPlaceholder": "הקלד להוספה או לחץ על הצעות למטה",
                 "editWord": "עריכת מילת טריגר",
                 "editPlaceholder": "עריכת מילת טריגר",
-                "copyWord": "העתק מילת טריגר",
+                "copyOrEditWord": "לחץ כדי להעתיק, לחץ פעמיים כדי לערוך",
                 "deleteWord": "מחק מילת טריגר",
                 "suggestions": {
                     "noSuggestions": "אין הצעות זמינות",
@@ -1480,10 +2072,10 @@
                 "noNext": "אין מודל נוסף זמין"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "אסור למכור תוכן שנוצר",
+                "noRentCivit": "אין יצירה דרך CivitAI",
+                "noRent": "אין שירותי יצירה",
+                "noSell": "אסור למכור מודלים",
                 "creditRequired": "נדרש ייחוס ליוצר",
                 "noDerivatives": "אין שיתוף מיזוגים",
                 "noReLicense": "נדרשות אותן הרשאות",
@@ -1495,6 +2087,32 @@
                 "recipes": "טוען מתכונים...",
                 "examples": "טוען דוגמאות...",
                 "versions": "טוען גרסאות..."
+            },
+            "showcase": {
+                "hiddenBySfw": "{count} הוסתרו עקב הגדרת SFW בלבד",
+                "showExamples": "הצג דוגמאות",
+                "showCount": "הצג דוגמאות ({count})",
+                "hideExamples": "הסתר דוגמאות",
+                "addExamples": "הוסף דוגמאות",
+                "previousExample": "דוגמה קודמת ([)",
+                "nextExample": "דוגמה הבאה (])",
+                "noExamples": "אין תמונות דוגמה זמינות",
+                "addMoreExamples": "הוסף עוד דוגמאות",
+                "dragDrop": "גרור ושחרר תמונות או סרטונים כאן",
+                "or": "או",
+                "selectFiles": "בחר קבצים",
+                "supportedFormats": "פורמטים נתמכים: jpg, png, gif, webp, avif, jxl, mp4, webm",
+                "importing": "מייבא קבצים...",
+                "noSupportedFiles": "לא נבחרו קבצים נתמכים. בחר קבצי תמונה או וידאו.",
+                "allFiltered": "כל תמונות הדוגמה מסוננות עקב הגדרות תוכן NSFW",
+                "sfwOnlyEnabled": "ההגדרות שלך מוגדרות כעת להציג רק תוכן SFW",
+                "changeInSettings": "ניתן לשנות זאת בהגדרות",
+                "nsfwMature": "תוכן למבוגרים",
+                "nsfwR": "תוכן בדירוג R",
+                "nsfwX": "תוכן בדירוג X",
+                "nsfwXxx": "תוכן בדירוג XXX",
+                "layoutGallery": "תצוגת גלריה",
+                "layoutList": "תצוגת רשימה"
             },
             "versions": {
                 "heading": "גרסאות המודל",
@@ -1522,29 +2140,38 @@
                     "newer": "גרסה חדשה יותר",
                     "newerTooltip": "גרסה זו חדשה יותר מהגרסה המקומית האחרונה שלך",
                     "earlyAccess": "גישה מוקדמת",
-                    "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של Civitai",
+                    "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של CivitAI",
+                    "paid": "בתשלום",
+                    "paidTooltip": "גרסה זו דורשת תשלום כדי להוריד",
+                    "priceSaleTooltip": "במבצע, בדרך כלל {list} Buzz",
+                    "priceBlueBuzzTooltip": "ניתן לשלם גם ב-Blue Buzz",
+                    "freeNow": "חינם כעת",
+                    "freeNowTooltip": "גרסה זו אינה דורשת עוד תשלום",
                     "ignored": "התעלם",
                     "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו",
                     "onSiteOnly": "רק באתר",
-                    "onSiteOnlyTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai"
+                    "onSiteOnlyTooltip": "גרסה זו זמינה רק ליצירה באתר CivitAI",
+                    "earlyAccessTooltipUntil": "גישה מוקדמת עד {date}, לאחר מכן ההורדה חינם"
                 },
                 "actions": {
                     "download": "הורדה",
                     "downloadTooltip": "הורד את הגרסה הזו",
-                    "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
-                    "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai",
+                    "downloadChooseFilesTooltip": "בחר אילו קבצים להוריד",
+                    "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-CivitAI",
+                    "downloadPaidTooltip": "הורד את הגרסה בתשלום הזו מ-CivitAI",
+                    "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר CivitAI",
                     "delete": "מחיקה",
                     "deleteTooltip": "מחק את הגרסה המקומית הזו",
                     "ignore": "התעלם",
                     "unignore": "בטל התעלמות",
                     "ignoreTooltip": "התעלם מהתראות העדכון עבור גרסה זו",
                     "unignoreTooltip": "חזור לקבל התראות עדכון עבור גרסה זו",
-                    "viewVersionOnCivitai": "הצג את הגרסה ב-Civitai",
+                    "viewVersionOnCivitai": "הצג את הגרסה ב-CivitAI",
                     "earlyAccessTooltip": "נדרש רכישת גישה מוקדמת",
                     "resumeModelUpdates": "המשך עדכונים עבור מודל זה",
                     "ignoreModelUpdates": "התעלם מעדכונים עבור מודל זה",
                     "viewLocalVersions": "הצג את כל הגרסאות המקומיות",
-                    "viewLocalTooltip": "יגיע בקרוב"
+                    "viewLocalTooltip": "הצג את כל הגרסאות המקומיות של המודל הזה בדף הראשי"
                 },
                 "filters": {
                     "label": "מסנן בסיס",
@@ -1560,8 +2187,8 @@
                 },
                 "empty": "אין עדיין היסטוריית גרסאות למודל זה.",
                 "error": "טעינת הגרסאות נכשלה.",
-                "missingModelId": "למודל זה אין מזהה מודל של Civitai.",
-                "hfGroupInfo": "זוהי קבוצת דגמים של HuggingFace. פתח את הספרייה כדי לראות את כל הגרסאות ברשת.",
+                "missingModelId": "למודל זה אין מזהה מודל של CivitAI.",
+                "sourceGroupInfo": "זוהי קבוצת מודלים של {source}. פתח את הספרייה כדי לראות את כל הגרסאות ברשת.",
                 "confirm": {
                     "delete": "למחוק גרסה זו מהספרייה שלך?"
                 },
@@ -1575,10 +2202,11 @@
             }
         },
         "metadataFetchSummary": {
-            "title": "סיכום שליפת מטא-דאטה",
+            "title": "סיכום שליפת מטא-נתונים",
             "statSuccess": "הצלחה",
             "statFailed": "נכשל",
             "statSkipped": "דולג",
+            "statOffline": "כונן לא זמין",
             "statTotal": "סה\"כ נסרק",
             "statDuration": "משך",
             "successMessage": "כל {count} {type}s עודכנו בהצלחה!",
@@ -1594,11 +2222,11 @@
             "statSuccess": "הצליחו",
             "statFailed": "נכשלו",
             "statTotal": "סה\"כ",
-            "successMessage": "כל {count} הדגמים הורדו בהצלחה",
+            "successMessage": "כל {count} המודלים הורדו בהצלחה",
             "completedWithErrors": "הושלם עם שגיאות",
             "failed": "ההורדה נכשלה",
             "failedItems": "פריטים שנכשלו ({count})",
-            "columnName": "שם הדגם",
+            "columnName": "שם המודל",
             "columnError": "שגיאה",
             "close": "סגור",
             "copyReport": "העתק דוח",
@@ -1633,6 +2261,10 @@
             "title": "מאתחל מנהל Embedding",
             "message": "סורק ובונה מטמון embedding. זה עשוי לקחת מספר דקות..."
         },
+        "other": {
+            "title": "מאתחל את מנהל המודלים האחרים",
+            "message": "סורק ובונה מטמון מודלים. זה עשוי לקחת מספר דקות..."
+        },
         "recipes": {
             "title": "מאתחל מנהל מתכונים",
             "message": "טוען ומעבד מתכונים. זה עשוי לקחת מספר דקות..."
@@ -1644,14 +2276,14 @@
         "tips": {
             "title": "טיפים וטריקים",
             "civitai": {
-                "title": "שילוב עם Civitai",
-                "description": "חבר את חשבון Civitai שלך: בקר באווטאר הפרופיל ← הגדרות ← מפתחות API ← הוסף מפתח API, ואז הדבק אותו בהגדרות מנהל LoRA.",
-                "alt": "הגדרת API של Civitai"
+                "title": "שילוב עם CivitAI",
+                "description": "חבר את חשבון CivitAI שלך: בקר באווטאר הפרופיל ← הגדרות ← מפתחות API ← הוסף מפתח API, ואז הדבק אותו בהגדרות מנהל LoRA.",
+                "alt": "הגדרת API של CivitAI"
             },
             "download": {
                 "title": "הורדה קלה",
-                "description": "השתמש בכתובות URL של Civitai כדי להוריד ולהתקין במהירות מודלים חדשים.",
-                "alt": "הורדה מ-Civitai"
+                "description": "השתמש בכתובות URL של CivitAI כדי להוריד ולהתקין במהירות מודלים חדשים.",
+                "alt": "הורדה מ-CivitAI"
             },
             "recipes": {
                 "title": "שמור מתכונים",
@@ -1677,7 +2309,7 @@
         "exitMode": "צא ממצב",
         "help": {
             "identicalHashes": "hashes זהים פירושם קבצי מודל זהים, גם אם יש להם שמות או תצוגות מקדימות שונות.",
-            "keepOne": "שמור רק גרסה אחת (רצוי עם מטא-דאטה/תצוגות מקדימות טובות יותר) ומחק בבטחה את האחרות."
+            "keepOne": "שמור רק גרסה אחת (רצוי עם מטא-נתונים/תצוגות מקדימות טובות יותר) ומחק בבטחה את האחרות."
         }
     },
     "uiHelpers": {
@@ -1701,23 +2333,26 @@
             "recipeReplaced": "מתכון הוחלף ב-workflow",
             "recipeFailedToSend": "שליחת מתכון ל-workflow נכשלה",
             "noMatchingNodes": "אין צמתים תואמים זמינים ב-workflow הנוכחי",
+            "noPromptTargets": "אין יעדי פרומפט תואמים ב-workflow.\nלחץ לחיצה ימנית על צומת ב-ComfyUI → Mark as → Send Prompt Target",
             "noTargetNodeSelected": "לא נבחר צומת יעד",
             "modelUpdated": "מודל עודכן ב-workflow",
             "modelFailed": "עדכון צומת המודל נכשל",
             "embeddingAdded": "Embedding נוסף ל-workflow",
             "embeddingFailed": "הוספת Embedding נכשלה",
-            "promptSent": "הנחיה נשלחה ל-workflow",
-            "promptFailed": "שליחת ההנחיה נכשלה"
+            "promptSent": "פרומפט נשלחה ל-workflow",
+            "promptFailed": "שליחת הפרומפט נכשלה",
+            "nodeTypeExcluded": "סוג הצומת \"{type}\" הוחרג מיעדי השליחה"
         },
         "nodeSelector": {
             "recipe": "מתכון",
             "lora": "LoRA",
             "embedding": "Embedding",
-            "prompt": "הנחיה",
+            "prompt": "פרומפט",
             "replace": "החלף",
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",
-            "sendToAll": "שלח לכל"
+            "sendToAll": "שלח לכל",
+            "excludeNodeType": "לא להציע שוב סוג צומת זה"
         },
         "exampleImages": {
             "opened": "תיקיית תמונות הדוגמה נפתחה",
@@ -1738,10 +2373,52 @@
         "tabs": {
             "gettingStarted": "תחילת עבודה",
             "updateVlogs": "בלוגי וידאו של עדכונים",
-            "documentation": "תיעוד"
+            "documentation": "תיעוד",
+            "shortcuts": "קיצורי דרך"
         },
         "gettingStarted": {
-            "title": "תחילת עבודה עם מנהל LoRA"
+            "title": "תחילת עבודה עם מנהל LoRA",
+            "replayTutorial": "הפעל את המדריך מחדש"
+        },
+        "shortcuts": {
+            "title": "קיצורי מקלדת ועכבר",
+            "groups": {
+                "general": "כללי",
+                "actions": "פעולות",
+                "selection": "בחירה ומצב בכמות גדולה",
+                "navigation": "ניווט",
+                "modelModal": "חלון מודל / מתכון",
+                "mediaViewer": "מציג מדיה / גלריית דוגמאות"
+            },
+            "keys": {
+                "click": "לחיצה",
+                "drag": "גרירה",
+                "rightClick": "לחיצה ימנית",
+                "letter": "אות",
+                "swipe": "החלקה"
+            },
+            "entries": {
+                "focusSearch": "העבר מיקוד לחיפוש",
+                "closeModal": "סגור חלון / פאנל",
+                "openShortcuts": "פתח את פאנל קיצורי הדרך הזה",
+                "refresh": "רענן את רשימת המודלים",
+                "fetchMetadata": "אחזר מטא-נתונים מ-CivitAI (דפי מודלים בלבד)",
+                "downloadModel": "הורד מודל (דפי מודלים בלבד)",
+                "toggleBulkMode": "הפעל/כבה מצב בכמות גדולה",
+                "selectAll": "בחר את כל המודלים הגלויים",
+                "rangeSelect": "בחר טווח",
+                "marqueeSelect": "בחר כרטיסים במסגרת בחירה (באזור ריק של הרשת)",
+                "exitBulkMode": "צא ממצב בכמות גדולה",
+                "bulkActions": "על כרטיס נבחר: תפריט פעולות בכמות גדולה",
+                "globalActions": "באזור ריק בדף: תפריט פעולות גלובליות (בדיקת עדכונים, ניהול מודלים מוחרגים)",
+                "scrollPages": "גלול בין דפים",
+                "jumpAlphabet": "קפוץ בעזרת סרגל האותיות",
+                "prevNext": "מודל קודם / הבא",
+                "deleteEntry": "מחק",
+                "cycleMedia": "עבור בין פריטי מדיה ([ / ] בגלריית הדוגמאות)",
+                "swipeTouch": "עבור בין פריטי מדיה במכשירי מגע",
+                "closeViewer": "סגור את המציג"
+            }
         },
         "updateVlogs": {
             "title": "עדכונים אחרונים",
@@ -1758,7 +2435,8 @@
             "settings": "הגדרות ותצורה",
             "extensions": "הרחבות",
             "newBadge": "חדש"
-        }
+        },
+        "newContentBadge": "חדש"
     },
     "update": {
         "title": "בדוק עדכונים",
@@ -1834,7 +2512,7 @@
             "submitGithubIssue": "פתח בעיה ב-GitHub",
             "joinDiscord": "הצטרף לדיסקורד",
             "youtubeChannel": "ערוץ יוטיוב",
-            "civitaiProfile": "פרופיל Civitai",
+            "civitaiProfile": "פרופיל CivitAI",
             "supportKofi": "תמכו ב-Ko-fi",
             "supportPatreon": "תמכו ב-Patreon"
         },
@@ -1877,12 +2555,16 @@
             "downloadPartialSuccess": "הורדו {completed} מתוך {total} LoRAs",
             "downloadPartialWithAccess": "הורדו {completed} מתוך {total} LoRAs. {accessFailures} נכשלו עקב הגבלות גישה. בדוק את מפתח ה-API שלך בהגדרות או את סטטוס הגישה המוקדמת.",
             "pleaseSelectVersion": "אנא בחר גרסה",
+            "pleaseSelectFile": "אנא בחר לפחות קובץ אחד",
             "versionExists": "גרסה זו כבר קיימת בספרייה שלך",
             "downloadCompleted": "ההורדה הושלמה בהצלחה",
             "downloadSkippedByBaseModel": "ההורדה דולגה כי מודל הבסיס {baseModel} מוחרג",
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
+            "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
+            "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",
+            "filenameTemplateFailed": "החלת תבנית שם הקובץ נכשלה: {error}",
             "noModelsSelected": "לא נבחרו מודלים"
         },
         "recipes": {
@@ -1905,23 +2587,39 @@
             "noRecipeId": "אין מזהה מתכון זמין",
             "sendToWorkflowFailed": "נכשל שליחת המתכון ל-workflow: {message}",
             "copyFailed": "שגיאה בהעתקת תחביר המתכון: {message}",
-            "createError": "שגיאה ביצירת המתכון：{message}",
-            "createFailed": "יצירת המתכון נכשלה：{error}",
+            "createError": "שגיאה ביצירת המתכון: {message}",
+            "createFailed": "יצירת המתכון נכשלה: {error}",
             "createMissingData": "חסרים נתונים נדרשים ליצירת המתכון",
             "created": "המתכון נוצר בהצלחה",
             "noMissingLoras": "אין LoRAs חסרים להורדה",
+            "unresolvableMarkedForReconnect": "{count} פריטים שלא ניתן לפתור סומנו — עכשיו ניתן לחבר אותם מחדש ל-LoRA מקומי.",
+            "noPreviousRecipe": "אין מתכון קודם זמין",
+            "noNextRecipe": "אין מתכון נוסף זמין",
             "missingLorasInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",
             "preparingForDownloadFailed": "שגיאה בהכנת LoRAs להורדה",
             "enterLoraName": "אנא הזן שם LoRA או תחביר",
             "reconnectedSuccessfully": "LoRA קושר מחדש בהצלחה",
+            "reconnectBaseModelMismatch": "הקישור מחדש הצליח, אך מודלי הבסיס שונים (מתכון: {recipe}, LoRA: {lora}) — הם תואמים מבחינת הארכיטקטורה",
             "reconnectFailed": "שגיאה בקישור מחדש של LoRA: {message}",
-            "noPromptToSend": "אין הנחיה לשליחה",
+            "loraRestored": "LoRA שוחזר לשיוך הקודם",
+            "loraRestoreFailed": "שגיאה בשחזור LoRA: {message}",
+            "noPromptToSend": "אין פרומפט לשליחה",
             "cannotSend": "לא ניתן לשלוח מתכון: חסר מזהה מתכון",
             "sendFailed": "שליחת המתכון ל-workflow נכשלה",
             "sendError": "שגיאה בשליחת המתכון ל-workflow",
             "missingCheckpointPath": "נתיב ה-checkpoint אינו זמין",
             "missingCheckpointInfo": "חסרים פרטי checkpoint",
             "downloadCheckpointFailed": "הורדת checkpoint נכשלה: {message}",
+            "enterCheckpointName": "הזן שם של Checkpoint",
+            "checkpointReconnectedSuccessfully": "Checkpoint קושר מחדש בהצלחה",
+            "reconnectCheckpointBaseModelMismatch": "הקישור מחדש הצליח, אך מודלי הבסיס שונים (מתכון: {recipe}, Checkpoint: {checkpoint}) — הם תואמים מבחינת הארכיטקטורה",
+            "checkpointReconnectFailed": "שגיאה בקישור מחדש של Checkpoint: {message}",
+            "checkpointRestored": "Checkpoint שוחזר לשיוך הקודם",
+            "checkpointRestoreFailed": "שגיאה בשחזור Checkpoint: {message}",
+            "checkpointDownloadUnavailable": "לא ניתן להוריד Checkpoint זה ללא מזהי CivitAI - נסה לחבר אותו מחדש עם Checkpoint מקומי",
+            "missingLoraDownloadInfo": "חסר מידע הורדה עבור LoRA זה",
+            "hashNotFoundOnCivitai": "לא ניתן לפתור את ה-hash של ה-LoRA ב-CivitAI - ייתכן שהמודל עודכן או שה-hash אינו תקין",
+            "downloadLoraFailed": "הורדת ה-LoRA נכשלה: {message}",
             "cannotDelete": "לא ניתן למחוק מתכון: חסר מזהה מתכון",
             "deleteConfirmationError": "שגיאה בהצגת אישור המחיקה",
             "deletedSuccessfully": "המתכון נמחק בהצלחה",
@@ -1936,27 +2634,31 @@
             "processingError": "שגיאת עיבוד: {message}",
             "folderBrowserError": "שגיאה בטעינת דפדפן התיקיות: {message}",
             "recipeSaveFailed": "שמירת המתכון נכשלה: {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "המתכון נשמר בהצלחה",
             "importFailed": "הייבוא נכשל: {message}",
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",
             "folderTreeError": "שגיאה בטעינת עץ התיקיות",
-            "batchImportFailed": "Failed to start batch import: {message}",
-            "batchImportCancelling": "Cancelling batch import...",
-            "batchImportCancelFailed": "Failed to cancel batch import: {message}",
-            "batchImportNoUrls": "Please enter at least one URL or file path",
-            "batchImportNoDirectory": "Please enter a directory path",
-            "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}",
+            "batchImportFailed": "לא ניתן היה להתחיל ייבוא בכמות גדולה: {message}",
+            "batchImportCancelling": "מבטל ייבוא בכמות גדולה...",
+            "batchImportCancelFailed": "לא ניתן היה לבטל את הייבוא בכמות גדולה: {message}",
+            "batchImportNoUrls": "אנא הזן לפחות כתובת URL אחת או נתיב קובץ אחד",
+            "batchImportNoDirectory": "אנא הזן נתיב תיקייה",
+            "batchImportRateLimited": "הושגה מגבלת הקצב של ספק המטא-נתונים — הבקשות מואטות וחלק מהפריטים עלולים לדלוג. ניתן להפעיל שוב את הייבוא מאוחר יותר.",
+            "batchImportBrowseFailed": "לא ניתן היה לעיין בתיקייה: {message}",
+            "batchImportDirectorySelected": "נבחרה תיקייה: {path}",
             "noRecipesSelected": "לא נבחרו מתכונים",
-            "repairBulkComplete": "התיקון הושלם: {repaired} תוקנו, {skipped} דולגו (מתוך {total})",
-            "repairBulkSkipped": "אין צורך בתיקון עבור {total} המתכונים הנבחרים",
-            "repairBulkFailed": "תיקון המתכונים הנבחרים נכשל: {message}",
+            "rematchSkipped": "אין צורך בהתאמה עבור {total} המתכונים שנבחרו",
+            "rematchFailed": "ההתאמה מחדש של המתכונים שנבחרו נכשלה: {message}",
             "reimporting": "מייבא מתכון מחדש מהמקור...",
+            "reimportingViaExtension": "מייבא מתכון מחדש {current}/{total} דרך תוסף הדפדפן...",
             "reimportSuccess": "המתכון יובא מחדש בהצלחה",
             "reimportBulkComplete": "ייבוא מחדש הושלם: {completed} יובאו, {failed} נכשלו (מתוך {total})",
             "reimportBulkFailed": "ייבוא מחדש של חלק מהמתכונים נכשל",
             "noMissingLorasInSelection": "לא נמצאו LoRAs חסרים במתכונים שנבחרו",
-            "noLoraRootConfigured": "תיקיית השורש של LoRA לא מוגדרת. אנא הגדר תיקיית שורש LoRA ברירת מחדל בהגדרות."
+            "noLoraRootConfigured": "תיקיית השורש של LoRA לא מוגדרת. אנא הגדר תיקיית שורש LoRA ברירת מחדל בהגדרות.",
+            "workflowSent": "ה-workflow נשלח ל-ComfyUI",
+            "workflowSendFailed": "שליחת ה-workflow ל-ComfyUI נכשלה: {error}",
+            "workflowNoWorkflow": "לא נמצא workflow מוטבע במתכון זה"
         },
         "models": {
             "noModelsSelected": "לא נבחרו מודלים",
@@ -1965,7 +2667,7 @@
             "deleteFailedGeneral": "מחיקת המודלים נכשלה",
             "selectedAdditional": "נבחרו {count} {type}(ים) נוספים",
             "marqueeSelectionComplete": "נבחרו {count} {type}(ים) בבחירת מלבן",
-            "refreshMetadataFailed": "רענון המטא-דאטה נכשל",
+            "refreshMetadataFailed": "רענון המטא-נתונים נכשל",
             "nameCannotBeEmpty": "שם המודל אינו יכול להיות ריק",
             "nameUpdatedSuccessfully": "שם המודל עודכן בהצלחה",
             "nameUpdateFailed": "עדכון שם המודל נכשל",
@@ -1985,16 +2687,16 @@
             "bulkContentRatingSet": "דירוג התוכן הוגדר ל-{level} עבור {count} מודלים",
             "bulkContentRatingPartial": "דירוג התוכן הוגדר ל-{level} עבור {success} מודלים, {failed} נכשלו",
             "bulkContentRatingFailed": "עדכון דירוג התוכן עבור המודלים שנבחרו נכשל",
-            "bulkFavoriteUpdating": "מוסיף {count} דגמים למועדפים...",
-            "bulkUnfavoriteUpdating": "מסיר {count} דגמים ממועדפים...",
-            "bulkFavoritePartialAdded": "{success} דגמים נוספו למועדפים, {failed} נכשלו",
-            "bulkFavoritePartialRemoved": "{success} דגמים הוסרו ממועדפים, {failed} נכשלו",
+            "bulkFavoriteUpdating": "מוסיף {count} מודלים למועדפים...",
+            "bulkUnfavoriteUpdating": "מסיר {count} מודלים ממועדפים...",
+            "bulkFavoritePartialAdded": "{success} מודלים נוספו למועדפים, {failed} נכשלו",
+            "bulkFavoritePartialRemoved": "{success} מודלים הוסרו ממועדפים, {failed} נכשלו",
             "bulkFavoriteFailed": "עדכון סטטוס מועדפים נכשל",
             "bulkUpdatesChecking": "בודק עדכונים עבור {type} שנבחרו...",
             "bulkUpdatesSuccess": "יש עדכונים עבור {count} {type} שנבחרו",
             "bulkUpdatesNone": "לא נמצאו עדכונים עבור {type} שנבחרו",
-            "bulkUpdatesMissing": "ה-{type} שנבחרו אינם מקושרים לעדכוני Civitai",
-            "bulkUpdatesPartialMissing": "דילג על {missing} {type} שנבחרו ללא קישור Civitai",
+            "bulkUpdatesMissing": "ה-{type} שנבחרו אינם מקושרים לעדכוני CivitAI",
+            "bulkUpdatesPartialMissing": "דילג על {missing} {type} שנבחרו ללא קישור CivitAI",
             "bulkUpdatesFailed": "בדיקת העדכונים עבור {type} שנבחרו נכשלה: {message}",
             "invalidCharactersRemoved": "תווים לא חוקיים הוסרו משם הקובץ",
             "filenameCannotBeEmpty": "שם הקובץ אינו יכול להיות ריק",
@@ -2023,19 +2725,22 @@
             "checkpointRootsFailed": "טעינת שורשי checkpoint נכשלה: {message}",
             "unetRootsFailed": "טעינת שורשי Diffusion Model נכשלה: {message}",
             "embeddingRootsFailed": "טעינת שורשי embedding נכשלה: {message}",
-            "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count} מיפוי{plural})",
+            "otherRootsFailed": "טעינת שורשי המודלים האחרים נכשלה: {message}",
+            "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count})",
             "mappingsCleared": "מיפויי נתיבי מודל בסיס נוקו",
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",
             "downloadTemplatesFailed": "שמירת תבניות נתיב הורדה נכשלה: {message}",
+            "filenameTemplatesUpdated": "תבניות שמות הקבצים עודכנו",
+            "filenameTemplatesFailed": "שמירת תבניות שמות הקבצים נכשלה: {message}",
             "recipesPathUpdated": "נתיב אחסון המתכונים עודכן",
             "recipesPathSaveFailed": "עדכון נתיב אחסון המתכונים נכשל: {message}",
             "settingsUpdated": "הגדרות עודכנו: {setting}",
             "compactModeToggled": "מצב קומפקטי {state}",
             "settingSaveFailed": "שמירת ההגדרה נכשלה: {message}",
             "displayDensitySet": "צפיפות התצוגה הוגדרה ל-{density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "לא ניתן היה לטעון את הספריות: {message}",
+            "libraryActivateFailed": "לא ניתן היה להפעיל את הספרייה: {message}",
             "languageChangeFailed": "שינוי השפה נכשל: {message}",
             "cacheCleared": "קבצי המטמון נוקו בהצלחה. המטמון ייבנה מחדש בפעולה הבאה.",
             "cacheClearFailed": "ניקוי המטמון נכשל: {error}",
@@ -2087,6 +2792,14 @@
             "updateFailed": "עדכון מילות הטריגר נכשל",
             "copyFailed": "ההעתקה נכשלה"
         },
+        "undo": {
+            "action": "בטל",
+            "deleted": "נמחק: {name}",
+            "deletedBulk": "{count} פריטים נמחקו",
+            "expired": "חלון הביטול פג. הפריט נמחק לצמיתות.",
+            "failed": "הביטול נכשל: {error}",
+            "restored": "הפריט שוחזר"
+        },
         "virtual": {
             "loadFailed": "טעינת הפריטים נכשלה",
             "loadMoreFailed": "טעינת פריטים נוספים נכשלה",
@@ -2106,19 +2819,22 @@
         "controls": {
             "reloadFailed": "טעינה מחדש של {pageType} נכשלה: {message}",
             "refreshFailed": "{action} של {pageType} נכשל: {message}",
-            "fetchMetadataFailed": "אחזור המטא-דאטה נכשל: {message}",
+            "fetchMetadataFailed": "אחזור המטא-נתונים נכשל: {message}",
             "clearFilterFailed": "ניקוי המסנן המותאם אישית נכשל: {message}"
         },
         "contextMenu": {
             "contentRatingSet": "דירוג התוכן הוגדר ל-{level}",
             "contentRatingFailed": "הגדרת דירוג התוכן נכשלה: {message}",
-            "relinkSuccess": "המודל קושר מחדש ל-Civitai בהצלחה",
+            "relinkSuccess": "המודל קושר מחדש ל-CivitAI בהצלחה",
             "relinkFailed": "שגיאה: {message}",
             "linkHfSuccess": "המודל נקשר בהצלחה ל-HuggingFace",
             "linkHfFailed": "שגיאה: {message}",
-            "fetchMetadataFirst": "אנא אחזר מטא-דאטה מ-CivitAI תחילה",
+            "linkCivArchSuccess": "המודל קושר מחדש דרך CivitArchive בהצלחה",
+            "fetchMetadataFirst": "אנא אחזר מטא-נתונים מ-CivitAI תחילה",
             "noCivitaiInfo": "אין מידע מ-CivitAI זמין",
-            "missingHash": "ה-hash של המודל אינו זמין"
+            "missingHash": "ה-hash של המודל אינו זמין",
+            "enrichNeedsSource": "קשר מודל זה למקור מודל תחילה (קישור מודל → קישור למקור מודל)",
+            "enrichUnsupportedSource": "העשרת AI אינה זמינה עבור מודלים של {source}"
         },
         "exampleImages": {
             "pathUpdated": "נתיב תמונות הדוגמה עודכן בהצלחה",
@@ -2150,19 +2866,20 @@
             "fileRenameFailed": "שינוי שם הקובץ נכשל: {error}",
             "previewUpdated": "התצוגה המקדימה עודכנה בהצלחה",
             "previewUploadFailed": "העלאת תמונת התצוגה המקדימה נכשלה",
+            "previewDropInvalid": "סוג קובץ לא נתמך: {name}. גרור במקום זאת תמונה או סרטון MP4.",
             "refreshComplete": "{action} הושלם",
             "refreshFailed": "{action} של {type}s נכשל",
-            "metadataRefreshed": "המטא-דאטה רועננה בהצלחה",
-            "metadataRefreshFailed": "רענון המטא-דאטה נכשל: {message}",
-            "metadataUpdateComplete": "עדכון המטא-דאטה הושלם",
+            "metadataRefreshed": "המטא-נתונים רועננה בהצלחה",
+            "metadataRefreshFailed": "רענון המטא-נתונים נכשל: {message}",
+            "metadataUpdateComplete": "עדכון המטא-נתונים הושלם",
             "operationCancelled": "הפעולה בוטלה על ידי המשתמש",
             "operationCancelledPartial": "הפעולה בוטלה. {success} פריטים עובדו.",
-            "metadataFetchFailed": "אחזור המטא-דאטה נכשל: {message}",
+            "metadataFetchFailed": "אחזור המטא-נתונים נכשל: {message}",
             "bulkMetadataCompleteAll": "רועננו בהצלחה כל {count} ה-{type}s",
             "bulkMetadataCompletePartial": "רועננו {success} מתוך {total} {type}s",
-            "bulkMetadataCompleteNone": "רענון המטא-דאטה נכשל עבור כל ה-{type}s",
+            "bulkMetadataCompleteNone": "רענון המטא-נתונים נכשל עבור כל ה-{type}s",
             "bulkMetadataFailureDetails": "רענונים שנכשלו:\n{failures}",
-            "bulkMetadataFailed": "רענון המטא-דאטה נכשל: {message}",
+            "bulkMetadataFailed": "רענון המטא-נתונים נכשל: {message}",
             "moveNotSupported": "העברת {type}s אינה נתמכת",
             "alreadyInFolder": "{type} כבר נמצא בתיקייה שנבחרה",
             "moveInfo": "{message}",
@@ -2174,15 +2891,18 @@
             "bulkMoveSuccess": "הועברו בהצלחה {successCount} {type}s",
             "exampleImagesDownloadSuccess": "תמונות הדוגמה הורדו בהצלחה!",
             "exampleImagesDownloadFailed": "הורדת תמונות הדוגמה נכשלה: {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "לא ניתן היה להעביר את הפריט: {message}",
             "copiedToClipboard": "הועתק ללוח",
-            "downloadStarted": "ההורדה החלה"
+            "downloadStarted": "ההורדה החלה",
+            "refreshCompleteScoped": "{scope} נסרק: {added} חדשים, {removed} הוסרו",
+            "refreshKeptUnreachable": "נשמרו {count} מודלים: {paths} אינם זמינים",
+            "scanRootUnreachable": "{scope} אינו זמין כעת. לא בוצעו שינויים."
         },
         "agent": {
             "llmNotConfigured": "ספק AI לא הוגדר. הפעל אותו בהגדרות → ספק AI.",
-            "enrichStarted": "מעשיר מטא-דאטה באמצעות AI...",
-            "enrichComplete": "העשרת מטא-דאטה הושלמה: {{summary}}",
-            "enrichFailed": "העשרת מטא-דאטה נכשלה: {{error}}"
+            "enrichStarted": "מעשיר מטא-נתונים באמצעות AI...",
+            "enrichComplete": "העשרת מטא-נתונים הושלמה: {{summary}}",
+            "enrichFailed": "העשרת מטא-נתונים נכשלה: {{error}}"
         }
     },
     "doctor": {
@@ -2204,30 +2924,33 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API Key"
+                "title": "מפתח API של CivitAI"
             },
             "cache_health": {
-                "title": "Model Cache Health"
+                "title": "מצב מטמון המודלים"
             },
             "filename_conflicts": {
-                "title": "Duplicate Filename Conflicts"
+                "title": "התנגשויות שמות קבצים כפולים"
+            },
+            "sidecar_mirror_orphans": {
+                "title": "קבצי לוואי מרוכזים"
             },
             "ui_version": {
-                "title": "UI Version"
+                "title": "גרסת הממשק"
             }
         },
         "actions": {
             "runAgain": "הפעל שוב",
             "exportBundle": "ייצוא חבילה",
-            "open-settings": "Open Settings",
-            "open-settings-syntax-format": "Switch to Full Path Syntax",
-            "repair-cache": "Rebuild Cache",
-            "resolve-filename-conflicts": "Resolve Conflicts",
-            "reload-page": "Reload UI"
+            "open-settings": "פתח הגדרות",
+            "open-settings-syntax-format": "עבור לתחביר נתיב מלא",
+            "repair-cache": "בנה מחדש את המטמון",
+            "resolve-filename-conflicts": "פתור התנגשויות",
+            "reload-page": "טען מחדש את הממשק"
         },
         "labels": {
-            "conflicts": "Conflicts",
-            "version": "Version"
+            "conflicts": "התנגשויות",
+            "version": "גרסה"
         },
         "toast": {
             "loadFailed": "טעינת האבחון נכשלה: {message}",
@@ -2241,7 +2964,7 @@
     },
     "conflictConfirm": {
         "title": "פתור התנגשויות בשמות קבצים",
-        "message": "שינוי שם על ידי הוספת האש באורך 4 תווים לכל שם קובץ כפול.",
+        "message": "שינוי שם על ידי הוספת hash באורך 4 תווים לכל שם קובץ כפול.",
         "note": "פעולה זו משנה שמות של קבצים בדיסק. ייתכן שיהיה צורך לעדכן הפניות למודלים בזרימות עבודה קיימות אם אתה משתמש בפורמט התחביר A1111.",
         "detail": "דוגמה: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
         "impact": "ישנה שם של <strong>{count}</strong> קבצים ב-<strong>{groups}</strong> קבוצות כפולות",
@@ -2257,10 +2980,10 @@
             "seconds": "שניות"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "title": "תמכו בהמשך פיתוח LoRA Manager ❤️",
+            "content": "LoRA Manager הוא פרויקט אהוב המתוחזק במשרה מלאה על ידי מפתח יחיד. התמיכה שלך ב-Ko-fi עוזרת לכסות עלויות פיתוח, מאפשרת עדכונים חדשים ומעניקה מפתח רישיון להרחבת LM CivitAI כמתנת תודה. כל תרומה באמת עושה את ההבדל.",
+            "supportCta": "תמכו ב-Ko-fi",
+            "learnMore": "מדריך להרחבת LM CivitAI"
         },
         "cacheHealth": {
             "corrupted": {
@@ -2269,12 +2992,23 @@
             "degraded": {
                 "title": "זוהו בעיות במטמון"
             },
-            "content": "{invalid} מתוך {total} רשומות מטמון אינן תקינות ({rate}). זה עלול לגרום לדגמים חסרים או לשגיאות. מומלץ לבנות מחדש את המטמון.",
+            "content": "{invalid} מתוך {total} רשומות מטמון אינן תקינות ({rate}). זה עלול לגרום למודלים חסרים או לשגיאות. מומלץ לבנות מחדש את המטמון.",
             "rebuildCache": "בניית מטמון מחדש",
             "dismiss": "ביטול",
             "rebuilding": "בונה מחדש את המטמון...",
             "rebuildFailed": "נכשלה בניית המטמון מחדש: {error}",
             "retry": "נסה שוב"
+        },
+        "otherModels": {
+            "title": "ניהול המודלים האחרים זמין",
+            "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
+            "enable": "הפעל מודלים אחרים",
+            "openSettings": "פתח הגדרות"
+        },
+        "pager": {
+            "previous": "הודעה קודמת",
+            "next": "הודעה הבאה",
+            "position": "הודעה {current} מתוך {total}"
         }
     }
 }

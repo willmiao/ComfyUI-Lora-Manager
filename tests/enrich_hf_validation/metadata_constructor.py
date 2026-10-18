@@ -149,7 +149,6 @@ def create_initial_metadata(
         "metadata_source": "",
         "last_checked_at": 0,
         "hash_status": "completed",
-        "trainedWords": [],
         "hf_url": hf_url,
         "usage_tips": "{}",
     }

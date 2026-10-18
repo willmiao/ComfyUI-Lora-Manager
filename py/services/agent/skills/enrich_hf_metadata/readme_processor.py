@@ -1,8 +1,15 @@
-"""HF README processing for the ``enrich_hf_metadata`` skill.
+"""Model card (README) processing for the ``enrich_hf_metadata`` skill.
 
 Provides README cleaning for LLM injection, gallery/image extraction from
 multiple formats (YAML widget, markdown, HTML ``<img>``, gallery tables),
 and section-based README trimming for collection repos.
+
+The extractors default to Hugging Face asset URLs, but every one of them
+accepts an explicit ``base_url`` so the same parsing works for any model
+source (ModelScope, ...).  See :mod:`py.services.model_sources`.
+
+This module deliberately has no package-relative imports: it is also loaded
+standalone by the README-processing test harness.
 """
 
 from __future__ import annotations
@@ -15,12 +22,25 @@ from typing import Any, List, Tuple
 _REPO_URL_PATTERN = re.compile(r"https?://huggingface\.co/([^/]+/[^/]+)")
 
 
+def resolve_asset_base_url(repo: str, base_url: str | None = None) -> str:
+    """Return the base URL used to resolve repository-relative assets.
+
+    Falls back to the historical Hugging Face layout when *base_url* is not
+    supplied, so existing callers keep their behaviour.
+    """
+
+    if base_url:
+        return base_url.rstrip("/")
+    return f"https://huggingface.co/{repo}/resolve/main"
+
+
 def extract_simple_markdown_images(
     markdown_text: str,
     repo: str,
     existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
+    base_url: str | None = None,
 ) -> list[dict[str, Any]]:
     """Extract standalone markdown images from the README body.
 
@@ -32,10 +52,10 @@ def extract_simple_markdown_images(
     Returns a list of dicts in the same ``civitai.images`` format as
     :func:`extract_gallery_images`.
     """
-    if not markdown_text or not repo:
+    if not markdown_text or not (repo or base_url):
         return []
 
-    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    base_url = resolve_asset_base_url(repo, base_url)
     images: list[dict[str, Any]] = []
     seen_urls: set[str] = set(existing_urls) if existing_urls else set()
 
@@ -89,20 +109,21 @@ def extract_html_img_tags(
     existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
+    base_url: str | None = None,
 ) -> list[dict[str, Any]]:
     """Extract image URLs from HTML ``<img src=\"...\">`` tags in the README.
 
     Many HF collection repos (e.g. ``deadman44/Z-Image_LoRA``) use raw HTML
     ``<img>`` tags exclusively for their sample images, with no markdown
     ``![]()`` equivalents.  This function finds those tags and constructs
-    resolvable HF URLs.
+    resolvable URLs.
 
     Returns a list of dicts in the ``civitai.images`` format.
     """
-    if not markdown_text or not repo:
+    if not markdown_text or not (repo or base_url):
         return []
 
-    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    base_url = resolve_asset_base_url(repo, base_url)
     images: list[dict[str, Any]] = []
     seen_urls: set[str] = set(existing_urls) if existing_urls else set()
 
@@ -166,7 +187,7 @@ def extract_html_img_tags(
 
 def extract_repo_from_hf_url(hf_url: str) -> str:
     """Extract ``user/repo`` from a HuggingFace URL."""
-    m = _REPO_URL_PATTERN.match(hf_url)
+    m = _REPO_URL_PATTERN.match(hf_url or "")
     return m.group(1) if m else ""
 
 
@@ -175,21 +196,23 @@ def extract_gallery_images(
     repo: str,
     default_width: int = 512,
     default_height: int = 512,
+    base_url: str | None = None,
 ) -> List[dict[str, Any]]:
-    """Extract widget/gallery images from the YAML frontmatter of a HF README.
+    """Extract widget/gallery images from the YAML frontmatter of a README.
 
     Args:
         markdown_text: Raw README content.
-        repo: HF repo identifier (``user/repo``).
+        repo: Repository identifier (``user/repo``).
         default_width: Fallback width when the README provides no dimension.
         default_height: Fallback height when the README provides no dimension.
+        base_url: Overrides the asset base URL (defaults to Hugging Face).
 
     Returns a list of dicts compatible with the ``civitai.images`` metadata
-    format, each containing ``url`` (absolute HF URL), ``meta.prompt``,
+    format, each containing ``url`` (absolute), ``meta.prompt``,
     ``width``, ``height``, and ``type``.  Returns an empty list when no
     widget entries are found or when *repo* is empty.
     """
-    if not markdown_text or not repo:
+    if not markdown_text or not (repo or base_url):
         return []
 
     frontmatter = _extract_frontmatter(markdown_text)
@@ -197,7 +220,7 @@ def extract_gallery_images(
         return []
 
     images: List[dict[str, Any]] = []
-    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    base_url = resolve_asset_base_url(repo, base_url)
     w = default_width or 512
     h = default_height or 512
 
@@ -279,10 +302,11 @@ def extract_gallery_table_images(
     existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
+    base_url: str | None = None,
 ) -> list[dict[str, Any]]:
     """Extract images from ``| Preview | Prompt |`` markdown gallery tables.
 
-    Many HF READMEs include a sample-gallery table in the body (outside
+    Many READMEs include a sample-gallery table in the body (outside
     the YAML frontmatter) that shows generation examples with their
     prompts.  This function parses those tables and merges results with
     the widget-sourced images from :func:`extract_gallery_images`.
@@ -291,10 +315,10 @@ def extract_gallery_table_images(
     :func:`extract_gallery_images`.  Already-seen URLs (from *existing_urls*)
     are skipped.
     """
-    if not markdown_text or not repo:
+    if not markdown_text or not (repo or base_url):
         return []
 
-    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    base_url = resolve_asset_base_url(repo, base_url)
     images: list[dict[str, Any]] = []
     seen_urls: set[str] = set(existing_urls) if existing_urls else set()
     lines = markdown_text.split("\n")
@@ -368,12 +392,18 @@ def _extract_frontmatter(text: str) -> str:
 
 
 def convert_readme_to_html(markdown_text: str | None) -> str:
-    """Convert HF README markdown to sanitised HTML."""
+    """Convert HF README markdown to sanitised HTML.
+
+    Site-generated placeholder notices are dropped here too, so a repository
+    whose author wrote nothing does not store the download instructions as its
+    model description; the result is an empty string in that case.
+    """
     if not markdown_text:
         return ""
 
     text = markdown_text
     text = _strip_frontmatter(text)
+    text = _strip_generated_card_boilerplate(text)
     text = _strip_gallery(text)
     text = _strip_badge_images(text)
     text = _strip_html_comments(text)
@@ -420,6 +450,59 @@ _MASSIVE_LIST_LINE_MIN_LEN = 150
 #: Minimum consecutive enumeration lines to trigger massive-list stripping.
 _MASSIVE_LIST_THRESHOLD = 8
 
+#: Substrings identifying text a *site* generated to fill a model card whose
+#: author wrote nothing, as opposed to the author's own content.  ModelScope
+#: renders such a card as a placeholder notice, a block of SDK/git download
+#: instructions, and a closing invitation to improve the card.
+#:
+#: Matched as substrings rather than whole headings because the notices are
+#: prose, and because non-Latin scripts are not space-delimited — the notice
+#: continues with a full-width period, so the ``title == kw`` style matching
+#: used for :data:`_BOILERPLATE_HEADERS` would never fire.
+_GENERATED_CARD_MARKERS: tuple[str, ...] = (
+    "当前模型的贡献者未提供更加详细的模型介绍",
+    "您可以通过如下",
+    "如果您是本模型的贡献者",
+)
+
+
+def _strip_generated_card_boilerplate(text: str) -> str:
+    """Remove the notices a site generates to fill an empty model card.
+
+    A repository whose uploader wrote no README still gets a card: ModelScope
+    answers with "the contributor provided no further description", the SDK
+    and git download commands, and an invitation to complete the card.  None
+    of it describes the model, yet it was landing in both the LLM prompt and
+    the stored description.
+
+    A notice that is a heading takes its whole section with it, so the
+    download block goes too; a stand-alone notice line is dropped on its own.
+    Content the author added later — under a heading of equal or higher
+    level — is kept, so an improved card is not thrown away.
+    """
+
+    lines = text.split("\n")
+    out: list[str] = []
+    skip_until_level: int | None = None
+
+    for line in lines:
+        level = _heading_level(line)
+
+        if any(marker in line for marker in _GENERATED_CARD_MARKERS):
+            if level > 0:
+                skip_until_level = level
+            continue
+
+        if skip_until_level is not None:
+            if level > 0 and level <= skip_until_level:
+                skip_until_level = None
+            else:
+                continue
+
+        out.append(line)
+
+    return "\n".join(out)
+
 
 def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> str:
     """Clean a HF README for injection into an LLM metadata-extraction prompt.
@@ -429,6 +512,8 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
 
     * ``widget:`` YAML block (example prompts + output URLs)
     * ``<Gallery />`` tags and wrappers
+    * Site-generated placeholder notices for a card the author never wrote
+      (see :func:`_strip_generated_card_boilerplate`)
     * Fenced code blocks (Python / bash / bibtex / yaml)
     * Standalone ``![...](...)`` image lines and ``<img>`` tags
     * Training-parameter tables
@@ -454,6 +539,7 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
     # Order matters — broader strips first, then finer ones.
     text = _strip_gallery(text)
     text = _strip_widget_section(text)
+    text = _strip_generated_card_boilerplate(text)
     text = _strip_fenced_code_blocks(text)
     text = _strip_standalone_images(text)
     text = _strip_training_tables(text)

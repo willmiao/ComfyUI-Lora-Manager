@@ -19,7 +19,9 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from ..utils.cache_db import closing_connection, connect_cache_db
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
+from ..utils.file_lock import exclusive_lock
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +54,13 @@ class PersistentRecipeCache:
         "file_mtime",
         "file_size",
         "favorite",
-        "repair_version",
         "preview_nsfw_level",
         "loras_json",
         "checkpoint_json",
         "gen_params_json",
         "tags_json",
+        "has_workflow",
+        "import_info_json",
     )
     _instances: Dict[str, "PersistentRecipeCache"] = {}
     _instance_lock = threading.Lock()
@@ -169,65 +172,98 @@ class PersistentRecipeCache:
         recipes: List[Dict[str, Any]],
         json_paths: Optional[Dict[str, str]] = None,
         image_id_map: Optional[Dict[str, str]] = None,
-    ) -> None:
+        skip_if_empty: bool = False,
+    ) -> bool:
         """Save all recipes to SQLite cache.
 
         Args:
             recipes: List of recipe dictionaries to persist.
             json_paths: Optional mapping of recipe_id -> json_path for file stats.
             image_id_map: Optional precomputed civitai image_id → recipe_id mapping.
+            skip_if_empty: When True, refuse to replace a non-empty cache with an
+                empty one. This is the storage-level backstop against a scan that
+                silently loses every recipe (unavailable drive / mis-resolved
+                recipes directory): overwriting both deletes the user's data and
+                destroys their only record of it. Intentional full clears (manual
+                rebuild) must pass ``skip_if_empty=False``.
+
+        Returns:
+            ``True`` when the write happened, ``False`` when it was skipped.
         """
         if not self.is_enabled():
-            return
+            return False
         if not self._schema_initialized:
             self._initialize_schema()
         if not self._schema_initialized:
-            return
+            return False
 
         try:
             with self._db_lock:
-                conn = self._connect()
-                try:
-                    conn.execute("PRAGMA foreign_keys = ON")
-                    conn.execute("BEGIN")
+                # Cross-process serialization: another LoRA Manager instance may
+                # share this settings directory, and a full-table replace is a
+                # read-modify-write that SQLite alone cannot make atomic.
+                with exclusive_lock(self._db_path):
+                    conn = self._connect()
+                    try:
+                        conn.execute("PRAGMA foreign_keys = ON")
+                        conn.execute("BEGIN")
 
-                    # Clear existing data
-                    conn.execute("DELETE FROM recipes")
+                        if skip_if_empty and not recipes:
+                            existing = conn.execute(
+                                "SELECT COUNT(*) FROM recipes"
+                            ).fetchone()
+                            if existing and existing[0]:
+                                conn.rollback()
+                                logger.warning(
+                                    "Refusing to persist an empty recipe cache: the "
+                                    "stored cache still holds %d recipe(s). The scan "
+                                    "found nothing, which usually means the recipes "
+                                    "path was unavailable or resolved elsewhere; "
+                                    "keeping the stored cache so the data stays "
+                                    "recoverable.",
+                                    existing[0],
+                                )
+                                return False
 
-                    # Prepare and insert all rows
-                    recipe_rows = []
-                    for recipe in recipes:
-                        recipe_id = str(recipe.get("id", ""))
-                        if not recipe_id:
-                            continue
+                        # Clear existing data
+                        conn.execute("DELETE FROM recipes")
 
-                        json_path = ""
-                        if json_paths:
-                            json_path = json_paths.get(recipe_id, "")
+                        # Prepare and insert all rows
+                        recipe_rows = []
+                        for recipe in recipes:
+                            recipe_id = str(recipe.get("id", ""))
+                            if not recipe_id:
+                                continue
 
-                        row = self._prepare_recipe_row(recipe, json_path)
-                        recipe_rows.append(row)
+                            json_path = ""
+                            if json_paths:
+                                json_path = json_paths.get(recipe_id, "")
 
-                    if recipe_rows:
-                        placeholders = ", ".join(["?"] * len(self._RECIPE_COLUMNS))
-                        columns = ", ".join(self._RECIPE_COLUMNS)
-                        conn.executemany(
-                            f"INSERT INTO recipes ({columns}) VALUES ({placeholders})",
-                            recipe_rows,
+                            row = self._prepare_recipe_row(recipe, json_path)
+                            recipe_rows.append(row)
+
+                        if recipe_rows:
+                            placeholders = ", ".join(["?"] * len(self._RECIPE_COLUMNS))
+                            columns = ", ".join(self._RECIPE_COLUMNS)
+                            conn.executemany(
+                                f"INSERT INTO recipes ({columns}) VALUES ({placeholders})",
+                                recipe_rows,
+                            )
+
+                        # Persist image_id_map for O(1) lookups on cache load
+                        conn.execute(
+                            "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
+                            ("image_id_map", json.dumps(image_id_map or {})),
                         )
 
-                    # Persist image_id_map for O(1) lookups on cache load
-                    conn.execute(
-                        "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
-                        ("image_id_map", json.dumps(image_id_map or {})),
-                    )
-
-                    conn.commit()
-                    logger.debug("Persisted %d recipes to cache", len(recipe_rows))
-                finally:
-                    conn.close()
+                        conn.commit()
+                        logger.debug("Persisted %d recipes to cache", len(recipe_rows))
+                        return True
+                    finally:
+                        conn.close()
         except Exception as exc:
             logger.warning("Failed to persist recipe cache: %s", exc)
+            return False
 
     def get_file_stats(self) -> Dict[str, Tuple[float, int]]:
         """Return stored file stats for all cached recipes.
@@ -332,6 +368,44 @@ class PersistentRecipeCache:
         except Exception as exc:
             logger.debug("Failed to persist image_id_map: %s", exc)
 
+    def get_metadata_value(self, key: str) -> Optional[str]:
+        """Return a value from cache_metadata, or None if missing."""
+        if not self.is_enabled() or not self._schema_initialized:
+            return None
+
+        try:
+            with self._db_lock:
+                conn = self._connect(readonly=True)
+                try:
+                    row = conn.execute(
+                        "SELECT value FROM cache_metadata WHERE key = ?",
+                        (key,),
+                    ).fetchone()
+                    return row["value"] if row else None
+                finally:
+                    conn.close()
+        except Exception:
+            return None
+
+    def set_metadata_value(self, key: str, value: str) -> None:
+        """Store a value in cache_metadata without rewriting the full cache."""
+        if not self.is_enabled() or not self._schema_initialized:
+            return
+
+        try:
+            with self._db_lock:
+                conn = self._connect()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
+                        (key, value),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+        except Exception as exc:
+            logger.debug("Failed to persist cache metadata %s: %s", key, exc)
+
     def get_indexed_recipe_ids(self) -> Set[str]:
         """Return all recipe IDs in the cache.
 
@@ -383,7 +457,7 @@ class PersistentRecipeCache:
             if self._schema_initialized:
                 return
             try:
-                with self._connect() as conn:
+                with closing_connection(self._connect()) as conn:
                     conn.execute("PRAGMA journal_mode=WAL")
                     conn.execute("PRAGMA foreign_keys = ON")
                     conn.executescript(
@@ -402,12 +476,13 @@ class PersistentRecipeCache:
                             file_mtime REAL,
                             file_size INTEGER,
                             favorite INTEGER DEFAULT 0,
-                            repair_version INTEGER DEFAULT 0,
                             preview_nsfw_level INTEGER DEFAULT 0,
                             loras_json TEXT,
                             checkpoint_json TEXT,
                             gen_params_json TEXT,
-                            tags_json TEXT
+                            tags_json TEXT,
+                            has_workflow INTEGER DEFAULT 0,
+                            import_info_json TEXT
                         );
 
                         CREATE INDEX IF NOT EXISTS idx_recipes_json_path ON recipes(json_path);
@@ -426,22 +501,34 @@ class PersistentRecipeCache:
                         )
                     except Exception:
                         pass  # column already exists
+                    # Migration: add has_workflow column to existing databases
+                    try:
+                        conn.execute(
+                            "ALTER TABLE recipes ADD COLUMN has_workflow INTEGER DEFAULT 0"
+                        )
+                    except Exception:
+                        pass  # column already exists
+                    # Migration: add import_info_json column to existing databases
+                    try:
+                        conn.execute(
+                            "ALTER TABLE recipes ADD COLUMN import_info_json TEXT"
+                        )
+                    except Exception:
+                        pass  # column already exists
                     conn.commit()
                 self._schema_initialized = True
             except Exception as exc:
                 logger.warning("Failed to initialize persistent recipe cache schema: %s", exc)
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
-        uri = False
-        path = self._db_path
-        if readonly:
-            if not os.path.exists(path):
-                raise FileNotFoundError(path)
-            path = f"file:{path}?mode=ro"
-            uri = True
-        conn = sqlite3.connect(path, check_same_thread=False, uri=uri, detect_types=sqlite3.PARSE_DECLTYPES)
-        conn.row_factory = sqlite3.Row
-        return conn
+        if readonly and not os.path.exists(self._db_path):
+            raise FileNotFoundError(self._db_path)
+        return connect_cache_db(
+            self._db_path,
+            readonly=readonly,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            row_factory=sqlite3.Row,
+        )
 
     def _prepare_recipe_row(self, recipe: Dict[str, Any], json_path: str) -> Tuple[Any, ...]:
         """Convert a recipe dict to a row tuple for SQLite insertion."""
@@ -456,6 +543,9 @@ class PersistentRecipeCache:
 
         tags = recipe.get("tags")
         tags_json = json.dumps(tags) if tags else None
+
+        import_info = recipe.get("import_info")
+        import_info_json = json.dumps(import_info) if import_info else None
 
         # Get file stats if json_path exists
         file_mtime = 0.0
@@ -482,12 +572,13 @@ class PersistentRecipeCache:
             file_mtime,
             file_size,
             1 if recipe.get("favorite") else 0,
-            int(recipe.get("repair_version") or 0),
             int(recipe.get("preview_nsfw_level") or 0),
             loras_json,
             checkpoint_json,
             gen_params_json,
             tags_json,
+            1 if recipe.get("has_workflow") else 0,
+            import_info_json,
         )
 
     def _row_to_recipe(self, row: sqlite3.Row) -> Dict[str, Any]:
@@ -520,6 +611,13 @@ class PersistentRecipeCache:
             except json.JSONDecodeError:
                 pass
 
+        import_info = None
+        if row["import_info_json"]:
+            try:
+                import_info = json.loads(row["import_info_json"])
+            except json.JSONDecodeError:
+                pass
+
         recipe = {
             "id": row["recipe_id"],
             "file_path": row["file_path"] or "",
@@ -531,8 +629,8 @@ class PersistentRecipeCache:
             "created_date": row["created_date"] or 0.0,
             "modified": row["modified"] or 0.0,
             "favorite": bool(row["favorite"]),
-            "repair_version": row["repair_version"] or 0,
             "preview_nsfw_level": row["preview_nsfw_level"] or 0,
+            "has_workflow": bool(row["has_workflow"]),
             "loras": loras,
             "gen_params": gen_params,
         }
@@ -542,6 +640,9 @@ class PersistentRecipeCache:
 
         if checkpoint:
             recipe["checkpoint"] = checkpoint
+
+        if import_info:
+            recipe["import_info"] = import_info
 
         return recipe
 

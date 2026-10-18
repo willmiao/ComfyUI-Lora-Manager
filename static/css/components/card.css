@@ -41,6 +41,11 @@
     border-color: var(--lora-accent);
 }
 
+.model-card.drag-over {
+    outline: 2px dashed var(--lora-accent);
+    outline-offset: -2px;
+}
+
 .model-card:focus-visible {
     outline: 2px solid var(--lora-accent);
     outline-offset: 2px;
@@ -240,7 +245,7 @@
 
 .show-content-btn {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-xs);
     padding: 4px var(--space-1);
@@ -603,12 +608,14 @@
     gap: 2px;
 }
 
-/* HIGH / LOW badges — shown inline before version name in card footer */
+/* HIGH / LOW badges — shown inline before version name in card footer.
+   font-size/line-height/padding mirror .version-name so all chips in
+   .badge-version-unit share the same box height. */
 .hl-badge {
     display: inline-block;
-    font-size: 0.7em;
+    font-size: 0.85em;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.4;
     padding: 1px 5px;
     border-radius: var(--border-radius-xs);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -628,17 +635,48 @@
 }
 
 .medium-density .hl-badge {
-    font-size: 0.65em;
+    font-size: 0.8em;
 }
 
 .compact-density .hl-badge {
-    font-size: 0.62em;
-    padding: 0px 4px;
+    font-size: 0.75em;
+    padding: 1px 4px;
+}
+
+/* Quantization badge (e.g. Q4_K_M, FP8) — shown inline before version name.
+   font-size/line-height/padding mirror .version-name so all chips in
+   .badge-version-unit share the same box height. */
+.quant-badge {
+    display: inline-block;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 1px 5px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
+    color: oklch(80% 0.09 300);
+    background: oklch(52% 0.12 300 / 0.25);
+    border-color: oklch(58% 0.14 300 / 0.3);
+}
+
+.medium-density .quant-badge {
+    font-size: 0.8em;
+}
+
+.compact-density .quant-badge {
+    font-size: 0.75em;
+    padding: 1px 4px;
 }
 
 /* Hide version-related elements when setting is disabled */
 body.hide-card-version .civitai-version,
 body.hide-card-version .hl-badge {
+    display: none;
+}
+
+/* Hide quantization badge when setting is disabled */
+body.hide-card-quant .quant-badge {
     display: none;
 }
 
@@ -659,30 +697,54 @@ body.hide-card-version .hl-badge {
 .card-footer,
 .card-header,
 .model-name,
-.base-model-label {
+.base-model-label,
+.workflow-badge {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
 }
 
+/* Compact LoRA status pill: state icon + available/total fraction (e.g. "2/3").
+   The icon switches by state (warning/check/layers) so status never relies on
+   color alone; the tooltip spells out the full details. */
 .lora-count {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: var(--border-radius-xs);
+    flex-shrink: 0;
+    /* Pin to the bottom-right corner of the footer, matching how model card
+       footer .card-actions behave when the title wraps to multiple lines */
+    align-self: flex-end;
     font-size: 0.85em;
-    position: relative;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: var(--border-radius-xs);
 }
 
 .lora-count.ready {
     background: rgba(46, 204, 113, 0.3);
+    border-color: rgba(46, 204, 113, 0.6);
 }
 
 .lora-count.missing {
-    background: rgba(231, 76, 60, 0.3);
+    background: rgba(231, 76, 60, 0.35);
+    border-color: rgba(231, 76, 60, 0.65);
+}
+
+/* Partial: usable but degraded — some LoRAs are unobtainable (deleted from
+   the source or unresolvable hash) and are skipped when the recipe is used.
+   Amber sits between ready green and missing red. */
+.lora-count.partial {
+    background: rgba(243, 156, 18, 0.35);
+    border-color: rgba(243, 156, 18, 0.65);
+}
+
+/* Unavailable: no usable LoRA at all — gray marks the recipe as dead. */
+.lora-count.unavailable {
+    background: rgba(149, 165, 166, 0.35);
+    border-color: rgba(149, 165, 166, 0.65);
 }
 
 .placeholder-message {
@@ -776,7 +838,7 @@ body.hide-card-version .hl-badge {
     top: 8px;
     right: 8px;
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-radius: var(--border-radius-xs);
     padding: 3px 6px;
     font-size: 0.75em;
@@ -858,4 +920,27 @@ body.hide-card-version .hl-badge {
     justify-content: center;
     flex-shrink: 0;
     opacity: 0.9;
+}
+
+/* Recipe card capability badge: mirrors the model-card update/skip-refresh
+   badges (small square icon next to the base-model pill) but stays a neutral
+   attribute marker — no card-level highlight like .has-update. */
+.workflow-badge {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 4px;
+    background: var(--badge-workflow-bg);
+    color: var(--badge-workflow-text);
+    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px var(--badge-workflow-glow);
+    border: 1px solid color-mix(in oklab, var(--badge-workflow-bg) 55%, transparent);
+}
+
+.workflow-badge i {
+    line-height: 1;
 }

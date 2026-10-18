@@ -1,0 +1,50 @@
+# .comfyignore — keep the Comfy Registry archive to runtime-only files.
+#
+# comfy-cli builds node.zip as: git-tracked files − .comfyignore matches
+# + [tool.comfy].includes (we declare none). Patterns use .gitignore
+# (gitwildmatch) syntax, evaluated against paths relative to the repo root.
+# https://docs.comfy.org/registry/publishing
+#
+# Why this file exists: the registry security scan flags a version on ANY
+# finding, even severity "info", so every shipped file is scan surface.
+# Dev-only files (tests, docs, tooling scripts, agent notes, Vue sources)
+# accounted for ~44 of the 115 findings that flagged 1.2.2–1.2.4.
+
+# Test suites
+/tests/
+
+# Developer documentation, plans and internal notes
+/docs/
+/.omo/
+/.specs/
+/AGENTS.md
+/update_logs.md
+
+# Agent skill definitions (repo tooling, not loaded by ComfyUI)
+/.agents/
+
+# CI and repository automation
+/.github/
+
+# Repository tooling scripts — maintenance only, never imported at runtime.
+# scripts/api.js + scripts/app.js are ComfyUI stubs consumed by the vitest suite.
+/scripts/
+
+# Vue widget sources and build inputs. The prebuilt bundle that actually ships
+# lives in web/comfyui/vue-widgets/. Dropping the sources also stops the startup
+# auto-builder from running its mtime check (and an npm install) on end-user
+# machines, since py/vue_widget_builder.py skips the check when src/ is absent.
+/vue-widgets/
+
+# Root npm tooling — frontend test runner only
+/package.json
+/package-lock.json
+/vitest.config.js
+/pytest.ini
+/requirements-dev.txt
+
+# Sourcemaps are build artifacts, never loaded at runtime
+web/comfyui/vue-widgets/*.js.map
+
+# Keep this file itself out of the archive
+/.comfyignore

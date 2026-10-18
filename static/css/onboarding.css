@@ -44,6 +44,13 @@
     pointer-events: auto !important;
 }
 
+/* Keep the fixed-position sidebar anchored when highlighted, otherwise
+   .onboarding-target-highlight's position: relative would pull it into
+   normal flow and it would move away from the spotlight cutout */
+.folder-sidebar.onboarding-target-highlight {
+    position: fixed;
+}
+
 .onboarding-popup {
     position: absolute;
     background: var(--lora-surface);
@@ -103,13 +110,13 @@
 
 .onboarding-btn:hover {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
 .onboarding-btn.primary {
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -182,7 +189,7 @@
 .language-option.selected {
     border-color: var(--lora-accent);
     background: var(--lora-accent);
-    color: var(--lora-text);
+    color: var(--text-on-accent);
 }
 
 .language-flag {
@@ -205,6 +212,7 @@
     display: inline-block;
     background: var(--shortcut-bg);
     border: 1px solid var(--shortcut-border);
+    box-shadow: var(--shortcut-shadow);
     border-radius: var(--border-radius-xs);
     padding: 2px 6px;
     font-size: 0.8em;

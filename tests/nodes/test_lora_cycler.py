@@ -6,6 +6,7 @@ import pytest
 
 from py.nodes.lora_cycler import LoraCyclerLM
 from py.services import service_registry
+import os
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ async def test_cycler_uses_scaled_preset_strength_when_available(
     result = await cycler_node.cycle(cycler_config)
 
     assert result["result"][0] == [
-        ("/models/loras/preset_lora.safetensors", 1.05, 0.75)
+        ("/models/loras/preset_lora.safetensors".replace("/", os.sep), 1.05, 0.75)
     ]
 
 
@@ -74,7 +75,7 @@ async def test_cycler_falls_back_to_manual_strength_when_preset_missing(
     result = await cycler_node.cycle(cycler_config)
 
     assert result["result"][0] == [
-        ("/models/loras/manual_lora.safetensors", 0.8, 0.6)
+        ("/models/loras/manual_lora.safetensors".replace("/", os.sep), 0.8, 0.6)
     ]
 
 
@@ -105,5 +106,5 @@ async def test_cycler_syncs_clip_to_model_when_same_clip_strength_enabled(
     )
 
     assert result["result"][0] == [
-        ("/models/loras/preset_lora.safetensors", 1.05, 1.05)
+        ("/models/loras/preset_lora.safetensors".replace("/", os.sep), 1.05, 1.05)
     ]

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('other.title') }}{% endblock %}
+{% block page_id %}other{% endblock %}
+
+{% block init_title %}{{ t('initialization.other.title') }}{% endblock %}
+{% block init_message %}{{ t('initialization.other.message') }}{% endblock %}
+{% block init_check_url %}/api/other/list?page=1&page_size=1{% endblock %}
+
+{% block page_css %}
+<style>
+    .other-disabled {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 64px 24px;
+        color: var(--text-color, #e0e0e0);
+    }
+    .other-disabled > i {
+        font-size: 48px;
+        opacity: 0.6;
+    }
+    .other-disabled h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+    .other-disabled p {
+        margin: 0;
+        max-width: 520px;
+        line-height: 1.6;
+        opacity: 0.8;
+    }
+    .other-disabled .other-disabled-hint {
+        font-size: 13px;
+        opacity: 0.6;
+    }
+    .other-disabled button {
+        margin-top: 8px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #fff;
+        background: var(--primary-color, #4a7dff);
+    }
+    .other-disabled button:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+    .other-settings-file {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+    .other-settings-file code {
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(127, 127, 127, 0.15);
+        border: 1px solid rgba(127, 127, 127, 0.25);
+        word-break: break-all;
+    }
+</style>
+{% endblock %}
+
+{% block additional_components %}
+
+<div id="otherContextMenu" class="context-menu" style="display: none;">
+    <!-- Metadata -->
+    <div class="context-menu-item" data-action="refresh-metadata"><i class="fas fa-sync"></i> {{ t('loras.contextMenu.refreshMetadata') }}</div>
+    <div class="context-menu-item has-submenu" data-has-submenu="link-model">
+        <i class="fas fa-link"></i>
+        <span>{{ t('loras.contextMenu.linkModel') }}</span>
+        <i class="fas fa-chevron-right submenu-arrow"></i>
+        <div class="context-submenu">
+            <div class="context-menu-item" data-action="relink-civitai">
+                <i class="fas fa-external-link-alt"></i> <span>{{ t('loras.contextMenu.linkCivitai') }}</span>
+            </div>
+            <div class="context-menu-item" data-action="link-hf">
+                <i class="fas fa-robot"></i> <span>{{ t('loras.contextMenu.linkModelSource') }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Workflow -->
+    <div class="context-menu-item" data-action="copyname"><i class="fas fa-copy"></i> {{ t('loras.contextMenu.copyFilename') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Media / Preview -->
+    <div class="context-menu-item" data-action="preview"><i class="fas fa-folder-open"></i> {{ t('loras.contextMenu.openExamples') }}</div>
+    <div class="context-menu-item has-submenu" data-has-submenu="download-examples"><i class="fas fa-download"></i> {{ t('loras.contextMenu.downloadExamples') }} <i class="fas fa-chevron-right submenu-arrow"></i>
+        <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-examples"><i class="fas fa-download"></i> {{ t('loras.contextMenu.downloadMissingExamples') }}</div>
+            <div class="context-menu-item" data-action="download-examples-force"><i class="fas fa-redo-alt"></i> {{ t('loras.contextMenu.reprocessExamples') }}</div>
+        </div>
+    </div>
+    <div class="context-menu-item" data-action="replace-preview"><i class="fas fa-image"></i> {{ t('loras.contextMenu.replacePreview') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Attributes -->
+    <div class="context-menu-item" data-action="set-nsfw"><i class="fas fa-exclamation-triangle"></i> {{ t('loras.contextMenu.setContentRating') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Organization -->
+    <div class="context-menu-item" data-action="move"><i class="fas fa-folder-open"></i> {{ t('loras.contextMenu.moveToFolder') }}</div>
+    <div class="context-menu-separator"></div>
+    <!-- Destructive -->
+    <div class="context-menu-item" data-action="exclude"><i class="fas fa-eye-slash"></i> {{ t('loras.contextMenu.excludeModel') }}</div>
+    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{ t('loras.contextMenu.deleteModel') }}</div>
+</div>
+{% endblock %}
+
+{% block content %}
+    {% if other_disabled %}
+    <div class="other-disabled">
+        <i class="fas fa-shapes"></i>
+        <h2>{{ t('other.disabled.title') }}</h2>
+        <p>{{ t('other.disabled.description') }}</p>
+        <button id="enableOtherModelsBtn" type="button">
+            <i class="fas fa-toggle-on"></i> {{ t('other.disabled.enableButton') }}
+        </button>
+        <p class="other-disabled-hint">{{ t('other.disabled.hint') }}</p>
+    </div>
+    {% elif other_no_paths %}
+    <div class="other-disabled">
+        <i class="fas fa-folder-open"></i>
+        <h2>{{ t('other.noPaths.title') }}</h2>
+        {% if standalone_mode %}
+        <p>{{ t('other.noPaths.descriptionStandalone') }}</p>
+        <p class="other-disabled-hint">{{ t('other.noPaths.hintStandalone') }}</p>
+        <button id="openModelPathsSettingsBtn" type="button">
+            <i class="fas fa-cog"></i> {{ t('other.noPaths.openModelPaths') }}
+        </button>
+        {% if settings_file %}
+        <p class="other-settings-file"><i class="fas fa-file-alt"></i> <code>{{ settings_file }}</code></p>
+        {% endif %}
+        <button id="openSettingsFolderBtn" type="button">
+            <i class="fas fa-folder-open"></i> {{ t('other.noPaths.openSettingsFolder') }}
+        </button>
+        {% else %}
+        <p>{{ t('other.noPaths.descriptionComfyUI') }}</p>
+        <p class="other-disabled-hint">{{ t('other.noPaths.hintComfyUI') }}</p>
+        <button id="openOtherModelsSettingsBtn" type="button">
+            <i class="fas fa-cog"></i> {{ t('other.noPaths.openSettings') }}
+        </button>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="sticky-topbar">
+    {% include 'components/controls.html' %}
+    {% include 'components/breadcrumb.html' %}
+    </div>
+    {% include 'components/duplicates_banner.html' %}
+    {% include 'components/folder_sidebar.html' %}
+    
+    <!-- Other model cards container -->
+    <div class="card-grid" id="modelGrid">
+        <!-- Cards will be dynamically inserted here -->
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block overlay %}
+<div class="bulk-mode-overlay"></div>
+{% endblock %}
+
+{% block main_script %}
+{% if other_disabled or other_no_paths %}
+<script type="module" src="{{ rel_prefix }}loras_static/js/other_disabled.js?v={{ version }}"></script>
+{% else %}
+<script type="module" src="{{ rel_prefix }}loras_static/js/other.js?v={{ version }}"></script>
+{% endif %}
+{% endblock %}

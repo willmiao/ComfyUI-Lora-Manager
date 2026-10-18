@@ -20,7 +20,13 @@ from .model_metadata_provider import (
 )
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
-from ..utils.civitai_utils import resolve_license_payload
+from ..utils.civitai_utils import (
+    build_civitai_model_page_url,
+    civitai_page_host_candidates,
+    resolve_license_payload,
+)
+from ..utils.civitai_page_prices import parse_model_page_prices
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES, is_empty_placeholder_hash
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +35,24 @@ logger = logging.getLogger(__name__)
 # too so repeated failures don't hammer the API.
 _CREATOR_COUNT_CACHE_TTL_SECONDS = 600
 _creator_model_count_cache: Dict[str, Tuple[float, Optional[int]]] = {}
+
+# How long a page host stays on the skip list after refusing a request outright
+# (Cloudflare's challenge, surfaced as 403 "Access forbidden"). Long enough to
+# cover a whole update refresh, short enough to recover within a session.
+_PAGE_HOST_BLOCK_TTL = 15 * 60
+
+
+def _is_host_level_refusal(message: str) -> bool:
+    """Whether a failed request means "this host refuses us" rather than "this
+    model is unavailable".
+
+    ``downloader.make_request`` collapses statuses into prose, and 403 ("Access
+    forbidden") is the one a Cloudflare challenge produces. A 404 ("Resource not
+    found") is model-specific — mature pages are hidden from anonymous visitors —
+    so it must not put the whole host on the skip list.
+    """
+
+    return "forbidden" in message.lower()
 
 
 class CivitaiClient:
@@ -65,6 +89,10 @@ class CivitaiClient:
             str, Tuple[Optional[Dict[str, Any]], Optional[str]]
         ] = OrderedDict()
         self._MAX_CACHE_ENTRIES = 500
+        # Model-page host bookkeeping: which host last worked, and which ones are
+        # currently refusing us (see get_model_prices).
+        self._page_host_preference: Optional[str] = None
+        self._page_host_blocked: Dict[str, float] = {}
 
     def _build_image_info_url(self, image_id: str) -> str:
         return f"{self.base_url}/images?imageId={image_id}&nsfw=X&withMeta=true"
@@ -179,6 +207,11 @@ class CivitaiClient:
     async def get_model_by_hash(
         self, model_hash: str
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        if is_empty_placeholder_hash(model_hash):
+            # The empty-hash placeholder (SHA256 of an empty byte string)
+            # matches no real file; CivitAI's by-hash index can contain
+            # polluted entries for it, so never resolve it.
+            return None, "Model not found"
         try:
             success, version = await self._make_request(
                 "GET",
@@ -296,8 +329,19 @@ class CivitaiClient:
                     "name": result.get("name", ""),
                 }
             message = self._extract_error_message(result)
-            if message and "not found" in message.lower():
-                raise ResourceNotFoundError(f"Resource not found for model {model_id}")
+            if message and (
+                "not found" in message.lower()
+                or message.lower().startswith("no model with id ")
+            ):
+                raise ResourceNotFoundError(
+                    f"Civitai model {model_id} was not found. Check the original "
+                    "Civitai link: use the model ID from /models/<id>, not a "
+                    "version ID from ?modelVersionId=<id> or "
+                    "/api/download/models/<id>. If the model ID is correct, "
+                    "the model may have been removed or made inaccessible. "
+                    "If the page opens only when logged in, check the Civitai "
+                    "API key in LoRA Manager settings."
+                )
             if is_expected_offline_error(message):
                 logger.info("Civitai request skipped: %s", OFFLINE_FRIENDLY_MESSAGE)
                 return None
@@ -314,7 +358,7 @@ class CivitaiClient:
         except RateLimitError:
             raise
         except ResourceNotFoundError as exc:
-            logger.info("Model %s is no longer available on Civitai: %s", model_id, exc)
+            logger.info("Civitai model lookup failed: %s", exc)
             raise
         except Exception as e:
             logger.error("Error fetching model versions: %s", e, exc_info=True)
@@ -375,6 +419,138 @@ class CivitaiClient:
             raise
         except Exception as exc:
             logger.error(f"Error fetching model versions in bulk: {exc}")
+            return None
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        """Fetch per-version buzz prices for one model from its public page.
+
+        CivitAI's public REST API deliberately omits prices, but the model page
+        embeds the site's own ``model.getById`` result (including
+        ``paidAccess.terms``) in its server-rendered payload. One request covers
+        every version of the model. Returns ``{version_id: price fields}``, an
+        empty dict when the page loads but lists no gated version, or None when
+        the page could not be read or understood — callers keep any stored price.
+
+        Several hosts are tried in order, because the hosts are not equivalent:
+
+        * ``civitai.red`` serves mature model pages that ``civitai.com`` hides from
+          anonymous visitors, but it is behind a Cloudflare challenge that refuses
+          non-browser clients outright (403 for any User-Agent).
+        * ``civitai.com`` / ``civitai.green`` answer normally for anonymously
+          visible models, and 404 for the mature ones.
+
+        So the user's ``civitai_host`` preference is a starting point, not the only
+        option. Mature models whose page cannot be read from any host stay
+        priceless — see the known limitation in
+        ``docs/plans/paid-model-price-tracking.md``.
+
+        This is a public anonymous page fetch: no API key and no internal
+        endpoint, so a failure here must never fail the update check itself.
+        """
+
+        try:
+            normalized_id = int(model_id)
+        except (TypeError, ValueError):
+            return None
+
+        candidates = self._page_host_candidates()
+        failures: List[str] = []
+
+        for host in candidates:
+            url = build_civitai_model_page_url(normalized_id, host=host)
+            if not url:
+                continue
+
+            try:
+                success, result = await self._make_request(
+                    "GET",
+                    url,
+                    use_auth=False,
+                    custom_headers={"Accept": "text/html"},
+                )
+            except RateLimitError:
+                # The shared rate-limit gate already recorded it; skip this model.
+                raise
+            except Exception as exc:  # pragma: no cover - defensive
+                failures.append(f"{host}: {exc}")
+                continue
+
+            if not success or not isinstance(result, str):
+                message = result if isinstance(result, str) else type(result).__name__
+                failures.append(f"{host}: {message}")
+                if isinstance(result, str) and _is_host_level_refusal(result):
+                    # A refusal like Cloudflare's "Access forbidden" applies to the
+                    # host, not to this model, so stop paying for it for a while.
+                    self._block_page_host(host)
+                continue
+
+            prices = parse_model_page_prices(result)
+            if prices is None:
+                failures.append(f"{host}: no usable price payload")
+                continue
+
+            self._remember_page_host(host)
+            return prices
+
+        logger.warning(
+            "No price source for model %s; tried %s. Mature models are only served "
+            "by civitai.red, which challenges non-browser clients.",
+            model_id,
+            "; ".join(failures) or "no candidate hosts",
+        )
+        return None
+
+    def _page_host_candidates(self) -> List[str]:
+        """Ordered hosts to try: the last one that worked, then the preference."""
+
+        preferred = self._page_host()
+        ordered = list(civitai_page_host_candidates(preferred))
+        if self._page_host_preference and self._page_host_preference in ordered:
+            ordered.remove(self._page_host_preference)
+            ordered.insert(0, self._page_host_preference)
+
+        now = time.time()
+        usable = [
+            host
+            for host in ordered
+            if now - self._page_host_blocked.get(host, 0.0) >= _PAGE_HOST_BLOCK_TTL
+        ]
+        # Never return an empty list: a blocked host is still better than no attempt
+        # once the preference and the memo disagree.
+        return usable or ordered
+
+    def _remember_page_host(self, host: str) -> None:
+        if self._page_host_preference != host:
+            logger.info("CivitAI model pages are being read from %s", host)
+        self._page_host_preference = host
+        self._page_host_blocked.pop(host, None)
+
+    def _block_page_host(self, host: str) -> None:
+        if host in self._page_host_blocked:
+            return
+        # Log once per host per TTL: the failure is host-wide, so repeating it for
+        # every mature model in the library would be pure noise.
+        logger.warning(
+            "CivitAI model pages on %s refused the request (likely a Cloudflare "
+            "challenge); skipping that host for %d minutes",
+            host,
+            _PAGE_HOST_BLOCK_TTL // 60,
+        )
+        self._page_host_blocked[host] = time.time()
+        if self._page_host_preference == host:
+            self._page_host_preference = None
+
+    def _page_host(self) -> Optional[str]:
+        """Resolve the page host from the ``civitai_host`` setting."""
+
+        try:
+            from .settings_manager import get_settings_manager
+
+            settings = get_settings_manager()
+            return settings.get("civitai_host") if settings else None
+        except Exception:
             return None
 
     async def get_model_version(
@@ -499,8 +675,54 @@ class CivitaiClient:
         logger.warning(f"Failed to fetch version by id {version_id}")
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch raw stored file info via the model-versions/mini endpoint.
+
+        The public REST API rewrites ``files[].name`` to
+        ``"{model}_{version}"`` for non-LoRA model types, so every
+        precision variant of a multi-file version shares one name (#1100).
+        The mini endpoint returns the raw ``ModelFile.name`` in
+        ``fileName``. ``file_id`` is mandatory: without it mini picks a
+        file via its own primary-file logic, which can disagree with the
+        REST ``primary`` flag.
+
+        Returns the mini payload dict on success, None on any failure.
+        """
+        try:
+            success, data = await self._make_request(
+                "GET",
+                f"{self.base_url}/model-versions/mini/{version_id}",
+                params={"modelFileId": file_id},
+                use_auth=True,
+            )
+            if success and isinstance(data, dict):
+                return data
+            if is_expected_offline_error(data):
+                return None
+            logger.debug(
+                "Mini endpoint lookup failed for version %s file %s: %s",
+                version_id,
+                file_id,
+                data,
+            )
+            return None
+        except RateLimitError:
+            raise
+        except Exception as exc:
+            logger.debug(
+                "Error fetching mini info for version %s file %s: %s",
+                version_id,
+                file_id,
+                exc,
+            )
+            return None
+
     async def _fetch_version_by_hash(self, model_hash: Optional[str]) -> Optional[Dict[str, Any]]:
         if not model_hash:
+            return None
+        if is_empty_placeholder_hash(model_hash):
             return None
 
         success, version = await self._make_request(
@@ -538,10 +760,16 @@ class CivitaiClient:
         return model_versions[0]
 
     def _extract_primary_model_hash(self, version_entry: Dict[str, Any]) -> Optional[str]:
+        # Prefer the generic "Model" file (most reliable version identity);
+        # fall back to any other weights-type primary.
         for file_info in version_entry.get("files", []):
             if file_info.get("type") == "Model" and file_info.get("primary"):
-                hashes = file_info.get("hashes", {})
-                model_hash = hashes.get("SHA256")
+                model_hash = (file_info.get("hashes", {}) or {}).get("SHA256")
+                if model_hash:
+                    return model_hash
+        for file_info in version_entry.get("files", []):
+            if file_info.get("type") in MODEL_WEIGHT_FILE_TYPES and file_info.get("primary"):
+                model_hash = (file_info.get("hashes", {}) or {}).get("SHA256")
                 if model_hash:
                     return model_hash
         return None

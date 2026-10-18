@@ -4,7 +4,7 @@
   position: fixed;
   top: 0;
   z-index: var(--z-header);
-  height: 48px;
+  height: var(--header-height, 48px);
   /* Reduced height */
   width: 100%;
   box-shadow: var(--shadow-md);
@@ -12,7 +12,7 @@
 }
 
 .header-container {
-  max-width: 1400px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 15px;
   display: flex;
@@ -36,19 +36,6 @@
   align-items: center;
   gap: 1rem;
   flex-shrink: 0;
-}
-
-/* Responsive header container for larger screens */
-@media (min-width: 2150px) {
-  .header-container {
-    max-width: 1800px;
-  }
-}
-
-@media (min-width: 3000px) {
-  .header-container {
-    max-width: 2400px;
-  }
 }
 
 /* Logo and title styling */
@@ -96,6 +83,12 @@
   white-space: nowrap;
 }
 
+/* Opt-in pages (e.g. Other Models) hide their nav entry until enabled.
+   A class is used instead of [hidden] because .nav-item sets display: flex. */
+.nav-item--hidden {
+  display: none;
+}
+
 .nav-item:hover,
 .nav-item:focus-visible {
   background-color: var(--lora-surface-hover, oklch(95% 0.02 256));
@@ -111,7 +104,7 @@
 
 .nav-item.active {
   background-color: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
 }
 
 /* Header search - Centered with VS Code command palette style */
@@ -120,6 +113,9 @@
   display: flex;
   justify-content: center;
   max-width: 600px;
+  /* No hard floor: the field shrinks with the available space instead of parking
+     at a fixed width and crowding its own placeholder (see the 1366px query). */
+  min-width: 0;
   margin: 0 auto;
   transition: opacity 0.2s ease;
 }
@@ -128,6 +124,7 @@
 .header-search .search-container {
   width: 100%;
   max-width: 600px;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
@@ -149,7 +146,12 @@
   width: 100%;
   padding: 0.5rem 0.75rem;
   padding-left: 2.25rem !important;
-  padding-right: 6.75rem !important; /* clear room for options + filter + clear/cue toggles */
+  /* Reserve exactly the inline chrome so typed text never runs under it:
+     cue(58) + clear(28) + toggles(28 + 28 + 4 gap) + edges(8 + 8) = 126px.
+     Below 1366px the cue is hidden and the reservation drops to 68px.
+     !important is required: search-filter.css loads later and sets its own
+     right padding at equal specificity (.search-container input). */
+  padding-right: 7.875rem !important;
   border: none;
   background: transparent;
   color: var(--text-color);
@@ -249,10 +251,10 @@
   font-family: inherit;
   font-size: 0.68rem;
   font-weight: 500;
-  color: var(--text-muted);
-  /* Subtle tint derived from text color so it adapts to both light & dark themes */
-  background: color-mix(in oklch, var(--text-muted) 12%, transparent);
-  border: 1px solid color-mix(in oklch, var(--text-muted) 25%, transparent);
+  color: var(--shortcut-text);
+  background: var(--shortcut-bg);
+  border: 1px solid var(--shortcut-border);
+  box-shadow: var(--shortcut-shadow);
   border-radius: var(--border-radius-xs, 3px);
   line-height: 1;
 }
@@ -352,7 +354,7 @@
 
 .header-controls>div:hover {
   background: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   transform: translateY(-2px);
 }
 
@@ -570,7 +572,7 @@
 }
 
 /* Dark mode: use each preset's dark-mode accent lightness for visibility.
-   These match the --color-accent-l values from [data-theme="dark"][data-theme-preset="..."]
+   These match the --color-accent-l values from :root[data-theme="dark"][data-theme-preset="..."]
    in tokens/colors.css so the swatch accurately previews what the theme looks like. */
 
 [data-theme="dark"] .preset-swatch-default {
@@ -697,6 +699,20 @@
   margin: 0.25rem 0;
 }
 
+/* Responsive: the Ctrl+F cue is pure decoration and, above 950px, the widest
+   thing inside the field. Below 1366px the header (branding + full nav) leaves
+   too little room for it, so it steps aside and the field reclaims its 58px.
+   The shortcut itself keeps working - only the visual hint is dropped. */
+@media (max-width: 1366px) {
+  .header-search .search-shortcut-cue {
+    display: none;
+  }
+
+  .header-search input {
+    padding-right: 4.25rem !important;
+  }
+}
+
 /* Responsive: Early optimization at 1200px - reduce gaps and padding */
 @media (max-width: 1200px) {
   .header-container {
@@ -715,11 +731,6 @@
 
   .header-controls {
     gap: 6px;
-  }
-
-  .header-controls > div {
-    width: 30px;
-    height: 30px;
   }
 }
 
@@ -797,13 +808,12 @@
   }
 }
 
-/* For very small screens - switch nav to icons only */
-@media (max-width: 600px) {
-  .header-container {
-    padding: 0 8px;
-    gap: 0.4rem;
-  }
-
+/* For narrower screens - switch nav to icons only.
+   A labelled nav needs ~383px and a readable search field needs ~300px, so the
+   two cannot coexist below ~700px: at 601-700px the search input was previously
+   squeezed to 200px, leaving only ~96px of text room and overlapping the
+   placeholder with the inline toggles. Labels therefore collapse here. */
+@media (max-width: 700px) {
   .main-nav {
     display: flex;
     gap: 0.15rem;
@@ -811,8 +821,7 @@
   }
 
   .nav-item {
-    padding: 0.25rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.4rem;
   }
 
   .nav-item span {
@@ -821,6 +830,22 @@
 
   .nav-item i {
     display: block;
+  }
+}
+
+/* For very small screens - tighten container spacing */
+@media (max-width: 600px) {
+  .header-container {
+    padding: 0 8px;
+    gap: 0.4rem;
+  }
+
+  .nav-item {
+    padding: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .nav-item i {
     font-size: 1rem;
   }
 }

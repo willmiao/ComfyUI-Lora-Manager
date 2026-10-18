@@ -45,7 +45,7 @@
     align-items: center;
     gap: var(--space-1);
     background: var(--lora-accent, #4f46e5);
-    color: #fff;
+    color: var(--text-on-accent);
     border: none;
     border-radius: var(--border-radius-sm);
     padding: var(--space-2) var(--space-3);

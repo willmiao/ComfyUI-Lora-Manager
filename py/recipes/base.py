@@ -11,7 +11,7 @@ import re
 from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 from ..config import config
-from ..utils.constants import VALID_LORA_TYPES, VALID_CHECKPOINT_SUB_TYPES
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES, VALID_LORA_TYPES, VALID_CHECKPOINT_SUB_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,40 @@ class RecipeMetadataParser(ABC):
         """
         pass
     
+    @staticmethod
+    def populate_lora_from_local(lora_entry: Dict[str, Any], local_lora: Dict[str, Any], base_model_counts=None) -> Dict[str, Any]:
+        """Populate a recipe LoRA entry from the local scanner cache."""
+        local_path = local_lora.get('file_path') or ''
+        file_name = local_lora.get('file_name') or os.path.splitext(os.path.basename(local_path))[0]
+        base_model = local_lora.get('base_model') or ''
+
+        lora_entry['name'] = local_lora.get('model_name') or file_name or lora_entry.get('name', '')
+        lora_entry['file_name'] = file_name
+        lora_entry['hash'] = (local_lora.get('sha256') or lora_entry.get('hash') or '').lower()
+        lora_entry['localPath'] = local_path or None
+        lora_entry['size'] = local_lora.get('size', 0) or 0
+        lora_entry['baseModel'] = base_model
+        lora_entry['existsLocally'] = True
+        lora_entry['isDeleted'] = False
+
+        preview_url = local_lora.get('preview_url')
+        if preview_url:
+            lora_entry['thumbnailUrl'] = config.get_preview_static_url(preview_url)
+
+        civitai_info = local_lora.get('civitai') or {}
+        if isinstance(civitai_info, dict):
+            if civitai_info.get('id') is not None:
+                lora_entry['id'] = civitai_info['id']
+            if civitai_info.get('modelId') is not None:
+                lora_entry['modelId'] = civitai_info['modelId']
+            if civitai_info.get('name'):
+                lora_entry['version'] = civitai_info['name']
+
+        if base_model_counts is not None and base_model:
+            base_model_counts[base_model] = base_model_counts.get(base_model, 0) + 1
+
+        return lora_entry
+
     @staticmethod
     async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any] | None, str | None] | Dict[str, Any],
                                          recipe_scanner=None, base_model_counts=None, hash_value=None) -> Optional[Dict[str, Any]]:
@@ -155,9 +189,9 @@ class RecipeMetadataParser(ABC):
             
             # Process file information if available
             if 'files' in civitai_info:
-                # Find the primary model file (type="Model" and primary=true) in the files list
+                # Find the primary model file (weights-type and primary=true) in the files list
                 model_file = next((file for file in civitai_info.get('files', []) 
-                                    if file.get('type') == 'Model' and file.get('primary') == True), None)
+                                    if file.get('type') in MODEL_WEIGHT_FILE_TYPES and file.get('primary') == True), None)
                 
                 if model_file:
                     # Get size
@@ -261,11 +295,21 @@ class RecipeMetadataParser(ABC):
             checkpoint['id'] = civitai_data.get('id', 0)
 
             if 'files' in civitai_data:
+                # Prefer the file CivitAI marked primary; fall back to any
+                # weights-type file (providers without primary flags).
                 model_file = next(
                     (
                         file
                         for file in civitai_data.get('files', [])
-                        if file.get('type') == 'Model'
+                        if file.get('type') in MODEL_WEIGHT_FILE_TYPES
+                        and file.get('primary') is True
+                    ),
+                    None,
+                ) or next(
+                    (
+                        file
+                        for file in civitai_data.get('files', [])
+                        if file.get('type') in MODEL_WEIGHT_FILE_TYPES
                     ),
                     None,
                 )

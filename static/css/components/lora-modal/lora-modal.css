@@ -68,12 +68,50 @@
     font-size: 14px;
 }
 
+/* Destructive modal action: ghost icon button right-anchored by its own auto
+   margin, revealing the danger color only on hover/focus. Shared by the model
+   modal and the recipe modal. */
+.modal-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.modal-delete-btn:hover,
+.modal-delete-btn:focus-visible {
+    color: var(--lora-error);
+    border-color: var(--lora-error);
+    background: oklch(from var(--lora-error) l c h / 0.08);
+}
+
+.modal-delete-btn i {
+    font-size: 14px;
+}
+
+/* When license icons directly precede the delete button, they carry the auto
+   margin instead, so the [license][delete] cluster stays right-anchored as
+   one group with the delete button flush at the right edge and no split gap. */
 .modal-header-actions .license-restrictions {
     margin-left: auto;
 }
 
 .modal-header-actions .license-permissions {
     margin-left: auto;
+}
+
+.modal-header-actions .license-restrictions + .modal-delete-btn,
+.modal-header-actions .license-permissions + .modal-delete-btn {
+    margin-left: 0;
 }
 
 .license-restrictions {
@@ -216,6 +254,71 @@
     justify-content: space-between;
 }
 
+/* Hashes footnote — borderless full-width muted line; reads as a footnote
+   to the file info grid rather than a peer field */
+.hash-footnote {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 0 var(--space-1);
+    color: var(--text-color);
+}
+
+.hash-footnote .hash-entry {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.hash-footnote .hash-kind {
+    font-size: 0.7em;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+
+.hash-footnote .model-hash-value {
+    font-family: monospace;
+    font-size: 0.8em;
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.hash-footnote .hash-sep {
+    opacity: 0.3;
+    font-size: 0.8em;
+}
+
+/* Civitai model/version ids — pushed to the right end of the footnote line */
+.hash-footnote .civitai-id-group {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-left: auto;
+}
+
+.hash-footnote .hash-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    opacity: 0.35;
+    font-size: 0.7em;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.hash-footnote .hash-copy-btn:hover {
+    opacity: 0.9;
+}
+
 /* Toggle button — icon only, inline with the label */
 .notes-toggle-btn {
     display: none;  /* shown by JS when content exceeds threshold */
@@ -244,6 +347,34 @@
 .file-path {
     font-family: var(--font-mono);
     font-size: 0.9em;
+}
+
+.file-path-wrapper {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.file-path-wrapper .file-path {
+    flex: 1;
+    min-width: 0;
+    word-break: break-all;
+}
+
+.location-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--lora-accent);
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: var(--border-radius-xs);
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.location-action-btn:hover {
+    opacity: 1;
+    background: rgba(66, 153, 225, 0.1);
 }
 
 .file-path[data-action="open-file-location"] {
@@ -342,7 +473,7 @@
 
 .modal-content .back-to-top:hover {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     transform: translateY(-2px);
 }
 
@@ -984,6 +1115,19 @@
     color: #facc15;
 }
 
+/* Partial: usable but degraded — some LoRAs are unobtainable and skipped.
+   Orange sits between ready green and missing amber. */
+.recipe-card__badge--partial {
+    background: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+}
+
+/* Unavailable: no usable LoRA at all — red marks the recipe as dead. */
+.recipe-card__badge--unavailable {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
 .recipe-card__badge--empty {
     background: rgba(148, 163, 184, 0.18);
     color: #e2e8f0;
@@ -997,6 +1141,16 @@
 [data-theme="light"] .recipe-card__badge--missing {
     color: #9f580a;
     background: rgba(245, 199, 43, 0.22);
+}
+
+[data-theme="light"] .recipe-card__badge--partial {
+    color: #c2410c;
+    background: rgba(249, 115, 22, 0.18);
+}
+
+[data-theme="light"] .recipe-card__badge--unavailable {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.16);
 }
 
 [data-theme="light"] .recipe-card__badge--empty {
@@ -1108,7 +1262,7 @@
 
 .creator-placeholder {
     background: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     display: flex;
     align-items: center;
     justify-content: center;

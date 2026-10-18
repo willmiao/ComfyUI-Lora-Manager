@@ -1,11 +1,25 @@
 from difflib import SequenceMatcher
+import functools
+import logging
 import os
 import re
 from typing import Any, Dict, List, Optional
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
+from .constants import (
+    MAX_FILENAME_COMPONENT_BYTES,
+    MAX_FILENAME_STEM_LENGTH,
+    MAX_FOLDER_NAME_LENGTH,
+    MAX_FULL_PATH_LENGTH,
+    MAX_PATH_TAG_LENGTH,
+    MIN_VIABLE_STEM_LENGTH,
+    PATH_BUDGET_SUFFIX_ALLOWANCE,
+)
+from .sidecar_paths import get_sidecar_dir
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 
 def get_lora_info(lora_name):
@@ -111,6 +125,16 @@ def get_lora_info_absolute(lora_name):
         scanner = await ServiceRegistry.get_lora_scanner()
         cache = await scanner.get_cached_data()
 
+        # Stack producers can resolve an exact business path. Preserve it even
+        # when several indexed LoRAs share the same basename.
+        if os.path.isabs(lora_name):
+            for item in cache.raw_data:
+                file_path = item.get("file_path")
+                if file_path and os.path.abspath(file_path) == os.path.abspath(lora_name):
+                    civitai = item.get("civitai") or {}
+                    return file_path, civitai.get("trainedWords", [])
+            return lora_name, []
+
         lora_name_normalized = lora_name.replace("\\", "/")
         lora_name_no_ext = lora_name_normalized
         for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
@@ -210,8 +234,9 @@ def get_checkpoint_info_absolute(checkpoint_name):
         # Get model roots for matching
         model_roots = scanner.get_model_roots()
 
-        # Normalize the checkpoint name
-        normalized_name = checkpoint_name.replace(os.sep, "/")
+        # Normalize the checkpoint name; old Windows workflows spell model
+        # names with backslashes while the cache formats them forward-slashed.
+        normalized_name = checkpoint_name.replace("\\", "/")
 
         for item in cache.raw_data:
             file_path = item.get("file_path", "")
@@ -221,8 +246,8 @@ def get_checkpoint_info_absolute(checkpoint_name):
             # Format the stored path as ComfyUI-style name
             formatted_name = _format_model_name_for_comfyui(file_path, model_roots)
 
-            # Match by formatted name (normalize separators for robust comparison)
-            if formatted_name.replace(os.sep, "/") == normalized_name or formatted_name == checkpoint_name:
+            # Match by formatted name (normalized separators) or exact spelling
+            if formatted_name == normalized_name or formatted_name == checkpoint_name:
                 return file_path, item
 
             # Also try matching by basename only (for backward compatibility)
@@ -285,8 +310,10 @@ def _format_model_name_for_comfyui(file_path: str, model_roots: list[str]) -> st
                 norm_root += os.sep
 
             if norm_file.startswith(norm_root):
-                # Use os.path.relpath to get relative path with OS-native separator
-                return os.path.relpath(file_path, root)
+                # ComfyUI names a model with forward slashes on every platform
+                # ("unet/base.safetensors"); os.path.relpath alone returns the
+                # host's separator, which no ComfyUI widget list matches on Windows.
+                return os.path.relpath(file_path, root).replace(os.sep, "/")
         except (ValueError, TypeError):
             continue
 
@@ -321,6 +348,42 @@ def model_patcher_to_name(model_patcher: Any) -> Optional[str]:
     if not isinstance(abs_path, str) or not abs_path:
         return None
     return _abs_model_path_to_name(abs_path)
+
+
+def sampler_object_to_name(sampler: Any) -> Optional[str]:
+    """Extract a ComfyUI-style sampler name from a SAMPLER (KSAMPLER) object.
+
+    Standard outputs (KSamplerSelect, most built-in sampler nodes) round-trip
+    losslessly via the underlying sampler function's ``__name__``
+    (``sample_euler`` -> ``euler``). A few edge cases need special-casing
+    because the function name diverges from the ``SAMPLER_NAMES`` entry:
+
+      - ``dpm_fast`` / ``dpm_adaptive`` are local closures inside
+        ``comfy.samplers.ksampler`` (``dpm_fast_function`` / ``dpm_adaptive_function``)
+      - ``uni_pc`` / ``uni_pc_bh2`` use ``sample_unipc`` / ``sample_unipc_bh2``
+
+    ``ddim`` is constructed by ComfyUI as ``euler`` with random inpaint, so
+    the original ``ddim`` name is unrecoverable (extracts as ``euler``).
+    Custom sampler nodes that pass non-``sample_*`` functions return None.
+
+    Returns None when the name cannot be recovered.
+    """
+    sampler_function = getattr(sampler, "sampler_function", None)
+    func_name = getattr(sampler_function, "__name__", None)
+    if not isinstance(func_name, str) or not func_name:
+        return None
+    if func_name == "dpm_fast_function":
+        return "dpm_fast"
+    if func_name == "dpm_adaptive_function":
+        return "dpm_adaptive"
+    if func_name.startswith("sample_"):
+        name = func_name[len("sample_"):]
+        if name == "unipc":
+            return "uni_pc"
+        if name == "unipc_bh2":
+            return "uni_pc_bh2"
+        return name or None
+    return None
 
 
 def _abs_model_path_to_name(abs_path: str) -> str:
@@ -378,12 +441,17 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
     return True
 
 
-def sanitize_folder_name(name: str, replacement: str = "_") -> str:
+def sanitize_folder_name(
+    name: str, replacement: str = "_", max_length: Optional[int] = None
+) -> str:
     """Sanitize a folder name by removing or replacing invalid characters.
 
     Args:
         name: The original folder name.
         replacement: The character to use when replacing invalid characters.
+        max_length: Optional maximum length for the resulting name. Longer
+            names are truncated (and re-trimmed) so that a single untrusted
+            value cannot blow past filesystem path limits.
 
     Returns:
         A sanitized folder name safe to use across common filesystems.
@@ -410,10 +478,120 @@ def sanitize_folder_name(name: str, replacement: str = "_") -> str:
         # If no replacement, just strip spaces and dots from right, spaces from left
         sanitized = sanitized.rstrip(" .").lstrip(" ")
 
+    if max_length is not None and max_length > 0 and len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+        # Re-trim separators and spaces exposed by the cut so the truncated
+        # name stays filesystem-safe.
+        if replacement:
+            sanitized = sanitized.rstrip(" ." + replacement).lstrip(" " + replacement)
+        else:
+            sanitized = sanitized.rstrip(" .").lstrip(" ")
+
     if not sanitized:
         return "unnamed"
 
     return sanitized
+
+
+@functools.lru_cache(maxsize=256)
+def _probe_name_max_bytes(dir_path: str) -> int:
+    """Best-effort NAME_MAX (in bytes) for the filesystem hosting ``dir_path``.
+
+    Walks up to the nearest existing ancestor because the target directory
+    may not exist yet. Falls back to :data:`MAX_FILENAME_COMPONENT_BYTES`
+    when the platform cannot report a limit (``os.pathconf`` is Unix-only) or
+    reports an indeterminate one, and caps larger limits at that value so
+    libraries stay portable across filesystems.
+    """
+
+    path = dir_path or os.sep
+    while not os.path.isdir(path):
+        parent = os.path.dirname(path)
+        if parent == path:
+            break
+        path = parent
+    try:
+        value = os.pathconf(path, "PC_NAME_MAX")
+    except (AttributeError, ValueError, OSError):
+        return MAX_FILENAME_COMPONENT_BYTES
+    if value <= 0:
+        return MAX_FILENAME_COMPONENT_BYTES
+    return min(value, MAX_FILENAME_COMPONENT_BYTES)
+
+
+def _truncate_to_byte_budget(text: str, max_bytes: int) -> str:
+    """Truncate ``text`` to at most ``max_bytes`` UTF-8 bytes.
+
+    The cut always lands on a character boundary: a multibyte character
+    straddling the limit is dropped, never split.
+    """
+
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
+def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> str:
+    """Truncate ``stem`` so the file and its companions fit the path budget.
+
+    The per-component caps (:data:`MAX_FILENAME_STEM_LENGTH` and friends) do
+    not add up to a guarantee: a deep model root plus template folders plus a
+    150-char stem still overflows the Windows MAX_PATH limit (issue #1142).
+    This measures the real destination instead: the model path
+    ``dir_path/stem+extension`` and the sidecar location resolved by
+    :func:`~py.utils.sidecar_paths.get_sidecar_dir` (the centralized mirror
+    tree when active, which is typically deeper than the model directory).
+    The stem is shared by the model file, the ``.metadata.json`` sidecar (and
+    its ``.bak``), preview files and aria2 control files, so
+    :data:`PATH_BUDGET_SUFFIX_ALLOWANCE` characters past the stem stay
+    reserved for the longest of those suffixes.
+
+    A second, independent limit is enforced on the name component itself:
+    POSIX filesystems bound a single path component in BYTES (NAME_MAX), so a
+    CJK-heavy stem passes every character cap above and still fails with
+    ENAMETOOLONG on disk. The limit is probed per directory via
+    ``os.pathconf`` because encrypted filesystems report less than the usual
+    255 (eCryptfs — Ubuntu encrypted home dirs, Synology encrypted shares —
+    allows only 143 bytes); both the model directory and the sidecar mirror
+    directory are probed and the stricter value wins.
+
+    Returns the (possibly truncated) stem, or "" when the directory alone
+    leaves no room for a viable name — callers must treat that as "skip with
+    an actionable error", never write a stub name.
+    """
+
+    if not stem:
+        return ""
+
+    budget = MAX_FULL_PATH_LENGTH - PATH_BUDGET_SUFFIX_ALLOWANCE
+    model_base = os.path.join(dir_path, stem)
+    sidecar_dir = get_sidecar_dir(model_base + extension)
+    used = max(len(model_base), len(os.path.join(sidecar_dir, stem)))
+    if used > budget:
+        allowed = len(stem) - (used - budget)
+        if allowed < MIN_VIABLE_STEM_LENGTH:
+            return ""
+        stem = stem[:allowed].strip("-_. ")
+
+    name_max = min(
+        (
+            _probe_name_max_bytes(path)
+            for path in (dir_path, sidecar_dir)
+            if path
+        ),
+        default=MAX_FILENAME_COMPONENT_BYTES,
+    )
+    # The component holds stem + the longest companion suffix: the model
+    # file's own extension or ".metadata.json.bak", whichever is longer.
+    suffix_bytes = max(len(extension.encode("utf-8")), PATH_BUDGET_SUFFIX_ALLOWANCE)
+    byte_budget = name_max - suffix_bytes
+    if len(stem.encode("utf-8")) > byte_budget:
+        stem = _truncate_to_byte_budget(stem, byte_budget).strip("-_. ")
+        if len(stem) < MIN_VIABLE_STEM_LENGTH:
+            return ""
+
+    return stem
 
 
 def calculate_recipe_fingerprint(loras):
@@ -469,6 +647,24 @@ def calculate_recipe_fingerprint(loras):
     return fingerprint
 
 
+def normalize_prompt_for_dedup(prompt) -> str:
+    """Normalize a positive prompt for duplicate recipe matching.
+
+    Applies casefolding, collapses whitespace runs into single spaces, and
+    trims leading/trailing whitespace. Missing or non-string prompts
+    normalize to an empty string.
+
+    Args:
+        prompt: The positive prompt text (or None)
+
+    Returns:
+        str: The normalized prompt
+    """
+    if not prompt or not isinstance(prompt, str):
+        return ""
+    return re.sub(r"\s+", " ", prompt).strip().casefold()
+
+
 def calculate_relative_path_for_model(
     model_data: Dict[str, Any], model_type: str = "lora"
 ) -> str:
@@ -518,12 +714,20 @@ def calculate_relative_path_for_model(
     if not first_tag:
         first_tag = "no tags"  # Default if no tags available
 
+    # Tags are user-generated on CivitAI, so sanitize the value before it
+    # becomes a path segment and cap its length (#1119).
+    first_tag = sanitize_folder_name(first_tag, max_length=MAX_PATH_TAG_LENGTH)
+
     # Format the template with available data
-    model_name = sanitize_folder_name(model_data.get("model_name", ""))
+    model_name = sanitize_folder_name(
+        model_data.get("model_name", ""), max_length=MAX_FOLDER_NAME_LENGTH
+    )
     version_name = ""
 
     if isinstance(civitai_data, dict):
-        version_name = sanitize_folder_name(civitai_data.get("name") or "")
+        version_name = sanitize_folder_name(
+            civitai_data.get("name") or "", max_length=MAX_FOLDER_NAME_LENGTH
+        )
 
     formatted_path = path_template
     formatted_path = formatted_path.replace("{base_model}", mapped_base_model)
@@ -542,6 +746,124 @@ def calculate_relative_path_for_model(
     formatted_path = formatted_path.rstrip("/")
 
     return formatted_path
+
+
+def calculate_filename_for_model(
+    model_data: Dict[str, Any], model_type: str = "lora", target_dir: Optional[str] = None
+) -> str:
+    """Calculate the filename stem for a model using the filename template.
+
+    Mirrors the data extraction of :func:`calculate_relative_path_for_model`
+    but renders a single filename (no path segments). Missing values resolve
+    to empty segments instead of the path-oriented defaults ("Anonymous" /
+    "no tags") so templates degrade gracefully.
+
+    Args:
+        model_data: Model data from scanner cache
+        model_type: Type of model ('lora', 'checkpoint', 'embedding')
+        target_dir: Optional destination directory. When given, the rendered
+            stem is additionally trimmed to the full-path budget for that
+            location (see :func:`fit_stem_to_path_budget`); "" is returned
+            when the directory leaves no room for a viable name.
+
+    Returns:
+        Sanitized filename stem without extension, or an empty string when no
+        template is configured, the template is invalid, or the rendered name
+        is empty.
+    """
+    settings_manager = get_settings_manager()
+    template = settings_manager.get_download_filename_template(model_type)
+
+    if not template:
+        return ""
+
+    # A filename template must render a single name, never folder segments.
+    if "/" in template or "\\" in template:
+        logger.warning(
+            "Filename template for %s contains a path separator and is ignored: %r",
+            model_type,
+            template,
+        )
+        return ""
+
+    civitai_data = model_data.get("civitai", {})
+
+    author = ""
+    if isinstance(civitai_data, dict) and civitai_data.get("id") is not None:
+        creator_info = civitai_data.get("creator") or {}
+        author = creator_info.get("username") or ""
+
+    base_model = model_data.get("base_model", "")
+    base_model_mappings = settings_manager.get("base_model_path_mappings", {})
+    mapped_base_model = base_model_mappings.get(base_model, base_model)
+
+    lowercase_tags = [
+        tag.lower() for tag in model_data.get("tags", []) if isinstance(tag, str)
+    ]
+    first_tag = settings_manager.resolve_priority_tag_for_model(
+        lowercase_tags, model_type
+    )
+
+    model_name = model_data.get("model_name", "")
+    version_name = ""
+    if isinstance(civitai_data, dict):
+        version_name = civitai_data.get("name") or ""
+
+    sha256 = model_data.get("sha256") or ""
+    hash_short = sha256[:10].lower() if isinstance(sha256, str) else ""
+
+    file_path = model_data.get("file_path") or ""
+    if isinstance(file_path, str) and file_path:
+        original_name = os.path.splitext(os.path.basename(file_path))[0]
+    else:
+        original_name = os.path.splitext(str(model_data.get("file_name", "")))[0]
+
+    def _sanitize_value(value: Any, max_length: Optional[int] = None) -> str:
+        # sanitize_folder_name falls back to "unnamed" for empty input; for
+        # templates an empty value must stay empty so segments collapse.
+        text = str(value) if value else ""
+        if not text:
+            return ""
+        return sanitize_folder_name(text, max_length=max_length)
+
+    replacements = {
+        "{model_name}": _sanitize_value(model_name, MAX_FILENAME_STEM_LENGTH),
+        "{version_name}": _sanitize_value(version_name, MAX_FILENAME_STEM_LENGTH),
+        "{base_model}": _sanitize_value(mapped_base_model, MAX_FILENAME_STEM_LENGTH),
+        "{author}": _sanitize_value(author, MAX_FILENAME_STEM_LENGTH),
+        "{first_tag}": _sanitize_value(first_tag, MAX_PATH_TAG_LENGTH),
+        "{hash_short}": hash_short,
+        "{original_name}": _sanitize_value(original_name, MAX_FILENAME_STEM_LENGTH),
+    }
+
+    result = template
+    for placeholder, value in replacements.items():
+        result = result.replace(placeholder, value)
+
+    if model_type == "embedding":
+        result = result.replace(" ", "_")
+
+    # Strip characters that are illegal in filenames on common filesystems.
+    result = re.sub(r'[:*?"<>|]', "", result)
+    # Collapse runs of identical separators introduced by empty substitutions.
+    result = re.sub(r"([-_. ])\1+", r"\1", result)
+    # Drop separators left dangling next to each other ("- -" -> "-").
+    result = re.sub(r" ?([-_.]) (?=[-_.])", r"\1", result)
+    # A stem must not start or end with separators, spaces or dots.
+    result = result.strip("-_. ")
+
+    # A template can concatenate several values, so cap the rendered stem as
+    # well and re-trim the cut.
+    if len(result) > MAX_FILENAME_STEM_LENGTH:
+        result = result[:MAX_FILENAME_STEM_LENGTH].strip("-_. ")
+
+    # The fixed cap above ignores how deep the destination actually is; when
+    # the caller knows it, trim further so the full path (including the
+    # sidecar mirror) stays within budget.
+    if result and target_dir:
+        result = fit_stem_to_path_budget(target_dir, result)
+
+    return result
 
 
 def remove_empty_dirs(path):

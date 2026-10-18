@@ -32,6 +32,7 @@ from .handlers.misc_handlers import (
     NodeRegistry,
     NodeRegistryHandler,
     SettingsHandler,
+    SidecarMigrationHandler,
     SupportersHandler,
     TrainedWordsHandler,
     UsageStatsHandler,
@@ -39,8 +40,9 @@ from .handlers.misc_handlers import (
     build_service_registry_adapter,
 )
 from .handlers.base_model_handlers import BaseModelHandlerSet
-from .handlers.hf_handlers import HfHandler
+from .handlers.model_source_handlers import ModelSourceHandler
 from .handlers.agent_handlers import AgentHandler
+from .handlers.download_routing_handlers import DownloadRoutingHandler
 from .misc_route_registrar import MiscRouteRegistrar
 
 logger = logging.getLogger(__name__)
@@ -138,8 +140,10 @@ class MiscRoutes:
         doctor = DoctorHandler(settings_service=self._settings)
         example_workflows = ExampleWorkflowsHandler()
         base_model = BaseModelHandlerSet()
-        hf_handler = HfHandler()
+        model_source_handler = ModelSourceHandler()
         agent_handler = AgentHandler()
+        download_routing = DownloadRoutingHandler()
+        sidecar_migration = SidecarMigrationHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -159,8 +163,10 @@ class MiscRoutes:
             doctor=doctor,
             example_workflows=example_workflows,
             base_model=base_model,
-            hf_handler=hf_handler,
+            model_source_handler=model_source_handler,
             agent_handler=agent_handler,
+            download_routing=download_routing,
+            sidecar_migration=sidecar_migration,
         )
 
 

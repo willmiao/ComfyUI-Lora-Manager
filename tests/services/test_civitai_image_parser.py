@@ -898,3 +898,84 @@ async def test_local_cache_dedup_same_hash_produces_one_entry_on_miss(monkeypatc
     assert provider.hash_calls == ["missdedup123"]
     assert len(result["loras"]) == 1
 
+
+
+
+@pytest.mark.asyncio
+async def test_quote_wrapped_lora_hashes_override_stale_hash(monkeypatch):
+    """CivitAI's image API meta parser mangles the A1111 'Lora hashes' text
+    field into a quote-wrapped dict entry ('"Daphne Blake Cosplay_v1":
+    "e67ebd5e315f"'). The recovered 12-char AutoV3 must override the stale
+    10-char value in the hashes dict, so the lora resolves instead of being
+    marked deleted."""
+    current_sha256 = (
+        "533317d3f7d269f9f504bdc432514774d3ada3738ebd80f3f1a37ff848e88276"
+    )
+
+    class Provider:
+        def __init__(self):
+            self.hash_calls = []
+
+        async def get_model_version_info(self, version_id):
+            if version_id == "138176":
+                return {
+                    "id": 138176,
+                    "modelId": 15003,
+                    "model": {"name": "CyberRealistic", "type": "checkpoint"},
+                    "name": "v3.3",
+                    "baseModel": "SD 1.5",
+                    "files": [
+                        {
+                            "type": "Model",
+                            "primary": True,
+                            "name": "cyberrealistic_v33.safetensors",
+                            "hashes": {"SHA256": "3c8530cb2239b686d23a94627e29883fe44a1605f31a777727b6709f80d11679"},
+                        }
+                    ],
+                }, None
+            return None, "Model not found"
+
+        async def get_model_by_hash(self, model_hash):
+            self.hash_calls.append(model_hash)
+            if model_hash == "e67ebd5e315f":
+                return {
+                    "id": 359072,
+                    "modelId": 320224,
+                    "model": {"name": "Daphne Blake Cosplay (Scooby Doo)", "type": "lora"},
+                    "name": "v1.0",
+                    "baseModel": "SD 1.5",
+                    "downloadUrl": "https://civitai.com/api/download/359072",
+                    "files": [
+                        {
+                            "type": "Model",
+                            "primary": True,
+                            "name": "Daphne Blake Cosplay_v1.safetensors",
+                            "hashes": {"SHA256": current_sha256.upper()},
+                        }
+                    ],
+                }, None
+            return None, "Model not found"
+
+    metadata = {
+        "prompt": "test",
+        "steps": 20,
+        "sampler": "DPM++ 2M Karras",
+        "hashes": {
+            "model": "3c8530cb22",
+            "lora:Daphne Blake Cosplay_v1": "a2a12bfa01",
+        },
+        '"Daphne Blake Cosplay_v1': 'e67ebd5e315f"',
+        "modelVersionIds": [138176],
+        "browsingLevel": 1,
+    }
+
+    provider = Provider()
+    result = await _parse_with_cache(monkeypatch, provider, metadata, local_cache={})
+
+    assert len(result["loras"]) == 1
+    lora = result["loras"][0]
+    assert lora["hash"] == current_sha256
+    assert lora["id"] == 359072
+    assert lora.get("isDeleted") in (None, False)
+    assert "e67ebd5e315f" in provider.hash_calls
+    assert "a2a12bfa01" not in provider.hash_calls

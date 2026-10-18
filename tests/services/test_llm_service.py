@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from unittest import mock
 
 import pytest
 
-from py.services.llm_service import LLMService
+from py.services import llm_service as llm_module
 from py.services.errors import LLMNotConfiguredError, LLMRateLimitError, LLMResponseError
+from py.services.llm_service import LLMService, fetch_ollama_models
 
 
 class MockSettings:
@@ -66,6 +68,25 @@ class MockSession:
         self.last_json = json
         self.last_headers = headers
         return self._response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+class RecordingSession:
+    """Mock session that records each request payload and replays responses."""
+
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.payloads = []
+
+    def post(self, url, json=None, headers=None):
+        self.payloads.append(json)
+        index = min(len(self.payloads) - 1, len(self._responses) - 1)
+        return self._responses[index]
 
     async def __aenter__(self):
         return self
@@ -297,6 +318,107 @@ class TestLLMServiceChatCompletionJson:
         assert call_index == 2
 
     @pytest.mark.asyncio
+    async def test_chat_completion_json_prefers_json_object_for_deepseek(self):
+        """DeepSeek rejects json_schema, so json_object is used first.
+
+        Regression: DeepSeek answers json_schema with
+        "This response_format type is unavailable now", which the old
+        substring check did not recognise, so enrichment failed outright.
+        """
+        settings = MockSettings(
+            llm_enabled=True,
+            llm_provider="deepseek",
+            llm_api_key="sk-test-key",
+            llm_api_base="https://api.deepseek.com/v1",
+            llm_model="deepseek-v4-flash",
+        )
+        service = LLMService(settings)
+
+        session = RecordingSession(
+            [
+                MockResponse(
+                    200,
+                    json_data={
+                        "choices": [{"message": {"content": '{"key": "value"}'}}],
+                        "usage": {},
+                    },
+                )
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            result = await service.chat_completion_json(
+                system_prompt="You are helpful.",
+                user_prompt="Return JSON.",
+            )
+
+        assert result == {"key": "value"}
+        assert len(session.payloads) == 1
+        assert session.payloads[0]["response_format"] == {"type": "json_object"}
+
+    @pytest.mark.asyncio
+    async def test_chat_completion_json_downgrades_from_json_schema(
+        self, llm_service,
+    ):
+        """json_schema → json_object when the provider rejects json_schema."""
+        session = RecordingSession(
+            [
+                MockResponse(
+                    400,
+                    text_data=(
+                        '{"error":{"message":"This response_format type is '
+                        'unavailable now","type":"invalid_request_error"}}'
+                    ),
+                ),
+                MockResponse(
+                    200,
+                    json_data={
+                        "choices": [{"message": {"content": '{"key": "value"}'}}],
+                        "usage": {},
+                    },
+                ),
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            result = await llm_service.chat_completion_json(
+                system_prompt="You are helpful.",
+                user_prompt="Return JSON.",
+            )
+
+        assert result == {"key": "value"}
+        assert [p.get("response_format") for p in session.payloads] == [
+            {
+                "type": "json_schema",
+                "json_schema": {"name": "metadata", "schema": {"type": "object"}},
+            },
+            {"type": "json_object"},
+        ]
+
+    @pytest.mark.asyncio
+    async def test_chat_completion_json_does_not_retry_unrelated_errors(
+        self, llm_service,
+    ):
+        """Unrelated 400s are surfaced unchanged, without format downgrades."""
+        session = RecordingSession(
+            [
+                MockResponse(
+                    400,
+                    text_data='{"error":{"message":"Model not found"}}',
+                )
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            with pytest.raises(LLMResponseError, match="HTTP 400"):
+                await llm_service.chat_completion_json(
+                    system_prompt="You are helpful.",
+                    user_prompt="Return JSON.",
+                )
+
+        assert len(session.payloads) == 1
+
+    @pytest.mark.asyncio
     async def test_chat_completion_json_raises_on_non_json(self, llm_service):
         # Non-JSON content raises LLMResponseError (salvage also fails)
         mock_response = MockResponse(
@@ -314,3 +436,158 @@ class TestLLMServiceChatCompletionJson:
                     system_prompt="test",
                     user_prompt="test",
                 )
+
+
+class MockGetSession:
+    """Minimal aiohttp session mock supporting get() for catalog tests."""
+
+    def __init__(self, response):
+        self._response = response
+        self.last_url = None
+        self.last_headers = None
+
+    def get(self, url, headers=None):
+        self.last_url = url
+        self.last_headers = headers
+        return self._response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+class CorruptJsonResponse(MockResponse):
+    """Response whose body cannot be decoded as UTF-8 (like the issue's 0x9a byte)."""
+
+    async def json(self):
+        raise UnicodeDecodeError("utf-8", b"\x9a", 0, 1, "invalid start byte")
+
+
+class SlowResponse(MockResponse):
+    """Response whose body takes a moment to read, to force contention."""
+
+    async def json(self):
+        await asyncio.sleep(0.05)
+        return self._json_data
+
+
+class TestModelCatalog:
+    """Tests for _load_model_catalog / fetch_ollama_models error handling."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_catalog_cache(self):
+        """Reset the module-level catalog cache around each test."""
+        llm_module._catalog_cache = None
+        llm_module._model_output_limits = {}
+        llm_module._catalog_last_failure = None
+        yield
+        llm_module._catalog_cache = None
+        llm_module._model_output_limits = {}
+        llm_module._catalog_last_failure = None
+
+    @pytest.mark.asyncio
+    async def test_load_model_catalog_falls_back_on_unicode_decode_error(self):
+        """Corrupted catalog body must not raise — fall back to an empty dict."""
+        response = CorruptJsonResponse(200)
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            catalog = await llm_module._load_model_catalog()
+
+        assert catalog == {}
+
+    @pytest.mark.asyncio
+    async def test_fetch_ollama_models_falls_back_on_unicode_decode_error(self):
+        """Corrupted Ollama response must not raise — fall back to an empty list."""
+        response = CorruptJsonResponse(200)
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            models = await fetch_ollama_models("http://localhost:11434/v1")
+
+        assert models == []
+
+    @pytest.mark.asyncio
+    async def test_catalog_request_disables_brotli_encoding(self):
+        """The catalog request must not advertise br — a corrupt brotli stream
+        can crash the native decoder (Windows access violation, issue #1099)."""
+        response = MockResponse(200, json_data={})
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            await llm_module._load_model_catalog()
+
+        assert session.last_headers == {"Accept-Encoding": "gzip, deflate"}
+
+    @pytest.mark.asyncio
+    async def test_ollama_request_disables_brotli_encoding(self):
+        """The Ollama models request must not advertise br either."""
+        response = MockResponse(200, json_data={"data": [{"id": "llama3"}]})
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            models = await fetch_ollama_models("http://localhost:11434/v1")
+
+        assert models == ["llama3"]
+        assert session.last_headers == {"Accept-Encoding": "gzip, deflate"}
+
+    @pytest.mark.asyncio
+    async def test_failed_fetch_is_negatively_cached(self):
+        """A failed fetch is not retried until the cooldown elapses."""
+        created = []
+
+        def factory(*args, **kwargs):
+            session = MockGetSession(MockResponse(500, text_data="error"))
+            created.append(session)
+            return session
+
+        with mock.patch("aiohttp.ClientSession", side_effect=factory):
+            first = await llm_module._load_model_catalog()
+            second = await llm_module._load_model_catalog()
+
+        assert first == {}
+        assert second == {}
+        assert len(created) == 1
+        assert llm_module._catalog_last_failure is not None
+
+    @pytest.mark.asyncio
+    async def test_fetch_retries_after_cooldown(self):
+        """Once the cooldown elapses, the next call fetches again."""
+        bad = MockGetSession(MockResponse(500, text_data="error"))
+        with mock.patch("aiohttp.ClientSession", return_value=bad):
+            assert await llm_module._load_model_catalog() == {}
+
+        # Simulate the cooldown having elapsed.
+        llm_module._catalog_last_failure = (
+            time.monotonic() - llm_module._CATALOG_FAILURE_COOLDOWN - 1
+        )
+
+        good = MockGetSession(
+            MockResponse(200, json_data={"openai": {"models": {"gpt-4o": {}}}})
+        )
+        with mock.patch("aiohttp.ClientSession", return_value=good):
+            catalog = await llm_module._load_model_catalog()
+
+        assert catalog == {"openai": ["gpt-4o"]}
+
+    @pytest.mark.asyncio
+    async def test_concurrent_fetches_are_deduplicated(self):
+        """Concurrent callers share a single in-flight fetch."""
+        created = []
+
+        def factory(*args, **kwargs):
+            session = MockGetSession(
+                SlowResponse(200, json_data={"openai": {"models": {"gpt-4o": {}}}})
+            )
+            created.append(session)
+            return session
+
+        with mock.patch("aiohttp.ClientSession", side_effect=factory):
+            results = await asyncio.gather(
+                *(llm_module._load_model_catalog() for _ in range(3))
+            )
+
+        assert len(created) == 1
+        assert all(r == {"openai": ["gpt-4o"]} for r in results)

@@ -1,4 +1,4 @@
-import types
+import json
 
 import pytest
 
@@ -130,12 +130,7 @@ def test_input_types_exposes_two_default_slots():
     assert input_types["optional"]["lora_stack2"][0] == "LORA_STACK"
 
 
-def test_input_types_recognizes_dynamic_slots_from_get_input_info(monkeypatch):
-    frames = [None, None, types.SimpleNamespace(function="get_input_info")]
-    monkeypatch.setattr(
-        "py.nodes.lora_stack_combiner.inspect.stack", lambda: frames
-    )
-
+def test_input_types_resolves_dynamic_slots():
     input_types = LoraStackCombinerLM.INPUT_TYPES()
     optional = input_types["optional"]
 
@@ -143,6 +138,29 @@ def test_input_types_recognizes_dynamic_slots_from_get_input_info(monkeypatch):
     assert optional["lora_stack3"][0] == "LORA_STACK"
     assert "lora_stack25" in optional
     assert optional["lora_stack25"][0] == "LORA_STACK"
+
+
+def test_input_types_serializes_only_static_slots():
+    """ComfyUI's /object_info route json.dumps INPUT_TYPES() directly."""
+    input_types = LoraStackCombinerLM.INPUT_TYPES()
+
+    payload = json.loads(json.dumps(input_types))
+
+    assert set(payload["optional"]) == {"lora_stack1", "lora_stack2"}
+    assert payload["optional"]["lora_stack1"][0] == "LORA_STACK"
+
+
+def test_input_types_supports_get_input_info_lookup_order():
+    """Mirror comfy_execution.graph.get_input_info()'s containment then lookup."""
+    valid_inputs = LoraStackCombinerLM.INPUT_TYPES()
+    input_name = "lora_stack7"
+
+    assert "optional" in valid_inputs
+    assert input_name in valid_inputs["optional"]
+    input_type, extra_info = valid_inputs["optional"][input_name]
+
+    assert input_type == "LORA_STACK"
+    assert "tooltip" in extra_info
 
 
 def test_lora_stack_optional_inputs_proxy():

@@ -2,7 +2,11 @@ from dataclasses import dataclass, asdict, field
 from typing import Callable, Dict, Optional, List, Any
 from datetime import datetime
 import os
-from .constants import INVALID_AUTOV3_EMPTY_HASH
+from .constants import (
+    CIVITAI_TYPE_TO_OTHER_SUB_TYPE,
+    INVALID_AUTOV3_EMPTY_HASH,
+    MODEL_FILE_EXTENSIONS,
+)
 from .model_utils import determine_base_model
 
 
@@ -46,6 +50,54 @@ def autov3_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: st
     return None
 
 
+def quantization_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: str) -> Optional[str]:
+    """Extract the quantization from Civitai metadata for the matching file.
+
+    Fallback for when content-based detection found nothing: Civitai reports
+    the precision of each file under ``files[].metadata.fp`` ("fp8", "fp16",
+    ...). Only "fp8" is reported (as "FP8") — other precisions are not
+    quantizations. The value is only valid for the file whose
+    ``hashes.SHA256`` equals the local model's sha256 (case-insensitive).
+
+    Returns ``None`` when no Civitai data, no matching file, or the matching
+    file is not fp8.
+    """
+    if not civitai_data or not sha256:
+        return None
+    target_sha = sha256.lower()
+    for file_info in civitai_data.get("files") or []:
+        if not isinstance(file_info, dict):
+            continue
+        hashes = file_info.get("hashes") or {}
+        file_sha = (hashes.get("SHA256") or "").lower()
+        if file_sha and file_sha == target_sha:
+            file_metadata = file_info.get("metadata")
+            if isinstance(file_metadata, dict):
+                fp = file_metadata.get("fp")
+                if isinstance(fp, str) and fp.lower() == "fp8":
+                    return "FP8"
+            return None
+    return None
+
+
+def strip_model_extension(file_name: str) -> str:
+    """Strip a recognized model file extension, leaving dotted stems intact.
+
+    ``os.path.splitext`` treats everything after the last dot as an extension,
+    so applying it to an already extension-free name truncates dotted stems:
+    ``lora-sd1.5-backlight_slider_v10`` becomes ``lora-sd1``. API filenames keep
+    their extension and need one strip, while migration paths (``.civitai.info``)
+    pass the local stem as-is, so only remove a suffix that is a known model
+    extension and both inputs resolve to the same stem (issue #1112).
+    """
+    if not file_name:
+        return file_name
+    stem, extension = os.path.splitext(file_name)
+    if extension.lower() in MODEL_FILE_EXTENSIONS:
+        return stem
+    return file_name
+
+
 @dataclass
 class BaseModelMetadata:
     """Base class for all model metadata structures"""
@@ -77,9 +129,7 @@ class BaseModelMetadata:
     last_checked_at: float = 0  # Last checked timestamp
     hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
     autov3: Optional[str] = None  # CivitAI AutoV3 hash (12-char lowercase hex); "" = checked but unavailable, None = not checked
-    trainedWords: List[str] = field(
-        default_factory=list
-    )  # Trigger words / activation prompts (source-agnostic)
+    quantization: Optional[str] = None  # Content-detected quantization ("Q4_K_M"/"FP8"/...); "" = checked but unavailable, None = not checked
     _unknown_fields: Dict[str, Any] = field(
         default_factory=dict, repr=False, compare=False
     )  # Store unknown fields
@@ -92,9 +142,6 @@ class BaseModelMetadata:
         if self.tags is None:
             self.tags = []
 
-        if self.trainedWords is None:
-            self.trainedWords = []
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "BaseModelMetadata":
         """Create instance from dictionary"""
@@ -104,9 +151,11 @@ class BaseModelMetadata:
         # JSON null in the sidecar ("checked but unavailable") is normalized to ""
         # in memory; an absent key stays None ("not checked yet"). autov3 is a known
         # field, so it flows through fields_to_use below and never leaks into
-        # _unknown_fields.
+        # _unknown_fields. quantization follows the same contract.
         if "autov3" in data_copy:
             data_copy["autov3"] = data_copy["autov3"] or ""
+        if "quantization" in data_copy:
+            data_copy["quantization"] = data_copy["quantization"] or ""
 
         # Use cached fields if available, otherwise compute them
         if not hasattr(cls, "_known_fields_cache"):
@@ -156,6 +205,12 @@ class BaseModelMetadata:
         else:
             result.pop("autov3", None)
 
+        # quantization uses the same three-state contract as autov3.
+        if self.quantization is not None:
+            result["quantization"] = self.quantization or None
+        else:
+            result.pop("quantization", None)
+
         return result
 
     def update_civitai_info(self, civitai_data: Dict[str, Any]) -> None:
@@ -170,6 +225,13 @@ class BaseModelMetadata:
         autov3 = autov3_from_civitai_files(civitai_data, self.sha256)
         if autov3:
             self.autov3 = autov3
+        # Civitai fp8 is only a fallback: it may fill an unchecked or
+        # checked-unavailable quantization, but never overrides a value
+        # detected from the file content itself.
+        if not self.quantization:
+            quantization = quantization_from_civitai_files(civitai_data, self.sha256)
+            if quantization:
+                self.quantization = quantization
 
     def update_file_info(self, file_path: str, update_timestamps: bool = False) -> None:
         """
@@ -247,6 +309,7 @@ class LoraMetadata(BaseModelMetadata):
     ) -> "LoraMetadata":
         """Create LoraMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
 
         # Extract tags and description if available
@@ -261,8 +324,8 @@ class LoraMetadata(BaseModelMetadata):
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
@@ -291,6 +354,7 @@ class CheckpointMetadata(BaseModelMetadata):
     ) -> "CheckpointMetadata":
         """Create CheckpointMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "checkpoint")
@@ -305,8 +369,64 @@ class CheckpointMetadata(BaseModelMetadata):
             description = model_data["description"]
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
+            file_path=save_path.replace(os.sep, "/"),
+            size=file_info.get("sizeKB", 0) * 1024,
+            modified=datetime.now().timestamp(),
+            sha256=sha256_value,
+            base_model=base_model,
+            preview_url="",  # Will be updated after preview download
+            preview_nsfw_level=0,
+            from_civitai=True,
+            civitai=version_info,
+            sub_type=sub_type,
+            tags=tags,
+            modelDescription=description,
+            # Direct read: the downloaded file IS file_info, no SHA256 matching.
+            autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
+        )
+
+
+@dataclass
+class OtherModelMetadata(BaseModelMetadata):
+    """Represents the metadata structure for an "other" model (VAE, upscaler,
+    text encoder, CLIP vision, ControlNet, ...).
+
+    The sub_type is location-derived: the OtherScanner sets it from the
+    folder_paths category whose root contains the file. The dataclass default
+    is only a placeholder.
+    """
+
+    sub_type: str = "vae"  # Placeholder; overridden by the scanner hooks
+
+    @classmethod
+    def from_civitai_info(
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
+    ) -> "OtherModelMetadata":
+        """Create OtherModelMetadata instance from Civitai version info"""
+        file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
+        base_model = determine_base_model(version_info.get("baseModel", ""))
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
+        # Map the CivitAI model type onto our sub_types; unknown types keep the
+        # placeholder until the scanner re-derives sub_type from the location.
+        # The type lives at version["model"]["type"], not version["type"].
+        civitai_type = str((version_info.get("model") or {}).get("type", "") or "").lower()
+        sub_type = CIVITAI_TYPE_TO_OTHER_SUB_TYPE.get(civitai_type, "vae")
+
+        # Extract tags and description if available
+        tags = []
+        description = ""
+        model_data = version_info.get("model") or {}
+        if "tags" in model_data:
+            tags = model_data["tags"]
+        if "description" in model_data:
+            description = model_data["description"]
+
+        return cls(
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
@@ -336,6 +456,7 @@ class EmbeddingMetadata(BaseModelMetadata):
     ) -> "EmbeddingMetadata":
         """Create EmbeddingMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "embedding")
@@ -350,8 +471,8 @@ class EmbeddingMetadata(BaseModelMetadata):
             description = model_data["description"]
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),

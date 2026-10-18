@@ -27,6 +27,42 @@ class ExampleImagesProcessor:
     """Processes and manipulates example images"""
 
     @staticmethod
+    async def _model_scanners() -> list:
+        """Return every scanner whose models can carry example images."""
+        return [
+            await ServiceRegistry.get_lora_scanner(),
+            await ServiceRegistry.get_checkpoint_scanner(),
+            await ServiceRegistry.get_embedding_scanner(),
+            await ServiceRegistry.get_other_scanner(),
+        ]
+
+    @staticmethod
+    async def resolve_hash_for_file_path(file_path: str) -> str:
+        """Return the SHA256 for a cached model file, computing it on demand.
+
+        Checkpoint and Other scanners record ``hash_status="pending"`` with an
+        empty sha256 until something needs the hash; importing example images
+        is such a moment because example folders are keyed by hash.  Returns
+        ``''`` when the file is unknown to every scanner or hashing failed.
+        """
+        if not file_path:
+            return ''
+        normalized = file_path.replace(os.sep, '/')
+        for scanner in await ExampleImagesProcessor._model_scanners():
+            cache = await scanner.get_cached_data()
+            for item in cache.raw_data:
+                if item.get('file_path') != normalized:
+                    continue
+                sha256 = (item.get('sha256') or '').strip()
+                if sha256 and item.get('hash_status', 'completed') == 'completed':
+                    return sha256
+                calculate = getattr(scanner, 'calculate_hash_for_model', None)
+                if calculate is None:
+                    return sha256
+                return (await calculate(normalized)) or ''
+        return ''
+
+    @staticmethod
     def generate_short_id(length=8):
         """Generate a short random alphanumeric identifier"""
         chars = string.ascii_lowercase + string.digits
@@ -450,15 +486,11 @@ class ExampleImagesProcessor:
                 raise ExampleImagesValidationError('No example images path configured')
 
             # Find the model and get current metadata
-            lora_scanner = await ServiceRegistry.get_lora_scanner()
-            checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
-            embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-
             model_data = None
             scanner = None
 
-            # Check both scanners to find the model
-            for scan_obj in [lora_scanner, checkpoint_scanner, embedding_scanner]:
+            # Check every scanner to find the model
+            for scan_obj in await ExampleImagesProcessor._model_scanners():
                 cache = await scan_obj.get_cached_data()
                 for item in cache.raw_data:
                     if item.get('sha256') == model_hash:
@@ -536,6 +568,7 @@ class ExampleImagesProcessor:
                 'errors': errors,
                 'regular_images': regular_images,
                 'custom_images': custom_images,
+                'model_hash': model_hash,
                 "model_file_path": model_data.get('file_path', ''),
             }
 
@@ -577,15 +610,11 @@ class ExampleImagesProcessor:
                 }, status=400)
             
             # Find the model and get current metadata
-            lora_scanner = await ServiceRegistry.get_lora_scanner()
-            checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
-            embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-            
             model_data = None
             scanner = None
-            
-            # Check both scanners to find the model
-            for scan_obj in [lora_scanner, checkpoint_scanner, embedding_scanner]:
+
+            # Check every scanner to find the model
+            for scan_obj in await ExampleImagesProcessor._model_scanners():
                 if scan_obj.has_hash(model_hash):
                     cache = await scan_obj.get_cached_data()
                     for item in cache.raw_data:
@@ -595,13 +624,13 @@ class ExampleImagesProcessor:
                             break
                 if model_data:
                     break
-            
+
             if not model_data:
                 return web.json_response({
                     'success': False,
                     'error': f"Model with hash {model_hash} not found in cache"
                 }, status=404)
-            
+
             await MetadataManager.hydrate_model_data(model_data)
             civitai_data = model_data.setdefault('civitai', {})
             custom_images = civitai_data.get('customImages')
@@ -737,14 +766,10 @@ class ExampleImagesProcessor:
                 )
 
         try:
-            lora_scanner = await ServiceRegistry.get_lora_scanner()
-            checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
-            embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-
             model_data = None
             scanner = None
 
-            for scan_obj in [lora_scanner, checkpoint_scanner, embedding_scanner]:
+            for scan_obj in await ExampleImagesProcessor._model_scanners():
                 if scan_obj.has_hash(model_hash):
                     cache = await scan_obj.get_cached_data()
                     for item in cache.raw_data:

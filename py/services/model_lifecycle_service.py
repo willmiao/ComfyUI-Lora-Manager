@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import os
-from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING, cast
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING, cast
 
 from ..services.service_registry import ServiceRegistry
+from ..services.pending_delete_service import get_pending_delete_service
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_sidecar_dir
 
 logger = logging.getLogger(__name__)
 
@@ -16,19 +21,45 @@ if TYPE_CHECKING:
     from ..services.model_update_service import ModelUpdateService
 
 
+async def load_local_metadata(metadata_path: str) -> Dict[str, Any]:
+    """Load a metadata sidecar JSON, returning an empty dict when missing.
+
+    Thin equivalent of ``MetadataSyncService.load_local_metadata`` for callers
+    (download manager, use cases) that do not hold a sync-service instance.
+    """
+
+    if not os.path.exists(metadata_path):
+        return {}
+
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except Exception as exc:
+        logger.warning("Failed to load metadata from %s: %s", metadata_path, exc)
+        return {}
+
+    return payload if isinstance(payload, dict) else {}
+
+
 async def delete_model_artifacts(
     target_dir: str, file_name: str, main_extension: str | None = None
 ) -> List[str]:
-    """Delete the primary model artefacts within ``target_dir``."""
+    """Delete the primary model artefacts within ``target_dir``.
+
+    Sidecars and previews are taken from the model's sidecar directory — the
+    model's own directory in alongside mode, the centralized mirror otherwise.
+    """
 
     main_extension = ".safetensors" if main_extension is None else main_extension
     main_file = f"{file_name}{main_extension}" if main_extension else file_name
-    patterns = [main_file, f"{file_name}.metadata.json"]
+    model_path = os.path.join(target_dir, main_file)
+    sidecar_dir = get_sidecar_dir(model_path)
+    patterns = [os.path.basename(get_metadata_path(model_path))]
     for ext in PREVIEW_EXTENSIONS:
         patterns.append(f"{file_name}{ext}")
 
     deleted: List[str] = []
-    main_path = os.path.join(target_dir, main_file).replace(os.sep, "/")
+    main_path = model_path.replace(os.sep, "/")
 
     if os.path.exists(main_path):
         os.remove(main_path)
@@ -36,8 +67,8 @@ async def delete_model_artifacts(
     else:
         logger.warning("Model file not found: %s", main_file)
 
-    for pattern in patterns[1:]:
-        path = os.path.join(target_dir, pattern)
+    for pattern in patterns:
+        path = os.path.join(sidecar_dir, pattern)
         if os.path.exists(path):
             try:
                 os.remove(path)
@@ -76,6 +107,36 @@ def _require_path_in_library_roots(file_path: str, scanner, *, label: str = "pat
     raise ValueError(
         f"{label} '{file_path}' is outside configured library directories"
     )
+
+
+class BulkRenameContext:
+    """Per-session state threaded through ``rename_model`` calls of a bulk rename.
+
+    Holds the lazily built recipe hash index so a bulk rename loop pays the
+    O(recipes) index build at most once (on the first recipe-touching rename)
+    instead of rescanning every recipe per renamed file. Also tracks whether
+    any recipe was re-pointed so the session finalizes recipe maintenance only
+    when needed.
+    """
+
+    def __init__(self, recipe_scanner: Any) -> None:
+        self._recipe_scanner = recipe_scanner
+        self._recipe_hash_index: Optional[Dict[str, List[Dict[str, Any]]]] = None
+        self.recipes_touched = False
+
+    @property
+    def recipe_scanner(self) -> Any:
+        return self._recipe_scanner
+
+    async def get_recipe_hash_index(self) -> Optional[Dict[str, List[Dict[str, Any]]]]:
+        """Return the lora-hash → recipes index, building it on first use."""
+        if self._recipe_scanner is None:
+            return None
+        if self._recipe_hash_index is None:
+            self._recipe_hash_index = (
+                await self._recipe_scanner.build_lora_hash_index()
+            )
+        return self._recipe_hash_index
 
 
 class ModelLifecycleService:
@@ -129,9 +190,24 @@ class ModelLifecycleService:
         target_dir = os.path.dirname(file_path)
         base_name = os.path.basename(file_path)
         file_name, main_extension = os.path.splitext(base_name)
-        deleted_files = await delete_model_artifacts(
-            target_dir, file_name, main_extension=main_extension
+
+        # Stage the delete into the pending-delete service when undo is
+        # enabled; a successful stage renames the artifacts away, otherwise
+        # fall back to the direct hard delete.
+        pending_delete_service = await get_pending_delete_service()
+        batch_id = await pending_delete_service.stage_model_delete(
+            scanner=self._scanner,
+            target_dir=target_dir,
+            file_name=file_name,
+            main_extension=main_extension,
+            original_file_path=file_path,
+            cached_entry=cached_entry,
         )
+        deleted_files: List[str] = []
+        if batch_id is None:
+            deleted_files = await delete_model_artifacts(
+                target_dir, file_name, main_extension=main_extension
+            )
 
         if cache:
             cache.raw_data = [
@@ -151,7 +227,11 @@ class ModelLifecycleService:
         if callable(persist_current_cache):
             await cast(Awaitable[Any], persist_current_cache())
 
-        return {"success": True, "deleted_files": deleted_files}
+        return {
+            "success": True,
+            "deleted_files": deleted_files,
+            "batch_id": batch_id,
+        }
 
     @staticmethod
     def _extract_model_id_from_payload(payload: Any) -> Optional[int]:
@@ -219,7 +299,7 @@ class ModelLifecycleService:
 
         _require_path_in_library_roots(file_path, self._scanner, label="File path")
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await self._metadata_loader(metadata_path)
         metadata["exclude"] = True
 
@@ -274,7 +354,7 @@ class ModelLifecycleService:
         if not os.path.exists(file_path):
             raise ValueError("Model file does not exist")
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata_payload = await self._metadata_loader(metadata_path)
         metadata_payload["exclude"] = False
 
@@ -317,10 +397,45 @@ class ModelLifecycleService:
 
         return await self._scanner.bulk_delete_models(file_paths)
 
+    @asynccontextmanager
+    async def bulk_rename_session(self) -> AsyncIterator[BulkRenameContext]:
+        """Context for bulk rename loops (filename-template "Apply to Library").
+
+        While active, the per-file ``update_single_model_cache`` resort/persist
+        chain and the per-file recipe folder-metadata refresh/resort are
+        deferred; both run exactly once when the outermost session exits — see
+        ``ModelScanner.defer_cache_persist`` and
+        ``RecipeScanner.finalize_bulk_filename_updates``. The finalize steps run
+        even on cancellation or mid-loop errors, because files are already
+        renamed on disk and the caches must not be left diverging.
+
+        Yields a :class:`BulkRenameContext` to pass as ``bulk_context`` into
+        each ``rename_model`` call of the loop.
+        """
+        recipe_scanner = await self._recipe_scanner_factory()
+        context = BulkRenameContext(recipe_scanner)
+        async with self._scanner.defer_cache_persist():
+            try:
+                yield context
+            finally:
+                if recipe_scanner is not None and context.recipes_touched:
+                    try:
+                        await recipe_scanner.finalize_bulk_filename_updates()
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logger.error(
+                            "Error finalizing bulk recipe updates: %s", exc
+                        )
+
     async def rename_model(
-        self, *, file_path: str, new_file_name: str
+        self, *, file_path: str, new_file_name: str, bulk_context: Optional[BulkRenameContext] = None
     ) -> Dict[str, object]:
-        """Rename a model and its companion artefacts."""
+        """Rename a model and its companion artefacts.
+
+        When ``bulk_context`` is given (bulk rename loop), the recipe
+        re-pointing uses the session's prebuilt hash index and defers recipe
+        maintenance to the session finalize; the scanner cache persist is
+        likewise deferred by the surrounding ``bulk_rename_session``.
+        """
 
         if not file_path or not new_file_name:
             raise ValueError("File path and new file name are required")
@@ -343,21 +458,26 @@ class ModelLifecycleService:
         if os.path.exists(new_file_path):
             raise ValueError("A file with this name already exists")
 
-        patterns = [
-            f"{old_file_name}{old_extension}",
-            f"{old_file_name}.metadata.json",
-            f"{old_file_name}.metadata.json.bak",
+        metadata_filename = os.path.basename(get_metadata_path(file_path))
+        # Sidecars/previews live in the sidecar dir (the model's own dir in
+        # alongside mode, the centralized mirror otherwise); the model file
+        # itself always stays in target_dir.
+        sidecar_dir = get_sidecar_dir(file_path)
+        patterns: List[tuple[str, str]] = [
+            (target_dir, f"{old_file_name}{old_extension}"),
+            (sidecar_dir, metadata_filename),
+            (sidecar_dir, f"{metadata_filename}.bak"),
         ]
         for ext in PREVIEW_EXTENSIONS:
-            patterns.append(f"{old_file_name}{ext}")
+            patterns.append((sidecar_dir, f"{old_file_name}{ext}"))
 
         existing_files: List[tuple[str, str]] = []
-        for pattern in patterns:
-            path = os.path.join(target_dir, pattern)
+        for pattern_dir, pattern in patterns:
+            path = os.path.join(pattern_dir, pattern)
             if os.path.exists(path):
                 existing_files.append((path, pattern))
 
-        metadata_path = os.path.join(target_dir, f"{old_file_name}.metadata.json")
+        metadata_path = get_metadata_path(file_path)
         metadata: Optional[Dict[str, object]] = None
         hash_value: Optional[str] = None
 
@@ -366,31 +486,25 @@ class ModelLifecycleService:
             raw_hash = metadata.get("sha256") if isinstance(metadata, dict) else None
             hash_value = raw_hash if isinstance(raw_hash, str) else None
 
-        renamed_files: List[str] = []
-        new_metadata_path: Optional[str] = None
         new_preview: Optional[str] = None
 
-        for old_path, pattern in existing_files:
-            ext = self._get_multipart_ext(pattern)
-            new_path = os.path.join(target_dir, f"{new_file_name}{ext}").replace(
-                os.sep, "/"
-            )
-            os.rename(old_path, new_path)
-            renamed_files.append(new_path)
-
-            if ext == ".metadata.json":
-                new_metadata_path = new_path
+        renamed_files, new_metadata_path = await asyncio.to_thread(
+            self._rename_companion_files, existing_files, new_file_name
+        )
 
         if metadata and new_metadata_path:
             metadata["file_name"] = new_file_name
             metadata["file_path"] = new_file_path
+            # Preserve the pre-rename stem so the original download filename
+            # stays recoverable after template-driven renames.
+            metadata.setdefault("original_file_name", old_file_name)
 
             if metadata.get("preview_url"):
                 old_preview = str(metadata["preview_url"])
                 ext = self._get_multipart_ext(old_preview)
-                new_preview = os.path.join(target_dir, f"{new_file_name}{ext}").replace(
-                    os.sep, "/"
-                )
+                new_preview = os.path.join(
+                    get_preview_dir(new_file_path), f"{new_file_name}{ext}"
+                ).replace(os.sep, "/")
                 metadata["preview_url"] = new_preview
 
             await self._metadata_manager.save_metadata(new_file_path, metadata)
@@ -401,12 +515,26 @@ class ModelLifecycleService:
             )
 
             if hash_value and getattr(self._scanner, "model_type", "") == "lora":
-                recipe_scanner = await self._recipe_scanner_factory()
+                if bulk_context is not None:
+                    recipe_scanner = bulk_context.recipe_scanner
+                    hash_index = await bulk_context.get_recipe_hash_index()
+                    defer_maintenance = True
+                else:
+                    recipe_scanner = await self._recipe_scanner_factory()
+                    hash_index = None
+                    defer_maintenance = False
                 if recipe_scanner:
                     try:
-                        await recipe_scanner.update_lora_filename_by_hash(
-                            hash_value, new_file_name
+                        file_count, cache_count = (
+                            await recipe_scanner.update_lora_filename_by_hash(
+                                hash_value,
+                                new_file_name,
+                                hash_index=hash_index,
+                                defer_maintenance=defer_maintenance,
+                            )
                         )
+                        if bulk_context is not None and (file_count or cache_count):
+                            bulk_context.recipes_touched = True
                     except Exception as exc:  # pragma: no cover - defensive logging
                         logger.error(
                             "Error updating recipe references for %s: %s",
@@ -421,6 +549,34 @@ class ModelLifecycleService:
             "renamed_files": renamed_files,
             "reload_required": False,
         }
+
+    def _rename_companion_files(
+        self,
+        existing_files: List[tuple[str, str]],
+        new_file_name: str,
+    ) -> tuple[List[str], Optional[str]]:
+        """Rename all companion files, off the event loop thread.
+
+        Runs the blocking ``os.rename`` sequence for one model in a worker
+        thread so a single file's HDD I/O does not stall the event loop.
+        Never parallelized across files: one model's renames stay sequential
+        and the helper holds no locks.
+        """
+        renamed_files: List[str] = []
+        new_metadata_path: Optional[str] = None
+
+        for old_path, pattern in existing_files:
+            ext = self._get_multipart_ext(pattern)
+            new_path = os.path.join(
+                os.path.dirname(old_path), f"{new_file_name}{ext}"
+            ).replace(os.sep, "/")
+            os.rename(old_path, new_path)
+            renamed_files.append(new_path)
+
+            if ext == ".metadata.json":
+                new_metadata_path = new_path
+
+        return renamed_files, new_metadata_path
 
     @staticmethod
     def _get_multipart_ext(filename: str) -> str:

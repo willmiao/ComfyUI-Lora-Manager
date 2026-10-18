@@ -5,47 +5,37 @@
             <h2>{{ t('recipes.controls.import.action') }}</h2>
         </div>
         
-        <!-- Step 1: Upload Image or Input URL -->
+        <!-- Step 1: Provide Image (URL first, or drop zone below) -->
         <div class="import-step" id="uploadStep">
-            <div class="import-mode-toggle">
-                <button class="toggle-btn active" data-mode="url" onclick="importManager.toggleImportMode('url')">
-                    <i class="fas fa-link"></i> {{ t('recipes.controls.import.urlLocalPath') }}
-                </button>
-                <button class="toggle-btn" data-mode="upload" onclick="importManager.toggleImportMode('upload')">
-                    <i class="fas fa-upload"></i> {{ t('recipes.controls.import.uploadImage') }}
-                </button>
-            </div>
-            
-            <!-- Input URL/Path Section -->
+            <p class="import-description">{{ t('recipes.controls.import.title') }}</p>
+
+            <!-- Input URL/Path Section (primary mode) -->
             <div class="import-section" id="urlSection">
-                <p>{{ t('recipes.controls.import.urlSectionDescription') }}</p>
                 <div class="input-group">
                     <label for="imageUrlInput">{{ t('recipes.controls.import.imageUrlOrPath') }}</label>
                     <div class="input-with-button">
                         <input type="text" id="imageUrlInput" placeholder="{{ t('recipes.controls.import.urlPlaceholder') }}">
-                        <button class="primary-btn" onclick="importManager.handleUrlInput()">
+                        <button class="primary-btn" id="fetchImageBtn" onclick="importManager.handleUrlInput()">
                             <i class="fas fa-download"></i> {{ t('recipes.controls.import.fetchImage') }}
                         </button>
                     </div>
                     <div class="error-message" id="importUrlError"></div>
                 </div>
             </div>
-            
-            <!-- Upload Image Section -->
-            <div class="import-section" id="uploadSection">
-                <p>{{ t('recipes.controls.import.uploadSectionDescription') }}</p>
-                <div class="input-group">
-                    <label for="recipeImageUpload">{{ t('recipes.controls.import.selectImage') }}</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="recipeImageUpload" accept="image/*" onchange="importManager.handleImageUpload(event)">
-                        <div class="file-input-button">
-                            <i class="fas fa-upload"></i> {{ t('recipes.controls.import.selectImage') }}
-                        </div>
-                    </div>
-                    <div class="error-message" id="uploadError"></div>
-                </div>
+
+            <div class="import-divider"><span>{{ t('recipes.controls.import.orDivider') }}</span></div>
+
+            <!-- Unified drop zone: click to browse, drag & drop, or paste an image -->
+            <div class="import-drop-zone" id="importDropZone" tabindex="0" role="button"
+                 aria-label="{{ t('recipes.controls.import.dropZoneLabel') }}">
+                <input type="file" id="recipeImageUpload" accept="image/*" hidden
+                       onchange="importManager.handleImageUpload(event)">
+                <i class="fas fa-cloud-upload-alt drop-zone-icon"></i>
+                <p class="drop-zone-primary" id="dropZonePrimaryText">{{ t('recipes.controls.import.dropZoneHint') }}</p>
+                <p class="drop-zone-filename" id="selectedFileName" style="display: none;"></p>
             </div>
-            
+            <div class="error-message" id="uploadError"></div>
+
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="modalManager.closeModal('importModal')">{{ t('common.actions.cancel') }}</button>
             </div>

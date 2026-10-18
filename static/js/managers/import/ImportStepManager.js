@@ -1,6 +1,7 @@
 export class ImportStepManager {
     constructor() {
         this.injectedStyles = null;
+        this.currentStep = null;
     }
 
     removeInjectedStyles() {
@@ -18,6 +19,7 @@ export class ImportStepManager {
     showStep(stepId) {
         // Remove any injected styles to prevent conflicts
         this.removeInjectedStyles();
+        this.currentStep = stepId;
         
         // Hide all steps first
         document.querySelectorAll('.import-step').forEach(step => {

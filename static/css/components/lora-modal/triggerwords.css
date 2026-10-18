@@ -140,7 +140,7 @@
 
 .token-badge {
   background: var(--lora-accent);
-  color: white;
+  color: var(--text-on-accent);
   font-size: 0.7em;
   padding: 2px 5px;
   border-radius: 8px;

@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
+from .constants import CIVITAI_META_TAGS, MAX_PATH_TAG_LENGTH
+
 
 @dataclass(frozen=True)
 class PriorityTagEntry:
@@ -102,3 +104,43 @@ def collect_canonical_tags(entries: Iterable[PriorityTagEntry]) -> List[str]:
     """Return the ordered list of canonical tags from the parsed entries."""
 
     return [entry.canonical for entry in entries]
+
+
+def is_usable_path_tag(tag: object) -> bool:
+    """Return True when a tag is a sane single-concept folder-name candidate.
+
+    CivitAI tags are normally short labels ("character", "anime"), but some
+    uploaders dump their whole keyword list into a single tag, e.g.
+    ``"lora, character, rosie, irish, ... face"``. Using such a tag as a folder
+    name produces unwieldy and path-length-breaking directories (#1119), so
+    tag-derived path segments only accept single-concept tags.
+    """
+
+    if not isinstance(tag, str):
+        return False
+
+    candidate = tag.strip()
+    if not candidate:
+        return False
+
+    # Commas mean the tag is a keyword dump rather than one concept.
+    if "," in candidate:
+        return False
+
+    return len(candidate) <= MAX_PATH_TAG_LENGTH
+
+
+def is_civitai_meta_tag(tag: object) -> bool:
+    """Return True for Civitai labels that describe the listing, not content.
+
+    Civitai attaches structural tags such as "base model" to the same list as
+    real content tags. They carry no organisational meaning, so the automatic
+    fallback must not turn one into a folder name. A user who does want such a
+    folder can still put the label in their priority tag list, because explicit
+    priority matches bypass this check.
+    """
+
+    if not isinstance(tag, str):
+        return False
+
+    return tag.strip().casefold() in CIVITAI_META_TAGS

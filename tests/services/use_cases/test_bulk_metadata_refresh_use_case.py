@@ -402,3 +402,138 @@ async def test_model_without_hash_skipped(use_case, mock_service, mock_metadata_
 
     assert result["processed"] == 1
     assert result["updated"] == 0
+
+
+def _offline_scanner_mock(scanner):
+    """Point the scanner mock at one offline and one online root."""
+    scanner.describe_model_roots = MagicMock(
+        return_value=[
+            {"path": "/mnt/offline_loras", "label": "offline_loras", "reachable": False, "available": False, "models": 1},
+            {"path": "/models", "label": "models", "reachable": True, "available": True, "models": 1},
+        ]
+    )
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_fetch_skips_models_on_offline_root(mock_hydrate, use_case, mock_service, mock_metadata_sync):
+    """Models under an unreachable root are excluded from the fetch queue."""
+    mock_hydrate.return_value = None
+    _offline_scanner_mock(mock_service.scanner)
+
+    offline_model = {
+        "file_path": "/mnt/offline_loras/model.safetensors",
+        "sha256": "hash_offline",
+        "model_name": "Offline Model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": False,
+    }
+    online_model = {
+        "file_path": "/models/model.safetensors",
+        "sha256": "hash_online",
+        "model_name": "Online Model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": False,
+    }
+
+    cache = SimpleNamespace(raw_data=[offline_model, online_model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    reporter = MockProgressReporter()
+    result = await use_case.execute(progress_callback=reporter)
+
+    # Only the online model is fetched
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args[1]
+    assert call_args["file_path"] == "/models/model.safetensors"
+
+    assert result["success"] is True
+    assert result["processed"] == 1
+    assert result["offline_skipped"] == 1
+    # The offline model still counts as excluded from the queue
+    assert result["skipped_count"] == 1
+
+    completed_calls = [c for c in reporter.progress_calls if c["status"] == "completed"]
+    assert completed_calls[0]["offline_skipped"] == 1
+    assert completed_calls[0]["offline_roots"] == [
+        {"path": "/mnt/offline_loras", "label": "offline_loras"}
+    ]
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_fetch_offline_filter_only_catches_offline_prefix(mock_hydrate, use_case, mock_service, mock_metadata_sync):
+    """A sibling path that merely shares a prefix string is not excluded."""
+    mock_hydrate.return_value = None
+    _offline_scanner_mock(mock_service.scanner)
+
+    # "/mnt/offline_loras_backup/..." must NOT match the "/mnt/offline_loras/" prefix
+    sibling_model = {
+        "file_path": "/mnt/offline_loras_backup/model.safetensors",
+        "sha256": "hash_sibling",
+        "model_name": "Sibling Model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": False,
+    }
+
+    cache = SimpleNamespace(raw_data=[sibling_model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    assert result["offline_skipped"] == 0
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_fetch_proceeds_unfiltered_without_root_description(mock_hydrate, use_case, mock_service, mock_metadata_sync):
+    """Scanners without describe_model_roots keep the previous behaviour."""
+    mock_hydrate.return_value = None
+    del mock_service.scanner.describe_model_roots
+
+    model = {
+        "file_path": "/mnt/offline_loras/model.safetensors",
+        "sha256": "hash123",
+        "model_name": "Test Model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": False,
+    }
+
+    cache = SimpleNamespace(raw_data=[model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    assert result["offline_skipped"] == 0
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_fetch_proceeds_unfiltered_when_root_description_fails(mock_hydrate, use_case, mock_service, mock_metadata_sync):
+    """A failing describe_model_roots must not break the fetch."""
+    mock_hydrate.return_value = None
+    mock_service.scanner.describe_model_roots = MagicMock(side_effect=RuntimeError("boom"))
+
+    model = {
+        "file_path": "/models/model.safetensors",
+        "sha256": "hash123",
+        "model_name": "Test Model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": False,
+    }
+
+    cache = SimpleNamespace(raw_data=[model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    assert result["success"] is True
+    assert result["offline_skipped"] == 0

@@ -129,7 +129,7 @@
     top: -6px;
     right: -6px;
     background-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     width: 16px;
     height: 16px;
     border-radius: 50%;
@@ -213,7 +213,7 @@
 .filter-search-input:focus {
     outline: none;
     border-color: var(--lora-accent);
-    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 76, 175, 80), 0.15);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15);
 }
 
 .filter-empty-state {
@@ -257,7 +257,7 @@
 
 .filter-tag.active {
     background-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -309,7 +309,7 @@
 
 .tag-filter.active .tag-count {
     background: rgba(255, 255, 255, 0.3);
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .tags-loading, .tags-error, .no-tags {
@@ -493,7 +493,7 @@
 
 .search-option-tag.active {
     background-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     border-color: var(--lora-accent);
 }
 
@@ -537,12 +537,12 @@
 }
 
 .filter-preset.active .preset-name {
-    color: white;
+    color: var(--text-on-accent);
     font-weight: 600;
 }
 
 .filter-preset.active .preset-delete-btn {
-    color: white;
+    color: var(--text-on-accent);
     opacity: 0;
 }
 
@@ -552,7 +552,7 @@
 
 .filter-preset.active .preset-delete-btn:hover {
     opacity: 1;
-    color: white;
+    color: var(--text-on-accent);
 }
 
 .preset-name {
@@ -743,7 +743,7 @@
 
 .tag-logic-option.active {
     background-color: var(--lora-accent);
-    color: white;
+    color: var(--text-on-accent);
     opacity: 1;
 }
 

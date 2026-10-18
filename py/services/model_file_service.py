@@ -1,16 +1,60 @@
 import asyncio
 import fnmatch
-import os
 import logging
+import os
+import posixpath
+import shutil
 from typing import Any, Dict, List, Optional, Sequence, Set
 from abc import ABC, abstractmethod
 
-from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
-from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
+from ..utils.utils import calculate_relative_path_for_model, fit_stem_to_path_budget, remove_empty_dirs
+from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE, MODEL_FILE_EXTENSIONS
+from ..utils.recipes_paths import path_is_or_contains_recipes_dir
+from ..utils.sidecar_paths import is_centralized, resolve_centralized_dir_for_dir
 from ..services.settings_manager import get_settings_manager
 from ..services.model_lifecycle_service import _require_path_in_library_roots
+from ..services.pending_delete_service import (
+    PENDING_DELETE_DIR_NAME,
+    staging_dir_has_content,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_relative_folder(folder: str) -> str:
+    """Normalize a library-relative folder path, raising ``ValueError``.
+
+    Absolute paths (POSIX, drive-letter or UNC) and paths that climb out of the
+    library root are refused: both mean the caller is confused about which space
+    it is working in, and guessing would be worse than an error. Shared by the
+    folder operations and the scoped scan endpoint so both reject the same input.
+    """
+    raw = str(folder or "").strip()
+    if not raw:
+        raise ValueError("Folder path is required")
+
+    normalized = raw.replace("\\", "/")
+    if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+        raise ValueError("Folder path must be relative to a library root")
+
+    # posixpath, not os.path: ntpath.normpath would fold the business form back
+    # to backslashes, and every stored folder, cache entry and comparison in the
+    # app is forward-slashed.
+    normalized = posixpath.normpath(normalized)
+    if normalized == ".." or normalized.startswith("../"):
+        raise ValueError("Folder path must stay inside the library root")
+
+    return normalized
+
+
+def _normalize_match_path(path: Any) -> str:
+    """Normalize a path for set membership tests.
+
+    Business paths only — symlinks are never resolved here, matching how the
+    scanner stores ``excluded_models``. The forward-slash form keeps Windows
+    comparisons working with the scanner's normalized entries.
+    """
+    return os.path.normpath(os.path.abspath(str(path))).replace(os.sep, "/")
 
 
 class ProgressCallback(ABC):
@@ -41,10 +85,22 @@ class AutoOrganizeResult:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
+        if self.operation_type == 'filename_template':
+            message = (
+                f'Filename template applied: {self.success_count} renamed, '
+                f'{self.skipped_count} skipped, {self.failure_count} failed '
+                f'out of {self.total} total'
+            )
+        else:
+            message = (
+                f'Auto-organize {self.operation_type} completed: '
+                f'{self.success_count} moved, {self.skipped_count} skipped, '
+                f'{self.failure_count} failed out of {self.total} total'
+            )
         result: Dict[str, Any] = {
             'success': self.status != 'error',
             'status': self.status,
-            'message': f'Auto-organize {self.operation_type} completed: {self.success_count} moved, {self.skipped_count} skipped, {self.failure_count} failed out of {self.total} total',
+            'message': message,
             'summary': {
                 'total': self.total,
                 'success': self.success_count,
@@ -340,7 +396,20 @@ class ModelFileService:
             # Check for conflicts
             file_name = os.path.basename(file_path)
             target_file_path = os.path.join(target_dir, file_name)
-            
+
+            # Auto-organize moves the file as-is, so an over-long target
+            # cannot be fixed by trimming the name here — refuse with an
+            # actionable message instead of letting the OS move fail
+            # (#1142). The check covers the sidecar mirror path too.
+            file_stem, file_ext = os.path.splitext(file_name)
+            if fit_stem_to_path_budget(target_dir, file_stem, file_ext) != file_stem:
+                self._add_result(result, model_name, False,
+                               "Skipped - target path would exceed the OS path "
+                               "length limit; shorten the file name or move the "
+                               "library to a shallower root")
+                result.skipped_count += 1
+                return
+
             if os.path.exists(target_file_path):
                 self._add_result(result, model_name, False, 
                                f"Target file already exists: {target_file_path}")
@@ -473,17 +542,593 @@ class ModelFileService:
 
 class ModelMoveService:
     """Service for handling individual model moves"""
-    
+
     def __init__(self, scanner, model_type: str):
         """Initialize the service
-        
+
         Args:
             scanner: Model scanner instance
             model_type: Type of model (e.g., 'lora', 'checkpoint')
         """
         self.scanner = scanner
         self.model_type = model_type
-    
+
+    async def create_folder(self, folder_path: str) -> Dict[str, Any]:
+        """Create a directory inside the model library roots.
+
+        Args:
+            folder_path: Absolute path of the directory to create (business
+                path — symlinks are not resolved)
+
+        Returns:
+            Dictionary with success flag, the created path and the
+            library-relative folder name used by folder trees.
+        """
+        try:
+            if not folder_path or not str(folder_path).strip():
+                return {"success": False, "error": "Folder path is required"}
+
+            _require_path_in_library_roots(folder_path, self.scanner, label="Folder path")
+
+            absolute_path = os.path.abspath(folder_path)
+            already_exists = os.path.isdir(absolute_path)
+            os.makedirs(absolute_path, exist_ok=True)
+
+            relative_folder = self._calculate_relative_folder(absolute_path)
+            if relative_folder:
+                await self.scanner.add_known_folder(relative_folder)
+
+            return {
+                "success": True,
+                "folder_path": absolute_path.replace(os.sep, "/"),
+                "folder": relative_folder,
+                "created": not already_exists,
+            }
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        except Exception as exc:
+            logger.error(f"Error creating folder: {exc}", exc_info=True)
+            return {"success": False, "error": str(exc)}
+
+    def _calculate_relative_folder(self, absolute_path: str) -> str:
+        """Return the library-relative folder for an absolute directory path."""
+        normalized = os.path.abspath(absolute_path)
+        for root in self.scanner.get_model_roots():
+            abs_root = os.path.abspath(root)
+            try:
+                rel = os.path.relpath(normalized, abs_root)
+            except ValueError:
+                continue
+            if rel == ".":
+                return ""
+            if not rel.startswith(".."):
+                return rel.replace(os.sep, "/")
+        return ""
+
+    async def forget_folder(self, folder: str) -> Dict[str, Any]:
+        """Drop the records of a folder that is on disk under no root (#1145).
+
+        A directory moved or deleted with a file manager can leave the sidebar
+        holding a node no delete can clear: the folder is gone, so there is
+        nothing to remove and every attempt answered "Folder no longer exists".
+        This drops what remains — the recorded folder entry and the cached model
+        rows under it — and is refused while any root still holds the directory,
+        because then the caller wants a delete, not a cleanup.
+        """
+        resolution = self.resolve_folder(folder)
+        if not resolution.get("success"):
+            return resolution
+
+        normalized = resolution.get("folder") or ""
+        if not normalized:
+            return {"success": False, "error": "Folder is required"}
+        if resolution.get("candidates"):
+            return {
+                "success": False,
+                "code": "exists",
+                "error": "The folder still exists on disk",
+            }
+
+        await self._forget_folder(normalized)
+        return {"success": True, "folder": normalized}
+
+    def resolve_folder(self, folder: str) -> Dict[str, Any]:
+        """Map a library-relative folder onto the directories it stands for.
+
+        The unified folder tree merges every model root into a single
+        relative-path namespace, so a tree node does not carry the root it came
+        from: the same relative folder can exist under several roots, or under
+        one that is not the default root. Folder operations take an absolute
+        business path, so a caller holding only the rendered node must ask which
+        directories it maps to instead of assuming a root — assuming one is how
+        deleting a folder that sits right there fails with "Folder no longer
+        exists", or, when a same-named folder exists in another root, silently
+        acts on that other directory.
+
+        Args:
+            folder: Library-relative folder path (``a/b``; backslashes are
+                accepted). Absolute paths are rejected — a caller that already
+                holds an absolute business path does not need this.
+
+        Returns:
+            Dictionary with the success flag, the normalized relative folder and
+            ``candidates``: one entry per model root that holds the directory on
+            disk (``folder_path``/``root``/``is_symlink``), in scanner root
+            order. An empty list means the directory exists under no root.
+        """
+        try:
+            relative = self._normalize_relative_folder(folder)
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+
+        candidates: List[Dict[str, Any]] = []
+        for root in self.scanner.get_model_roots():
+            abs_root = os.path.abspath(root)
+            candidate = os.path.abspath(os.path.join(abs_root, relative))
+            # normpath already collapsed any "." / ".." segment; the
+            # containment check is belt-and-braces, not traversal defence.
+            if candidate != abs_root and not candidate.startswith(abs_root + os.sep):
+                continue
+            if not os.path.isdir(candidate):
+                continue
+            candidates.append(
+                {
+                    "folder_path": candidate.replace(os.sep, "/"),
+                    "root": abs_root.replace(os.sep, "/"),
+                    "is_symlink": os.path.islink(candidate),
+                }
+            )
+
+        return {
+            "success": True,
+            "folder": relative.replace(os.sep, "/"),
+            "candidates": candidates,
+        }
+
+    @staticmethod
+    def _normalize_relative_folder(folder: str) -> str:
+        """Normalize a library-relative folder path, raising ``ValueError``."""
+        return normalize_relative_folder(folder)
+
+    async def delete_folder(self, folder_path: str, dry_run: bool = False) -> Dict[str, Any]:
+        """Delete a model-free directory inside the model library roots.
+
+        Only directories whose subtree holds no model weight files can be
+        removed: a folder-level cascade would bypass the per-model lifecycle
+        bookkeeping (metadata sidecars, previews, cache entries, pending-delete
+        staging and recipe references), so it is deliberately refused. Leftover
+        non-model files (stray previews, sidecars, ``.bak`` files) are reported
+        in the manifest before they are removed.
+
+        Args:
+            folder_path: Absolute path of the directory to remove (business
+                path — symlinks are not resolved)
+            dry_run: When true, only report what would be removed
+
+        Returns:
+            Dictionary with the success flag plus a removal manifest
+            (``model_count``/``excluded_model_count``/``file_count``/
+            ``dir_count``/``symlink_count``/``total_bytes``/``restorable``)
+            on success.
+        """
+        try:
+            if not folder_path or not str(folder_path).strip():
+                return {"success": False, "error": "Folder path is required"}
+
+            _require_path_in_library_roots(folder_path, self.scanner, label="Folder path")
+
+            absolute_path = os.path.abspath(folder_path)
+            if os.path.islink(absolute_path):
+                # shutil.rmtree refuses symlinked roots, and silently deleting
+                # the link (leaving the real directory behind) is a separate
+                # decision we do not make here.
+                return {
+                    "success": False,
+                    "error": "Symlinked folders cannot be deleted",
+                }
+            if not os.path.isdir(absolute_path):
+                # `missing` is its own code so the sidebar can tell "this node's
+                # directory is gone" apart from a failed operation. There is
+                # nothing left to delete, but the sidebar can still be holding the
+                # node: a folder moved or removed with a file manager leaves its
+                # records behind, and "Folder no longer exists" was a dead end --
+                # the ghost could not be cleared from the UI at all (issue #1145).
+                # The real delete therefore forgets those records and reports
+                # success; the dry run stays a pure read and keeps answering
+                # `missing`, which is what makes the dialog offer the removal.
+                if dry_run:
+                    return {
+                        "success": False,
+                        "code": "missing",
+                        "error": "Folder no longer exists",
+                    }
+
+                relative_folder = self._calculate_relative_folder(absolute_path)
+                await self._forget_folder(relative_folder, absolute_path)
+                return {
+                    "success": True,
+                    "code": "missing",
+                    "already_missing": True,
+                    "folder": relative_folder,
+                    "folder_path": absolute_path.replace(os.sep, "/"),
+                }
+
+            if self._is_model_root(absolute_path):
+                return {
+                    "success": False,
+                    "error": "The library root itself cannot be deleted",
+                }
+
+            if path_is_or_contains_recipes_dir(absolute_path):
+                # The recipes dir holds no model weight files, so the
+                # model_count check below cannot protect it — but removing it
+                # wipes the user's recipe library.
+                return {
+                    "success": False,
+                    "code": "protected",
+                    "error": (
+                        "This folder holds the recipe library and cannot be "
+                        "deleted from here"
+                    ),
+                }
+
+            manifest = self._collect_folder_manifest(absolute_path)
+
+            if manifest["pending_delete_job"]:
+                return {
+                    "success": False,
+                    "code": "busy",
+                    "error": (
+                        "A staged delete is still pending inside this folder; "
+                        "wait for the undo window to expire"
+                    ),
+                    "manifest": manifest,
+                }
+
+            if manifest["model_count"] > 0:
+                model_count = manifest["model_count"]
+                excluded_count = manifest["excluded_model_count"]
+                # Excluded models are hidden from the library lists but are
+                # still real weight files, so they block the cascade just like
+                # any other model. Naming them is what makes the refusal
+                # actionable: the folder looks empty in the sidebar precisely
+                # because everything in it is excluded.
+                if excluded_count == model_count:
+                    error = (
+                        f"Folder still contains {model_count} model file(s), "
+                        "all excluded from the library; un-exclude or delete "
+                        "them first"
+                    )
+                elif excluded_count:
+                    error = (
+                        f"Folder still contains {model_count} model file(s), "
+                        f"{excluded_count} of them excluded from the library; "
+                        "delete or move them first"
+                    )
+                else:
+                    error = (
+                        f"Folder still contains {model_count} model "
+                        "file(s); delete or move them first"
+                    )
+                return {
+                    "success": False,
+                    "code": "not_empty",
+                    "error": error,
+                    "manifest": manifest,
+                }
+
+            relative_folder = self._calculate_relative_folder(absolute_path)
+
+            if dry_run:
+                return {
+                    "success": True,
+                    "dry_run": True,
+                    "folder_path": absolute_path.replace(os.sep, "/"),
+                    "folder": relative_folder,
+                    **manifest,
+                }
+
+            shutil.rmtree(absolute_path)
+
+            # Centralized mode: prune the folder's mirror subtree when it no
+            # longer holds any sidecar files (per-model deletes already
+            # removed their sidecars, so only empty directories are expected;
+            # a non-empty mirror keeps its orphan sidecars).
+            if is_centralized():
+                mirror_dir = resolve_centralized_dir_for_dir(absolute_path)
+                if mirror_dir and os.path.isdir(mirror_dir):
+                    for root, _dirs, files in os.walk(mirror_dir, topdown=False):
+                        if files:
+                            continue
+                        try:
+                            os.rmdir(root)
+                        except OSError:  # pragma: no cover - best-effort cleanup
+                            pass
+
+            await self._forget_folder(relative_folder, absolute_path)
+
+            return {
+                "success": True,
+                "dry_run": False,
+                "folder_path": absolute_path.replace(os.sep, "/"),
+                "folder": relative_folder,
+                **manifest,
+            }
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        except Exception as exc:
+            logger.error(f"Error deleting folder: {exc}", exc_info=True)
+            return {"success": False, "error": str(exc)}
+
+    def _is_model_root(self, absolute_path: str) -> bool:
+        """Return True when the path *is* one of the configured library roots."""
+        normalized = os.path.normpath(absolute_path)
+        for root in self.scanner.get_model_roots():
+            if os.path.normpath(os.path.abspath(root)) == normalized:
+                return True
+        return False
+
+    @staticmethod
+    def _is_model_file(file_name: str) -> bool:
+        """Return True when the file name carries a model weight extension."""
+        return os.path.splitext(file_name)[1].lower() in MODEL_FILE_EXTENSIONS
+
+    def _collect_folder_manifest(self, absolute_path: str) -> Dict[str, Any]:
+        """Describe everything a recursive delete of *absolute_path* removes.
+
+        Walking is intentional: the scanner cache can be stale, and a model file
+        that appeared on disk since the last scan must still block the delete.
+        Symbolic links are never followed (``os.walk`` default) and are counted
+        separately — ``shutil.rmtree`` unlinks them without touching their
+        targets.
+
+        ``excluded_model_count`` splits the subset of ``model_count`` that the
+        library hides behind the ``exclude`` flag: those files still block the
+        delete, yet they are invisible to the model lists (and therefore to the
+        folder tree, which derives "empty" from them).
+        """
+        model_count = 0
+        excluded_model_count = 0
+        file_count = 0
+        dir_count = 0
+        symlink_count = 0
+        total_bytes = 0
+        pending_delete_job = False
+        excluded_paths = self._excluded_model_paths()
+
+        for dirpath, dirnames, filenames in os.walk(absolute_path):
+            # The container alone means nothing: an empty `.lm-pending-delete`
+            # is a leftover from a purge, an undo or a failed staging, and
+            # treating it as pending made the folder undeletable for good.
+            if PENDING_DELETE_DIR_NAME in dirnames and staging_dir_has_content(
+                os.path.join(dirpath, PENDING_DELETE_DIR_NAME)
+            ):
+                pending_delete_job = True
+
+            for name in dirnames:
+                if os.path.islink(os.path.join(dirpath, name)):
+                    symlink_count += 1
+                else:
+                    dir_count += 1
+
+            for name in filenames:
+                full_path = os.path.join(dirpath, name)
+                if os.path.islink(full_path):
+                    symlink_count += 1
+                    continue
+                if self._is_model_file(name):
+                    model_count += 1
+                    if _normalize_match_path(full_path) in excluded_paths:
+                        excluded_model_count += 1
+                else:
+                    file_count += 1
+                try:
+                    total_bytes += os.path.getsize(full_path)
+                except OSError:  # pragma: no cover - defensive
+                    pass
+
+        return {
+            "model_count": model_count,
+            "excluded_model_count": excluded_model_count,
+            "file_count": file_count,
+            "dir_count": dir_count,
+            "symlink_count": symlink_count,
+            "total_bytes": total_bytes,
+            "pending_delete_job": pending_delete_job,
+            # A truly empty directory is the only case an "undo" can restore by
+            # simply recreating it; a folder holding stray files is gone for good.
+            "restorable": (
+                model_count == 0
+                and file_count == 0
+                and dir_count == 0
+                and symlink_count == 0
+            ),
+        }
+
+    def _excluded_model_paths(self) -> Set[str]:
+        """Absolute paths of the models the library hides behind ``exclude``.
+
+        Best-effort: scanner stand-ins that do not expose the accessor simply
+        report no excluded models.
+        """
+        get_excluded = getattr(self.scanner, "get_excluded_models", None)
+        if not callable(get_excluded):
+            return set()
+        try:
+            paths = get_excluded() or []
+        except Exception:  # pragma: no cover - defensive
+            return set()
+        return {_normalize_match_path(path) for path in paths if path}
+
+    async def _forget_folder(
+        self, relative_folder: str, absolute_path: Optional[str] = None
+    ) -> None:
+        """Drop a removed directory from the scanner's folder/cache records.
+
+        ``absolute_path`` is what the caller actually deleted: the scanner needs
+        it to purge the right model cards, because the same relative folder can
+        exist under several roots.
+        """
+        if not relative_folder:
+            return
+        remove_known_folder = getattr(self.scanner, "remove_known_folder", None)
+        if callable(remove_known_folder):
+            await remove_known_folder(relative_folder, absolute_path)
+
+    async def rename_folder(self, folder_path: str, new_name: str) -> Dict[str, Any]:
+        """Rename a directory inside the model library roots.
+
+        Unlike :meth:`delete_folder` this works on folders that hold models.
+        A rename keeps every file, so no per-model lifecycle step is bypassed:
+        the directory is renamed on disk and the affected folder, cache, hash
+        index and metadata-sidecar records are re-keyed onto the new prefix by
+        the scanner.
+
+        Args:
+            folder_path: Absolute path of the directory to rename (business
+                path — symlinks are not resolved)
+            new_name: New leaf name; a single path segment, not a path
+
+        Returns:
+            Dictionary with the success flag, the previous/next library-relative
+            folder names and whether the directory actually moved.
+        """
+        try:
+            if not folder_path or not str(folder_path).strip():
+                return {"success": False, "error": "Folder path is required"}
+
+            new_name = str(new_name or "").strip()
+            if not new_name:
+                return {"success": False, "error": "New folder name is required"}
+            if new_name in (".", "..") or any(
+                char in new_name for char in '/\\:*?"<>|'
+            ):
+                return {"success": False, "error": "Invalid characters in folder name"}
+
+            _require_path_in_library_roots(folder_path, self.scanner, label="Folder path")
+
+            absolute_path = os.path.abspath(folder_path)
+            if os.path.islink(absolute_path):
+                return {
+                    "success": False,
+                    "error": "Symlinked folders cannot be renamed",
+                }
+            if not os.path.isdir(absolute_path):
+                # `missing` is its own code so the sidebar can tell "this node's
+                # directory is gone, refresh" apart from a failed operation.
+                return {
+                    "success": False,
+                    "code": "missing",
+                    "error": "Folder no longer exists",
+                }
+
+            if self._is_model_root(absolute_path):
+                return {
+                    "success": False,
+                    "error": "The library root itself cannot be renamed",
+                }
+
+            if path_is_or_contains_recipes_dir(absolute_path):
+                # Renaming the recipes dir (or an ancestor) strands the recipe
+                # library: the scanner keeps looking at the configured path.
+                return {
+                    "success": False,
+                    "code": "protected",
+                    "error": (
+                        "This folder holds the recipe library and cannot be "
+                        "renamed from here"
+                    ),
+                }
+
+            previous_relative = self._calculate_relative_folder(absolute_path)
+            target = os.path.join(os.path.dirname(absolute_path), new_name)
+
+            if os.path.normpath(target) == os.path.normpath(absolute_path):
+                return {
+                    "success": True,
+                    "renamed": False,
+                    "folder": previous_relative,
+                    "previous_folder": previous_relative,
+                    "folder_path": absolute_path.replace(os.sep, "/"),
+                }
+
+            if os.path.exists(target):
+                return {
+                    "success": False,
+                    "code": "target_exists",
+                    "error": f"A folder named \"{new_name}\" already exists here",
+                }
+
+            # A staging manifest records absolute original/staged paths, so
+            # moving a folder that holds one would break its undo and purge.
+            if self._has_pending_delete_job(absolute_path):
+                return {
+                    "success": False,
+                    "code": "busy",
+                    "error": (
+                        "A staged delete is still pending inside this folder; "
+                        "wait for the undo window to expire"
+                    ),
+                }
+
+            os.rename(absolute_path, target)
+
+            new_relative = self._calculate_relative_folder(target)
+            await self._rename_folder_records(
+                previous_relative,
+                new_relative,
+                # Business paths, like every other absolute path this service
+                # hands out: the scanner re-keys cache entries by prefix.
+                absolute_path.replace(os.sep, "/"),
+                target.replace(os.sep, "/"),
+            )
+
+            return {
+                "success": True,
+                "renamed": True,
+                "folder": new_relative,
+                "previous_folder": previous_relative,
+                "folder_path": target.replace(os.sep, "/"),
+            }
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        except Exception as exc:
+            logger.error(f"Error renaming folder: {exc}", exc_info=True)
+            return {"success": False, "error": str(exc)}
+
+    @staticmethod
+    def _has_pending_delete_job(absolute_path: str) -> bool:
+        """Return True when a staged-delete batch lives inside the subtree.
+
+        An empty ``.lm-pending-delete`` container does not count: it is a
+        leftover, not a batch, and a rename must not be refused because of one.
+        """
+        for dirpath, dirnames, _filenames in os.walk(absolute_path):
+            if PENDING_DELETE_DIR_NAME in dirnames and staging_dir_has_content(
+                os.path.join(dirpath, PENDING_DELETE_DIR_NAME)
+            ):
+                return True
+        return False
+
+    async def _rename_folder_records(
+        self,
+        previous_relative: str,
+        new_relative: str,
+        previous_path: str,
+        new_path: str,
+    ) -> None:
+        """Hand the rename to the scanner so folder/cache records follow it."""
+        if not previous_relative or not new_relative:
+            return
+        rename_known_folder = getattr(self.scanner, "rename_known_folder", None)
+        if callable(rename_known_folder):
+            await rename_known_folder(
+                previous_relative,
+                new_relative,
+                previous_path=previous_path,
+                new_path=new_path,
+            )
+
     async def move_model(self, file_path: str, target_path: str, use_default_paths: bool = False) -> Dict[str, Any]:
         """Move a single model file
         

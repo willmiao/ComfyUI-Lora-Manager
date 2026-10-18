@@ -1,10 +1,31 @@
 import logging
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Mapping
 
 import pytest
 
 from py import config as config_module
+from py.utils.root_paths import normalize_root_identity
 from py.services import settings_manager as settings_manager_module
+
+
+def _identity(value):
+    """Fold path spelling so an assertion is about paths, not separators.
+
+    LM keeps the host's own spelling for the paths it is configured with
+    (backslashes on Windows) while the ones it derives itself are forward-slashed,
+    so two values naming the same directory can differ as strings. Compare
+    identities wherever a test asserts *which* paths survived.
+    """
+
+    if isinstance(value, str):
+        return normalize_root_identity(value)
+    if isinstance(value, Mapping):
+        return {key: _identity(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_identity(item) for item in value]
+    if isinstance(value, set):
+        return {_identity(item) for item in value}
+    return value
 
 
 def _setup_config_environment(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Dict[str, List[str]]:
@@ -94,11 +115,11 @@ def test_save_paths_renames_default_library(monkeypatch: pytest.MonkeyPatch, tmp
         key: [path.replace("\\", "/") for path in paths]
         for key, paths in folder_paths.items()
     }
-    assert payload["folder_paths"] == expected_folder_paths
-    assert payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
-    assert payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
-    assert payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
-    assert payload["metadata"] == {"display_name": "ComfyUI", "source": "comfyui"}
+    assert _identity(payload["folder_paths"]) == _identity(expected_folder_paths)
+    assert _identity(payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
+    assert _identity(payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
+    assert _identity(payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
+    assert _identity(payload["metadata"]) == _identity({"display_name": "ComfyUI", "source": "comfyui"})
     assert payload["activate"] is True
 
 
@@ -175,9 +196,9 @@ def test_save_paths_repairs_empty_default_roots(monkeypatch: pytest.MonkeyPatch,
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
-    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
-    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
 
 
 def test_save_paths_repairs_stale_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
@@ -214,9 +235,9 @@ def test_save_paths_repairs_stale_default_roots(monkeypatch: pytest.MonkeyPatch,
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
-    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
-    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
 
 
 def test_save_paths_keeps_valid_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
@@ -253,9 +274,9 @@ def test_save_paths_keeps_valid_default_roots(monkeypatch: pytest.MonkeyPatch, t
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
-    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
-    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
 
 
 def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
@@ -338,17 +359,15 @@ def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
         key: [path.replace("\\", "/") for path in paths]
         for key, paths in folder_paths.items()
     }
-    assert payload["folder_paths"] == expected_folder_paths
-    assert payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
-    assert (
-        payload["default_checkpoint_root"]
-        == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert _identity(payload["folder_paths"]) == _identity(expected_folder_paths)
+    assert _identity(payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
+    assert _identity(payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0].replace("\\", "/")
     )
-    assert (
-        payload["default_embedding_root"]
-        == folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0].replace("\\", "/")
     )
-    assert payload["metadata"] == {"display_name": "ComfyUI", "source": "comfyui"}
+    assert _identity(payload["metadata"]) == _identity({"display_name": "ComfyUI", "source": "comfyui"})
     assert payload["activate"] is True
 
 
@@ -397,16 +416,16 @@ def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.Monke
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["extra_folder_paths"]["loras"] == [str(extra_lora_dir).replace("\\", "/")]
-    assert fake_settings.payload["extra_folder_paths"]["checkpoints"] == [
+    assert _identity(fake_settings.payload["extra_folder_paths"]["loras"]) == _identity([str(extra_lora_dir).replace("\\", "/")])
+    assert _identity(fake_settings.payload["extra_folder_paths"]["checkpoints"]) == _identity([
         str(extra_checkpoint_dir).replace("\\", "/")
-    ]
-    assert fake_settings.payload["extra_folder_paths"]["embeddings"] == [
+    ])
+    assert _identity(fake_settings.payload["extra_folder_paths"]["embeddings"]) == _identity([
         str(extra_embedding_dir).replace("\\", "/")
-    ]
-    assert fake_settings.payload["default_lora_root"] == str(extra_lora_dir).replace("\\", "/")
-    assert fake_settings.payload["default_checkpoint_root"] == str(extra_checkpoint_dir).replace("\\", "/")
-    assert fake_settings.payload["default_embedding_root"] == str(extra_embedding_dir).replace("\\", "/")
+    ])
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(str(extra_lora_dir).replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(str(extra_checkpoint_dir).replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(str(extra_embedding_dir).replace("\\", "/"))
     assert fake_settings.payload["activate"] is True
 
 
@@ -451,8 +470,8 @@ def test_save_paths_keeps_default_roots_in_extra_paths_with_windows_slash_mismat
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["default_lora_root"] == "U:/Lora7/Loras"
-    assert fake_settings.payload["default_checkpoint_root"] == "U:/Lora7/Models"
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity("U:/Lora7/Loras")
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity("U:/Lora7/Models")
 
 
 def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_missing(
@@ -505,7 +524,7 @@ def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_miss
     config_module.Config()
 
     assert fake_settings.name == "comfyui"
-    assert fake_settings.payload["default_lora_root"] == str(extra_lora_dir).replace("\\", "/")
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(str(extra_lora_dir).replace("\\", "/"))
 
 
 def test_save_paths_does_not_activate_comfyui_library_when_another_library_is_active(
@@ -585,12 +604,12 @@ def test_apply_library_settings_merges_extra_paths(monkeypatch, tmp_path):
 
     config_instance.apply_library_settings(library_config)
 
-    assert str(loras_dir) in config_instance.loras_roots
-    assert str(extra_loras_dir) in config_instance.extra_loras_roots
-    assert str(checkpoints_dir) in config_instance.base_models_roots
-    assert str(extra_checkpoints_dir) in config_instance.extra_checkpoints_roots
-    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
-    assert str(extra_embeddings_dir) in config_instance.extra_embeddings_roots
+    assert _identity(str(loras_dir)) in _identity(config_instance.loras_roots)
+    assert _identity(str(extra_loras_dir)) in _identity(config_instance.extra_loras_roots)
+    assert _identity(str(checkpoints_dir)) in _identity(config_instance.base_models_roots)
+    assert _identity(str(extra_checkpoints_dir)) in _identity(config_instance.extra_checkpoints_roots)
+    assert _identity(str(embeddings_dir)) in _identity((config_instance.embeddings_roots or []))
+    assert _identity(str(extra_embeddings_dir)) in _identity(config_instance.extra_embeddings_roots)
 
 
 def test_apply_library_settings_without_extra_paths(monkeypatch, tmp_path):
@@ -617,12 +636,12 @@ def test_apply_library_settings_without_extra_paths(monkeypatch, tmp_path):
 
     config_instance.apply_library_settings(library_config)
 
-    assert str(loras_dir) in config_instance.loras_roots
-    assert config_instance.extra_loras_roots == []
-    assert str(checkpoints_dir) in config_instance.base_models_roots
-    assert config_instance.extra_checkpoints_roots == []
-    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
-    assert config_instance.extra_embeddings_roots == []
+    assert _identity(str(loras_dir)) in _identity(config_instance.loras_roots)
+    assert _identity(config_instance.extra_loras_roots) == _identity([])
+    assert _identity(str(checkpoints_dir)) in _identity(config_instance.base_models_roots)
+    assert _identity(config_instance.extra_checkpoints_roots) == _identity([])
+    assert _identity(str(embeddings_dir)) in _identity((config_instance.embeddings_roots or []))
+    assert _identity(config_instance.extra_embeddings_roots) == _identity([])
 
 
 def test_extra_paths_deduplication(monkeypatch, tmp_path):
@@ -654,8 +673,8 @@ def test_extra_paths_deduplication(monkeypatch, tmp_path):
 
     config_instance.apply_library_settings(library_config)
 
-    assert config_instance.loras_roots == [str(loras_dir)]
-    assert config_instance.extra_loras_roots == [str(extra_loras_dir)]
+    assert _identity(config_instance.loras_roots) == _identity([str(loras_dir)])
+    assert _identity(config_instance.extra_loras_roots) == _identity([str(extra_loras_dir)])
 
 
 def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_symlink(
@@ -687,8 +706,8 @@ def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_syml
     with caplog.at_level("WARNING", logger=config_module.logger.name):
         config_instance.apply_library_settings(library_config)
 
-    assert config_instance.loras_roots == [str(loras_link)]
-    assert config_instance.extra_loras_roots == []
+    assert _identity(config_instance.loras_roots) == _identity([str(loras_link)])
+    assert _identity(config_instance.extra_loras_roots) == _identity([])
 
     warning_messages = [
         record.message
@@ -764,8 +783,8 @@ def test_apply_library_settings_detects_overlap_case_insensitively(
     with caplog.at_level("WARNING", logger=config_module.logger.name):
         config_instance.apply_library_settings(library_config)
 
-    assert config_instance.loras_roots == [primary_path]
-    assert config_instance.extra_loras_roots == []
+    assert _identity(config_instance.loras_roots) == _identity([primary_path])
+    assert _identity(config_instance.extra_loras_roots) == _identity([])
     assert any("same lora folder" in record.message.lower() for record in caplog.records)
 
 
@@ -794,8 +813,8 @@ def test_apply_library_settings_ignores_missing_extra_lora_paths(monkeypatch, tm
     with caplog.at_level("WARNING", logger=config_module.logger.name):
         config_instance.apply_library_settings(library_config)
 
-    assert config_instance.loras_roots == [str(loras_dir)]
-    assert config_instance.extra_loras_roots == []
+    assert _identity(config_instance.loras_roots) == _identity([str(loras_dir)])
+    assert _identity(config_instance.extra_loras_roots) == _identity([])
     assert not any("same lora folder" in record.message.lower() for record in caplog.records)
 
 
@@ -829,8 +848,8 @@ def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_root
     with caplog.at_level("WARNING", logger=config_module.logger.name):
         config_instance.apply_library_settings(library_config)
 
-    assert config_instance.loras_roots == [str(loras_dir)]
-    assert config_instance.extra_loras_roots == []
+    assert _identity(config_instance.loras_roots) == _identity([str(loras_dir)])
+    assert _identity(config_instance.extra_loras_roots) == _identity([])
     assert any(
         "same lora folder" in record.message.lower()
         for record in caplog.records
@@ -905,3 +924,260 @@ def test_save_paths_removes_stale_empty_default_when_comfyui_exists(
     assert name == "comfyui"
     assert payload["activate"] is True
     assert fake_settings.active_library == "comfyui"
+
+
+def test_save_paths_keeps_configured_root_of_a_switched_off_drive(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """A root whose directory is missing right now must stay in the library.
+
+    `upsert_library(folder_paths=...)` replaces the stored paths, so persisting
+    the existence-filtered live list would erase a drive that happened to be
+    switched off when ComfyUI started. A path the host no longer configures must
+    still be dropped.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    switched_off = str(tmp_path / "drive-Z" / "loras")
+    removed_by_user = str(tmp_path / "old-location" / "loras")
+    # The host still configures the switched-off drive; it no longer configures
+    # the old location (that one only survives in the stored library paths).
+    folder_paths["loras"] = [switched_off, readable]
+
+    class FakeSettingsService:
+        active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
+
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {
+                        "loras": [removed_by_user, readable],
+                        "checkpoints": [],
+                        "unet": [],
+                        "embeddings": [],
+                    },
+                    "default_lora_root": switched_off,
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def get_active_library_name(self):
+            return self.active_library
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_instance = config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    # The switched-off drive keeps its configured path...
+    assert _identity(switched_off.replace("\\", "/")) in _identity(persisted)
+    assert _identity(readable.replace("\\", "/")) in _identity(persisted)
+    # ...the path the host really dropped is gone...
+    assert _identity(removed_by_user.replace("\\", "/")) not in _identity(persisted)
+    # ...and the live list still only holds what is readable right now.
+    assert _identity(config_instance.loras_roots) == _identity([readable.replace("\\", "/")])
+    # The user's default root survives because it is merely unavailable.
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(switched_off.replace("\\", "/"))
+
+
+# --- roots the host registered but never created (issue #1146) --------------
+
+
+class _FakePersistentCache:
+    """Stand-in for PersistentModelCache in the startup sync."""
+
+    def __init__(self, cached_roots=None, error: Exception | None = None):
+        self._cached_roots = cached_roots or {}
+        self._error = error
+        self.queries: List[tuple] = []
+
+    def roots_with_cached_entries(self, model_type: str, roots):
+        self.queries.append((model_type, list(roots)))
+        if self._error is not None:
+            raise self._error
+        known = {path.replace("\\", "/") for path in self._cached_roots.get(model_type, [])}
+        return {
+            root for root in roots if root.replace("\\", "/") in known
+        }
+
+
+def _stub_persistent_cache(monkeypatch: pytest.MonkeyPatch, cache) -> None:
+    from py.services import persistent_model_cache as persistent_model_cache_module
+
+    monkeypatch.setattr(
+        persistent_model_cache_module, "get_persistent_cache", lambda: cache
+    )
+
+
+class _LibrarySettingsService:
+    """Minimal settings service recording what the startup sync persists."""
+
+    active_library = "comfyui"
+
+    def __init__(self, library: Dict[str, Any]):
+        self._library = library
+        self.payload: Dict[str, Any] = {}
+
+    def get_libraries(self):
+        return {"comfyui": self._library}
+
+    def rename_library(self, *_):  # pragma: no cover - defensive guard
+        raise AssertionError("rename_library should not be invoked")
+
+    def delete_library(self, *_):  # pragma: no cover - defensive guard
+        raise AssertionError("delete_library should not be invoked")
+
+    def get_active_library_name(self):
+        return self.active_library
+
+    def upsert_library(self, name: str, **payload):
+        self.payload = payload
+
+
+def test_save_paths_drops_registered_directories_that_never_existed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """ComfyUI registers `<output>/<type>` for its save nodes unconditionally.
+
+    Those directories are not library paths when they do not exist and hold no
+    cached models: persisting them brings them back as "unavailable" roots on
+    every boot.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    unet_dir = tmp_path / "unet"
+    unet_dir.mkdir()
+    folder_paths["unet"] = [str(unet_dir)]
+    output_loras = str(tmp_path / "output" / "loras")
+    output_checkpoints = str(tmp_path / "output" / "checkpoints")
+    output_unet = str(tmp_path / "output" / "diffusion_models")
+    output_embeddings = str(tmp_path / "output" / "embeddings")
+    folder_paths["loras"].append(output_loras)
+    folder_paths["checkpoints"].append(output_checkpoints)
+    folder_paths["unet"].append(output_unet)
+    folder_paths["embeddings"].append(output_embeddings)
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+            "default_lora_root": folder_paths["loras"][0],
+            "default_checkpoint_root": folder_paths["checkpoints"][0],
+            "default_embedding_root": folder_paths["embeddings"][0],
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    cache = _FakePersistentCache()
+    _stub_persistent_cache(monkeypatch, cache)
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]
+    for key, never_created in (
+        ("loras", output_loras),
+        ("checkpoints", output_checkpoints),
+        ("unet", output_unet),
+        ("embeddings", output_embeddings),
+    ):
+        assert _identity(never_created.replace("\\", "/")) not in _identity(persisted[key]), key
+        # The real root of that key is untouched.
+        assert _identity(folder_paths[key][0].replace("\\", "/")) in _identity(persisted[key]), key
+    # Lora and checkpoint roots are looked up in their own model type.
+    assert [model_type for model_type, _roots in cache.queries] == [
+        "lora",
+        "checkpoint",
+        "checkpoint",
+        "embedding",
+    ]
+
+
+def test_save_paths_keeps_an_unavailable_root_that_has_cached_models(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """A switched-off drive keeps its path: its models are still cached."""
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    switched_off = str(tmp_path / "drive-Z" / "loras")
+    folder_paths["loras"] = [readable, switched_off]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"loras": [readable]},
+            "default_lora_root": readable,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(
+        monkeypatch, _FakePersistentCache({"lora": [switched_off]})
+    )
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    assert _identity(switched_off.replace("\\", "/")) in _identity(persisted)
+    assert _identity(readable.replace("\\", "/")) in _identity(persisted)
+
+
+def test_save_paths_keeps_every_root_when_the_cache_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """No answer from the cache means no root is dropped."""
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    readable = folder_paths["loras"][0]
+    unknown = str(tmp_path / "drive-Z" / "loras")
+    folder_paths["loras"] = [readable, unknown]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"loras": [readable]},
+            "default_lora_root": readable,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(
+        monkeypatch, _FakePersistentCache(error=FileNotFoundError("no cache"))
+    )
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["loras"]
+    assert _identity(unknown.replace("\\", "/")) in _identity(persisted)
+
+
+def test_save_paths_keeps_the_root_a_default_setting_points_at(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """An empty unavailable default root must not be dropped.
+
+    Dropping it would let the next boot "repair" the default onto another root and
+    silently retarget downloads. ``default_unet_root`` is only known from the
+    stored library (the sync resolves the lora/checkpoint/embedding ones itself),
+    so this covers the fallback to the stored value.
+    """
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    unet_dir = tmp_path / "unet"
+    unet_dir.mkdir()
+    default_target = str(tmp_path / "drive-Z" / "unet")
+    folder_paths["unet"] = [str(unet_dir), default_target]
+
+    fake_settings = _LibrarySettingsService(
+        {
+            "folder_paths": {"unet": [str(unet_dir)]},
+            "default_unet_root": default_target,
+        }
+    )
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    _stub_persistent_cache(monkeypatch, _FakePersistentCache())
+
+    config_module.Config()
+
+    persisted = fake_settings.payload["folder_paths"]["unet"]
+    assert _identity(default_target.replace("\\", "/")) in _identity(persisted)
+    assert _identity(str(unet_dir).replace("\\", "/")) in _identity(persisted)

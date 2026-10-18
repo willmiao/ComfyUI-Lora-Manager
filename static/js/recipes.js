@@ -10,7 +10,7 @@ import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll, recreateVirtualScroll } from './utils/infiniteScroll.js';
 import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
-import { initSortDropdown } from './components/controls/SortDropdown.js';
+import { initSortDropdown, applySortToSelect, randomizeSortValue } from './components/controls/SortDropdown.js';
 
 class RecipePageControls {
     constructor() {
@@ -245,10 +245,20 @@ class RecipeManager {
                 this.pageState.sortBy = savedSort;
             }
             initSortDropdown(sortSelect);
-            sortSelect.value = this.pageState.sortBy || 'date:desc';
+            applySortToSelect(this.pageState.sortBy || 'date:desc');
             sortSelect.addEventListener('change', () => {
-                this.pageState.sortBy = sortSelect.value;
-                setStorageItem('recipes_sort', sortSelect.value);
+                let value = sortSelect.value;
+                if (value.startsWith('random')) {
+                    // Every pick of Random reshuffles the list: generate a
+                    // fresh seed so the backend keeps a stable order across
+                    // paginated requests.
+                    value = randomizeSortValue();
+                }
+                this.pageState.sortBy = value;
+                setStorageItem('recipes_sort', value);
+                // Reset the seeded Random option when switching away from
+                // Random, or re-apply the fresh seed when picking it again.
+                applySortToSelect(value);
                 refreshVirtualScroll();
             });
         }
@@ -269,6 +279,30 @@ class RecipeManager {
                 this.pageState.showFavoritesOnly = !this.pageState.showFavoritesOnly;
                 favoriteFilterBtn.classList.toggle('active', this.pageState.showFavoritesOnly);
                 refreshVirtualScroll();
+            });
+        }
+
+        // Layout toggle (grid / masonry) — shares the recipes_layout setting with
+        // the settings modal segmented control; active states stay in sync via
+        // settingsManager.updateRecipesLayoutControls() after each save
+        const layoutToggleBtns = document.querySelectorAll('.layout-toggle-btn');
+        if (layoutToggleBtns.length) {
+            const currentLayout = state.global.settings?.recipes_layout || 'grid';
+            layoutToggleBtns.forEach((btn) => {
+                const isActive = btn.dataset.recipesLayout === currentLayout;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-pressed', String(isActive));
+                btn.addEventListener('click', async () => {
+                    const layout = btn.dataset.recipesLayout;
+                    if ((state.global.settings?.recipes_layout || 'grid') === layout) {
+                        return;
+                    }
+                    try {
+                        await window.settingsManager?.saveRecipesLayout(layout);
+                    } catch (error) {
+                        console.error('Failed to switch recipes layout:', error);
+                    }
+                });
             });
         }
 

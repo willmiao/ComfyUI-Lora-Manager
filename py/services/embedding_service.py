@@ -51,6 +51,8 @@ class EmbeddingService(BaseModelService):
             "base_model": model_data.get("base_model", ""),
             "folder": folder,
             "sha256": model_data.get("sha256", ""),
+            "autov3": model_data.get("autov3"),
+            "quantization": model_data.get("quantization"),
             "file_path": file_path.replace(os.sep, "/"),
             "file_size": model_data.get("size", 0),
             "modified": model_data.get("modified", ""),
@@ -66,6 +68,10 @@ class EmbeddingService(BaseModelService):
             "civitai": self.filter_civitai_data(model_data.get("civitai", {}), minimal=True),
             "auto_tags": model_data.get("auto_tags") or extract_auto_tags(model_data),
             "version_count": model_data.get("version_count"),
+            "source_platform": model_data.get("source_platform", ""),
+            "source_url": model_data.get("source_url", ""),
+            "source_model_id": model_data.get("source_model_id", ""),
+            "source_version_id": model_data.get("source_version_id", ""),
             "hf_url": model_data.get("hf_url", ""),
         }
     

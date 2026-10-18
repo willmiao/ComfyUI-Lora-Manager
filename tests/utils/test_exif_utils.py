@@ -65,6 +65,69 @@ def test_append_recipe_metadata_includes_checkpoint(monkeypatch, tmp_path):
     assert payload["base_model"] == "Illustrious"
 
 
+def test_append_recipe_metadata_pixel_preserving_webp(tmp_path):
+    """pixel_preserving=True must rewrite only the EXIF chunk of a WebP,
+    leaving the pixel chunks byte-identical and the old block replaced."""
+    img = Image.new("RGB", (64, 48), (120, 30, 200))
+    original_params = (
+        "masterpiece, best quality\n"
+        "Negative prompt: lowres\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 1, "
+        "Size: 512x768, Model hash: abc123, Model: foo_v1, Clip skip: 2\n"
+        ' Recipe metadata: {"title": "Old", "loras": []}'
+    )
+    exif = piexif.dump(
+        {
+            "0th": {},
+            "Exif": {
+                piexif.ExifIFD.UserComment: b"UNICODE\x00"
+                + original_params.encode("utf-16be")
+            },
+        }
+    )
+    image_path = tmp_path / "recipe.webp"
+    img.save(str(image_path), format="WEBP", exif=exif, quality=85)
+
+    with open(image_path, "rb") as fh:
+        before = fh.read()
+
+    new_recipe = {
+        "title": "New",
+        "base_model": "SDXL",
+        "loras": [],
+        "gen_params": {"steps": 25},
+    }
+    ExifUtils.append_recipe_metadata(
+        str(image_path), new_recipe, pixel_preserving=True
+    )
+
+    with open(image_path, "rb") as fh:
+        after = fh.read()
+
+    def chunks(data: bytes) -> Dict[bytes, bytes]:
+        pos, result = 12, {}
+        while pos + 8 <= len(data):
+            fourcc = data[pos : pos + 4]
+            size = int.from_bytes(data[pos + 4 : pos + 8], "little")
+            result[fourcc] = data[pos + 8 : pos + 8 + size]
+            pos += 8 + size + (size % 2)
+        return result
+
+    before_chunks = chunks(before)
+    after_chunks = chunks(after)
+    for fourcc, payload in before_chunks.items():
+        if fourcc == b"EXIF":
+            assert after_chunks[fourcc] != payload, "EXIF must be replaced"
+        else:
+            assert after_chunks[fourcc] == payload, f"{fourcc} was re-encoded"
+
+    # The appended block is updated; the original parameters stay in front.
+    metadata = ExifUtils.extract_image_metadata(str(image_path))
+    assert "Steps: 20" in metadata
+    assert 'Recipe metadata: {"title": "New"' in metadata
+    assert '"title": "Old"' not in metadata
+
+
 def test_optimize_image_preserves_workflow_when_converting_png_to_webp(tmp_path):
     image_path = tmp_path / "source.png"
     png_info = PngImagePlugin.PngInfo()
@@ -146,6 +209,104 @@ def test_update_image_metadata_preserves_png_workflow(tmp_path):
             img.info["parameters"]
             == 'prompt text\nRecipe metadata: {"title":"recipe"}'
         )
+
+
+def test_optimize_image_embeds_supplied_workflow_when_source_has_none(tmp_path):
+    """Import paths hand the workflow over as data when the preview source is
+    metadata-free (CivitAI's optimized rendition); optimize_image must embed
+    it while re-encoding, otherwise the recipe loses has_workflow."""
+    image_path = tmp_path / "optimized.webp"
+    Image.new("RGB", (64, 32), color="red").save(image_path, format="WEBP", quality=85)
+
+    workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow=workflow,
+    )
+
+    optimized_path = tmp_path / f"embedded{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_optimize_image_keeps_source_workflow_over_supplied(tmp_path):
+    image_path = tmp_path / "source.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":7}]}')
+    Image.new("RGB", (64, 32), color="red").save(image_path, pnginfo=png_info)
+
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow={"nodes": [{"id": 1}]},
+    )
+
+    optimized_path = tmp_path / f"sourcewins{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == '{"nodes":[{"id":7}]}'
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_webp(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (32, 32), color="blue").save(image_path, format="WEBP", quality=85)
+
+    workflow = json.dumps({"nodes": [{"id": 1}]})
+    returned = ExifUtils.embed_workflow(str(image_path), workflow)
+
+    assert returned == str(image_path)
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == workflow
+    with Image.open(image_path) as img:
+        assert img.size == (32, 32)
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_png(tmp_path):
+    image_path = tmp_path / "preview.png"
+    Image.new("RGB", (32, 32), color="blue").save(image_path)
+
+    workflow = {"nodes": [{"id": 3}]}
+    ExifUtils.embed_workflow(str(image_path), workflow)
+
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_embed_workflow_leaves_existing_workflow_untouched(tmp_path):
+    image_path = tmp_path / "preview.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":9}]}')
+    Image.new("RGB", (32, 32), color="green").save(image_path, pnginfo=png_info)
+
+    ExifUtils.embed_workflow(str(image_path), {"nodes": [{"id": 1}]})
+
+    with Image.open(image_path) as img:
+        assert img.info["workflow"] == '{"nodes":[{"id":9}]}'
+
+
+def test_embed_workflow_ignores_unsupported_payloads_and_containers(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (16, 16), color="black").save(image_path, format="WEBP")
+
+    # Nothing to embed / unsupported payload types are no-ops.
+    assert ExifUtils.embed_workflow(str(image_path), None) == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), "") == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), 123) == str(image_path)
+    assert ExifUtils._load_structured_metadata(str(image_path))["workflow"] is None
+
+    video_path = tmp_path / "clip.mp4"
+    video_path.write_bytes(b"video")
+    assert ExifUtils.embed_workflow(str(video_path), {"nodes": []}) == str(video_path)
 
 
 # --- ISOBMFF / brotli extraction tests ---

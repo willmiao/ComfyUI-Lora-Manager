@@ -54,7 +54,18 @@ class PreviewHandler:
 
         if not resolved.is_file():
             logger.debug("Preview file not found at %s", str(resolved))
-            asyncio.create_task(self._cleanup_stale_preview_url(normalized))
+            if resolved.parent.is_dir():
+                # The file is really gone from a reachable directory, so the
+                # cached preview_url is stale and can be cleared.
+                asyncio.create_task(self._cleanup_stale_preview_url(normalized))
+            else:
+                # The directory itself is unreachable (drive switched off,
+                # unmounted share). Nothing was deleted: keep the cached
+                # preview_url so the card recovers when the drive is back.
+                logger.debug(
+                    "Preview directory unreachable, keeping cached preview_url: %s",
+                    str(resolved.parent),
+                )
             raise web.HTTPNotFound(text="Preview file not found")
 
         # aiohttp's FileResponse handles range requests, content headers, and

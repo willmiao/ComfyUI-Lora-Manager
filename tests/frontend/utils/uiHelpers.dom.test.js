@@ -110,6 +110,170 @@ describe('UI helper DOM utilities', () => {
     expect(toast.classList.contains('show')).toBe(false);
   });
 
+  it('renders an action button and countdown span for action toasts', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', { name: 'Demo Model' }, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.classList.contains('toast-success')).toBe(true);
+    expect(translateMock).toHaveBeenCalledWith('toast.undo.deleted', { name: 'Demo Model' });
+
+    const button = toast.querySelector('.toast-action-btn');
+    expect(button).not.toBeNull();
+    expect(button.textContent).toBe('Undo');
+
+    const countdown = toast.querySelector('.toast-countdown');
+    expect(countdown).not.toBeNull();
+    expect(countdown.textContent).toBe('(20s)');
+
+    // Ticking one second updates the countdown text
+    vi.advanceTimersByTime(1000);
+    expect(countdown.textContent).toBe('(19s)');
+
+    // Drain remaining timers so no state leaks into other tests
+    vi.advanceTimersByTime(20000);
+  });
+
+  it('invokes onAction once and dismisses immediately when the button is clicked', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    toast.querySelector('.toast-action-btn').click();
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toast.classList.contains('show')).toBe(false);
+
+    // Dismissal removes the element after the transition ends
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
+    expect(document.querySelector('.toast-container')).toBeNull();
+  });
+
+  it('calls onAction exactly once when the button is double-clicked', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const button = document.querySelector('.toast-action-btn');
+    button.click();
+    button.click();
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismisses the toast via the close button without firing onAction', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    toast.querySelector('.toast-close-btn').click();
+
+    expect(onAction).not.toHaveBeenCalled();
+    expect(toast.classList.contains('show')).toBe(false);
+
+    // Advancing past the full duration must not tick the countdown further,
+    // throw, or re-dismiss the already-dismissed toast
+    vi.advanceTimersByTime(60000);
+    expect(countdown.textContent).toBe('(20s)');
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
+  });
+
+  it('dismisses the toast when the countdown reaches zero', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+    // Async RAF mirrors production ordering: the countdown interval is
+    // registered before the dismiss timeout, so the final tick displays (0s)
+    globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction: vi.fn(),
+      durationMs: 3000,
+    });
+
+    vi.advanceTimersByTime(0); // Flush the RAF callback
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    expect(countdown.textContent).toBe('(3s)');
+
+    vi.advanceTimersByTime(2000);
+    expect(countdown.textContent).toBe('(1s)');
+    expect(toast.classList.contains('show')).toBe(true);
+
+    vi.advanceTimersByTime(1000);
+    expect(countdown.textContent).toBe('(0s)');
+    expect(toast.classList.contains('show')).toBe(false);
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
+  });
+
+  it('clears the countdown interval when dismissed via the action button', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+      durationMs: 30000,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    toast.querySelector('.toast-action-btn').click();
+
+    // Advancing past the full duration must not tick the countdown further,
+    // throw, or re-dismiss the already-dismissed toast
+    vi.advanceTimersByTime(60000);
+    expect(countdown.textContent).toBe('(30s)');
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toast.classList.contains('show')).toBe(false);
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container')).toBeNull();
+  });
+
   it('toggles the persisted theme and updates DOM attributes', async () => {
     getStorageItemMock.mockReturnValue('light');
     document.body.innerHTML = '<button class="theme-toggle"></button>';
@@ -177,6 +341,432 @@ describe('UI helper DOM utilities', () => {
       '#1 Root Loader',
       '#2 (Character Subgraph) Nested Loader',
     ]);
+  });
+
+  it('excludes prompt targets whose text widget is connected to an input', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 4,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Free Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: false,
+              widget_names: ['text', 'clip'],
+            },
+          },
+          'root:2': {
+            id: 2,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+          'root:3': {
+            id: 3,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked But Wired',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: true,
+              widget_names: ['seed'],
+            },
+          },
+          'root:4': {
+            id: 4,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Free Text 2',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: false,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(true);
+
+    const nodeLabels = Array.from(
+      document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+    ).map((span) => span.textContent.trim());
+
+    expect(nodeLabels).toEqual(['#1 Free Text', '#4 Free Text 2']);
+  });
+
+  it('returns false when the only prompt target has its text widget connected', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 1,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+    translateMock.mockReturnValue(
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(false);
+    expect(document.querySelectorAll('#nodeSelector .node-item').length).toBe(0);
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toContain('Mark as');
+    expect(toast.textContent).toContain('Send Prompt Target');
+  });
+
+  it('shows the mark-as hint when no embedding target is available', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 1,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+    translateMock.mockReturnValue(
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+
+    const { sendEmbeddingToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendEmbeddingToWorkflow('embeddingcode');
+
+    expect(result).toBe(false);
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toContain('Send Prompt Target');
+  });
+
+  it('keeps unconnected marker targets in the prompt candidate list', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 2,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked Target',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: false,
+              widget_names: ['seed'],
+            },
+          },
+          'root:2': {
+            id: 2,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked Target 2',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: false,
+              widget_names: ['seed'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(true);
+
+    const nodeLabels = Array.from(
+      document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+    ).map((span) => span.textContent.trim());
+
+    expect(nodeLabels).toEqual(['#1 Marked Target', '#2 Marked Target 2']);
+  });
+
+  it('hides node classes listed in send_to_workflow_exclusions', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: ['PulIDFluxModelLoader'],
+          title_patterns: [],
+        },
+      },
+    };
+
+    const makeLoaderNode = (id, title, comfyClass) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 0,
+      type_name: comfyClass,
+      comfy_class: comfyClass,
+      mode: 0,
+      marker_role: null,
+      capabilities: { widget_names: ['ckpt_name'] },
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 3,
+        nodes: {
+          'root:1': makeLoaderNode(1, 'Main Checkpoint', 'CheckpointLoaderSimple'),
+          'root:2': makeLoaderNode(2, 'Auxiliary Loader', 'PulIDFluxModelLoader'),
+          'root:3': makeLoaderNode(3, 'Backup Checkpoint', 'CheckpointLoaderSimple'),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendModelPathToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      const result = await sendModelPathToWorkflow('foo/model.safetensors', {
+        widgetName: 'ckpt_name',
+      });
+
+      expect(result).toBe(true);
+
+      const nodeLabels = Array.from(
+        document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+      ).map((span) => span.textContent.trim());
+
+      expect(nodeLabels).toEqual(['#1 Main Checkpoint', '#3 Backup Checkpoint']);
+    } finally {
+      delete state.global;
+    }
+  });
+
+  it('hides nodes whose title matches an exclusion pattern (case-insensitive)', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: [],
+          title_patterns: ['negative'],
+        },
+      },
+    };
+
+    const makeTextNode = (id, title) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 'CLIPTextEncode',
+      comfy_class: 'CLIPTextEncode',
+      mode: 0,
+      marker_role: null,
+      capabilities: {
+        has_text_widget: true,
+        text_widget_connected: false,
+        widget_names: ['text', 'clip'],
+      },
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 2,
+        nodes: {
+          'root:1': makeTextNode(1, 'Positive Prompt'),
+          'root:2': makeTextNode(2, 'Negative Prompt'),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      await sendPromptToWorkflow('a cat');
+
+      const nodeLabels = Array.from(
+        document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+      ).map((span) => span.textContent.trim());
+
+      expect(nodeLabels).toEqual([]);
+      // Single remaining target sends directly without opening the selector.
+      const sendCalls = global.fetch.mock.calls.filter(
+        ([url]) => url === '/api/lm/update-node-widget'
+      );
+      expect(sendCalls).toHaveLength(1);
+    } finally {
+      delete state.global;
+    }
+  });
+
+  it('keeps explicitly marked nodes exempt from global exclusions, while per-node exclusion always wins', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: ['KSampler'],
+          title_patterns: [],
+        },
+      },
+    };
+
+    const makeNode = (id, title, overrides = {}) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 'KSampler',
+      comfy_class: 'KSampler',
+      mode: 0,
+      marker_role: null,
+      capabilities: {
+        has_text_widget: false,
+        text_widget_connected: false,
+        widget_names: ['seed'],
+      },
+      ...overrides,
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 3,
+        nodes: {
+          // Class is excluded, but the explicit marker wins.
+          'root:1': makeNode(1, 'Marked Target', { marker_role: 'send_prompt_target' }),
+          // No marker: filtered out by the class exclusion.
+          'root:2': makeNode(2, 'Plain KSampler'),
+          // Marker present, but per-node exclusion beats everything.
+          'root:3': makeNode(3, 'Marked But Excluded', {
+            marker_role: 'send_prompt_target',
+            exclude_send: true,
+          }),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      await sendPromptToWorkflow('a cat');
+
+      // Only node 1 survives → single-target direct send, no selector.
+      const sendCalls = global.fetch.mock.calls.filter(
+        ([url]) => url === '/api/lm/update-node-widget'
+      );
+      expect(sendCalls).toHaveLength(1);
+      const body = JSON.parse(sendCalls[0][1].body);
+      expect(body.node_ids).toEqual([{ node_id: 1, graph_id: 'root' }]);
+    } finally {
+      delete state.global;
+    }
   });
 
   it('opens Civitai links using the preferred host and registers the first-use banner once', async () => {

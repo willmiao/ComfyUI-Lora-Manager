@@ -3,9 +3,10 @@ import importlib.util
 import inspect
 import sys
 import types
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 from unittest import mock
 
 import pytest
@@ -177,6 +178,10 @@ class MockScanner:
     def reset_cancellation(self) -> None:
         self._cancelled = False
 
+    @asynccontextmanager
+    async def defer_cache_persist(self) -> AsyncIterator[None]:
+        yield None
+
     async def get_cached_data(self, force_refresh: bool = False):
         return self._cache
 
@@ -331,6 +336,21 @@ def mock_websocket_manager():
             return [p for p in self.payloads if p.get("type") == msg_type]
 
     return RecordingWebSocketManager()
+
+
+@pytest.fixture(autouse=True)
+def reset_media_dimension_caches():
+    """Clear path-keyed dimension caches so files reused across tests re-probe."""
+    from py.utils.exif_utils import _get_image_dimensions_cached
+    from py.utils.video_metadata import _clear_video_dimensions_cache
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
+
+    yield
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
 
 
 @pytest.fixture(autouse=True)

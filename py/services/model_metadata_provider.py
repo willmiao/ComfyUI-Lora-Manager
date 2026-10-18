@@ -66,6 +66,14 @@ class _RateLimitRetryHelper:
             except RateLimitError as exc:
                 attempt += 1
 
+                # The downloader's rate-limit gate already applied the wait
+                # policy for this request (waited out the vendor window or
+                # deliberately refused because it exceeds the cap). Sleeping
+                # again here would double the wait — just propagate.
+                if getattr(exc, "gate_handled", False):
+                    exc.provider = exc.provider or label
+                    raise
+
                 # Determine effective retry limit based on rate-limit magnitude
                 effective_retry_limit = self._retry_limit  # default: 3
                 if exc.retry_after is not None and exc.retry_after >= 120.0:
@@ -100,6 +108,15 @@ class _RateLimitRetryHelper:
             base_delay += random.uniform(-jitter_span, jitter_span)
 
         return min(self._max_delay, max(0.0, base_delay))
+
+
+# Labels of providers that are free to consult even while a network provider
+# is rate-limited (local lookups, no vendor cost).
+# "openmodeldb_api" qualifies because its lookups hit a local index built from
+# a cached bulk dump; the underlying site is a static host (GitHub Pages), so
+# even a cold cache refresh is a single cheap GET against a different vendor.
+_LOCAL_PROVIDER_LABELS = frozenset({"sqlite", "openmodeldb_api"})
+
 
 class ModelMetadataProvider(ABC):
     """Base abstract class for all model metadata providers"""
@@ -155,6 +172,28 @@ class ModelMetadataProvider(ABC):
         """Published model count for the user; None when unsupported."""
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch raw stored file info via CivitAI's model-versions/mini endpoint.
+
+        Only the CivitAI provider implements this (#1100); other providers
+        already serve raw file names (CivArchive) or cannot resolve this
+        lookup (SQLite), so the default is None.
+        """
+        return None
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        """Fetch per-version buzz prices for a model, when the provider has them.
+
+        CivitAI publishes prices only inside its public model page payload;
+        providers that cannot read it (CivArchive, SQLite, OpenModelDB) keep the
+        default of None, which callers treat as "no price information".
+        """
+        return None
+
 class CivitaiModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses Civitai API for metadata"""
     
@@ -189,6 +228,16 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
     async def get_creator_model_count(self, username: str) -> Optional[int]:
         return await self.client.get_creator_model_count(username)
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        return await self.client.get_version_file_mini(version_id, file_id)
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        return await self.client.get_model_prices(model_id)
+
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive API for metadata"""
     
@@ -210,6 +259,10 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Not supported by CivArchive provider"""
         return None
+
+    def pop_foreign_source_ref(self, model_hash: str) -> Any:
+        """Foreign source ref (e.g. ModelScope) recorded during the hash lookup"""
+        return self.client.pop_foreign_source_ref(model_hash)
 
 class SQLiteModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses SQLite database for metadata"""
@@ -450,8 +503,45 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
         except json.JSONDecodeError:
             return None
         
+class OpenModelDBModelMetadataProvider(ModelMetadataProvider):
+    """Provider that serves upscaler metadata from the OpenModelDB catalogue.
+
+    Only hash lookups are supported: OpenModelDB has no per-model or version
+    API, so the remaining provider surface intentionally returns None and lets
+    the fallback chain continue to the next provider.
+    """
+
+    def __init__(self, openmodeldb_client):
+        self.client = openmodeldb_client
+
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        return await self.client.get_model_by_hash(model_hash)
+
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Not supported: OpenModelDB models have no version history API."""
+        return None
+
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+        """Not supported: OpenModelDB models have no version history API."""
+        return None
+
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        """Not supported: OpenModelDB models have no version history API."""
+        return None, "Model not found"
+
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Not supported by the OpenModelDB provider."""
+        return None
+
 class FallbackMetadataProvider(ModelMetadataProvider):
-    """Try providers in order, return first successful result."""
+    """Try providers in order, return first successful result.
+
+    Rate-limit policy (#1085): once a *network* provider raises
+    ``RateLimitError``, the chain stops consulting further network providers —
+    failing over would just spread the flood to the next vendor. Local-only
+    providers (see ``_LOCAL_PROVIDER_LABELS``) are still allowed as a last
+    resort because they cost the vendor nothing.
+    """
 
     def __init__(
         self,
@@ -486,7 +576,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         )
 
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result, error = await self._call_with_rate_limit(
                     label,
@@ -496,8 +589,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result, error
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -505,11 +599,18 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_by_hash: %s", label, e)
                 continue
+        if rate_limited:
+            # Distinct from "Model not found": callers must not mistake a
+            # rate-limited lookup for a confirmed deletion.
+            return None, "Rate limited"
         return None, "Model not found"
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         not_found_confirmed = False
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -519,8 +620,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -539,7 +641,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -550,8 +655,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -562,7 +668,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result, error = await self._call_with_rate_limit(
                     label,
@@ -572,8 +681,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result, error
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -581,12 +691,17 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_version_info: %s", label, e)
                 continue
+        if rate_limited:
+            return None, "Rate limited"
         return None, "No provider could retrieve the data"
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
     ) -> Optional[List[Dict[str, Any]]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -598,8 +713,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except NotImplementedError:
                 continue
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -614,7 +730,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -625,8 +744,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result is not None:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -649,8 +769,93 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        rate_limited = False
+        for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
+            try:
+                result = await self._call_with_rate_limit(
+                    label,
+                    provider.get_version_file_mini,
+                    version_id,
+                    file_id,
+                )
+                if result:
+                    return result
+            except RateLimitError as exc:
+                rate_limited = True
+                logger.warning(
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
+                    label,
+                    exc.retry_after or 0,
+                )
+                continue
+            except Exception as e:
+                logger.debug(
+                    "Provider %s failed for get_version_file_mini: %s", label, e
+                )
+                continue
+        return None
+
     def _iter_providers(self):
         return zip(self.providers, self._provider_labels)
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        rate_limited = False
+        for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
+            try:
+                result = await self._call_with_rate_limit(
+                    label,
+                    provider.get_model_prices,
+                    model_id,
+                )
+                if result:
+                    return result
+            except RateLimitError as exc:
+                rate_limited = True
+                logger.warning(
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
+                    label,
+                    exc.retry_after or 0,
+                )
+                continue
+            except Exception as e:
+                logger.debug("Provider %s failed for get_model_prices: %s", label, e)
+                continue
+        return None
+
+    def excluding(self, labels: "frozenset[str] | set[str]") -> "FallbackMetadataProvider":
+        """Return a copy of this chain without the providers named in *labels*.
+
+        Used by the metadata sync service to skip providers that cannot apply
+        to a given model (e.g. OpenModelDB only indexes upscalers), so their
+        cold-start cost (a bulk dump download) is never paid pointlessly.
+        """
+        kept = [
+            (label, provider)
+            for provider, label in self._iter_providers()
+            if label not in labels
+        ]
+        if len(kept) == len(self.providers):
+            return self
+        if not kept:
+            # Never produce an empty chain; the caller still needs a provider
+            # that can at least report "Model not found".
+            return self
+        return FallbackMetadataProvider(
+            kept,
+            rate_limit_retry_limit=self._rate_limit_retry_limit,
+            rate_limit_base_delay=self._rate_limit_base_delay,
+            rate_limit_max_delay=self._rate_limit_max_delay,
+            rate_limit_jitter_ratio=self._rate_limit_jitter_ratio,
+        )
 
     async def _call_with_rate_limit(self, label: str, func, *args, **kwargs):
         return await self._rate_limit_helper.run(label, func, *args, **kwargs)
@@ -739,6 +944,25 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
 
     async def get_creator_model_count(self, username: str) -> Optional[int]:
         return await self._provider.get_creator_model_count(username)
+
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        return await self._rate_limit_helper.run(
+            self._label,
+            self._provider.get_version_file_mini,
+            version_id,
+            file_id,
+        )
+
+    async def get_model_prices(
+        self, model_id: int
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
+        return await self._rate_limit_helper.run(
+            self._label,
+            self._provider.get_model_prices,
+            model_id,
+        )
 
 class ModelMetadataProviderManager:
     """Manager for selecting and using model metadata providers"""

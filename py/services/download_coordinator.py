@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 
 from .downloader import DownloadProgress
 
@@ -83,10 +83,13 @@ class DownloadCoordinator:
             save_dir=payload.get("model_root"),
             relative_path=payload.get("relative_path", ""),
             use_default_paths=payload.get("use_default_paths", False),
+            use_save_dir_as_root=payload.get("use_save_dir_as_root", False),
             progress_callback=progress_callback,
             download_id=download_id,
             source=payload.get("source"),
-            file_params=payload.get("file_params"),
+            # Normalize falsy file_params (e.g. {}) to None so download gates
+            # treat it as "no explicit file selection" (#1058).
+            file_params=payload.get("file_params") or None,
         )
 
         result["download_id"] = download_id
@@ -182,6 +185,14 @@ class DownloadCoordinator:
 
         download_manager = await self._download_manager_factory()
         return await download_manager.get_active_downloads()
+
+    async def discard_cleared_downloads(self, download_ids: Iterable[str]) -> int:
+        """Tear down in-memory/aria2 tracking for queue-cleared downloads."""
+
+        if not download_ids:
+            return 0
+        download_manager = await self._download_manager_factory()
+        return await download_manager.discard_cleared_downloads(download_ids)
 
     def _parse_optional_int(self, value: Any, field: str) -> Optional[int]:
         """Parse an optional integer from user input."""

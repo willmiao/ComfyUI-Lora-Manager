@@ -1,0 +1,32 @@
+<!-- Directory Picker Modal (self-managed by DirectoryPickerModal.js, stacked above the settings modal) -->
+<div id="directoryPickerModal" class="modal directory-picker-modal" style="display: none;">
+    <div class="modal-content directory-picker-content">
+        <button class="close" id="directoryPickerCloseBtn">&times;</button>
+        <h3>{{ t('settings.directoryPicker.title') }}</h3>
+
+        <div class="directory-picker-path-row">
+            <input type="text" id="directoryPickerPathInput" placeholder="{{ t('settings.directoryPicker.pathPlaceholder') }}" autocomplete="off">
+            <button class="secondary-btn" id="directoryPickerGoBtn">
+                <i class="fas fa-arrow-right"></i> {{ t('settings.directoryPicker.go') }}
+            </button>
+        </div>
+
+        <div class="directory-browser" id="directoryPickerBrowser">
+            <div class="browser-header">
+                <button class="back-btn" id="directoryPickerUpBtn" title="{{ t('settings.directoryPicker.goUp') }}" disabled>
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+                <div class="current-path" id="directoryPickerCurrentPath"></div>
+            </div>
+            <div class="browser-content">
+                <div class="folder-list" id="directoryPickerFolderList"></div>
+                <div class="directory-picker-error" id="directoryPickerError" style="display: none;"></div>
+            </div>
+            <div class="browser-footer">
+                <button class="primary-btn" id="directoryPickerSelectBtn">
+                    <i class="fas fa-check"></i> {{ t('settings.directoryPicker.selectFolder') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

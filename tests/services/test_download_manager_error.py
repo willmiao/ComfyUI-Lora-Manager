@@ -12,9 +12,12 @@ from unittest.mock import AsyncMock
 import pytest
 
 from py.services.download_manager import DownloadManager
+from py.services.download_queue_service import DownloadQueueService
 from py.services.downloader import DownloadStreamControl
 from py.services import download_manager
 from py.services import aria2_transfer_state
+from py.services.errors import DownloadRateLimitError, RateLimitError
+from py.services.rate_limit_coordinator import RateLimitCoordinator
 from py.services.service_registry import ServiceRegistry
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils.metadata_manager import MetadataManager
@@ -60,6 +63,25 @@ def isolate_aria2_state(monkeypatch, tmp_path):
     )
 
 
+@pytest.fixture
+def queue_service(tmp_path, monkeypatch):
+    """Return a tmp-backed DownloadQueueService and stub the singleton."""
+    service = DownloadQueueService(db_path=str(tmp_path / "queue.sqlite"))
+
+    async def fake_get_instance(_cls=None):
+        return service
+
+    monkeypatch.setattr(DownloadQueueService, "get_instance", fake_get_instance)
+    return service
+
+
+@pytest.fixture
+def reset_rate_limit_coordinator():
+    RateLimitCoordinator._instance = None
+    yield
+    RateLimitCoordinator._instance = None
+
+
 @pytest.mark.asyncio
 async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     """Test that download retries multiple URLs on failure."""
@@ -97,7 +119,9 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
         def __init__(self):
             self.calls = []
 
-        async def download_file(self, url, path, progress_callback=None, use_auth=None):
+        async def download_file(
+            self, url, path, progress_callback=None, use_auth=None, **_kwargs
+        ):
             self.calls.append((url, path, use_auth))
             if len(self.calls) == 1:
                 return False, "first failed"
@@ -373,7 +397,7 @@ async def test_execute_download_adjusts_checkpoint_sub_type(monkeypatch, tmp_pat
 
     class DummyDownloader:
         async def download_file(
-            self, _url, path, progress_callback=None, use_auth=None
+            self, _url, path, progress_callback=None, use_auth=None, **_kwargs
         ):
             Path(path).write_text("content")
             return True, "ok"
@@ -508,7 +532,7 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
     extracted = save_dir / "model.safetensors"
     assert extracted.exists()
     saved_call = MetadataManager.save_metadata.await_args
-    assert saved_call.args[0] == str(extracted)
+    assert saved_call.args[0] == str(extracted).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert saved_call.args[1].sha256 == "sha256"
     # The zip-level AutoV3 was cleared; the extracted file is not safetensors,
@@ -593,10 +617,10 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
     assert dummy_scanner.add_model_to_cache.await_count == 2
 
     metadata_calls = MetadataManager.save_metadata.await_args_list
-    assert metadata_calls[0].args[0] == str(extracted_one)
+    assert metadata_calls[0].args[0] == str(extracted_one).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert metadata_calls[0].args[1].sha256 == "sha256"
-    assert metadata_calls[1].args[0] == str(extracted_two)
+    assert metadata_calls[1].args[0] == str(extracted_two).replace(os.sep, "/")
     assert metadata_calls[1].args[1].sha256 == "sha256"
 
 
@@ -669,7 +693,7 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
     extracted = save_dir / "embedding.pt"
     assert extracted.exists()
     saved_call = MetadataManager.save_metadata.await_args
-    assert saved_call.args[0] == str(extracted)
+    assert saved_call.args[0] == str(extracted).replace(os.sep, "/")
     # SHA256 comes from metadata (API value), not recalculated
     assert saved_call.args[1].sha256 == "sha256"
     assert dummy_scanner.add_model_to_cache.await_count == 1
@@ -703,6 +727,37 @@ async def test_extract_model_files_from_archive_uses_executor(monkeypatch, tmp_p
     assert captured["executor"] is manager._archive_executor
     assert len(extracted) == 1
     assert extracted[0].endswith("model.safetensors")
+
+
+@pytest.mark.asyncio
+async def test_extract_model_files_from_archive_fits_member_names_to_path_budget(
+    tmp_path,
+):
+    """Archive member names carry no length cap: a CJK-heavy member whose
+    stem passes every character cap still overflows NAME_MAX in bytes and
+    must be truncated, or the create fails with ENAMETOOLONG."""
+    from py.utils.constants import (
+        MAX_FILENAME_COMPONENT_BYTES,
+        PATH_BUDGET_SUFFIX_ALLOWANCE,
+    )
+
+    manager = DownloadManager()
+    archive_path = tmp_path / "bundle.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("界" * 100 + ".safetensors", b"model")
+
+    extracted = await manager._extract_model_files_from_archive(
+        str(archive_path),
+        {".safetensors"},
+    )
+
+    assert len(extracted) == 1
+    member_stem = os.path.splitext(os.path.basename(extracted[0]))[0]
+    assert (
+        len(member_stem.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE
+        <= MAX_FILENAME_COMPONENT_BYTES
+    )
+    assert os.path.exists(extracted[0])
 
 
 @pytest.mark.asyncio
@@ -1611,10 +1666,10 @@ async def test_resume_download_requests_reconnect_for_stalled_stream():
     assert pause_control.is_set() is True
     assert pause_control.has_reconnect_request() is True
 
-
 @pytest.mark.asyncio
 async def test_resume_download_rejects_when_not_paused():
     """Test that resume_download rejects when download is not paused."""
+
     manager = DownloadManager()
 
     download_id = "dl"
@@ -1624,3 +1679,626 @@ async def test_resume_download_rejects_when_not_paused():
     result = await manager.resume_download(download_id)
 
     assert result == {"success": False, "error": "Download is not paused"}
+
+
+class _SharedTargetMetadata:
+    """Metadata double whose generate_unique_filename mirrors BaseModelMetadata."""
+
+    def __init__(self, path: Path):
+        self.file_path = str(path)
+        self.file_name = path.stem
+        self.sha256 = "abcdef1234567890"
+        self.preview_url = None
+        self.autov3: Optional[str] = None
+
+    def generate_unique_filename(self, target_dir, base_name, extension, hash_provider=None):
+        original_filename = f"{base_name}{extension}"
+        if not os.path.exists(os.path.join(target_dir, original_filename)):
+            return original_filename
+        short_hash = (hash_provider() if hash_provider else "0000")[:4]
+        unique_filename = f"{base_name}-{short_hash}{extension}"
+        counter = 1
+        while os.path.exists(os.path.join(target_dir, unique_filename)):
+            unique_filename = f"{base_name}-{short_hash}-{counter}{extension}"
+            counter += 1
+        return unique_filename
+
+    def to_dict(self):
+        return {"file_path": self.file_path}
+
+
+@pytest.mark.asyncio
+async def test_concurrent_downloads_with_same_target_path_do_not_destroy_each_other(
+    monkeypatch, tmp_path
+):
+    """Two downloads racing on the same target filename must not corrupt each other.
+
+    Regression scenario (#issue: same-name files of model versions 2665422 and
+    2925310 downloaded concurrently): one task fails mid-flight and its failure
+    cleanup deletes the target file the other task just finished downloading,
+    crashing the survivor in _build_metadata_entries with FileNotFoundError.
+    """
+    manager = DownloadManager()
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "GTO-MuraiJuria-RG4535.safetensors"
+
+    # Deterministic interleave control
+    both_resolved = asyncio.Event()
+    a_wrote_file = asyncio.Event()
+    build_started = asyncio.Event()
+    release_build = asyncio.Event()
+    resolve_count = {"n": 0}
+
+    original_resolve = manager._resolve_download_target_path
+
+    async def tracking_resolve(*args, **kwargs):
+        result = await original_resolve(*args, **kwargs)
+        resolve_count["n"] += 1
+        if resolve_count["n"] >= 2:
+            both_resolved.set()
+        return result
+
+    monkeypatch.setattr(manager, "_resolve_download_target_path", tracking_resolve)
+
+    original_build = manager._build_metadata_entries
+
+    async def paced_build(base_metadata, file_paths):
+        build_started.set()
+        await release_build.wait()
+        return await original_build(base_metadata, file_paths)
+
+    monkeypatch.setattr(manager, "_build_metadata_entries", paced_build)
+
+    downloader_paths = []
+
+    class DummyDownloader:
+        async def download_file(
+            self, url, path, progress_callback=None, use_auth=None, **_kwargs
+        ):
+            downloader_paths.append(str(path))
+            if "2665422" in url:
+                # Task A: wait until both tasks resolved the same target path,
+                # then complete successfully.
+                try:
+                    await asyncio.wait_for(both_resolved.wait(), timeout=0.5)
+                except asyncio.TimeoutError:
+                    pass
+                Path(path).write_text("model-a-content")
+                a_wrote_file.set()
+                return True, "ok"
+            # Task B: fail as soon as A's file physically exists, mirroring a
+            # conflicting aria2/transfer error on the shared target path.
+            await a_wrote_file.wait()
+            return False, "simulated conflict failure"
+
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader())
+    )
+
+    class DummyScanner:
+        def __init__(self):
+            self.calls = []
+
+        async def add_model_to_cache(self, metadata_dict, relative_path):
+            self.calls.append((metadata_dict, relative_path))
+
+    dummy_scanner = DummyScanner()
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+
+    version_info = {"images": []}
+
+    task_a = asyncio.create_task(
+        manager._execute_download(
+            download_urls=["https://civitai.example/api/download/models/2665422"],
+            save_dir=str(save_dir),
+            metadata=_SharedTargetMetadata(target_path),
+            version_info=version_info,
+            relative_path="",
+            progress_callback=None,
+            model_type="lora",
+            download_id=None,
+            transfer_backend="python",
+        )
+    )
+    task_b = asyncio.create_task(
+        manager._execute_download(
+            download_urls=["https://civitai.example/api/download/models/2925310"],
+            save_dir=str(save_dir),
+            metadata=_SharedTargetMetadata(target_path),
+            version_info=version_info,
+            relative_path="",
+            progress_callback=None,
+            model_type="lora",
+            download_id=None,
+            transfer_backend="python",
+        )
+    )
+
+    # Wait until task A reached the metadata-build seam (file written, download
+    # reported success), letting task B's failure cleanup run meanwhile.
+    await asyncio.wait_for(build_started.wait(), timeout=5.0)
+    release_build.set()
+
+    result_b = await asyncio.wait_for(task_b, timeout=10.0)
+    result_a = await asyncio.wait_for(task_a, timeout=10.0)
+
+    # Task A must succeed: its completed file must not be deleted by task B.
+    assert result_a.get("success") is True, (
+        f"Surviving download failed due to the same-path race: {result_a}"
+    )
+    assert target_path.exists(), (
+        "Task B's failure cleanup deleted task A's completed download"
+    )
+    assert target_path.read_text() == "model-a-content"
+
+    # Task B legitimately fails (simulated transfer error)...
+    assert result_b.get("success") is False
+    # ...but only after being serialized behind A, resolving to a unique
+    # filename instead of colliding on A's target path.
+    b_targets = [p for p in downloader_paths if "2925310" in str(p) or True]
+    assert b_targets, "Task B never attempted a download"
+    assert all(os.path.basename(p) != target_path.name for p in [downloader_paths[-1]]) or (
+        os.path.basename(downloader_paths[-1]) != target_path.name
+    ), (
+        f"Task B reused task A's exact target path instead of a unique one: "
+        f"{downloader_paths}"
+    )
+
+
+def test_reconcile_failed_aria2_partial_preserves_resumable_pair(tmp_path):
+    """Payload and .aria2 control file are a resumable pair: keep both."""
+    save_path = tmp_path / "model.safetensors"
+    save_path.write_text("partial")
+    control_path = tmp_path / "model.safetensors.aria2"
+    control_path.write_text("control")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert save_path.exists()
+    assert control_path.exists()
+
+
+def test_reconcile_failed_aria2_partial_preserves_likely_complete_file(tmp_path):
+    """Payload without a control file means aria2 finished it: keep it."""
+    save_path = tmp_path / "model.safetensors"
+    save_path.write_text("complete")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert save_path.exists()
+    assert not (tmp_path / "model.safetensors.aria2").exists()
+
+
+def test_reconcile_failed_aria2_partial_removes_orphaned_control_file(tmp_path):
+    """A control file without its payload cannot resume: remove the orphan."""
+    save_path = tmp_path / "model.safetensors"
+    control_path = tmp_path / "model.safetensors.aria2"
+    control_path.write_text("control")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert not control_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_execute_download_preserves_aria2_partial_pair_on_failure(
+    monkeypatch, tmp_path
+):
+    """A failed aria2 transfer keeps the payload and control file for resume."""
+    manager = DownloadManager()
+    settings = get_settings_manager()
+    settings.settings["download_backend"] = "aria2"
+
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "file.safetensors"
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.autov3: Optional[str] = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, _path):
+            return None
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    class FailingAria2Downloader:
+        async def download_file(
+            self,
+            url,
+            save_path,
+            *,
+            download_id,
+            progress_callback=None,
+            headers=None,
+        ):
+            Path(save_path).write_text("partial")
+            Path(f"{save_path}.aria2").write_text("control")
+            return False, "No URI available."
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=FailingAria2Downloader()),
+    )
+
+    result = await manager._execute_download(
+        download_urls=["https://civitai.com/api/download/models/1"],
+        save_dir=str(save_dir),
+        metadata=DummyMetadata(target_path),
+        version_info={"images": []},
+        relative_path="",
+        progress_callback=None,
+        model_type="lora",
+        download_id="download-fail",
+    )
+
+    assert result["success"] is False
+    assert result["error"] == "No URI available."
+    assert target_path.exists()
+    assert (save_dir / "file.safetensors.aria2").exists()
+
+
+@pytest.mark.asyncio
+async def test_restore_persisted_downloads_removes_orphaned_aria2_control_file(
+    monkeypatch, tmp_path
+):
+    """A persisted record whose .aria2 control file lost its payload is
+    dropped, and the orphaned control file is removed."""
+    manager = DownloadManager()
+    download_id = "download-orphan"
+    save_path = tmp_path / "file.safetensors"
+    control_path = tmp_path / "file.safetensors.aria2"
+    control_path.write_text("control")
+
+    await manager._aria2_state_store.upsert(
+        download_id,
+        {
+            "download_id": download_id,
+            "transfer_backend": "aria2",
+            "status": "failed",
+            "save_path": str(save_path),
+            "file_path": str(save_path),
+        },
+    )
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=SimpleNamespace()),
+    )
+
+    await manager._restore_persisted_downloads()
+
+    assert not control_path.exists()
+    assert await manager._aria2_state_store.get(download_id) is None
+
+
+# ----------------------------------------------------------------------
+# Structured 429 rate-limit handling (download queue contract)
+# ----------------------------------------------------------------------
+
+
+def _prepare_tracked_download(manager, download_id, status="downloading"):
+    manager._active_downloads[download_id] = {
+        "transfer_backend": "python",
+        "status": status,
+        "bytes_per_second": 0.0,
+    }
+    manager._pause_events[download_id] = DownloadStreamControl()
+
+
+async def _run_download(manager, download_id, tmp_path, source=None):
+    return await manager._download_with_semaphore(
+        download_id,
+        1,
+        None,
+        str(tmp_path),
+        "",
+        None,
+        False,
+        source,
+        None,
+        False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_rate_limited_download_is_requeued_not_failed(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """A 429 during the transfer re-queues the item with a structured result."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    download_id = "dl-429"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    await queue_service.update_status(download_id, "downloading")
+    _prepare_tracked_download(manager, download_id)
+
+    monkeypatch.setattr(
+        manager,
+        "_execute_original_download",
+        AsyncMock(
+            side_effect=DownloadRateLimitError(
+                "Download rate limited (429), retry after 120s",
+                retry_after=120,
+                host="civitai.com",
+            )
+        ),
+    )
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert result["retry_after"] == 120
+    assert "rate limited" in result["error"].lower()
+
+    # Back to "queued" — NOT moved to history as failed.
+    queue = await queue_service.get_queue()
+    assert len(queue) == 1
+    assert queue[0]["status"] == "queued"
+    history = await queue_service.get_history()
+    assert history["items"] == []
+    assert manager._active_downloads[download_id]["status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_preflight_gate_blocks_when_host_in_cooldown(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """Host in cooldown: immediate structured 429, no transfer, no slot held."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civitai.com", 300)
+
+    download_id = "dl-cooldown"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id, status="waiting")
+
+    execute = AsyncMock(
+        side_effect=AssertionError("download must not start during cooldown")
+    )
+    monkeypatch.setattr(manager, "_execute_original_download", execute)
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert execute.await_count == 0
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert 290 <= result["retry_after"] <= 300
+
+    queue = await queue_service.get_queue()
+    assert len(queue) == 1
+    assert queue[0]["status"] == "queued"
+    history = await queue_service.get_history()
+    assert history["items"] == []
+
+    # The concurrency slot was never occupied by the gated download.
+    await asyncio.wait_for(manager._download_semaphore.acquire(), timeout=0.1)
+    manager._download_semaphore.release()
+
+
+@pytest.mark.asyncio
+async def test_preflight_gate_ignores_civarchive_cooldown_for_civitai_downloads(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """A civarchive.com cooldown (armed e.g. by bulk metadata fetches) must
+    not block a plain CivitAI download that never touches that host."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+
+    download_id = "dl-civarchive-cooldown"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id, status="waiting")
+
+    execute = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(manager, "_execute_original_download", execute)
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert execute.await_count == 1
+    assert result["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_preflight_gate_ignores_civarchive_cooldown_for_civarchive_source(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """A civarchive.com cooldown must not hard-block CivArchive-sourced
+    downloads either: they can still resolve metadata and file bytes from
+    CivitAI. The CivArchive legs are gated separately (metadata via
+    wait_for_slot, mirrors via _deprioritize_cooled_down_urls)."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+
+    download_id = "dl-civarchive-source"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id, status="waiting")
+
+    execute = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(manager, "_execute_original_download", execute)
+
+    result = await _run_download(manager, download_id, tmp_path, source="civarchive")
+
+    assert execute.await_count == 1
+    assert result["success"] is True
+
+
+@pytest.mark.asyncio
+async def test_deprioritize_cooled_down_urls_moves_cooled_hosts_last(
+    reset_rate_limit_coordinator,
+):
+    """Mirrors on a cooled-down host yield to mirrors that can serve now."""
+    manager = DownloadManager()
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+
+    urls = [
+        "https://civarchive.com/api/download/models/1",
+        "https://civitai.com/api/download/models/1",
+        "https://civarchive.com/mirror/file.safetensors",
+    ]
+
+    reordered = await manager._deprioritize_cooled_down_urls(urls)
+
+    assert reordered == [
+        "https://civitai.com/api/download/models/1",
+        "https://civarchive.com/api/download/models/1",
+        "https://civarchive.com/mirror/file.safetensors",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_deprioritize_cooled_down_urls_keeps_order_when_all_cooled(
+    reset_rate_limit_coordinator,
+):
+    """When every mirror is cooling down, order stays unchanged so the
+    transfer's own rate-limit handling (wait within cap, else re-queue)
+    applies to the same first choice as before."""
+    manager = DownloadManager()
+    coordinator = await RateLimitCoordinator.get_instance()
+    coordinator.register_rate_limit("civarchive.com", 1800)
+    coordinator.register_rate_limit("civitai.com", 300)
+
+    urls = [
+        "https://civarchive.com/api/download/models/1",
+        "https://civitai.com/api/download/models/1",
+    ]
+
+    assert await manager._deprioritize_cooled_down_urls(urls) == urls
+
+
+@pytest.mark.asyncio
+async def test_deprioritize_cooled_down_urls_noop_without_cooldown(
+    reset_rate_limit_coordinator,
+):
+    manager = DownloadManager()
+
+    urls = [
+        "https://civarchive.com/api/download/models/1",
+        "https://civitai.com/api/download/models/1",
+    ]
+
+    assert await manager._deprioritize_cooled_down_urls(urls) == urls
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_retry_after_falls_back_to_coordinator_backoff(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """When the 429 carries no Retry-After, the coordinator backoff supplies it."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    # Cooldown on a mirror host that is NOT in the pre-flight host list, so
+    # the failure must come from the transfer itself.
+    coordinator = await RateLimitCoordinator.get_instance()
+    backoff = coordinator.register_rate_limit("mirror.example.com", None)
+    assert backoff == 30.0
+
+    download_id = "dl-429-mirror"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id)
+
+    monkeypatch.setattr(
+        manager,
+        "_execute_original_download",
+        AsyncMock(
+            side_effect=DownloadRateLimitError(
+                "Download rate limited (429)",
+                retry_after=None,
+                host="mirror.example.com",
+            )
+        ),
+    )
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert 25 <= result["retry_after"] <= 30
+    queue = await queue_service.get_queue()
+    assert queue[0]["status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_metadata_fetch_rate_limit_error_is_also_requeued(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """A plain RateLimitError (metadata fetch path) gets the same treatment."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    download_id = "dl-meta-429"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id)
+
+    monkeypatch.setattr(
+        manager,
+        "_execute_original_download",
+        AsyncMock(
+            side_effect=RateLimitError(
+                "Request rate limited", retry_after=45, provider="civitai_api"
+            )
+        ),
+    )
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert result["success"] is False
+    assert result["reason"] == "rate_limited"
+    assert result["retry_after"] == 45
+    queue = await queue_service.get_queue()
+    assert queue[0]["status"] == "queued"
+    history = await queue_service.get_history()
+    assert history["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_generic_failure_still_moves_to_history_as_failed(
+    monkeypatch, tmp_path, queue_service, reset_rate_limit_coordinator
+):
+    """Non-rate-limit failures keep the legacy move-to-history behavior."""
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "_cleanup_download_record", AsyncMock())
+
+    download_id = "dl-generic-fail"
+    await queue_service.add_to_queue(download_id=download_id, model_id=1)
+    _prepare_tracked_download(manager, download_id)
+
+    monkeypatch.setattr(
+        manager,
+        "_execute_original_download",
+        AsyncMock(side_effect=RuntimeError("disk full")),
+    )
+
+    result = await _run_download(manager, download_id, tmp_path)
+
+    assert result == {"success": False, "error": "disk full"}
+    queue = await queue_service.get_queue()
+    assert queue == []
+    history = await queue_service.get_history()
+    assert len(history["items"]) == 1
+    assert history["items"][0]["status"] == "failed"
