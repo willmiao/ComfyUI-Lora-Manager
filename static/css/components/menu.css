@@ -290,6 +290,30 @@
     text-align: center;
 }
 
+/* Per-item "exclude this node type" action in the node selector */
+.node-item-exclude {
+    margin-left: auto;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+
+.node-item:hover .node-item-exclude {
+    opacity: 1;
+}
+
+.node-item-exclude:hover {
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text-on-accent);
+}
+
 /* Node Selector Header */
 .node-selector-header {
     padding: 10px 15px;

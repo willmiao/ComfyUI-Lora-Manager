@@ -399,7 +399,8 @@
             "autoOrganize": "自动整理",
             "metadata": "元数据",
             "sidecarStorage": "附属文件存储",
-            "proxySettings": "代理设置"
+            "proxySettings": "代理设置",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "通用",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "请输入至少一个路径，以逗号分隔。",
                 "saveFailed": "无法保存跳过路径：{message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding 已追加到工作流",
             "embeddingFailed": "添加 Embedding 失败",
             "promptSent": "提示词已发送到工作流",
-            "promptFailed": "提示词发送失败"
+            "promptFailed": "提示词发送失败",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "配方",
@@ -2332,7 +2346,8 @@
             "replace": "替换",
             "append": "追加",
             "selectTargetNode": "选择目标节点",
-            "sendToAll": "全部发送"
+            "sendToAll": "全部发送",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "示例图片文件夹已打开",

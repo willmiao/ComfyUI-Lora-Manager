@@ -399,7 +399,8 @@
       "autoOrganize": "Auto-organize",
       "metadata": "Metadata",
       "sidecarStorage": "Sidecar Storage",
-      "proxySettings": "Proxy Settings"
+      "proxySettings": "Proxy Settings",
+      "sendToWorkflow": "Send to Workflow"
     },
     "nav": {
       "general": "General",
@@ -451,6 +452,18 @@
       "validation": {
         "noPaths": "Enter at least one path separated by commas.",
         "saveFailed": "Unable to save skip paths: {message}"
+      }
+    },
+    "sendToWorkflowExclusions": {
+      "nodeClasses": {
+        "label": "Excluded node types",
+        "placeholder": "Example: CheckpointLoaderSimple, MyCustomNode",
+        "help": "ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+      },
+      "titlePatterns": {
+        "label": "Excluded node title patterns",
+        "placeholder": "Example: negative, preview",
+        "help": "Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
       }
     },
     "backup": {
@@ -2322,7 +2335,8 @@
       "embeddingAdded": "Embedding added to workflow",
       "embeddingFailed": "Failed to add embedding",
       "promptSent": "Prompt sent to workflow",
-      "promptFailed": "Failed to send prompt"
+      "promptFailed": "Failed to send prompt",
+      "nodeTypeExcluded": "Node type \"{type}\" excluded from send targets"
     },
     "nodeSelector": {
       "recipe": "Recipe",
@@ -2332,7 +2346,8 @@
       "replace": "Replace",
       "append": "Append",
       "selectTargetNode": "Select target node",
-      "sendToAll": "Send to All"
+      "sendToAll": "Send to All",
+      "excludeNodeType": "Never suggest this node type"
     },
     "exampleImages": {
       "opened": "Example images folder opened",

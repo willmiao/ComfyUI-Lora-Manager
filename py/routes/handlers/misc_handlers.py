@@ -617,6 +617,7 @@ class NodeRegistry:
             "widget_names": widget_names,
             "mode": node.get("mode"),
             "marker_role": node.get("marker_role"),
+            "exclude_send": bool(node.get("exclude_send")),
         }
 
     # ------------------------------------------------------------------

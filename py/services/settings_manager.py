@@ -140,6 +140,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "price_check_ttl_hours": 24,
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
+    # Send-to-Workflow target filtering: candidate nodes whose comfy class or
+    # title matches these lists are hidden from the target selector. Nodes
+    # explicitly marked via right-click ("Mark as") are exempt.
+    "send_to_workflow_exclusions": {"node_classes": [], "title_patterns": []},
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
     # Ordered per-type rules routing downloads to a non-default root by base

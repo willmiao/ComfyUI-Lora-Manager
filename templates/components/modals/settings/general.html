@@ -360,4 +360,35 @@
             </div>
         </div>
     </div>
+
+    <!-- Send to Workflow (hidden in standalone mode: no ComfyUI to send to) -->
+    <div class="settings-subsection" id="sendToWorkflowSubsection">
+        {{ sm.subsection_header('settings.sections.sendToWorkflow') }}
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sendToWorkflowExcludedClasses">
+                        {{ t('settings.sendToWorkflowExclusions.nodeClasses.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sendToWorkflowExclusions.nodeClasses.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <textarea id="sendToWorkflowExcludedClasses" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.sendToWorkflowExclusions.nodeClasses.placeholder') }}"></textarea>
+            <div class="settings-input-error-message" id="sendToWorkflowExcludedClassesError"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sendToWorkflowExcludedTitles">
+                        {{ t('settings.sendToWorkflowExclusions.titlePatterns.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sendToWorkflowExclusions.titlePatterns.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <textarea id="sendToWorkflowExcludedTitles" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.sendToWorkflowExclusions.titlePatterns.placeholder') }}"></textarea>
+            <div class="settings-input-error-message" id="sendToWorkflowExcludedTitlesError"></div>
+        </div>
+    </div>
 </div>

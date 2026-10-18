@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     price_check_ttl_hours: 24,
     auto_organize_exclusions: [],
     metadata_refresh_skip_paths: [],
+    send_to_workflow_exclusions: { node_classes: [], title_patterns: [] },
     skip_previously_downloaded_model_versions: false,
     download_skip_base_models: [],
     download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
@@ -91,6 +92,7 @@ export function createDefaultSettings() {
         default_other_roots: {},
         download_root_rules: { loras: [], checkpoints: [], unet: [], embeddings: [] },
         enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
+        send_to_workflow_exclusions: { node_classes: [], title_patterns: [] },
         // Standalone-only fields populated by GET /api/lm/settings; in plugin
         // mode the backend omits folder_paths/folder_path_schema and these
         // defaults apply.

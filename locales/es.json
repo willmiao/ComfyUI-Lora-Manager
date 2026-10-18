@@ -399,7 +399,8 @@
             "autoOrganize": "Organización automática",
             "metadata": "Metadatos",
             "sidecarStorage": "Almacenamiento de archivos sidecar",
-            "proxySettings": "Configuración de proxy"
+            "proxySettings": "Configuración de proxy",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "General",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "Ingrese al menos una ruta separada por comas.",
                 "saveFailed": "No se pudieron guardar las rutas a omitir: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding añadido al workflow",
             "embeddingFailed": "Error al añadir el embedding",
             "promptSent": "Prompt enviado al workflow",
-            "promptFailed": "Error al enviar el prompt"
+            "promptFailed": "Error al enviar el prompt",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "Receta",
@@ -2332,7 +2346,8 @@
             "replace": "Reemplazar",
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",
-            "sendToAll": "Enviar a todos"
+            "sendToAll": "Enviar a todos",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "Carpeta de imágenes de ejemplo abierta",

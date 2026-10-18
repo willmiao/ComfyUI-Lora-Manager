@@ -399,7 +399,8 @@
             "autoOrganize": "자동 정리",
             "metadata": "메타데이터",
             "sidecarStorage": "사이드카 파일 저장",
-            "proxySettings": "프록시 설정"
+            "proxySettings": "프록시 설정",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "일반",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "쉼표로 구분하여 하나 이상의 경로를 입력하세요.",
                 "saveFailed": "건너뛰기 경로를 저장할 수 없습니다: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding을 워크플로에 추가했습니다",
             "embeddingFailed": "Embedding 추가 실패",
             "promptSent": "프롬프트를 워크플로에 보냈습니다",
-            "promptFailed": "프롬프트 보내기 실패"
+            "promptFailed": "프롬프트 보내기 실패",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "레시피",
@@ -2332,7 +2346,8 @@
             "replace": "교체",
             "append": "추가",
             "selectTargetNode": "대상 노드 선택",
-            "sendToAll": "모두에게 전송"
+            "sendToAll": "모두에게 전송",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "예시 이미지 폴더가 열렸습니다",

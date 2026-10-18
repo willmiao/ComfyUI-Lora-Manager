@@ -399,7 +399,8 @@
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
             "sidecarStorage": "附屬檔案儲存",
-            "proxySettings": "代理設定"
+            "proxySettings": "代理設定",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "通用",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "請輸入至少一個路徑，以逗號分隔。",
                 "saveFailed": "無法儲存跳過路徑：{message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding 已附加到工作流",
             "embeddingFailed": "傳送 Embedding 到工作流失敗",
             "promptSent": "提示詞已發送到工作流",
-            "promptFailed": "提示詞發送失敗"
+            "promptFailed": "提示詞發送失敗",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "配方",
@@ -2332,7 +2346,8 @@
             "replace": "取代",
             "append": "附加",
             "selectTargetNode": "選擇目標節點",
-            "sendToAll": "全部傳送"
+            "sendToAll": "全部傳送",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "範例圖片資料夾已開啟",

@@ -399,7 +399,8 @@
             "autoOrganize": "Auto-Organisierung",
             "metadata": "Metadaten",
             "sidecarStorage": "Sidecar-Speicherung",
-            "proxySettings": "Proxy-Einstellungen"
+            "proxySettings": "Proxy-Einstellungen",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "Allgemein",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "Geben Sie mindestens einen durch Kommas getrennten Pfad ein.",
                 "saveFailed": "Übersprungene Pfade konnten nicht gespeichert werden: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding zum Workflow hinzugefügt",
             "embeddingFailed": "Fehler beim Hinzufügen des Embeddings",
             "promptSent": "Prompt an Workflow gesendet",
-            "promptFailed": "Fehler beim Senden des Prompts"
+            "promptFailed": "Fehler beim Senden des Prompts",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "Rezept",
@@ -2332,7 +2346,8 @@
             "replace": "Ersetzen",
             "append": "Anhängen",
             "selectTargetNode": "Zielknoten auswählen",
-            "sendToAll": "An alle senden"
+            "sendToAll": "An alle senden",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "Beispielbilder-Ordner geöffnet",

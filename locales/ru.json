@@ -399,7 +399,8 @@
             "autoOrganize": "Автоорганизация",
             "metadata": "Метаданные",
             "sidecarStorage": "Хранилище sidecar-файлов",
-            "proxySettings": "Настройки прокси"
+            "proxySettings": "Настройки прокси",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "Общее",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "Введите хотя бы один путь, разделённый запятыми.",
                 "saveFailed": "Не удалось сохранить пути для пропуска: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding добавлен в workflow",
             "embeddingFailed": "Не удалось добавить embedding",
             "promptSent": "Промпт отправлен в workflow",
-            "promptFailed": "Не удалось отправить промпт"
+            "promptFailed": "Не удалось отправить промпт",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
@@ -2332,7 +2346,8 @@
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",
-            "sendToAll": "Отправить во все"
+            "sendToAll": "Отправить во все",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "Папка с примерами изображений открыта",

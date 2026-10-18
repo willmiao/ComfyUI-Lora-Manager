@@ -399,7 +399,8 @@
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
             "sidecarStorage": "אחסון קובצי לוואי",
-            "proxySettings": "הגדרות פרוקסי"
+            "proxySettings": "הגדרות פרוקסי",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         },
         "nav": {
             "general": "כללי",
@@ -451,6 +452,18 @@
             "validation": {
                 "noPaths": "הזן לפחות נתיב אחד מופרד בפסיקים.",
                 "saveFailed": "לא ניתן לשמור נתיבי דילוג: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "[TODO: Translate] Excluded node types",
+                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
+                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+            },
+            "titlePatterns": {
+                "label": "[TODO: Translate] Excluded node title patterns",
+                "placeholder": "[TODO: Translate] Example: negative, preview",
+                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
             }
         },
         "backup": {
@@ -2322,7 +2335,8 @@
             "embeddingAdded": "Embedding נוסף ל-workflow",
             "embeddingFailed": "הוספת Embedding נכשלה",
             "promptSent": "פרומפט נשלחה ל-workflow",
-            "promptFailed": "שליחת הפרומפט נכשלה"
+            "promptFailed": "שליחת הפרומפט נכשלה",
+            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
         },
         "nodeSelector": {
             "recipe": "מתכון",
@@ -2332,7 +2346,8 @@
             "replace": "החלף",
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",
-            "sendToAll": "שלח לכל"
+            "sendToAll": "שלח לכל",
+            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
         },
         "exampleImages": {
             "opened": "תיקיית תמונות הדוגמה נפתחה",

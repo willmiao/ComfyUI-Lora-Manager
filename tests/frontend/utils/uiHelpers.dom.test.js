@@ -575,6 +575,200 @@ describe('UI helper DOM utilities', () => {
     expect(nodeLabels).toEqual(['#1 Marked Target', '#2 Marked Target 2']);
   });
 
+  it('hides node classes listed in send_to_workflow_exclusions', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: ['PulIDFluxModelLoader'],
+          title_patterns: [],
+        },
+      },
+    };
+
+    const makeLoaderNode = (id, title, comfyClass) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 0,
+      type_name: comfyClass,
+      comfy_class: comfyClass,
+      mode: 0,
+      marker_role: null,
+      capabilities: { widget_names: ['ckpt_name'] },
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 3,
+        nodes: {
+          'root:1': makeLoaderNode(1, 'Main Checkpoint', 'CheckpointLoaderSimple'),
+          'root:2': makeLoaderNode(2, 'Auxiliary Loader', 'PulIDFluxModelLoader'),
+          'root:3': makeLoaderNode(3, 'Backup Checkpoint', 'CheckpointLoaderSimple'),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendModelPathToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      const result = await sendModelPathToWorkflow('foo/model.safetensors', {
+        widgetName: 'ckpt_name',
+      });
+
+      expect(result).toBe(true);
+
+      const nodeLabels = Array.from(
+        document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+      ).map((span) => span.textContent.trim());
+
+      expect(nodeLabels).toEqual(['#1 Main Checkpoint', '#3 Backup Checkpoint']);
+    } finally {
+      delete state.global;
+    }
+  });
+
+  it('hides nodes whose title matches an exclusion pattern (case-insensitive)', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: [],
+          title_patterns: ['negative'],
+        },
+      },
+    };
+
+    const makeTextNode = (id, title) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 'CLIPTextEncode',
+      comfy_class: 'CLIPTextEncode',
+      mode: 0,
+      marker_role: null,
+      capabilities: {
+        has_text_widget: true,
+        text_widget_connected: false,
+        widget_names: ['text', 'clip'],
+      },
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 2,
+        nodes: {
+          'root:1': makeTextNode(1, 'Positive Prompt'),
+          'root:2': makeTextNode(2, 'Negative Prompt'),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      await sendPromptToWorkflow('a cat');
+
+      const nodeLabels = Array.from(
+        document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+      ).map((span) => span.textContent.trim());
+
+      expect(nodeLabels).toEqual([]);
+      // Single remaining target sends directly without opening the selector.
+      const sendCalls = global.fetch.mock.calls.filter(
+        ([url]) => url === '/api/lm/update-node-widget'
+      );
+      expect(sendCalls).toHaveLength(1);
+    } finally {
+      delete state.global;
+    }
+  });
+
+  it('keeps explicitly marked nodes exempt from global exclusions, while per-node exclusion always wins', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global = {
+      settings: {
+        send_to_workflow_exclusions: {
+          node_classes: ['KSampler'],
+          title_patterns: [],
+        },
+      },
+    };
+
+    const makeNode = (id, title, overrides = {}) => ({
+      id,
+      graph_id: 'root',
+      graph_name: null,
+      title,
+      type: 'KSampler',
+      comfy_class: 'KSampler',
+      mode: 0,
+      marker_role: null,
+      capabilities: {
+        has_text_widget: false,
+        text_widget_connected: false,
+        widget_names: ['seed'],
+      },
+      ...overrides,
+    });
+
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 3,
+        nodes: {
+          // Class is excluded, but the explicit marker wins.
+          'root:1': makeNode(1, 'Marked Target', { marker_role: 'send_prompt_target' }),
+          // No marker: filtered out by the class exclusion.
+          'root:2': makeNode(2, 'Plain KSampler'),
+          // Marker present, but per-node exclusion beats everything.
+          'root:3': makeNode(3, 'Marked But Excluded', {
+            marker_role: 'send_prompt_target',
+            exclude_send: true,
+          }),
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    try {
+      await sendPromptToWorkflow('a cat');
+
+      // Only node 1 survives → single-target direct send, no selector.
+      const sendCalls = global.fetch.mock.calls.filter(
+        ([url]) => url === '/api/lm/update-node-widget'
+      );
+      expect(sendCalls).toHaveLength(1);
+      const body = JSON.parse(sendCalls[0][1].body);
+      expect(body.node_ids).toEqual([{ node_id: 1, graph_id: 'root' }]);
+    } finally {
+      delete state.global;
+    }
+  });
+
   it('opens Civitai links using the preferred host and registers the first-use banner once', async () => {
     const openSpy = vi.fn();
     globalThis.window.open = openSpy;
