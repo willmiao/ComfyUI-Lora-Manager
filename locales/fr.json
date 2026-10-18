@@ -264,7 +264,7 @@
         },
         "filter": {
             "title": "Filtrer les modèles",
-            "countTitle": "[TODO: Translate] {name} — {count} models",
+            "countTitle": "{name} — {count} modèles",
             "presets": "Préréglages",
             "savePreset": "Enregistrer les filtres actifs comme nouveau préréglage.",
             "savePresetDisabledActive": "Impossible d'enregistrer : Un préréglage est déjà actif. Modifiez les filtres pour enregistrer un nouveau préréglage",
@@ -1099,7 +1099,7 @@
     "recipes": {
         "title": "LoRA Recipes",
         "filter": {
-            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+            "countTitle": "{name} — {count} Recipes"
         },
         "actions": {
             "sendCheckpoint": "Envoyer vers ComfyUI",
@@ -1478,8 +1478,8 @@
             "notEmptyMessageCount": "Ce dossier contient encore {count} fichier(s) de modèle. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "notEmptyMessageExcluded": "Ce dossier contient encore {count} fichier(s) de modèle, dont {excluded} sont exclus de la bibliothèque. Annulez leur exclusion dans « Gérer les modèles exclus » et supprimez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "missingTitle": "Dossier introuvable",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Ce dossier n’existe plus sur le disque. Vous pouvez le retirer de la liste.",
+            "removeFromList": "Retirer de la liste",
             "symlinkTitle": "Le dossier est un lien symbolique",
             "symlinkMessage": "Toutes les copies de ce dossier sont des liens symboliques ; supprimez le lien ou sa cible en dehors de LoRA Manager.",
             "protectedTitle": "Dossier protégé",
@@ -1501,8 +1501,8 @@
             "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
             "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
             "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Dossier \"{name}\" retiré de la liste",
+            "exists": "Le dossier est de retour sur le disque. Supprimez-le à la place.",
             "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être supprimé depuis la barre latérale.",
             "successMulti": "Dossier \"{name}\" supprimé de {count} racines de modèle",
             "partial": "{count} copie(s) sur {total} supprimée(s) — {failed} en échec. Actualisez la barre latérale et réessayez."

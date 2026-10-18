@@ -264,7 +264,7 @@
         },
         "filter": {
             "title": "Фильтр моделей",
-            "countTitle": "[TODO: Translate] {name} — {count} models",
+            "countTitle": "{name} — {count} модел(ей)",
             "presets": "Пресеты",
             "savePreset": "Сохранить текущие активные фильтры как новый пресет.",
             "savePresetDisabledActive": "Невозможно сохранить: Пресет уже активен. Измените фильтры, чтобы сохранить новый пресет",
@@ -1099,7 +1099,7 @@
     "recipes": {
         "title": "Рецепты LoRA",
         "filter": {
-            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+            "countTitle": "{name} — {count} рецепт(ов)"
         },
         "actions": {
             "sendCheckpoint": "Отправить в ComfyUI",
@@ -1478,8 +1478,8 @@
             "notEmptyMessageCount": "В этой папке ещё есть {count} файл(ов) модели. Сначала удалите или переместите их — удаление папки никогда не затрагивает файлы моделей.",
             "notEmptyMessageExcluded": "В этой папке ещё есть {count} файл(ов) модели, из них {excluded} исключены из библиотеки. Снимите исключение в разделе «Управление исключёнными моделями» и удалите их — удаление папки никогда не затрагивает файлы моделей.",
             "missingTitle": "Папка не найдена",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Эта папка больше не существует на диске. Вы можете удалить её из списка.",
+            "removeFromList": "Удалить из списка",
             "symlinkTitle": "Папка является символической ссылкой",
             "symlinkMessage": "Все копии этой папки являются символическими ссылками; удалите ссылку или её цель вне LoRA Manager.",
             "protectedTitle": "Папка защищена",
@@ -1501,8 +1501,8 @@
             "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
             "unsupported": "Удаление папок не поддерживается на этой странице",
             "missing": "Эта папка больше не существует на диске. Обновите боковую панель и повторите попытку.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Папка \"{name}\" удалена из списка",
+            "exists": "Папка снова появилась на диске. Вместо этого удалите её.",
             "symlink": "Эта папка является символической ссылкой; её нельзя удалить из боковой панели.",
             "successMulti": "Папка \"{name}\" удалена из {count} корневых папок моделей",
             "partial": "Удалено {count} из {total} копий — не удалось удалить {failed}. Обновите боковую панель и повторите попытку."

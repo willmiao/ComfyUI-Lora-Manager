@@ -264,7 +264,7 @@
         },
         "filter": {
             "title": "篩選模型",
-            "countTitle": "[TODO: Translate] {name} — {count} models",
+            "countTitle": "{name} —— {count} 個模型",
             "presets": "預設",
             "savePreset": "將目前啟用的篩選器儲存為新預設。",
             "savePresetDisabledActive": "無法儲存：已有預設處於啟用狀態。修改篩選器後可儲存新預設",
@@ -1099,7 +1099,7 @@
     "recipes": {
         "title": "LoRA 配方",
         "filter": {
-            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+            "countTitle": "{name} —— {count} 個配方"
         },
         "actions": {
             "sendCheckpoint": "傳送到 ComfyUI",
@@ -1478,8 +1478,8 @@
             "notEmptyMessageCount": "該資料夾中仍有 {count} 個模型檔案，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
             "notEmptyMessageExcluded": "該資料夾中仍有 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除。請先在「管理已排除的模型」中取消排除並刪除它們 —— 刪除資料夾不會串聯刪除模型檔案。",
             "missingTitle": "未找到資料夾",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "該資料夾在磁碟上已不存在，您可以將其從清單中移除。",
+            "removeFromList": "從清單中移除",
             "symlinkTitle": "資料夾是符號連結",
             "symlinkMessage": "該資料夾的每一份副本都是符號連結；請在 LoRA Manager 之外刪除該連結或其指向的目標。",
             "protectedTitle": "資料夾受保護",
@@ -1501,8 +1501,8 @@
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援刪除資料夾",
             "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "已將資料夾 \"{name}\" 從清單中移除",
+            "exists": "該資料夾已重新出現在磁碟上，請改為刪除它。",
             "symlink": "該資料夾是符號連結，無法從側邊欄中刪除。",
             "successMulti": "已從 {count} 個模型根目錄中刪除資料夾 \"{name}\"",
             "partial": "已刪除 {total} 份副本中的 {count} 份 —— {failed} 份無法刪除。請重新整理側邊欄後再試。"

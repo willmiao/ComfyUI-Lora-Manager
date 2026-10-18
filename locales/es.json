@@ -264,7 +264,7 @@
         },
         "filter": {
             "title": "Filtrar modelos",
-            "countTitle": "[TODO: Translate] {name} — {count} models",
+            "countTitle": "{name} — {count} modelos",
             "presets": "Preajustes",
             "savePreset": "Guardar filtros activos como nuevo preajuste.",
             "savePresetDisabledActive": "No se puede guardar: Ya hay un preajuste activo. Modifique los filtros para guardar un nuevo preajuste",
@@ -1099,7 +1099,7 @@
     "recipes": {
         "title": "Recetas de LoRA",
         "filter": {
-            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+            "countTitle": "{name} — {count} recetas"
         },
         "actions": {
             "sendCheckpoint": "Enviar a ComfyUI",
@@ -1478,8 +1478,8 @@
             "notEmptyMessageCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "notEmptyMessageExcluded": "Esta carpeta aún contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca. Anula su exclusión en «Gestionar modelos excluidos» y elimínalos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "missingTitle": "Carpeta no encontrada",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Esta carpeta ya no existe en el disco. Puedes quitarla de la lista.",
+            "removeFromList": "Quitar de la lista",
             "symlinkTitle": "La carpeta es un enlace simbólico",
             "symlinkMessage": "Todas las copias de esta carpeta son enlaces simbólicos; elimina el enlace o su destino fuera de LoRA Manager.",
             "protectedTitle": "Carpeta protegida",
@@ -1501,8 +1501,8 @@
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "La eliminación de carpetas no es compatible con esta página",
             "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Carpeta \"{name}\" quitada de la lista",
+            "exists": "La carpeta ha vuelto al disco. Elimínala en su lugar.",
             "symlink": "Esta carpeta es un enlace simbólico; no se puede eliminar desde la barra lateral.",
             "successMulti": "Carpeta \"{name}\" eliminada de {count} raíces de modelo",
             "partial": "Se eliminaron {count} de {total} copias — {failed} no se pudieron eliminar. Actualiza la barra lateral e inténtalo de nuevo."

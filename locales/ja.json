@@ -264,7 +264,7 @@
         },
         "filter": {
             "title": "モデルをフィルタ",
-            "countTitle": "[TODO: Translate] {name} — {count} models",
+            "countTitle": "{name} —— {count} 個のモデル",
             "presets": "プリセット",
             "savePreset": "現在のアクティブフィルタを新しいプリセットとして保存。",
             "savePresetDisabledActive": "保存できません：プリセットがすでにアクティブです。フィルタを変更して新しいプリセットを保存してください",
@@ -1099,7 +1099,7 @@
     "recipes": {
         "title": "LoRAレシピ",
         "filter": {
-            "countTitle": "[TODO: Translate] {name} — {count} recipes"
+            "countTitle": "{name} —— {count} 件のレシピ"
         },
         "actions": {
             "sendCheckpoint": "ComfyUIへ送信",
@@ -1478,8 +1478,8 @@
             "notEmptyMessageCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
             "notEmptyMessageExcluded": "このフォルダにはまだ {count} 個のモデルファイルがあり、そのうち {excluded} 個はライブラリから除外されています。「除外モデルを管理」で除外を解除してから削除してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
             "missingTitle": "フォルダが見つかりません",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "このフォルダはディスク上に存在しません。リストから削除できます。",
+            "removeFromList": "リストから削除",
             "symlinkTitle": "フォルダがシンボリックリンクです",
             "symlinkMessage": "このフォルダのすべてのコピーがシンボリックリンクです。LoRA Manager の外でリンクまたはそのリンク先を削除してください。",
             "protectedTitle": "フォルダは保護されています",
@@ -1501,8 +1501,8 @@
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダを削除できません",
             "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "フォルダ \"{name}\" をリストから削除しました",
+            "exists": "フォルダがディスク上に戻りました。代わりに削除してください。",
             "symlink": "このフォルダはシンボリックリンクです。サイドバーからは削除できません。",
             "successMulti": "{count} 個のモデルルートからフォルダ \"{name}\" を削除しました",
             "partial": "{total} 個のコピーのうち {count} 個を削除しました —— {failed} 個は削除できませんでした。サイドバーを再読み込みしてからもう一度お試しください。"
