@@ -275,7 +275,7 @@ export class ModelDuplicatesManager {
         if (duplicatesBtn) {
             duplicatesBtn.classList.remove('active');
             duplicatesBtn.title = 'Find duplicate models';
-            duplicatesBtn.innerHTML = '<i class="fas fa-clone"></i> Duplicates <span id="duplicatesBadge" class="badge"></span>';
+            duplicatesBtn.innerHTML = 'Duplicates <span id="duplicatesBadge" class="badge"></span>';
             
             // Restore badge
             const newBadge = duplicatesBtn.querySelector('#duplicatesBadge');
