@@ -400,7 +400,7 @@
             "metadata": "Métadonnées",
             "sidecarStorage": "Stockage des fichiers sidecar",
             "proxySettings": "Paramètres du proxy",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "Envoyer vers le workflow"
         },
         "nav": {
             "general": "Général",
@@ -456,14 +456,14 @@
         },
         "sendToWorkflowExclusions": {
             "nodeClasses": {
-                "label": "[TODO: Translate] Excluded node types",
-                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
-                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "Types de nœuds exclus",
+                "placeholder": "Exemple : CheckpointLoaderSimple, MyCustomNode",
+                "help": "Noms de classe de nœuds ComfyUI qui n'apparaissent jamais comme cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
             },
             "titlePatterns": {
-                "label": "[TODO: Translate] Excluded node title patterns",
-                "placeholder": "[TODO: Translate] Example: negative, preview",
-                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "Motifs de titres de nœuds exclus",
+                "placeholder": "Exemple : negative, preview",
+                "help": "Les nœuds dont le titre contient l'un de ces fragments de texte (insensible à la casse) sont masqués des cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
             }
         },
         "backup": {
@@ -2341,7 +2341,7 @@
             "embeddingFailed": "Échec de l'ajout de l'embedding",
             "promptSent": "Prompt envoyé au workflow",
             "promptFailed": "Échec de l'envoi du prompt",
-            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
+            "nodeTypeExcluded": "Type de nœud \"{type}\" exclu des cibles d'envoi"
         },
         "nodeSelector": {
             "recipe": "Recipe",
@@ -2352,7 +2352,7 @@
             "append": "Ajouter",
             "selectTargetNode": "Sélectionner le nœud cible",
             "sendToAll": "Envoyer à tous",
-            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
+            "excludeNodeType": "Ne plus suggérer ce type de nœud"
         },
         "exampleImages": {
             "opened": "Dossier d'images d'exemple ouvert",

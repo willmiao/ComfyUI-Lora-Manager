@@ -400,7 +400,7 @@
             "metadata": "元数据",
             "sidecarStorage": "附属文件存储",
             "proxySettings": "代理设置",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "发送到工作流"
         },
         "nav": {
             "general": "通用",
@@ -456,14 +456,14 @@
         },
         "sendToWorkflowExclusions": {
             "nodeClasses": {
-                "label": "[TODO: Translate] Excluded node types",
-                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
-                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "排除的节点类型",
+                "placeholder": "示例: CheckpointLoaderSimple, MyCustomNode",
+                "help": "这些 ComfyUI 节点类名永远不会作为发送到工作流的目标出现。多个条目用逗号或分号分隔。在 ComfyUI 中显式标记的节点（右键 → Mark as）不受此限制。"
             },
             "titlePatterns": {
-                "label": "[TODO: Translate] Excluded node title patterns",
-                "placeholder": "[TODO: Translate] Example: negative, preview",
-                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "排除的节点标题模式",
+                "placeholder": "示例: negative, preview",
+                "help": "标题包含这些文本片段（不区分大小写）的节点不会出现在发送到工作流的目标中。多个条目用逗号或分号分隔。在 ComfyUI 中显式标记的节点（右键 → Mark as）不受此限制。"
             }
         },
         "backup": {
@@ -2341,7 +2341,7 @@
             "embeddingFailed": "添加 Embedding 失败",
             "promptSent": "提示词已发送到工作流",
             "promptFailed": "提示词发送失败",
-            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
+            "nodeTypeExcluded": "节点类型 \"{type}\" 已从发送目标中排除"
         },
         "nodeSelector": {
             "recipe": "配方",
@@ -2352,7 +2352,7 @@
             "append": "追加",
             "selectTargetNode": "选择目标节点",
             "sendToAll": "全部发送",
-            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
+            "excludeNodeType": "不再建议此节点类型"
         },
         "exampleImages": {
             "opened": "示例图片文件夹已打开",

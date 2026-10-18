@@ -400,7 +400,7 @@
             "metadata": "메타데이터",
             "sidecarStorage": "사이드카 파일 저장",
             "proxySettings": "프록시 설정",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "워크플로로 전송"
         },
         "nav": {
             "general": "일반",
@@ -456,14 +456,14 @@
         },
         "sendToWorkflowExclusions": {
             "nodeClasses": {
-                "label": "[TODO: Translate] Excluded node types",
-                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
-                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "제외할 노드 유형",
+                "placeholder": "예: CheckpointLoaderSimple, MyCustomNode",
+                "help": "이 ComfyUI 노드 클래스 이름은 워크플로로 전송할 대상으로 표시되지 않습니다. 여러 항목은 쉼표 또는 세미콜론으로 구분하십시오. ComfyUI에서 명시적으로 마크한 노드(우클릭 → Mark as)는 예외입니다."
             },
             "titlePatterns": {
-                "label": "[TODO: Translate] Excluded node title patterns",
-                "placeholder": "[TODO: Translate] Example: negative, preview",
-                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "제외할 노드 제목 패턴",
+                "placeholder": "예: negative, preview",
+                "help": "제목에 이 텍스트 조각 중 하나라도 포함된 노드(대소문자를 구분하지 않음)는 워크플로로 전송할 대상에 표시되지 않습니다. 여러 항목은 쉼표 또는 세미콜론으로 구분하십시오. ComfyUI에서 명시적으로 마크한 노드(우클릭 → Mark as)는 예외입니다."
             }
         },
         "backup": {
@@ -2341,7 +2341,7 @@
             "embeddingFailed": "Embedding 추가 실패",
             "promptSent": "프롬프트를 워크플로에 보냈습니다",
             "promptFailed": "프롬프트 보내기 실패",
-            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
+            "nodeTypeExcluded": "노드 유형 \"{type}\"을(를) 전송 대상에서 제외했습니다"
         },
         "nodeSelector": {
             "recipe": "레시피",
@@ -2352,7 +2352,7 @@
             "append": "추가",
             "selectTargetNode": "대상 노드 선택",
             "sendToAll": "모두에게 전송",
-            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
+            "excludeNodeType": "이 노드 유형을 다시 제안하지 않음"
         },
         "exampleImages": {
             "opened": "예시 이미지 폴더가 열렸습니다",

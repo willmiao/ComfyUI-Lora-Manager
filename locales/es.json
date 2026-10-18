@@ -400,7 +400,7 @@
             "metadata": "Metadatos",
             "sidecarStorage": "Almacenamiento de archivos sidecar",
             "proxySettings": "Configuración de proxy",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "Enviar al workflow"
         },
         "nav": {
             "general": "General",
@@ -456,14 +456,14 @@
         },
         "sendToWorkflowExclusions": {
             "nodeClasses": {
-                "label": "[TODO: Translate] Excluded node types",
-                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
-                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "Tipos de nodos excluidos",
+                "placeholder": "Ejemplo: CheckpointLoaderSimple, MyCustomNode",
+                "help": "Nombres de clase de nodos de ComfyUI que nunca aparecen como destinos de envío al workflow. Separa varias entradas con comas o puntos y comas. Los nodos marcados explícitamente en ComfyUI (clic derecho → Mark as) quedan exentos."
             },
             "titlePatterns": {
-                "label": "[TODO: Translate] Excluded node title patterns",
-                "placeholder": "[TODO: Translate] Example: negative, preview",
-                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "Patrones de títulos de nodos excluidos",
+                "placeholder": "Ejemplo: negative, preview",
+                "help": "Los nodos cuyo título contenga alguno de estos fragmentos de texto (sin distinguir mayúsculas y minúsculas) se ocultan de los destinos de envío al workflow. Separa varias entradas con comas o puntos y comas. Los nodos marcados explícitamente en ComfyUI (clic derecho → Mark as) quedan exentos."
             }
         },
         "backup": {
@@ -2341,7 +2341,7 @@
             "embeddingFailed": "Error al añadir el embedding",
             "promptSent": "Prompt enviado al workflow",
             "promptFailed": "Error al enviar el prompt",
-            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
+            "nodeTypeExcluded": "Tipo de nodo \"{type}\" excluido de los destinos de envío"
         },
         "nodeSelector": {
             "recipe": "Receta",
@@ -2352,7 +2352,7 @@
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",
             "sendToAll": "Enviar a todos",
-            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
+            "excludeNodeType": "No volver a sugerir este tipo de nodo"
         },
         "exampleImages": {
             "opened": "Carpeta de imágenes de ejemplo abierta",

@@ -400,7 +400,7 @@
             "metadata": "מטא-נתונים",
             "sidecarStorage": "אחסון קובצי לוואי",
             "proxySettings": "הגדרות פרוקסי",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "שליחה ל-workflow"
         },
         "nav": {
             "general": "כללי",
@@ -456,14 +456,14 @@
         },
         "sendToWorkflowExclusions": {
             "nodeClasses": {
-                "label": "[TODO: Translate] Excluded node types",
-                "placeholder": "[TODO: Translate] Example: CheckpointLoaderSimple, MyCustomNode",
-                "help": "[TODO: Translate] ComfyUI node class names that never appear as send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "סוגי צמתים מוחרגים",
+                "placeholder": "דוגמה: CheckpointLoaderSimple, MyCustomNode",
+                "help": "שמות מחלקה של צמתים ב-ComfyUI שלעולם לא מופיעים כיעדי שליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
             },
             "titlePatterns": {
-                "label": "[TODO: Translate] Excluded node title patterns",
-                "placeholder": "[TODO: Translate] Example: negative, preview",
-                "help": "[TODO: Translate] Nodes whose title contains any of these text fragments (case-insensitive) are hidden from send-to-workflow targets. Separate multiple entries with commas or semicolons. Nodes explicitly marked in ComfyUI (right-click → Mark as) are exempt."
+                "label": "תבניות כותרת של צמתים מוחרגים",
+                "placeholder": "דוגמה: negative, preview",
+                "help": "צמתים שכותרתם מכילה אחד מקטעי הטקסט האלה (ללא תלות ברישיות) מוסתרים מיעדי השליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
             }
         },
         "backup": {
@@ -2341,7 +2341,7 @@
             "embeddingFailed": "הוספת Embedding נכשלה",
             "promptSent": "פרומפט נשלחה ל-workflow",
             "promptFailed": "שליחת הפרומפט נכשלה",
-            "nodeTypeExcluded": "[TODO: Translate] Node type \"{type}\" excluded from send targets"
+            "nodeTypeExcluded": "סוג הצומת \"{type}\" הוחרג מיעדי השליחה"
         },
         "nodeSelector": {
             "recipe": "מתכון",
@@ -2352,7 +2352,7 @@
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",
             "sendToAll": "שלח לכל",
-            "excludeNodeType": "[TODO: Translate] Never suggest this node type"
+            "excludeNodeType": "לא להציע שוב סוג צומת זה"
         },
         "exampleImages": {
             "opened": "תיקיית תמונות הדוגמה נפתחה",
