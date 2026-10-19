@@ -1722,6 +1722,7 @@
             "errors": {
                 "invalidUrl": "잘못된 모델 URL 형식",
                 "noVersions": "이 모델에 사용 가능한 버전이 없습니다",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
                 "mixedSources": "동일한 배치에서 CivitAI와 Hugging Face / ModelScope URL을 혼합할 수 없습니다.",
                 "noModelFiles": "이 저장소에서 모델 파일을 찾을 수 없습니다."
             },

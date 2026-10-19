@@ -1722,6 +1722,7 @@
             "errors": {
                 "invalidUrl": "Неверный формат URL модели",
                 "noVersions": "Нет доступных версий для этой модели",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
                 "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face / ModelScope в одном пакете.",
                 "noModelFiles": "В этом репозитории не найдено файлов моделей."
             },
