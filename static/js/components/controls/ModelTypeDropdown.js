@@ -275,7 +275,17 @@ export async function initModelTypeDropdown(pageType) {
 
     buildMenu();
     syncFromFilters();
-    group.classList.remove('hidden');
+    // Record that the control is usable before revealing it: PageControls'
+    // excluded-view sync must be able to tell "not initialized / single type"
+    // (stay hidden) apart from "available, temporarily hidden by excluded
+    // view" (restore on exit).
+    group.dataset.modelTypeAvailable = '1';
+    // The init fetch is async and PageControls.syncExcludedViewState() has
+    // already run by now, so only reveal the control when the excluded view
+    // is not the current mode.
+    if (!document.body.classList.contains('excluded-view-active')) {
+        group.classList.remove('hidden');
+    }
 
     // Let FilterManager push external changes (panel chips, presets, clear)
     // back into the trigger label and menu selection.

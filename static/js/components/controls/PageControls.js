@@ -997,7 +997,6 @@ export class PageControls {
             '[data-action="find-duplicates"]',
             '#favoriteFilterBtn',
             '.update-filter-group',
-            '#modelTypeDropdown',
         ];
         const customFilterIndicator = document.getElementById('customFilterIndicator');
 
@@ -1015,6 +1014,16 @@ export class PageControls {
                 element.classList.toggle('hidden', isExcludedView);
             });
         });
+
+        // The model-type dropdown decides its own initial visibility: it stays
+        // hidden when the page has a single sub-type (see ModelTypeDropdown.js).
+        // Un-hiding it here unconditionally would surface an empty, unwired
+        // trigger (just the caret) on single-type pages such as Checkpoints.
+        const modelTypeDropdown = document.getElementById('modelTypeDropdown');
+        if (modelTypeDropdown) {
+            const isAvailable = modelTypeDropdown.dataset.modelTypeAvailable === '1';
+            modelTypeDropdown.classList.toggle('hidden', isExcludedView || !isAvailable);
+        }
 
         if (customFilterIndicator && isExcludedView) {
             customFilterIndicator.classList.add('hidden');

@@ -48,6 +48,7 @@ afterEach(() => {
   delete window.filterManager;
   delete window.modelTypeDropdown;
   delete global.fetch;
+  document.body.classList.remove('excluded-view-active');
 });
 
 describe('ModelTypeDropdown', () => {
@@ -68,7 +69,26 @@ describe('ModelTypeDropdown', () => {
 
     const group = document.getElementById('modelTypeDropdown');
     expect(group.classList.contains('hidden')).toBe(true);
+    expect(group.dataset.modelTypeAvailable).toBeUndefined();
     expect(window.modelTypeDropdown).toBeUndefined();
+  });
+
+  it('flags itself available when it is surfaced', async () => {
+    await initModelTypeDropdown('other');
+
+    const group = document.getElementById('modelTypeDropdown');
+    expect(group.dataset.modelTypeAvailable).toBe('1');
+    expect(group.classList.contains('hidden')).toBe(false);
+  });
+
+  it('does not surface itself while the excluded view is active', async () => {
+    document.body.classList.add('excluded-view-active');
+
+    await initModelTypeDropdown('other');
+
+    const group = document.getElementById('modelTypeDropdown');
+    expect(group.dataset.modelTypeAvailable).toBe('1');
+    expect(group.classList.contains('hidden')).toBe(true);
   });
 
   it('stays hidden when no element with the dropdown id exists', async () => {
