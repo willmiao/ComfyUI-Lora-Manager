@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -11,6 +12,50 @@ from ..utils.constants import SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
 from .downloader import get_downloader
 
 logger = logging.getLogger(__name__)
+
+_DISK_CACHE_FILENAME = "civitai_base_models.json"
+
+
+def _disk_cache_path(*, create_dir: bool) -> str:
+    """Return the on-disk cache path under ``{settings_dir}/cache/``.
+
+    ``get_settings_dir`` is looked up dynamically so tests that monkeypatch
+    ``py.utils.settings_paths.get_settings_dir`` stay isolated.
+    """
+    from ..utils import settings_paths
+
+    cache_dir = os.path.join(settings_paths.get_settings_dir(create=create_dir), "cache")
+    if create_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, _DISK_CACHE_FILENAME)
+
+
+def _read_disk_cache() -> Optional[Dict[str, Any]]:
+    """Read the persisted remote-model snapshot, or None when unavailable."""
+    try:
+        path = _disk_cache_path(create_dir=False)
+        if not os.path.isfile(path):
+            return None
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if not isinstance(data, dict):
+            return None
+        remote = data.get("remote_models")
+        if not isinstance(remote, list):
+            return None
+        fetched_at = data.get("fetched_at")
+        timestamp: Optional[datetime] = None
+        if isinstance(fetched_at, str):
+            try:
+                timestamp = datetime.fromisoformat(fetched_at)
+            except ValueError:
+                timestamp = None
+        if timestamp is None:
+            timestamp = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+        return {"remote_models": remote, "fetched_at": timestamp}
+    except Exception as exc:
+        logger.debug("Failed to read base model disk cache: %s", exc)
+        return None
 
 
 class CivitaiBaseModelService:
@@ -53,6 +98,16 @@ class CivitaiBaseModelService:
 
         # Hardcoded models for fallback
         self._hardcoded_models = set(SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS)
+
+        # Seed the in-memory cache from the last persisted snapshot so the
+        # merged vocabulary is available before the first async fetch.
+        disk_snapshot = _read_disk_cache()
+        if disk_snapshot is not None:
+            self._cache = {
+                "remote_models": disk_snapshot["remote_models"],
+                "hardcoded_models": sorted(self._hardcoded_models),
+            }
+            self._cache_timestamp = disk_snapshot["fetched_at"]
 
         logger.info("CivitaiBaseModelService initialized")
 
@@ -321,6 +376,20 @@ class CivitaiBaseModelService:
         self._cache_timestamp = datetime.now(timezone.utc)
         logger.info(f"Cache updated with {len(remote_models)} remote models")
 
+        try:
+            path = _disk_cache_path(create_dir=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(
+                    {
+                        "fetched_at": self._cache_timestamp.isoformat(),
+                        "remote_models": sorted(remote_models),
+                    },
+                    handle,
+                    ensure_ascii=False,
+                )
+        except Exception as exc:
+            logger.debug("Failed to persist base model cache: %s", exc)
+
     def _is_cache_valid(self) -> bool:
         """Check if current cache is valid (not expired).
 
@@ -454,6 +523,28 @@ class CivitaiBaseModelService:
         }
 
         return categories
+
+
+def get_known_base_models() -> Set[str]:
+    """Return the merged base-model vocabulary without async or network I/O.
+
+    Union of the hardcoded fallback list and the most recent remote snapshot
+    (the warm singleton's in-memory cache, otherwise the on-disk snapshot from
+    the last successful fetch). Expired snapshots are accepted on purpose:
+    settings validators use this for membership tests, where keeping a stale
+    name is harmless but dropping a valid one silently destroys user config.
+    """
+    known = set(SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS)
+    instance = CivitaiBaseModelService._instance
+    cache = instance._cache if instance is not None else None
+    if cache is not None:
+        remote = cache.get("remote_models")
+    else:
+        snapshot = _read_disk_cache()
+        remote = snapshot["remote_models"] if snapshot else None
+    if isinstance(remote, list):
+        known.update(m for m in remote if isinstance(m, str) and m)
+    return known
 
 
 # Convenience function for getting the singleton instance

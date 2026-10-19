@@ -1833,3 +1833,58 @@ def test_download_root_rules_tag_rules_still_validate_root(manager, caplog):
 
     assert result["loras"] == []
     assert "/not-configured" in caplog.text
+
+
+def test_download_skip_base_models_accept_remote_only_models(manager, monkeypatch):
+    """Base models missing from the hardcoded list (new CivitAI families) must
+    survive validation once the merged vocabulary knows them."""
+    monkeypatch.setattr(
+        settings_manager_module,
+        "_get_supported_base_models",
+        lambda: {"SDXL 1.0", "Qwen 3"},
+    )
+
+    manager.set("download_skip_base_models", ["Qwen 3", "SDXL 1.0", "Not A Model"])
+
+    assert manager.get("download_skip_base_models") == ["Qwen 3", "SDXL 1.0"]
+
+
+def test_download_skip_base_models_fall_back_to_hardcoded_list(manager, monkeypatch):
+    """When the merged vocabulary is unavailable, the hardcoded list decides."""
+    monkeypatch.setattr(
+        settings_manager_module,
+        "_get_supported_base_models",
+        lambda: {"SDXL 1.0"},
+    )
+
+    manager.set("download_skip_base_models", ["Qwen 3", "SDXL 1.0"])
+
+    assert manager.get("download_skip_base_models") == ["SDXL 1.0"]
+
+
+def test_download_root_rules_accept_remote_only_base_models(manager, monkeypatch):
+    monkeypatch.setattr(
+        settings_manager_module,
+        "_get_supported_base_models",
+        lambda: {"Flux.1 D", "Flux.3"},
+    )
+    _configure_lora_roots(manager, "/loras-archive")
+    manager.settings["download_root_rules"] = {
+        "loras": [
+            {
+                "match_type": "base_model",
+                "match": ["Flux.3", "Flux.1 D"],
+                "root": "/loras-archive",
+            }
+        ]
+    }
+
+    result = manager.get_download_root_rules()
+
+    assert result["loras"] == [
+        {
+            "match_type": "base_model",
+            "match": ["Flux.3", "Flux.1 D"],
+            "root": "/loras-archive",
+        }
+    ]

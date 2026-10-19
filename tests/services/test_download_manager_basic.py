@@ -11,8 +11,10 @@ import pytest
 from py.services.download_manager import DownloadManager
 from py.services import download_manager
 from py.services import aria2_transfer_state
+from py.services import settings_manager as settings_manager_module
 from py.services.service_registry import ServiceRegistry
 from py.services.settings_manager import SettingsManager, get_settings_manager
+from py.utils.constants import SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
 
 
 @pytest.fixture(autouse=True)
@@ -1640,6 +1642,56 @@ async def test_download_skips_excluded_base_model(monkeypatch, scanners, metadat
     assert "file.safetensors" in result["message"]
     execute_download.assert_not_called()
     assert manager._active_downloads[result["download_id"]]["status"] == "skipped"
+
+
+@pytest.mark.asyncio
+async def test_download_skips_excluded_remote_only_base_model(
+    monkeypatch, scanners, metadata_provider
+):
+    """Exclusions for base models missing from the hardcoded list (e.g. new
+    CivitAI families known only via the remote snapshot) must still apply."""
+    monkeypatch.setattr(
+        settings_manager_module,
+        "_get_supported_base_models",
+        lambda: set(SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS) | {"Qwen 3"},
+    )
+    manager = DownloadManager()
+    get_settings_manager().settings["download_skip_base_models"] = ["Qwen 3"]
+
+    metadata_provider.get_model_version = AsyncMock(
+        return_value={
+            "id": 99,
+            "model": {"type": "LoRA", "tags": ["fantasy"]},
+            "baseModel": "Qwen 3",
+            "creator": {"username": "Author"},
+            "files": [
+                {
+                    "type": "Model",
+                    "primary": True,
+                    "downloadUrl": "https://example.invalid/file.safetensors",
+                    "name": "file.safetensors",
+                }
+            ],
+        }
+    )
+
+    execute_download = AsyncMock()
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert result["skipped"] is True
+    assert result["reason"] == "base_model_excluded"
+    assert result["base_model"] == "Qwen 3"
+    execute_download.assert_not_called()
 
 
 @pytest.mark.asyncio

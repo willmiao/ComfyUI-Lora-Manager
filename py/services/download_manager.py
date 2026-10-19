@@ -28,7 +28,6 @@ from ..utils.constants import (
     MAX_FOLDER_NAME_LENGTH,
     MAX_PATH_TAG_LENGTH,
     MODEL_WEIGHT_FILE_TYPES,
-    SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
     VALID_OTHER_CIVITAI_TYPES,
 )
@@ -1849,11 +1848,10 @@ class DownloadManager:
                 if isinstance(model_info, dict)
                 else []
             )
-            if (
-                isinstance(base_model_value, str)
-                and base_model_value in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
-                and base_model_value in excluded_base_models
-            ):
+            # excluded_base_models is already validated against the merged
+            # base-model vocabulary by the settings manager, so membership in
+            # the user exclusion list is sufficient here.
+            if isinstance(base_model_value, str) and base_model_value in excluded_base_models:
                 file_name = ""
                 files = version_info.get("files")
                 if isinstance(files, list):
