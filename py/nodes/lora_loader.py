@@ -169,6 +169,7 @@ class LoraLoaderLM:
         """Loads multiple LoRAs based on the widget input and lora_stack."""
         del text
         clip = kwargs.get("clip", None)
+        anima_remap = kwargs.get("anima_remap", True)
         lora_entries = _collect_stack_entries(kwargs.get("lora_stack", None))
         lora_entries.extend(_collect_widget_entries(loras))
 
