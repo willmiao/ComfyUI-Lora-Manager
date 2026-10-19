@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from typing import Any, Dict, List, Optional
+from urllib.parse import unquote_to_bytes
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
@@ -530,6 +531,32 @@ def _truncate_to_byte_budget(text: str, max_bytes: int) -> str:
     if len(encoded) <= max_bytes:
         return text
     return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
+def decode_percent_encoded_filename(name: str) -> str:
+    """Decode a percent-encoded stored filename back to the real name.
+
+    CivitAI's backend stores file names with non-ASCII characters
+    percent-encoded (URL-quoted): the mini endpoint's ``fileName`` is that
+    raw stored name (e.g. ``%E7%8A%AC...safetensors``), while the REST
+    ``files[].name`` is the decoded display name. Saving the raw string
+    literally would land ``%E7%8A%AC...`` on disk instead of the real
+    characters.
+
+    A literal ``%`` in an uploader's name is itself stored as ``%25``, so a
+    decoded result that stays pure ASCII (e.g. ``100%25cool`` ->
+    ``100%cool``) is treated as a real name and returned unchanged — only
+    decodes that yield valid UTF-8 with non-ASCII characters are applied.
+    """
+    if "%" not in name:
+        return name
+    try:
+        decoded = unquote_to_bytes(name).decode("utf-8", errors="strict")
+    except (UnicodeDecodeError, ValueError):
+        return name
+    if decoded == name or not any(ord(char) > 127 for char in decoded):
+        return name
+    return decoded
 
 
 def fit_stem_to_path_budget(dir_path: str, stem: str, extension: str = "") -> str:

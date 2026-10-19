@@ -16,6 +16,7 @@ from py.utils.utils import (
     calculate_filename_for_model,
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    decode_percent_encoded_filename,
     fit_stem_to_path_budget,
     get_lora_info,
     get_lora_info_absolute,
@@ -744,3 +745,51 @@ def test_calculate_filename_without_target_dir_keeps_fixed_cap(isolated_settings
     result = calculate_filename_for_model(model_data, "lora")
 
     assert len(result) == MAX_FILENAME_STEM_LENGTH
+
+
+# Real raw stored fileName served by CivitAI's mini endpoint for model
+# version 1714548: non-ASCII names are percent-encoded server-side.
+PERCENT_ENCODED_STORED_NAME = (
+    "%E7%8A%AC%E5%A4%9C%E5%8F%89%E6%97%A5%E6%9A%AE%E3%81%8B%E3%81%94"
+    "%E3%82%812000%E5%B9%B4%E4%BB%A3%E3%82%A2%E3%83%8B%E3%83%A1%E3%82%A2"
+    "%E3%83%8A%E3%83%AD%E3%82%B0%E4%BD%9C%E7%94%BB%E9%A2%A8illustrious"
+    "InuyashaHigurashi_Kagome2000s_anime_analog_painting_Styleillustrious"
+    ".safetensors"
+)
+
+
+def test_decode_percent_encoded_filename_decodes_non_ascii_names():
+    result = decode_percent_encoded_filename(PERCENT_ENCODED_STORED_NAME)
+
+    assert result == (
+        "犬夜叉日暮かごめ2000年代アニメアナログ作画風illustrious"
+        "InuyashaHigurashi_Kagome2000s_anime_analog_painting_Styleillustrious"
+        ".safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_passes_plain_names_through():
+    assert decode_percent_encoded_filename("model.safetensors") == "model.safetensors"
+
+
+def test_decode_percent_encoded_filename_keeps_ascii_only_escapes_literal():
+    # A literal "%" is stored as "%25", so decoding would yield pure ASCII:
+    # treat the string as a real name and leave it alone.
+    assert (
+        decode_percent_encoded_filename("100%25cool.safetensors")
+        == "100%25cool.safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_keeps_invalid_escapes_literal():
+    assert (
+        decode_percent_encoded_filename("100%zzcool.safetensors")
+        == "100%zzcool.safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_keeps_truncated_escapes_literal():
+    # A mid-triplet cut (e.g. from a previous length-truncation bug) does not
+    # decode to valid UTF-8 and must pass through untouched.
+    truncated = PERCENT_ENCODED_STORED_NAME[:100]
+    assert decode_percent_encoded_filename(truncated) == truncated

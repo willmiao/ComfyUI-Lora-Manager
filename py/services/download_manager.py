@@ -42,7 +42,7 @@ from ..utils.paid_access import (
 )
 from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
-from ..utils.utils import calculate_filename_for_model, fit_stem_to_path_budget, sanitize_folder_name
+from ..utils.utils import calculate_filename_for_model, decode_percent_encoded_filename, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
@@ -2241,6 +2241,19 @@ class DownloadManager:
             file_name = file_info.get("name", "")
             if not file_name:
                 return {"success": False, "error": "No filename found in file info"}
+            # CivitAI stores non-ASCII file names percent-encoded; the mini
+            # endpoint (and CivArchive) return that raw stored name, which
+            # must be decoded before it becomes the on-disk name — otherwise
+            # the literal "%E7%8A%AC..." string lands on the filesystem.
+            decoded_file_name = decode_percent_encoded_filename(file_name)
+            if decoded_file_name != file_name:
+                logger.info(
+                    "[download] Decoded percent-encoded filename '%s' to '%s'",
+                    file_name,
+                    decoded_file_name,
+                )
+                file_name = decoded_file_name
+                file_info = {**file_info, "name": file_name}
             # Raw stored filenames carry no length cap, and the fixed stem
             # cap only applies to template renames; trim to the real path
             # budget (model path and sidecar mirror alike) so the target

@@ -2294,6 +2294,116 @@ async def test_download_falls_back_to_rest_name_when_mini_fails(
 
 
 @pytest.mark.asyncio
+async def test_download_decodes_percent_encoded_raw_file_name(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """CivitAI stores non-ASCII file names percent-encoded; the mini
+    endpoint's raw fileName must be decoded before it lands on disk."""
+    manager = DownloadManager()
+    encoded_name = (
+        "%E7%8A%AC%E5%A4%9C%E5%8F%89%E6%97%A5%E6%9A%AE2000s_anime_analog_painting_Style.safetensors"
+    )
+    metadata_provider.payload = {
+        "id": 42,
+        "model": {"type": "LORA", "tags": ["fantasy"]},
+        "baseModel": "Illustrious",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 1001,
+                "type": "Model",
+                "primary": True,
+                "name": "犬夜叉日暮2000s_anime_analog_painting_Style.safetensors",
+                "downloadUrl": "https://example.invalid/file.safetensors",
+            }
+        ],
+    }
+    metadata_provider.get_version_file_mini = AsyncMock(
+        return_value={"fileName": encoded_name}
+    )
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["file_path"].endswith(
+        "犬夜叉日暮2000s_anime_analog_painting_Style.safetensors"
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_decodes_percent_encoded_name_for_civarchive_source(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """CivArchive serves raw stored names too — the decode applies even
+    though the mini lookup is skipped."""
+    manager = DownloadManager()
+    encoded_name = (
+        "%E7%8A%AC%E5%A4%9C%E5%8F%89%E6%97%A5%E6%9A%AE2000s_anime_analog_painting_Style.safetensors"
+    )
+    metadata_provider.payload = {
+        "id": 99,
+        "model": {"type": "LORA", "tags": ["fantasy"]},
+        "baseModel": "Illustrious",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 1001,
+                "type": "Model",
+                "primary": True,
+                "name": encoded_name,
+                "downloadUrl": "https://example.invalid/file.safetensors",
+            }
+        ],
+    }
+    metadata_provider.get_version_file_mini = AsyncMock()
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_metadata_provider",
+        AsyncMock(return_value=metadata_provider),
+    )
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    assert captured["file_path"].endswith(
+        "犬夜叉日暮2000s_anime_analog_painting_Style.safetensors"
+    )
+
+
+@pytest.mark.asyncio
 async def test_download_skips_mini_lookup_for_civarchive_source(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
