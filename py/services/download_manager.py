@@ -25,6 +25,7 @@ from ..utils.models import (
 )
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
+    CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE,
     MAX_FOLDER_NAME_LENGTH,
     MAX_PATH_TAG_LENGTH,
     MODEL_WEIGHT_FILE_TYPES,
@@ -88,6 +89,23 @@ DEFAULT_RATE_LIMIT_RETRY_AFTER_SECONDS = 60
 # File types that are never the intended download target even when CivitAI
 # marks them primary — configs/archives/workflows are auxiliary artifacts.
 NON_DOWNLOADABLE_PRIMARY_TYPES = ("Config", "Archive", "Workflow", "Training Data")
+
+
+def _other_models_disabled_response() -> Dict[str, Any]:
+    """Structured rejection when the Other Models feature is turned off.
+
+    The machine-readable ``reason`` is consumed by the companion browser
+    extension (docs/other-models-support.md C4); keep the value stable.
+    """
+    return {
+        "success": False,
+        "error": (
+            "Other Models management is disabled. Enable it in "
+            "Settings > Library before downloading VAE, upscaler, "
+            "text encoder or CLIP files."
+        ),
+        "reason": "other_models_disabled",
+    }
 
 
 @dataclass
@@ -1738,35 +1756,6 @@ class DownloadManager:
                 return {"success": False, "error": "Failed to fetch model metadata"}
 
             model_type_from_info = version_info.get("model", {}).get("type", "").lower()
-            # CivitAI ModelType has no model-level diffusion variant: DiT
-            # models are uploaded as "Checkpoint" or "UNet". Both go through
-            # the checkpoint branch so the standard diffusion routing chain
-            # (file type -> baseModel lists -> unknown default) applies.
-            if model_type_from_info in ("checkpoint", "unet"):
-                model_type = "checkpoint"
-            elif model_type_from_info in VALID_LORA_TYPES:
-                model_type = "lora"
-            elif model_type_from_info == "textualinversion":
-                model_type = "embedding"
-            elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
-                if not get_settings_manager().is_other_models_enabled():
-                    return {
-                        "success": False,
-                        "error": (
-                            "Other Models management is disabled. Enable it in "
-                            "Settings > Library before downloading VAE, upscaler, "
-                            "text encoder or CLIP files."
-                        ),
-                        # Machine-readable failure code consumed by the companion
-                        # browser extension (docs/other-models-support.md C4).
-                        "reason": "other_models_disabled",
-                    }
-                model_type = "other"
-            else:
-                return {
-                    "success": False,
-                    "error": f'Model type "{model_type_from_info}" is not supported for download',
-                }
 
             resolved_version_id = model_version_id
             raw_version_id = version_info.get("id")
@@ -1792,6 +1781,52 @@ class DownloadManager:
                         resolved_version_id,
                     )
             explicit_file = target_file is not None
+
+            # file_type_routing is an explicit caller opt-in (companion browser
+            # extension): when the resolved file's CivitAI file.type maps to an
+            # other-model sub_type and model.type itself is not an other type
+            # (e.g. a VAE file bundled on a Checkpoint model page), reroute the
+            # download through the other-models pipeline. The locked default is
+            # unchanged: without the flag, file.type never overrides model.type
+            # (see resolve_other_download_sub_type in download_routing.py).
+            file_type_reroute = (
+                explicit_file
+                and file_params is not None
+                and bool(file_params.get("file_type_routing"))
+                and model_type_from_info not in VALID_OTHER_CIVITAI_TYPES
+                and target_file.get("type") in CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE
+            )
+
+            # CivitAI ModelType has no model-level diffusion variant: DiT
+            # models are uploaded as "Checkpoint" or "UNet". Both go through
+            # the checkpoint branch so the standard diffusion routing chain
+            # (file type -> baseModel lists -> unknown default) applies.
+            if file_type_reroute:
+                if not get_settings_manager().is_other_models_enabled():
+                    return _other_models_disabled_response()
+                model_type = "other"
+                logger.info(
+                    "[download] file_type_routing: file type '%s' reroutes "
+                    "model version %s (model.type '%s') to the other-models pipeline",
+                    target_file.get("type"),
+                    resolved_version_id,
+                    model_type_from_info,
+                )
+            elif model_type_from_info in ("checkpoint", "unet"):
+                model_type = "checkpoint"
+            elif model_type_from_info in VALID_LORA_TYPES:
+                model_type = "lora"
+            elif model_type_from_info == "textualinversion":
+                model_type = "embedding"
+            elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
+                if not get_settings_manager().is_other_models_enabled():
+                    return _other_models_disabled_response()
+                model_type = "other"
+            else:
+                return {
+                    "success": False,
+                    "error": f'Model type "{model_type_from_info}" is not supported for download',
+                }
 
             if (
                 not explicit_file
