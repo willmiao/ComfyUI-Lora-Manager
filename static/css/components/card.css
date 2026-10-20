@@ -608,12 +608,14 @@
     gap: 2px;
 }
 
-/* HIGH / LOW badges — shown inline before version name in card footer */
+/* HIGH / LOW badges — shown inline before version name in card footer.
+   font-size/line-height/padding mirror .version-name so all chips in
+   .badge-version-unit share the same box height. */
 .hl-badge {
     display: inline-block;
-    font-size: 0.7em;
+    font-size: 0.85em;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.4;
     padding: 1px 5px;
     border-radius: var(--border-radius-xs);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -633,20 +635,22 @@
 }
 
 .medium-density .hl-badge {
-    font-size: 0.65em;
+    font-size: 0.8em;
 }
 
 .compact-density .hl-badge {
-    font-size: 0.62em;
-    padding: 0px 4px;
+    font-size: 0.75em;
+    padding: 1px 4px;
 }
 
-/* Quantization badge (e.g. Q4_K_M, FP8) — shown inline before version name */
+/* Quantization badge (e.g. Q4_K_M, FP8) — shown inline before version name.
+   font-size/line-height/padding mirror .version-name so all chips in
+   .badge-version-unit share the same box height. */
 .quant-badge {
     display: inline-block;
-    font-size: 0.7em;
+    font-size: 0.85em;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.4;
     padding: 1px 5px;
     border-radius: var(--border-radius-xs);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -657,12 +661,12 @@
 }
 
 .medium-density .quant-badge {
-    font-size: 0.65em;
+    font-size: 0.8em;
 }
 
 .compact-density .quant-badge {
-    font-size: 0.62em;
-    padding: 0px 4px;
+    font-size: 0.75em;
+    padding: 1px 4px;
 }
 
 /* Hide version-related elements when setting is disabled */

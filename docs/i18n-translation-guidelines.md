@@ -214,6 +214,20 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `truncateMiddlePath` stays — it is a code-level path-elision character, not a locale
 > string. No remaining `[TODO: Translate]` placeholders.
 
+> **Status (2026-10, filter count tooltips):** the counted chips of the filter panel, the
+> All Types dropdown options and the Refresh scope rows gained an **always-on** hover string
+> carrying the full name plus the exact count (`{name} — {count} models`, and
+> `recipes.filter.countTitle` on the Recipes page, whose chips count recipes). The hover text
+> is deliberately not tied to whether the on-screen number was abbreviated — an affordance
+> that exists only above a threshold is undiscoverable, and the name is what CSS ellipsizes on
+> a narrow chip. The abbreviation itself starts at 10,000 and is used **only where the
+> locale's `Intl` compact form is a real unit and narrower than the plain number**: German has
+> no compact unit below a million, so it keeps `18.475` rather than the rounded `18.500`, and
+> Russian keeps `18 475` rather than the wider `18,5 тыс.` (rule and rationale in
+> `static/js/utils/formatters.js`). The same pass translated the 4 leftover
+> `sidebar.deleteFolder*` placeholders (folder missing on disk → remove from list), so no
+> `[TODO: Translate]` remains in any locale.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -836,6 +850,25 @@ count, `(5/10)`). `{count}` is substituted with an already-formatted number
 files the walk looked at**, not every file on disk — the noun mirrors each locale's
 `stages.count_models` rendering, and `ru` uses the `файл(ов)` form because the count ticks
 live and can be any number (`notEmptyMessageCount` precedent).
+
+### Filter count tooltips (hover text of counted chips / options / rows)
+
+The number shown in a filter-panel chip, an All Types option or a Refresh scope row is
+abbreviated from 10,000 up (above); its tooltip is **always** present and always exact, because
+it also repeats the label that CSS may have ellipsized. Shape: `{name} — {count} <noun>` — the
+two keys differ only in the noun, so a locale's word order for the count (ko `모델 {count}개`)
+is applied once and reused. Dash follows the `sidebar.folderRoot.*Status` precedent: CJK uses
+`——`, all other locales `—`. "models" reuses each locale's `loras.controls.refresh.rootModels`
+noun; "recipes" uses the R4 noun in its plain plural (fr keeps `Recipes`).
+
+| Term | Rendering |
+|---|---|
+| `header.filter.countTitle` ("{name} — {count} models") | zh-CN {name} —— {count} 个模型 · zh-TW {name} —— {count} 個模型 · ja {name} —— {count} 個のモデル · ko {name} —— 모델 {count}개 · fr {name} — {count} modèles · de {name} — {count} Modelle · es {name} — {count} modelos · ru {name} — {count} модел(ей) · he {name} — {count} מודלים |
+| `recipes.filter.countTitle` ("{name} — {count} recipes") | zh-CN {name} —— {count} 个配方 · zh-TW {name} —— {count} 個配方 · ja {name} —— {count} 件のレシピ · ko {name} —— 레시피 {count}개 · fr {name} — {count} Recipes · de {name} — {count} Rezepte · es {name} — {count} recetas · ru {name} — {count} рецепт(ов) · he {name} — {count} מתכונים |
+
+Both keys are passed a pre-formatted count (`formatCountExact`), so no locale adds its own
+digit grouping; `ko` needs no `의` because the count follows the noun directly, as in
+`rootModels`.
 
 ---
 

@@ -343,6 +343,15 @@ PATH_BUDGET_SUFFIX_ALLOWANCE = 20
 # the operation with an actionable message instead of writing a stub name.
 MIN_VIABLE_STEM_LENGTH = 8
 
+# Fallback for the per-component filename limit in BYTES (POSIX NAME_MAX).
+# Filesystems count name components in bytes, not characters, so a CJK-heavy
+# name can pass every character-count cap above and still be unwritable.
+# fit_stem_to_path_budget probes the real limit per directory via
+# os.pathconf(PC_NAME_MAX) — encrypted filesystems report less (eCryptfs,
+# used by Ubuntu encrypted home dirs and Synology encrypted shares, allows
+# only 143 bytes) — and uses this value when probing is unavailable.
+MAX_FILENAME_COMPONENT_BYTES = 255
+
 # baseModel values from CivitAI that should be treated as diffusion models (unet)
 # These model types are incorrectly labeled as "checkpoint" by CivitAI but are actually diffusion models
 DIFFUSION_MODEL_BASE_MODELS = frozenset(

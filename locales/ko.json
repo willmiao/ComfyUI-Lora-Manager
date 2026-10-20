@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "모델 필터",
+            "countTitle": "{name} —— 모델 {count}개",
             "presets": "프리셋",
             "savePreset": "현재 활성 필터를 새 프리셋으로 저장.",
             "savePresetDisabledActive": "저장할 수 없음: 프리셋이 이미 활성화되어 있습니다. 필터를 수정한 후 새 프리셋을 저장하세요",
@@ -399,7 +400,8 @@
             "autoOrganize": "자동 정리",
             "metadata": "메타데이터",
             "sidecarStorage": "사이드카 파일 저장",
-            "proxySettings": "프록시 설정"
+            "proxySettings": "프록시 설정",
+            "sendToWorkflow": "워크플로로 전송"
         },
         "nav": {
             "general": "일반",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "쉼표로 구분하여 하나 이상의 경로를 입력하세요.",
                 "saveFailed": "건너뛰기 경로를 저장할 수 없습니다: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "제외할 노드 유형",
+                "placeholder": "예: CheckpointLoaderSimple, MyCustomNode",
+                "help": "이 ComfyUI 노드 클래스 이름은 워크플로로 전송할 대상으로 표시되지 않습니다. 여러 항목은 쉼표 또는 세미콜론으로 구분하십시오. ComfyUI에서 명시적으로 마크한 노드(우클릭 → Mark as)는 예외입니다."
+            },
+            "titlePatterns": {
+                "label": "제외할 노드 제목 패턴",
+                "placeholder": "예: negative, preview",
+                "help": "제목에 이 텍스트 조각 중 하나라도 포함된 노드(대소문자를 구분하지 않음)는 워크플로로 전송할 대상에 표시되지 않습니다. 여러 항목은 쉼표 또는 세미콜론으로 구분하십시오. ComfyUI에서 명시적으로 마크한 노드(우클릭 → Mark as)는 예외입니다."
             }
         },
         "backup": {
@@ -957,6 +971,11 @@
                 "random": "랜덤",
                 "randomAction": "셔플 (무작위)"
             },
+            "modelType": {
+                "title": "모델 유형으로 필터링",
+                "all": "모든 유형",
+                "multiple": "유형 {count}개"
+            },
             "refresh": {
                 "title": "모델 목록 새로고침",
                 "full": "캐시 재구성",
@@ -1079,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA 레시피",
+        "filter": {
+            "countTitle": "{name} —— 레시피 {count}개"
+        },
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기",
@@ -1456,8 +1478,8 @@
             "notEmptyMessageCount": "이 폴더에는 아직 모델 파일이 {count}개 있습니다. 먼저 해당 모델을 삭제하거나 이동하세요 —— 폴더를 삭제해도 모델 파일이 함께 삭제되지는 않습니다.",
             "notEmptyMessageExcluded": "이 폴더에는 아직 모델 파일이 {count}개 있으며, 그중 {excluded}개는 라이브러리에서 제외되어 있습니다. '제외된 모델 관리'에서 제외를 해제한 뒤 먼저 삭제하세요 —— 폴더를 삭제해도 모델 파일이 함께 삭제되지는 않습니다.",
             "missingTitle": "폴더를 찾을 수 없습니다",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 목록에서 제거할 수 있습니다.",
+            "removeFromList": "목록에서 제거",
             "symlinkTitle": "폴더가 심볼릭 링크입니다",
             "symlinkMessage": "이 폴더의 모든 복사본이 심볼릭 링크입니다. LoRA Manager 외부에서 링크 또는 그 대상을 삭제하세요.",
             "protectedTitle": "보호된 폴더",
@@ -1479,8 +1501,8 @@
             "busy": "이 폴더에 아직 대기 중인 삭제 작업이 있습니다. 되돌리기 시간이 끝날 때까지 기다리세요.",
             "unsupported": "이 페이지에서는 폴더를 삭제할 수 없습니다",
             "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "\"{name}\" 폴더를 목록에서 제거했습니다",
+            "exists": "폴더가 디스크에 다시 나타났습니다. 대신 삭제하세요.",
             "symlink": "이 폴더는 심볼릭 링크이므로 사이드바에서 삭제할 수 없습니다.",
             "successMulti": "모델 루트 {count}개에서 \"{name}\" 폴더를 삭제했습니다",
             "partial": "복사본 {total}개 중 {count}개를 삭제했습니다 —— {failed}개는 삭제하지 못했습니다. 사이드바를 새로 고친 후 다시 시도하세요."
@@ -2322,7 +2344,8 @@
             "embeddingAdded": "Embedding을 워크플로에 추가했습니다",
             "embeddingFailed": "Embedding 추가 실패",
             "promptSent": "프롬프트를 워크플로에 보냈습니다",
-            "promptFailed": "프롬프트 보내기 실패"
+            "promptFailed": "프롬프트 보내기 실패",
+            "nodeTypeExcluded": "노드 유형 \"{type}\"을(를) 전송 대상에서 제외했습니다"
         },
         "nodeSelector": {
             "recipe": "레시피",
@@ -2332,7 +2355,8 @@
             "replace": "교체",
             "append": "추가",
             "selectTargetNode": "대상 노드 선택",
-            "sendToAll": "모두에게 전송"
+            "sendToAll": "모두에게 전송",
+            "excludeNodeType": "이 노드 유형을 다시 제안하지 않음"
         },
         "exampleImages": {
             "opened": "예시 이미지 폴더가 열렸습니다",
@@ -2794,7 +2818,9 @@
             "noItemsSelected": "삭제할 {type}이(가) 선택되지 않았습니다",
             "deleteError": "오류: {message}",
             "deleteSuccess": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",
-            "deleteFailed": "{type} 삭제 실패: {message}"
+            "deleteFailed": "{type} 삭제 실패: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "{pageType} 다시 로딩 실패: {message}",

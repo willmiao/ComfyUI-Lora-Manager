@@ -77,6 +77,44 @@ class TestModelHashIndexRemoveByPath:
         assert "abc123" not in index._duplicate_hashes
         assert index._hash_to_path.get("abc123") == "/a/model.safetensors"
 
+    def test_remove_by_path_ignores_stale_hash_hint(self):
+        """A hash hint that does not reference the path must not raise.
+
+        The cache row's sha256 and the index can drift apart (a hash corrected
+        in place, a partially applied cache update). The delete flow passes the
+        cache row's hash as a hint; a mismatch used to raise KeyError and abort
+        the whole batch cache update (issue #1154).
+        """
+        index = ModelHashIndex()
+        index.add_entry("oldhash", "/models/lora.safetensors")
+
+        # Cache row says "newhash"; the index still files the path under
+        # "oldhash".
+        index.remove_by_path("/models/lora.safetensors", "newhash")
+
+        assert len(index) == 0
+        assert "oldhash" not in index._hash_to_path
+
+    def test_remove_by_path_tolerates_unknown_hash_and_path(self):
+        index = ModelHashIndex()
+        index.add_entry("abc123", "/models/lora.safetensors")
+
+        # Neither the hash nor the path is known: must be a no-op, not a raise.
+        index.remove_by_path("/models/other.safetensors", "deadbeef")
+        index.remove_by_path("/models/other.safetensors", "deadbeef")
+
+        assert len(index) == 1
+        assert index._hash_to_path.get("abc123") == "/models/lora.safetensors"
+
+    def test_remove_by_path_clears_autov3_for_unknown_path(self):
+        """Path-keyed entries are dropped even when no hash mapping exists."""
+        index = ModelHashIndex()
+        index.add_autov3("autov3value", "/models/lora.safetensors")
+
+        index.remove_by_path("/models/lora.safetensors")
+
+        assert index.get_all_autov3() == {}
+
 
 class TestModelHashIndexGetDuplicateFilenames:
     def test_empty_index_returns_empty_dict(self):

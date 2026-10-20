@@ -64,8 +64,19 @@
                     </optgroup>
                 </select>
             </div>
+            {% if page_id in ['loras', 'checkpoints', 'other'] %}
+            {# The tooltip sits on the trigger, not the group: a group-level title
+               leaks onto every menu option that has no title of its own. #}
+            <div class="control-group model-type-dropdown-group dropdown-group hidden" id="modelTypeDropdown">
+                <button type="button" class="model-type-trigger" aria-haspopup="listbox" aria-expanded="false" title="{{ t('loras.controls.modelType.title') }}">
+                    <span class="model-type-trigger__label"></span>
+                    <i class="fas fa-caret-down model-type-trigger__caret" aria-hidden="true"></i>
+                </button>
+                <div class="dropdown-menu model-type-dropdown-menu" role="listbox"></div>
+            </div>
+            {% endif %}
             <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.title') }}{% else %}{{ t('loras.controls.refresh.title') }}{% endif %}" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span><span>{{ t('common.actions.refresh') }}</span> <kbd class="shortcut-key">R</kbd></span></button>
+                <button data-action="refresh" class="dropdown-main"><span><span>{{ t('common.actions.refresh') }}</span> <kbd class="shortcut-key">R</kbd></span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
@@ -84,30 +95,30 @@
             
             {% if page_id != 'recipes' %}
             <div class="control-group">
-                <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span><span>{{ t('loras.controls.fetch.action') }}</span> <kbd class="shortcut-key">F</kbd></span></button>
+                <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><span><span>{{ t('loras.controls.fetch.action') }}</span> <kbd class="shortcut-key">F</kbd></span></button>
             </div>
             <div class="control-group">
                 <button data-action="download" title="{{ t('loras.controls.download.title') }}">
-                    <i class="fas fa-cloud-download-alt"></i> <span><span>{{ t('loras.controls.download.action') }}</span> <kbd class="shortcut-key">D</kbd></span>
+                    <span><span>{{ t('loras.controls.download.action') }}</span> <kbd class="shortcut-key">D</kbd></span>
                 </button>
             </div>
             {% endif %}
             {% if page_id == 'recipes' %}
             <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
-                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{ t('recipes.controls.import.action') }}</button>
+                <button onclick="importManager.showImportModal()"><span>{{ t('recipes.controls.import.action') }}</span></button>
             </div>
             <div title="{{ t('recipes.batchImport.title') }}" class="control-group">
-                <button onclick="batchImportManager.showModal()"><i class="fas fa-layer-group"></i> {{ t('recipes.batchImport.action') }}</button>
+                <button onclick="batchImportManager.showModal()"><span>{{ t('recipes.batchImport.action') }}</span></button>
             </div>
             {% endif %}
             <div class="control-group">
                 <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
-                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span> <kbd class="shortcut-key">B</kbd></span>
+                    <span><span>{{ t('loras.controls.bulk.action') }}</span> <kbd class="shortcut-key">B</kbd></span>
                 </button>
             </div>
             <div class="control-group">
                 <button id="findDuplicatesBtn" data-action="find-duplicates" title="{{ t('loras.controls.duplicates.title') }}">
-                    <i class="fas fa-clone"></i> <span>{{ t('loras.controls.duplicates.action') }}</span>
+                    <span>{{ t('loras.controls.duplicates.action') }}</span>
                     <span id="duplicatesBadge" class="badge"></span>
                 </button>
             </div>
@@ -152,7 +163,6 @@
             {% endif %}
             <div class="control-group doctor-control-group">
                 <button id="doctorTriggerBtn" class="doctor-trigger" title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}">
-                    <i class="fas fa-stethoscope"></i>
                     <span>{{ t('doctor.title', default='Doctor') }}</span>
                     <span id="doctorStatusBadge" class="doctor-status-badge hidden" aria-hidden="true"></span>
                 </button>

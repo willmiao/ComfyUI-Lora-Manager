@@ -510,11 +510,51 @@ export class SidebarManager {
         }
 
         const suffix = `/${normalizedFolder}`;
-        if (directory.endsWith(suffix)) {
+        // Case-insensitive: a cached folder may differ from the file path in
+        // case alone, which is the same directory on Windows/macOS.
+        if (directory.toLowerCase().endsWith(suffix.toLowerCase())) {
             return directory.slice(0, -suffix.length);
         }
 
-        return directory;
+        // Folder and file path disagree (stale cache entry): returning the
+        // file's own directory here would make the move nest the target under
+        // the source folder (issue #1148). Let the caller resolve the root
+        // from the library roots instead.
+        return null;
+    }
+
+    /**
+     * Resolve the library root a dragged file lives under.
+     *
+     * Prefers the authoritative root list (longest root prefixing the file
+     * path) over the card heuristic, which silently derives a wrong root when
+     * the cached folder disagrees with the file path (issue #1148).
+     *
+     * `fallbackRoot` is passed in instead of read from `this.draggedRootPath`:
+     * the drag state is cleared by `dragend` while this request is in flight.
+     */
+    async _resolveMoveRoot(filePath, fallbackRoot = '') {
+        try {
+            if (typeof this.apiClient?.fetchModelRoots === 'function') {
+                const rootsData = await this.apiClient.fetchModelRoots();
+                const roots = rootsData?.roots || [];
+                const normalizedFile = (filePath || '').replace(/\\/g, '/').toLowerCase();
+                let best = '';
+                for (const root of roots) {
+                    const normalizedRoot = (root || '').replace(/\\/g, '/').replace(/\/+$/, '');
+                    if (!normalizedRoot) continue;
+                    const key = normalizedRoot.toLowerCase();
+                    if ((normalizedFile === key || normalizedFile.startsWith(key + '/')) &&
+                        normalizedRoot.length > best.length) {
+                        best = normalizedRoot;
+                    }
+                }
+                if (best) return best;
+            }
+        } catch (error) {
+            console.warn('[SidebarManager] Failed to resolve move root from library roots:', error);
+        }
+        return fallbackRoot ? fallbackRoot.replace(/\\/g, '/') : '';
     }
 
     combineRootAndRelativePath(root, relative) {
@@ -637,11 +677,22 @@ export class SidebarManager {
     }
 
     async performDragMove(targetRelativePath) {
+        // Snapshot the drag state before the first await. The browser dispatches
+        // `dragend` right after `drop`, and handleCardDragEnd() calls
+        // resetDragState() while this move is still awaiting the roots request.
+        // Reading the instance fields after that await would either throw
+        // (null.length) or abort the move (issue: drag-drop move did nothing).
+        const filePaths = Array.isArray(this.draggedFilePaths) ? [...this.draggedFilePaths] : [];
+        const fromBulk = Boolean(this.draggedFromBulk);
+        const fallbackRoot = this.draggedRootPath
+            ? this.draggedRootPath.replace(/\\/g, '/')
+            : '';
+
         console.log('[SidebarManager] performDragMove called with targetRelativePath:', targetRelativePath);
-        console.log('[SidebarManager] draggedFilePaths:', this.draggedFilePaths);
-        console.log('[SidebarManager] draggedRootPath:', this.draggedRootPath);
-        
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) {
+        console.log('[SidebarManager] draggedFilePaths:', filePaths);
+        console.log('[SidebarManager] draggedRootPath:', fallbackRoot);
+
+        if (filePaths.length === 0) {
             console.log('[SidebarManager] performDragMove returning false - no draggedFilePaths');
             return false;
         }
@@ -658,7 +709,7 @@ export class SidebarManager {
             return false;
         }
 
-        const rootPath = this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
+        const rootPath = await this._resolveMoveRoot(filePaths[0], fallbackRoot);
         console.log('[SidebarManager] rootPath:', rootPath);
         if (!rootPath) {
             console.log('[SidebarManager] performDragMove returning false - no rootPath');
@@ -671,22 +722,22 @@ export class SidebarManager {
         }
 
         const destination = this.combineRootAndRelativePath(rootPath, targetRelativePath);
-        const useBulkMove = this.draggedFromBulk || this.draggedFilePaths.length > 1;
+        const useBulkMove = fromBulk || filePaths.length > 1;
 
         try {
             console.log('[SidebarManager] calling apiClient.move, useBulkMove:', useBulkMove);
             let movedFiles = []; // Array of { original_file_path, new_file_path }
 
             if (useBulkMove) {
-                const results = await this.apiClient.moveBulkModels(this.draggedFilePaths, destination);
+                const results = await this.apiClient.moveBulkModels(filePaths, destination);
                 movedFiles = (results || [])
                     .filter(r => r.success)
                     .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
             } else {
-                const result = await this.apiClient.moveSingleModel(this.draggedFilePaths[0], destination);
+                const result = await this.apiClient.moveSingleModel(filePaths[0], destination);
                 if (result) {
                     movedFiles.push({
-                        original_file_path: result.original_file_path || this.draggedFilePaths[0],
+                        original_file_path: result.original_file_path || filePaths[0],
                         new_file_path: result.new_file_path
                     });
                 }
@@ -738,7 +789,7 @@ export class SidebarManager {
             // Refresh sidebar folder tree only (no model data reload)
             await this.refresh();
 
-            if (this.draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
+            if (fromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
                 bulkManager.toggleBulkMode();
             }
 

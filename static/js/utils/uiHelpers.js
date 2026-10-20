@@ -728,6 +728,48 @@ async function fetchWorkflowRegistry() {
   }
 }
 
+/**
+ * Check whether a registry node is excluded from send-to-workflow targets.
+ *
+ * Precedence:
+ *  1. Per-node exclusion (right-click → "Exclude from Send Targets") always wins.
+ *  2. An explicit per-node marker ("Mark as →") exempts the node from the
+ *     global exclusion lists — the user pointed at this exact node.
+ *  3. Global exclusion lists from settings: exact comfy-class matches and
+ *     case-insensitive title substrings.
+ */
+function isNodeExcludedFromSendTargets(node) {
+  if (!node) {
+    return false;
+  }
+  if (node.exclude_send === true) {
+    return true;
+  }
+  if (node.marker_role) {
+    return false;
+  }
+
+  const exclusions = state?.global?.settings?.send_to_workflow_exclusions;
+  if (!exclusions || typeof exclusions !== 'object') {
+    return false;
+  }
+
+  const nodeClasses = Array.isArray(exclusions.node_classes) ? exclusions.node_classes : [];
+  const nodeClass = node.comfy_class || node.type_name;
+  if (nodeClass && nodeClasses.includes(nodeClass)) {
+    return true;
+  }
+
+  const titlePatterns = Array.isArray(exclusions.title_patterns) ? exclusions.title_patterns : [];
+  const title = typeof node.title === 'string' ? node.title.toLowerCase() : '';
+  return titlePatterns.some((pattern) => {
+    if (typeof pattern !== 'string' || !pattern.trim()) {
+      return false;
+    }
+    return title.includes(pattern.trim().toLowerCase());
+  });
+}
+
 function filterRegistryNodes(nodes = {}, predicate) {
   if (typeof nodes !== 'object' || nodes === null) {
     return {};
@@ -735,6 +777,9 @@ function filterRegistryNodes(nodes = {}, predicate) {
 
   return Object.fromEntries(
     Object.entries(nodes).filter(([, node]) => {
+      if (isNodeExcludedFromSendTargets(node)) {
+        return false;
+      }
       try {
         return predicate(node);
       } catch (error) {
@@ -1423,6 +1468,11 @@ function showNodeSelector(nodes, options = {}) {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
     const bgColor = node.bgcolor || DEFAULT_NODE_COLOR;
     const graphLabel = node.graph_name ? ` (${node.graph_name})` : '';
+    const nodeClass = node.comfy_class || node.type_name || '';
+    const excludeTitle = translate('uiHelpers.nodeSelector.excludeNodeType', {}, 'Never suggest this node type');
+    const excludeButton = nodeClass
+      ? `<button type="button" class="node-item-exclude" data-exclude-class="${nodeClass.replace(/"/g, '&quot;')}" title="${excludeTitle}"><i class="fas fa-eye-slash"></i></button>`
+      : '';
 
     return `
       <div class="node-item" data-node-id="${nodeKey}">
@@ -1430,6 +1480,7 @@ function showNodeSelector(nodes, options = {}) {
           <i class="${iconClass}"></i>
         </div>
         <span>#${node.id}${graphLabel} ${node.title}</span>
+        ${excludeButton}
       </div>
     `;
   }).join('');
@@ -1474,6 +1525,62 @@ function showNodeSelector(nodes, options = {}) {
 }
 
 /**
+ * Add a comfy node class to the send-to-workflow exclusion list (persisted via
+ * settings), then drop matching items from the open node selector.
+ */
+async function excludeNodeClassFromSelector(comfyClass) {
+  if (!comfyClass) {
+    return;
+  }
+
+  const current = state?.global?.settings?.send_to_workflow_exclusions;
+  const updated = {
+    node_classes: Array.isArray(current?.node_classes) ? [...current.node_classes] : [],
+    title_patterns: Array.isArray(current?.title_patterns) ? [...current.title_patterns] : [],
+  };
+  if (!updated.node_classes.includes(comfyClass)) {
+    updated.node_classes.push(comfyClass);
+  }
+
+  try {
+    const response = await fetch('/api/lm/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ send_to_workflow_exclusions: updated }),
+    });
+    const data = await response.json();
+    if (!response.ok || data.success === false) {
+      throw new Error(data?.error || 'Failed to save setting');
+    }
+  } catch (error) {
+    console.error('Failed to save send-to-workflow exclusion:', error);
+    showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+    return;
+  }
+
+  state.global.settings.send_to_workflow_exclusions = updated;
+  showToast('uiHelpers.workflow.nodeTypeExcluded', { type: comfyClass }, 'success');
+
+  // Remove matching candidates from the open selector.
+  const nodes = nodeSelectorState.currentNodes || {};
+  for (const [nodeKey, node] of Object.entries(nodes)) {
+    if ((node.comfy_class || node.type_name) === comfyClass) {
+      delete nodes[nodeKey];
+    }
+  }
+  document.querySelectorAll('#nodeSelector .node-item-exclude').forEach((button) => {
+    if (button.dataset.excludeClass === comfyClass) {
+      button.closest('.node-item')?.remove();
+    }
+  });
+
+  if (Object.keys(nodes).length === 0) {
+    hideNodeSelector();
+    showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
+  }
+}
+
+/**
  * Setup event listeners for node selector using event manager
  * @param {HTMLElement} selector - The selector element
  */
@@ -1494,6 +1601,13 @@ function setupNodeSelectorEvents(selector) {
 
   // Register node selection handler with event manager  
   eventManager.addHandler('click', 'nodeSelector-selection', async (e) => {
+    const excludeButton = e.target.closest('.node-item-exclude');
+    if (excludeButton) {
+      e.stopPropagation();
+      await excludeNodeClassFromSelector(excludeButton.dataset.excludeClass);
+      return true; // Stop propagation
+    }
+
     const nodeItem = e.target.closest('.node-item');
     if (!nodeItem) return false; // Continue with other handlers
 

@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "モデルをフィルタ",
+            "countTitle": "{name} —— {count} 個のモデル",
             "presets": "プリセット",
             "savePreset": "現在のアクティブフィルタを新しいプリセットとして保存。",
             "savePresetDisabledActive": "保存できません：プリセットがすでにアクティブです。フィルタを変更して新しいプリセットを保存してください",
@@ -399,7 +400,8 @@
             "autoOrganize": "自動整理",
             "metadata": "メタデータ",
             "sidecarStorage": "サイドカーファイルの保存",
-            "proxySettings": "プロキシ設定"
+            "proxySettings": "プロキシ設定",
+            "sendToWorkflow": "ワークフローへ送信"
         },
         "nav": {
             "general": "一般",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "カンマで区切って少なくとも1つのパスを入力してください。",
                 "saveFailed": "スキップパスの保存に失敗しました：{message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "除外するノードタイプ",
+                "placeholder": "例: CheckpointLoaderSimple, MyCustomNode",
+                "help": "これらの ComfyUI ノードクラス名は、ワークフローへの送信ターゲットとして表示されません。複数の項目はカンマまたはセミコロンで区切ってください。ComfyUI で明示的にマークしたノード（右クリック → Mark as）は対象外です。"
+            },
+            "titlePatterns": {
+                "label": "除外するノードタイトルパターン",
+                "placeholder": "例: negative, preview",
+                "help": "タイトルにこれらの文字列のいずれかを含むノード（大文字と小文字を区別しません）は、ワークフローへの送信ターゲットに表示されません。複数の項目はカンマまたはセミコロンで区切ってください。ComfyUI で明示的にマークしたノード（右クリック → Mark as）は対象外です。"
             }
         },
         "backup": {
@@ -957,6 +971,11 @@
                 "random": "ランダム",
                 "randomAction": "シャッフル（ランダム）"
             },
+            "modelType": {
+                "title": "モデルタイプで絞り込む",
+                "all": "すべてのタイプ",
+                "multiple": "{count} タイプ"
+            },
             "refresh": {
                 "title": "モデルリストを更新",
                 "full": "キャッシュを再構築",
@@ -1079,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRAレシピ",
+        "filter": {
+            "countTitle": "{name} —— {count} 件のレシピ"
+        },
         "actions": {
             "sendCheckpoint": "ComfyUIへ送信",
             "sendRecipe": "ComfyUIへ送信",
@@ -1456,8 +1478,8 @@
             "notEmptyMessageCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
             "notEmptyMessageExcluded": "このフォルダにはまだ {count} 個のモデルファイルがあり、そのうち {excluded} 個はライブラリから除外されています。「除外モデルを管理」で除外を解除してから削除してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
             "missingTitle": "フォルダが見つかりません",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "このフォルダはディスク上に存在しません。リストから削除できます。",
+            "removeFromList": "リストから削除",
             "symlinkTitle": "フォルダがシンボリックリンクです",
             "symlinkMessage": "このフォルダのすべてのコピーがシンボリックリンクです。LoRA Manager の外でリンクまたはそのリンク先を削除してください。",
             "protectedTitle": "フォルダは保護されています",
@@ -1479,8 +1501,8 @@
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダを削除できません",
             "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "フォルダ \"{name}\" をリストから削除しました",
+            "exists": "フォルダがディスク上に戻りました。代わりに削除してください。",
             "symlink": "このフォルダはシンボリックリンクです。サイドバーからは削除できません。",
             "successMulti": "{count} 個のモデルルートからフォルダ \"{name}\" を削除しました",
             "partial": "{total} 個のコピーのうち {count} 個を削除しました —— {failed} 個は削除できませんでした。サイドバーを再読み込みしてからもう一度お試しください。"
@@ -2322,7 +2344,8 @@
             "embeddingAdded": "Embeddingをワークフローに追加しました",
             "embeddingFailed": "Embeddingの追加に失敗しました",
             "promptSent": "プロンプトをワークフローに送信しました",
-            "promptFailed": "プロンプトの送信に失敗しました"
+            "promptFailed": "プロンプトの送信に失敗しました",
+            "nodeTypeExcluded": "ノードタイプ \"{type}\" を送信ターゲットから除外しました"
         },
         "nodeSelector": {
             "recipe": "レシピ",
@@ -2332,7 +2355,8 @@
             "replace": "置換",
             "append": "追加",
             "selectTargetNode": "ターゲットノードを選択",
-            "sendToAll": "すべてに送信"
+            "sendToAll": "すべてに送信",
+            "excludeNodeType": "このノードタイプを今後提案しない"
         },
         "exampleImages": {
             "opened": "例画像フォルダが開かれました",
@@ -2794,7 +2818,9 @@
             "noItemsSelected": "削除する {type} が選択されていません",
             "deleteError": "エラー：{message}",
             "deleteSuccess": "{count} {type} が正常に削除されました",
-            "deleteFailed": "{type} の削除に失敗しました：{message}"
+            "deleteFailed": "{type} の削除に失敗しました：{message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "{pageType}の再読み込みに失敗しました：{message}",

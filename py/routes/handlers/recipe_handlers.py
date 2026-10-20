@@ -362,6 +362,54 @@ class RecipeListingHandler:
             self._logger.error("Error retrieving recipes: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
 
+    # Generation-parameter fields whose text may carry the legacy Civitai
+    # scrape artifact described in _repair_legacy_prompt_ellipsis.
+    _LEGACY_ELLIPSIS_FIELDS = ("prompt", "negative_prompt")
+
+    @classmethod
+    def _strip_trailing_ellipsis(cls, value: Any) -> Optional[str]:
+        """Return *value* without trailing ``...`` runs, or ``None`` if unchanged."""
+        if not isinstance(value, str):
+            return None
+
+        cleaned = value.rstrip()
+        if not cleaned.endswith("..."):
+            return None
+
+        # Each scrape appended one ``...``; collapse repeated trailing runs
+        # so a multiply-appended ellipsis is fully cleaned in one pass.
+        while cleaned.endswith("..."):
+            cleaned = cleaned[:-3].rstrip()
+
+        return cleaned
+
+    @classmethod
+    def _repair_legacy_prompt_ellipsis(
+        cls, recipe: Mapping[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Return cleaned ``gen_params`` when a prompt ends with the legacy ``...``.
+
+        Old companion-extension versions scraped Civitai's collapsed
+        ``...Show more`` toggle as part of the prompt text, so recipes saved by
+        them can end with an extra ellipsis. Detecting it when the recipe
+        detail (modal) is loaded keeps the repair lazy and one-shot: once the
+        cleaned value is persisted, later opens no longer match.
+        """
+        gen_params = recipe.get("gen_params")
+        if not isinstance(gen_params, dict):
+            return None
+
+        cleaned_gen_params = dict(gen_params)
+        repaired = False
+        for field in cls._LEGACY_ELLIPSIS_FIELDS:
+            cleaned = cls._strip_trailing_ellipsis(gen_params.get(field))
+            if cleaned is None:
+                continue
+            cleaned_gen_params[field] = cleaned
+            repaired = True
+
+        return cleaned_gen_params if repaired else None
+
     async def get_recipe(self, request: web.Request) -> web.Response:
         try:
             await self._ensure_dependencies_ready()
@@ -375,9 +423,33 @@ class RecipeListingHandler:
             if not recipe:
                 return web.json_response({"error": "Recipe not found"}, status=404)
 
+            recipe = dict(recipe)
+
+            # Strip the legacy trailing "..." from prompts when the recipe
+            # modal loads. Repair failures must never break the detail
+            # response, so they only log and fall back to the stored value.
+            repaired_gen_params = self._repair_legacy_prompt_ellipsis(recipe)
+            if repaired_gen_params is not None:
+                try:
+                    persisted = await recipe_scanner.update_recipe_metadata(
+                        recipe_id, {"gen_params": repaired_gen_params}
+                    )
+                except Exception as exc:  # pragma: no cover - defensive guard
+                    self._logger.warning(
+                        "Failed to repair legacy prompt ellipsis in recipe %s: %s",
+                        recipe_id,
+                        exc,
+                    )
+                else:
+                    if persisted:
+                        recipe["gen_params"] = repaired_gen_params
+                        self._logger.info(
+                            "Repaired legacy prompt ellipsis in recipe %s",
+                            recipe_id,
+                        )
+
             # Expose the on-disk recipe JSON path so the modal can offer
             # "open file location" without guessing the storage layout.
-            recipe = dict(recipe)
             try:
                 json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
             except Exception:  # pragma: no cover - details must still load

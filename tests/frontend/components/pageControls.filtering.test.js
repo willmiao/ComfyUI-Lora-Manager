@@ -84,7 +84,7 @@ beforeEach(() => {
 
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ success: true, base_models: [] }),
+    json: async () => ({ success: true, base_models: [], model_types: [] }),
   });
 });
 
@@ -143,6 +143,13 @@ function renderControlsDom(pageKey) {
             <div class="dropdown-menu">
               <div class="dropdown-item" data-action="full-rebuild"></div>
             </div>
+          </div>
+          <div class="control-group model-type-dropdown-group dropdown-group hidden" id="modelTypeDropdown">
+            <button type="button" class="model-type-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="model-type-trigger__label"></span>
+              <i class="fas fa-caret-down model-type-trigger__caret" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu model-type-dropdown-menu" role="listbox"></div>
           </div>
           <div class="control-group">
             <button data-action="fetch"></button>
@@ -1205,6 +1212,71 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
 
       vi.useRealTimers();
     });
+  });
+});
+
+describe('Model type dropdown visibility on model pages', () => {
+  function mockModelTypes(types) {
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/model-types')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, model_types: types }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+    });
+  }
+
+  async function setupCheckpointsControls() {
+    renderControlsDom('checkpoints');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('checkpoints');
+    const { CheckpointsControls } = await import('../../../static/js/components/controls/CheckpointsControls.js');
+    const controls = new CheckpointsControls();
+    // Let the (mocked) model-types fetch settle.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    return controls;
+  }
+
+  it('keeps the dropdown hidden on a single sub-type page', async () => {
+    mockModelTypes([{ type: 'checkpoint', count: 20 }]);
+
+    await setupCheckpointsControls();
+
+    const group = document.getElementById('modelTypeDropdown');
+    expect(group.classList.contains('hidden')).toBe(true);
+    expect(group.querySelector('.model-type-trigger__label').textContent).toBe('');
+  });
+
+  it('shows the dropdown when several sub-types exist', async () => {
+    mockModelTypes([
+      { type: 'checkpoint', count: 20 },
+      { type: 'diffusion_model', count: 2 },
+    ]);
+
+    await setupCheckpointsControls();
+
+    const group = document.getElementById('modelTypeDropdown');
+    expect(group.classList.contains('hidden')).toBe(false);
+    expect(group.querySelector('.model-type-trigger__label').textContent).toBe('All Types');
+  });
+
+  it('hides the dropdown in excluded view and restores it on exit', async () => {
+    mockModelTypes([
+      { type: 'checkpoint', count: 20 },
+      { type: 'diffusion_model', count: 2 },
+    ]);
+
+    const controls = await setupCheckpointsControls();
+    const group = document.getElementById('modelTypeDropdown');
+    expect(group.classList.contains('hidden')).toBe(false);
+
+    await controls.enterExcludedView();
+    expect(group.classList.contains('hidden')).toBe(true);
+
+    await controls.exitExcludedView();
+    expect(group.classList.contains('hidden')).toBe(false);
   });
 });
 

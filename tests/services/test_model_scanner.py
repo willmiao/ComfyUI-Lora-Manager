@@ -215,6 +215,36 @@ async def test_calculate_folder_returns_empty_for_root_and_unknown_paths(tmp_pat
 
 
 @pytest.mark.asyncio
+async def test_reconcile_cache_heals_folder_drift(tmp_path: Path):
+    """An incremental refresh repairs entries whose folder no longer matches
+    where the file actually sits (issue #1148): older versions could record a
+    wrong folder, and the sidebar drag-and-drop strips the folder off the file
+    path to find the library root, so the stale value made the next move nest
+    the target under the source directory."""
+    nested = tmp_path / "anima" / "character"
+    nested.mkdir(parents=True)
+    model = nested / "x.txt"
+    model.write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    item = next(i for i in scanner._cache.raw_data if i["file_path"].endswith("/x.txt"))
+    assert item["folder"] == "anima/character"
+    item["folder"] = ""  # pollution as written by the buggy versions
+
+    summary = await scanner._reconcile_cache()
+
+    assert item["folder"] == "anima/character"
+    assert summary["folder_repaired"] == 1
+    assert "anima/character" in scanner._cache.folders
+
+    # A second reconcile over the healed cache finds nothing left to repair.
+    summary = await scanner._reconcile_cache()
+    assert summary["folder_repaired"] == 0
+
+
+@pytest.mark.asyncio
 async def test_initialize_cache_populates_cache(tmp_path: Path):
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)
@@ -1488,6 +1518,202 @@ async def test_bulk_delete_cancelled_after_one_staged_batch_present(
     assert not first.exists()
     # The second file was never touched.
     assert second.exists()
+
+
+# ── cache staleness after delete (issue #1154) ──────────────────────────────
+
+
+def _make_duplicate_scanner(
+    root: Path, file_paths: List[Path], sha: str = "hash-dup"
+) -> DummyScanner:
+    """Cache two files as hash duplicates, matching what a scan produces."""
+    scanner = DummyScanner(root)
+    raw_data = []
+    for path in file_paths:
+        name = os.path.splitext(os.path.basename(path))[0]
+        raw_data.append(
+            {
+                "file_path": _normalize_path(path),
+                "folder": "",
+                "sha256": sha,
+                "tags": [],
+                "model_name": name,
+                "file_name": name,
+                "size": 1,
+                "modified": 1.0,
+            }
+        )
+    scanner._cache = ModelCache(
+        raw_data=raw_data, folders=[], name_display_mode="model_name"
+    )
+    for entry in raw_data:
+        scanner._hash_index.add_entry(entry["sha256"], entry["file_path"])
+    return scanner
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_cleans_cache_row_when_file_is_already_gone(
+    tmp_path: Path,
+):
+    """A stale row whose file vanished must be removed, not reported as failure.
+
+    This is the state a user lands in when a previous delete removed the file
+    but the cache update did not run: the duplicate keeps showing and every
+    retry used to fail with "No files deleted".
+    """
+    root = tmp_path / "loras"
+    root.mkdir()
+    main = root / "model.safetensors"
+    main.write_text("same", encoding="utf-8")
+    missing = root / "model-copy.safetensors"  # never written to disk
+
+    scanner = _make_duplicate_scanner(root, [main, missing])
+    assert scanner._hash_index.get_duplicate_hashes()
+
+    result = await scanner.bulk_delete_models([_normalize_path(missing)])
+
+    assert result["success"] is True
+    assert result["total_deleted"] == 1
+    assert result["cache_updated"] is True
+    assert result["results"][0]["already_missing"] is True
+    assert result["results"][0]["success"] is True
+    assert _normalize_path(missing) not in {
+        entry["file_path"] for entry in scanner._cache.raw_data
+    }
+    assert scanner._hash_index.get_duplicate_hashes() == {}
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_keeps_entry_when_folder_is_unreachable(tmp_path: Path):
+    """A missing folder is an offline root, not a completed deletion."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    offline_dir = root / "external"
+    missing = offline_dir / "model.safetensors"
+
+    scanner = _make_duplicate_scanner(root, [missing])
+    result = await scanner.bulk_delete_models([_normalize_path(missing)])
+
+    assert result["success"] is False
+    assert result["total_deleted"] == 0
+    assert result["results"][0]["success"] is False
+    assert _normalize_path(missing) in {
+        entry["file_path"] for entry in scanner._cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_all_failures_reports_error(tmp_path: Path, monkeypatch):
+    """Nothing removed -> success is False (the UI must not show a success)."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first])
+
+    class FailingPendingDelete:
+        async def stage_model_delete(self, **_kwargs):
+            return None
+
+    async def fake_get_pending_delete():
+        return FailingPendingDelete()
+
+    async def nothing_deleted(*_args, **_kwargs):
+        return []
+
+    monkeypatch.setattr(
+        model_scanner, "get_pending_delete_service", fake_get_pending_delete
+    )
+    monkeypatch.setattr(model_scanner, "delete_model_artifacts", nothing_deleted)
+
+    result = await scanner.bulk_delete_models([str(first)])
+
+    assert result["success"] is False
+    assert result["total_deleted"] == 0
+    assert result["error"] == "No files deleted"
+    assert first.exists()
+    assert str(first) in {entry["file_path"] for entry in scanner._cache.raw_data}
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_cache_update_survives_hash_index_drift(tmp_path: Path):
+    """A cache row whose sha256 is not in the index must still be cleaned.
+
+    The delete used to raise KeyError inside the hash index update, silently
+    aborting the whole cache update while the file was already gone (issue
+    #1154).
+    """
+    root = tmp_path / "loras"
+    root.mkdir()
+    model = root / "model.safetensors"
+    model.write_text("data", encoding="utf-8")
+    path = _normalize_path(model)
+
+    scanner = DummyScanner(root)
+    scanner._cache = ModelCache(
+        raw_data=[
+            {
+                "file_path": path,
+                "folder": "",
+                "sha256": "newhash",  # cache row drifted from the index
+                "tags": [],
+                "model_name": "model",
+                "file_name": "model",
+                "size": 1,
+                "modified": 1.0,
+            }
+        ],
+        folders=[],
+        name_display_mode="model_name",
+    )
+    scanner._hash_index.add_entry("oldhash", path)
+
+    result = await scanner.bulk_delete_models([path])
+
+    assert result["success"] is True
+    assert result["total_deleted"] == 1
+    assert result["cache_updated"] is True
+    assert model.exists() is False
+    assert scanner._cache.raw_data == []
+    assert scanner._hash_index.get_duplicate_hashes() == {}
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_updates_cache_when_cancelled_mid_way(
+    tmp_path: Path, monkeypatch
+):
+    """Files staged before a cancellation must not become ghost cache rows."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    real_rename = os.rename
+    rename_count = {"n": 0}
+
+    def cancelling_rename(src: str, dst: str) -> None:
+        rename_count["n"] += 1
+        result = real_rename(src, dst)
+        if rename_count["n"] == 1:
+            scanner.cancel_task()
+        return result
+
+    monkeypatch.setattr(
+        "py.services.pending_delete_service.os.rename", cancelling_rename
+    )
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+    scanner.reset_cancellation()
+
+    assert result["status"] == "cancelled"
+    assert result["total_deleted"] == 1
+    assert result["cache_updated"] is True
+    cached_paths = {entry["file_path"] for entry in scanner._cache.raw_data}
+    assert str(first) not in cached_paths
+    assert str(second) in cached_paths
 
 
 @pytest.mark.asyncio
@@ -2992,6 +3218,7 @@ def test_reconcile_walk_skips_the_recipes_dir(tmp_path: Path, monkeypatch):
         excluded_models=set(),
         is_cancelled=lambda: False,
         report_progress=lambda _files_seen: None,
+        expected_folder_of=lambda _path: "",
     )
 
     assert "keep" in result.discovered_folders

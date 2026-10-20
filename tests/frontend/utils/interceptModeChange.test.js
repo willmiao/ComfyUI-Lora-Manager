@@ -96,4 +96,39 @@ describe("interceptModeChange", () => {
       expect(descriptor.configurable).toBe(true);
     });
   });
+
+  describe("multiple listeners", () => {
+    it("notifies every registered listener while intercepting only once", () => {
+      const node = { mode: 0 };
+      const first = vi.fn();
+      const second = vi.fn();
+      interceptModeChange(node, first);
+      interceptModeChange(node, second);
+
+      node.mode = 2;
+      expect(first).toHaveBeenCalledWith(2, 0);
+      expect(second).toHaveBeenCalledWith(2, 0);
+
+      // The second registration must not replace the accessor: the value is
+      // still tracked across registrations.
+      node.mode = 4;
+      expect(first).toHaveBeenCalledWith(4, 2);
+      expect(second).toHaveBeenCalledWith(4, 2);
+    });
+
+    it("keeps notifying remaining listeners when one of them throws", () => {
+      const node = { mode: 0 };
+      const failing = vi.fn(() => {
+        throw new Error("boom");
+      });
+      const healthy = vi.fn();
+      interceptModeChange(node, failing);
+      interceptModeChange(node, healthy);
+
+      node.mode = 2;
+      expect(failing).toHaveBeenCalledWith(2, 0);
+      expect(healthy).toHaveBeenCalledWith(2, 0);
+      expect(node.mode).toBe(2);
+    });
+  });
 });

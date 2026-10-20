@@ -5,11 +5,48 @@ import { getApiEndpoints } from '../api/apiConfig.js';
 import { removeStorageItem, setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { formatCount, formatCountTitle } from '../utils/formatters.js';
 import { FilterPresetManager, EMPTY_WILDCARD_MARKER } from './FilterPresetManager.js';
 
 // LoRA availability statuses available on the recipes page. No statuses
 // selected (the default) means no filtering.
 const LORA_AVAILABILITY_STATUSES = ['ready', 'missing', 'deleted'];
+
+/**
+ * Render a filter chip's label and its optional count.
+ *
+ * The name gets its own span so CSS can ellipsize it instead of letting a long
+ * name squeeze the count pill out of the chip; the chip tooltip repeats the
+ * full name next to the exact count, which stays readable there even when the
+ * number on screen is abbreviated. Both parts are set through textContent, so
+ * a tag name is never parsed as HTML.
+ *
+ * @param {HTMLElement} chip - The chip element to fill
+ * @param {string} name - Label text
+ * @param {number|null} [count] - Entry count; omit to render a count-less chip
+ * @param {string} [titleKey] - Translation key for the count sentence
+ */
+function renderChipContent(chip, name, count, titleKey) {
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tag-name';
+    nameEl.textContent = name;
+    chip.appendChild(nameEl);
+
+    if (count === null || count === undefined) {
+        return;
+    }
+
+    const countEl = document.createElement('span');
+    countEl.className = 'tag-count';
+    countEl.textContent = formatCount(count);
+    chip.appendChild(countEl);
+
+    const title = formatCountTitle(name, count, titleKey);
+    chip.title = title;
+    // title is unreliable for assistive tech, and the visible name may be
+    // ellipsized, so the accessible name carries the full sentence too.
+    chip.setAttribute('aria-label', title);
+}
 
 export class FilterManager {
     constructor(options = {}) {
@@ -18,6 +55,11 @@ export class FilterManager {
         };
 
         this.currentPage = options.page || document.body.dataset.page || 'loras';
+        // The filter chips count models on every page except Recipes, where the
+        // same sections count recipes.
+        this.countTitleKey = this.currentPage === 'recipes'
+            ? 'recipes.filter.countTitle'
+            : 'header.filter.countTitle';
         const pageState = getCurrentPageState();
 
         this.filters = this.initializeFilters(pageState ? pageState.filters : undefined);
@@ -309,11 +351,7 @@ export class FilterManager {
             tagEl.dataset.tag = tagName;
 
             // Show count only if it's > 0 (known count)
-            if (tag.count > 0) {
-                tagEl.innerHTML = `${tagName} <span class="tag-count">${tag.count}</span>`;
-            } else {
-                tagEl.textContent = tagName;
-            }
+            renderChipContent(tagEl, tagName, tag.count > 0 ? tag.count : null, this.countTitleKey);
 
             // Add click handler to cycle through tri-state filter and automatically apply
             tagEl.addEventListener('click', async () => {
@@ -543,7 +581,7 @@ export class FilterManager {
             // bucket shows "Unknown" but filters via a dedicated marker).
             const filterValue = model.value ?? model.name;
             tag.dataset.baseModel = filterValue;
-            tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
+            renderChipContent(tag, model.name, model.count, this.countTitleKey);
 
             tag.addEventListener('click', async () => {
                 tag.classList.toggle('active');
@@ -614,7 +652,7 @@ export class FilterManager {
                 const tag = document.createElement('div');
                 tag.className = 'filter-tag model-type-tag';
                 tag.dataset.modelType = type;
-                tag.innerHTML = `${MODEL_TYPE_DISPLAY_NAMES[type]} <span class="tag-count">${count}</span>`;
+                renderChipContent(tag, MODEL_TYPE_DISPLAY_NAMES[type], count, this.countTitleKey);
 
                 if (this.filters.modelTypes.includes(type)) {
                     tag.classList.add('active');
@@ -631,6 +669,8 @@ export class FilterManager {
                     }
 
                     this.updateActiveFiltersCount();
+                    // Keep the controls-bar quick switcher in sync (no-op when absent)
+                    window.modelTypeDropdown?.syncFromFilters?.();
                     await this.applyFilters(false);
                 });
 
@@ -781,6 +821,8 @@ export class FilterManager {
                 tag.classList.remove('active');
             }
         });
+        // Keep the controls-bar quick switcher in sync (no-op when absent)
+        window.modelTypeDropdown?.syncFromFilters?.();
     }
 
     updateActiveFiltersCount() {

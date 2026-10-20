@@ -351,14 +351,17 @@ body.sticky-controls .sticky-topbar {
    sizes to the currently selected text only; the dropdown menu sizes to
    its content independently. The native <select> is kept in the DOM
    (visually hidden) so existing JS that reads/writes `.value` / `.disabled`
-   and dynamically adds/removes <option>s keeps working. */
+   and dynamically adds/removes <option>s keeps working. The model-type
+   dropdown (.model-type-*) shares these styles — same trigger/menu look. */
 
-.sort-dropdown-group {
+.sort-dropdown-group,
+.model-type-dropdown-group {
     position: relative;
     display: flex;
 }
 
-.sort-trigger {
+.sort-trigger,
+.model-type-trigger {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -375,8 +378,14 @@ body.sticky-controls .sticky-topbar {
     box-shadow: var(--shadow-xs);
 }
 
+.model-type-trigger {
+    min-width: 90px;
+}
+
 .sort-trigger:hover,
-.sort-trigger:focus-visible {
+.sort-trigger:focus-visible,
+.model-type-trigger:hover,
+.model-type-trigger:focus-visible {
     border-color: var(--lora-accent);
     background: var(--bg-color);
     transform: translateY(-1px);
@@ -384,28 +393,33 @@ body.sticky-controls .sticky-topbar {
     outline: none;
 }
 
-.sort-trigger:active {
+.sort-trigger:active,
+.model-type-trigger:active {
     transform: translateY(0);
     box-shadow: var(--shadow-xs);
 }
 
-.sort-trigger__label {
+.sort-trigger__label,
+.model-type-trigger__label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.sort-trigger__caret {
+.sort-trigger__caret,
+.model-type-trigger__caret {
     opacity: 0.8;
     transition: transform var(--transition-base);
     flex-shrink: 0;
 }
 
-.sort-dropdown-group.active .sort-trigger__caret {
+.sort-dropdown-group.active .sort-trigger__caret,
+.model-type-dropdown-group.active .model-type-trigger__caret {
     transform: rotate(180deg);
 }
 
-.sort-dropdown-group.active .sort-trigger {
+.sort-dropdown-group.active .sort-trigger,
+.model-type-dropdown-group.active .model-type-trigger {
     border-color: var(--lora-accent);
     box-shadow: 0 0 0 2px color-mix(in oklch, var(--lora-accent) 15%, transparent);
 }
@@ -423,7 +437,8 @@ body.sticky-controls .sticky-topbar {
 
 /* Dropdown menu — sizes to its content, independent of trigger width.
    Inherits base .dropdown-menu styling; capped for very long i18n text. */
-.sort-dropdown-menu {
+.sort-dropdown-menu,
+.model-type-dropdown-menu {
     min-width: max-content;
     max-width: 320px;
     width: max-content;
@@ -446,7 +461,8 @@ body.sticky-controls .sticky-topbar {
 }
 
 /* Option items */
-.sort-dropdown-group .sort-option {
+.sort-dropdown-group .sort-option,
+.model-type-dropdown-group .model-type-option {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -457,7 +473,8 @@ body.sticky-controls .sticky-topbar {
     white-space: nowrap;
 }
 
-.sort-dropdown-group .sort-option::before {
+.sort-dropdown-group .sort-option::before,
+.model-type-dropdown-group .model-type-option::before {
     content: '';
     width: 14px;
     flex-shrink: 0;
@@ -465,16 +482,19 @@ body.sticky-controls .sticky-topbar {
     font-weight: 700;
 }
 
-.sort-dropdown-group .sort-option:hover {
+.sort-dropdown-group .sort-option:hover,
+.model-type-dropdown-group .model-type-option:hover {
     background-color: color-mix(in oklch, var(--lora-accent) 10%, transparent);
 }
 
-.sort-dropdown-group .sort-option.is-selected {
+.sort-dropdown-group .sort-option.is-selected,
+.model-type-dropdown-group .model-type-option.is-selected {
     color: var(--lora-accent);
     font-weight: 600;
 }
 
-.sort-dropdown-group .sort-option.is-selected::before {
+.sort-dropdown-group .sort-option.is-selected::before,
+.model-type-dropdown-group .model-type-option.is-selected::before {
     content: '\2713';
     color: var(--lora-accent);
 }
@@ -730,16 +750,35 @@ body.sticky-controls .sticky-topbar {
     opacity: 0.6;
 }
 
+/* Label and count as two slots instead of label + floated count: the label
+   column absorbs the row's spare width (so counts still line up on the right)
+   and ellipsizes rather than pushing the count out of the menu. */
+.scan-root-item {
+    display: flex;
+    align-items: center;
+}
+
+.scan-root-item i {
+    flex-shrink: 0;
+}
+
 .scan-root-label {
+    flex: 1;
+    min-width: 0;
     margin-right: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .scan-root-count,
 .scan-root-offline {
-    float: right;
     margin-left: 16px;
     font-size: 0.9em;
     opacity: 0.7;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .scan-root-item.is-offline .scan-root-offline {

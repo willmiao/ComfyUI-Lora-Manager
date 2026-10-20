@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Filtrer les modèles",
+            "countTitle": "{name} — {count} modèles",
             "presets": "Préréglages",
             "savePreset": "Enregistrer les filtres actifs comme nouveau préréglage.",
             "savePresetDisabledActive": "Impossible d'enregistrer : Un préréglage est déjà actif. Modifiez les filtres pour enregistrer un nouveau préréglage",
@@ -399,7 +400,8 @@
             "autoOrganize": "Organisation automatique",
             "metadata": "Métadonnées",
             "sidecarStorage": "Stockage des fichiers sidecar",
-            "proxySettings": "Paramètres du proxy"
+            "proxySettings": "Paramètres du proxy",
+            "sendToWorkflow": "Envoyer vers le workflow"
         },
         "nav": {
             "general": "Général",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "Entrez au moins un chemin séparé par des virgules.",
                 "saveFailed": "Impossible d'enregistrer les chemins à ignorer : {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "Types de nœuds exclus",
+                "placeholder": "Exemple : CheckpointLoaderSimple, MyCustomNode",
+                "help": "Noms de classe de nœuds ComfyUI qui n'apparaissent jamais comme cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
+            },
+            "titlePatterns": {
+                "label": "Motifs de titres de nœuds exclus",
+                "placeholder": "Exemple : negative, preview",
+                "help": "Les nœuds dont le titre contient l'un de ces fragments de texte (insensible à la casse) sont masqués des cibles d'envoi vers le workflow. Séparez plusieurs entrées par des virgules ou des points-virgules. Les nœuds explicitement marqués dans ComfyUI (clic droit → Mark as) sont exemptés."
             }
         },
         "backup": {
@@ -957,6 +971,11 @@
                 "random": "Aléatoire",
                 "randomAction": "Aléatoire (mélanger)"
             },
+            "modelType": {
+                "title": "Filtrer par type de modèle",
+                "all": "Tous les types",
+                "multiple": "{count} types"
+            },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
                 "full": "Reconstruire le cache",
@@ -1079,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA Recipes",
+        "filter": {
+            "countTitle": "{name} — {count} Recipes"
+        },
         "actions": {
             "sendCheckpoint": "Envoyer vers ComfyUI",
             "sendRecipe": "Envoyer vers ComfyUI",
@@ -1456,8 +1478,8 @@
             "notEmptyMessageCount": "Ce dossier contient encore {count} fichier(s) de modèle. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "notEmptyMessageExcluded": "Ce dossier contient encore {count} fichier(s) de modèle, dont {excluded} sont exclus de la bibliothèque. Annulez leur exclusion dans « Gérer les modèles exclus » et supprimez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
             "missingTitle": "Dossier introuvable",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Ce dossier n’existe plus sur le disque. Vous pouvez le retirer de la liste.",
+            "removeFromList": "Retirer de la liste",
             "symlinkTitle": "Le dossier est un lien symbolique",
             "symlinkMessage": "Toutes les copies de ce dossier sont des liens symboliques ; supprimez le lien ou sa cible en dehors de LoRA Manager.",
             "protectedTitle": "Dossier protégé",
@@ -1479,8 +1501,8 @@
             "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
             "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
             "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Dossier \"{name}\" retiré de la liste",
+            "exists": "Le dossier est de retour sur le disque. Supprimez-le à la place.",
             "symlink": "Ce dossier est un lien symbolique ; il ne peut pas être supprimé depuis la barre latérale.",
             "successMulti": "Dossier \"{name}\" supprimé de {count} racines de modèle",
             "partial": "{count} copie(s) sur {total} supprimée(s) — {failed} en échec. Actualisez la barre latérale et réessayez."
@@ -2322,7 +2344,8 @@
             "embeddingAdded": "Embedding ajouté au workflow",
             "embeddingFailed": "Échec de l'ajout de l'embedding",
             "promptSent": "Prompt envoyé au workflow",
-            "promptFailed": "Échec de l'envoi du prompt"
+            "promptFailed": "Échec de l'envoi du prompt",
+            "nodeTypeExcluded": "Type de nœud \"{type}\" exclu des cibles d'envoi"
         },
         "nodeSelector": {
             "recipe": "Recipe",
@@ -2332,7 +2355,8 @@
             "replace": "Remplacer",
             "append": "Ajouter",
             "selectTargetNode": "Sélectionner le nœud cible",
-            "sendToAll": "Envoyer à tous"
+            "sendToAll": "Envoyer à tous",
+            "excludeNodeType": "Ne plus suggérer ce type de nœud"
         },
         "exampleImages": {
             "opened": "Dossier d'images d'exemple ouvert",
@@ -2794,7 +2818,9 @@
             "noItemsSelected": "Aucun {type} sélectionné pour la suppression",
             "deleteError": "Erreur : {message}",
             "deleteSuccess": "{count} {type} supprimé(s) avec succès",
-            "deleteFailed": "Échec de la suppression de {type} : {message}"
+            "deleteFailed": "Échec de la suppression de {type} : {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "Échec du rechargement de {pageType} : {message}",

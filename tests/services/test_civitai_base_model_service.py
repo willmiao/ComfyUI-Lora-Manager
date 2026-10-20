@@ -3,7 +3,12 @@
 import pytest
 from unittest.mock import patch
 
-from py.services.civitai_base_model_service import CivitaiBaseModelService
+from py.services.civitai_base_model_service import (
+    CivitaiBaseModelService,
+    _read_disk_cache,
+    get_known_base_models,
+)
+from py.utils.constants import SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
 
 
 class TestCivitaiBaseModelService:
@@ -133,3 +138,49 @@ class TestCivitaiBaseModelService:
         assert "CogVideoX" in video_models
         assert "Mochi" in video_models
         assert "Wan Video 2.5 T2V" in video_models
+
+    @pytest.mark.asyncio
+    async def test_fetch_persists_remote_snapshot_to_disk(self):
+        """A successful fetch writes the remote snapshot for sync readers."""
+        mock_models = {"SD 1.5", "Qwen 3"}
+
+        with patch.object(
+            self.service, "_fetch_from_civitai", return_value=mock_models
+        ):
+            await self.service.get_base_models()
+
+        snapshot = _read_disk_cache()
+        assert snapshot is not None
+        assert set(snapshot["remote_models"]) == mock_models
+
+    def test_init_loads_persisted_snapshot(self):
+        """A fresh service instance picks up the last persisted snapshot."""
+        self.service._update_cache({"SD 1.5", "Flux.3"})
+
+        fresh = CivitaiBaseModelService()
+
+        assert fresh._cache is not None
+        assert "Flux.3" in fresh._cache["remote_models"]
+        assert fresh._cache_timestamp is not None
+
+    def test_get_known_base_models_merges_remote_snapshot(self, monkeypatch):
+        """The sync vocabulary includes remote-only names from the snapshot."""
+        monkeypatch.setattr(CivitaiBaseModelService, "_instance", None)
+        self.service._update_cache({"SD 1.5", "Qwen 3"})
+
+        known = get_known_base_models()
+
+        assert "Qwen 3" in known
+        assert "SD 1.5" in known
+
+    def test_get_known_base_models_prefers_warm_singleton(self, monkeypatch):
+        warm = CivitaiBaseModelService()
+        warm._cache = {"remote_models": ["Flux.3"], "hardcoded_models": []}
+        monkeypatch.setattr(CivitaiBaseModelService, "_instance", warm)
+
+        assert "Flux.3" in get_known_base_models()
+
+    def test_get_known_base_models_falls_back_to_hardcoded(self, monkeypatch):
+        monkeypatch.setattr(CivitaiBaseModelService, "_instance", None)
+
+        assert get_known_base_models() == set(SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS)

@@ -355,4 +355,80 @@ describe('ModelDuplicatesManager confirmDeleteDuplicates undo flows', () => {
       'success'
     );
   });
+
+  it('reports a failure instead of a success when nothing was deleted', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({
+      success: false,
+      error: 'Permission denied',
+      total_deleted: 0,
+      results: [{ file_path: carPath, success: false, error: 'Permission denied' }],
+    });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(carPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showToastMock).toHaveBeenCalledTimes(1);
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.duplicates.deleteFailed',
+      { type: 'loras', message: expect.stringContaining('Permission denied') },
+      'error'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.duplicates.deleteSuccess',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(showActionToastMock).not.toHaveBeenCalled();
+    expect(resetAndReloadMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces per-file failures that arrive alongside a successful response', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({
+      success: true,
+      total_deleted: 1,
+      batch_id: 'model-batch-1',
+      results: [
+        { file_path: carPath, success: true },
+        { file_path: copyPath, success: false, error: 'The file is in use' },
+      ],
+    });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(copyPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showActionToastMock).toHaveBeenCalledTimes(1);
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.duplicates.deletePartialFailed',
+      { failed: 1, type: 'loras', message: 'The file is in use' },
+      'error'
+    );
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('warns when the files were deleted but the cache was not updated', async () => {
+    const manager = await createManager();
+    mockDeleteAndRecheck({
+      success: true,
+      total_deleted: 1,
+      cache_updated: false,
+    });
+
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add(carPath);
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.duplicates.cacheUpdateFailed',
+      {},
+      'warning'
+    );
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
 });

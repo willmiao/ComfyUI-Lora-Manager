@@ -698,3 +698,279 @@ async def test_sync_downloaded_version_uses_other_scanner(monkeypatch, scanners)
     )
 
     assert update_service.calls == [("other", 7, [42])]
+
+
+def _checkpoint_payload_with_vae_file() -> dict:
+    """A Checkpoint model version bundling a VAE component file."""
+    return {
+        "id": 42,
+        "model": {"type": "Checkpoint", "tags": ["utility"]},
+        "baseModel": "SDXL 1.0",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 1,
+                "type": "Model",
+                "primary": True,
+                "name": "model.safetensors",
+                "hashes": {"SHA256": "aaaa"},
+                "downloadUrl": "https://example.invalid/model.safetensors",
+            },
+            {
+                "id": 2,
+                "type": "VAE",
+                "name": "bundled-vae.safetensors",
+                "hashes": {"SHA256": "bbbb"},
+                "downloadUrl": "https://example.invalid/bundled-vae.safetensors",
+            },
+        ],
+    }
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_defaults_off_without_flag(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Locked default: without file_type_routing, a bundled VAE file pick on a
+    Checkpoint model stays on the checkpoint pipeline."""
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 2, "type": "VAE"},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "checkpoint"
+    assert captured["metadata"].metadata_class == "CheckpointMetadata"
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_false_flag_keeps_checkpoint(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """An explicit false flag must behave exactly like a missing flag."""
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 2, "type": "VAE", "file_type_routing": False},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "checkpoint"
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_ignores_non_other_file_type(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Flag set but the selected file's type maps to nothing -> no reroute."""
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 1, "type": "Model", "file_type_routing": True},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "checkpoint"
+    assert captured["download_urls"] == ["https://example.invalid/model.safetensors"]
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_routes_vae_file_to_other_root(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Flag + VAE file on a Checkpoint model -> other pipeline, vae root,
+    OtherModelMetadata, and the sub_type resolved deterministically from the
+    file type (never other_sub_type_undecidable)."""
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        use_default_paths=True,
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "other"
+    assert captured["metadata"].metadata_class == "OtherModelMetadata"
+    assert str(tmp_path / "vae") in str(captured["save_dir"])
+    assert captured["download_urls"] == [
+        "https://example.invalid/bundled-vae.safetensors"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_rejected_when_feature_disabled(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Master switch off: same structured rejection as a native other model."""
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+    get_settings_manager().settings["enable_other_models"] = False
+
+    execute_mock = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(DownloadManager, "_execute_download", execute_mock)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is False
+    assert result["reason"] == "other_models_disabled"
+    assert execute_mock.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_rejected_when_sub_type_disabled(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+    get_settings_manager().settings["enabled_other_sub_types"] = ["upscaler"]
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        use_default_paths=True,
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is False
+    assert result["reason"] == "other_sub_type_disabled"
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_rejected_without_default_root(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+    get_settings_manager().settings["default_other_roots"] = {
+        "upscaler": str(tmp_path / "upscale_models"),
+    }
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        use_default_paths=True,
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is False
+    assert result["reason"] == "other_no_default_root"
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_dedup_uses_other_scanner(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """The rerouted VAE file already in the other library blocks the download."""
+    scanners.other._cache = SimpleNamespace(
+        raw_data=[
+            {
+                "file_name": "bundled-vae",
+                "sha256": "bbbb",
+                "civitai": {"id": 42},
+            }
+        ]
+    )
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    execute_mock = AsyncMock(return_value={"success": True})
+    monkeypatch.setattr(DownloadManager, "_execute_download", execute_mock)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is False
+    assert "already exists in other library" in result["error"]
+    assert execute_mock.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_file_type_routing_checkpoint_library_does_not_block(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Same version, main checkpoint file already in the checkpoint library:
+    downloading its VAE file with the flag must NOT be blocked — the file-level
+    gate consults only the other scanner."""
+    scanners.checkpoint._cache = SimpleNamespace(
+        raw_data=[
+            {
+                "file_name": "model",
+                "sha256": "aaaa",
+                "civitai": {"id": 42},
+            }
+        ]
+    )
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 2, "type": "VAE", "file_type_routing": True},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "other"
+
+
+@pytest.mark.asyncio
+async def test_rerouted_vae_in_other_library_does_not_block_checkpoint_file(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Reverse direction: the VAE file already in the other library must not
+    block a later download of the same version's main checkpoint file."""
+    scanners.other._cache = SimpleNamespace(
+        raw_data=[
+            {
+                "file_name": "bundled-vae",
+                "sha256": "bbbb",
+                "civitai": {"id": 42},
+            }
+        ]
+    )
+    metadata_provider.payload = _checkpoint_payload_with_vae_file()
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        file_params={"id": 1, "type": "Model"},
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "checkpoint"

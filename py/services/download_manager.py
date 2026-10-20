@@ -25,10 +25,10 @@ from ..utils.models import (
 )
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
+    CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE,
     MAX_FOLDER_NAME_LENGTH,
     MAX_PATH_TAG_LENGTH,
     MODEL_WEIGHT_FILE_TYPES,
-    SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
     VALID_OTHER_CIVITAI_TYPES,
 )
@@ -42,7 +42,7 @@ from ..utils.paid_access import (
 )
 from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
-from ..utils.utils import calculate_filename_for_model, fit_stem_to_path_budget, sanitize_folder_name
+from ..utils.utils import calculate_filename_for_model, decode_percent_encoded_filename, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
@@ -89,6 +89,23 @@ DEFAULT_RATE_LIMIT_RETRY_AFTER_SECONDS = 60
 # File types that are never the intended download target even when CivitAI
 # marks them primary — configs/archives/workflows are auxiliary artifacts.
 NON_DOWNLOADABLE_PRIMARY_TYPES = ("Config", "Archive", "Workflow", "Training Data")
+
+
+def _other_models_disabled_response() -> Dict[str, Any]:
+    """Structured rejection when the Other Models feature is turned off.
+
+    The machine-readable ``reason`` is consumed by the companion browser
+    extension (docs/other-models-support.md C4); keep the value stable.
+    """
+    return {
+        "success": False,
+        "error": (
+            "Other Models management is disabled. Enable it in "
+            "Settings > Library before downloading VAE, upscaler, "
+            "text encoder or CLIP files."
+        ),
+        "reason": "other_models_disabled",
+    }
 
 
 @dataclass
@@ -1739,35 +1756,6 @@ class DownloadManager:
                 return {"success": False, "error": "Failed to fetch model metadata"}
 
             model_type_from_info = version_info.get("model", {}).get("type", "").lower()
-            # CivitAI ModelType has no model-level diffusion variant: DiT
-            # models are uploaded as "Checkpoint" or "UNet". Both go through
-            # the checkpoint branch so the standard diffusion routing chain
-            # (file type -> baseModel lists -> unknown default) applies.
-            if model_type_from_info in ("checkpoint", "unet"):
-                model_type = "checkpoint"
-            elif model_type_from_info in VALID_LORA_TYPES:
-                model_type = "lora"
-            elif model_type_from_info == "textualinversion":
-                model_type = "embedding"
-            elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
-                if not get_settings_manager().is_other_models_enabled():
-                    return {
-                        "success": False,
-                        "error": (
-                            "Other Models management is disabled. Enable it in "
-                            "Settings > Library before downloading VAE, upscaler, "
-                            "text encoder or CLIP files."
-                        ),
-                        # Machine-readable failure code consumed by the companion
-                        # browser extension (docs/other-models-support.md C4).
-                        "reason": "other_models_disabled",
-                    }
-                model_type = "other"
-            else:
-                return {
-                    "success": False,
-                    "error": f'Model type "{model_type_from_info}" is not supported for download',
-                }
 
             resolved_version_id = model_version_id
             raw_version_id = version_info.get("id")
@@ -1793,6 +1781,52 @@ class DownloadManager:
                         resolved_version_id,
                     )
             explicit_file = target_file is not None
+
+            # file_type_routing is an explicit caller opt-in (companion browser
+            # extension): when the resolved file's CivitAI file.type maps to an
+            # other-model sub_type and model.type itself is not an other type
+            # (e.g. a VAE file bundled on a Checkpoint model page), reroute the
+            # download through the other-models pipeline. The locked default is
+            # unchanged: without the flag, file.type never overrides model.type
+            # (see resolve_other_download_sub_type in download_routing.py).
+            file_type_reroute = (
+                explicit_file
+                and file_params is not None
+                and bool(file_params.get("file_type_routing"))
+                and model_type_from_info not in VALID_OTHER_CIVITAI_TYPES
+                and target_file.get("type") in CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE
+            )
+
+            # CivitAI ModelType has no model-level diffusion variant: DiT
+            # models are uploaded as "Checkpoint" or "UNet". Both go through
+            # the checkpoint branch so the standard diffusion routing chain
+            # (file type -> baseModel lists -> unknown default) applies.
+            if file_type_reroute:
+                if not get_settings_manager().is_other_models_enabled():
+                    return _other_models_disabled_response()
+                model_type = "other"
+                logger.info(
+                    "[download] file_type_routing: file type '%s' reroutes "
+                    "model version %s (model.type '%s') to the other-models pipeline",
+                    target_file.get("type"),
+                    resolved_version_id,
+                    model_type_from_info,
+                )
+            elif model_type_from_info in ("checkpoint", "unet"):
+                model_type = "checkpoint"
+            elif model_type_from_info in VALID_LORA_TYPES:
+                model_type = "lora"
+            elif model_type_from_info == "textualinversion":
+                model_type = "embedding"
+            elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
+                if not get_settings_manager().is_other_models_enabled():
+                    return _other_models_disabled_response()
+                model_type = "other"
+            else:
+                return {
+                    "success": False,
+                    "error": f'Model type "{model_type_from_info}" is not supported for download',
+                }
 
             if (
                 not explicit_file
@@ -1849,11 +1883,10 @@ class DownloadManager:
                 if isinstance(model_info, dict)
                 else []
             )
-            if (
-                isinstance(base_model_value, str)
-                and base_model_value in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
-                and base_model_value in excluded_base_models
-            ):
+            # excluded_base_models is already validated against the merged
+            # base-model vocabulary by the settings manager, so membership in
+            # the user exclusion list is sufficient here.
+            if isinstance(base_model_value, str) and base_model_value in excluded_base_models:
                 file_name = ""
                 files = version_info.get("files")
                 if isinstance(files, list):
@@ -2241,6 +2274,19 @@ class DownloadManager:
             file_name = file_info.get("name", "")
             if not file_name:
                 return {"success": False, "error": "No filename found in file info"}
+            # CivitAI stores non-ASCII file names percent-encoded; the mini
+            # endpoint (and CivArchive) return that raw stored name, which
+            # must be decoded before it becomes the on-disk name — otherwise
+            # the literal "%E7%8A%AC..." string lands on the filesystem.
+            decoded_file_name = decode_percent_encoded_filename(file_name)
+            if decoded_file_name != file_name:
+                logger.info(
+                    "[download] Decoded percent-encoded filename '%s' to '%s'",
+                    file_name,
+                    decoded_file_name,
+                )
+                file_name = decoded_file_name
+                file_info = {**file_info, "name": file_name}
             # Raw stored filenames carry no length cap, and the fixed stem
             # cap only applies to template renames; trim to the real path
             # budget (model path and sidecar mirror alike) so the target
@@ -3258,8 +3304,24 @@ class DownloadManager:
                     file_name = os.path.basename(info.filename)
                     if not file_name:
                         continue
+                    # Archive member names come from the uploader uncapped;
+                    # fit each to the destination budget like any other
+                    # download target so the create cannot fail with
+                    # ENAMETOOLONG (a CJK-heavy member name passes every
+                    # character cap yet still overflows NAME_MAX in bytes).
+                    member_stem, member_ext = os.path.splitext(file_name)
+                    fitted_stem = fit_stem_to_path_budget(
+                        target_dir, member_stem, member_ext
+                    )
+                    if not fitted_stem:
+                        logger.warning(
+                            "Skipping archive member whose name cannot fit the "
+                            "destination path budget: %s",
+                            file_name,
+                        )
+                        continue
                     dest_path = self._resolve_extracted_destination(
-                        target_dir, file_name
+                        target_dir, fitted_stem + member_ext
                     )
                     with archive.open(info) as source, open(dest_path, "wb") as target:
                         shutil.copyfileobj(source, target)

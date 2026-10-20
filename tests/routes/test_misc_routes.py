@@ -1222,6 +1222,47 @@ async def test_register_nodes_defaults_graph_name_to_none():
 
 
 @pytest.mark.asyncio
+async def test_register_nodes_passes_through_exclude_send():
+    node_registry = NodeRegistry()
+    handler = NodeRegistryHandler(
+        node_registry=node_registry,
+        prompt_server=FakePromptServer,  # pyright: ignore[reportArgumentType]
+        standalone_mode=False,
+    )
+
+    request = FakeRequest(
+        json_data={
+            "nodes": [
+                {
+                    "node_id": 10,
+                    "graph_id": "root",
+                    "type": "CLIPTextEncode",
+                    "title": "Excluded Encoder",
+                    "exclude_send": True,
+                },
+                {
+                    "node_id": 11,
+                    "graph_id": "root",
+                    "type": "CLIPTextEncode",
+                    "title": "Normal Encoder",
+                },
+            ],
+            "client_id": "test-client-1",
+        }
+    )
+
+    response = await handler.register_nodes(request)  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+
+    registry = await node_registry.get_merged_registry()
+    nodes = registry["nodes"]
+    assert nodes["root:10"]["exclude_send"] is True
+    assert nodes["root:11"]["exclude_send"] is False
+
+
+@pytest.mark.asyncio
 async def test_register_nodes_includes_capabilities():
     node_registry = NodeRegistry()
     handler = NodeRegistryHandler(

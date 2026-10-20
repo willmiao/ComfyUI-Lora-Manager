@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "筛选模型",
+            "countTitle": "{name} —— {count} 个模型",
             "presets": "预设",
             "savePreset": "将当前激活的筛选器保存为新预设。",
             "savePresetDisabledActive": "无法保存：已有预设处于激活状态。修改筛选器后可保存新预设",
@@ -399,7 +400,8 @@
             "autoOrganize": "自动整理",
             "metadata": "元数据",
             "sidecarStorage": "附属文件存储",
-            "proxySettings": "代理设置"
+            "proxySettings": "代理设置",
+            "sendToWorkflow": "发送到工作流"
         },
         "nav": {
             "general": "通用",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "请输入至少一个路径，以逗号分隔。",
                 "saveFailed": "无法保存跳过路径：{message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "排除的节点类型",
+                "placeholder": "示例: CheckpointLoaderSimple, MyCustomNode",
+                "help": "这些 ComfyUI 节点类名永远不会作为发送到工作流的目标出现。多个条目用逗号或分号分隔。在 ComfyUI 中显式标记的节点（右键 → Mark as）不受此限制。"
+            },
+            "titlePatterns": {
+                "label": "排除的节点标题模式",
+                "placeholder": "示例: negative, preview",
+                "help": "标题包含这些文本片段（不区分大小写）的节点不会出现在发送到工作流的目标中。多个条目用逗号或分号分隔。在 ComfyUI 中显式标记的节点（右键 → Mark as）不受此限制。"
             }
         },
         "backup": {
@@ -957,6 +971,11 @@
                 "random": "随机",
                 "randomAction": "随机排序（洗牌）"
             },
+            "modelType": {
+                "title": "按模型类型筛选",
+                "all": "全部类型",
+                "multiple": "{count} 种类型"
+            },
             "refresh": {
                 "title": "刷新模型列表",
                 "full": "重建缓存",
@@ -1079,6 +1098,9 @@
     },
     "recipes": {
         "title": "LoRA 配方",
+        "filter": {
+            "countTitle": "{name} —— {count} 个配方"
+        },
         "actions": {
             "sendCheckpoint": "发送到 ComfyUI",
             "sendRecipe": "发送到 ComfyUI",
@@ -1456,8 +1478,8 @@
             "notEmptyMessageCount": "该文件夹中仍有 {count} 个模型文件，请先删除或移出这些模型 —— 删除文件夹不会级联删除模型文件。",
             "notEmptyMessageExcluded": "该文件夹中仍有 {count} 个模型文件，其中 {excluded} 个已从模型库中排除。请先在“管理已排除的模型”中取消排除并删除它们 —— 删除文件夹不会级联删除模型文件。",
             "missingTitle": "未找到文件夹",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "该文件夹在磁盘上已不存在，你可以将其从列表中移除。",
+            "removeFromList": "从列表中移除",
             "symlinkTitle": "文件夹是符号链接",
             "symlinkMessage": "该文件夹的每一份副本都是符号链接；请在 LoRA Manager 之外删除该链接或其指向的目标。",
             "protectedTitle": "文件夹受保护",
@@ -1479,8 +1501,8 @@
             "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
             "unsupported": "此页面不支持删除文件夹",
             "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "已将文件夹 \"{name}\" 从列表中移除",
+            "exists": "该文件夹已重新出现在磁盘上，请改为删除它。",
             "symlink": "该文件夹是符号链接，无法从侧边栏中删除。",
             "successMulti": "已从 {count} 个模型根目录中删除文件夹 \"{name}\"",
             "partial": "已删除 {total} 份副本中的 {count} 份 —— {failed} 份无法删除。请刷新侧边栏后重试。"
@@ -2322,7 +2344,8 @@
             "embeddingAdded": "Embedding 已追加到工作流",
             "embeddingFailed": "添加 Embedding 失败",
             "promptSent": "提示词已发送到工作流",
-            "promptFailed": "提示词发送失败"
+            "promptFailed": "提示词发送失败",
+            "nodeTypeExcluded": "节点类型 \"{type}\" 已从发送目标中排除"
         },
         "nodeSelector": {
             "recipe": "配方",
@@ -2332,7 +2355,8 @@
             "replace": "替换",
             "append": "追加",
             "selectTargetNode": "选择目标节点",
-            "sendToAll": "全部发送"
+            "sendToAll": "全部发送",
+            "excludeNodeType": "不再建议此节点类型"
         },
         "exampleImages": {
             "opened": "示例图片文件夹已打开",
@@ -2794,7 +2818,9 @@
             "noItemsSelected": "未选中要删除的 {type}",
             "deleteError": "错误：{message}",
             "deleteSuccess": "成功删除 {count} 个 {type}",
-            "deleteFailed": "删除 {type} 失败：{message}"
+            "deleteFailed": "删除 {type} 失败：{message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "重新加载 {pageType} 失败：{message}",

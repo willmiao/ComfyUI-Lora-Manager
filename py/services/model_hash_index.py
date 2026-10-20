@@ -107,8 +107,25 @@ class ModelHashIndex:
         return os.path.splitext(os.path.basename(file_path))[0]
     
     def remove_by_path(self, file_path: str, hash_val: Optional[str] = None) -> None:
-        """Remove entry by file path"""
+        """Remove a path from the index.
+
+        ``hash_val`` is only a hint (callers pass the sha256 stored on the
+        cache row). The index and the cache can drift apart - a hash corrected
+        in place, a partially applied cache update - so a hint that does not
+        reference ``file_path`` is ignored in favour of the index's own
+        mapping. Every deletion below is membership-guarded: an inconsistent
+        index must never raise ``KeyError`` into the delete flow, because that
+        aborts the whole batch cache update and leaves deleted models listed.
+        """
         filename = self._get_filename_from_path(file_path)
+
+        if hash_val:
+            indexed_path = self._hash_to_path.get(hash_val)
+            duplicated = file_path in self._duplicate_hashes.get(hash_val, [])
+            if indexed_path != file_path and not duplicated:
+                hash_val = None
+        else:
+            hash_val = None
         
         # Find the hash for this file path
         if hash_val is None:
@@ -123,8 +140,9 @@ class ModelHashIndex:
                     hash_val = h
                     break
         
-        # If we didn't find a hash, nothing to do
+        # If we didn't find a hash, drop the path-keyed entries and stop
         if not hash_val:
+            self._remove_path_keyed_entries(file_path, filename)
             return
         
         # Update duplicates tracking for hash
@@ -155,19 +173,25 @@ class ModelHashIndex:
             else:
                 # No duplicates left, remove hash entry completely
                 del self._duplicate_hashes[hash_val]
-                del self._hash_to_path[hash_val]
+                if hash_val in self._hash_to_path:
+                    del self._hash_to_path[hash_val]
                 
                 # Remove corresponding filename entry if it points to this hash
                 if filename in self._filename_to_hash and self._filename_to_hash[filename] == hash_val:
                     del self._filename_to_hash[filename]
         else:
             # No duplicates, simply remove the hash entry
-            del self._hash_to_path[hash_val]
+            if hash_val in self._hash_to_path:
+                del self._hash_to_path[hash_val]
             
             # Remove corresponding filename entry if it points to this hash
             if filename in self._filename_to_hash and self._filename_to_hash[filename] == hash_val:
                 del self._filename_to_hash[filename]
         
+        self._remove_path_keyed_entries(file_path, filename)
+
+    def _remove_path_keyed_entries(self, file_path: str, filename: str) -> None:
+        """Drop every mapping that is keyed by a path rather than a hash."""
         # Update duplicates tracking for filename
         if filename in self._duplicate_filenames:
             # Remove the current path from duplicates

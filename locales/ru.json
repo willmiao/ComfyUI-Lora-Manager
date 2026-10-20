@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Фильтр моделей",
+            "countTitle": "{name} — {count} модел(ей)",
             "presets": "Пресеты",
             "savePreset": "Сохранить текущие активные фильтры как новый пресет.",
             "savePresetDisabledActive": "Невозможно сохранить: Пресет уже активен. Измените фильтры, чтобы сохранить новый пресет",
@@ -399,7 +400,8 @@
             "autoOrganize": "Автоорганизация",
             "metadata": "Метаданные",
             "sidecarStorage": "Хранилище sidecar-файлов",
-            "proxySettings": "Настройки прокси"
+            "proxySettings": "Настройки прокси",
+            "sendToWorkflow": "Отправка в Workflow"
         },
         "nav": {
             "general": "Общее",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "Введите хотя бы один путь, разделённый запятыми.",
                 "saveFailed": "Не удалось сохранить пути для пропуска: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "Исключённые типы узлов",
+                "placeholder": "Пример: CheckpointLoaderSimple, MyCustomNode",
+                "help": "Имена классов узлов ComfyUI, которые никогда не отображаются как цели отправки в Workflow. Разделяйте несколько записей запятыми или точками с запятой. Узлы, явно отмеченные в ComfyUI (правый клик → Mark as), не затрагиваются."
+            },
+            "titlePatterns": {
+                "label": "Исключённые шаблоны заголовков узлов",
+                "placeholder": "Пример: negative, preview",
+                "help": "Узлы, в заголовке которых есть любой из этих фрагментов текста (без учёта регистра), скрываются из целей отправки в Workflow. Разделяйте несколько записей запятыми или точками с запятой. Узлы, явно отмеченные в ComfyUI (правый клик → Mark as), не затрагиваются."
             }
         },
         "backup": {
@@ -957,6 +971,11 @@
                 "random": "Случайно",
                 "randomAction": "Перемешать"
             },
+            "modelType": {
+                "title": "Фильтровать по типу модели",
+                "all": "Все типы",
+                "multiple": "{count} тип(ов)"
+            },
             "refresh": {
                 "title": "Обновить список моделей",
                 "full": "Перестроить кэш",
@@ -1079,6 +1098,9 @@
     },
     "recipes": {
         "title": "Рецепты LoRA",
+        "filter": {
+            "countTitle": "{name} — {count} рецепт(ов)"
+        },
         "actions": {
             "sendCheckpoint": "Отправить в ComfyUI",
             "sendRecipe": "Отправить в ComfyUI",
@@ -1456,8 +1478,8 @@
             "notEmptyMessageCount": "В этой папке ещё есть {count} файл(ов) модели. Сначала удалите или переместите их — удаление папки никогда не затрагивает файлы моделей.",
             "notEmptyMessageExcluded": "В этой папке ещё есть {count} файл(ов) модели, из них {excluded} исключены из библиотеки. Снимите исключение в разделе «Управление исключёнными моделями» и удалите их — удаление папки никогда не затрагивает файлы моделей.",
             "missingTitle": "Папка не найдена",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Эта папка больше не существует на диске. Вы можете удалить её из списка.",
+            "removeFromList": "Удалить из списка",
             "symlinkTitle": "Папка является символической ссылкой",
             "symlinkMessage": "Все копии этой папки являются символическими ссылками; удалите ссылку или её цель вне LoRA Manager.",
             "protectedTitle": "Папка защищена",
@@ -1479,8 +1501,8 @@
             "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
             "unsupported": "Удаление папок не поддерживается на этой странице",
             "missing": "Эта папка больше не существует на диске. Обновите боковую панель и повторите попытку.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Папка \"{name}\" удалена из списка",
+            "exists": "Папка снова появилась на диске. Вместо этого удалите её.",
             "symlink": "Эта папка является символической ссылкой; её нельзя удалить из боковой панели.",
             "successMulti": "Папка \"{name}\" удалена из {count} корневых папок моделей",
             "partial": "Удалено {count} из {total} копий — не удалось удалить {failed}. Обновите боковую панель и повторите попытку."
@@ -2322,7 +2344,8 @@
             "embeddingAdded": "Embedding добавлен в workflow",
             "embeddingFailed": "Не удалось добавить embedding",
             "promptSent": "Промпт отправлен в workflow",
-            "promptFailed": "Не удалось отправить промпт"
+            "promptFailed": "Не удалось отправить промпт",
+            "nodeTypeExcluded": "Тип узла \"{type}\" исключён из целей отправки"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
@@ -2332,7 +2355,8 @@
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",
-            "sendToAll": "Отправить во все"
+            "sendToAll": "Отправить во все",
+            "excludeNodeType": "Больше не предлагать этот тип узла"
         },
         "exampleImages": {
             "opened": "Папка с примерами изображений открыта",
@@ -2794,7 +2818,9 @@
             "noItemsSelected": "Не выбрано {type} для удаления",
             "deleteError": "Ошибка: {message}",
             "deleteSuccess": "Успешно удалено {count} {type}",
-            "deleteFailed": "Не удалось удалить {type}: {message}"
+            "deleteFailed": "Не удалось удалить {type}: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "Не удалось перезагрузить {pageType}: {message}",

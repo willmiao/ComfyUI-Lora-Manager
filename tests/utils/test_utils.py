@@ -5,6 +5,7 @@ import pytest
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.services.service_registry import ServiceRegistry
 from py.utils.constants import (
+    MAX_FILENAME_COMPONENT_BYTES,
     MAX_FILENAME_STEM_LENGTH,
     MAX_FOLDER_NAME_LENGTH,
     MAX_FULL_PATH_LENGTH,
@@ -15,6 +16,7 @@ from py.utils.utils import (
     calculate_filename_for_model,
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    decode_percent_encoded_filename,
     fit_stem_to_path_budget,
     get_lora_info,
     get_lora_info_absolute,
@@ -658,6 +660,56 @@ def test_fit_stem_to_path_budget_counts_the_centralized_sidecar_mirror(
     assert len(os.path.join(mirror_dir, result)) == PATH_BUDGET
 
 
+def test_fit_stem_to_path_budget_enforces_component_byte_limit_for_cjk(
+    alongside_sidecar_dir,
+):
+    """POSIX NAME_MAX counts bytes: a 100-char CJK stem (300 bytes) passes
+    every character cap yet cannot be created on disk (ENAMETOOLONG)."""
+
+    result = fit_stem_to_path_budget("/models", "界" * 100, ".safetensors")
+
+    assert 0 < len(result) < 100
+    # stem + longest companion suffix (".metadata.json.bak") fits NAME_MAX.
+    assert (
+        len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE
+        <= MAX_FILENAME_COMPONENT_BYTES
+    )
+
+
+def test_fit_stem_to_path_budget_honors_probed_name_max(
+    monkeypatch, alongside_sidecar_dir
+):
+    """eCryptfs (Ubuntu encrypted home, Synology encrypted shares) allows
+    only 143 bytes per component; the probe must tighten the budget."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 143)
+
+    result = fit_stem_to_path_budget("/models", "か" * 60, ".safetensors")
+
+    assert 0 < len(result) < 60
+    assert len(result.encode("utf-8")) + PATH_BUDGET_SUFFIX_ALLOWANCE <= 143
+
+
+def test_fit_stem_to_path_budget_byte_cut_never_splits_a_multibyte_character(
+    alongside_sidecar_dir,
+):
+    stem = "a" * 233 + "界界"  # 239 bytes; the 235-byte cut lands mid-界
+
+    result = fit_stem_to_path_budget("/", stem, ".safetensors")
+
+    assert result == "a" * 233
+
+
+def test_fit_stem_to_path_budget_returns_empty_when_byte_budget_is_not_viable(
+    monkeypatch, alongside_sidecar_dir
+):
+    """A name-max probe below the viable stem size must skip, not stub."""
+
+    monkeypatch.setattr("py.utils.utils._probe_name_max_bytes", lambda path: 24)
+
+    assert fit_stem_to_path_budget("/models", "n" * 30, ".safetensors") == ""
+
+
 def test_calculate_filename_with_target_dir_trims_to_path_budget(
     isolated_settings, alongside_sidecar_dir
 ):
@@ -693,3 +745,51 @@ def test_calculate_filename_without_target_dir_keeps_fixed_cap(isolated_settings
     result = calculate_filename_for_model(model_data, "lora")
 
     assert len(result) == MAX_FILENAME_STEM_LENGTH
+
+
+# Real raw stored fileName served by CivitAI's mini endpoint for model
+# version 1714548: non-ASCII names are percent-encoded server-side.
+PERCENT_ENCODED_STORED_NAME = (
+    "%E7%8A%AC%E5%A4%9C%E5%8F%89%E6%97%A5%E6%9A%AE%E3%81%8B%E3%81%94"
+    "%E3%82%812000%E5%B9%B4%E4%BB%A3%E3%82%A2%E3%83%8B%E3%83%A1%E3%82%A2"
+    "%E3%83%8A%E3%83%AD%E3%82%B0%E4%BD%9C%E7%94%BB%E9%A2%A8illustrious"
+    "InuyashaHigurashi_Kagome2000s_anime_analog_painting_Styleillustrious"
+    ".safetensors"
+)
+
+
+def test_decode_percent_encoded_filename_decodes_non_ascii_names():
+    result = decode_percent_encoded_filename(PERCENT_ENCODED_STORED_NAME)
+
+    assert result == (
+        "犬夜叉日暮かごめ2000年代アニメアナログ作画風illustrious"
+        "InuyashaHigurashi_Kagome2000s_anime_analog_painting_Styleillustrious"
+        ".safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_passes_plain_names_through():
+    assert decode_percent_encoded_filename("model.safetensors") == "model.safetensors"
+
+
+def test_decode_percent_encoded_filename_keeps_ascii_only_escapes_literal():
+    # A literal "%" is stored as "%25", so decoding would yield pure ASCII:
+    # treat the string as a real name and leave it alone.
+    assert (
+        decode_percent_encoded_filename("100%25cool.safetensors")
+        == "100%25cool.safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_keeps_invalid_escapes_literal():
+    assert (
+        decode_percent_encoded_filename("100%zzcool.safetensors")
+        == "100%zzcool.safetensors"
+    )
+
+
+def test_decode_percent_encoded_filename_keeps_truncated_escapes_literal():
+    # A mid-triplet cut (e.g. from a previous length-truncation bug) does not
+    # decode to valid UTF-8 and must pass through untouched.
+    truncated = PERCENT_ENCODED_STORED_NAME[:100]
+    assert decode_percent_encoded_filename(truncated) == truncated

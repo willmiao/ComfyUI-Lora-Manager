@@ -200,6 +200,8 @@ CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE = {
 3. **file.type fallback** — only when model.type maps to nothing (e.g. model.type `Other` or retired `CLIP`). MUST NOT override a mapped model.type: checkpoint models routinely bundle VAE/Text Encoder component files, and unconditional file-type routing would misroute them.
 4. Still undecidable → `None`; `use_default_paths` errors and the UI offers all other roots for manual selection.
 
+**Opt-in exception (`file_type_routing`)**: `file_params` accepts an optional boolean `file_type_routing`. When true AND the resolved target file's `file.type` maps in `CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE` AND `model.type` is not an other type, `download_manager._execute_original_download` reroutes the download to `model_type = "other"` right after file resolution and before the classification branch, so the existing other pipeline (gating, `default_other_roots`, OtherModelMetadata, other-scanner file-level dedup) takes over unchanged. The sub_type then comes from priority 1 above (explicit file pick) — deterministic, never `other_sub_type_undecidable`. Without the flag the locked priority above is untouched: `file.type` still never overrides a mapped `model.type`.
+
 HTTP: extend `DownloadRoutingHandler.get_download_routing` (`download_routing_handlers.py:23`) with an `other` branch returning `{root_kind: "other", sub_type: ...}`; add `GET /api/lm/other/roots_by_subtype` in `OtherRoutes.setup_specific_routes` (data from `config._prepare_other_paths`'s per-key roots, aggregating `text_encoders` + legacy `clip` under `text_encoder`).
 
 ### 9.3 Settings: single dict key `default_other_roots` **[locked]**

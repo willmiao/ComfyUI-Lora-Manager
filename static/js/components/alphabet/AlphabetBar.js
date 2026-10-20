@@ -2,6 +2,7 @@
 import { getCurrentPageState } from '../../state/index.js';
 import { getStorageItem, setStorageItem } from '../../utils/storageHelpers.js';
 import { resetAndReload } from '../../api/modelApiFactory.js';
+import { formatCount, formatCountExact } from '../../utils/formatters.js';
 
 /**
  * AlphabetBar class - Handles the alphabet filtering UI and interactions
@@ -77,7 +78,7 @@ export class AlphabetBar {
             
             // Update the title attribute for tooltip display
             if (count > 0) {
-                chip.title = `${letter}: ${count} LoRAs`;
+                chip.title = `${letter}: ${formatCountExact(count)} LoRAs`;
                 chip.classList.remove('disabled');
             } else {
                 chip.title = `${letter}: No LoRAs`;
@@ -87,7 +88,7 @@ export class AlphabetBar {
             // Keep the count span for backward compatibility
             const countSpan = chip.querySelector('.count');
             if (countSpan) {
-                countSpan.textContent = ` (${count})`;
+                countSpan.textContent = ` (${formatCount(count)})`;
             }
         });
     }
