@@ -75,6 +75,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
         "mark_checkpoint_hash_invalid",
     ),
     RouteDefinition("GET", "/api/lm/recipes/find-duplicates", "find_duplicates"),
+    RouteDefinition("GET", "/api/lm/recipes/find-similar", "find_similar"),
     RouteDefinition("POST", "/api/lm/recipes/bulk-delete", "bulk_delete"),
     RouteDefinition(
         "POST", "/api/lm/recipes/save-from-widget", "save_recipe_from_widget"
