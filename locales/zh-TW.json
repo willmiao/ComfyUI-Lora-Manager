@@ -2818,7 +2818,9 @@
             "noItemsSelected": "未選擇要刪除的 {type}",
             "deleteError": "錯誤：{message}",
             "deleteSuccess": "成功刪除 {count} 個 {type}",
-            "deleteFailed": "刪除 {type} 失敗：{message}"
+            "deleteFailed": "刪除 {type} 失敗：{message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "重新載入 {pageType} 失敗：{message}",

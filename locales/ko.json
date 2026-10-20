@@ -2818,7 +2818,9 @@
             "noItemsSelected": "삭제할 {type}이(가) 선택되지 않았습니다",
             "deleteError": "오류: {message}",
             "deleteSuccess": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",
-            "deleteFailed": "{type} 삭제 실패: {message}"
+            "deleteFailed": "{type} 삭제 실패: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "{pageType} 다시 로딩 실패: {message}",

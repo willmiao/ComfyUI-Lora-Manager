@@ -2818,7 +2818,9 @@
             "noItemsSelected": "לא נבחרו {type} למחיקה",
             "deleteError": "שגיאה: {message}",
             "deleteSuccess": "נמחקו בהצלחה {count} {type}",
-            "deleteFailed": "מחיקת {type} נכשלה: {message}"
+            "deleteFailed": "מחיקת {type} נכשלה: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "טעינה מחדש של {pageType} נכשלה: {message}",

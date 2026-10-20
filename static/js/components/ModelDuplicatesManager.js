@@ -735,6 +735,9 @@ export class ModelDuplicatesManager {
                 throw new Error(data.error || 'Unknown error deleting models');
             }
 
+            const results = Array.isArray(data.results) ? data.results : [];
+            const failures = results.filter(entry => entry && entry.success === false);
+
             const batchIds = !data.batch_id && Array.isArray(data.batch_ids) && data.batch_ids.length
                 ? data.batch_ids
                 : null;
@@ -761,6 +764,23 @@ export class ModelDuplicatesManager {
                 });
             } else {
                 showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: this.modelType }, 'success');
+            }
+
+            // Per-file failures are reported in `results` while the request as
+            // a whole still succeeded; never hide them behind the success toast.
+            if (failures.length > 0) {
+                showToast('toast.duplicates.deletePartialFailed', {
+                    failed: failures.length,
+                    type: this.modelType,
+                    message: failures[0].error || '',
+                }, 'error');
+            }
+
+            // Files are gone from disk but the library cache was not updated:
+            // the deleted cards would otherwise reappear after the refresh and
+            // only a full rebuild can clear them.
+            if (data.cache_updated === false && data.total_deleted > 0) {
+                showToast('toast.duplicates.cacheUpdateFailed', {}, 'warning');
             }
             
             // If models were successfully deleted

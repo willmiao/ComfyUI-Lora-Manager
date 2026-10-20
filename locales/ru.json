@@ -2818,7 +2818,9 @@
             "noItemsSelected": "Не выбрано {type} для удаления",
             "deleteError": "Ошибка: {message}",
             "deleteSuccess": "Успешно удалено {count} {type}",
-            "deleteFailed": "Не удалось удалить {type}: {message}"
+            "deleteFailed": "Не удалось удалить {type}: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "Не удалось перезагрузить {pageType}: {message}",

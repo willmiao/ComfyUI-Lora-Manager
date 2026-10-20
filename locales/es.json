@@ -2818,7 +2818,9 @@
             "noItemsSelected": "No hay {type} seleccionados para eliminar",
             "deleteError": "Error: {message}",
             "deleteSuccess": "{count} {type} eliminados exitosamente",
-            "deleteFailed": "Error al eliminar {type}: {message}"
+            "deleteFailed": "Error al eliminar {type}: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "Error al recargar {pageType}: {message}",

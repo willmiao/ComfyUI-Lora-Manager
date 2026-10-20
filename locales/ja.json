@@ -2818,7 +2818,9 @@
             "noItemsSelected": "削除する {type} が選択されていません",
             "deleteError": "エラー：{message}",
             "deleteSuccess": "{count} {type} が正常に削除されました",
-            "deleteFailed": "{type} の削除に失敗しました：{message}"
+            "deleteFailed": "{type} の削除に失敗しました：{message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "{pageType}の再読み込みに失敗しました：{message}",

@@ -778,6 +778,18 @@ def _is_pending_delete_path(path: str) -> bool:
     return any(part == PENDING_DELETE_DIR_NAME for part in normalized.split("/"))
 
 
+def _file_already_gone(file_path: str, target_dir: str) -> bool:
+    """True when a model's file is already gone but its folder is reachable.
+
+    A missing folder means an offline or unmounted root, so the entry is kept
+    instead of mistaking an unavailable drive for a completed deletion.
+    """
+    try:
+        return not os.path.exists(file_path) and os.path.isdir(target_dir)
+    except OSError:  # pragma: no cover - defensive
+        return False
+
+
 @dataclass
 class CacheBuildResult:
     """Represents the outcome of scanning model files for cache building."""
@@ -4878,6 +4890,19 @@ class ModelScanner:
                             'deleted_files': deleted_files
                         })
                         total_deleted += 1
+                    elif _file_already_gone(file_path, target_dir):
+                        # Nothing was left on disk but the folder is still
+                        # reachable: a previous delete removed the artifacts and
+                        # only the stale cache row survived. Clean it up instead
+                        # of failing forever with "No files deleted" (#1154).
+                        deleted_models.append(file_path)
+                        results.append({
+                            'file_path': file_path,
+                            'success': True,
+                            'already_missing': True,
+                            'deleted_files': []
+                        })
+                        total_deleted += 1
                     else:
                         results.append({
                             'file_path': file_path,
@@ -4908,16 +4933,34 @@ class ModelScanner:
             if deleted_models:
                 # Update the cache in a batch operation
                 cache_updated = await self._batch_update_cache_for_deleted_models(deleted_models)
-                
-            return {
-                'success': True,
-                'status': 'cancelled' if self.is_cancelled() else 'success',
+
+            status = 'cancelled' if self.is_cancelled() else 'success'
+            response: Dict[str, Any] = {
+                # An operation that removed nothing must not present itself as
+                # a success: the caller would otherwise show "deleted" while
+                # every file is still on disk (issue #1154).
+                'success': total_deleted > 0,
+                'status': status,
                 'total_deleted': total_deleted,
                 'total_attempted': len(file_paths),
                 'cache_updated': cache_updated,
                 'results': results,
                 **batch_field
             }
+            if total_deleted == 0:
+                first_error = next(
+                    (entry.get('error') for entry in results if entry.get('error')),
+                    None,
+                )
+                if first_error:
+                    response['error'] = first_error
+                elif status == 'cancelled':
+                    response['error'] = (
+                        'Deletion was cancelled before any file was processed'
+                    )
+                else:
+                    response['error'] = 'No files were deleted'
+            return response
             
         except Exception as e:
             logger.error(f"Error in bulk delete: {e}", exc_info=True)
@@ -4939,18 +4982,24 @@ class ModelScanner:
         if not file_paths or self._cache is None:
             return False
 
+        # A cancellation request is deliberately ignored: the files are already
+        # gone from disk by the time this runs, so skipping the cache update
+        # leaves ghost entries that nothing but a full rebuild can clear
+        # (issue #1154).
         if self.is_cancelled():
             logger.info(
-                f"{self.model_type.capitalize()} Scanner: Skipping cache update "
-                "after cancelled bulk delete"
+                f"{self.model_type.capitalize()} Scanner: Applying cache update "
+                "for a bulk delete that was interrupted by cancellation"
             )
-            return False
             
         try:
             # Get all models that need to be removed from cache
             models_to_remove = [item for item in self._cache.raw_data if item['file_path'] in file_paths]
             
             if not models_to_remove:
+                # The rows are already gone, but path-keyed index entries can
+                # survive a partially applied update. Clean them anyway.
+                self._purge_paths_from_hash_index(file_paths)
                 return False
                 
             # Update tag counts
@@ -4968,13 +5017,29 @@ class ModelScanner:
                 if hasattr(self, '_hash_index') and self._hash_index:
                     # Get the hash and filename before removal for duplicate checking
                     file_name = os.path.splitext(os.path.basename(file_path))[0]
-                    hash_val = model.get('sha256', '').lower()
+                    hash_val = (model.get('sha256') or '').lower()
 
-                    # Remove from hash index
-                    self._hash_index.remove_by_path(file_path, hash_val)
-                    
-                    # Check and clean up duplicates
-                    self._cleanup_duplicates_after_removal(hash_val, file_name)
+                    try:
+                        # Remove from hash index
+                        self._hash_index.remove_by_path(file_path, hash_val)
+
+                        # Check and clean up duplicates
+                        self._cleanup_duplicates_after_removal(hash_val, file_name)
+                    except Exception as exc:
+                        # One inconsistent index entry must never abort the
+                        # whole batch - the cache rows below still have to go.
+                        logger.warning(
+                            "%s Scanner: Failed to clean hash index for %s: %s",
+                            self.model_type.capitalize(),
+                            file_path,
+                            exc,
+                        )
+
+            # Paths that were never in the cache can still leak into the
+            # path-keyed indexes; clean those too.
+            stale_paths = [path for path in file_paths if path not in {m['file_path'] for m in models_to_remove}]
+            if stale_paths:
+                self._purge_paths_from_hash_index(stale_paths)
             
             # Update cache data
             self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in file_paths]
@@ -4992,7 +5057,22 @@ class ModelScanner:
         except Exception as e:
             logger.error(f"Error updating cache after bulk delete: {e}", exc_info=True)
             return False
-    
+
+    def _purge_paths_from_hash_index(self, file_paths: List[str]) -> None:
+        """Remove path-keyed hash index entries for paths no longer in the cache."""
+        if not hasattr(self, '_hash_index') or not self._hash_index:
+            return
+        for file_path in file_paths:
+            try:
+                self._hash_index.remove_by_path(file_path)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "%s Scanner: Failed to purge hash index entry for %s: %s",
+                    self.model_type.capitalize(),
+                    file_path,
+                    exc,
+                )
+
     def _cleanup_duplicates_after_removal(self, hash_val: str, file_name: str) -> None:
         """Clean up duplicate entries in hash index after removing a model
         
