@@ -1723,6 +1723,7 @@
                 "invalidUrl": "无效的模型 URL 格式",
                 "noVersions": "此模型没有可用版本",
                 "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
+                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
                 "mixedSources": "无法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此仓库中未找到模型文件。"
             },

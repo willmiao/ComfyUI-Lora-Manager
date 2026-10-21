@@ -337,14 +337,20 @@ describe('civitaiUtils', () => {
     });
 
     describe('isSupportedCivitaiPageHost', () => {
-        it('accepts civitai.com and civitai.red page hosts', () => {
+        it('accepts civitai.com, civitai.red and civitai.green page hosts', () => {
             expect(isSupportedCivitaiPageHost('civitai.com')).toBe(true);
             expect(isSupportedCivitaiPageHost('civitai.red')).toBe(true);
+            expect(isSupportedCivitaiPageHost('civitai.green')).toBe(true);
+        });
+
+        it('accepts www-prefixed page hosts', () => {
+            expect(isSupportedCivitaiPageHost('www.civitai.com')).toBe(true);
+            expect(isSupportedCivitaiPageHost('www.civitai.red')).toBe(true);
+            expect(isSupportedCivitaiPageHost('www.civitai.green')).toBe(true);
         });
 
         it('rejects unrelated hosts', () => {
-            expect(isSupportedCivitaiPageHost('www.civitai.com')).toBe(false);
-            expect(isSupportedCivitaiPageHost('www.civitai.red')).toBe(false);
+            expect(isSupportedCivitaiPageHost('civitai.com.evil.test')).toBe(false);
             expect(isSupportedCivitaiPageHost('example.com')).toBe(false);
             expect(isSupportedCivitaiPageHost('')).toBe(false);
             expect(isSupportedCivitaiPageHost(null)).toBe(false);

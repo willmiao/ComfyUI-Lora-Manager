@@ -553,11 +553,14 @@ export class DownloadManager {
     getLinkedFile(version, fileId) {
         if (!fileId) return null;
         const file = this._getWeightFiles(version).find(f => String(f.id) === fileId);
-        if (!file) {
-            throw new Error(translate('modals.download.errors.linkedFileNotFound', { fileId },
-                `File ${fileId} was not found in the requested model version.`));
+        if (file) return file;
+        const existsAsNonWeightFile = (version?.files || []).some(f => String(f.id) === fileId);
+        if (existsAsNonWeightFile) {
+            throw new Error(translate('modals.download.errors.linkedFileNotWeightFile', { fileId },
+                `File ${fileId} is not a downloadable model file.`));
         }
-        return file;
+        throw new Error(translate('modals.download.errors.linkedFileNotFound', { fileId },
+            `File ${fileId} was not found in the requested model version.`));
     }
 
     static parseModelUrl(url) {

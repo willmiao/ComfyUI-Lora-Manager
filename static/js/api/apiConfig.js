@@ -154,7 +154,6 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         civitaiUrl: `/api/lm/${MODEL_TYPES.LORA}/civitai-url`,
         metadata: `/api/lm/${MODEL_TYPES.LORA}/metadata`,
         getTriggerWordsPost: `/api/lm/${MODEL_TYPES.LORA}/get_trigger_words`,
-        civitaiModelByVersion: `/api/lm/${MODEL_TYPES.LORA}/civitai/model/version`,
         civitaiModelByHash: `/api/lm/${MODEL_TYPES.LORA}/civitai/model/hash`,
     },
     [MODEL_TYPES.CHECKPOINT]: {

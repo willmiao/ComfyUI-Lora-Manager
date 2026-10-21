@@ -330,4 +330,25 @@ describe('DownloadManager Civitai download URLs', () => {
     expect(mockApiClient.fetchCivitaiModelByVersion).not.toHaveBeenCalled();
     expect(mockApiClient.fetchCivitaiVersions).not.toHaveBeenCalled();
   });
+
+  it.each([
+    'https://www.civitai.com/api/download/models/3409322?fileId=3301284',
+    'https://civitai.red/api/download/models/3409322?fileId=3301284',
+    'https://civitai.green/api/download/models/3409322?fileId=3301284',
+  ])('resolves download URLs on mirror and www-prefixed hosts: %s', async (mirrorUrl) => {
+    document.getElementById('modelUrl').value = mirrorUrl;
+    await manager.validateAndFetchVersions();
+    expect(mockApiClient.fetchCivitaiModelByVersion).toHaveBeenCalledWith('3409322');
+    expect(manager.currentVersion.id).toBe(3409322);
+    expect(manager.selectedFile.id).toBe(3301284);
+  });
+
+  it('reports a linked fileId that exists but is not a model weight file', async () => {
+    requestedVersion.files.push({ id: 555, type: 'Training Data', name: 'dataset.zip' });
+    document.getElementById('modelUrl').value = url.replace('3301284', '555');
+    await manager.validateAndFetchVersions();
+    expect(document.getElementById('urlError').textContent).toBe(
+      'File 555 is not a downloadable model file.');
+    expect(manager.selectedFile).toBeNull();
+  });
 });

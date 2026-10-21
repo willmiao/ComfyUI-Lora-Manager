@@ -1723,6 +1723,7 @@
         "invalidUrl": "Invalid model URL format",
         "noVersions": "No versions available for this model",
         "linkedFileNotFound": "File {fileId} was not found in the requested model version.",
+        "linkedFileNotWeightFile": "File {fileId} is not a downloadable model file.",
         "mixedSources": "Cannot mix CivitAI and Hugging Face / ModelScope URLs in the same batch.",
         "noModelFiles": "No model files found in this repository."
       },

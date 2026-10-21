@@ -1723,6 +1723,7 @@
                 "invalidUrl": "Ungültiges Modell-URL-Format",
                 "noVersions": "Keine Versionen für dieses Modell verfügbar",
                 "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
+                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
                 "mixedSources": "CivitAI- und Hugging Face-/ModelScope-URLs können nicht in derselben Charge gemischt werden.",
                 "noModelFiles": "In diesem Repository wurden keine Modelldateien gefunden."
             },

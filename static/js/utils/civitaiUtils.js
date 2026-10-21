@@ -20,9 +20,11 @@ export const OptimizationMode = {
 
 export const DEFAULT_CIVITAI_PAGE_HOST = 'civitai.com';
 
+// Mirrors py/utils/civitai_utils.py (_SUPPORTED_CIVITAI_PAGE_HOSTS).
 const SUPPORTED_CIVITAI_PAGE_HOSTS = new Set([
     'civitai.com',
     'civitai.red',
+    'civitai.green',
 ]);
 
 export function normalizeCivitaiPageHost(hostname) {
@@ -218,7 +220,7 @@ export function isSupportedCivitaiPageHost(hostname) {
         return false;
     }
 
-    return SUPPORTED_CIVITAI_PAGE_HOSTS.has(hostname.toLowerCase());
+    return SUPPORTED_CIVITAI_PAGE_HOSTS.has(hostname.toLowerCase().replace(/^www\./, ''));
 }
 
 export function extractCivitaiModelUrlParts(url) {
