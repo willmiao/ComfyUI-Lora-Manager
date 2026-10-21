@@ -4,38 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
 import urllib.parse
 from pathlib import Path
 
 from aiohttp import web
 
 from ...config import config as global_config
+from ...utils.file_responses import platform_file_response_class
 
 logger = logging.getLogger(__name__)
 
 _CHUNK_SIZE = 1024 * 1024  # 1 MB — balance between streaming iteration overhead and per-chunk memory
 
-
-class _ChunkedFileResponse(web.FileResponse):
-    """FileResponse that skips loop.sendfile and always sends in chunks.
-
-    On Windows, aiohttp's native sendfile (TransmitFile over IOCP) is suspected
-    of wedging the event loop and leaving an unkillable process when clients
-    abort transfers while scrolling through previews. Range, ETag and header
-    handling stay with FileResponse.
-    """
-
-    async def _sendfile(self, request, fobj, offset, count):
-        writer = await web.StreamResponse.prepare(self, request)
-        try:
-            return await self._sendfile_fallback(writer, fobj, offset, count)
-        except ConnectionError:
-            # Client went away mid-transfer, which is routine when scrolling fast.
-            return writer
-
-
-_FileResponse = _ChunkedFileResponse if sys.platform == "win32" else web.FileResponse
+_FileResponse = platform_file_response_class()
 
 
 class PreviewHandler:
