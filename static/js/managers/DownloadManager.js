@@ -284,7 +284,7 @@ export class DownloadManager {
                     this.currentVersion = this.versions[0];
                 }
 
-                if (!this.currentVersion) {
+                if (!this.currentVersion && DownloadManager.parseDownloadUrl(urls[0])) {
                     throw new Error(translate('modals.download.errors.noVersions'));
                 }
                 const linkedFile = this.getLinkedFile(this.currentVersion, parsed.fileId);
@@ -2527,6 +2527,11 @@ export class DownloadManager {
             if (!m.selectedVersion) return false;
             // HF items have selectedVersion as a boolean marker + checked flag
             if (isExternalModelSource(m.source)) return m.checked !== false;
+            if (m.selectedFile && this._getWeightFiles(m.selectedVersion)
+                .some(file => String(file.id) === String(m.selectedFile.id))) {
+                return this._getRemainingFiles(m.selectedVersion)
+                    .some(file => String(file.id) === String(m.selectedFile.id));
+            }
             return !m.selectedVersion.existsLocally;
         });
         if (downloadItems.length === 0) {

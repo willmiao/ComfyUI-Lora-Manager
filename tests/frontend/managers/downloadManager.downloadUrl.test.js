@@ -278,6 +278,31 @@ describe('DownloadManager Civitai download URLs', () => {
     expect(document.getElementById('versionStep').style.display).not.toBe('block');
   });
 
+  it('opens the version list for a model page with an unknown version ID', async () => {
+    document.getElementById('modelUrl').value = 'https://civitai.com/models/123?modelVersionId=777';
+    await manager.validateAndFetchVersions();
+    expect(document.getElementById('urlError').textContent).toBe('');
+    expect(document.getElementById('versionStep').style.display).toBe('block');
+    expect(document.querySelectorAll('.version-item')).toHaveLength(2);
+    expect(document.querySelector('.version-item.selected')).toBeNull();
+    expect(manager.currentVersion).toBeUndefined();
+    expect(mockApiClient.fetchCivitaiModelByVersion).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('downloads only the missing linked file when existsLocally is %s', async (existsLocally) => {
+    requestedVersion.existsLocally = existsLocally;
+    requestedVersion.downloadedFiles = [{ fileId: 1 }];
+    document.getElementById('modelUrl').value = `${url}\n${url.replace('3301284', '1')}`;
+    await manager.validateAndFetchVersions();
+    expect(manager.batchModels).toHaveLength(2);
+    document.getElementById('modelRoot').value = '/models/loras';
+    const execute = vi.spyOn(manager, 'executeBatchDownload').mockResolvedValue(undefined);
+    await manager.startDownload();
+    expect(execute).toHaveBeenCalledTimes(1);
+    const [items] = execute.mock.calls[0];
+    expect(items.map(item => item.selectedFile.id)).toEqual([3301284]);
+  });
+
   it('does not preselect a linked file already present in the library', async () => {
     requestedVersion.downloadedFiles = [{ fileId: 3301284 }];
     document.getElementById('modelUrl').value = url;
