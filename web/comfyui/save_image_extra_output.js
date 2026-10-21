@@ -2,38 +2,17 @@ import { app } from "../../scripts/app.js";
 import { chainCallback, getAllGraphNodes, getWidgetByName } from "./utils.js";
 
 /**
- * Format a date string using the given pattern (e.g. "yyyy-MM-dd").
- * Supports: yyyy, yy, MM, M, dd, d, hh, h, mm, m, ss, s
- */
-function formatDate(text, date) {
-  const pad = (n, len) => n.toString().padStart(len, "0");
-  // Order matters: longer patterns first to avoid partial substring matches.
-  // The original ComfyUI frontend uses the same ordered-alternation approach.
-  return text
-    .replace(/yyyy/g, () => date.getFullYear().toString())
-    .replace(/yy/g, () => pad(date.getFullYear() % 100, 2))
-    .replace(/MM/g, () => pad(date.getMonth() + 1, 2))
-    .replace(/M/g, () => (date.getMonth() + 1).toString())
-    .replace(/dd/g, () => pad(date.getDate(), 2))
-    .replace(/d/g, () => date.getDate().toString())
-    .replace(/hh/g, () => pad(date.getHours(), 2))
-    .replace(/h/g, () => date.getHours().toString())
-    .replace(/mm/g, () => pad(date.getMinutes(), 2))
-    .replace(/m/g, () => date.getMinutes().toString())
-    .replace(/ss/g, () => pad(date.getSeconds(), 2))
-    .replace(/s/g, () => date.getSeconds().toString());
-}
-
-/**
  * Resolve %NodeTitle.WidgetName% placeholders in a string using the current graph.
  *
  * Patterns supported:
  *   %NodeTitle.WidgetName%  – widget value from a node (by title or "Node name for S&R")
- *   %date:format%           – current date/time formatted (e.g. %date:yyyy-MM-dd%)
- *   %width%, %height%       – left as-is, handled by the backend
  *
- * All other %text% patterns are passed through unchanged (they may be handled by
- * the backend's format_filename, e.g. %seed%, %model%, %pprompt%).
+ * All other %text% patterns are passed through unchanged so the backend's
+ * format_filename can handle them (e.g. %seed%, %model%, %pprompt%, %width%,
+ * %height%). In particular %date:format% must NOT be resolved here: doing so
+ * would bake the queue time into the serialized prompt instead of the save
+ * time, and prompts queued within the same second (or re-run from history)
+ * would share one timestamp and overwrite each other's files.
  */
 function applyTextReplacements(value) {
   if (!value || typeof value !== "string" || !value.includes("%")) {
@@ -44,13 +23,15 @@ function applyTextReplacements(value) {
   const allNodes = getAllGraphNodes(app.graph);
 
   return value.replace(/%([^%]+)%/g, function (match, text) {
+    // Backend-handled patterns (checked before splitting on "." so date
+    // formats containing dots, e.g. %date:yyyy.M.d%, are not mistaken for
+    // %NodeTitle.WidgetName% placeholders).
+    if (text.startsWith("date:")) {
+      return match;
+    }
+
     const split = text.split(".");
     if (split.length !== 2) {
-      // Handle %date:format% patterns
-      if (split[0].startsWith("date:")) {
-        return formatDate(split[0].substring(5), new Date());
-      }
-
       // %width% and %height% are left for the backend to handle
       if (text !== "width" && text !== "height") {
         console.warn(

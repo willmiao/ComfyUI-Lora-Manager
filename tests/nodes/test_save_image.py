@@ -467,6 +467,51 @@ def test_save_image_single_image_without_counter_keeps_plain_filename(
     assert (tmp_path / "sample.png").exists()
 
 
+def test_save_image_without_counter_does_not_overwrite_existing_file(
+    monkeypatch, tmp_path
+):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    existing = tmp_path / "sample.png"
+    existing.write_bytes(b"original")
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()],
+        "ComfyUI",
+        "png",
+        id="node-1",
+        add_counter_to_filename=False,
+    )
+
+    assert existing.read_bytes() == b"original"
+    assert (tmp_path / "sample_0001.png").exists()
+
+
+def test_save_image_without_counter_skips_past_existing_suffixes(
+    monkeypatch, tmp_path
+):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    (tmp_path / "sample.png").write_bytes(b"original")
+    (tmp_path / "sample_0001.png").write_bytes(b"also original")
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()],
+        "ComfyUI",
+        "png",
+        id="node-1",
+        add_counter_to_filename=False,
+    )
+
+    assert (tmp_path / "sample.png").read_bytes() == b"original"
+    assert (tmp_path / "sample_0001.png").read_bytes() == b"also original"
+    assert (tmp_path / "sample_0002.png").exists()
+
+
 # ---------------------------------------------------------------------------
 # Tests for webp_method and jpeg_subsampling parameters
 # ---------------------------------------------------------------------------

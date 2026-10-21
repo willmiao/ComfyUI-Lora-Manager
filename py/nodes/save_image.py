@@ -795,6 +795,28 @@ class SaveImageLM:
         ExifUtils.append_recipe_metadata(image_path, recipe_data)
         self._sync_recipe_cache(recipe_scanner, recipe_data, json_path)
 
+    @staticmethod
+    def _dedupe_existing_filename(full_output_folder, file):
+        """Return (file, file_path), appending an incrementing suffix when the
+        target file already exists so a counter-less save never overwrites."""
+        original_file = file
+        file_path = os.path.join(full_output_folder, file)
+        if not os.path.exists(file_path):
+            return file, file_path
+
+        stem, extension = os.path.splitext(original_file)
+        suffix = 1
+        while os.path.exists(file_path):
+            file = f"{stem}_{suffix:04}{extension}"
+            file_path = os.path.join(full_output_folder, file)
+            suffix += 1
+        logger.warning(
+            "Output file %s already exists; saving as %s to avoid overwriting it",
+            original_file,
+            file,
+        )
+        return file, file_path
+
     def save_images(
         self,
         images,
@@ -891,6 +913,10 @@ class SaveImageLM:
 
             # Full save path
             file_path = os.path.join(full_output_folder, file)
+            if not add_counter_to_filename and not force_counter:
+                file, file_path = self._dedupe_existing_filename(
+                    full_output_folder, file
+                )
 
             # Save the image with metadata
             try:
