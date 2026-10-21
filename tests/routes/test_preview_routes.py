@@ -1,12 +1,13 @@
 import asyncio
 import os
+import sys
 import urllib.parse
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from aiohttp import web
-from aiohttp.test_utils import make_mocked_request
+from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 
 from py.config import Config
 from py.routes.handlers.preview_handlers import PreviewHandler
@@ -413,3 +414,41 @@ async def test_preview_404_clears_cache_when_file_really_deleted(tmp_path):
         await asyncio.sleep(0)
 
     cleanup.assert_awaited_once()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only chunked sendfile bypass")
+async def test_preview_chunked_response_serves_ranges_without_sendfile(tmp_path):
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    payload = bytes(range(256)) * 8192  # 2 MB, several 1 MB chunks
+    (library_root / "clip.mp4").write_bytes(payload)
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    app = web.Application()
+    app.router.add_get("/preview", PreviewHandler(config=config).serve_preview)
+    url = "/preview?path=" + urllib.parse.quote(str(library_root / "clip.mp4"), safe="")
+
+    client = TestClient(TestServer(app))
+    await client.start_server()
+    try:
+        with patch.object(asyncio.BaseEventLoop, "sendfile", side_effect=AssertionError("native sendfile used")):
+            full = await client.get(url)
+            part = await client.get(url, headers={"Range": "bytes=100-199"})
+
+            assert full.status == 200
+            assert await full.read() == payload
+            assert part.status == 206
+            assert await part.read() == payload[100:200]
+    finally:
+        await client.close()
