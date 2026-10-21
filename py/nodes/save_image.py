@@ -836,6 +836,21 @@ class SaveImageLM:
         if not os.path.exists(full_output_folder):
             os.makedirs(full_output_folder, exist_ok=True)
 
+        # Batch images with identical prefixes would silently overwrite each other;
+        # force a counter suffix when nothing else disambiguates the filenames.
+        force_counter = (
+            len(images) > 1
+            and not add_counter_to_filename
+            and "%batch_num%" not in filename
+        )
+        if force_counter:
+            logger.warning(
+                "Saving %d images with add_counter_to_filename disabled and no "
+                "%%batch_num%% pattern in the filename; adding a counter suffix "
+                "to avoid overwriting batch images.",
+                len(images),
+            )
+
         # Process each image with incrementing counter
         for i, image in enumerate(images):
             # Convert the tensor image to numpy array
@@ -844,7 +859,7 @@ class SaveImageLM:
 
             # Generate filename with counter if needed
             base_filename = filename.replace("%batch_num%", str(i))
-            if add_counter_to_filename:
+            if add_counter_to_filename or force_counter:
                 # Use counter + i to ensure unique filenames for all images in batch
                 current_counter = counter + i
                 base_filename += f"_{current_counter:05}_"

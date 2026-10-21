@@ -403,6 +403,70 @@ def test_save_image_as_recipe_writes_recipe_without_async_scanner_calls(
     assert scanner.fts_updates == [(recipe["id"], "add")]
 
 
+def test_save_image_batch_without_counter_still_gets_unique_filenames(
+    monkeypatch, tmp_path
+):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image(), _make_image(), _make_image()],
+        "ComfyUI",
+        "png",
+        id="node-1",
+        add_counter_to_filename=False,
+    )
+
+    assert (tmp_path / "sample_00001_.png").exists()
+    assert (tmp_path / "sample_00002_.png").exists()
+    assert (tmp_path / "sample_00003_.png").exists()
+
+
+def test_save_image_batch_with_batch_num_pattern_needs_no_counter(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        "folder_paths.get_output_directory", lambda: str(tmp_path), raising=False
+    )
+    monkeypatch.setattr(
+        "folder_paths.get_save_image_path",
+        lambda prefix, *_args, **_kwargs: (str(tmp_path), prefix, 1, "", prefix),
+        raising=False,
+    )
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image(), _make_image()],
+        "sample_%batch_num%",
+        "png",
+        id="node-1",
+        add_counter_to_filename=False,
+    )
+
+    assert (tmp_path / "sample_0.png").exists()
+    assert (tmp_path / "sample_1.png").exists()
+
+
+def test_save_image_single_image_without_counter_keeps_plain_filename(
+    monkeypatch, tmp_path
+):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()],
+        "ComfyUI",
+        "png",
+        id="node-1",
+        add_counter_to_filename=False,
+    )
+
+    assert (tmp_path / "sample.png").exists()
+
+
 # ---------------------------------------------------------------------------
 # Tests for webp_method and jpeg_subsampling parameters
 # ---------------------------------------------------------------------------
