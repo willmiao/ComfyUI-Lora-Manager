@@ -1722,6 +1722,7 @@
             "errors": {
                 "invalidUrl": "פורמט URL של מודל לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
                 "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face / ModelScope באותה קבוצה.",
                 "noModelFiles": "לא נמצאו קבצי מודל במאגר זה."
             },

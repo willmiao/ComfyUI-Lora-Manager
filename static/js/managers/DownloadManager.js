@@ -9,7 +9,7 @@ import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { MODEL_SUBTYPE_DISPLAY_NAMES } from '../utils/constants.js';
-import { buildCivitaiUrl, extractCivitaiModelUrlParts, normalizeCivitaiPageHost } from '../utils/civitaiUtils.js';
+import { buildCivitaiUrl, extractCivitaiModelUrlParts, normalizeCivitaiPageHost, isSupportedCivitaiPageHost } from '../utils/civitaiUtils.js';
 import { formatFileSize } from '../utils/formatters.js';
 import { showDownloadBatchSummary } from '../components/DownloadBatchSummaryModal.js';
 import { openOtherModelsSettings } from '../utils/otherModels.js';
@@ -225,9 +225,12 @@ export class DownloadManager {
     }
 
     async validateAndFetchVersions() {
+        this.selectedFile = null;
+        this.selectedFiles = [];
         const rawText = document.getElementById('modelUrl').value.trim();
         const errorElement = document.getElementById('urlError');
         const urls = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+        errorElement.textContent = '';
 
         if (urls.length === 0) {
             errorElement.textContent = translate('modals.download.errors.invalidUrl');
@@ -264,7 +267,10 @@ export class DownloadManager {
             try {
                 this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
 
-                this.modelId = this.extractModelId(urls[0]);
+                const parsed = await this.resolveModelUrl(urls[0]);
+                this.modelId = parsed.modelId;
+                this.modelVersionId = parsed.modelVersionId;
+                this.source = parsed.source;
                 if (!this.modelId) {
                     throw new Error(translate('modals.download.errors.invalidUrl'));
                 }
@@ -278,7 +284,17 @@ export class DownloadManager {
                     this.currentVersion = this.versions[0];
                 }
 
+                if (!this.currentVersion && DownloadManager.parseDownloadUrl(urls[0])) {
+                    throw new Error(translate('modals.download.errors.noVersions'));
+                }
+                const linkedFile = this.getLinkedFile(this.currentVersion, parsed.fileId);
                 this.showVersionStep();
+                if (linkedFile) {
+                    this.showFileSelectionStep(this.currentVersion.id);
+                    const checkbox = document.querySelector(`#fileSelectionList input[value="${linkedFile.id}"]`);
+                    if (checkbox && !checkbox.disabled) checkbox.checked = true;
+                    this._syncFileSelectionState();
+                }
             } catch (error) {
                 errorElement.textContent = error.message;
             } finally {
@@ -292,10 +308,17 @@ export class DownloadManager {
         this.batchModels = [];
         errorElement.textContent = '';
 
+        this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
         const seen = new Set();
         const parsed = [];
         for (const url of urls) {
-            const result = DownloadManager.parseModelUrl(url);
+            let result;
+            try {
+                result = await this.resolveModelUrl(url);
+            } catch (error) {
+                parsed.push({ url, error: error.message });
+                continue;
+            }
             if (!result.modelId) {
                 parsed.push({ url, error: translate('modals.download.errors.invalidUrl') });
                 continue;
@@ -305,17 +328,17 @@ export class DownloadManager {
             const dedupKey = result.modelVersionId
                 ? `${result.modelId}:${result.modelVersionId}`
                 : result.modelId;
-            if (seen.has(dedupKey)) continue;
-            seen.add(dedupKey);
+            const fileKey = result.fileId ? `${dedupKey}:${result.fileId}` : dedupKey;
+            if (seen.has(fileKey)) continue;
+            seen.add(fileKey);
             parsed.push({ url, ...result, error: null });
         }
 
         if (parsed.length === 0) {
+            this.loadingManager.hide();
             errorElement.textContent = translate('modals.download.errors.invalidUrl');
             return;
         }
-
-        this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
 
         let fetched = 0;
         const total = parsed.filter(p => !p.error).length;
@@ -335,13 +358,18 @@ export class DownloadManager {
                 let selectedVersion = null;
                 if (versions && versions.length > 0) {
                     if (item.modelVersionId) {
-                        selectedVersion = versions.find(v => v.id.toString() === item.modelVersionId) || versions[0];
+                        selectedVersion = versions.find(v => v.id.toString() === item.modelVersionId);
+                        if (!selectedVersion && DownloadManager.parseDownloadUrl(item.url)) {
+                            throw new Error(translate('modals.download.errors.noVersions'));
+                        }
+                        selectedVersion ||= versions[0];
                     } else {
                         selectedVersion = versions[0];
                     }
                 }
 
-                this.batchModels[index] = { ...item, versions: versions || [], selectedVersion };
+                const selectedFile = this.getLinkedFile(selectedVersion, item.fileId);
+                this.batchModels[index] = { ...item, versions: versions || [], selectedVersion, selectedFile };
             } catch (err) {
                 this.batchModels[index] = { ...item, versions: [], selectedVersion: null, error: err.message };
             }
@@ -497,6 +525,41 @@ export class DownloadManager {
         }
     }
 
+    static parseDownloadUrl(url) {
+        try {
+            const parsed = new URL(url);
+            if (!['http:', 'https:'].includes(parsed.protocol)
+                || !isSupportedCivitaiPageHost(parsed.hostname)) return null;
+            const match = parsed.pathname.match(/^\/api\/download\/models\/(\d+)\/?$/);
+            if (!match) return null;
+            const fileId = parsed.searchParams.get('fileId');
+            if (fileId !== null && !/^\d+$/.test(fileId)) return null;
+            return { modelVersionId: match[1], fileId };
+        } catch {
+            return null;
+        }
+    }
+
+    async resolveModelUrl(url) {
+        const download = DownloadManager.parseDownloadUrl(url);
+        if (!download) return DownloadManager.parseModelUrl(url);
+        const version = await this.apiClient.fetchCivitaiModelByVersion(download.modelVersionId);
+        if (!version?.modelId) {
+            throw new Error(translate('modals.download.errors.noVersions'));
+        }
+        return { ...download, modelId: String(version.modelId), source: null };
+    }
+
+    getLinkedFile(version, fileId) {
+        if (!fileId) return null;
+        const file = this._getWeightFiles(version).find(f => String(f.id) === fileId);
+        if (!file) {
+            throw new Error(translate('modals.download.errors.linkedFileNotFound', { fileId },
+                `File ${fileId} was not found in the requested model version.`));
+        }
+        return file;
+    }
+
     static parseModelUrl(url) {
         const civarchiveMatch = url.match(/https?:\/\/(?:www\.)?(?:civitaiarchive|civarchive)\.com\/models\/(\d+)/i);
         if (civarchiveMatch) {
@@ -526,6 +589,8 @@ export class DownloadManager {
     static detectUrlType(url) {
         const trimmed = url.trim();
         if (!trimmed) return null;
+
+        if (DownloadManager.parseDownloadUrl(trimmed)) return { type: 'civitai' };
 
         // CivitAI — matches civitai.com, civitai.red, civitai.green, etc.
         if (/civitai\.(?:com|red|green)\/models\//i.test(trimmed) || /civitaiarchive|civarchive/i.test(trimmed)) {
@@ -756,6 +821,10 @@ export class DownloadManager {
     }
 
     selectVersion(versionId) {
+        if (String(this.currentVersion?.id) !== String(versionId)) {
+            this.selectedFile = null;
+            this.selectedFiles = [];
+        }
         this.currentVersion = this.versions.find(v => v.id.toString() === versionId.toString());
         if (!this.currentVersion) return;
 
@@ -2458,6 +2527,11 @@ export class DownloadManager {
             if (!m.selectedVersion) return false;
             // HF items have selectedVersion as a boolean marker + checked flag
             if (isExternalModelSource(m.source)) return m.checked !== false;
+            if (m.selectedFile && this._getWeightFiles(m.selectedVersion)
+                .some(file => String(file.id) === String(m.selectedFile.id))) {
+                return this._getRemainingFiles(m.selectedVersion)
+                    .some(file => String(file.id) === String(m.selectedFile.id));
+            }
             return !m.selectedVersion.existsLocally;
         });
         if (downloadItems.length === 0) {
@@ -2576,8 +2650,6 @@ export class DownloadManager {
                         wsHf.close();
                     }
                 } else {
-                    console.log('[download] batch download: fileParams NOT passed for modelId=%s, versionId=%s — backend will use primary file',
-                        item.modelId, item.selectedVersion?.id);
                     response = await this.apiClient.downloadModel(
                         item.modelId,
                         item.selectedVersion.id,
@@ -2585,7 +2657,17 @@ export class DownloadManager {
                         targetFolder,
                         useDefaultPaths,
                         batchDownloadId,
-                        item.source
+                        item.source,
+                        item.selectedFile && item.selectedVersion.files?.some(f => f.id === item.selectedFile.id)
+                            ? {
+                                id: item.selectedFile.id,
+                                name: item.selectedFile.name || null,
+                                type: item.selectedFile.type || 'Model',
+                                format: item.selectedFile.metadata?.format || null,
+                                size: item.selectedFile.metadata?.size || null,
+                                fp: item.selectedFile.metadata?.fp || null,
+                            }
+                            : null
                     );
                 }
 

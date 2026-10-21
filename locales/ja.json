@@ -1722,6 +1722,7 @@
             "errors": {
                 "invalidUrl": "無効なモデル URL 形式",
                 "noVersions": "このモデルの利用可能なバージョンがありません",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
                 "mixedSources": "同じバッチ内でCivitAIとHugging Face / ModelScopeのURLを混在させることはできません。",
                 "noModelFiles": "このリポジトリにモデルファイルが見つかりませんでした。"
             },

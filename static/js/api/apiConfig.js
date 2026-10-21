@@ -99,6 +99,7 @@ export function getApiEndpoints(modelType) {
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,
         fetchAllCivitai: `/api/lm/${modelType}/fetch-all-civitai`,
         relinkCivitai: `/api/lm/${modelType}/relink-civitai`,
+        civitaiModelByVersion: `/api/lm/${modelType}/civitai/model/version`,
         civitaiVersions: `/api/lm/${modelType}/civitai/versions`,
         refreshUpdates: `/api/lm/${modelType}/updates/refresh`,
         fetchMissingLicenses: `/api/lm/${modelType}/updates/fetch-missing-license`,

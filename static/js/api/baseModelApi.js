@@ -1296,6 +1296,15 @@ export class BaseModelApiClient {
         }
     }
 
+    async fetchCivitaiModelByVersion(versionId) {
+        const response = await fetch(`${this.apiConfig.endpoints.civitaiModelByVersion}/${versionId}`);
+        if (!response.ok) {
+            const result = await response.json().catch(() => ({}));
+            throw new Error(result.error || 'Failed to fetch model version');
+        }
+        return await response.json();
+    }
+
     async fetchCivitaiVersions(modelId, source = null) {
         try {
             let requestUrl = `${this.apiConfig.endpoints.civitaiVersions}/${modelId}`;
