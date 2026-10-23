@@ -380,3 +380,123 @@ describe("model widget value migration", () => {
     expect(modelWidget(node, "ckpt_name").value).toBe("dir/model.safetensors");
   });
 });
+
+describe("subgraph boundary widget migration", () => {
+  function makeSubgraphNode(boundaryWidgets, innerNodes = []) {
+    return {
+      comfyClass: "MySubgraph",
+      widgets: boundaryWidgets,
+      subgraph: { nodes: innerNodes },
+      onWidgetChanged: vi.fn(),
+    };
+  }
+
+  function makeBoundaryWidget(value) {
+    return {
+      name: "ckpt_name",
+      type: "combo",
+      value,
+      options: { values: ["aaa/first.safetensors", "dir/model.safetensors"] },
+    };
+  }
+
+  async function loadGraphWith(nodes) {
+    const extension = state.registerExtension.mock.calls.map(
+      (call) => call[0]
+    )[0];
+    await extension.setup();
+
+    state.graph.nodes = nodes;
+    for (const node of nodes) {
+      const nodeType = { comfyClass: node.comfyClass, prototype: {} };
+      extension.beforeRegisterNodeDef(nodeType, {});
+      nodeType.prototype.onAdded?.call({ graph: state.graph });
+    }
+
+    state.graph.onConfigure({});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  beforeEach(() => {
+    state.fetchApi.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          { name: "aaa/first.safetensors", base_model: "Any" },
+          { name: "dir/model.safetensors", base_model: "Any" },
+        ],
+      }),
+    });
+  });
+
+  it("migrates a promoted boundary widget that keeps its own stale copy", async () => {
+    const boundary = makeBoundaryWidget("dir\\model.safetensors");
+    const subgraphNode = makeSubgraphNode([boundary]);
+    const root = makeCheckpointNode();
+
+    await loadGraphWith([root, subgraphNode]);
+
+    expect(boundary.value).toBe("dir/model.safetensors");
+  });
+
+  it("fires the host node's onWidgetChanged so host-keyed errors clear", async () => {
+    const boundary = makeBoundaryWidget("dir\\model.safetensors");
+    const subgraphNode = makeSubgraphNode([boundary]);
+    // A root-level loader node installs the graph configure hook.
+    const root = makeCheckpointNode();
+
+    await loadGraphWith([root, subgraphNode]);
+
+    expect(subgraphNode.onWidgetChanged).toHaveBeenCalledWith(
+      "ckpt_name",
+      "dir/model.safetensors",
+      "dir\\model.safetensors",
+      boundary
+    );
+  });
+
+  it("leaves a boundary widget alone when the normalized value is unknown", async () => {
+    const boundary = makeBoundaryWidget("dir\\unknown.safetensors");
+    const subgraphNode = makeSubgraphNode([boundary]);
+    const root = makeCheckpointNode();
+
+    await loadGraphWith([root, subgraphNode]);
+
+    expect(boundary.value).toBe("dir\\unknown.safetensors");
+    expect(subgraphNode.onWidgetChanged).not.toHaveBeenCalled();
+  });
+
+  it("leaves an already-valid boundary value untouched", async () => {
+    const boundary = makeBoundaryWidget("dir/model.safetensors");
+    const subgraphNode = makeSubgraphNode([boundary]);
+    const root = makeCheckpointNode();
+
+    await loadGraphWith([root, subgraphNode]);
+
+    expect(boundary.value).toBe("dir/model.safetensors");
+    expect(subgraphNode.onWidgetChanged).not.toHaveBeenCalled();
+  });
+
+  it("sweeps boundary widgets after a pasted loader node configures", async () => {
+    const extension = state.registerExtension.mock.calls.map(
+      (call) => call[0]
+    )[0];
+    await extension.setup();
+
+    const boundary = makeBoundaryWidget("dir\\model.safetensors");
+    const subgraphNode = makeSubgraphNode([boundary]);
+    state.graph.nodes = [subgraphNode];
+
+    const nodeType = {
+      comfyClass: "Checkpoint Loader (LoraManager)",
+      prototype: {},
+    };
+    extension.beforeRegisterNodeDef(nodeType, {});
+
+    const node = makeCheckpointNode();
+    nodeType.prototype.onConfigure.call(node, {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(boundary.value).toBe("dir/model.safetensors");
+  });
+});

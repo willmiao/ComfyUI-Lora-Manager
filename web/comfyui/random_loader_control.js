@@ -55,22 +55,61 @@ async function refreshPoolCache() {
 }
 
 /**
- * Migrate a model widget value spelled with backslashes. Windows workflows
- * saved before the forward-slash paths fix carry "dir\model.safetensors"
- * while the combo list now offers "dir/model.safetensors"; rewrite the value
- * to its separator-normalized form when that form is a known model, so old
- * workflows keep their selection instead of resetting to the first model.
+ * Migrate a widget value spelled with backslashes. Windows workflows saved
+ * before the forward-slash paths fix carry "dir\model.safetensors" while the
+ * combo list now offers "dir/model.safetensors"; rewrite the value to its
+ * separator-normalized form when that form is a known model, so old workflows
+ * keep their selection instead of resetting to the first model.
  */
-function migrateModelWidgetValue(node, modelWidget, names) {
-  const value = modelWidget.value;
+function migrateWidgetValue(node, widget, names) {
+  const value = widget.value;
   if (typeof value !== "string" || !value.includes("\\")) return;
   if (names.includes(value)) return;
   const normalized = value.replace(/\\/g, "/");
   if (!names.includes(normalized)) return;
-  modelWidget.value = normalized;
+  widget.value = normalized;
   // Fire the standard widget-changed hook so the frontend's error-clearing
   // chain drops the stale "value not in list" flag on the corrected widget.
-  node?.onWidgetChanged?.(modelWidget.name, normalized, value, modelWidget);
+  node?.onWidgetChanged?.(widget.name, normalized, value, widget);
+}
+
+/**
+ * Promoted combo widgets on a subgraph boundary hold their own store-backed
+ * copy of the interior widget's value, seeded from the workflow's serialized
+ * widgets_values; migrating the interior loader widget never reaches them.
+ * Apply the same separator migration to the boundary widgets: their value
+ * setter writes through to the frontend's widget store, and firing the host
+ * node's onWidgetChanged clears error entries keyed to the host (the frontend
+ * flags the stale boundary value as a missing model on load).
+ */
+function migrateBoundaryWidgets(node, names) {
+  for (const widget of node.widgets ?? []) {
+    migrateWidgetValue(node, widget, names);
+  }
+}
+
+function allPoolNames() {
+  const names = [];
+  for (const pool of poolCache.values()) {
+    for (const model of pool) names.push(model.name);
+  }
+  return names;
+}
+
+function visitAllNodes(graph, callback) {
+  // Subgraphs nest loader nodes; Subgraph extends LGraph, so the same .nodes
+  // list recurses through every level.
+  for (const node of graph?.nodes ?? []) {
+    callback(node);
+    if (node.subgraph) visitAllNodes(node.subgraph, callback);
+  }
+}
+
+function migrateAllBoundaryWidgets() {
+  const names = allPoolNames();
+  visitAllNodes(app.graph, (node) => {
+    if (node.subgraph) migrateBoundaryWidgets(node, names);
+  });
 }
 
 function applyBaseModelFilter(node, config) {
@@ -86,11 +125,7 @@ function applyBaseModelFilter(node, config) {
 
   // Migrate against the full pool: separator spelling is independent of the
   // base_model filter, and wired widgets skip the filter entirely below.
-  migrateModelWidgetValue(
-    node,
-    modelWidget,
-    pool.map((model) => model.name)
-  );
+  migrateWidgetValue(node, modelWidget, pool.map((model) => model.name));
 
   const wired = node.inputs?.some(
     (input) =>
@@ -169,19 +204,15 @@ export function sanitizeControlWidget(node, config) {
 }
 
 function applyToAllNodes() {
-  // Subgraphs nest loader nodes; Subgraph extends LGraph, so the same .nodes
-  // list recurses through every level.
-  const visit = (graph) => {
-    for (const node of graph?.nodes ?? []) {
-      const config = NODE_CONFIGS[node.comfyClass];
-      if (config) {
-        sanitizeControlWidget(node, config);
-        applyBaseModelFilter(node, config);
-      }
-      if (node.subgraph) visit(node.subgraph);
+  const boundaryNames = allPoolNames();
+  visitAllNodes(app.graph, (node) => {
+    const config = NODE_CONFIGS[node.comfyClass];
+    if (config) {
+      sanitizeControlWidget(node, config);
+      applyBaseModelFilter(node, config);
     }
-  };
-  visit(app.graph);
+    if (node.subgraph) migrateBoundaryWidgets(node, boundaryNames);
+  });
 }
 
 function ensureGraphConfigureHook(graph) {
@@ -246,6 +277,9 @@ app.registerExtension({
       const result = onConfigure?.apply(this, arguments);
       sanitizeControlWidget(this, config);
       applyBaseModelFilter(this, config);
+      // Pasting a whole subgraph node restores its boundary widget values
+      // after the interior nodes configure; sweep once the paste settles.
+      queueMicrotask(() => migrateAllBoundaryWidgets());
       return result;
     };
   },
