@@ -129,20 +129,21 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
     class DummyDownloader:
         def __init__(self):
             self.file_calls: list[tuple[str, str]] = []
-            self.memory_calls = 0
+            self.memory_calls: list[str] = []
 
         async def download_file(self, url, path, progress_callback=None, use_auth=None, **_kwargs):
             self.file_calls.append((url, path))
-            if url.endswith(".jpeg"):
-                Path(path).write_bytes(b"preview")
-                return True, None
             if url.endswith(".safetensors"):
                 Path(path).write_bytes(b"model")
                 return True, None
             return False, "unexpected url"
 
-        async def download_to_memory(self, *_args, **_kwargs):
-            self.memory_calls += 1
+        async def download_to_memory(self, url, **_kwargs):
+            self.memory_calls.append(url)
+            if "width=450,optimized=true" in url:
+                # Civitai's optimized rendition is WebP even though the URL
+                # path ends in .jpeg
+                return True, b"RIFF\x00\x00\x00\x00WEBPpreview", {"content-type": "image/webp"}
             return False, b"", {}
 
     dummy_downloader = DummyDownloader()
@@ -178,17 +179,13 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
     )
 
     assert result == {"success": True}
-    preview_urls = [
-        url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")
-    ]
-    assert any("width=450,optimized=true" in url for url in preview_urls)
-    assert dummy_downloader.memory_calls == 0
+    assert any("width=450,optimized=true" in url for url in dummy_downloader.memory_calls)
     assert optimize_called["value"] is False
     assert metadata.preview_url is not None
-    assert metadata.preview_url.endswith(".jpeg")
+    assert metadata.preview_url.endswith(".webp")
     assert metadata.preview_nsfw_level == 2
     stored_preview = manager._active_downloads["dl"]["preview_path"]
-    assert stored_preview.endswith(".jpeg")
+    assert stored_preview.endswith(".webp")
     assert Path(stored_preview).exists()
 
 
@@ -248,18 +245,19 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
     class DummyDownloader:
         def __init__(self):
             self.file_calls: list[tuple[str, str]] = []
+            self.memory_calls: list[str] = []
 
         async def download_file(self, url, path, progress_callback=None, use_auth=None, **_kwargs):
             self.file_calls.append((url, path))
             if url.endswith(".safetensors"):
                 Path(path).write_bytes(b"model")
                 return True, None
-            if "safe.jpeg" in url:
-                Path(path).write_bytes(b"preview")
-                return True, None
             return False, "unexpected url"
 
-        async def download_to_memory(self, *_args, **_kwargs):
+        async def download_to_memory(self, url, **_kwargs):
+            self.memory_calls.append(url)
+            if "safe.jpeg" in url:
+                return True, b"RIFF\x00\x00\x00\x00WEBPpreview", {"content-type": "image/webp"}
             return False, b"", {}
 
     dummy_downloader = DummyDownloader()
@@ -306,15 +304,13 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
     )
 
     assert result == {"success": True}
-    preview_urls = [
-        url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")
-    ]
+    preview_urls = dummy_downloader.memory_calls
     assert preview_urls
     assert all("nsfw.jpeg" not in url for url in preview_urls)
     assert any("safe.jpeg" in url for url in preview_urls)
     assert metadata.preview_nsfw_level == 1
     stored_preview = manager._active_downloads["dl"].get("preview_path")
-    assert stored_preview and stored_preview.endswith(".jpeg")
+    assert stored_preview and stored_preview.endswith(".webp")
 
 
 @pytest.mark.asyncio

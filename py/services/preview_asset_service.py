@@ -7,8 +7,13 @@ import os
 from typing import Awaitable, Callable, Dict, Optional, Sequence
 from urllib.parse import urlparse
 
-from ..utils.constants import CARD_PREVIEW_WIDTH, PREVIEW_EXTENSIONS
+from ..utils.constants import (
+    CARD_PREVIEW_WIDTH,
+    PREVIEW_EXTENSIONS,
+    SUPPORTED_MEDIA_EXTENSIONS,
+)
 from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.file_utils import detect_media_extension
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .settings_manager import get_settings_manager
@@ -109,15 +114,27 @@ class PreviewAssetService:
         else:
             rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type="image")
             if rewritten:
-                extension = extension_from_url(preview_url, ".png")
-                preview_path = os.path.join(preview_dir, base_name + extension)
-                success, _ = await downloader.download_file(
-                    rewritten_url, preview_path, use_auth=False
+                # Civitai's optimized renditions are re-encoded (typically
+                # WebP) regardless of the URL's extension, so the saved
+                # extension must come from the actual bytes/headers.
+                success, content, headers = await downloader.download_to_memory(
+                    rewritten_url, use_auth=False, return_headers=True
                 )
-                if success:
-                    local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
-                    local_metadata["preview_nsfw_level"] = nsfw_level
-                    return
+                if success and isinstance(content, bytes):
+                    extension = detect_media_extension(
+                        content, headers, fallback_url=preview_url
+                    )
+                    if extension in SUPPORTED_MEDIA_EXTENSIONS["images"]:
+                        preview_path = os.path.join(preview_dir, base_name + extension)
+                        try:
+                            with open(preview_path, "wb") as handle:
+                                handle.write(content)
+                        except OSError as exc:
+                            logger.error("Error saving preview image: %s", exc)
+                            return
+                        local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
+                        local_metadata["preview_nsfw_level"] = nsfw_level
+                        return
 
             extension = ".webp"
             preview_path = os.path.join(preview_dir, base_name + extension)

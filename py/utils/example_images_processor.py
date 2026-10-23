@@ -11,6 +11,7 @@ from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
 from ..utils.example_images_paths import get_model_folder, get_model_relative_path
 from .example_images_metadata import MetadataUpdater, update_cache_from_metadata
+from .file_utils import detect_media_extension
 from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
@@ -82,63 +83,10 @@ class ExampleImagesProcessor:
     
     @staticmethod
     def _get_file_extension_from_content_or_headers(content, headers, fallback_url=None, media_type_hint=None):
-        """Determine file extension from content magic bytes or headers
-        
-        Args:
-            content: File content bytes
-            headers: HTTP response headers
-            fallback_url: Original URL for extension extraction
-            media_type_hint: Optional media type hint from metadata (e.g., "video" or "image")
-        """
-        # Check magic bytes for common formats
-        if content:
-            if content.startswith(b'\xFF\xD8\xFF'):
-                return '.jpg'
-            elif content.startswith(b'\x89PNG\r\n\x1A\n'):
-                return '.png'
-            elif content.startswith(b'GIF87a') or content.startswith(b'GIF89a'):
-                return '.gif'
-            elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:
-                return '.webp'
-            elif len(content) >= 12 and content[4:8] == b'ftyp' and b'avif' in content[8:24]:
-                return '.avif'
-            elif content.startswith(b'\x00\x00\x00\x0cJXL \x0d\x0a\x87\x0a'):
-                return '.jxl'
-            elif content.startswith(b'\x00\x00\x00\x18ftypmp4') or content.startswith(b'\x00\x00\x00\x20ftypmp4'):
-                return '.mp4'
-            elif content.startswith(b'\x1A\x45\xDF\xA3'):
-                return '.webm'
-        
-        # Check Content-Type header
-        if headers:
-            content_type = headers.get('content-type', '').lower()
-            type_map = {
-                'image/jpeg': '.jpg',
-                'image/png': '.png',
-                'image/gif': '.gif',
-                'image/webp': '.webp',
-                'image/avif': '.avif',
-                'image/jxl': '.jxl',
-                'video/mp4': '.mp4',
-                'video/webm': '.webm',
-                'video/quicktime': '.mov'
-            }
-            if content_type in type_map:
-                return type_map[content_type]
-        
-        # Fallback to URL extension if available
-        if fallback_url:
-            filename = os.path.basename(fallback_url.split('?')[0])
-            ext = os.path.splitext(filename)[1].lower()
-            if ext in SUPPORTED_MEDIA_EXTENSIONS['images'] or ext in SUPPORTED_MEDIA_EXTENSIONS['videos']:
-                return ext
-        
-        # Use media type hint from metadata if available
-        if media_type_hint == "video":
-            return '.mp4'
-        
-        # Default fallback
-        return '.jpg'
+        """Determine file extension from content magic bytes or headers"""
+        return detect_media_extension(
+            content, headers, fallback_url=fallback_url, media_type_hint=media_type_hint
+        )
 
     @staticmethod
     def _is_not_found_error(error) -> bool:

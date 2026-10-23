@@ -29,6 +29,7 @@ from ..utils.constants import (
     MAX_FOLDER_NAME_LENGTH,
     MAX_PATH_TAG_LENGTH,
     MODEL_WEIGHT_FILE_TYPES,
+    SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
     VALID_OTHER_CIVITAI_TYPES,
 )
@@ -40,7 +41,7 @@ from ..utils.paid_access import (
     normalize_paid_access,
     parse_civitai_timestamp,
 )
-from ..utils.file_utils import calculate_sha256, calculate_autov3
+from ..utils.file_utils import calculate_sha256, calculate_autov3, detect_media_extension
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import calculate_filename_for_model, decode_percent_encoded_filename, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
@@ -2845,16 +2846,29 @@ class DownloadManager:
                             preview_url, media_type="image"
                         )
                         if rewritten and rewritten_url:
-                            preview_ext = _extension_from_url(preview_url, ".png")
-                            preview_path = os.path.join(
-                                get_preview_dir(save_path),
-                                os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
+                            # Civitai's optimized renditions are re-encoded
+                            # (typically WebP) regardless of the URL's
+                            # extension, so the saved extension must come from
+                            # the actual bytes/headers.
+                            (
+                                success,
+                                content,
+                                headers,
+                            ) = await downloader.download_to_memory(
+                                rewritten_url, use_auth=False, return_headers=True
                             )
-                            success, _ = await downloader.download_file(
-                                rewritten_url, preview_path, use_auth=False
-                            )
-                            if success:
-                                preview_downloaded = True
+                            if success and isinstance(content, bytes):
+                                preview_ext = detect_media_extension(
+                                    content, headers, fallback_url=preview_url
+                                )
+                                if preview_ext in SUPPORTED_MEDIA_EXTENSIONS["images"]:
+                                    preview_path = os.path.join(
+                                        get_preview_dir(save_path),
+                                        os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
+                                    )
+                                    with open(preview_path, "wb") as preview_file:
+                                        preview_file.write(content)
+                                    preview_downloaded = True
 
                         if not preview_downloaded:
                             temp_path: str | None = None

@@ -13,6 +13,7 @@ from .constants import (
     INVALID_AUTOV3_EMPTY_HASH,
     MAX_SAFETENSORS_HEADER_BYTES,
     PREVIEW_EXTENSIONS,
+    SUPPORTED_MEDIA_EXTENSIONS,
 )
 from .exif_utils import ExifUtils
 from ..services.settings_manager import get_settings_manager
@@ -150,6 +151,75 @@ def calculate_autov3(file_path: str) -> str | None:
                 return autov3
 
     return None
+
+
+def detect_media_extension(
+    content: bytes | None,
+    headers: dict | None = None,
+    fallback_url: str | None = None,
+    media_type_hint: str | None = None,
+) -> str:
+    """Determine a file extension from content magic bytes or headers.
+
+    CDNs (Civitai's ``optimized=true`` renditions in particular) re-encode
+    media regardless of the extension in the URL path, so the URL extension
+    must only be used as a fallback after content and headers.
+
+    Args:
+        content: File content bytes (only the first bytes are inspected).
+        headers: HTTP response headers.
+        fallback_url: Original URL for extension extraction.
+        media_type_hint: Optional media type hint from metadata (e.g. "video" or "image").
+    """
+    # Check magic bytes for common formats
+    if content:
+        if content.startswith(b'\xFF\xD8\xFF'):
+            return '.jpg'
+        elif content.startswith(b'\x89PNG\r\n\x1A\n'):
+            return '.png'
+        elif content.startswith(b'GIF87a') or content.startswith(b'GIF89a'):
+            return '.gif'
+        elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:
+            return '.webp'
+        elif len(content) >= 12 and content[4:8] == b'ftyp' and b'avif' in content[8:24]:
+            return '.avif'
+        elif content.startswith(b'\x00\x00\x00\x0cJXL \x0d\x0a\x87\x0a'):
+            return '.jxl'
+        elif content.startswith(b'\x00\x00\x00\x18ftypmp4') or content.startswith(b'\x00\x00\x00\x20ftypmp4'):
+            return '.mp4'
+        elif content.startswith(b'\x1A\x45\xDF\xA3'):
+            return '.webm'
+
+    # Check Content-Type header
+    if headers:
+        content_type = headers.get('content-type', '').lower()
+        type_map = {
+            'image/jpeg': '.jpg',
+            'image/png': '.png',
+            'image/gif': '.gif',
+            'image/webp': '.webp',
+            'image/avif': '.avif',
+            'image/jxl': '.jxl',
+            'video/mp4': '.mp4',
+            'video/webm': '.webm',
+            'video/quicktime': '.mov'
+        }
+        if content_type in type_map:
+            return type_map[content_type]
+
+    # Fallback to URL extension if available
+    if fallback_url:
+        filename = os.path.basename(fallback_url.split('?')[0])
+        ext = os.path.splitext(filename)[1].lower()
+        if ext in SUPPORTED_MEDIA_EXTENSIONS['images'] or ext in SUPPORTED_MEDIA_EXTENSIONS['videos']:
+            return ext
+
+    # Use media type hint from metadata if available
+    if media_type_hint == "video":
+        return '.mp4'
+
+    # Default fallback
+    return '.jpg'
 
 
 def find_preview_file(base_name: str, dir_path: str) -> str:
