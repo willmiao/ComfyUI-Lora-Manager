@@ -1211,6 +1211,12 @@ class UNETLoaderExtractor(NodeMetadataExtractor):
                 "node_id": node_id
             }
 
+# Nodes that turn latents into images and therefore provide the preview image
+# for recipe saving. Both native decoders return ``(images,)`` and share the
+# same "first decode wins" capture semantics.
+IMAGE_DECODE_NODE_CLASSES = frozenset({"VAEDecode", "VAEDecodeTiled"})
+
+
 class VAEDecodeExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -1479,6 +1485,7 @@ NODE_EXTRACTORS = {
     "CFGGuider": CFGGuiderExtractor,            # Add CFGGuider
     # Image
     "VAEDecode": VAEDecodeExtractor,  # Added VAEDecode extractor
+    "VAEDecodeTiled": VAEDecodeExtractor,  # Native tiled decoder, same output
     # Metadata overwrite
     "MetadataOverwriteLM": MetadataOverwriteExtractor,
     # Add other nodes as needed
