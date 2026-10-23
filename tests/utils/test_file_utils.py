@@ -11,6 +11,7 @@ from py.utils.file_utils import (
     calculate_sha256,
     find_preview_file,
     get_preview_extension,
+    reconcile_media_extension,
 )
 
 
@@ -183,3 +184,49 @@ class TestCalculateAutov3:
         # The read returns {} because the actual bytes are shorter than the
         # claimed length (short-read guard), without allocating anything huge.
         assert calculate_autov3(str(file_path)) is None
+
+
+class TestReconcileMediaExtension:
+    def test_renames_webp_bytes_saved_as_jpeg(self, tmp_path):
+        file_path = tmp_path / "preview.jpeg"
+        file_path.write_bytes(b"RIFF\x00\x00\x00\x00WEBPdata")
+
+        result = reconcile_media_extension(str(file_path))
+
+        assert result == str(tmp_path / "preview.webp")
+        assert not file_path.exists()
+        assert (tmp_path / "preview.webp").read_bytes() == b"RIFF\x00\x00\x00\x00WEBPdata"
+
+    def test_renames_webm_bytes_saved_as_mp4(self, tmp_path):
+        file_path = tmp_path / "preview.mp4"
+        file_path.write_bytes(b"\x1a\x45\xdf\xa3" + b"webm-data")
+
+        result = reconcile_media_extension(str(file_path))
+
+        assert result == str(tmp_path / "preview.webm")
+        assert (tmp_path / "preview.webm").exists()
+
+    def test_keeps_path_when_extension_matches_content(self, tmp_path):
+        file_path = tmp_path / "preview.webp"
+        file_path.write_bytes(b"RIFF\x00\x00\x00\x00WEBPdata")
+
+        assert reconcile_media_extension(str(file_path)) == str(file_path)
+
+    def test_treats_jpg_and_jpeg_as_equivalent(self, tmp_path):
+        file_path = tmp_path / "preview.jpeg"
+        file_path.write_bytes(b"\xff\xd8\xff" + b"jpeg-data")
+
+        assert reconcile_media_extension(str(file_path)) == str(file_path)
+        assert file_path.exists()
+
+    def test_keeps_path_for_unrecognized_content(self, tmp_path):
+        file_path = tmp_path / "preview.mp4"
+        file_path.write_bytes(b"not-a-real-video")
+
+        assert reconcile_media_extension(str(file_path)) == str(file_path)
+        assert file_path.exists()
+
+    def test_keeps_path_for_missing_file(self, tmp_path):
+        missing = str(tmp_path / "nope.mp4")
+
+        assert reconcile_media_extension(missing) == missing

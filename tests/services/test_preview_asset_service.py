@@ -229,6 +229,50 @@ async def test_ensure_preview_rewrites_civitai_video(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_ensure_preview_renames_video_when_content_differs_from_url(tmp_path):
+    """A transcoded video whose bytes don't match the URL extension gets renamed."""
+    metadata_path = tmp_path / "model.metadata.json"
+    metadata_path.write_text("{}")
+    local_metadata: dict[str, Any] = {}
+
+    webm_bytes = b"\x1a\x45\xdf\xa3" + b"webm-video-data"
+
+    class Downloader:
+        async def download_file(self, url, path, use_auth=False):
+            if "transcode=true" in url:
+                Path(path).write_bytes(webm_bytes)
+                return True, None
+            return False, "fail"
+
+        async def download_to_memory(self, *_args, **_kwargs):
+            pytest.fail("download_to_memory should not be used for video previews")
+
+    async def downloader_factory():
+        return Downloader()
+
+    service = PreviewAssetService(
+        metadata_manager=StubMetadataManager(),
+        downloader_factory=downloader_factory,
+        exif_utils=RecordingExifUtils(),
+    )
+
+    images: List[Dict[str, object]] = [
+        {
+            "url": "https://image.civitai.com/container/example/original=true/sample.mp4",
+            "type": "video",
+            "nsfwLevel": 2,
+        }
+    ]
+
+    await service.ensure_preview_for_metadata(str(metadata_path), local_metadata, images)
+
+    preview_path = Path(local_metadata["preview_url"])
+    assert preview_path.suffix == ".webm"
+    assert preview_path.read_bytes() == webm_bytes
+    assert local_metadata["preview_nsfw_level"] == 2
+
+
+@pytest.mark.asyncio
 async def test_ensure_preview_respects_blur_setting(monkeypatch, tmp_path):
     metadata_path = tmp_path / "model.metadata.json"
     metadata_path.write_text("{}")

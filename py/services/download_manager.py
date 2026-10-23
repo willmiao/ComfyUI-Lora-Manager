@@ -41,7 +41,7 @@ from ..utils.paid_access import (
     normalize_paid_access,
     parse_civitai_timestamp,
 )
-from ..utils.file_utils import calculate_sha256, calculate_autov3, detect_media_extension
+from ..utils.file_utils import calculate_sha256, calculate_autov3, detect_media_extension, reconcile_media_extension
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import calculate_filename_for_model, decode_percent_encoded_filename, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
@@ -2839,6 +2839,7 @@ class DownloadManager:
                                 attempt, preview_path, use_auth=False
                             )
                             if success:
+                                preview_path = reconcile_media_extension(preview_path)
                                 preview_downloaded = True
                                 break
                     else:

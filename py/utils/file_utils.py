@@ -158,6 +158,7 @@ def detect_media_extension(
     headers: dict | None = None,
     fallback_url: str | None = None,
     media_type_hint: str | None = None,
+    default: str = ".jpg",
 ) -> str:
     """Determine a file extension from content magic bytes or headers.
 
@@ -170,6 +171,8 @@ def detect_media_extension(
         headers: HTTP response headers.
         fallback_url: Original URL for extension extraction.
         media_type_hint: Optional media type hint from metadata (e.g. "video" or "image").
+        default: Extension returned when nothing else matches. Pass ``""`` to
+            treat unrecognized content as a detection failure.
     """
     # Check magic bytes for common formats
     if content:
@@ -219,7 +222,38 @@ def detect_media_extension(
         return '.mp4'
 
     # Default fallback
-    return '.jpg'
+    return default
+
+
+def reconcile_media_extension(file_path: str) -> str:
+    """Rename *file_path* when its bytes indicate a different media format.
+
+    Returns the final path: the renamed path when the sniffed extension is a
+    supported media extension that differs from the current one, otherwise
+    *file_path* unchanged.
+    """
+    current_ext = os.path.splitext(file_path)[1].lower()
+    try:
+        with open(file_path, "rb") as f:
+            head = f.read(64)
+    except OSError:
+        return file_path
+    detected = detect_media_extension(head, default="")
+    if not detected or detected == current_ext:
+        return file_path
+    if {detected, current_ext} <= {".jpg", ".jpeg"}:
+        return file_path
+    supported = (
+        SUPPORTED_MEDIA_EXTENSIONS["images"] + SUPPORTED_MEDIA_EXTENSIONS["videos"]
+    )
+    if detected not in supported:
+        return file_path
+    new_path = os.path.splitext(file_path)[0] + detected
+    try:
+        os.replace(file_path, new_path)
+    except OSError:
+        return file_path
+    return new_path
 
 
 def find_preview_file(base_name: str, dir_path: str) -> str:

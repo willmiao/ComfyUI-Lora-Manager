@@ -13,7 +13,7 @@ from ..utils.constants import (
     SUPPORTED_MEDIA_EXTENSIONS,
 )
 from ..utils.civitai_utils import rewrite_preview_url
-from ..utils.file_utils import detect_media_extension
+from ..utils.file_utils import detect_media_extension, reconcile_media_extension
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .settings_manager import get_settings_manager
@@ -108,6 +108,7 @@ class PreviewAssetService:
 
                 success, _ = await downloader.download_file(candidate, preview_path, use_auth=False)
                 if success:
+                    preview_path = reconcile_media_extension(preview_path)
                     local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
                     local_metadata["preview_nsfw_level"] = nsfw_level
                     return
