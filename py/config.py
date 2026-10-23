@@ -762,13 +762,86 @@ class Config:
             if fingerprint_valid and mappings_valid:
                 return
 
-            logger.info("Symlink configuration changed; rescanning symbolic links")
+            logger.info(
+                "Symlink configuration changed; rescanning symbolic links (%s)",
+                self._describe_symlink_cache_invalidation(current_fingerprint),
+            )
 
         self.rebuild_symlink_cache()
         logger.info(
             "Symlink mappings rebuilt and cached in %.2f ms",
             (time.perf_counter() - start) * 1000,
         )
+
+    def _describe_symlink_cache_invalidation(
+        self, current_fingerprint: Dict[str, object]
+    ) -> str:
+        """Summarize why the persisted symlink cache was invalidated.
+
+        Distinguishes a fingerprint mismatch (root set or first-level symlink
+        layout changed) from a stale mapping (a cached link vanished or was
+        retargeted), so the startup log records what actually changed instead
+        of a bare "configuration changed".
+        """
+        cached = self._cached_fingerprint
+        if not isinstance(cached, dict) or not cached:
+            return "cache has no usable fingerprint"
+
+        if current_fingerprint == cached:
+            return "cached symlink mapping failed validation"
+
+        def _root_set(value: object) -> Set[str]:
+            if not isinstance(value, list):
+                return set()
+            return {item for item in value if isinstance(item, str)}
+
+        def _link_set(value: object) -> Set[Tuple[str, str]]:
+            pairs: Set[Tuple[str, str]] = set()
+            if isinstance(value, list):
+                for entry in value:
+                    if isinstance(entry, (list, tuple)) and len(entry) == 2:
+                        pairs.add((str(entry[0]), str(entry[1])))
+            return pairs
+
+        def _format(items: List[str]) -> str:
+            shown = items[:3]
+            suffix = f" +{len(items) - 3} more" if len(items) > 3 else ""
+            return ", ".join(shown) + suffix
+
+        reasons: List[str] = []
+        added_roots = sorted(
+            _root_set(current_fingerprint.get("roots"))
+            - _root_set(cached.get("roots"))
+        )
+        removed_roots = sorted(
+            _root_set(cached.get("roots"))
+            - _root_set(current_fingerprint.get("roots"))
+        )
+        if added_roots:
+            reasons.append(f"roots added: {_format(added_roots)}")
+        if removed_roots:
+            reasons.append(f"roots removed: {_format(removed_roots)}")
+
+        added_links = sorted(
+            _link_set(current_fingerprint.get("direct_symlinks"))
+            - _link_set(cached.get("direct_symlinks"))
+        )
+        removed_links = sorted(
+            _link_set(cached.get("direct_symlinks"))
+            - _link_set(current_fingerprint.get("direct_symlinks"))
+        )
+        if added_links:
+            reasons.append(
+                "symlinks added: "
+                + _format([f"{link} -> {target}" for link, target in added_links])
+            )
+        if removed_links:
+            reasons.append(
+                "symlinks removed: "
+                + _format([f"{link} -> {target}" for link, target in removed_links])
+            )
+
+        return "; ".join(reasons) or "fingerprint structure differs"
 
     def rebuild_symlink_cache(self) -> None:
         """Force a fresh scan of all symbolic links and update the persistent cache."""
@@ -871,14 +944,14 @@ class Config:
 
             # Check if symlink still exists
             if not self._is_link(link_path):
-                logger.debug("Cached symlink no longer exists: %s", link_path)
+                logger.info("Cached symlink no longer exists: %s", link_path)
                 return False
 
             # Check if target is still the same
             try:
                 actual_target = self._normalize_path(os.path.realpath(link_path))
                 if actual_target != target:
-                    logger.debug(
+                    logger.info(
                         "Symlink target changed: %s -> %s (cached: %s)",
                         link_path,
                         actual_target,
@@ -886,7 +959,7 @@ class Config:
                     )
                     return False
             except OSError:
-                logger.debug("Cannot resolve symlink: %s", link_path)
+                logger.info("Cannot resolve symlink: %s", link_path)
                 return False
 
         return True
