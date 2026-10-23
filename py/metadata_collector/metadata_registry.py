@@ -3,7 +3,11 @@ import re
 import time
 from typing import Any
 from nodes import NODE_CLASS_MAPPINGS  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
-from .node_extractors import NODE_EXTRACTORS, GenericNodeExtractor
+from .node_extractors import (
+    IMAGE_DECODE_NODE_CLASSES,
+    NODE_EXTRACTORS,
+    GenericNodeExtractor,
+)
 from .constants import METADATA_CATEGORIES, IMAGES, MODELS, OVERWRITE
 
 
@@ -379,7 +383,7 @@ class MetadataRegistry:
             return image_data
 
         # If no image is found in the current metadata, try to find it in the cache
-        # This handles the case where VAEDecode was cached by ComfyUI and not executed
+        # This handles the case where a decode node was cached by ComfyUI and not executed
         prompt_obj = metadata.get("current_prompt")
         if prompt_obj and hasattr(prompt_obj, "original_prompt"):
             original_prompt = prompt_obj.original_prompt
@@ -388,8 +392,9 @@ class MetadataRegistry:
                 if class_type and class_type in NODE_CLASS_MAPPINGS:
                     class_obj = NODE_CLASS_MAPPINGS[class_type]
                     class_name = class_obj.__name__
-                    # Check if this is a VAEDecode node
-                    if class_name == "VAEDecode":
+                    # Check if this is an image decode node (VAEDecode and
+                    # its tiled variant share the same cached-image fallback)
+                    if class_name in IMAGE_DECODE_NODE_CLASSES:
                         # Try to find this node in the cache
                         cache_key = f"{node_id}:{class_name}"
                         if cache_key in self.node_cache:
