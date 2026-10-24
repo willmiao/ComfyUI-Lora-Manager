@@ -1337,6 +1337,22 @@ class ModelScanner:
             
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error initializing cache in background: {e}")
+            # Surface the failure to the initialization page: without this
+            # broadcast clients would wait forever on a scan that already
+            # died (the page only reloads on a completion message).
+            try:
+                await ws_manager.broadcast_init_progress({
+                    'stage': 'error',
+                    'status': 'error',
+                    'progress': 0,
+                    'details': f"{self.model_type.capitalize()} cache initialization failed: {e}",
+                    'scanner_type': self.model_type,
+                    'pageType': self.page_type,
+                })
+            except Exception as broadcast_error:  # pragma: no cover - defensive guard
+                logger.error(
+                    f"{self.model_type.capitalize()} Scanner: Failed to broadcast initialization error: {broadcast_error}"
+                )
         finally:
             # Always clear the initializing flag when done
             self._is_initializing = False

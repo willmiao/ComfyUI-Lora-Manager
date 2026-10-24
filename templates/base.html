@@ -89,7 +89,10 @@
                 <!-- Banners will be dynamically inserted here -->
             </div>
 
-            {% if is_initializing %}
+            {% if awaiting_first_scan %}
+                <!-- Show first-run welcome component before the initial scan -->
+                {% include 'components/first_run.html' %}
+            {% elif is_initializing %}
                 <!-- Show initialization component when initializing -->
                 {% include 'components/initialization.html' %}
             {% else %}
@@ -101,7 +104,10 @@
         {% block overlay %}{% endblock %}
     </div>
 
-    {% if is_initializing %}
+    {% if awaiting_first_scan %}
+        <!-- Load first-run welcome JavaScript -->
+        <script type="module" src="{{ rel_prefix }}loras_static/js/components/first_run.js?v={{ version }}"></script>
+    {% elif is_initializing %}
         <!-- Load initialization JavaScript -->
         <script type="module" src="{{ rel_prefix }}loras_static/js/components/initialization.js?v={{ version }}"></script>
     {% else %}

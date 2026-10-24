@@ -9,6 +9,7 @@ from typing import Dict, List, Any
 
 from ..config import config
 from ..services.settings_manager import get_settings_manager
+from ..services.first_run_manager import get_first_run_manager
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..services.model_query import normalize_sub_type, resolve_sub_type
@@ -104,6 +105,7 @@ class StatsRoutes:
             template = self.template_env.get_template('statistics.html')
             rendered = template.render(
                 is_initializing=is_initializing,
+                awaiting_first_scan=get_first_run_manager().is_awaiting_first_scan(),
                 settings=settings_manager,
                 request=request,
                 t=server_i18n.get_translation,

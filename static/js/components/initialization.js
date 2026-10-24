@@ -41,6 +41,12 @@ class InitializationManager {
 
         // Add event listeners for tip navigation
         this.setupTipNavigation();
+
+        // Wire up the error retry button
+        const retryBtn = document.getElementById('initRetryBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => window.location.reload());
+        }
         
         // Show first tip as active
         document.querySelector('.tip-item').classList.add('active');
@@ -210,6 +216,12 @@ class InitializationManager {
             this.handleCacheHealthWarning(data);
             return;
         }
+
+        // The first-run welcome page owns the pre-scan state; once the scan
+        // starts the page reloads into the progress view on its own.
+        if (data.stage === 'scan_started') {
+            return;
+        }
         
         // Check if this update is for our page type
         if (data.pageType && data.pageType !== this.pageType) {
@@ -231,6 +243,12 @@ class InitializationManager {
                 console.log(`Ignoring update for ${data.scanner_type}, we're on ${this.pageType}`);
                 return;
             }
+        }
+
+        // Show scan failures instead of silently sitting on the progress view
+        if (data.status === 'error') {
+            this.showError(data.details);
+            return;
         }
         
         // Save progress data to session storage
@@ -449,6 +467,27 @@ class InitializationManager {
             this.tipInterval = setInterval(() => {
                 this.showNextTip();
             }, 8000);
+        }
+    }
+
+    /**
+     * Show an initialization error with a retry button
+     */
+    showError(details) {
+        const loadingContent = document.querySelector('.initialization-container .loading-content');
+        const errorEl = document.getElementById('initError');
+        const errorText = document.getElementById('initErrorText');
+
+        if (loadingContent) {
+            loadingContent.style.display = 'none';
+        }
+
+        if (errorText) {
+            errorText.textContent = details || '';
+        }
+
+        if (errorEl) {
+            errorEl.hidden = false;
         }
     }
 

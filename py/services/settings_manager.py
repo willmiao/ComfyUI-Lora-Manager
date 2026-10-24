@@ -98,6 +98,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "language": "en",
     "show_only_sfw": False,
     "onboarding_completed": False,
+    # First-run gate: until the user confirms the welcome page, the initial
+    # library scan is deferred (see py/services/first_run_manager.py).
+    "initial_scan_completed": False,
     "dismissed_banners": [],
     "enable_metadata_archive_db": False,
     "enable_civarchive_api": True,

@@ -1,0 +1,74 @@
+<!-- First Run Welcome Component -->
+<div class="first-run-container" id="firstRunContainer">
+    <div class="first-run-content">
+        <div class="first-run-language">
+            <label for="firstRunLanguage"><i class="fas fa-globe"></i> {{ t('firstRun.language.label') }}</label>
+            <select id="firstRunLanguage">
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ru">Русский</option>
+            </select>
+        </div>
+
+        <div class="first-run-header">
+            <h2 id="firstRunTitle">{{ t('firstRun.title') }}</h2>
+            <p class="first-run-subtitle" id="firstRunSubtitle">{{ t('firstRun.description') }}</p>
+        </div>
+
+        <div class="first-run-libraries" id="firstRunLibraries">
+            <!-- Library summary rows are rendered by first_run.js -->
+        </div>
+
+        <div class="first-run-estimate" id="firstRunEstimate" hidden>
+            <i class="fas fa-clock"></i>
+            <span id="firstRunEstimateText"></span>
+        </div>
+
+        <div class="first-run-no-roots" id="firstRunNoRoots" hidden>
+            <i class="fas fa-exclamation-triangle"></i>
+            <p id="firstRunNoRootsText"></p>
+        </div>
+
+        <div class="first-run-sidecar">
+            <h3>{{ t('firstRun.sidecar.title') }}</h3>
+            <label class="first-run-sidecar-option">
+                <input type="radio" name="sidecarStorageMode" value="alongside" checked>
+                <span class="first-run-sidecar-option-text">
+                    <strong>{{ t('firstRun.sidecar.alongside.label') }}</strong>
+                    <small>{{ t('firstRun.sidecar.alongside.description') }}</small>
+                </span>
+            </label>
+            <label class="first-run-sidecar-option">
+                <input type="radio" name="sidecarStorageMode" value="centralized">
+                <span class="first-run-sidecar-option-text">
+                    <strong>{{ t('firstRun.sidecar.centralized.label') }}</strong>
+                    <small>{{ t('firstRun.sidecar.centralized.description') }}</small>
+                </span>
+            </label>
+            <div class="first-run-sidecar-path" id="firstRunSidecarPathRow" hidden>
+                <input type="text" id="firstRunSidecarPath"
+                       placeholder="{{ t('firstRun.sidecar.centralized.pathPlaceholder') }}">
+            </div>
+        </div>
+
+        <div class="first-run-actions">
+            <button type="button" class="primary-btn" id="firstRunStart">
+                <i class="fas fa-play"></i> {{ t('firstRun.actions.start') }}
+            </button>
+            <button type="button" class="secondary-btn" id="firstRunDefer">
+                {{ t('firstRun.actions.defer') }}
+            </button>
+        </div>
+
+        <div class="first-run-error" id="firstRunError" hidden>
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="firstRunErrorText"></span>
+        </div>
+    </div>
+</div>

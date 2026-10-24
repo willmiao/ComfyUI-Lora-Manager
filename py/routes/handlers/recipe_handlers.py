@@ -16,6 +16,7 @@ from aiohttp import web
 from ...config import config
 from ...services.server_i18n import server_i18n as default_server_i18n
 from ...services.settings_manager import SettingsManager, get_settings_manager
+from ...services.first_run_manager import get_first_run_manager
 from ...services.recipes import (
     RecipeAnalysisService,
     RecipeDownloadError,
@@ -206,6 +207,7 @@ class RecipePageView:
             is_initializing = (
                 recipe_scanner._cache is None or recipe_scanner.is_initializing()
             )
+            awaiting_first_scan = get_first_run_manager().is_awaiting_first_scan()
 
             try:
                 if not is_initializing:
@@ -213,6 +215,7 @@ class RecipePageView:
                 rendered = self._template_env.get_template(self._template_name).render(
                     recipes=[],
                     is_initializing=is_initializing,
+                    awaiting_first_scan=awaiting_first_scan,
                     settings=self._settings,
                     request=request,
                     t=self._server_i18n.get_translation,
@@ -222,6 +225,7 @@ class RecipePageView:
                 self._logger.error("Error loading recipe cache data: %s", cache_error)
                 rendered = self._template_env.get_template(self._template_name).render(
                     is_initializing=True,
+                    awaiting_first_scan=awaiting_first_scan,
                     settings=self._settings,
                     request=request,
                     t=self._server_i18n.get_translation,

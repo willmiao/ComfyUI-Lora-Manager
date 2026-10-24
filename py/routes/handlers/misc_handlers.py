@@ -36,6 +36,7 @@ from ...services.metadata_service import (
 from ...services.service_registry import ServiceRegistry
 from ...services.model_lifecycle_service import delete_model_artifacts
 from ...services.settings_manager import get_settings_manager
+from ...services.first_run_manager import get_first_run_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...services.errors import ResourceNotFoundError
@@ -704,6 +705,7 @@ class HealthCheckHandler:
     def __init__(
         self,
         scanner_getters: Mapping[str, Callable[[], Awaitable[Any]]] | None = None,
+        first_run_manager: Any = None,
     ) -> None:
         self._scanner_getters = scanner_getters or {
             "lora": ServiceRegistry.get_lora_scanner,
@@ -712,6 +714,7 @@ class HealthCheckHandler:
             "other": ServiceRegistry.get_other_scanner,
             "recipe": ServiceRegistry.get_recipe_scanner,
         }
+        self._first_run_manager = first_run_manager
 
     def _active_scanner_getters(
         self,
@@ -734,6 +737,17 @@ class HealthCheckHandler:
         /ws/init-progress WebSocket is unavailable. Omits pageType so every
         page accepts the update and only reloads once all scanners are done.
         """
+        if (
+            self._first_run_manager is not None
+            and self._first_run_manager.is_awaiting_first_scan()
+        ):
+            return web.json_response(
+                {
+                    "status": "awaiting_first_scan",
+                    "details": "Waiting for the initial scan to be confirmed.",
+                }
+            )
+
         pending: list[str] = []
         for name, getter in self._active_scanner_getters().items():
             try:
@@ -766,6 +780,66 @@ class HealthCheckHandler:
                 "details": "Initialization complete",
             }
         )
+
+
+class FirstRunHandler:
+    """Serve the first-run welcome page and kick off the gated initial scan."""
+
+    def __init__(self, first_run_manager: Any = None) -> None:
+        self._manager = first_run_manager or get_first_run_manager()
+
+    async def get_first_run_info(self, request: web.Request) -> web.Response:
+        """GET /api/lm/first-run-info — roots, sizes and scan estimate."""
+        if not self._manager.is_awaiting_first_scan():
+            return web.json_response({"status": "completed"})
+        info = await self._manager.collect_first_run_info()
+        payload = {"status": "awaiting_first_scan"}
+        payload.update(info)
+        return web.json_response(payload)
+
+    async def start_first_scan(self, request: web.Request) -> web.Response:
+        """POST (or GET, for the browser extension) /api/lm/first-scan/start."""
+        data: Dict[str, Any] = {}
+        if request.method == "POST":
+            try:
+                body = await request.json()
+                if isinstance(body, dict):
+                    data.update(body)
+            except Exception:
+                # Empty or non-JSON body: fall back to query parameters.
+                pass
+        for key in ("sidecar_storage_mode", "sidecar_storage_path", "defer"):
+            if key in request.query:
+                data[key] = request.query[key]
+
+        defer = _parse_bool_param(data.get("defer", False))
+        try:
+            result = await self._manager.start_initial_scan(
+                sidecar_storage_mode=data.get("sidecar_storage_mode"),
+                sidecar_storage_path=data.get("sidecar_storage_path"),
+                defer=defer,
+            )
+        except ValueError as exc:
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.error(
+                "Error starting first scan: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
+        return web.json_response({"success": True, **result})
+
+
+def _parse_bool_param(value: Any) -> bool:
+    """Tolerantly parse a boolean from JSON or query-string input."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    return bool(value)
 
 
 class SupportersHandler:
@@ -4431,6 +4505,7 @@ class MiscHandlerSet:
         agent_handler: Any = None,
         download_routing: Any = None,
         sidecar_migration: Any = None,
+        first_run: Any = None,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -4453,6 +4528,7 @@ class MiscHandlerSet:
         self.agent_handler = agent_handler
         self.download_routing = download_routing
         self.sidecar_migration = sidecar_migration
+        self.first_run = first_run
 
     def to_route_mapping(
         self,
@@ -4523,6 +4599,9 @@ class MiscHandlerSet:
             "get_download_routing": self.download_routing.get_download_routing,
             # Sidecar migration handler
             "migrate_sidecars": self.sidecar_migration.migrate_sidecars,
+            # First-run welcome page handlers
+            "get_first_run_info": self.first_run.get_first_run_info,
+            "start_first_scan": self.first_run.start_first_scan,
             # Base model handlers
             "get_base_models": self.base_model.get_base_models,
             "refresh_base_models": self.base_model.refresh_base_models,

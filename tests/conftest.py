@@ -381,6 +381,7 @@ def reset_singletons():
     from py.services.service_registry import ServiceRegistry
     from py.services.model_scanner import ModelScanner
     from py.services.settings_manager import get_settings_manager
+    from py.services.first_run_manager import reset_first_run_manager
 
     # Reset DownloadManager singleton
     DownloadManager._instance = None
@@ -392,6 +393,9 @@ def reset_singletons():
     # Reset ModelScanner instances
     if hasattr(ModelScanner, '_instances'):
         ModelScanner._instances.clear()
+
+    # Reset FirstRunManager singleton
+    reset_first_run_manager()
 
     # Reset SettingsManager
     settings_manager = get_settings_manager()
@@ -406,4 +410,5 @@ def reset_singletons():
     ServiceRegistry._initialized = False  # pyright: ignore[reportAttributeAccessIssue]
     if hasattr(ModelScanner, '_instances'):
         ModelScanner._instances.clear()
+    reset_first_run_manager()
 

@@ -2307,6 +2307,52 @@
                 "description": "按 Ctrl+F（Mac 上为 Cmd+F）可快速在当前视图内搜索。",
                 "alt": "快速搜索"
             }
+        },
+        "error": {
+            "title": "[TODO: Translate] Initialization failed",
+            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
+            "retry": "[TODO: Translate] Retry"
+        }
+    },
+    "firstRun": {
+        "title": "[TODO: Translate] Welcome to LoRA Manager",
+        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "libraries": {
+            "loras": "[TODO: Translate] LoRAs",
+            "checkpoints": "[TODO: Translate] Checkpoints",
+            "embeddings": "[TODO: Translate] Embeddings",
+            "other": "[TODO: Translate] Other Models"
+        },
+        "language": {
+            "label": "[TODO: Translate] Language"
+        },
+        "libraryStats": "[TODO: Translate] {count} models · {size}",
+        "rootMissing": "[TODO: Translate] Directory not found",
+        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "noRoots": {
+            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
+            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+        },
+        "sidecar": {
+            "title": "[TODO: Translate] Metadata storage",
+            "alongside": {
+                "label": "[TODO: Translate] Next to model files (recommended)",
+                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+            },
+            "centralized": {
+                "label": "[TODO: Translate] Centralized directory",
+                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
+                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+            }
+        },
+        "actions": {
+            "start": "[TODO: Translate] Start Scan",
+            "defer": "[TODO: Translate] Later"
+        },
+        "errors": {
+            "loadFailed": "[TODO: Translate] Failed to load library information.",
+            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
+            "startFailed": "[TODO: Translate] Failed to start the scan."
         }
     },
     "duplicates": {

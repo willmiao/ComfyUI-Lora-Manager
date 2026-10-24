@@ -35,6 +35,11 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/settings/libraries/activate", "activate_library"),
     RouteDefinition("GET", "/api/lm/health-check", "health_check"),
     RouteDefinition("GET", "/api/lm/init-status", "get_init_status"),
+    # First-run welcome page: info + gated initial scan kickoff. The GET alias
+    # on start follows the browser extension's GET-only convention.
+    RouteDefinition("GET", "/api/lm/first-run-info", "get_first_run_info"),
+    RouteDefinition("POST", "/api/lm/first-scan/start", "start_first_scan"),
+    RouteDefinition("GET", "/api/lm/first-scan/start", "start_first_scan"),
     RouteDefinition("GET", "/api/lm/supporters", "get_supporters"),
     RouteDefinition("GET", "/api/lm/wildcards/search", "search_wildcards"),
     RouteDefinition("POST", "/api/lm/wildcards/open-location", "open_wildcards_location"),

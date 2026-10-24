@@ -20,6 +20,15 @@
             </div>
         </div>
 
+        <div class="init-error" id="initError" hidden>
+            <i class="fas fa-exclamation-circle"></i>
+            <div class="init-error-content">
+                <h3>{{ t('initialization.error.title') }}</h3>
+                <p id="initErrorText"></p>
+                <button type="button" class="primary-btn" id="initRetryBtn">{{ t('initialization.error.retry') }}</button>
+            </div>
+        </div>
+
         <div class="tips-container">
             <div class="tips-header">
                 <i class="fas fa-lightbulb"></i>

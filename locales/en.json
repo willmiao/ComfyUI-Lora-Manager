@@ -2307,6 +2307,52 @@
         "description": "Press Ctrl+F (Cmd+F on Mac) to quickly search within your current view.",
         "alt": "Quick Search"
       }
+    },
+    "error": {
+      "title": "Initialization failed",
+      "message": "Something went wrong while scanning your model library.",
+      "retry": "Retry"
+    }
+  },
+  "firstRun": {
+    "title": "Welcome to LoRA Manager",
+    "description": "Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+    "libraries": {
+      "loras": "LoRAs",
+      "checkpoints": "Checkpoints",
+      "embeddings": "Embeddings",
+      "other": "Other Models"
+    },
+    "language": {
+      "label": "Language"
+    },
+    "libraryStats": "{count} models · {size}",
+    "rootMissing": "Directory not found",
+    "estimate": "About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+    "noRoots": {
+      "plugin": "No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
+      "standalone": "No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+    },
+    "sidecar": {
+      "title": "Metadata storage",
+      "alongside": {
+        "label": "Next to model files (recommended)",
+        "description": "Metadata .json files are stored next to each model file, so they move together with the model."
+      },
+      "centralized": {
+        "label": "Centralized directory",
+        "description": "Metadata is stored in a separate directory, keeping your model folders clean.",
+        "pathPlaceholder": "Directory for centralized metadata storage"
+      }
+    },
+    "actions": {
+      "start": "Start Scan",
+      "defer": "Later"
+    },
+    "errors": {
+      "loadFailed": "Failed to load library information.",
+      "pathRequired": "Please enter a storage directory for centralized metadata.",
+      "startFailed": "Failed to start the scan."
     }
   },
   "duplicates": {

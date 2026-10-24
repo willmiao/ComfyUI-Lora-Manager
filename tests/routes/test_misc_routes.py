@@ -3242,6 +3242,7 @@ def _stub_misc_handler_set(**overrides) -> MiscHandlerSet:
         "agent_handler",
         "download_routing",
         "sidecar_migration",
+        "first_run",
     )
     handlers = {name: _AnyHandler() for name in names}
     handlers.update(overrides)

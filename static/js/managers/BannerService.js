@@ -55,37 +55,47 @@ class BannerService {
         // Load dismissed banners from backend first (for persistence across browser modes)
         await this.loadDismissedBannersFromBackend();
 
-        // Register default banners
-        this.registerBanner('civitai-extension', {
-            id: 'civitai-extension',
-            title: 'New Tool Available: LM Civitai Extension!',
-            content: 'LM Civitai Extension is a browser extension designed to work seamlessly with LoRA Manager to significantly enhance your Civitai browsing experience! See which models you already have, download new ones with a single click, and manage your downloads efficiently.',
-            actions: [
-                {
-                    text: 'Chrome Web Store',
-                    icon: 'fab fa-chrome',
-                    url: 'https://chromewebstore.google.com/detail/capigligggeijgmocnaflanlbghnamgm?utm_source=item-share-cb',
-                    type: 'secondary'
-                },
-                {
-                    text: 'Firefox Extension',
-                    icon: 'fab fa-firefox-browser',
-                    url: 'https://github.com/willmiao/lm-civitai-extension-firefox/releases/latest/download/extension.xpi',
-                    type: 'secondary'
-                },
-                {
-                    text: 'Read more...',
-                    icon: 'fas fa-book',
-                    url: 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)',
-                    type: 'tertiary'
-                }
-            ],
-            dismissible: true,
-            priority: 1
-        });
+        // Promotional banners compete with the first-run welcome page, the
+        // initialization screen and the onboarding tour for the user's
+        // attention, so they are only registered once the onboarding flow is
+        // done (or skipped). Alert-style banners (startup messages,
+        // cache-health warnings) are registered elsewhere and unaffected.
+        const onboardingDone = getStorageItem('onboarding_completed') || getStorageItem('onboarding_skipped');
+        const firstRunOrInitPage = document.getElementById('firstRunContainer') || document.getElementById('initializationContainer');
+        const showPromos = Boolean(onboardingDone) && !firstRunOrInitPage;
 
-        this.prepareCommunitySupportBanner();
-        this.prepareOtherModelsBanner();
+        if (showPromos) {
+            this.registerBanner('civitai-extension', {
+                id: 'civitai-extension',
+                title: 'New Tool Available: LM Civitai Extension!',
+                content: 'LM Civitai Extension is a browser extension designed to work seamlessly with LoRA Manager to significantly enhance your Civitai browsing experience! See which models you already have, download new ones with a single click, and manage your downloads efficiently.',
+                actions: [
+                    {
+                        text: 'Chrome Web Store',
+                        icon: 'fab fa-chrome',
+                        url: 'https://chromewebstore.google.com/detail/capigligggeijgmocnaflanlbghnamgm?utm_source=item-share-cb',
+                        type: 'secondary'
+                    },
+                    {
+                        text: 'Firefox Extension',
+                        icon: 'fab fa-firefox-browser',
+                        url: 'https://github.com/willmiao/lm-civitai-extension-firefox/releases/latest/download/extension.xpi',
+                        type: 'secondary'
+                    },
+                    {
+                        text: 'Read more...',
+                        icon: 'fas fa-book',
+                        url: 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)',
+                        type: 'tertiary'
+                    }
+                ],
+                dismissible: true,
+                priority: 1
+            });
+
+            this.prepareCommunitySupportBanner();
+            this.prepareOtherModelsBanner();
+        }
 
         await this.showActiveBanners();
         this.initialized = true;

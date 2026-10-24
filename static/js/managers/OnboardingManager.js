@@ -126,6 +126,13 @@ export class OnboardingManager {
 
     // Start the onboarding process
     async start() {
+        // Skip onboarding while the first-run welcome page or the
+        // initialization page is shown: their DOM targets don't exist yet, so
+        // the tutorial would be silently skipped and marked completed.
+        if (document.getElementById('firstRunContainer') || document.getElementById('initializationContainer')) {
+            return;
+        }
+
         const shouldShow = await this.shouldShowOnboarding();
         if (!shouldShow) {
             return;

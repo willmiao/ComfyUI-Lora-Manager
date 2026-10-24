@@ -15,6 +15,7 @@ from ..services.metadata_service import (
     update_metadata_providers,
 )
 from ..services.settings_manager import get_settings_manager
+from ..services.first_run_manager import get_first_run_manager
 from ..services.downloader import get_downloader
 from ..utils.usage_stats import UsageStats
 from .handlers.misc_handlers import (
@@ -22,6 +23,7 @@ from .handlers.misc_handlers import (
     DoctorHandler,
     ExampleWorkflowsHandler,
     FileSystemHandler,
+    FirstRunHandler,
     HealthCheckHandler,
     LoraCodeHandler,
     BackupHandler,
@@ -108,7 +110,7 @@ class MiscRoutes:
         return self._handler_mapping
 
     def _create_handler_set(self) -> MiscHandlerSet:
-        health = HealthCheckHandler()
+        health = HealthCheckHandler(first_run_manager=get_first_run_manager())
         settings_handler = SettingsHandler(
             settings_service=self._settings,
             metadata_provider_updater=self._metadata_provider_updater,
@@ -144,6 +146,7 @@ class MiscRoutes:
         agent_handler = AgentHandler()
         download_routing = DownloadRoutingHandler()
         sidecar_migration = SidecarMigrationHandler()
+        first_run = FirstRunHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -167,6 +170,7 @@ class MiscRoutes:
             agent_handler=agent_handler,
             download_routing=download_routing,
             sidecar_migration=sidecar_migration,
+            first_run=first_run,
         )
 
 

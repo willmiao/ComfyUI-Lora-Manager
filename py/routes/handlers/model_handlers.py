@@ -33,6 +33,7 @@ from ...services.model_scanner import ReconcileScope
 from ...services.preview_asset_service import PreviewAssetService
 from ...services.service_registry import ServiceRegistry
 from ...services.settings_manager import SettingsManager, get_settings_manager
+from ...services.first_run_manager import get_first_run_manager
 from ...services.tag_update_service import TagUpdateService
 from ...services.use_cases import (
     AutoOrganizeInProgressError,
@@ -205,6 +206,10 @@ class ModelPageView:
 
             template_context = {
                 "is_initializing": is_initializing,
+                # First-run gate: the welcome page takes precedence over the
+                # initialization screen (the scanner cache is empty because no
+                # scan has run yet, not because one is in flight).
+                "awaiting_first_scan": get_first_run_manager().is_awaiting_first_scan(),
                 "settings": self._settings,
                 "request": request,
                 "folders": [],

@@ -87,6 +87,46 @@
   opacity: 0.8;
 }
 
+/* Error area */
+.init-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--lora-danger, #e05c5c);
+  border-radius: var(--border-radius-base);
+  background: rgba(var(--lora-accent), 0.05);
+  margin-bottom: var(--space-2);
+}
+
+.init-error[hidden] {
+  display: none !important;
+}
+
+.init-error > i {
+  color: var(--lora-danger, #e05c5c);
+  font-size: 1.4rem;
+  margin-top: 2px;
+}
+
+.init-error-content {
+  flex: 1;
+}
+
+.init-error-content h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.05rem;
+  color: var(--text-color);
+}
+
+.init-error-content p {
+  margin: 0 0 var(--space-1);
+  font-size: 0.9rem;
+  color: var(--text-color);
+  opacity: 0.85;
+  word-break: break-word;
+}
+
 /* Stages Styles */
 .initialization-stages {
   margin-bottom: var(--space-3);
