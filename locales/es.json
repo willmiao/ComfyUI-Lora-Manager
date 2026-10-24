@@ -2221,7 +2221,8 @@
             "copyReport": "Copiar informe",
             "downloadCsv": "Descargar CSV",
             "columnModelName": "Nombre del modelo",
-            "columnError": "Error"
+            "columnError": "Error",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "Resumen de descarga por lotes",
@@ -2882,6 +2883,7 @@
             "metadataUpdateComplete": "Actualización de metadatos completada",
             "operationCancelled": "Operación cancelada por el usuario",
             "operationCancelledPartial": "Operación cancelada. {success} elementos procesados.",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "Error al obtener metadatos: {message}",
             "bulkMetadataCompleteAll": "Actualizados exitosamente todos los {count} {type}s",
             "bulkMetadataCompletePartial": "Actualizados {success} de {total} {type}s",

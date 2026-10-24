@@ -2221,7 +2221,8 @@
             "copyReport": "보고서 복사",
             "downloadCsv": "CSV 다운로드",
             "columnModelName": "모델 이름",
-            "columnError": "오류"
+            "columnError": "오류",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "일괄 다운로드 요약",
@@ -2882,6 +2883,7 @@
             "metadataUpdateComplete": "메타데이터 업데이트 완료",
             "operationCancelled": "사용자에 의해 작업이 취소되었습니다",
             "operationCancelledPartial": "작업이 취소되었습니다. {success}개 항목이 처리되었습니다.",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "메타데이터 가져오기 실패: {message}",
             "bulkMetadataCompleteAll": "모든 {count}개 {type}이(가) 성공적으로 새로고침되었습니다",
             "bulkMetadataCompletePartial": "{total}개 중 {success}개 {type}이(가) 새로고침되었습니다",

@@ -837,6 +837,22 @@ export class BaseModelApiClient {
                                 break;
                             }
 
+                            case 'rate_limited': {
+                                // Backend aborted the batch after repeated rate limits;
+                                // settle the promise so the loading overlay closes.
+                                let summaryText = `Aborted (rate limited): updated ${data.success} of ${data.processed} ${this.apiConfig.config.displayName}s`;
+                                if (data.failure_count > 0) {
+                                    summaryText += ` | ❌ ${data.failure_count} failed`;
+                                }
+                                if (data.skipped_count > 0) {
+                                    summaryText += ` | ⏭️ ${data.skipped_count} skipped`;
+                                }
+                                summaryText += ` (⏱ ${data.elapsed_seconds || '?'}s)`;
+                                loading.setStatus(summaryText);
+                                resolve(data);
+                                break;
+                            }
+
                             case 'cancelled':
                                 loading.setStatus('Operation cancelled by user');
                                 resolve(data);
@@ -894,6 +910,17 @@ export class BaseModelApiClient {
             return;
         }
 
+        if (data.status === 'rate_limited') {
+            showToast('toast.api.metadataFetchRateLimited', {
+                success,
+                total,
+                failed: data.failure_count || 0,
+                skipped: data.skipped_count || 0,
+            }, 'warning');
+            this._showFailureDetailsModal(data);
+            return;
+        }
+
         this._showFailureDetailsModal(data);
     }
 
@@ -917,6 +944,11 @@ export class BaseModelApiClient {
                     <button class="close" data-action="close-modal">&times;</button>
 
                     <h2>${translate('modals.metadataFetchSummary.title', {}, 'Metadata Fetch Summary')}</h2>
+
+                    ${data.status === 'rate_limited' ? `
+                    <div class="refresh-rate-limited-notice">
+                        <i class="fas fa-exclamation-triangle"></i> ${translate('modals.metadataFetchSummary.rateLimitedNotice', {}, 'Fetch aborted: the metadata provider rate limit was reached. Re-run "Fetch from Civitai" later to retry the remaining models.')}
+                    </div>` : ''}
 
                     <div class="refresh-summary-stats">
                         <div class="stat-card stat-card-success">

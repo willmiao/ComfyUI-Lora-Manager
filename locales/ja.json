@@ -2221,7 +2221,8 @@
             "copyReport": "レポートをコピー",
             "downloadCsv": "CSVをダウンロード",
             "columnModelName": "モデル名",
-            "columnError": "エラー"
+            "columnError": "エラー",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "バッチダウンロードの概要",
@@ -2882,6 +2883,7 @@
             "metadataUpdateComplete": "メタデータ更新完了",
             "operationCancelled": "ユーザーによって操作がキャンセルされました",
             "operationCancelledPartial": "操作がキャンセルされました。{success} 個の項目が処理されました。",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "メタデータの取得に失敗しました：{message}",
             "bulkMetadataCompleteAll": "{count} {type}すべてが正常に更新されました",
             "bulkMetadataCompletePartial": "{total} {type}のうち {success} が更新されました",

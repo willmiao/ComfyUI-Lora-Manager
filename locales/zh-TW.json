@@ -2221,7 +2221,8 @@
             "copyReport": "複製報告",
             "downloadCsv": "下載 CSV",
             "columnModelName": "模型名稱",
-            "columnError": "錯誤"
+            "columnError": "錯誤",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "批次下載摘要",
@@ -2882,6 +2883,7 @@
             "metadataUpdateComplete": "metadata 更新完成",
             "operationCancelled": "操作已由用戶取消",
             "operationCancelledPartial": "操作已取消。已處理 {success} 個項目。",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "取得 metadata 失敗：{message}",
             "bulkMetadataCompleteAll": "已成功刷新全部 {count} 個 {type}",
             "bulkMetadataCompletePartial": "已刷新 {success} / {total} 個 {type}",

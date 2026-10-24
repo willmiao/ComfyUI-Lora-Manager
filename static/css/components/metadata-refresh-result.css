@@ -164,6 +164,25 @@
     color: var(--color-success);
 }
 
+.refresh-rate-limited-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    background: var(--surface-subtle);
+    border-left: 4px solid var(--color-warning);
+    color: var(--lora-text);
+    border-radius: var(--border-radius-sm);
+    font-weight: var(--weight-medium);
+}
+
+.refresh-rate-limited-notice i {
+    font-size: 1.2em;
+    flex-shrink: 0;
+    color: var(--color-warning);
+}
+
 [data-theme="dark"] .failure-table th {
     background: var(--lora-surface-solid);
 }
