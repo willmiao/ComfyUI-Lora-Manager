@@ -13,7 +13,7 @@ from ..utils.models import BaseModelMetadata, autov3_from_civitai_files, quantiz
 from ..config import config
 from ..utils.constants import is_empty_placeholder_hash
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
-from ..utils.gc_utils import schedule_refreeze_after_rebuild
+from ..utils.gc_utils import schedule_refreeze, schedule_refreeze_after_rebuild
 from ..utils.gguf_utils import detect_quantization
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import (
@@ -2588,6 +2588,10 @@ class ModelScanner:
                 elapsed_seconds=time.time() - start_time,
                 **summary,
             )
+            if total_added > 0 or total_removed > 0:
+                # Reconcile-added entries are GC-tracked again; re-freeze
+                # once the follow-up work settles (issue #1161).
+                schedule_refreeze(f"{self.model_type} cache reconcile")
             return summary
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
@@ -3889,7 +3893,20 @@ class ModelScanner:
 
             # Update folder in metadata
             metadata_dict['folder'] = folder
-            
+
+            # Insert the slim cache representation, not the full payload: a
+            # fresh download/import carries the entire source payload, while
+            # scan-path entries keep only a handful of civitai keys. Keeping
+            # the fat payload per download re-tracks thousands of objects for
+            # the GC until the next restart (issue #1161). License flags must
+            # be derived before slimming — they read model-level fields the
+            # slim payload drops.
+            cache_entry = dict(metadata_dict)
+            if cache_entry.get('civitai'):
+                self._ensure_license_flags(cache_entry)
+                cache_entry['civitai'] = self._slim_civitai_payload(cache_entry['civitai'])
+            metadata_dict = cache_entry
+
             file_path = metadata_dict.get('file_path', '')
             if file_path:
                 old_entries = [item for item in self._cache.raw_data if item.get('file_path') == file_path]
@@ -3917,6 +3934,9 @@ class ModelScanner:
             )
             await self._persist_current_cache()
             self.bump_cache_version()
+            # The new entry is GC-tracked again; re-freeze once the write
+            # burst settles (issue #1161).
+            schedule_refreeze(f"{self.model_type} model added to cache")
             return True
         except Exception as e:
             logger.error(f"Error adding model to cache: {e}")
@@ -4213,6 +4233,9 @@ class ModelScanner:
             await self._cache.resort()
             await self._persist_current_cache(force=True)
             self.bump_cache_version()
+            # Bulk updates replace entries en masse; re-freeze once settled
+            # (issue #1161).
+            schedule_refreeze(f"{self.model_type} bulk cache update")
         except Exception:
             logger.error(
                 "%s Scanner: failed to finalize deferred cache persist",
@@ -4334,6 +4357,9 @@ class ModelScanner:
             if cache_modified:
                 await self._persist_current_cache()
                 self.bump_cache_version()
+                # The replacement entry is GC-tracked again; re-freeze once
+                # the write burst settles (issue #1161).
+                schedule_refreeze(f"{self.model_type} cache update")
 
         if metadata and cache_entry is not None:
             return cache_entry
@@ -4539,6 +4565,9 @@ class ModelScanner:
                 old_item_for_sql,
             )
 
+        # In-place updates still allocate fresh values; re-freeze once the
+        # sync burst settles (issue #1161).
+        schedule_refreeze(f"{self.model_type} metadata sync")
         return True
 
     async def update_autov3_for_model(self, model_type: str, file_path: str, autov3: str) -> bool:
