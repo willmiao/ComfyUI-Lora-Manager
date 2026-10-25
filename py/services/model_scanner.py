@@ -852,6 +852,10 @@ class ModelScanner:
         self._hash_index = hash_index or ModelHashIndex()
         self._tags_count = {}  # Dictionary to store tag counts
         self._is_initializing = False  # Flag to track initialization state
+        # Last initialize_in_background failure (None when the last attempt
+        # succeeded or none ran yet); surfaced via /api/lm/init-status so the
+        # polling fallback sees the same error the WebSocket broadcast carried.
+        self._init_error: Optional[str] = None
         self._excluded_models = []  # List to track excluded models
         self._persistent_cache = get_persistent_cache()
         self._name_display_mode = self._resolve_name_display_mode()
@@ -947,6 +951,7 @@ class ModelScanner:
         self._tags_count = {}
         self._excluded_models = []
         self._is_initializing = False
+        self._init_error = None
         self._name_display_mode = self._resolve_name_display_mode()
         self.bump_cache_version()
 
@@ -1239,6 +1244,8 @@ class ModelScanner:
             
             # Set initializing flag to true
             self._is_initializing = True
+            # Clear any previous failure so a retry starts from a clean slate
+            self._init_error = None
             
             # Determine the page type based on model type
             page_type = self.page_type
@@ -1337,6 +1344,7 @@ class ModelScanner:
             
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error initializing cache in background: {e}")
+            self._init_error = str(e)
             # Surface the failure to the initialization page: without this
             # broadcast clients would wait forever on a scan that already
             # died (the page only reloads on a completion message).

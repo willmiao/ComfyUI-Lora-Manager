@@ -2927,6 +2927,84 @@ async def test_get_init_status_reports_pending_scanners():
     assert "lora" not in payload["details"]
 
 
+async def test_get_init_status_scopes_to_requesting_page():
+    """?page= mirrors the WebSocket per-pageType completion semantics."""
+
+    async def ready_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: False)
+
+    async def initializing_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: True)
+
+    handler = HealthCheckHandler(
+        scanner_getters={
+            "lora": ready_scanner,
+            "checkpoint": initializing_scanner,
+        }
+    )
+
+    # The loras page only waits for the lora scanner, even while the
+    # checkpoint scan is still running.
+    response = await handler.get_init_status(FakeRequest(method="GET", query={"page": "loras"}))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "complete"
+
+    # The checkpoints page keeps waiting for its own scanner.
+    response = await handler.get_init_status(FakeRequest(method="GET", query={"page": "checkpoints"}))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "initializing"
+    assert "checkpoint" in payload["details"]
+
+    # No page parameter: aggregate behaviour (every scanner must be done).
+    response = await handler.get_init_status(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "initializing"
+
+
+async def test_get_init_status_reports_scanner_errors():
+    """A failed initial scan must not masquerade as 'complete'."""
+
+    async def failed_scanner():
+        return SimpleNamespace(
+            _cache=object(),
+            is_initializing=lambda: False,
+            _init_error="disk unreadable",
+        )
+
+    async def ready_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: False)
+
+    handler = HealthCheckHandler(
+        scanner_getters={
+            "lora": failed_scanner,
+            "checkpoint": ready_scanner,
+        }
+    )
+
+    response = await handler.get_init_status(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "error"
+    assert "disk unreadable" in payload["details"]
+
+    # Scoped to a healthy page, the failure of another scanner is irrelevant.
+    response = await handler.get_init_status(FakeRequest(method="GET", query={"page": "checkpoints"}))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "complete"
+
+    # A busy scanner takes precedence over a stale error record.
+    async def busy_scanner():
+        return SimpleNamespace(
+            _cache=object(),
+            is_initializing=lambda: True,
+            _init_error="stale",
+        )
+
+    handler = HealthCheckHandler(scanner_getters={"lora": busy_scanner})
+    response = await handler.get_init_status(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+    assert payload["status"] == "initializing"
+
+
 class StaticMetadataProvider:
     """Metadata provider returning one fixed CivitAI model payload."""
 

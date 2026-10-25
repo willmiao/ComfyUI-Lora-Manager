@@ -221,10 +221,13 @@ class RecipePageView:
                     t=self._server_i18n.get_translation,
                     rel_prefix=relative_root_prefix(request.path),
                 )
-            except Exception as cache_error:  # pragma: no cover - logging path
+            except Exception as cache_error:
                 self._logger.error("Error loading recipe cache data: %s", cache_error)
                 rendered = self._template_env.get_template(self._template_name).render(
                     is_initializing=True,
+                    # Explicit error state on the initialization view; a bare
+                    # is_initializing would loop forever (see model pages).
+                    init_error=str(cache_error),
                     awaiting_first_scan=awaiting_first_scan,
                     settings=self._settings,
                     request=request,

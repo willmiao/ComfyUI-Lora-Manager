@@ -730,12 +730,26 @@ class HealthCheckHandler:
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
 
+    # Page path segment -> scanner names that page's initialization view
+    # waits for. The WebSocket progress channel already completes per page
+    # (each scanner broadcast carries its pageType), so the polling fallback
+    # scopes itself the same way instead of waiting for every scanner.
+    _PAGE_SCANNER_NAMES: Mapping[str, tuple[str, ...]] = {
+        "loras": ("lora",),
+        "checkpoints": ("checkpoint",),
+        "embeddings": ("embedding",),
+        "other": ("other",),
+        "recipes": ("recipe",),
+    }
+
     async def get_init_status(self, request: web.Request) -> web.Response:
-        """Report aggregate scanner initialization status.
+        """Report scanner initialization status for the requesting page.
 
         Used by the initialization page's polling fallback when the
-        /ws/init-progress WebSocket is unavailable. Omits pageType so every
-        page accepts the update and only reloads once all scanners are done.
+        /ws/init-progress WebSocket is unavailable. ``?page=<pageType>``
+        scopes the check to that page's scanner(s), mirroring the WebSocket
+        completion semantics; without it every active scanner must be done.
+        Omits pageType so every page accepts the update.
         """
         if (
             self._first_run_manager is not None
@@ -748,21 +762,35 @@ class HealthCheckHandler:
                 }
             )
 
+        page = (request.query.get("page") or "").strip().lower()
+        scanner_names = self._PAGE_SCANNER_NAMES.get(page)
+
         pending: list[str] = []
+        errors: list[str] = []
         for name, getter in self._active_scanner_getters().items():
+            if scanner_names is not None and name not in scanner_names:
+                continue
             try:
                 scanner = await getter()
             except Exception:
                 pending.append(name)
                 continue
-            cache_ready = getattr(scanner, "_cache", None) is not None
             is_initializing = getattr(scanner, "is_initializing", None)
             busy = (
                 is_initializing()
                 if callable(is_initializing)
                 else bool(getattr(scanner, "_is_initializing", False))
             )
-            if busy or not cache_ready:
+            if busy:
+                pending.append(name)
+                continue
+            # A failed initial scan leaves an empty cache behind, so the
+            # cache-ready check alone would report it as "complete".
+            init_error = getattr(scanner, "_init_error", None)
+            if init_error:
+                errors.append(f"{name}: {init_error}")
+                continue
+            if getattr(scanner, "_cache", None) is None:
                 pending.append(name)
 
         if pending:
@@ -771,6 +799,13 @@ class HealthCheckHandler:
                     "status": "initializing",
                     "stage": "processing",
                     "details": "Initializing: " + ", ".join(pending),
+                }
+            )
+        if errors:
+            return web.json_response(
+                {
+                    "status": "error",
+                    "details": "Initialization failed: " + "; ".join(errors),
                 }
             )
         return web.json_response(

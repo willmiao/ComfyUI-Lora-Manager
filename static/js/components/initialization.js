@@ -32,22 +32,32 @@ class InitializationManager {
 
         // Check session storage for saved progress
         this.restoreProgress();
-        
-        // Setup the tip carousel
-        this.setupTipCarousel();
-        
-        // Connect to WebSocket for progress updates
-        this.connectWebSocket();
-
-        // Add event listeners for tip navigation
-        this.setupTipNavigation();
 
         // Wire up the error retry button
         const retryBtn = document.getElementById('initRetryBtn');
         if (retryBtn) {
             retryBtn.addEventListener('click', () => window.location.reload());
         }
-        
+
+        // A server-rendered error means the failure happened while this page
+        // was being generated (e.g. the cache read threw). Polling would
+        // report "complete" for the idle scanner and reload straight back
+        // into the same failure, so stay on the error state until the user
+        // retries manually.
+        const serverError = document.getElementById('initError');
+        if (serverError && !serverError.hidden) {
+            return;
+        }
+
+        // Setup the tip carousel
+        this.setupTipCarousel();
+
+        // Connect to WebSocket for progress updates
+        this.connectWebSocket();
+
+        // Add event listeners for tip navigation
+        this.setupTipNavigation();
+
         // Show first tip as active
         document.querySelector('.tip-item').classList.add('active');
     }
@@ -183,16 +193,20 @@ class InitializationManager {
      */
     pollProgress() {
         const checkProgress = () => {
-            fetch('/api/lm/init-status')
+            // Scope the status check to this page's scanner(s), mirroring the
+            // WebSocket completion semantics (per-pageType broadcasts).
+            fetch(`/api/lm/init-status?page=${encodeURIComponent(this.pageType)}`)
                 .then(response => response.json())
                 .then(data => {
                     this.handleProgressUpdate(data);
-                    
-                    // If initialization is complete, stop polling
-                    if (data.status !== 'complete') {
-                        setTimeout(checkProgress, 2000);
-                    } else {
+
+                    if (data.status === 'complete') {
+                        // Initialization is complete, stop polling
                         window.location.reload();
+                    } else if (data.status !== 'error') {
+                        // Errors are already displayed by handleProgressUpdate;
+                        // polling again would just reload into the same failure.
+                        setTimeout(checkProgress, 2000);
                     }
                 })
                 .catch(error => {
@@ -200,7 +214,7 @@ class InitializationManager {
                     setTimeout(checkProgress, 3000); // Try again after a longer delay
                 });
         };
-        
+
         checkProgress();
     }
 

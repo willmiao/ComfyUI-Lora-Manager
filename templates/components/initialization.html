@@ -7,7 +7,7 @@
             </p>
         </div>
 
-        <div class="loading-content">
+        <div class="loading-content"{% if init_error %} hidden{% endif %}>
             <div class="loading-spinner"></div>
             <div class="loading-status" id="progressStatus">{{ t('initialization.status') }}</div>
             <!-- Use initialization-specific classes for the progress bar -->
@@ -20,11 +20,13 @@
             </div>
         </div>
 
-        <div class="init-error" id="initError" hidden>
+        <!-- Server-rendered when the page itself failed to load the cache:
+             stays visible and initialization.js skips polling for it. -->
+        <div class="init-error" id="initError"{% if not init_error %} hidden{% endif %}>
             <i class="fas fa-exclamation-circle"></i>
             <div class="init-error-content">
                 <h3>{{ t('initialization.error.title') }}</h3>
-                <p id="initErrorText"></p>
+                <p id="initErrorText">{{ init_error or '' }}</p>
                 <button type="button" class="primary-btn" id="initRetryBtn">{{ t('initialization.error.retry') }}</button>
             </div>
         </div>

@@ -62,3 +62,32 @@ async def test_model_page_view_reads_version_per_request():
 
     assert first.text == "1.0.2-old"
     assert second.text == "1.0.2-new"
+
+
+class FailingCacheScanner(DummyScanner):
+    async def get_cached_data(self, *_args, **_kwargs):
+        raise RuntimeError("corrupt snapshot")
+
+
+async def test_model_page_view_surfaces_cache_load_error():
+    """A cache read failure renders the init view's error state, not a spinner."""
+    template_env = jinja2.Environment(
+        loader=jinja2.DictLoader(
+            {"dummy.html": "{{ is_initializing }}|{{ init_error | default('') }}"}
+        ),
+        autoescape=True,
+    )
+    service = DummyService()
+    service.scanner = FailingCacheScanner()
+    view = ModelPageView(
+        template_env=template_env,
+        template_name="dummy.html",
+        service=service,
+        settings_service=DummySettings(),  # pyright: ignore[reportArgumentType]
+        server_i18n=DummyI18n(),
+        logger=logging.getLogger("test_model_page_view"),
+    )
+
+    response = await view.handle(SimpleNamespace(path="/loras"))  # pyright: ignore[reportArgumentType]
+
+    assert response.text == "True|corrupt snapshot"

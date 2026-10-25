@@ -226,9 +226,14 @@ class ModelPageView:
                         force_refresh=False
                     )
                     template_context["folders"] = getattr(cache, "folders", [])
-                except Exception as cache_error:  # pragma: no cover - logging path
+                except Exception as cache_error:
                     self._logger.error("Error loading cache data: %s", cache_error)
+                    # Render the initialization view in its explicit error
+                    # state: pretending to be initializing would send the
+                    # page into a poll/reload loop, because init-status
+                    # reports the (idle) scanner as complete.
                     template_context["is_initializing"] = True
+                    template_context["init_error"] = str(cache_error)
 
             if self._page_context_provider is not None:
                 try:
