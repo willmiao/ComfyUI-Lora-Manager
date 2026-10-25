@@ -6,7 +6,11 @@ import logging
 import pytest
 
 from py.utils import gc_utils
-from py.utils.gc_utils import freeze_long_lived_objects, schedule_refreeze_after_rebuild
+from py.utils.gc_utils import (
+    freeze_long_lived_objects,
+    schedule_refreeze,
+    schedule_refreeze_after_rebuild,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -86,3 +90,42 @@ async def test_schedule_refreeze_debounces(
     await asyncio.sleep(0.2)
 
     assert fired == ["second"]
+
+
+async def test_schedule_refreeze_waits_for_idle_queue(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fired: list[str] = []
+    monkeypatch.setattr(
+        gc_utils, "freeze_long_lived_objects", lambda reason: fired.append(reason)
+    )
+    idle = {"value": False}
+    monkeypatch.setattr(
+        gc_utils, "_comfyui_queue_is_idle", lambda: idle["value"]
+    )
+
+    schedule_refreeze("download", delay=0.02)
+    await asyncio.sleep(0.07)
+    assert fired == []
+
+    idle["value"] = True
+    await asyncio.sleep(0.1)
+
+    assert fired == ["download"]
+
+
+async def test_schedule_refreeze_gives_up_after_max_retries(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    fired: list[str] = []
+    monkeypatch.setattr(
+        gc_utils, "freeze_long_lived_objects", lambda reason: fired.append(reason)
+    )
+    monkeypatch.setattr(gc_utils, "_comfyui_queue_is_idle", lambda: False)
+
+    with caplog.at_level(logging.DEBUG, logger="py.utils.gc_utils"):
+        schedule_refreeze("download", delay=0.01, _retries_left=2)
+        await asyncio.sleep(0.2)
+
+    assert fired == []
+    assert "skipped GC re-freeze" in caplog.text

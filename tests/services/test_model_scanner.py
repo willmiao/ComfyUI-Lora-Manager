@@ -3721,3 +3721,93 @@ async def test_process_model_file_keeps_a_zero_byte_placeholder_on_empty_files(
 
     assert await scanner._process_model_file(str(model_file), str(tmp_path)) is None
     assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == EMPTY_HASH_SHA256
+
+
+async def test_add_model_to_cache_slims_civitai_payload(tmp_path: Path, monkeypatch):
+    """Downloaded/imported entries must match the slim scan-path shape.
+
+    The full source payload (images, files, description, ...) stays with the
+    caller; the cache keeps only the frequently used keys, and license flags
+    are derived before slimming drops the model-level license fields
+    (issue #1161).
+    """
+    scanner = DummyScanner(tmp_path)
+    scanner._cache = ModelCache(raw_data=[], folders=[])
+    scheduled: List[str] = []
+    monkeypatch.setattr(
+        model_scanner, "schedule_refreeze", lambda reason: scheduled.append(reason)
+    )
+
+    full_payload = {
+        "id": 123,
+        "modelId": 456,
+        "name": "v1",
+        "creator": {"username": "alice", "image": "avatar.png"},
+        "trainedWords": ["trigger"],
+        "model": {
+            "type": "LORA",
+            "allowNoCredit": True,
+            "allowCommercialUse": ["Image"],
+            "description": "long text",
+        },
+        "images": [{"url": "u", "meta": {"prompt": "p"}}],
+        "files": [{"name": "f"}],
+        "stats": {"downloadCount": 1},
+    }
+    metadata = {
+        "file_path": "x.txt",
+        "folder": "",
+        "sha256": "abc",
+        "tags": [],
+        "civitai": full_payload,
+    }
+
+    ok = await scanner.add_model_to_cache(metadata, "")
+
+    assert ok is True
+    entry = scanner._cache.raw_data[0]
+    assert entry["civitai"] == {
+        "id": 123,
+        "modelId": 456,
+        "name": "v1",
+        "creator": {"username": "alice"},
+        "trainedWords": ["trigger"],
+        "model": {"type": "LORA"},
+    }
+    assert entry["license_flags"] == build_license_flags(
+        {"allowNoCredit": True, "allowCommercialUse": ["Image"]}
+    )
+    # The caller's dict keeps the full payload for downstream use
+    # (e.g. the filename-template flow).
+    assert "images" in metadata["civitai"]
+    assert scheduled == ["dummy model added to cache"]
+
+
+async def test_update_single_model_cache_schedules_refreeze(tmp_path: Path, monkeypatch):
+    scanner = DummyScanner(tmp_path)
+    scanner._cache = ModelCache(
+        raw_data=[
+            {
+                "file_path": "old.txt",
+                "folder": "",
+                "sha256": "abc",
+                "tags": [],
+                "model_name": "m",
+                "file_name": "old",
+            }
+        ],
+        folders=[],
+    )
+    scheduled: List[str] = []
+    monkeypatch.setattr(
+        model_scanner, "schedule_refreeze", lambda reason: scheduled.append(reason)
+    )
+
+    result = await scanner.update_single_model_cache(
+        "old.txt",
+        "old.txt",
+        {"file_path": "old.txt", "sha256": "abc", "tags": [], "model_name": "m"},
+    )
+
+    assert result
+    assert "dummy cache update" in scheduled
