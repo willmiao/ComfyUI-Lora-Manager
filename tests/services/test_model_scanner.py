@@ -278,7 +278,8 @@ async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_p
     scanner._cache = ModelCache(raw_data=[{"file_path": "sentinel", "folder": ""}], folders=["existing"])
 
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, scanner._initialize_cache_sync, 2, "dummy")
+    collected = scanner._collect_model_files()
+    result = await loop.run_in_executor(None, scanner._initialize_cache_sync, collected, "dummy")
 
     assert isinstance(result, CacheBuildResult)
     assert {item["file_path"] for item in result.raw_data} == {
@@ -290,6 +291,48 @@ async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_p
 
     assert scanner._cache.raw_data == [{"file_path": "sentinel", "folder": ""}]
     assert scanner._hash_index.get_path("hash-one") is None
+
+
+@pytest.mark.asyncio
+async def test_collect_model_files_records_files_folders_and_bytes(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    collected = scanner._collect_model_files()
+
+    assert {Path(item.file_path).name for item in collected.files} == {
+        "one.txt",
+        "two.txt",
+        "skip-file.txt",
+    }
+    assert collected.folders == ["nested"]
+    expected_bytes = sum(
+        (tmp_path / name).stat().st_size
+        for name in ("one.txt", "skip-file.txt")
+    ) + (tmp_path / "nested" / "two.txt").stat().st_size
+    assert collected.total_bytes == expected_bytes
+    assert scanner._count_model_files() == len(collected.files)
+
+
+@pytest.mark.asyncio
+async def test_gather_model_data_consumes_collected_without_rewalking(tmp_path: Path, monkeypatch):
+    """The processing phase must not walk the tree a second time."""
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    collected = scanner._collect_model_files()
+
+    def fail_collect(*_args, **_kwargs):
+        pytest.fail("_gather_model_data re-walked the tree instead of reusing the collected scan")
+
+    monkeypatch.setattr(scanner, "_collect_model_files", fail_collect)
+
+    result = await scanner._gather_model_data(collected=collected)
+
+    assert {item["file_path"] for item in result.raw_data} == {
+        _normalize_path(tmp_path / "one.txt"),
+        _normalize_path(tmp_path / "nested" / "two.txt"),
+    }
+    assert result.all_folders == ["nested"]
 
 
 @pytest.mark.asyncio

@@ -803,6 +803,30 @@ class CacheBuildResult:
     # (e.g. a persisted snapshot predating folder recording).
     all_folders: Optional[List[str]] = None
 
+
+@dataclass(frozen=True)
+class CollectedModelFile:
+    """One model file discovered by the pre-scan directory walk."""
+
+    file_path: str  # business path (forward slashes)
+    root_path: str
+    size: int
+
+
+@dataclass
+class CollectedScan:
+    """Outcome of the single pre-scan directory walk.
+
+    The walk records every model file (deduplicated by real path, with its
+    size for byte-weighted progress) and every directory under the model
+    roots, so the processing phase neither walks the tree again nor needs a
+    separate counting pass.
+    """
+
+    files: List[CollectedModelFile]
+    folders: List[str]
+    total_bytes: int
+
 class ModelScanner:
     """Base service for scanning and managing model files"""
     
@@ -1290,13 +1314,15 @@ class ModelScanner:
                 'pageType': page_type
             })
             
-            # Count files in a separate thread to avoid blocking
+            # Single pre-scan walk (in a thread): records both the file list
+            # the processing phase will consume and the total for progress.
             loop = asyncio.get_event_loop()
-            total_files = await loop.run_in_executor(
+            collected = await loop.run_in_executor(
                 None,  # Use default thread pool
-                self._count_model_files  # Run file counting in thread
+                self._collect_model_files,
             )
-            
+            total_files = len(collected.files)
+
             await ws_manager.broadcast_init_progress({
                 'stage': 'count_models',
                 'progress': 1, # Changed from 10 to 1
@@ -1304,14 +1330,14 @@ class ModelScanner:
                 'scanner_type': self.model_type,
                 'pageType': page_type
             })
-            
+
             start_time = time.time()
-            
+
             # Use thread pool to execute CPU-intensive operations with progress reporting
             scan_result: Optional[CacheBuildResult] = await loop.run_in_executor(
                 None,  # Use default thread pool
                 self._initialize_cache_sync,  # Run synchronous version in thread
-                total_files,  # Pass the total file count for progress reporting
+                collected,  # File list from the pre-scan walk
                 page_type  # Pass the page type for progress reporting
             )
 
@@ -1622,55 +1648,114 @@ class ModelScanner:
         )
         await self._save_persistent_cache(snapshot, force=force)
         await self._sync_download_history(snapshot.raw_data, source='scan')
-    def _count_model_files(self) -> int:
-        """Count all model files with supported extensions in all roots
+    def _collect_model_files(
+        self,
+        is_cancelled: Optional[Callable[[], bool]] = None,
+    ) -> CollectedScan:
+        """Walk every model root once and record what the scan must process.
 
-        Returns:
-            int: Total number of model files found
+        Single-pass synchronous walk (run it in a thread): collects every
+        model file with its size (for byte-weighted progress), deduplicated
+        by real path, plus every directory under the roots for the folder
+        tree. Replaces the former count-then-process double walk.
+
+        Args:
+            is_cancelled: Optional cancellation probe checked per directory.
         """
-        total_files = 0
-        visited_real_paths = set()
-        # The recipe library holds no model files; skip it so the progress
-        # estimate matches what the scan itself will walk.
+        files: List[CollectedModelFile] = []
+        folders: Set[str] = set()
+        visited_real_dirs: Set[str] = set()
+        seen_real_files: Set[str] = set()
+        # The recipe library holds no model files; skip it so the result
+        # matches what the scan itself is allowed to touch.
         recipes_dir_key = normalized_recipes_dir_key()
+
+        def collect_recursive(path: str, root_path: str) -> None:
+            if is_cancelled is not None and is_cancelled():
+                return
+            try:
+                real_path = os.path.realpath(path)
+                if real_path in visited_real_dirs:
+                    return
+                visited_real_dirs.add(real_path)
+
+                with os.scandir(path) as it:
+                    for entry in it:
+                        try:
+                            if entry.is_file(follow_symlinks=True):
+                                ext = os.path.splitext(entry.name)[1].lower()
+                                if ext not in self.file_extensions:
+                                    continue
+                                real_file_path = os.path.realpath(entry.path)
+                                if real_file_path in seen_real_files:
+                                    continue
+                                seen_real_files.add(real_file_path)
+                                try:
+                                    size = entry.stat(
+                                        follow_symlinks=True
+                                    ).st_size
+                                except OSError:
+                                    size = 0
+                                files.append(
+                                    CollectedModelFile(
+                                        file_path=entry.path.replace(
+                                            os.sep, "/"
+                                        ),
+                                        root_path=root_path,
+                                        size=size,
+                                    )
+                                )
+                            elif entry.is_dir(follow_symlinks=True):
+                                if _is_excluded_dir(entry.name):
+                                    continue
+                                if (
+                                    _dir_entry_key(path, entry.name)
+                                    == recipes_dir_key
+                                ):
+                                    continue
+                                # Record every directory (including empty
+                                # ones) so the folder tree can be served
+                                # without a live walk.
+                                rel_dir = os.path.relpath(
+                                    os.path.abspath(entry.path),
+                                    os.path.abspath(root_path),
+                                ).replace(os.path.sep, "/")
+                                if not _is_hidden_relative_path(rel_dir):
+                                    folders.add(rel_dir)
+                                collect_recursive(entry.path, root_path)
+                        except Exception as e:
+                            logger.error(
+                                f"Error collecting entry {entry.path}: {e}"
+                            )
+            except Exception as e:
+                logger.error(f"Error collecting files in {path}: {e}")
 
         for root_path in self.get_model_roots():
             if not os.path.exists(root_path):
                 continue
+            collect_recursive(root_path, root_path)
 
-            def count_recursive(path):
-                nonlocal total_files
-                try:
-                    real_path = os.path.realpath(path)
-                    if real_path in visited_real_paths:
-                        return
-                    visited_real_paths.add(real_path)
+        return CollectedScan(
+            files=files,
+            folders=sorted(folders, key=lambda x: x.lower()),
+            total_bytes=sum(item.size for item in files),
+        )
 
-                    with os.scandir(path) as it:
-                        for entry in it:
-                            try:
-                                if entry.is_file(follow_symlinks=True):
-                                    ext = os.path.splitext(entry.name)[1].lower()
-                                    if ext in self.file_extensions:
-                                        total_files += 1
-                                elif entry.is_dir(follow_symlinks=True):
-                                    if _is_excluded_dir(entry.name):
-                                        continue
-                                    if _dir_entry_key(path, entry.name) == recipes_dir_key:
-                                        continue
-                                    count_recursive(entry.path)
-                            except Exception as e:
-                                logger.error(f"Error counting files in entry {entry.path}: {e}")
-                except Exception as e:
-                    logger.error(f"Error counting files in {path}: {e}")
-            
-            count_recursive(root_path)
-        
-        return total_files
-    
-    def _initialize_cache_sync(self, total_files: int = 0, page_type: str = 'loras') -> Optional[CacheBuildResult]:
+    def _count_model_files(self) -> int:
+        """Count all model files with supported extensions in all roots.
+
+        Thin wrapper over :meth:`_collect_model_files` kept for callers that
+        only need the count.
+
+        Returns:
+            int: Total number of model files found
+        """
+        return len(self._collect_model_files().files)
+
+    def _initialize_cache_sync(self, collected: CollectedScan, page_type: str = 'loras') -> Optional[CacheBuildResult]:
         """Synchronous version of cache initialization for thread pool execution"""
 
+        total_files = len(collected.files)
         loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(loop)
@@ -1706,7 +1791,7 @@ class ModelScanner:
 
             return loop.run_until_complete(
                 self._gather_model_data(
-                    total_files=total_files,
+                    collected=collected,
                     progress_callback=progress_callback
                 )
             )
@@ -1865,9 +1950,13 @@ class ModelScanner:
             # This ensures that any new symlink mappings are correctly picked up.
             config.rebuild_symlink_cache()
 
-            # Count files in a thread so the event loop stays responsive
+            # Single pre-scan walk (in a thread): records both the file list
+            # the processing phase will consume and the total for progress.
             loop = asyncio.get_running_loop()
-            total_files = await loop.run_in_executor(None, self._count_model_files)
+            collected = await loop.run_in_executor(
+                None, self._collect_model_files, self.is_cancelled
+            )
+            total_files = len(collected.files)
             await self._broadcast_scan_progress(
                 'processing', 'count_models', 1, True,
                 processed=0, total=total_files,
@@ -1901,7 +1990,7 @@ class ModelScanner:
 
             # Scan for new data
             scan_result = await self._gather_model_data(
-                total_files=total_files,
+                collected=collected,
                 progress_callback=progress_callback,
             )
             if not self.is_cancelled():
@@ -3630,23 +3719,24 @@ class ModelScanner:
     async def _gather_model_data(
         self,
         *,
-        total_files: int = 0,
+        collected: Optional[CollectedScan] = None,
         progress_callback: Optional[Callable[[int, int, str], Awaitable[None]]] = None
     ) -> CacheBuildResult:
-        """Collect metadata for all model files."""
+        """Collect metadata for all model files.
 
+        Processes the file list from a single pre-scan walk
+        (:meth:`_collect_model_files`) instead of walking the tree again.
+        Callers that pass no ``collected`` get one computed inline.
+        """
+        if collected is None:
+            collected = self._collect_model_files(self.is_cancelled)
+
+        total_files = len(collected.files)
         raw_data: List[Dict[str, Any]] = []
         hash_index = ModelHashIndex()
         tags_count: Dict[str, int] = {}
         excluded_models: List[str] = []
         processed_files = 0
-        processed_real_files: Set[str] = set()
-        visited_real_dirs: Set[str] = set()
-        discovered_folders: Set[str] = set()
-        # The recipe library sits inside a lora root by default; it is a
-        # reserved directory, never a model folder, so the scan must not
-        # descend into it.
-        recipes_dir_key = normalized_recipes_dir_key()
 
         async def handle_progress(current_name: str = '') -> None:
             if progress_callback is None:
@@ -3658,106 +3748,50 @@ class ModelScanner:
 
         self.reset_cancellation()
 
-        async def scan_recursive(current_path: str, root_path: str, visited_paths: Set[str]) -> None:
-            nonlocal processed_files
+        for model_file in collected.files:
+            result = await self._process_model_file(
+                model_file.file_path,
+                model_file.root_path,
+                hash_index=hash_index,
+                excluded_models=excluded_models
+            )
 
-            try:
-                real_path = os.path.realpath(current_path)
-                if real_path in visited_paths or real_path in visited_real_dirs:
-                    return
-                visited_paths.add(real_path)
-                visited_real_dirs.add(real_path)
+            processed_files += 1
 
-                with os.scandir(current_path) as iterator:
-                    entries = list(iterator)
+            if result:
+                # Validate the entry before adding
+                validation_result = CacheEntryValidator.validate(
+                    result, auto_repair=True
+                )
+                if not validation_result.is_valid:
+                    logger.warning(
+                        f"Skipping invalid scan result: {model_file.file_path}"
+                    )
+                else:
+                    result = validation_result.entry
+                    if result is not None:
+                        self._ensure_license_flags(result)
+                        raw_data.append(result)
 
-                for entry in entries:
-                    try:
-                        if entry.is_file(follow_symlinks=True):
-                            ext = os.path.splitext(entry.name)[1].lower()
-                            if ext not in self.file_extensions:
-                                continue
+                        sha_value = result.get('sha256')
+                        model_path = result.get('file_path')
+                        if sha_value and model_path:
+                            hash_index.add_entry(sha_value.lower(), model_path, result.get('autov3') or None)
 
-                            file_path = entry.path.replace(os.sep, "/")
-                            real_file_path = os.path.realpath(entry.path)
-                            if real_file_path in processed_real_files:
-                                continue
+                        for tag in result.get('tags') or []:
+                            tags_count[tag] = tags_count.get(tag, 0) + 1
 
-                            processed_real_files.add(real_file_path)
-                            result = await self._process_model_file(
-                                file_path,
-                                root_path,
-                                hash_index=hash_index,
-                                excluded_models=excluded_models
-                            )
-
-                            processed_files += 1
-
-                            if result:
-                                # Validate the entry before adding
-                                validation_result = CacheEntryValidator.validate(
-                                    result, auto_repair=True
-                                )
-                                if not validation_result.is_valid:
-                                    logger.warning(
-                                        f"Skipping invalid scan result: {file_path}"
-                                    )
-                                    continue
-                                result = validation_result.entry
-                                if result is None:
-                                    continue
-
-                                self._ensure_license_flags(result)
-                                raw_data.append(result)
-
-                                sha_value = result.get('sha256')
-                                model_path = result.get('file_path')
-                                if sha_value and model_path:
-                                    hash_index.add_entry(sha_value.lower(), model_path, result.get('autov3') or None)
-
-                                for tag in result.get('tags') or []:
-                                    tags_count[tag] = tags_count.get(tag, 0) + 1
-
-                            await handle_progress(entry.name)
-                            await asyncio.sleep(0)
-                            if self.is_cancelled():
-                                return
-                        elif entry.is_dir(follow_symlinks=True):
-                            if _is_excluded_dir(entry.name):
-                                continue
-                            if (
-                                _dir_entry_key(current_path, entry.name)
-                                == recipes_dir_key
-                            ):
-                                continue
-                            # Record every directory (including empty ones) so
-                            # the folder tree can be served without a live walk.
-                            rel_dir = os.path.relpath(
-                                os.path.abspath(entry.path), os.path.abspath(root_path)
-                            ).replace(os.path.sep, "/")
-                            if not _is_hidden_relative_path(rel_dir):
-                                discovered_folders.add(rel_dir)
-                            await scan_recursive(entry.path, root_path, visited_paths)
-                    except Exception as entry_error:
-                        logger.error(f"Error processing entry {entry.path}: {entry_error}")
-            except Exception as scan_error:
-                logger.error(f"Error scanning {current_path}: {scan_error}")
-
+            await handle_progress(os.path.basename(model_file.file_path))
+            await asyncio.sleep(0)
             if self.is_cancelled():
-                return
-
-        for model_root in self.get_model_roots():
-            if not os.path.exists(model_root):
-                continue
-
-            await scan_recursive(model_root, model_root, set())
+                break
 
         return CacheBuildResult(
             raw_data=raw_data,
             hash_index=hash_index,
             tags_count=tags_count,
             excluded_models=excluded_models,
-            all_folders=sorted(discovered_folders, key=lambda x: x.lower()),
+            all_folders=list(collected.folders),
         )
 
     async def add_model_to_cache(self, metadata_dict: Dict[str, Any], folder: str = '') -> bool:
