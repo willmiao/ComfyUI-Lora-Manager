@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2128 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2308 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -227,6 +227,17 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `static/js/utils/formatters.js`). The same pass translated the 4 leftover
 > `sidebar.deleteFolder*` placeholders (folder missing on disk → remove from list), so no
 > `[TODO: Translate]` remains in any locale.
+
+> **Status (2026-10, first-run welcome page and fetch status):** the first launch is gated
+> behind a welcome page (`firstRun.*`), which shipped together with the initialization failure
+> state, the bulk-fetch rate-limit copy, the "fetch metadata" post-scan banner, two download
+> link errors and two duplicate-delete follow-ups — 36 keys left behind as
+> `[TODO: Translate]`. All 36 are now translated in all 9 locales (renderings in §2, "First-run
+> welcome page and fetch-status copy"). The same pass re-translated the three keys whose English
+> text had changed without being re-queued: `settings.folderSettings.activeLibrary` /
+> `.activeLibraryHelp` (multi-library deprecation, commit `1a6b0f78`) and
+> `toast.contextMenu.linkHfSuccess` (the toast now says "model source" instead of
+> "HuggingFace", commit `5ab0e88ab`). No `[TODO: Translate]` placeholder remains.
 
 ---
 
@@ -869,6 +880,53 @@ noun; "recipes" uses the R4 noun in its plain plural (fr keeps `Recipes`).
 Both keys are passed a pre-formatted count (`formatCountExact`), so no locale adds its own
 digit grouping; `ko` needs no `의` because the count follows the noun directly, as in
 `rootModels`.
+
+### First-run welcome page and fetch-status copy
+
+The first launch gates the library scan behind a welcome page (`firstRun.*`, 30 keys): it lists
+the scanned libraries with their model counts, offers the sidecar-storage choice, and starts or
+defers the initial scan. The same feature series added the initialization failure state
+(`initialization.error.*`), the bulk metadata fetch's rate-limit copy
+(`modals.metadataFetchSummary.rateLimitedNotice`, `toast.api.metadataFetchRateLimited`), the
+post-scan banner prompting the first fetch (`banners.bulkFetchPrompt.*`), the two download-modal
+link errors (`modals.download.errors.linkedFile*`) and the duplicate-delete follow-ups
+(`toast.duplicates.deletePartialFailed` / `.cacheUpdateFailed`).
+
+Most of these strings are assembled from existing renderings rather than new terms:
+
+| Term | Rendering |
+|---|---|
+| "Welcome to LoRA Manager" (`firstRun.title`) | byte-identical to `onboarding.languageSelection.title` in every locale |
+| `firstRun.libraries.*` | the model-type names of `header.navigation.*` — zh-CN/zh-TW/ja/ko keep the **singular** `LoRA` / `Checkpoint` / `Embedding`, the Latin locales keep the plurals; `other` uses the "Other Models" `other.title` rendering |
+| `firstRun.libraryStats` ("{count} models · {size}") | the "models" count shape of `loras.controls.refresh.rootModels` (ko `모델 {count}개`, ru `{count} модел(ей)`); the middle-dot separator stays verbatim |
+| `estimate` scan time (`~{minutes} min`) | the `common.scanProgress.eta.minutes` abbreviation (de `Min.`, fr `min`, ru `мин`) |
+| "recommended" | zh-CN 推荐 · zh-TW 建議 · ja 推奨 · ko 권장 · fr recommandé · de empfohlen · es recomendado · ru рекомендуется · he מומלץ |
+| `rootMissing` ("Directory not found") | the `recipes.batchImport.directory` noun (zh-CN 目录 · zh-TW 目錄 · ja フォルダ · ko 폴더 · fr dossier · de Verzeichnis · es directorio · ru папка · he תיקייה) with the `sidebar.deleteFolderModal.missingTitle` "not found" shape |
+| directory (of the centralized sidecar path) | zh-CN 目录 · zh-TW 目錄 · ja ディレクトリ · ko 디렉터리 · fr dossier · de Verzeichnis · es directorio · ru каталог · he תיקייה |
+| metadata storage | zh-CN 元数据存储 · zh-TW 中繼資料儲存 · ja メタデータの保存 · ko 메타데이터 저장 · fr Stockage des métadonnées · de Metadaten-Speicherung · es Almacenamiento de metadatos · ru Хранение метаданных · he אחסון מטא-נתונים |
+| rate limit (of the metadata provider) | zh-CN 速率限制 · zh-TW 速率限制 · ja レート制限 · ko 속도 제한 · fr limite de débit · de Ratenlimit · es límite de solicitudes · ru лимит запросов · he מגבלת קצב |
+| "(Deprecated)" (`settings.folderSettings.activeLibrary`) | zh-CN 已弃用 · zh-TW 已棄用 · ja 非推奨 · ko 사용 중단 예정 · fr obsolète · de veraltet · es obsoleto · ru устарело · he מיושן |
+| bulk-fetch banner title | zh-CN 让你的模型库焕发生机 · zh-TW 讓您的模型庫煥發生機 · ja ライブラリに命を吹き込もう · ko 라이브러리에 생기를 불어넣으세요 · fr Donnez vie à votre bibliothèque · de Erwecken Sie Ihre Bibliothek zum Leben · es Dale vida a tu biblioteca · ru Вдохните жизнь в свою библиотеку · he החייה את הספרייה שלך |
+| defer ("Later") / banner ("Maybe Later") | zh-CN 稍后 / 以后再说 · zh-TW 稍後 / 稍後再說 · ja 後で / また今度 · ko 나중에 / 나중에 하기 · fr Plus tard / Peut-être plus tard · de Später / Vielleicht später · es Más tarde / Quizás más tarde · ru Позже / Может быть, позже · he מאוחר יותר / אולי מאוחר יותר |
+
+- The two rate-limit strings name the **Fetch** action in prose. Where `en` quotes it
+  (`Re-run "Fetch from Civitai"`), the locale quotes its own `loras.controls.fetch.title`
+  value verbatim with its UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」, ko `' '`,
+  fr « … », de „ … “, es/ru/he «…») — zh-TW therefore quotes its existing
+  「從 CivitAI 取得 metadata」 label rather than inventing a second rendering of it.
+  `toast.duplicates.cacheUpdateFailed` quotes `loras.controls.refresh.full` the same way.
+- `toast.api.metadataFetchRateLimited` keeps the en "updated {success} of {total}" clause in
+  each locale's own "N of M" shape; `toast.duplicates.deletePartialFailed` mirrors
+  `toast.duplicates.deleteFailed` with the `{failed}` count inserted before the `{type}` noun
+  (ko puts the count after it, ja puts the count on the selected items).
+- `firstRun.description`, `.sidecar.alongside.description` and `.centralized.description`
+  name the sidecar files, so they use the Sidecar storage row's "sidecar" and "alongside model
+  files" renderings plus the §5 "metadata" noun; the `.json` file suffix stays byte-identical.
+  `firstRun.sidecar.*` is the same choice as `settings.sidecarStorage.modeOptions.*` made
+  before the first scan, so the labels reuse those renderings and only the parenthetical
+  changes (`(recommended)` instead of `(default)` / "centralized storage").
+- `firstRun.language.label` reuses `common.language.select` (zh-CN keeps its 选择语言 verb
+  label rather than introducing a second rendering of "Language").
 
 ---
 

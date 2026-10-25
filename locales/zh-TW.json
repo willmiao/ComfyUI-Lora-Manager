@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "調整模型和配方卡片上頁首和頁尾疊加層的模糊強度（0 = 無模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "使用中的資料庫",
-            "activeLibraryHelp": "在已設定的資料庫之間切換以更新預設資料夾。變更選項會重新載入頁面。",
+            "activeLibrary": "使用中的資料庫（已棄用）",
+            "activeLibraryHelp": "在已設定的資料庫之間切換以更新預設資料夾。變更選項將重新載入頁面。已棄用：多資料庫支援將在即將推出的版本中移除。單一資料庫內的多個資料夾根目錄仍完全受支援。",
             "loadingLibraries": "正在載入資料庫...",
             "noLibraries": "尚未設定任何資料庫",
             "defaultLoraRoot": "LoRA 根目錄",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "模型網址格式無效",
                 "noVersions": "此模型無可用版本",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "未在所要求的模型版本中找到檔案 {fileId}。",
+                "linkedFileNotWeightFile": "檔案 {fileId} 不是可下載的模型檔案。",
                 "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此倉庫中未找到模型檔案。"
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "下載 CSV",
             "columnModelName": "模型名稱",
             "columnError": "錯誤",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "取得已中止：已達到中繼資料提供者的速率限制。請稍後重新執行「從 CivitAI 取得 metadata」，以重試剩餘的模型。"
         },
         "downloadBatchSummary": {
             "title": "批次下載摘要",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "初始化失敗",
+            "message": "掃描您的模型庫時發生錯誤。",
+            "retry": "重試"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "歡迎使用 LoRA 管理器",
+        "description": "開始之前，LoRA Manager 需要掃描您的模型庫並產生中繼資料附屬檔案。這是單次步驟；所需時間取決於模型庫的大小與磁碟速度。",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "其他模型"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "語言"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} 個模型 · {size}",
+        "rootMissing": "找不到目錄",
+        "estimate": "約 {count} 個模型（{size}），預計掃描時間約 {minutes} 分鐘，視模型庫大小與磁碟速度而定。",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "找不到可存取的模型資料夾。開啟設定以設定模型目錄，然後重新載入此頁面。",
+            "standalone": "找不到可存取的模型資料夾。請編輯 settings.json 中的 folder_paths，然後重新啟動伺服器。"
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "中繼資料儲存",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "與模型檔案放在一起（建議）",
+                "description": "中繼資料 .json 檔案與每個模型檔案存放在一起，因此會隨模型一起移動。"
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "集中目錄",
+                "description": "中繼資料儲存在獨立的目錄中，讓模型資料夾保持整潔。",
+                "pathPlaceholder": "集中中繼資料儲存目錄"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "開始掃描",
+            "defer": "稍後"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "載入模型庫資訊失敗。",
+            "pathRequired": "請輸入集中儲存中繼資料的目錄。",
+            "startFailed": "無法開始掃描。"
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "錯誤：{message}",
             "deleteSuccess": "成功刪除 {count} 個 {type}",
             "deleteFailed": "刪除 {type} 失敗：{message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "刪除 {failed} 個已選取的 {type} 失敗：{message}",
+            "cacheUpdateFailed": "檔案已刪除，但無法更新模型庫快取。請執行「重建快取」以重新整理清單。"
         },
         "controls": {
             "reloadFailed": "重新載入 {pageType} 失敗：{message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "設定內容分級失敗：{message}",
             "relinkSuccess": "模型已成功重新連結至 CivitAI",
             "relinkFailed": "錯誤：{message}",
-            "linkHfSuccess": "模型已成功連結到 HuggingFace",
+            "linkHfSuccess": "模型已成功連結至其模型來源",
             "linkHfFailed": "錯誤：{message}",
             "linkCivArchSuccess": "模型已成功透過 CivitArchive 重新連結",
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "metadata 更新完成",
             "operationCancelled": "操作已由用戶取消",
             "operationCancelledPartial": "操作已取消。已處理 {success} 個項目。",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "因速率限制，中繼資料取得已中止——已更新 {total} 個中的 {success} 個，失敗 {failed} 個，跳過 {skipped} 個。請稍後重新從 CivitAI 取得中繼資料，以重試其餘模型。",
             "metadataFetchFailed": "取得 metadata 失敗：{message}",
             "bulkMetadataCompleteAll": "已成功刷新全部 {count} 個 {type}",
             "bulkMetadataCompletePartial": "已刷新 {success} / {total} 個 {type}",
@@ -3062,10 +3062,10 @@
             "openSettings": "開啟設定"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "讓您的模型庫煥發生機",
+            "content": "首次掃描發現 {count} 個模型缺少中繼資料。從 CivitAI 取得這些模型的資訊，即可獲得預覽圖片、描述與觸發詞。",
+            "fetch": "取得中繼資料",
+            "later": "稍後再說"
         },
         "pager": {
             "previous": "上一則通知",

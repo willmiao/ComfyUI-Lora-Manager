@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "Настройте интенсивность размытия наложений верхнего и нижнего колонтитулов на карточках моделей и рецептов (0 = без размытия, 20 = максимальное размытие)."
         },
         "folderSettings": {
-            "activeLibrary": "Активная библиотека",
-            "activeLibraryHelp": "Переключайтесь между настроенными библиотеками, чтобы обновить папки по умолчанию. Изменение выбора перезагружает страницу.",
+            "activeLibrary": "Активная библиотека (устарело)",
+            "activeLibraryHelp": "Переключайтесь между настроенными библиотеками, чтобы обновить папки по умолчанию. Изменение выбора перезагружает страницу. Устарело: поддержка нескольких библиотек будет удалена в одном из следующих выпусков. Несколько корневых папок в пределах одной библиотеки по-прежнему полностью поддерживаются.",
             "loadingLibraries": "Загрузка библиотек...",
             "noLibraries": "Библиотеки не настроены",
             "defaultLoraRoot": "Корневая папка LoRA",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "Неверный формат URL модели",
                 "noVersions": "Нет доступных версий для этой модели",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "Файл {fileId} не найден в запрошенной версии модели.",
+                "linkedFileNotWeightFile": "Файл {fileId} не является загружаемым файлом модели.",
                 "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face / ModelScope в одном пакете.",
                 "noModelFiles": "В этом репозитории не найдено файлов моделей."
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "Скачать CSV",
             "columnModelName": "Имя модели",
             "columnError": "Ошибка",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "Получение прервано: достигнут лимит запросов у поставщика метаданных. Повторно запустите «Получить метаданные с CivitAI» позже, чтобы повторить оставшиеся модели."
         },
         "downloadBatchSummary": {
             "title": "Сводка пакетной загрузки",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "Ошибка инициализации",
+            "message": "При сканировании библиотеки моделей произошла ошибка.",
+            "retry": "Повторить"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "Добро пожаловать в LoRA Manager",
+        "description": "Перед началом работы LoRA Manager просканирует вашу библиотеку моделей и создаст sidecar-файлы метаданных. Это одноразовый шаг; его длительность зависит от размера библиотеки и скорости диска.",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRAs",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
+            "other": "Другие модели"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "Язык"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} модел(ей) · {size}",
+        "rootMissing": "Папка не найдена",
+        "estimate": "Около {count} модел(ей) ({size}) — примерное время сканирования ~{minutes} мин, в зависимости от размера библиотеки и скорости диска.",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "Доступные папки моделей не найдены. Откройте «Настройки», укажите каталоги моделей и перезагрузите страницу.",
+            "standalone": "Доступные папки моделей не найдены. Отредактируйте folder_paths в settings.json и перезапустите сервер."
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "Хранение метаданных",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "Рядом с файлами моделей (рекомендуется)",
+                "description": "Файлы метаданных .json хранятся рядом с каждым файлом модели и перемещаются вместе с ним."
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "Централизованный каталог",
+                "description": "Метаданные хранятся в отдельном каталоге, поэтому папки моделей остаются чистыми.",
+                "pathPlaceholder": "Каталог централизованного хранения метаданных"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "Начать сканирование",
+            "defer": "Позже"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "Не удалось загрузить сведения о библиотеке.",
+            "pathRequired": "Укажите каталог для централизованного хранения метаданных.",
+            "startFailed": "Не удалось запустить сканирование."
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "Ошибка: {message}",
             "deleteSuccess": "Успешно удалено {count} {type}",
             "deleteFailed": "Не удалось удалить {type}: {message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "Не удалось удалить {failed} выбранных {type}: {message}",
+            "cacheUpdateFailed": "Файлы удалены, но кэш библиотеки обновить не удалось. Запустите «Перестроить кэш», чтобы обновить список."
         },
         "controls": {
             "reloadFailed": "Не удалось перезагрузить {pageType}: {message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "Не удалось установить рейтинг контента: {message}",
             "relinkSuccess": "Модель успешно пересвязана с CivitAI",
             "relinkFailed": "Ошибка: {message}",
-            "linkHfSuccess": "Модель успешно связана с HuggingFace",
+            "linkHfSuccess": "Модель успешно связана с источником модели",
             "linkHfFailed": "Ошибка: {message}",
             "linkCivArchSuccess": "Модель успешно пересвязана через CivitArchive",
             "fetchMetadataFirst": "Пожалуйста, сначала получите метаданные с CivitAI",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "Обновление метаданных завершено",
             "operationCancelled": "Операция отменена пользователем",
             "operationCancelledPartial": "Операция отменена. Обработано {success} элементов.",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "Получение метаданных прервано из-за ограничения частоты запросов — обновлено {success} из {total}, ошибок: {failed}, пропущено: {skipped}. Повторите получение с CivitAI позже, чтобы обработать остальные модели.",
             "metadataFetchFailed": "Не удалось получить метаданные: {message}",
             "bulkMetadataCompleteAll": "Успешно обновлены все {count} {type}s",
             "bulkMetadataCompletePartial": "Обновлено {success} из {total} {type}s",
@@ -3062,10 +3062,10 @@
             "openSettings": "Открыть настройки"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "Вдохните жизнь в свою библиотеку",
+            "content": "При первом сканировании найдено {count} модел(ей) без метаданных. Получите их сведения с CivitAI, чтобы добавить изображения превью, описания и триггерные слова.",
+            "fetch": "Получить метаданные",
+            "later": "Может быть, позже"
         },
         "pager": {
             "previous": "Предыдущее уведомление",

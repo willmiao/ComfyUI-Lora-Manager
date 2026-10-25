@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "Passen Sie die Unschärfeintensität der Kopf- und Fußzeilen-Overlays auf Modell- und Rezeptkarten an (0 = keine Unschärfe, 20 = maximale Unschärfe)."
         },
         "folderSettings": {
-            "activeLibrary": "Aktive Bibliothek",
-            "activeLibraryHelp": "Zwischen den konfigurierten Bibliotheken wechseln, um die Standardordner zu aktualisieren. Eine Änderung der Auswahl lädt die Seite neu.",
+            "activeLibrary": "Aktive Bibliothek (veraltet)",
+            "activeLibraryHelp": "Zwischen den konfigurierten Bibliotheken wechseln, um die Standardordner zu aktualisieren. Eine Änderung der Auswahl lädt die Seite neu. Veraltet: Die Unterstützung mehrerer Bibliotheken wird in einem kommenden Release entfernt. Mehrere Stammordner innerhalb einer Bibliothek werden weiterhin vollständig unterstützt.",
             "loadingLibraries": "Bibliotheken werden geladen...",
             "noLibraries": "Keine Bibliotheken konfiguriert",
             "defaultLoraRoot": "LoRA-Stammordner",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "Ungültiges Modell-URL-Format",
                 "noVersions": "Keine Versionen für dieses Modell verfügbar",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "Die Datei {fileId} wurde in der angeforderten Modellversion nicht gefunden.",
+                "linkedFileNotWeightFile": "Die Datei {fileId} ist keine herunterladbare Modelldatei.",
                 "mixedSources": "CivitAI- und Hugging Face-/ModelScope-URLs können nicht in derselben Charge gemischt werden.",
                 "noModelFiles": "In diesem Repository wurden keine Modelldateien gefunden."
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "CSV herunterladen",
             "columnModelName": "Modellname",
             "columnError": "Fehler",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "Abruf abgebrochen: Das Ratenlimit des Metadaten-Anbieters wurde erreicht. Führen Sie „Metadaten von CivitAI abrufen“ später erneut aus, um die verbleibenden Modelle zu wiederholen."
         },
         "downloadBatchSummary": {
             "title": "Zusammenfassung des Batch-Downloads",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "Initialisierung fehlgeschlagen",
+            "message": "Beim Scannen Ihrer Modellbibliothek ist ein Fehler aufgetreten.",
+            "retry": "Wiederholen"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "Willkommen beim LoRA Manager",
+        "description": "Bevor Sie beginnen, muss LoRA Manager Ihre Modellbibliothek scannen und Metadaten-Sidecar-Dateien erstellen. Dies ist ein einmaliger Schritt; die Dauer hängt von der Größe der Bibliothek und der Geschwindigkeit Ihrer Festplatte ab.",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRAs",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
+            "other": "Weitere Modelle"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "Sprache"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} Modelle · {size}",
+        "rootMissing": "Verzeichnis nicht gefunden",
+        "estimate": "Etwa {count} Modelle ({size}) — geschätzte Scanzeit ~{minutes} Min., abhängig von Bibliotheksgröße und Festplattengeschwindigkeit.",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "Es wurden keine zugänglichen Modellordner gefunden. Öffnen Sie die Einstellungen, um Ihre Modellverzeichnisse zu konfigurieren, und laden Sie die Seite anschließend neu.",
+            "standalone": "Es wurden keine zugänglichen Modellordner gefunden. Bearbeiten Sie folder_paths in settings.json und starten Sie den Server anschließend neu."
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "Metadaten-Speicherung",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "Neben den Modelldateien (empfohlen)",
+                "description": "Metadaten-.json-Dateien werden neben jeder Modelldatei gespeichert und wandern daher mit dem Modell mit."
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "Zentrales Verzeichnis",
+                "description": "Die Metadaten werden in einem separaten Verzeichnis gespeichert, sodass Ihre Modellordner sauber bleiben.",
+                "pathPlaceholder": "Verzeichnis für die zentrale Metadaten-Speicherung"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "Scan starten",
+            "defer": "Später"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "Bibliotheksinformationen konnten nicht geladen werden.",
+            "pathRequired": "Bitte geben Sie ein Speicherverzeichnis für zentralisierte Metadaten ein.",
+            "startFailed": "Der Scan konnte nicht gestartet werden."
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "Fehler: {message}",
             "deleteSuccess": "{count} {type} erfolgreich gelöscht",
             "deleteFailed": "Fehler beim Löschen von {type}: {message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "Fehler beim Löschen von {failed} ausgewählten {type}: {message}",
+            "cacheUpdateFailed": "Die Dateien wurden gelöscht, aber der Bibliotheks-Cache konnte nicht aktualisiert werden. Führen Sie „Cache neu aufbauen“ aus, um die Liste zu aktualisieren."
         },
         "controls": {
             "reloadFailed": "Fehler beim Neuladen von {pageType}: {message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "Fehler beim Setzen der Inhaltsbewertung: {message}",
             "relinkSuccess": "Modell erfolgreich mit CivitAI neu verknüpft",
             "relinkFailed": "Fehler: {message}",
-            "linkHfSuccess": "Modell erfolgreich mit HuggingFace verknüpft",
+            "linkHfSuccess": "Modell erfolgreich mit seiner Modellquelle verknüpft",
             "linkHfFailed": "Fehler: {message}",
             "linkCivArchSuccess": "Modell erfolgreich über CivitArchive neu verknüpft",
             "fetchMetadataFirst": "Bitte rufen Sie zuerst Metadaten von CivitAI ab",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "Metadaten-Update abgeschlossen",
             "operationCancelled": "Vorgang vom Benutzer abgebrochen",
             "operationCancelledPartial": "Vorgang abgebrochen. {success} Elemente verarbeitet.",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "Metadaten-Abruf wegen Ratenlimit abgebrochen — {success} von {total} aktualisiert, {failed} fehlgeschlagen, {skipped} übersprungen. Führen Sie den Abruf von CivitAI später erneut aus, um den Rest zu wiederholen.",
             "metadataFetchFailed": "Fehler beim Abrufen der Metadaten: {message}",
             "bulkMetadataCompleteAll": "Alle {count} {type}s erfolgreich aktualisiert",
             "bulkMetadataCompletePartial": "{success} von {total} {type}s aktualisiert",
@@ -3062,10 +3062,10 @@
             "openSettings": "Einstellungen öffnen"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "Erwecken Sie Ihre Bibliothek zum Leben",
+            "content": "Ihr erster Scan hat {count} Modelle ohne Metadaten gefunden. Rufen Sie ihre Informationen von CivitAI ab, um Vorschaubilder, Beschreibungen und Trigger Words zu erhalten.",
+            "fetch": "Metadaten abrufen",
+            "later": "Vielleicht später"
         },
         "pager": {
             "previous": "Vorherige Mitteilung",

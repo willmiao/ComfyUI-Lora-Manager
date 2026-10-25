@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "调整模型和配方卡片上页眉和页脚叠加层的模糊强度（0 = 无模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "活动库",
-            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。",
+            "activeLibrary": "活动库（已弃用）",
+            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。已弃用：多库支持将在即将发布的版本中移除。单个库内的多个文件夹根目录仍完全受支持。",
             "loadingLibraries": "正在加载库...",
             "noLibraries": "尚未配置库",
             "defaultLoraRoot": "LoRA 根目录",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "无效的模型 URL 格式",
                 "noVersions": "此模型没有可用版本",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "未在所请求的模型版本中找到文件 {fileId}。",
+                "linkedFileNotWeightFile": "文件 {fileId} 不是可下载的模型文件。",
                 "mixedSources": "无法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此仓库中未找到模型文件。"
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "下载 CSV",
             "columnModelName": "模型名称",
             "columnError": "错误",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "获取已中止：已达到元数据提供方的速率限制。请稍后重新执行“从 CivitAI 获取元数据”，以重试剩余的模型。"
         },
         "downloadBatchSummary": {
             "title": "批量下载摘要",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "初始化失败",
+            "message": "扫描你的模型库时出错。",
+            "retry": "重试"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "欢迎使用 LoRA 管理器",
+        "description": "开始之前，LoRA Manager 需要扫描你的模型库并生成元数据附属文件。这是一次性步骤；耗时取决于模型库的大小和磁盘速度。",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "其他模型"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "选择语言"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} 个模型 · {size}",
+        "rootMissing": "未找到目录",
+        "estimate": "约 {count} 个模型（{size}），预计扫描时间约 {minutes} 分钟，具体取决于模型库大小和磁盘速度。",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "未找到可访问的模型文件夹。打开设置配置模型目录，然后重新加载此页面。",
+            "standalone": "未找到可访问的模型文件夹。编辑 settings.json 中的 folder_paths，然后重启服务器。"
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "元数据存储",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "与模型文件放在一起（推荐）",
+                "description": "元数据 .json 文件与每个模型文件存放在一起，因此会随模型一起移动。"
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "集中目录",
+                "description": "元数据存储在单独的目录中，让模型文件夹保持整洁。",
+                "pathPlaceholder": "集中元数据存储目录"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "开始扫描",
+            "defer": "稍后"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "加载模型库信息失败。",
+            "pathRequired": "请输入用于集中存储元数据的目录。",
+            "startFailed": "无法启动扫描。"
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "错误：{message}",
             "deleteSuccess": "成功删除 {count} 个 {type}",
             "deleteFailed": "删除 {type} 失败：{message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "删除 {failed} 个选中的 {type} 失败：{message}",
+            "cacheUpdateFailed": "文件已删除，但无法更新模型库缓存。请运行“重建缓存”刷新列表。"
         },
         "controls": {
             "reloadFailed": "重新加载 {pageType} 失败：{message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "设置内容评级失败：{message}",
             "relinkSuccess": "模型已成功重新关联到 CivitAI",
             "relinkFailed": "错误：{message}",
-            "linkHfSuccess": "模型已成功链接到 HuggingFace",
+            "linkHfSuccess": "模型已成功关联到其模型来源",
             "linkHfFailed": "错误：{message}",
             "linkCivArchSuccess": "模型已成功通过 CivitArchive 重新关联",
             "fetchMetadataFirst": "请先从 CivitAI 获取元数据",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "元数据更新完成",
             "operationCancelled": "操作已由用户取消",
             "operationCancelledPartial": "操作已取消。已处理 {success} 个项目。",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "因速率限制，元数据获取已中止——已更新 {total} 个中的 {success} 个，失败 {failed} 个，跳过 {skipped} 个。请稍后重新从 CivitAI 获取元数据，以重试其余模型。",
             "metadataFetchFailed": "获取元数据失败：{message}",
             "bulkMetadataCompleteAll": "全部 {count} 个 {type} 元数据刷新成功",
             "bulkMetadataCompletePartial": "已刷新 {success}/{total} 个 {type} 元数据",
@@ -3062,10 +3062,10 @@
             "openSettings": "打开设置"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "让你的模型库焕发生机",
+            "content": "首次扫描发现 {count} 个模型缺少元数据。从 CivitAI 获取这些模型的信息，即可获得预览图片、描述和触发词。",
+            "fetch": "获取元数据",
+            "later": "以后再说"
         },
         "pager": {
             "previous": "上一条通知",

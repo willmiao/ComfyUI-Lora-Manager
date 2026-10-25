@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "モデルカードとレシピカードのヘッダー・フッターオーバーレイのぼかし強度を調整します（0 = ぼかしなし、20 = 最大ぼかし）。"
         },
         "folderSettings": {
-            "activeLibrary": "アクティブライブラリ",
-            "activeLibraryHelp": "設定済みのライブラリを切り替えてデフォルトのフォルダを更新します。選択を変更するとページが再読み込みされます。",
+            "activeLibrary": "アクティブライブラリ（非推奨）",
+            "activeLibraryHelp": "設定済みのライブラリを切り替えてデフォルトのフォルダを更新します。選択を変更するとページが再読み込みされます。非推奨：複数ライブラリのサポートは今後のリリースで削除されます。単一ライブラリ内の複数のフォルダルートは引き続き完全にサポートされます。",
             "loadingLibraries": "ライブラリを読み込み中...",
             "noLibraries": "ライブラリが設定されていません",
             "defaultLoraRoot": "LoRAルート",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "無効なモデル URL 形式",
                 "noVersions": "このモデルの利用可能なバージョンがありません",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "要求されたモデルバージョンにファイル {fileId} が見つかりません。",
+                "linkedFileNotWeightFile": "ファイル {fileId} はダウンロード可能なモデルファイルではありません。",
                 "mixedSources": "同じバッチ内でCivitAIとHugging Face / ModelScopeのURLを混在させることはできません。",
                 "noModelFiles": "このリポジトリにモデルファイルが見つかりませんでした。"
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "CSVをダウンロード",
             "columnModelName": "モデル名",
             "columnError": "エラー",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "取得を中止しました：メタデータ提供元のレート制限に達しました。残りのモデルを再試行するには、後で「CivitAIからメタデータを取得」を再実行してください。"
         },
         "downloadBatchSummary": {
             "title": "バッチダウンロードの概要",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "初期化に失敗しました",
+            "message": "モデルライブラリのスキャン中に問題が発生しました。",
+            "retry": "再試行"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "LoRA Managerへようこそ",
+        "description": "開始する前に、LoRA Manager はモデルライブラリをスキャンしてメタデータのサイドカーファイルを生成します。この処理は初回のみで、所要時間はライブラリのサイズとディスク速度によって異なります。",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "その他のモデル"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "言語"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} 個のモデル · {size}",
+        "rootMissing": "フォルダが見つかりません",
+        "estimate": "約 {count} 個のモデル（{size}）。推定スキャン時間は約 {minutes} 分で、ライブラリのサイズとディスク速度によって変わります。",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "アクセス可能なモデルフォルダが見つかりません。設定を開いてモデルディレクトリを構成してから、このページを再読み込みしてください。",
+            "standalone": "アクセス可能なモデルフォルダが見つかりません。settings.json の folder_paths を編集してから、サーバーを再起動してください。"
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "メタデータの保存",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "モデルファイルの隣（推奨）",
+                "description": "メタデータの .json ファイルを各モデルファイルの隣に保存するため、モデルと一緒に移動します。"
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "集中ディレクトリ",
+                "description": "メタデータは別のディレクトリに保存されるため、モデルフォルダをきれいに保てます。",
+                "pathPlaceholder": "集中メタデータ保存用ディレクトリ"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "スキャン開始",
+            "defer": "後で"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "ライブラリ情報の読み込みに失敗しました。",
+            "pathRequired": "集中メタデータ保存用のディレクトリを入力してください。",
+            "startFailed": "スキャンを開始できませんでした。"
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "エラー：{message}",
             "deleteSuccess": "{count} {type} が正常に削除されました",
             "deleteFailed": "{type} の削除に失敗しました：{message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "選択した {failed} 個の {type} の削除に失敗しました：{message}",
+            "cacheUpdateFailed": "ファイルは削除されましたが、ライブラリのキャッシュを更新できませんでした。リストを更新するには「キャッシュを再構築」を実行してください。"
         },
         "controls": {
             "reloadFailed": "{pageType}の再読み込みに失敗しました：{message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "コンテンツレーティングの設定に失敗しました：{message}",
             "relinkSuccess": "モデルがCivitAIに正常に再リンクされました",
             "relinkFailed": "エラー：{message}",
-            "linkHfSuccess": "モデルを HuggingFace にリンクしました",
+            "linkHfSuccess": "モデルをモデルソースにリンクしました",
             "linkHfFailed": "エラー：{message}",
             "linkCivArchSuccess": "モデルがCivitArchive経由で正常に再リンクされました",
             "fetchMetadataFirst": "最初にCivitAIからメタデータを取得してください",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "メタデータ更新完了",
             "operationCancelled": "ユーザーによって操作がキャンセルされました",
             "operationCancelledPartial": "操作がキャンセルされました。{success} 個の項目が処理されました。",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "レート制限によりメタデータの取得を中止しました — {total} 個中 {success} 個を更新、失敗 {failed} 個、スキップ {skipped} 個。後で再度 CivitAI からメタデータを取得して、残りを再試行してください。",
             "metadataFetchFailed": "メタデータの取得に失敗しました：{message}",
             "bulkMetadataCompleteAll": "{count} {type}すべてが正常に更新されました",
             "bulkMetadataCompletePartial": "{total} {type}のうち {success} が更新されました",
@@ -3062,10 +3062,10 @@
             "openSettings": "設定を開く"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "ライブラリに命を吹き込もう",
+            "content": "初回スキャンで、メタデータのないモデルが {count} 個見つかりました。CivitAI から情報を取得すると、プレビュー画像、説明、トリガーワードを利用できます。",
+            "fetch": "メタデータを取得",
+            "later": "また今度"
         },
         "pager": {
             "previous": "前の通知",

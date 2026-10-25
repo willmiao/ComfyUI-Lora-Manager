@@ -609,8 +609,8 @@
             "cardBlurAmountHelp": "כוונן את עוצמת הטשטוש של שכבת-העל בכותרת ובכותרות תחתונה בכרטיסי מודל ומתכונים (0 = ללא טשטוש, 20 = טשטוש מקסימלי)."
         },
         "folderSettings": {
-            "activeLibrary": "ספרייה פעילה",
-            "activeLibraryHelp": "החלפה בין הספריות המוגדרות לעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף.",
+            "activeLibrary": "ספרייה פעילה (מיושן)",
+            "activeLibraryHelp": "החלפה בין הספריות המוגדרות לעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף. מיושן: התמיכה בריבוי ספריות תוסר בגרסה קרובה. מספר תיקיות שורש בתוך ספרייה אחת עדיין נתמך במלואו.",
             "loadingLibraries": "טוען ספריות...",
             "noLibraries": "לא הוגדרו ספריות",
             "defaultLoraRoot": "תיקיית שורש LoRA",
@@ -1722,8 +1722,8 @@
             "errors": {
                 "invalidUrl": "פורמט URL של מודל לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "הקובץ {fileId} לא נמצא בגרסת המודל המבוקשת.",
+                "linkedFileNotWeightFile": "הקובץ {fileId} אינו קובץ מודל שניתן להורדה.",
                 "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face / ModelScope באותה קבוצה.",
                 "noModelFiles": "לא נמצאו קבצי מודל במאגר זה."
             },
@@ -2222,7 +2222,7 @@
             "downloadCsv": "הורד CSV",
             "columnModelName": "שם המודל",
             "columnError": "שגיאה",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "האחזור הופסק: הגבלת הקצב של ספק המטא-נתונים הושגה. הרץ שוב את «אחזר מטא-נתונים מ-CivitAI» מאוחר יותר כדי לנסות שוב את המודלים הנותרים."
         },
         "downloadBatchSummary": {
             "title": "סיכום הורדה בכמות",
@@ -2309,50 +2309,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "האתחול נכשל",
+            "message": "משהו השתבש בעת סריקת ספריית המודלים שלך.",
+            "retry": "נסה שוב"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "ברוכים הבאים ל-LoRA Manager",
+        "description": "לפני שמתחילים, LoRA Manager צריך לסרוק את ספריות המודלים שלך וליצור קובצי לוואי של מטא-נתונים. זהו שלב חד-פעמי; משך הזמן תלוי בגודל הספרייה ובמהירות הדיסק.",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRAs",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
+            "other": "מודלים אחרים"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "שפה"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} מודלים · {size}",
+        "rootMissing": "התיקייה לא נמצאה",
+        "estimate": "כ-{count} מודלים ({size}) — זמן סריקה משוער ~{minutes} דקות, בהתאם לגודל הספרייה ולמהירות הדיסק.",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "לא נמצאו תיקיות מודלים נגישות. פתח את ההגדרות כדי להגדיר את תיקיות המודלים, ואז רענן את העמוד.",
+            "standalone": "לא נמצאו תיקיות מודלים נגישות. ערוך את folder_paths בקובץ settings.json, ואז הפעל מחדש את השרת."
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "אחסון מטא-נתונים",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "לצד קובצי המודלים (מומלץ)",
+                "description": "קובצי ה-.json של המטא-נתונים נשמרים לצד כל קובץ מודל, ולכן עוברים יחד עם המודל."
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "תיקייה מרכזית",
+                "description": "המטא-נתונים נשמרים בתיקייה נפרדת, כך שתיקיות המודלים שלך נשארות נקיות.",
+                "pathPlaceholder": "תיקייה לאחסון מטא-נתונים מרוכז"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "התחל סריקה",
+            "defer": "מאוחר יותר"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "טעינת מידע הספרייה נכשלה.",
+            "pathRequired": "הזן תיקיית אחסון עבור מטא-נתונים מרוכזים.",
+            "startFailed": "הפעלת הסריקה נכשלה."
         }
     },
     "duplicates": {
@@ -2868,8 +2868,8 @@
             "deleteError": "שגיאה: {message}",
             "deleteSuccess": "נמחקו בהצלחה {count} {type}",
             "deleteFailed": "מחיקת {type} נכשלה: {message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "מחיקת {failed} {type} שנבחרו נכשלה: {message}",
+            "cacheUpdateFailed": "הקבצים נמחקו, אך לא ניתן היה לעדכן את מטמון הספרייה. הרץ את «בניית מטמון מחדש» כדי לרענן את הרשימה."
         },
         "controls": {
             "reloadFailed": "טעינה מחדש של {pageType} נכשלה: {message}",
@@ -2882,7 +2882,7 @@
             "contentRatingFailed": "הגדרת דירוג התוכן נכשלה: {message}",
             "relinkSuccess": "המודל קושר מחדש ל-CivitAI בהצלחה",
             "relinkFailed": "שגיאה: {message}",
-            "linkHfSuccess": "המודל נקשר בהצלחה ל-HuggingFace",
+            "linkHfSuccess": "המודל נקשר בהצלחה למקור המודל",
             "linkHfFailed": "שגיאה: {message}",
             "linkCivArchSuccess": "המודל קושר מחדש דרך CivitArchive בהצלחה",
             "fetchMetadataFirst": "אנא אחזר מטא-נתונים מ-CivitAI תחילה",
@@ -2929,7 +2929,7 @@
             "metadataUpdateComplete": "עדכון המטא-נתונים הושלם",
             "operationCancelled": "הפעולה בוטלה על ידי המשתמש",
             "operationCancelledPartial": "הפעולה בוטלה. {success} פריטים עובדו.",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "שליפת המטא-נתונים הופסקה עקב מגבלת קצב — עודכנו {success} מתוך {total}, {failed} נכשלו, {skipped} דולגו. הרץ שוב שליפה מ-CivitAI מאוחר יותר כדי לנסות שוב את השאר.",
             "metadataFetchFailed": "אחזור המטא-נתונים נכשל: {message}",
             "bulkMetadataCompleteAll": "רועננו בהצלחה כל {count} ה-{type}s",
             "bulkMetadataCompletePartial": "רועננו {success} מתוך {total} {type}s",
@@ -3062,10 +3062,10 @@
             "openSettings": "פתח הגדרות"
         },
         "bulkFetchPrompt": {
-            "title": "[TODO: Translate] Bring Your Library to Life",
-            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
-            "fetch": "[TODO: Translate] Fetch Metadata",
-            "later": "[TODO: Translate] Maybe Later"
+            "title": "החייה את הספרייה שלך",
+            "content": "הסריקה הראשונה מצאה {count} מודלים ללא מטא-נתונים. שלוף את המידע שלהם מ-CivitAI כדי לקבל תמונות תצוגה מקדימה, תיאורים ומילות טריגר.",
+            "fetch": "שלוף מטא-נתונים",
+            "later": "אולי מאוחר יותר"
         },
         "pager": {
             "previous": "הודעה קודמת",
