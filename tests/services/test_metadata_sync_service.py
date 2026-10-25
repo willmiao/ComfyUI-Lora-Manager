@@ -6,6 +6,7 @@ import pytest
 
 from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
 from py.services.errors import MetadataPersistError, RateLimitError
+from py.utils.constants import EMPTY_HASH_SHA256
 from py.services.metadata_sync_service import MetadataSyncService, _merge_ordered_unique
 
 
@@ -1154,3 +1155,86 @@ async def test_fetch_and_update_model_keeps_sqlite_last_resort_after_civarchive_
     civarchive_provider.get_model_by_hash.assert_awaited_once()
     sqlite_provider.get_model_by_hash.assert_awaited_once()
     assert model_data["metadata_source"] == "archive_db"
+
+
+# ---------------------------------------------------------------------------
+# Empty-file SHA256 placeholder (issue #1162)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_fetch_rehashes_the_empty_file_placeholder_before_lookup(tmp_path):
+    """A stored hash of zero bytes must be replaced before any provider runs."""
+    import hashlib
+
+    helpers = build_service()
+    helpers.default_provider.get_model_by_hash.return_value = (None, "Model not found")
+
+    model_path = tmp_path / "Emilia(RE0).safetensors"
+    model_path.write_bytes(b"real model bytes")
+    expected = hashlib.sha256(b"real model bytes").hexdigest()
+    model_data: Dict[str, Any] = {
+        "model_name": "Emilia",
+        "folder": "root",
+        "file_path": str(model_path),
+        "sha256": EMPTY_HASH_SHA256,
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256=EMPTY_HASH_SHA256,
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False and error is not None  # not found, but the hash was repaired
+    assert model_data["sha256"] == expected
+    assert model_data["hash_status"] == "completed"
+    helpers.default_provider.get_model_by_hash.assert_awaited_once_with(expected)
+    saved_payload = helpers.metadata_manager.save_metadata.await_args.args[1]
+    assert saved_payload["sha256"] == expected
+    assert "folder" not in saved_payload
+    # Once for the repaired hash, once for the not-found bookkeeping.
+    assert update_cache.await_count == 2
+    assert update_cache.await_args_list[0].args[2]["sha256"] == expected
+
+
+@pytest.mark.asyncio
+async def test_fetch_refuses_to_look_up_an_empty_file(tmp_path):
+    """Zero-byte models cannot be identified: no provider request is made."""
+    helpers = build_service()
+    model_path = tmp_path / "broken.safetensors"
+    model_path.write_bytes(b"")
+    model_data: Dict[str, Any] = {"file_path": str(model_path), "sha256": EMPTY_HASH_SHA256}
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256=EMPTY_HASH_SHA256,
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False
+    assert "empty" in (error or "").lower()
+    helpers.default_provider.get_model_by_hash.assert_not_awaited()
+    update_cache.assert_not_awaited()
+    assert "civitai_deleted" not in model_data
+
+
+@pytest.mark.asyncio
+async def test_fetch_reports_a_missing_model_file_for_the_placeholder(tmp_path):
+    helpers = build_service()
+    model_data: Dict[str, Any] = {"file_path": str(tmp_path / "gone.safetensors")}
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256=EMPTY_HASH_SHA256,
+        file_path=str(tmp_path / "gone.safetensors"),
+        model_data=model_data,
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert ok is False
+    assert "not found" in (error or "").lower()
+    helpers.default_provider.get_model_by_hash.assert_not_awaited()

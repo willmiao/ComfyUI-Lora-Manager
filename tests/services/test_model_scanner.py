@@ -3671,3 +3671,53 @@ async def test_process_model_file_still_accepts_non_empty_files(tmp_path: Path):
     assert result is not None
     assert len(result["sha256"]) == 64
     assert Path(get_metadata_path(str(model_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_rehashes_the_empty_file_placeholder(tmp_path: Path):
+    """A sidecar poisoned with the empty-string hash heals during the scan.
+
+    Regression test for issue #1162: existing libraries must recover without
+    the user re-clicking "Verify Hashes" on every duplicate group.
+    """
+    import hashlib
+
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    content = b"real model bytes"
+    model_file.write_bytes(content)
+    expected = hashlib.sha256(content).hexdigest()
+
+    metadata = await MetadataManager.create_default_metadata(str(model_file))
+    assert metadata is not None and metadata.sha256 == expected
+    sidecar = Path(get_metadata_path(str(model_file)))
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    payload["sha256"] = EMPTY_HASH_SHA256
+    sidecar.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert result["sha256"] == expected
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == expected
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_keeps_a_zero_byte_placeholder_on_empty_files(
+    tmp_path: Path,
+):
+    """An empty file stays unmanaged instead of being "repaired" to the placeholder."""
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "empty.safetensors"
+    model_file.write_bytes(b"")
+    sidecar = Path(get_metadata_path(str(model_file)))
+    sidecar.write_text(json.dumps({"sha256": EMPTY_HASH_SHA256}), encoding="utf-8")
+
+    assert await scanner._process_model_file(str(model_file), str(tmp_path)) is None
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == EMPTY_HASH_SHA256
