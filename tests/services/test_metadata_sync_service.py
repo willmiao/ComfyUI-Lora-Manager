@@ -1254,3 +1254,79 @@ async def test_foreign_source_link_skipped_for_the_empty_hash_placeholder():
 
     assert linked is False
     helpers.provider_selector.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_relink_without_a_sidecar_rebuilds_the_required_local_fields(tmp_path):
+    """Relinking after a manual sidecar deletion must write a parseable sidecar.
+
+    Regression test for issue #1162: relinking from ``{}`` used to persist only
+    the remote fields, so the next startup logged
+    ``LoraMetadata.__init__() missing N required positional arguments`` and the
+    scanner skipped the model forever.
+    """
+    import hashlib
+
+    from py.utils.models import LoraMetadata
+
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(
+            return_value={
+                "files": [
+                    {"primary": True, "type": "Model", "hashes": {"SHA256": "ABCDEF"}}
+                ],
+                "model": {"name": "Remote"},
+                "images": [],
+            }
+        ),
+    )
+    helpers = build_service(default_provider=provider)
+    model_path = tmp_path / "Emilia(RE0).safetensors"
+    content = b"real model bytes"
+    model_path.write_bytes(content)
+
+    result = await helpers.service.relink_metadata(
+        file_path=str(model_path),
+        metadata={},
+        model_id=1,
+        model_version_id=2,
+    )
+
+    parsed = LoraMetadata.from_dict(result)  # raises when a field is missing
+    assert parsed.file_name == "Emilia(RE0)"
+    assert parsed.file_path.endswith("Emilia(RE0).safetensors")
+    assert parsed.size == len(content)
+    assert parsed.sha256 == hashlib.sha256(content).hexdigest()
+    assert parsed.model_name == "Remote"
+    assert parsed.preview_url == ""
+
+
+@pytest.mark.asyncio
+async def test_relink_keeps_the_existing_payload_values(tmp_path):
+    """A healthy sidecar is not rewritten from disk facts alone."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(
+            return_value={
+                "files": [
+                    {"primary": True, "type": "Model", "hashes": {"SHA256": "ABCDEF"}}
+                ],
+                "model": {"name": "Remote"},
+                "images": [],
+            }
+        ),
+    )
+    helpers = build_service(default_provider=provider)
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"real model bytes")
+
+    result = await helpers.service.relink_metadata(
+        file_path=str(model_path),
+        metadata={"file_path": str(model_path), "model_name": "Local", "sha256": "original"},
+        model_id=1,
+        model_version_id=2,
+    )
+
+    assert result["sha256"] == "original"
+    assert result["model_name"] == "Remote"

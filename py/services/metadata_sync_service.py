@@ -11,10 +11,11 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Protocol
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.constants import is_empty_placeholder_hash
-from ..utils.file_utils import calculate_sha256
+from ..utils.file_utils import calculate_sha256, find_preview_file, normalize_path
+from ..utils.metadata_manager import MetadataManager
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
-from ..utils.sidecar_paths import get_metadata_path
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import MetadataPersistError, RateLimitError
 from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
@@ -690,6 +691,7 @@ class MetadataSyncService:
             )
 
         metadata_path = get_metadata_path(file_path)
+        metadata = await self._rebuild_relink_payload(file_path, metadata)
         await self.update_model_metadata(
             metadata_path,
             metadata,
@@ -698,6 +700,50 @@ class MetadataSyncService:
         )
 
         return metadata
+
+    @staticmethod
+    async def _rebuild_relink_payload(
+        file_path: str, metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Return a relink payload that still carries every required local fact.
+
+        Relinking is the documented remedy after deleting a broken
+        ``.metadata.json``, so callers frequently start from ``{}`` (or from a
+        half-written sidecar). Persisting the merged remote data alone would
+        produce a sidecar that ``BaseModelMetadata.from_dict`` cannot parse
+        (``file_name``/``file_path``/``size``/``modified``/``sha256`` are
+        required), and the scanner would then skip the model forever
+        (issue #1162).
+
+        Disk facts are restored first, the caller's payload is layered on top,
+        and the fields a relink cannot obtain from the provider (a SHA256 for a
+        model whose hash was lost, a display name, a preview path) are filled
+        from the local file.
+        """
+
+        payload = await MetadataManager.load_metadata_payload(file_path)
+        if isinstance(metadata, dict):
+            payload.update(metadata)
+        payload.setdefault("file_path", normalize_path(file_path))
+
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        if not payload.get("model_name"):
+            payload["model_name"] = base_name
+        if not payload.get("preview_url"):
+            payload["preview_url"] = normalize_path(
+                find_preview_file(base_name, get_preview_dir(file_path))
+            )
+
+        if not payload.get("sha256"):
+            try:
+                if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                    sha256 = await calculate_sha256(file_path)
+                    if sha256 and not is_empty_placeholder_hash(sha256):
+                        payload["sha256"] = sha256.lower()
+            except OSError as exc:  # pragma: no cover - defensive
+                logger.debug("Unable to hash %s while relinking: %s", file_path, exc)
+
+        return payload
 
     async def _try_link_foreign_source(
         self,
