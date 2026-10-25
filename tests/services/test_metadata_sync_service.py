@@ -1238,3 +1238,19 @@ async def test_fetch_reports_a_missing_model_file_for_the_placeholder(tmp_path):
     assert ok is False
     assert "not found" in (error or "").lower()
     helpers.default_provider.get_model_by_hash.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_foreign_source_link_skipped_for_the_empty_hash_placeholder():
+    """No repository gets linked for a hash that identifies no file (#1162)."""
+    helpers = build_service()
+
+    linked = await helpers.service._try_link_foreign_source(
+        sha256=EMPTY_HASH_SHA256,
+        file_path="/tmp/Emilia(RE0).safetensors",
+        model_data={"file_path": "/tmp/Emilia(RE0).safetensors"},
+        update_cache_func=AsyncMock(return_value=True),
+    )
+
+    assert linked is False
+    helpers.provider_selector.assert_not_awaited()

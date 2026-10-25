@@ -716,6 +716,11 @@ class MetadataSyncService:
         model was linked and hydrated; False leaves the caller's not-found
         handling in charge.
         """
+        if is_empty_placeholder_hash(sha256):
+            # The zero-byte digest identifies no file. A repository that
+            # publishes a 0-byte upload "matches" it, so linking would attach
+            # that repository's card to an unrelated model (issue #1162).
+            return False
         if has_external_source(model_data):
             return False
         try:

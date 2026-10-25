@@ -364,6 +364,53 @@ class TestFetchCardContextByHash:
 
         assert await source.fetch_card_context_by_hash("owner/repo", "f3a5370b") is None
 
+    @pytest.mark.asyncio
+    async def test_returns_none_for_the_empty_hash_placeholder(self, monkeypatch):
+        """A repository's 0-byte upload must not capture unrelated models (#1162)."""
+        from py.utils.constants import EMPTY_HASH_SHA256
+
+        detail = {
+            "ModelInfos": {
+                "safetensor": {
+                    "files": [
+                        {
+                            "name": "pam-krea2_c1-st4000.safetensors",
+                            "sha256": EMPTY_HASH_SHA256,
+                            "size": 0,
+                        }
+                    ]
+                }
+            }
+        }
+        source = ModelScopeSource()
+        monkeypatch.setattr(source, "_fetch_detail", _async(detail))
+
+        assert (
+            await source.fetch_card_context_by_hash("owner/repo", EMPTY_HASH_SHA256)
+            is None
+        )
+
+    def test_file_digests_skip_zero_byte_uploads(self):
+        from py.services.model_sources.modelscope import _file_digests
+        from py.utils.constants import EMPTY_HASH_SHA256
+
+        detail = {
+            "ModelInfos": {
+                "safetensor": {
+                    "files": [
+                        {"name": "real.safetensors", "sha256": "a" * 64, "size": 1024},
+                        {
+                            "name": "empty.safetensors",
+                            "sha256": EMPTY_HASH_SHA256,
+                            "size": 0,
+                        },
+                    ]
+                }
+            }
+        }
+
+        assert _file_digests(detail) == {"real.safetensors": "a" * 64}
+
 
 class TestSharedSourceCache:
     def test_same_repository_reuses_one_memo(self):
