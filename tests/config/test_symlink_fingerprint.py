@@ -149,4 +149,6 @@ def test_rescan_log_describes_invalidation_reason(monkeypatch: pytest.MonkeyPatc
     rescan_lines = [m for m in messages if m.startswith("Symlink configuration changed")]
     assert len(rescan_lines) == 1
     assert "roots added:" in rescan_lines[0]
-    assert str(new_lora_dir) in rescan_lines[0]
+    # Fingerprint paths are normalized to forward slashes (Config._normalize_path),
+    # so compare against as_posix() rather than the OS-native separator.
+    assert new_lora_dir.as_posix() in rescan_lines[0]
