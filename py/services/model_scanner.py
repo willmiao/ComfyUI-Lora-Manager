@@ -1328,7 +1328,9 @@ class ModelScanner:
                 'progress': 1, # Changed from 10 to 1
                 'details': f"Found {total_files} {self.model_type} files",
                 'scanner_type': self.model_type,
-                'pageType': page_type
+                'pageType': page_type,
+                'total': total_files,
+                'bytes_total': collected.total_bytes,
             })
 
             start_time = time.time()
@@ -1763,14 +1765,27 @@ class ModelScanner:
             last_progress_time = time.time()
             last_progress_percent = 0
 
-            async def progress_callback(processed_files: int, expected_total: int, current_name: str = '') -> None:
+            async def progress_callback(
+                processed_files: int,
+                expected_total: int,
+                current_name: str = '',
+                bytes_done: int = 0,
+                total_bytes: int = 0,
+            ) -> None:
                 nonlocal last_progress_time, last_progress_percent
 
                 if expected_total <= 0:
                     return
 
                 current_time = time.time()
-                progress_percent = min(99, int(1 + (processed_files / expected_total) * 98))
+                # Weight progress by bytes: a 7 GB LoRA and a 100 KB embedding
+                # must not move the bar by the same amount. Fall back to file
+                # counts when sizes are unavailable (all-zero library).
+                if total_bytes > 0:
+                    ratio = bytes_done / total_bytes
+                else:
+                    ratio = processed_files / expected_total
+                progress_percent = min(99, int(1 + ratio * 98))
 
                 if progress_percent <= last_progress_percent:
                     return
@@ -1786,7 +1801,13 @@ class ModelScanner:
                     'progress': progress_percent,
                     'details': f"Processing {self.model_type} files: {processed_files}/{expected_total}",
                     'scanner_type': self.model_type,
-                    'pageType': page_type
+                    'pageType': page_type,
+                    # Structured progress: the initialization page consumes
+                    # these fields directly instead of parsing `details`.
+                    'processed': processed_files,
+                    'total': expected_total,
+                    'bytes_done': bytes_done,
+                    'bytes_total': total_bytes,
                 })
 
             return loop.run_until_complete(
@@ -1960,18 +1981,31 @@ class ModelScanner:
             await self._broadcast_scan_progress(
                 'processing', 'count_models', 1, True,
                 processed=0, total=total_files,
+                bytes_total=collected.total_bytes,
             )
 
             last_progress_time = time.time()
 
-            async def progress_callback(processed_files: int, expected_total: int, current_name: str = '') -> None:
+            async def progress_callback(
+                processed_files: int,
+                expected_total: int,
+                current_name: str = '',
+                bytes_done: int = 0,
+                total_bytes: int = 0,
+            ) -> None:
                 nonlocal last_progress_time, last_progress_percent
 
                 if expected_total <= 0:
                     return
 
                 current_time = time.time()
-                progress_percent = min(99, int(1 + (processed_files / expected_total) * 98))
+                # Byte-weighted progress (see _initialize_cache_sync); fall
+                # back to file counts when sizes are unavailable.
+                if total_bytes > 0:
+                    ratio = bytes_done / total_bytes
+                else:
+                    ratio = processed_files / expected_total
+                progress_percent = min(99, int(1 + ratio * 98))
 
                 if progress_percent <= last_progress_percent:
                     return
@@ -1985,6 +2019,7 @@ class ModelScanner:
                 await self._broadcast_scan_progress(
                     'processing', 'process_models', progress_percent, True,
                     processed=processed_files, total=expected_total,
+                    bytes_done=bytes_done, bytes_total=total_bytes,
                     current_name=current_name,
                 )
 
@@ -3720,29 +3755,40 @@ class ModelScanner:
         self,
         *,
         collected: Optional[CollectedScan] = None,
-        progress_callback: Optional[Callable[[int, int, str], Awaitable[None]]] = None
+        progress_callback: Optional[
+            Callable[[int, int, str, int, int], Awaitable[None]]
+        ] = None
     ) -> CacheBuildResult:
         """Collect metadata for all model files.
 
         Processes the file list from a single pre-scan walk
         (:meth:`_collect_model_files`) instead of walking the tree again.
         Callers that pass no ``collected`` get one computed inline.
+
+        The progress callback receives ``(processed, total, current_name,
+        bytes_done, total_bytes)`` so progress and ETA can be weighted by
+        file size rather than file count.
         """
         if collected is None:
             collected = self._collect_model_files(self.is_cancelled)
 
         total_files = len(collected.files)
+        total_bytes = collected.total_bytes
         raw_data: List[Dict[str, Any]] = []
         hash_index = ModelHashIndex()
         tags_count: Dict[str, int] = {}
         excluded_models: List[str] = []
         processed_files = 0
+        bytes_done = 0
 
         async def handle_progress(current_name: str = '') -> None:
             if progress_callback is None:
                 return
             try:
-                await progress_callback(processed_files, total_files, current_name)
+                await progress_callback(
+                    processed_files, total_files, current_name,
+                    bytes_done, total_bytes,
+                )
             except Exception as exc:  # pragma: no cover - defensive logging
                 logger.error(f"Error reporting progress for {self.model_type}: {exc}")
 
@@ -3757,6 +3803,7 @@ class ModelScanner:
             )
 
             processed_files += 1
+            bytes_done += model_file.size
 
             if result:
                 # Validate the entry before adding

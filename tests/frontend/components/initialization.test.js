@@ -129,4 +129,59 @@ describe('InitializationManager', () => {
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
+
+    it('tracks structured progress fields without parsing the details string', () => {
+        setupDom();
+
+        initManager.handleProgressUpdate({
+            stage: 'count_models',
+            progress: 1,
+            details: 'deliberately unparseable',
+            total: 10,
+            bytes_total: 1000,
+        });
+
+        expect(initManager.totalFilesCount).toBe(10);
+        expect(initManager.totalBytes).toBe(1000);
+
+        initManager.handleProgressUpdate({
+            stage: 'process_models',
+            progress: 25,
+            details: 'deliberately unparseable',
+            processed: 2,
+            total: 10,
+            bytes_done: 250,
+            bytes_total: 1000,
+        });
+
+        expect(initManager.processedFilesCount).toBe(2);
+        expect(initManager.bytesDone).toBe(250);
+    });
+
+    it('estimates remaining time from byte progress when sizes are known', async () => {
+        setupDom();
+
+        initManager.handleProgressUpdate({
+            stage: 'process_models',
+            progress: 10,
+            processed: 1,
+            total: 4,
+            bytes_done: 100,
+            bytes_total: 1000,
+        });
+        await vi.advanceTimersByTimeAsync(1000);
+        initManager.handleProgressUpdate({
+            stage: 'process_models',
+            progress: 20,
+            processed: 2,
+            total: 4,
+            bytes_done: 200,
+            bytes_total: 1000,
+        });
+
+        // 200 bytes in ~1s -> the remaining 800 bytes need ~4s more.
+        expect(initManager.averageTimePerByte).not.toBeNull();
+        expect(document.getElementById('remainingTime').textContent)
+            .toBe('Less than a minute remaining');
+    });
 });
