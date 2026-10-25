@@ -223,6 +223,18 @@ class CheckpointScanner(ModelScanner):
             # Calculate hash
             logger.info(f"Calculating hash for checkpoint: {file_path}")
             sha256 = await calculate_sha256(real_path)
+            if not sha256:
+                # Nothing was read (the file is empty or was truncated while
+                # open): there is no identity to store. Keep the lazy-hash
+                # state so a later pass retries once the file has content, and
+                # never index the empty-string placeholder (issue #1162).
+                logger.warning(
+                    "No bytes read from checkpoint %s; keeping hash pending",
+                    file_path,
+                )
+                metadata.hash_status = "pending"
+                await MetadataManager.save_metadata(file_path, metadata)
+                return None
 
             # Update metadata with hash
             metadata.sha256 = sha256

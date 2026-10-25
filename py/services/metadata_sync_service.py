@@ -330,7 +330,14 @@ class MetadataSyncService:
             # The cache still carries the repaired hash for this session; the
             # next fetch retries the sidecar write.
             logger.warning("Failed to persist repaired SHA256 for %s", file_path)
-        await update_cache_func(file_path, file_path, data_to_save)
+        try:
+            await update_cache_func(file_path, file_path, data_to_save)
+        except Exception as exc:  # pragma: no cover - a cache fault must not block the repair
+            logger.warning(
+                "Failed to update cache after repairing SHA256 for %s: %s",
+                file_path,
+                exc,
+            )
         return new_hash, None
 
     async def fetch_and_update_model(
