@@ -33,7 +33,8 @@ from py.services.pending_delete_service import (
 )
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 from py.utils.civitai_utils import build_license_flags
-from py.utils.models import BaseModelMetadata
+from py.utils.models import BaseModelMetadata, LoraMetadata
+from py.utils.sidecar_paths import get_metadata_path
 
 
 class RecordingWebSocketManager:
@@ -3625,3 +3626,98 @@ async def test_on_library_changed_schedules_refreeze_after_reinit(tmp_path: Path
     await asyncio.sleep(0)
 
     assert calls == [("init", True), ("freeze", "dummy library change")]
+
+
+class PluginScanner(ModelScanner):
+    """Keeps the production ``_process_model_file`` (DummyScanner overrides it)."""
+
+    def __init__(self, root: Path):
+        self._root = str(root)
+        super().__init__(
+            model_type="dummy",
+            model_class=LoraMetadata,
+            file_extensions={".safetensors"},
+            hash_index=ModelHashIndex(),
+        )
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root]
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_skips_zero_byte_files(tmp_path: Path):
+    """An empty model file must stay unmanaged: no sidecar, no cache entry.
+
+    Regression test for issue #1162 — hashing it would store the empty-string
+    SHA256 placeholder, which every unread file shares.
+    """
+    scanner = PluginScanner(tmp_path)
+    empty_file = tmp_path / "Emilia(RE0).safetensors"
+    empty_file.write_bytes(b"")
+
+    assert await scanner._process_model_file(str(empty_file), str(tmp_path)) is None
+    assert not Path(get_metadata_path(str(empty_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_still_accepts_non_empty_files(tmp_path: Path):
+    """Guard against over-skipping: a file with content is processed normally."""
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_bytes(b"x" * 64)
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert len(result["sha256"]) == 64
+    assert Path(get_metadata_path(str(model_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_rehashes_the_empty_file_placeholder(tmp_path: Path):
+    """A sidecar poisoned with the empty-string hash heals during the scan.
+
+    Regression test for issue #1162: existing libraries must recover without
+    the user re-clicking "Verify Hashes" on every duplicate group.
+    """
+    import hashlib
+
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    content = b"real model bytes"
+    model_file.write_bytes(content)
+    expected = hashlib.sha256(content).hexdigest()
+
+    metadata = await MetadataManager.create_default_metadata(str(model_file))
+    assert metadata is not None and metadata.sha256 == expected
+    sidecar = Path(get_metadata_path(str(model_file)))
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    payload["sha256"] = EMPTY_HASH_SHA256
+    sidecar.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert result["sha256"] == expected
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == expected
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_keeps_a_zero_byte_placeholder_on_empty_files(
+    tmp_path: Path,
+):
+    """An empty file stays unmanaged instead of being "repaired" to the placeholder."""
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "empty.safetensors"
+    model_file.write_bytes(b"")
+    sidecar = Path(get_metadata_path(str(model_file)))
+    sidecar.write_text(json.dumps({"sha256": EMPTY_HASH_SHA256}), encoding="utf-8")
+
+    assert await scanner._process_model_file(str(model_file), str(tmp_path)) is None
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == EMPTY_HASH_SHA256

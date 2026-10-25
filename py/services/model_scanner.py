@@ -11,6 +11,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequ
 
 from ..utils.models import BaseModelMetadata, autov3_from_civitai_files, quantization_from_civitai_files
 from ..config import config
+from ..utils.constants import is_empty_placeholder_hash
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
 from ..utils.gc_utils import schedule_refreeze_after_rebuild
 from ..utils.gguf_utils import detect_quantization
@@ -3481,6 +3482,19 @@ class ModelScanner:
         if _is_pending_delete_path(file_path):
             return None
 
+        # A zero-byte file is not a model. Hashing it yields the empty-string
+        # SHA256, which is shared by every unread/unfinished file: the library
+        # would show one bogus duplicate group and every member would resolve
+        # to the same polluted remote entry (issue #1162). Leave it unmanaged;
+        # a later scan picks it up once the file has content.
+        try:
+            if os.path.getsize(file_path) == 0:
+                logger.debug("Skipping empty model file: %s", file_path)
+                return None
+        except OSError as exc:
+            logger.debug("Skipping unreadable model file %s: %s", file_path, exc)
+            return None
+
         metadata, should_skip = await MetadataManager.load_metadata(file_path, self.model_class)
     
         if should_skip:
@@ -3541,8 +3555,14 @@ class ModelScanner:
             
         if metadata is None:
             metadata = await self._create_default_metadata(file_path)
-        
-        assert metadata is not None
+
+        if metadata is None:
+            # create_default_metadata returns None for empty/vanished files and
+            # for failures; one bad file must never abort the whole scan.
+            logger.warning(
+                "Skipping model %s: metadata could not be created", file_path
+            )
+            return None
 
         # Hook: allow subclasses to adjust metadata
         metadata = self.adjust_metadata(metadata, file_path, root_path)
@@ -3557,11 +3577,22 @@ class ModelScanner:
         # Respect hash_status='pending' (set by CheckpointScanner for large models) to defer
         # hash calculation until on-demand — avoids reading entire checkpoint files at startup.
         hash_status = model_data.get('hash_status', '')
-        if not model_data.get('sha256') and hash_status != 'pending' and file_path:
+        stored_sha = (model_data.get('sha256') or '').strip()
+        # The empty-string placeholder is not an identity: models poisoned by a
+        # hash of zero bytes (issue #1162) are re-hashed once the file has
+        # content, so an existing library heals on its next full scan.
+        needs_sha = not stored_sha or is_empty_placeholder_hash(stored_sha)
+        if needs_sha and hash_status != 'pending' and file_path:
             try:
-                logger.info(f"Computing SHA256 hash for {file_path} (was empty from metadata)")
+                if stored_sha:
+                    logger.info(
+                        "Recomputing SHA256 for %s (stored hash is the empty-file placeholder)",
+                        file_path,
+                    )
+                else:
+                    logger.info(f"Computing SHA256 hash for {file_path} (was empty from metadata)")
                 sha256 = await calculate_sha256(file_path)
-                if sha256:
+                if sha256 and not is_empty_placeholder_hash(sha256):
                     model_data['sha256'] = sha256.lower()
                     if isinstance(metadata, BaseModelMetadata):
                         metadata.sha256 = sha256.lower()

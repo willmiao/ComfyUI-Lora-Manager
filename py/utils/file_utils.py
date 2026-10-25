@@ -51,6 +51,10 @@ async def calculate_sha256(file_path: str) -> str:
 
     On Windows/macOS where ``posix_fadvise`` is not available the hint is silently
     skipped.
+
+    Returns ``""`` when the file contains no bytes at all: the SHA256 of an
+    empty byte string is not a model identity, and persisting it would fold
+    every unreadable/unfinished file into one bogus identity (issue #1162).
     """
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _calculate_sha256_sync, file_path)
@@ -59,15 +63,24 @@ async def calculate_sha256(file_path: str) -> str:
 def _calculate_sha256_sync(file_path: str) -> str:
     sha256_hash = hashlib.sha256()
     chunk_size = _get_hash_chunk_size_bytes()
+    read_any = False
     with open(file_path, "rb") as f:
         fd = f.fileno()
         for byte_block in iter(lambda: f.read(chunk_size), b""):
+            read_any = True
             sha256_hash.update(byte_block)
         # Evict pages after reading so the data doesn't linger in the kernel page
         # cache — on WSL this otherwise appears as unreclaimable VmmemWSL growth.
         # Guard against platforms (Windows, macOS) that lack posix_fadvise.
         if hasattr(os, "posix_fadvise") and hasattr(os, "POSIX_FADV_DONTNEED"):
             os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+    if not read_any:
+        # A zero-byte file (or a file that was still being created/truncated
+        # when the scan reached it) hashes to the empty-string digest. That
+        # value is shared by every such file, so it can never identify a
+        # model; report "no hash" instead of a poisonous identity.
+        logger.debug("No bytes read; skipping SHA256 for empty file %s", file_path)
+        return ""
     return sha256_hash.hexdigest()
 
 

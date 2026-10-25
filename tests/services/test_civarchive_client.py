@@ -415,3 +415,45 @@ async def test_get_model_version_offline_cooldown_logged_as_debug(downloader, ca
         r.levelno == logging.DEBUG and "while offline" in r.getMessage()
         for r in module_records
     )
+
+
+async def test_get_model_by_hash_ignores_the_empty_hash_placeholder(downloader):
+    """The zero-byte digest resolves to a pile of unrelated files (#1162)."""
+    from py.utils.constants import EMPTY_HASH_SHA256
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash(EMPTY_HASH_SHA256)
+
+    assert result is None
+    assert error == "Model not found"
+    assert downloader.calls == []
+    # Nothing was remembered for a later foreign-source link either.
+    assert client.pop_foreign_source_ref(EMPTY_HASH_SHA256) is None
+
+
+async def test_resolve_version_from_files_refuses_the_placeholder(downloader):
+    """A file-entry payload for the placeholder must not record a link target."""
+    from py.utils.constants import EMPTY_HASH_SHA256
+
+    client = await CivArchiveClient.get_instance()
+    payload = {
+        "files": [
+            {
+                "filename": "pam-krea2_c1-st4000.safetensors",
+                "url": "https://www.modelscope.ai/models/ppxjmqq/pam-krea2/files?version=1",
+                "source": "civision",
+                "model_id": 474441,
+                "model_version_id": 199065,
+            }
+        ]
+    }
+
+    assert (
+        await client._resolve_version_from_files(
+            payload, expected_hash=EMPTY_HASH_SHA256
+        )
+        is None
+    )
+    assert client.pop_foreign_source_ref(EMPTY_HASH_SHA256) is None
+    assert downloader.calls == []

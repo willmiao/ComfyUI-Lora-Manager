@@ -10,9 +10,12 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Protocol
 
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
+from ..utils.constants import is_empty_placeholder_hash
+from ..utils.file_utils import calculate_sha256, find_preview_file, normalize_path
+from ..utils.metadata_manager import MetadataManager
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
-from ..utils.sidecar_paths import get_metadata_path
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import MetadataPersistError, RateLimitError
 from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
@@ -277,6 +280,66 @@ class MetadataSyncService:
                 "Failed to unblock example image failures for %s: %s", sha256, exc
             )
 
+    async def _repair_placeholder_hash(
+        self,
+        *,
+        file_path: str,
+        model_data: Dict[str, Any],
+        update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Re-hash a model whose stored SHA256 is the empty-file placeholder.
+
+        The digest of zero bytes identifies no file, and both CivitAI and
+        CivArchive indexes carry polluted entries for it (issue #1162). Only a
+        real hash of the model's current content may reach the provider chain,
+        so the file is read once here and the repaired value is written to the
+        sidecar and the cache before the lookup.
+
+        Returns ``(new_hash, None)`` when the hash was repaired, or
+        ``(None, error)`` when there is nothing to hash yet. The caller must
+        not run a lookup in the latter case.
+        """
+
+        if not file_path:
+            return None, "Model file path is missing; metadata fetch skipped"
+        try:
+            if os.path.getsize(file_path) == 0:
+                return None, "Model file is empty (0 bytes); metadata fetch skipped"
+        except OSError:
+            return None, "Model file not found; metadata fetch skipped"
+
+        try:
+            new_hash = await calculate_sha256(file_path)
+        except Exception as exc:
+            logger.error("Failed to recompute SHA256 for %s: %s", file_path, exc)
+            return None, "Failed to compute SHA256 hash for model"
+
+        if not new_hash or is_empty_placeholder_hash(new_hash):
+            return None, "Failed to compute SHA256 hash for model"
+
+        new_hash = new_hash.lower()
+        logger.info(
+            "Recomputed SHA256 for %s: the stored hash was the empty-file placeholder",
+            file_path,
+        )
+        model_data["sha256"] = new_hash
+        model_data["hash_status"] = "completed"
+        data_to_save = model_data.copy()
+        data_to_save.pop("folder", None)
+        if not await self._metadata_manager.save_metadata(file_path, data_to_save):
+            # The cache still carries the repaired hash for this session; the
+            # next fetch retries the sidecar write.
+            logger.warning("Failed to persist repaired SHA256 for %s", file_path)
+        try:
+            await update_cache_func(file_path, file_path, data_to_save)
+        except Exception as exc:  # pragma: no cover - a cache fault must not block the repair
+            logger.warning(
+                "Failed to update cache after repairing SHA256 for %s: %s",
+                file_path,
+                exc,
+            )
+        return new_hash, None
+
     async def fetch_and_update_model(
         self,
         *,
@@ -300,6 +363,24 @@ class MetadataSyncService:
         metadata_path = get_metadata_path(file_path)
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
         previous_source = model_data.get("metadata_source") or (model_data.get("civitai") or {}).get("source")
+
+        if is_empty_placeholder_hash(sha256):
+            # A stored hash of zero bytes (issue #1162) is not an identity: the
+            # provider chain would resolve it against polluted remote entries.
+            # Re-read the file once; refuse to look anything up when there is
+            # nothing to hash yet.
+            repaired, repair_error = await self._repair_placeholder_hash(
+                file_path=file_path,
+                model_data=model_data,
+                update_cache_func=update_cache_func,
+            )
+            if not repaired:
+                error_msg = repair_error or "Model file is empty; metadata fetch skipped"
+                logger.warning(
+                    "%s (file=%s)", error_msg, os.path.basename(file_path or "")
+                )
+                return False, error_msg
+            sha256 = repaired
 
         try:
             provider_attempts: list[tuple[Optional[str], MetadataProviderProtocol]] = []
@@ -617,6 +698,7 @@ class MetadataSyncService:
             )
 
         metadata_path = get_metadata_path(file_path)
+        metadata = await self._rebuild_relink_payload(file_path, metadata)
         await self.update_model_metadata(
             metadata_path,
             metadata,
@@ -625,6 +707,50 @@ class MetadataSyncService:
         )
 
         return metadata
+
+    @staticmethod
+    async def _rebuild_relink_payload(
+        file_path: str, metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Return a relink payload that still carries every required local fact.
+
+        Relinking is the documented remedy after deleting a broken
+        ``.metadata.json``, so callers frequently start from ``{}`` (or from a
+        half-written sidecar). Persisting the merged remote data alone would
+        produce a sidecar that ``BaseModelMetadata.from_dict`` cannot parse
+        (``file_name``/``file_path``/``size``/``modified``/``sha256`` are
+        required), and the scanner would then skip the model forever
+        (issue #1162).
+
+        Disk facts are restored first, the caller's payload is layered on top,
+        and the fields a relink cannot obtain from the provider (a SHA256 for a
+        model whose hash was lost, a display name, a preview path) are filled
+        from the local file.
+        """
+
+        payload = await MetadataManager.load_metadata_payload(file_path)
+        if isinstance(metadata, dict):
+            payload.update(metadata)
+        payload.setdefault("file_path", normalize_path(file_path))
+
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        if not payload.get("model_name"):
+            payload["model_name"] = base_name
+        if not payload.get("preview_url"):
+            payload["preview_url"] = normalize_path(
+                find_preview_file(base_name, get_preview_dir(file_path))
+            )
+
+        if not payload.get("sha256"):
+            try:
+                if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                    sha256 = await calculate_sha256(file_path)
+                    if sha256 and not is_empty_placeholder_hash(sha256):
+                        payload["sha256"] = sha256.lower()
+            except OSError as exc:  # pragma: no cover - defensive
+                logger.debug("Unable to hash %s while relinking: %s", file_path, exc)
+
+        return payload
 
     async def _try_link_foreign_source(
         self,
@@ -643,6 +769,11 @@ class MetadataSyncService:
         model was linked and hydrated; False leaves the caller's not-found
         handling in charge.
         """
+        if is_empty_placeholder_hash(sha256):
+            # The zero-byte digest identifies no file. A repository that
+            # publishes a 0-byte upload "matches" it, so linking would attach
+            # that repository's card to an unrelated model (issue #1162).
+            return False
         if has_external_source(model_data):
             return False
         try:

@@ -234,6 +234,17 @@ class OtherScanner(ModelScanner):
             # Calculate hash
             logger.info(f"Calculating hash for other model: {file_path}")
             sha256 = await calculate_sha256(real_path)
+            if not sha256:
+                # Nothing was read (empty or truncated file): no identity to
+                # store. Keep the lazy-hash state for a later retry and never
+                # index the empty-string placeholder (issue #1162).
+                logger.warning(
+                    "No bytes read from model %s; keeping hash pending",
+                    file_path,
+                )
+                metadata.hash_status = "pending"
+                await MetadataManager.save_metadata(file_path, metadata)
+                return None
 
             # Update metadata with hash
             metadata.sha256 = sha256

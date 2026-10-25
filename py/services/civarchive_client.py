@@ -7,6 +7,7 @@ import logging
 import asyncio
 from copy import deepcopy
 from typing import Any, Optional, Dict, Tuple, List, cast
+from ..utils.constants import is_empty_placeholder_hash
 from .connectivity_guard import is_expected_offline_error
 from .model_metadata_provider import CivArchiveModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
@@ -59,7 +60,10 @@ class CivArchiveClient:
         file_data: Dict[str, Any],
     ) -> None:
         """Record a resolvable source URL from a foreign-ecosystem file entry"""
-        if not expected_hash:
+        if not expected_hash or is_empty_placeholder_hash(expected_hash):
+            # The placeholder identifies no file, so any repo "sharing" it
+            # (e.g. a repository that publishes a zero-byte upload) must not
+            # become the link target for a local model (issue #1162).
             return
         url = file_data.get("url")
         if not isinstance(url, str) or not url.strip():
@@ -373,6 +377,11 @@ class CivArchiveClient:
         """Fallback to fetch version data when only file metadata is available"""
         if not isinstance(payload, dict):
             return None
+        if expected_hash and is_empty_placeholder_hash(expected_hash):
+            # A file-entry list returned for the zero-byte digest describes no
+            # real file; resolving (or remembering) any of its entries would
+            # attribute an unrelated model to the caller (issue #1162).
+            return None
         data = self._normalize_payload(payload)
         files = data.get("files") or payload.get("files") or []
         if not isinstance(files, list):
@@ -425,6 +434,13 @@ class CivArchiveClient:
 
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Find model by SHA256 hash value using CivArchive API"""
+        if is_empty_placeholder_hash(model_hash):
+            # CivArchive's by-hash index carries a large pile of unrelated
+            # foreign files under the zero-byte digest (and records one of them
+            # as a foreign source ref), so the placeholder must never be
+            # resolved — it once linked seven unrelated LoRAs to one ModelScope
+            # repository (issue #1162).
+            return None, "Model not found"
         try:
             payload, error = await self._request_json(f"/sha256/{model_hash.lower()}")
             # Treat a missing payload as an error even when the error string is

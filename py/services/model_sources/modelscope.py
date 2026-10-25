@@ -46,6 +46,7 @@ import os
 import re
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional
 
+from ...utils.constants import is_empty_placeholder_hash
 from .base import (
     GROUP_PREFIXES,
     ModelCardContext,
@@ -206,7 +207,10 @@ class ModelScopeSource(ModelSource):
         repository's weights before linking metadata to it.
         """
         target = (sha256 or "").strip().lower()
-        if not target:
+        if not target or is_empty_placeholder_hash(target):
+            # The zero-byte digest is not a file identity: a repository that
+            # publishes a 0-byte upload would "prove" it owns every local model
+            # whose hash is that placeholder (issue #1162).
             return None
         data = await self._fetch_detail(source_id, cache=cache)
         if data is None:
@@ -587,8 +591,17 @@ def _file_digests(data: dict[str, Any]) -> dict[str, str]:
                 continue
             name = _clean_text(entry.get("name"))
             digest = _clean_text(entry.get("sha256"))
-            if name and digest:
-                digests.setdefault(os.path.basename(name).lower(), digest.lower())
+            if not name or not digest:
+                continue
+            size = entry.get("size")
+            if isinstance(size, (int, float)) and size <= 0:
+                # A published 0-byte upload cannot be a model; its digest is
+                # the SHA256 of an empty byte string, which every unread local
+                # file shares (issue #1162).
+                continue
+            if is_empty_placeholder_hash(digest):
+                continue
+            digests.setdefault(os.path.basename(name).lower(), digest.lower())
     return digests
 
 

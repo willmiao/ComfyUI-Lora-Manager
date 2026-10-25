@@ -34,6 +34,15 @@ async def test_calculate_sha256(tmp_path):
     assert result == expected_hash
 
 
+@pytest.mark.asyncio
+async def test_calculate_sha256_returns_blank_for_an_empty_file(tmp_path):
+    """The empty-string SHA256 must never be reported as a model hash (#1162)."""
+    file_path = tmp_path / "empty.safetensors"
+    file_path.write_bytes(b"")
+
+    assert await calculate_sha256(str(file_path)) == ""
+
+
 def test_find_preview_file_returns_normalized_path(tmp_path):
     file_path = tmp_path / "model.preview.png"
     file_path.write_bytes(b"")

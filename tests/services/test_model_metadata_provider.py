@@ -266,3 +266,20 @@ async def test_rate_limit_retrying_provider_delegates_get_version_file_mini():
 
     assert result == {"fileName": "raw.safetensors"}
     assert inner.calls == [(10, 20)]
+
+
+@pytest.mark.asyncio
+async def test_sqlite_provider_ignores_the_empty_hash_placeholder(tmp_path):
+    """The archive DB must not resolve the zero-byte digest (#1162)."""
+    from py.services.model_metadata_provider import SQLiteModelMetadataProvider
+    from py.utils.constants import EMPTY_HASH_SHA256
+
+    db_path = tmp_path / "civitai.db"
+    provider = SQLiteModelMetadataProvider(str(db_path))
+
+    result, error = await provider.get_model_by_hash(EMPTY_HASH_SHA256)
+
+    assert result is None
+    assert error == "Model not found"
+    # The guard runs before the connection is opened.
+    assert not db_path.exists()

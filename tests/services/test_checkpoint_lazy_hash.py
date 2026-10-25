@@ -465,3 +465,38 @@ async def test_lora_scanner_not_affected(tmp_path: Path, monkeypatch):
     # LoraScanner should use parent's _create_default_metadata which calculates hash
     # We verify this by checking that it doesn't override the method
     assert scanner._create_default_metadata.__qualname__ == "ModelScanner._create_default_metadata"
+
+
+@pytest.mark.asyncio
+async def test_calculate_hash_keeps_pending_for_an_empty_file(
+    tmp_path: Path, monkeypatch
+):
+    """An empty file yields no hash: stay pending instead of storing the
+    empty-string placeholder and indexing it (issue #1162)."""
+    checkpoints_root = tmp_path / "checkpoints"
+    checkpoints_root.mkdir()
+
+    checkpoint_file = checkpoints_root / "empty.safetensors"
+    checkpoint_file.write_bytes(b"")
+
+    normalized_root = _normalize(checkpoints_root)
+    normalized_file = _normalize(checkpoint_file)
+    monkeypatch.setattr(
+        model_scanner.config,
+        "base_models_roots",
+        [normalized_root],
+        raising=False,
+    )
+
+    scanner = CheckpointScanner()
+    metadata = await scanner._create_default_metadata(normalized_file)
+    assert metadata is not None
+    assert metadata.hash_status == "pending"
+
+    assert await scanner.calculate_hash_for_model(normalized_file) is None
+
+    metadata_file = checkpoints_root / "empty.metadata.json"
+    saved_data = json.loads(metadata_file.read_text(encoding="utf-8"))
+    assert saved_data.get("sha256") == ""
+    assert saved_data.get("hash_status") == "pending"
+    assert scanner._hash_index.has_hash("") is False
