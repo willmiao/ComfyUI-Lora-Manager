@@ -46,6 +46,7 @@ import os
 import re
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional
 
+from ...utils.constants import is_empty_placeholder_hash
 from .base import (
     GROUP_PREFIXES,
     ModelCardContext,
@@ -57,7 +58,6 @@ from .base import (
     fetch_text,
     filter_weight_files,
 )
-from ...utils.constants import is_empty_placeholder_hash
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .base import ModelSourceCache

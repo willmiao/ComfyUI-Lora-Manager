@@ -7,11 +7,11 @@ import logging
 import asyncio
 from copy import deepcopy
 from typing import Any, Optional, Dict, Tuple, List, cast
+from ..utils.constants import is_empty_placeholder_hash
 from .connectivity_guard import is_expected_offline_error
 from .model_metadata_provider import CivArchiveModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
 from .errors import RateLimitError
-from ..utils.constants import is_empty_placeholder_hash
 
 logger = logging.getLogger(__name__)
 

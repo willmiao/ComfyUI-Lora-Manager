@@ -4,9 +4,9 @@ import json
 import logging
 import random
 from typing import Optional, Dict, Tuple, Any, List, Sequence
+from ..utils.constants import is_empty_placeholder_hash
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
-from ..utils.constants import is_empty_placeholder_hash
 
 try:
     from bs4 import BeautifulSoup
