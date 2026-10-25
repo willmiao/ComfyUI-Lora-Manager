@@ -3481,6 +3481,19 @@ class ModelScanner:
         if _is_pending_delete_path(file_path):
             return None
 
+        # A zero-byte file is not a model. Hashing it yields the empty-string
+        # SHA256, which is shared by every unread/unfinished file: the library
+        # would show one bogus duplicate group and every member would resolve
+        # to the same polluted remote entry (issue #1162). Leave it unmanaged;
+        # a later scan picks it up once the file has content.
+        try:
+            if os.path.getsize(file_path) == 0:
+                logger.debug("Skipping empty model file: %s", file_path)
+                return None
+        except OSError as exc:
+            logger.debug("Skipping unreadable model file %s: %s", file_path, exc)
+            return None
+
         metadata, should_skip = await MetadataManager.load_metadata(file_path, self.model_class)
     
         if should_skip:
@@ -3541,8 +3554,14 @@ class ModelScanner:
             
         if metadata is None:
             metadata = await self._create_default_metadata(file_path)
-        
-        assert metadata is not None
+
+        if metadata is None:
+            # create_default_metadata returns None for empty/vanished files and
+            # for failures; one bad file must never abort the whole scan.
+            logger.warning(
+                "Skipping model %s: metadata could not be created", file_path
+            )
+            return None
 
         # Hook: allow subclasses to adjust metadata
         metadata = self.adjust_metadata(metadata, file_path, root_path)

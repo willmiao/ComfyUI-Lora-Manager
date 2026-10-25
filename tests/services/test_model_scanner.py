@@ -33,7 +33,8 @@ from py.services.pending_delete_service import (
 )
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 from py.utils.civitai_utils import build_license_flags
-from py.utils.models import BaseModelMetadata
+from py.utils.models import BaseModelMetadata, LoraMetadata
+from py.utils.sidecar_paths import get_metadata_path
 
 
 class RecordingWebSocketManager:
@@ -3625,3 +3626,48 @@ async def test_on_library_changed_schedules_refreeze_after_reinit(tmp_path: Path
     await asyncio.sleep(0)
 
     assert calls == [("init", True), ("freeze", "dummy library change")]
+
+
+class PluginScanner(ModelScanner):
+    """Keeps the production ``_process_model_file`` (DummyScanner overrides it)."""
+
+    def __init__(self, root: Path):
+        self._root = str(root)
+        super().__init__(
+            model_type="dummy",
+            model_class=LoraMetadata,
+            file_extensions={".safetensors"},
+            hash_index=ModelHashIndex(),
+        )
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root]
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_skips_zero_byte_files(tmp_path: Path):
+    """An empty model file must stay unmanaged: no sidecar, no cache entry.
+
+    Regression test for issue #1162 — hashing it would store the empty-string
+    SHA256 placeholder, which every unread file shares.
+    """
+    scanner = PluginScanner(tmp_path)
+    empty_file = tmp_path / "Emilia(RE0).safetensors"
+    empty_file.write_bytes(b"")
+
+    assert await scanner._process_model_file(str(empty_file), str(tmp_path)) is None
+    assert not Path(get_metadata_path(str(empty_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_still_accepts_non_empty_files(tmp_path: Path):
+    """Guard against over-skipping: a file with content is processed normally."""
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_bytes(b"x" * 64)
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert len(result["sha256"]) == 64
+    assert Path(get_metadata_path(str(model_file))).exists()

@@ -264,6 +264,15 @@ class MetadataManager:
             start_hash_time = time.perf_counter()
             logger.debug(f"Calculating SHA256 hash for {real_path}...")
             sha256 = await calculate_sha256(real_path)
+            if not sha256:
+                # An empty file has no model identity: writing a sidecar for it
+                # would persist the empty-string SHA256 placeholder and pull the
+                # file into the library as a bogus duplicate of every other
+                # unread file (issue #1162). Leave it unmanaged instead.
+                logger.warning(
+                    f"Skipping metadata creation for empty model file: {file_path}"
+                )
+                return None
             hash_duration = time.perf_counter() - start_hash_time
             logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
             
