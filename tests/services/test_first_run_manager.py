@@ -232,6 +232,7 @@ async def test_start_initial_scan_launches_scanners_and_broadcasts(
     assert result["tasks"] == 2
     launcher.assert_awaited_once()
     assert get_settings_manager().get("initial_scan_completed") is True
+    assert get_settings_manager().get("bulk_fetch_prompt_pending") is True
     assert manager.is_awaiting_first_scan() is False
     assert ws_recorder.init_progress
     broadcast = ws_recorder.init_progress[-1]
@@ -292,6 +293,8 @@ async def test_start_initial_scan_defer_presets_empty_caches(tmp_path, ws_record
     assert result["status"] == "deferred"
     launcher.assert_not_awaited()
     assert get_settings_manager().get("initial_scan_completed") is True
+    # The defer path has no fresh scan to anchor the fetch prompt to.
+    assert get_settings_manager().get("bulk_fetch_prompt_pending") is False
     # Pages render an empty library instead of the initialization screen.
     assert lora_scanner._cache is not None
     assert lora_scanner._cache.raw_data == []

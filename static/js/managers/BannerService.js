@@ -11,6 +11,7 @@ import { enableOtherModels, openOtherModelsSettings } from '../utils/otherModels
 const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
 const CACHE_HEALTH_BANNER_ID = 'cache-health-warning';
 const OTHER_MODELS_BANNER_ID = 'other-models-announcement';
+const BULK_FETCH_PROMPT_BANNER_ID = 'first-scan-bulk-fetch';
 const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
 const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
@@ -95,6 +96,7 @@ class BannerService {
 
             this.prepareCommunitySupportBanner();
             this.prepareOtherModelsBanner();
+            await this.prepareBulkFetchPromptBanner();
         }
 
         await this.showActiveBanners();
@@ -741,6 +743,127 @@ class BannerService {
      */
     removeOtherModelsAnnouncement() {
         this.removeBannerElement(OTHER_MODELS_BANNER_ID);
+    }
+
+    /**
+     * One-shot prompt offered after the first library scan: fetch metadata
+     * for every scanned model so a fresh install goes from grey placeholder
+     * cards to an illustrated library in one click.
+     *
+     * Registered only from the showPromos branch, which already requires the
+     * onboarding tour to be finished/skipped and the first-run/init pages to
+     * be gone — so this banner never competes with the onboarding flow.
+     */
+    async prepareBulkFetchPromptBanner() {
+        if (!state.global.settings.bulk_fetch_prompt_pending) {
+            return;
+        }
+        if (this.isBannerDismissed(BULK_FETCH_PROMPT_BANNER_ID)) {
+            return;
+        }
+        const pageType = this.getCurrentPageType();
+        if (pageType === 'recipes') {
+            return; // no bulk metadata fetch on the recipes page
+        }
+
+        let count = 0;
+        try {
+            const response = await fetch('/api/lm/metadata-fetch-candidates');
+            const data = await response.json();
+            count = (data && data.success && data.counts && data.counts[pageType]) || 0;
+        } catch (e) {
+            console.debug('Failed to fetch metadata fetch candidates:', e);
+            return;
+        }
+        if (!count) {
+            // Keep the pending flag: another page type may still have
+            // candidates, so the prompt can appear there instead.
+            return;
+        }
+
+        this.registerBanner(BULK_FETCH_PROMPT_BANNER_ID, {
+            id: BULK_FETCH_PROMPT_BANNER_ID,
+            title: translate(
+                'banners.bulkFetchPrompt.title',
+                {},
+                'Bring Your Library to Life'
+            ),
+            content: translate(
+                'banners.bulkFetchPrompt.content',
+                { count },
+                `Your first scan found ${count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.`
+            ),
+            actions: [
+                {
+                    text: translate(
+                        'banners.bulkFetchPrompt.fetch',
+                        {},
+                        'Fetch Metadata'
+                    ),
+                    icon: 'fas fa-cloud-download-alt',
+                    action: 'bulk-fetch-metadata',
+                    type: 'primary'
+                },
+                {
+                    text: translate(
+                        'banners.bulkFetchPrompt.later',
+                        {},
+                        'Maybe Later'
+                    ),
+                    icon: 'fas fa-times',
+                    action: 'dismiss',
+                    type: 'secondary'
+                }
+            ],
+            dismissible: true,
+            // Above the promotional banners (extension/community/other-models),
+            // below alert-style banners like the cache health warning.
+            priority: 3,
+            onRegister: (bannerElement) => {
+                const fetchButton = bannerElement.querySelector(
+                    '[data-action="bulk-fetch-metadata"]'
+                );
+                if (fetchButton) {
+                    fetchButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        this.handleBulkFetchPrompt(pageType).catch((error) => {
+                            console.error('Bulk metadata fetch failed:', error);
+                        });
+                    });
+                }
+
+                const laterButton = bannerElement.querySelector('[data-action="dismiss"]');
+                if (laterButton) {
+                    laterButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        this.dismissBanner(BULK_FETCH_PROMPT_BANNER_ID);
+                    });
+                }
+            }
+        });
+
+        // One-shot: once displayed, clear the backend flag so the prompt does
+        // not reappear on the next page load regardless of how it is closed.
+        this.clearBulkFetchPromptFlag();
+    }
+
+    clearBulkFetchPromptFlag() {
+        if (state.global.settings) {
+            state.global.settings.bulk_fetch_prompt_pending = false;
+        }
+        fetch('/api/lm/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bulk_fetch_prompt_pending: false })
+        }).catch((e) => {
+            console.debug('Failed to clear the bulk fetch prompt flag:', e);
+        });
+    }
+
+    async handleBulkFetchPrompt(pageType) {
+        await this.dismissBanner(BULK_FETCH_PROMPT_BANNER_ID);
+        const apiClient = getModelApiClient(pageType);
+        await apiClient.fetchCivitaiMetadata();
     }
 
     initializeCommunitySupportState() {

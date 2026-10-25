@@ -3061,6 +3061,12 @@
       "enable": "Enable Other Models",
       "openSettings": "Open Settings"
     },
+    "bulkFetchPrompt": {
+      "title": "Bring Your Library to Life",
+      "content": "Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
+      "fetch": "Fetch Metadata",
+      "later": "Maybe Later"
+    },
     "pager": {
       "previous": "Previous message",
       "next": "Next message",

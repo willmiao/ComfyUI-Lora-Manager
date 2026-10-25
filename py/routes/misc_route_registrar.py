@@ -40,6 +40,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/first-run-info", "get_first_run_info"),
     RouteDefinition("POST", "/api/lm/first-scan/start", "start_first_scan"),
     RouteDefinition("GET", "/api/lm/first-scan/start", "start_first_scan"),
+    RouteDefinition("GET", "/api/lm/metadata-fetch-candidates", "get_metadata_fetch_candidates"),
     RouteDefinition("GET", "/api/lm/supporters", "get_supporters"),
     RouteDefinition("GET", "/api/lm/wildcards/search", "search_wildcards"),
     RouteDefinition("POST", "/api/lm/wildcards/open-location", "open_wildcards_location"),

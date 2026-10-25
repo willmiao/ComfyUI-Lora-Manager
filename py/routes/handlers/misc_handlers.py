@@ -34,6 +34,10 @@ from ...services.metadata_service import (
     update_metadata_providers,
 )
 from ...services.service_registry import ServiceRegistry
+from ...services.model_scanner import PAGE_TYPE_MAP
+from ...services.use_cases.bulk_metadata_refresh_use_case import (
+    count_fetch_candidates,
+)
 from ...services.model_lifecycle_service import delete_model_artifacts
 from ...services.settings_manager import get_settings_manager
 from ...services.first_run_manager import get_first_run_manager
@@ -815,6 +819,37 @@ class HealthCheckHandler:
                 "details": "Initialization complete",
             }
         )
+
+    async def get_metadata_fetch_candidates(
+        self, request: web.Request
+    ) -> web.Response:
+        """GET /api/lm/metadata-fetch-candidates.
+
+        Count of cached models eligible for a bulk metadata fetch, per page
+        type. Backs the one-shot post-first-scan fetch prompt, so the numbers
+        must match what the refresh use case would actually process (both
+        share ``count_fetch_candidates``). Read-only: only inspects the
+        in-memory cache and never triggers a scan — a scanner without a cache
+        yet simply contributes zero. Recipes are excluded (no bulk fetch).
+        """
+        settings = get_settings_manager()
+        counts: Dict[str, int] = {}
+        for name, getter in self._active_scanner_getters().items():
+            page_type = PAGE_TYPE_MAP.get(name)
+            if page_type is None:
+                continue
+            try:
+                scanner = await getter()
+            except Exception:
+                counts[page_type] = 0
+                continue
+            cache = getattr(scanner, "_cache", None)
+            raw_data = getattr(cache, "raw_data", None) if cache is not None else None
+            if not raw_data:
+                counts[page_type] = 0
+                continue
+            counts[page_type] = count_fetch_candidates(raw_data, settings=settings)
+        return web.json_response({"success": True, "counts": counts})
 
 
 class FirstRunHandler:
@@ -4571,6 +4606,7 @@ class MiscHandlerSet:
         return {
             "health_check": self.health.health_check,
             "get_init_status": self.health.get_init_status,
+            "get_metadata_fetch_candidates": self.health.get_metadata_fetch_candidates,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,

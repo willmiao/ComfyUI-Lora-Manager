@@ -3061,6 +3061,12 @@
             "enable": "הפעל מודלים אחרים",
             "openSettings": "פתח הגדרות"
         },
+        "bulkFetchPrompt": {
+            "title": "[TODO: Translate] Bring Your Library to Life",
+            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
+            "fetch": "[TODO: Translate] Fetch Metadata",
+            "later": "[TODO: Translate] Maybe Later"
+        },
         "pager": {
             "previous": "הודעה קודמת",
             "next": "הודעה הבאה",

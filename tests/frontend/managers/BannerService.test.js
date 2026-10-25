@@ -33,7 +33,13 @@ vi.mock('../../../static/js/utils/otherModels.js', () => ({
     openOtherModelsSettings: vi.fn(),
 }));
 
+// Mock the model API factory used by the bulk fetch prompt
+vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
+    getModelApiClient: vi.fn(),
+}));
+
 import { enableOtherModels, openOtherModelsSettings } from '../../../static/js/utils/otherModels.js';
+import { getModelApiClient } from '../../../static/js/api/modelApiFactory.js';
 
 describe('BannerService', () => {
     beforeEach(() => {
@@ -297,6 +303,142 @@ describe('BannerService', () => {
                 'dismissed_banners',
                 expect.arrayContaining([OTHER_MODELS_BANNER_ID])
             );
+        });
+    });
+
+    describe('Bulk fetch prompt banner', () => {
+        const BULK_FETCH_PROMPT_BANNER_ID = 'first-scan-bulk-fetch';
+        let fetchCivitaiMetadata;
+
+        const candidatesResponse = (counts) => ({
+            json: () => Promise.resolve({ success: true, counts })
+        });
+
+        const stubFetch = (counts) => {
+            const fetchMock = vi.fn((url) => {
+                if (url === '/api/lm/metadata-fetch-candidates') {
+                    return Promise.resolve(candidatesResponse(counts));
+                }
+                return Promise.resolve({ json: () => Promise.resolve({ success: true }) });
+            });
+            vi.stubGlobal('fetch', fetchMock);
+            return fetchMock;
+        };
+
+        const prepareBanner = async ({
+            pending = true,
+            dismissed = [],
+            counts = { loras: 5, checkpoints: 0, embeddings: 0 }
+        } = {}) => {
+            state.global.settings.bulk_fetch_prompt_pending = pending;
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'dismissed_banners') {
+                    return dismissed;
+                }
+                return defaultValue;
+            });
+            const fetchMock = stubFetch(counts);
+            bannerService.container = document.getElementById('banner-container');
+            bannerService.initialized = true;
+            await bannerService.prepareBulkFetchPromptBanner();
+            return fetchMock;
+        };
+
+        const bannerElement = () =>
+            document.querySelector(`[data-banner-id="${BULK_FETCH_PROMPT_BANNER_ID}"]`);
+
+        beforeEach(() => {
+            vi.spyOn(bannerService, 'getCurrentPageType').mockReturnValue('loras');
+            fetchCivitaiMetadata = vi.fn().mockResolvedValue();
+            getModelApiClient.mockReturnValue({ fetchCivitaiMetadata });
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('stays silent when the pending flag is not set', async () => {
+            const fetchMock = await prepareBanner({ pending: false });
+
+            expect(bannerElement()).toBeNull();
+            expect(fetchMock).not.toHaveBeenCalledWith('/api/lm/metadata-fetch-candidates');
+        });
+
+        it('stays silent when the banner was dismissed before', async () => {
+            await prepareBanner({ dismissed: [BULK_FETCH_PROMPT_BANNER_ID] });
+
+            expect(bannerElement()).toBeNull();
+        });
+
+        it('stays silent on the recipes page (no bulk fetch there)', async () => {
+            bannerService.getCurrentPageType.mockReturnValue('recipes');
+
+            const fetchMock = await prepareBanner();
+
+            expect(bannerElement()).toBeNull();
+            expect(fetchMock).not.toHaveBeenCalledWith('/api/lm/metadata-fetch-candidates');
+        });
+
+        it('stays silent and keeps the flag when nothing needs fetching', async () => {
+            await prepareBanner({ counts: { loras: 0, checkpoints: 0, embeddings: 0 } });
+
+            expect(bannerElement()).toBeNull();
+            expect(state.global.settings.bulk_fetch_prompt_pending).toBe(true);
+        });
+
+        it('shows the prompt with the candidate count', async () => {
+            await prepareBanner();
+
+            const element = bannerElement();
+            expect(element).not.toBeNull();
+            expect(element.querySelector('.banner-description').textContent)
+                .toContain('5 models');
+        });
+
+        it('clears the pending flag once displayed', async () => {
+            const fetchMock = await prepareBanner();
+
+            expect(state.global.settings.bulk_fetch_prompt_pending).toBe(false);
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/api/lm/settings',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({ bulk_fetch_prompt_pending: false })
+                })
+            );
+        });
+
+        it('kicks off the bulk fetch from the primary action', async () => {
+            await prepareBanner();
+
+            const button = bannerElement().querySelector(
+                '[data-action="bulk-fetch-metadata"]'
+            );
+            expect(button).not.toBeNull();
+
+            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(getModelApiClient).toHaveBeenCalledWith('loras');
+                expect(fetchCivitaiMetadata).toHaveBeenCalledTimes(1);
+            });
+        });
+
+        it('dismisses without fetching from the secondary action', async () => {
+            await prepareBanner();
+
+            const button = bannerElement().querySelector('[data-action="dismiss"]');
+            expect(button).not.toBeNull();
+
+            button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(storageHelpers.setStorageItem).toHaveBeenCalledWith(
+                    'dismissed_banners',
+                    [BULK_FETCH_PROMPT_BANNER_ID]
+                );
+            });
+            expect(fetchCivitaiMetadata).not.toHaveBeenCalled();
         });
     });
 

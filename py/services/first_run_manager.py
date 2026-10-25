@@ -305,6 +305,13 @@ class FirstRunManager:
                 await self._preset_empty_caches()
                 return {"status": "deferred"}
 
+            # Arm the post-scan "fetch metadata" prompt so the frontend can
+            # offer a one-click bulk fetch once this first scan finishes.
+            # Upgrade shortcuts (check_and_mark_upgrade) and the defer path
+            # skip this: those users either already have metadata or have no
+            # fresh scan to anchor the prompt to.
+            self._settings.set("bulk_fetch_prompt_pending", True)
+
             self._scan_in_progress = True
             try:
                 tasks = await self._launch_scan()

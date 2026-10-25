@@ -3005,6 +3005,41 @@ async def test_get_init_status_reports_scanner_errors():
     assert payload["status"] == "initializing"
 
 
+async def test_get_metadata_fetch_candidates_counts_eligible_models():
+    async def lora_scanner():
+        return SimpleNamespace(
+            _cache=SimpleNamespace(
+                raw_data=[
+                    {"folder": ""},  # candidate: no metadata yet
+                    {"folder": "", "civitai": {"id": 1}},  # already fetched
+                    {"folder": "", "skip_metadata_refresh": True},  # opted out
+                ]
+            ),
+        )
+
+    async def no_cache_scanner():
+        return SimpleNamespace(_cache=None)
+
+    async def recipe_scanner():
+        return SimpleNamespace(_cache=SimpleNamespace(raw_data=[{"folder": ""}]))
+
+    handler = HealthCheckHandler(
+        scanner_getters={
+            "lora": lora_scanner,
+            "checkpoint": no_cache_scanner,
+            "recipe": recipe_scanner,
+        }
+    )
+
+    response = await handler.get_metadata_fetch_candidates(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    assert payload["counts"] == {"loras": 1, "checkpoints": 0}
+    # Recipes have no bulk metadata fetch, so they are never reported.
+    assert "recipes" not in payload["counts"]
+
+
 class StaticMetadataProvider:
     """Metadata provider returning one fixed CivitAI model payload."""
 

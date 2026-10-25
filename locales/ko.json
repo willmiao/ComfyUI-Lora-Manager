@@ -3061,6 +3061,12 @@
             "enable": "기타 모델 활성화",
             "openSettings": "설정 열기"
         },
+        "bulkFetchPrompt": {
+            "title": "[TODO: Translate] Bring Your Library to Life",
+            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
+            "fetch": "[TODO: Translate] Fetch Metadata",
+            "later": "[TODO: Translate] Maybe Later"
+        },
         "pager": {
             "previous": "이전 알림",
             "next": "다음 알림",

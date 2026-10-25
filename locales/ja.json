@@ -3061,6 +3061,12 @@
             "enable": "その他のモデルを有効にする",
             "openSettings": "設定を開く"
         },
+        "bulkFetchPrompt": {
+            "title": "[TODO: Translate] Bring Your Library to Life",
+            "content": "[TODO: Translate] Your first scan found {count} models without metadata. Fetch their info from CivitAI to get preview images, descriptions, and trigger words.",
+            "fetch": "[TODO: Translate] Fetch Metadata",
+            "later": "[TODO: Translate] Maybe Later"
+        },
         "pager": {
             "previous": "前の通知",
             "next": "次の通知",

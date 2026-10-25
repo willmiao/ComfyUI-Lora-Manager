@@ -19,6 +19,72 @@ class MetadataRefreshProgressReporter(Protocol):
         """Handle a metadata refresh progress update."""
 
 
+def _is_in_skip_path(folder: str, skip_paths: Sequence[str]) -> bool:
+    if not skip_paths or not folder:
+        return False
+    normalized = folder.replace("\\", "/").strip("/")
+    if not normalized:
+        return False
+    for sp in skip_paths:
+        nsp = sp.replace("\\", "/").strip("/")
+        if not nsp:
+            continue
+        if normalized == nsp or normalized.startswith(nsp + "/"):
+            return True
+    return False
+
+
+def is_fetch_candidate(
+    model: Dict[str, Any],
+    *,
+    skip_paths: Sequence[str],
+    enable_metadata_archive_db: bool,
+) -> bool:
+    """Whether a cached model qualifies for a bulk metadata fetch.
+
+    Shared by the refresh itself and the count endpoint behind the
+    post-first-scan fetch prompt, so the advertised number matches what a
+    fetch would actually process.
+    """
+    if model.get("skip_metadata_refresh", False):
+        return False
+    if _is_in_skip_path(model.get("folder", ""), skip_paths):
+        return False
+    if model.get("civitai") and model["civitai"].get("id"):
+        return False
+    # Skip models linked to an external model site (Hugging Face /
+    # ModelScope / TensorArt) — they are not on CivitAI / CivArchive.
+    # Users can still refresh them individually via the right-click
+    # context menu.
+    if has_external_source(model):
+        return False
+    # Skip models confirmed not on CivitAI when no need to retry.
+    if (
+        model.get("from_civitai") is False
+        and model.get("civitai_deleted") is True
+        and (not enable_metadata_archive_db or model.get("db_checked", False))
+    ):
+        return False
+    return True
+
+
+def count_fetch_candidates(
+    raw_data: Sequence[Dict[str, Any]], *, settings: Any
+) -> int:
+    """Count cached models eligible for a bulk metadata fetch."""
+    skip_paths = settings.get("metadata_refresh_skip_paths", [])
+    enable_metadata_archive_db = settings.get("enable_metadata_archive_db", False)
+    return sum(
+        1
+        for model in raw_data
+        if is_fetch_candidate(
+            model,
+            skip_paths=skip_paths,
+            enable_metadata_archive_db=enable_metadata_archive_db,
+        )
+    )
+
+
 class BulkMetadataRefreshUseCase:
     """Coordinate bulk metadata refreshes with progress emission."""
 
@@ -50,22 +116,10 @@ class BulkMetadataRefreshUseCase:
         eligible: Sequence[Dict[str, Any]] = [
             model
             for model in cache.raw_data
-            if not model.get("skip_metadata_refresh", False)
-            and not self._is_in_skip_path(model.get("folder", ""), skip_paths)
-            and (not model.get("civitai") or not model["civitai"].get("id"))
-            # Skip models linked to an external model site (Hugging Face /
-            # ModelScope / TensorArt) — they are not on CivitAI / CivArchive.
-            # Users can still refresh them individually via the right-click
-            # context menu.
-            and not has_external_source(model)
-            and not (
-                # Skip models confirmed not on CivitAI when no need to retry
-                model.get("from_civitai") is False
-                and model.get("civitai_deleted") is True
-                and (
-                    not enable_metadata_archive_db
-                    or model.get("db_checked", False)
-                )
+            if is_fetch_candidate(
+                model,
+                skip_paths=skip_paths,
+                enable_metadata_archive_db=enable_metadata_archive_db,
             )
         ]
 
@@ -318,21 +372,6 @@ class BulkMetadataRefreshUseCase:
         return any(
             _path_matches_prefix(file_path, root["prefix"]) for root in offline_roots
         )
-
-    @staticmethod
-    def _is_in_skip_path(folder: str, skip_paths: List[str]) -> bool:
-        if not skip_paths or not folder:
-            return False
-        normalized = folder.replace("\\", "/").strip("/")
-        if not normalized:
-            return False
-        for sp in skip_paths:
-            nsp = sp.replace("\\", "/").strip("/")
-            if not nsp:
-                continue
-            if normalized == nsp or normalized.startswith(nsp + "/"):
-                return True
-        return False
 
     async def execute_with_error_handling(
         self,
