@@ -122,6 +122,29 @@ def test_save_image_appends_loras_to_prompt_when_enabled(monkeypatch, tmp_path):
         )
 
 
+def test_save_image_applies_wired_metadata_overwrite(monkeypatch, tmp_path):
+    """A metadata dict wired from a Metadata Overwrite node overrides the
+    collected metadata for this Save node only."""
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "auto prompt", "seed": 123})
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()],
+        "ComfyUI",
+        "png",
+        id="node-1",
+        metadata={"prompt": "wired prompt", "model": "wired_model.safetensors"},
+    )
+
+    image_path = tmp_path / "sample_00001_.png"
+    with Image.open(image_path) as img:
+        parameters = img.info["parameters"]
+    assert parameters.startswith("wired prompt")
+    assert "Seed: 123" in parameters
+    assert "Model: wired_model" in parameters
+
+
 def test_save_image_skips_jpeg_metadata_when_disabled(monkeypatch, tmp_path):
     _configure_save_paths(monkeypatch, tmp_path)
     _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
@@ -590,8 +613,8 @@ class TestParameterDefaultConsistency:
         assert widget_spec[1]["default"] == 6
         save_defaults = cast(tuple[Any, ...], SaveImageLM.save_images.__defaults__ or ())
         process_defaults = cast(tuple[Any, ...], SaveImageLM.process_image.__defaults__ or ())
-        assert save_defaults[4] == 6  # positional: webp_method=6 is at index 4
-        assert process_defaults[6] == 6
+        assert save_defaults[5] == 6  # positional: webp_method=6 is at index 5
+        assert process_defaults[7] == 6
 
     def test_jpeg_subsampling_defaults_are_consistent(self):
         input_types = SaveImageLM.INPUT_TYPES()
@@ -601,8 +624,8 @@ class TestParameterDefaultConsistency:
         assert widget_spec[1]["default"] == 0
         save_defaults = cast(tuple[Any, ...], SaveImageLM.save_images.__defaults__ or ())
         process_defaults = cast(tuple[Any, ...], SaveImageLM.process_image.__defaults__ or ())
-        assert save_defaults[5] == 0
-        assert process_defaults[7] == 0
+        assert save_defaults[6] == 0
+        assert process_defaults[8] == 0
 
     def test_add_loras_to_prompt_defaults_are_consistent(self):
         input_types = SaveImageLM.INPUT_TYPES()

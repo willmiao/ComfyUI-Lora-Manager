@@ -754,16 +754,17 @@ class MetadataProcessor:
             params["clip_skip"] = "1"
 
         # ---- Apply manual metadata overwrites ----
-        for overwrite_info in metadata.get(OVERWRITE, {}).values():
-            overwrite_params = overwrite_info.get("parameters", {})
-            for key, value in overwrite_params.items():
-                if key == "clip_skip":
-                    # Accept any value from overwrite node (sentinel -25 already
-                    # filtered upstream).  Needed because falsy check treats 0
-                    # as "not set" even though 0 is a valid wired input here.
-                    params[key] = value
-                elif value:  # truthy check — only overwrite when user provided a real value
-                    params[key] = value
+        # Overwrite nodes whose METADATA output is wired into a Save Image node
+        # are scoped to that connection and applied by the save node itself;
+        # they must not leak into the global merge below (which is the legacy
+        # behavior for unwired overwrite nodes).
+        wired_overwrite_ids = MetadataProcessor._get_wired_overwrite_node_ids(metadata)
+        for node_id, overwrite_info in metadata.get(OVERWRITE, {}).items():
+            if node_id in wired_overwrite_ids:
+                continue
+            MetadataProcessor.apply_overwrite_params(
+                params, overwrite_info.get("parameters", {})
+            )
 
         # Bridge: the overwrite node exposes the field as "model" (more accurate),
         # but the internal pipeline key remains "checkpoint" for backward compatibility
@@ -773,6 +774,60 @@ class MetadataProcessor:
             del params["model"]
 
         return params
+
+    @staticmethod
+    def apply_overwrite_params(params, overwrite_params):
+        """Merge overwrite-node parameters over extracted params.
+
+        clip_skip accepts any value (the sentinel -25 is already filtered
+        upstream) because the falsy check would treat a wired 0 as "not set";
+        every other field only overwrites when truthy.
+        """
+        for key, value in overwrite_params.items():
+            if key == "clip_skip":
+                params[key] = value
+            elif value:
+                params[key] = value
+
+        # Bridge: the overwrite node exposes the field as "model" (more
+        # accurate), but the internal pipeline key remains "checkpoint" for
+        # backward compatibility with A1111 metadata format and downstream
+        # consumers.
+        if params.get("model"):
+            params["checkpoint"] = params["model"]
+            del params["model"]
+
+        return params
+
+    @staticmethod
+    def _get_wired_overwrite_node_ids(metadata):
+        """Return IDs of overwrite nodes whose METADATA output is wired into a
+        Save Image (LoraManager) node in the current prompt graph."""
+        overwrite = metadata.get(OVERWRITE, {})
+        if not overwrite:
+            return set()
+
+        prompt = metadata.get("current_prompt")
+        original_prompt = getattr(prompt, "original_prompt", None) if prompt else None
+        if not original_prompt:
+            return set()
+
+        wired_ids = set()
+        for node_data in original_prompt.values():
+            if not isinstance(node_data, dict):
+                continue
+            class_type = node_data.get("class_type", "")
+            if class_type not in ("Save Image (LoraManager)", "SaveImageLM"):
+                continue
+            for input_value in node_data.get("inputs", {}).values():
+                # Input connections are formatted as [node_id, output_index]
+                if (
+                    isinstance(input_value, list)
+                    and len(input_value) >= 2
+                    and str(input_value[0]) in overwrite
+                ):
+                    wired_ids.add(str(input_value[0]))
+        return wired_ids
     
     @staticmethod
     def to_dict(metadata, id=None):

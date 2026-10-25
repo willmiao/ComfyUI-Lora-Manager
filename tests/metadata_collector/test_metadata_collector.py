@@ -1603,6 +1603,83 @@ def test_extract_generation_params_applies_overwrite(metadata_registry, populate
     registry_obj.clear_metadata()
 
 
+def test_extract_generation_params_skips_wired_overwrite(metadata_registry, populated_registry, monkeypatch):
+    """An overwrite node wired into a Save Image node is scoped to that
+    connection and must not leak into the global overwrite merge."""
+    import py.metadata_collector.metadata_processor as mp
+
+    monkeypatch.setattr(mp, "standalone_mode", False)
+
+    metadata = populated_registry["metadata"]
+    registry_obj = populated_registry["registry"]
+
+    # Prompt graph: a Save node whose metadata input is wired to ow-wired,
+    # plus a second, unconnected overwrite node.
+    prompt_graph = dict(populated_registry["prompt"].original_prompt)
+    prompt_graph["ow-wired"] = {
+        "class_type": "Metadata Overwrite (LoraManager)",
+        "inputs": {},
+    }
+    prompt_graph["ow-global"] = {
+        "class_type": "Metadata Overwrite (LoraManager)",
+        "inputs": {},
+    }
+    prompt_graph["save"] = {
+        "class_type": "Save Image (LoraManager)",
+        "inputs": {"images": ["vae", 0], "metadata": ["ow-wired", 0]},
+    }
+
+    registry_obj.start_collection("promptA")
+    registry_obj.set_current_prompt(SimpleNamespace(original_prompt=prompt_graph))
+    metadata2 = registry_obj.prompt_metadata["promptA"]
+
+    metadata2[OVERWRITE] = {
+        "ow-wired": {
+            "parameters": {"prompt": "stage two prompt"},
+            "node_id": "ow-wired",
+        },
+        "ow-global": {
+            "parameters": {"seed": 777},
+            "node_id": "ow-global",
+        },
+    }
+    for cat in ("models", "prompts", "sampling", "loras", "size", "images"):
+        if cat in metadata:
+            metadata2[cat] = metadata[cat]
+    metadata2["execution_order"] = metadata["execution_order"]
+
+    params = MetadataProcessor.extract_generation_params(metadata2, id="vae")
+
+    # Unwired overwrite still applies globally
+    assert params["seed"] == 777
+    # Wired overwrite must NOT leak into the global merge
+    assert params["prompt"] == "A castle on a hill"
+
+    registry_obj.clear_metadata()
+
+
+def test_apply_overwrite_params_bridges_model_to_checkpoint():
+    """The shared merge helper applies truthy values, keeps wired clip_skip=0,
+    and bridges the overwrite node's "model" field to "checkpoint"."""
+    params = {"prompt": "auto", "checkpoint": "auto.safetensors", "clip_skip": "1"}
+
+    result = MetadataProcessor.apply_overwrite_params(
+        params,
+        {
+            "prompt": "manual prompt",
+            "model": "wired_model.safetensors",
+            "seed": 0,  # falsy — must not overwrite
+            "clip_skip": 0,  # valid wired value — must overwrite
+        },
+    )
+
+    assert result["prompt"] == "manual prompt"
+    assert result["checkpoint"] == "wired_model.safetensors"
+    assert "model" not in result
+    assert result["clip_skip"] == 0
+    assert "seed" not in result
+
+
 def test_extract_generation_params_overwrite_falsy_skipped(metadata_registry, populated_registry, monkeypatch):
     """Overwrite entries with falsy values should NOT replace inferred params."""
     import py.metadata_collector.metadata_processor as mp

@@ -19,7 +19,9 @@ class MetadataOverwriteLM:
     DESCRIPTION = (
         "Manually specify generation parameters to override automatically collected "
         "metadata. Only filled/connected inputs will take effect — empty defaults "
-        "are ignored."
+        "are ignored. Wire the metadata output into a Save Image (LoraManager) node "
+        "to scope the override to that Save node; when left unconnected, the "
+        "override applies to every image saved in the run."
     )
 
     @classmethod
