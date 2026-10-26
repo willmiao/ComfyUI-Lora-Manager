@@ -40,6 +40,14 @@ CIVITAI_SAMPLER_MAP = {
     "lcm": "LCM",
 }
 
+# Civitai infers the image's "Tools" field from a lowercase `engine` detail key
+# when the image is uploaded: post.addImage resolves it with getToolByAlias /
+# getToolByName, and a Tool named "ComfyUI" exists, so this value tags every
+# saved image as ComfyUI. Techniques are intentionally NOT written: the detail
+# keys are `process`/`type`/`workflow` and the graph alone cannot tell txt2img
+# from img2img reliably, while a wrong value is user-visible on Civitai.
+CIVITAI_ENGINE = "ComfyUI"
+
 # Base model display name → AIR URN slug
 # Sourced from civitai source: src/shared/constants/basemodel.constants.ts
 BASE_MODEL_AIR_SLUG = {
@@ -497,6 +505,10 @@ class SaveImageLM:
                 params.append(f"Clip skip: {abs(int(clip_skip))}")
             except (ValueError, TypeError):
                 pass
+        # Tells Civitai which Tool generated the image. Emitted before
+        # additional_data on purpose: duplicate detail keys are last-one-wins,
+        # so a user-supplied `engine:` in additional_data still overrides this.
+        params.append(f"engine: {CIVITAI_ENGINE}")
         additional_data = metadata_dict.get("additional_data", "")
         if additional_data:
             params.append(additional_data)
