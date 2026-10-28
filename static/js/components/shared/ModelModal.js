@@ -505,11 +505,19 @@ export async function showModelModal(model, modelType) {
     // standalone mode: there is no running ComfyUI graph to push into.
     const hideSendButton = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
     if (!hideSendButton) {
-        const sendToWorkflowTitle = translate('modals.model.actions.sendToWorkflow', {}, 'Send to ComfyUI');
+        // Workflows load a whole graph document, so the action reads "Open";
+        // model types that insert into the current graph keep "Send".
+        const isWorkflow = modelType === MODEL_TYPES.WORKFLOW;
+        const sendToWorkflowTitle = isWorkflow
+            ? translate('workflows.contextMenu.sendToComfy', {}, 'Open in ComfyUI')
+            : translate('modals.model.actions.sendToWorkflow', {}, 'Send to ComfyUI');
+        const sendToWorkflowText = isWorkflow
+            ? translate('workflows.contextMenu.sendToComfy', {}, 'Open in ComfyUI')
+            : translate('modals.model.actions.sendToWorkflowText', {}, 'Send to ComfyUI');
         const sendToWorkflowButton = `
         <button class="modal-send-btn" data-action="send-to-workflow" data-model-type="${modelType}" title="${sendToWorkflowTitle}">
             <i class="fas fa-paper-plane"></i>
-            <span>${translate('modals.model.actions.sendToWorkflowText', {}, 'Send to ComfyUI')}</span>
+            <span>${sendToWorkflowText}</span>
         </button>
     `.trim();
         headerActionItems.push(indentMarkup(sendToWorkflowButton, 20));
