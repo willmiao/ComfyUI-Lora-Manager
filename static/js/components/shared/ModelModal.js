@@ -22,6 +22,7 @@ import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForModel } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
+import { sendWorkflowToComfy } from '../../utils/workflowActions.js';
 import { state } from '../../state/index.js';
 
 function getModalFilePath(fallback = '') {
@@ -499,16 +500,20 @@ export async function showModelModal(model, modelType) {
         ].join('\n')
         : '';
     const headerActionItems = [];
-    
-    // Add send to ComfyUI button for all model types
-    const sendToWorkflowTitle = translate('modals.model.actions.sendToWorkflow', {}, 'Send to ComfyUI');
-    const sendToWorkflowButton = `
+
+    // Add send to ComfyUI button for all model types. Workflows hide it in
+    // standalone mode: there is no running ComfyUI graph to push into.
+    const hideSendButton = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
+    if (!hideSendButton) {
+        const sendToWorkflowTitle = translate('modals.model.actions.sendToWorkflow', {}, 'Send to ComfyUI');
+        const sendToWorkflowButton = `
         <button class="modal-send-btn" data-action="send-to-workflow" data-model-type="${modelType}" title="${sendToWorkflowTitle}">
             <i class="fas fa-paper-plane"></i>
             <span>${translate('modals.model.actions.sendToWorkflowText', {}, 'Send to ComfyUI')}</span>
         </button>
     `.trim();
-    headerActionItems.push(indentMarkup(sendToWorkflowButton, 20));
+        headerActionItems.push(indentMarkup(sendToWorkflowButton, 20));
+    }
     
     if (creatorActionsMarkup) {
         headerActionItems.push(creatorActionsMarkup);
@@ -1524,6 +1529,9 @@ async function handleSendToWorkflow(target, modelType) {
         const name = currentFileName.replace(/\.[^.]+$/, '');
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         await sendEmbeddingToWorkflow(embeddingCode);
+    } else if (modelType === MODEL_TYPES.WORKFLOW) {
+        // Workflow send loads the whole graph document into ComfyUI.
+        await sendWorkflowToComfy(filePath);
     }
 }
 

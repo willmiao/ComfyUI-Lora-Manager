@@ -156,7 +156,9 @@
             "embeddingNameCopied": "已复制 Embedding 语法",
             "modelNameCopied": "模型名称已复制",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
-            "sendEmbeddingToWorkflow": "发送到 ComfyUI"
+            "sendEmbeddingToWorkflow": "发送到 ComfyUI",
+            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
         },
         "nsfw": {
             "matureContent": "成熟内容",

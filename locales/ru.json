@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Синтаксис embedding скопирован",
             "modelNameCopied": "Имя модели скопировано",
             "sendCheckpointToWorkflow": "Отправить в ComfyUI",
-            "sendEmbeddingToWorkflow": "Отправить в ComfyUI"
+            "sendEmbeddingToWorkflow": "Отправить в ComfyUI",
+            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
         },
         "nsfw": {
             "matureContent": "Контент для взрослых",

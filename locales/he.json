@@ -156,7 +156,9 @@
             "embeddingNameCopied": "תחביר Embedding הועתק",
             "modelNameCopied": "שם המודל הועתק",
             "sendCheckpointToWorkflow": "שלח ל-ComfyUI",
-            "sendEmbeddingToWorkflow": "שלח ל-ComfyUI"
+            "sendEmbeddingToWorkflow": "שלח ל-ComfyUI",
+            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
         },
         "nsfw": {
             "matureContent": "תוכן למבוגרים",

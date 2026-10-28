@@ -3,7 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
-import { copyToClipboard, showToast } from '../../utils/uiHelpers.js';
+import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workflowActions.js';
 import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
@@ -47,10 +47,10 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 this.currentCard.click();
                 break;
             case 'send-to-comfy':
-                this.sendToComfy(this.currentCard.dataset.filepath);
+                sendWorkflowToComfy(this.currentCard.dataset.filepath);
                 break;
             case 'copy-workflow':
-                this.copyWorkflowToClipboard(this.currentCard.dataset.filepath);
+                copyWorkflowToClipboard(this.currentCard.dataset.filepath);
                 break;
             case 'replace-preview':
                 // Add new action for replacing preview images
@@ -82,23 +82,7 @@ export class WorkflowContextMenu extends BaseContextMenu {
     }
 
     async sendToComfy(filePath) {
-        try {
-            await getModelApiClient().sendToComfy(filePath);
-            showToast('workflows.sendToComfy.success', {}, 'success');
-        } catch (error) {
-            console.error('Failed to send workflow to ComfyUI:', error);
-            showToast('workflows.sendToComfy.failed', { message: error.message }, 'error');
-        }
-    }
-
-    async copyWorkflowToClipboard(filePath) {
-        try {
-            const workflow = await getModelApiClient().fetchWorkflowContent(filePath);
-            await copyToClipboard(JSON.stringify(workflow));
-        } catch (error) {
-            console.error('Failed to copy workflow:', error);
-            showToast('workflows.copyWorkflow.failed', { message: error.message }, 'error');
-        }
+        await sendWorkflowToComfy(filePath);
     }
 }
 

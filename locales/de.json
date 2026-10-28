@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Embedding-Syntax kopiert",
             "modelNameCopied": "Modellname kopiert",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
-            "sendEmbeddingToWorkflow": "An ComfyUI senden"
+            "sendEmbeddingToWorkflow": "An ComfyUI senden",
+            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
         },
         "nsfw": {
             "matureContent": "Nicht jugendfreie Inhalte",

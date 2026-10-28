@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Embedding構文をコピーしました",
             "modelNameCopied": "モデル名をコピーしました",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
-            "sendEmbeddingToWorkflow": "ComfyUIに送信"
+            "sendEmbeddingToWorkflow": "ComfyUIに送信",
+            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
         },
         "nsfw": {
             "matureContent": "成人向けコンテンツ",
