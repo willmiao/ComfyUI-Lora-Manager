@@ -1477,6 +1477,7 @@ export class DownloadManager {
         suppressSuccessToast = false,
         suppressFailureSummary = false,
         isLatestVersion = null,
+        wasLocallyOwned = null,
     }) {
         const config = this.apiClient?.apiConfig?.config;
 
@@ -1485,7 +1486,7 @@ export class DownloadManager {
         }
 
         const displayName = versionName || `#${versionId}`;
-        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false, deferReload, suppressSuccessToast, suppressFailureSummary, isLatestVersion };
+        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false, deferReload, suppressSuccessToast, suppressFailureSummary, isLatestVersion, wasLocallyOwned };
         this._lastDownloadError = null;
         let ws = null;
         let updateProgress = () => { };
@@ -1640,6 +1641,7 @@ export class DownloadManager {
                 await this._reconcileViewAfterDownload({
                     modelId,
                     isLatestVersion: isLatestVersion ?? this._isDownloadingLatestVersion(versionId),
+                    wasLocallyOwned,
                 });
             }
 
@@ -1696,9 +1698,10 @@ export class DownloadManager {
      *   (the update flag is model-level, so every visible card of the
      *   model disappears at once).
      * - Normal listing: the card stays; only the update flag is cleared.
-     * - The model is not in the current view (different folder / filter /
-     *   window): nothing changes, which also covers brand-new models whose
-     *   card did not exist before.
+     * - An owned model outside the current view (different folder / filter /
+     *   window): nothing changes.
+     * - A brand-new model has no card to reconcile in place, so the listing
+     *   falls back to the legacy reload to make the new card visible.
      *
      * The sidebar folder tree is refreshed separately so folder counts
      * stay accurate without touching the model listing or scroll position.
@@ -1712,9 +1715,14 @@ export class DownloadManager {
      * @param {boolean} [opts.refreshSidebar=true] Whether to refresh the
      *   sidebar folder tree afterwards (batch callers batch this into a
      *   single refresh).
+     * @param {boolean|null} [opts.wasLocallyOwned=null] Whether any version
+     *   of the model was already in the library before this download. Only
+     *   an explicit true keeps the no-op for a model outside the current
+     *   view; false (brand-new) and null (unknown) reload the listing so a
+     *   new card can appear.
      * @returns {Promise<boolean>} True when an in-place update was applied.
      */
-    async _reconcileViewAfterDownload({ modelId, isLatestVersion = true, refreshSidebar = true } = {}) {
+    async _reconcileViewAfterDownload({ modelId, isLatestVersion = true, refreshSidebar = true, wasLocallyOwned = null } = {}) {
         const scroller = state?.virtualScroller;
         const items = Array.isArray(scroller?.items) ? scroller.items : [];
 
@@ -1738,8 +1746,15 @@ export class DownloadManager {
         });
 
         if (matches.length === 0) {
-            // Downloaded model is not visible in the current view — keep the
-            // listing untouched, only refresh folder counts.
+            // No card of this model is visible. A brand-new model (or one
+            // whose ownership is unknown) has no card anywhere in the
+            // listing to reconcile in place — fall back to the legacy
+            // reload so the new card becomes visible. An owned model that
+            // merely sits outside the current view keeps the no-op (#1078).
+            if (wasLocallyOwned !== true) {
+                await resetAndReload(true);
+                return true;
+            }
             await this._refreshSidebarAfterReconcile(refreshSidebar);
             return false;
         }
@@ -1792,6 +1807,7 @@ export class DownloadManager {
                 modelId,
                 isLatestVersion: this._isVersionLatest(item.selectedVersion?.id, item.versions),
                 refreshSidebar: false,
+                wasLocallyOwned: this._computeWasLocallyOwned(item.versions),
             });
         }
         await this._refreshSidebarAfterReconcile(true);
@@ -1849,6 +1865,19 @@ export class DownloadManager {
     /** True when the currently selected version is the newest remote one. */
     _isDownloadingLatestVersion(versionId) {
         return this._isVersionLatest(versionId, this.versions);
+    }
+
+    /**
+     * Whether any version of the model was already in the library before
+     * the download, derived from the `existsLocally` flags of the version
+     * list the modal fetched up front. Returns null when no version list is
+     * available (callers outside the modal flow).
+     */
+    _computeWasLocallyOwned(versions) {
+        if (!Array.isArray(versions) || versions.length === 0) {
+            return null;
+        }
+        return versions.some(version => version && version.existsLocally === true);
     }
 
     /**
@@ -1937,6 +1966,7 @@ export class DownloadManager {
             await this._reconcileViewAfterDownload({
                 modelId: this.modelId,
                 isLatestVersion: this._isDownloadingLatestVersion(this.currentVersion?.id),
+                wasLocallyOwned: this._computeWasLocallyOwned(this.versions),
             });
         }
         return failedItems.length === 0;
@@ -2521,6 +2551,7 @@ export class DownloadManager {
                 source: this.source,
                 fileParams,
                 closeModal: true,
+                wasLocallyOwned: this._computeWasLocallyOwned(this.versions),
             });
         }
 
