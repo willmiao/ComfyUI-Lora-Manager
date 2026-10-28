@@ -76,6 +76,7 @@ I'm incredibly grateful to everyone who has supported the development of this pr
   - Model descriptions and version selection
   - Trigger words at a glance
   - One-click workflow integration with preset values
+  - Automatic block remapping for legacy Anima LoRAs on Anima 2.9B / 3.8B ([details](docs/anima-lora-compat.md))
   
 - 🔄 **Checkpoint Management**
   - Scan and organize checkpoint models
@@ -333,6 +334,7 @@ npm run test:coverage
 ## Documentation
 
 - **[metadata.json Schema Documentation](docs/metadata-json-schema.md)** — Complete reference for the `.metadata.json` sidecar file format, including all fields, types, and examples for LoRA, Checkpoint, and Embedding models.
+- **[Anima LoRA Block Compatibility](docs/anima-lora-compat.md)** — How legacy 28-block Anima LoRAs are remapped for Anima 2.9B / 3.8B, and how to disable it.
 
 ---
 

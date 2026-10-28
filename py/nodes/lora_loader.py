@@ -5,6 +5,7 @@ import os
 import comfy.sd  # pyright: ignore[reportMissingImports]
 import comfy.utils  # pyright: ignore[reportMissingImports]
 
+from ..utils.lora_compat import LoraCompatibilityError, prepare_lora
 from ..utils.utils import get_lora_info_absolute
 from .utils import (
     FlexibleOptionalInputType,
@@ -12,6 +13,7 @@ from .utils import (
     apply_lora_syntax_format,
     detect_nunchaku_model_kind,
     extract_lora_name,
+    get_anima_lora_remap_enabled,
     get_loras_list,
     nunchaku_load_lora,
     parse_lora_syntax,
@@ -84,6 +86,23 @@ def _format_loaded_loras(loaded_loras):
     return " ".join(formatted_loras)
 
 
+def _prepare_lora(lora, model, name):
+    """Run model-family compatibility adapters before ComfyUI loads the LoRA."""
+    try:
+        remapped, report = prepare_lora(lora, model, name=name)
+    except LoraCompatibilityError:
+        raise
+    except Exception:
+        logger.exception(
+            "LoRA compatibility preparation failed; loading %s unchanged", name
+        )
+        return lora
+
+    if report:
+        logger.info("%s", report)
+    return remapped
+
+
 def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
     loaded_loras = []
     all_trigger_words = []
@@ -104,11 +123,15 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             model = nunchaku_load_qwen_loras(model, qwen_lora_configs)
         return model, clip, loaded_loras, all_trigger_words
 
+    anima_remap_enabled = get_anima_lora_remap_enabled()
+
     for entry in lora_entries:
         if nunchaku_model_kind == "flux":
             model = nunchaku_load_lora(model, entry["input_path"], entry["model_strength"])
         else:
             lora = comfy.utils.load_torch_file(entry["absolute_path"], safe_load=True)
+            if anima_remap_enabled:
+                lora = _prepare_lora(lora, model, entry["name"])
             model, clip = comfy.sd.load_lora_for_models(
                 model,
                 clip,

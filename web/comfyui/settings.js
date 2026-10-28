@@ -32,6 +32,9 @@ const TAG_SPACE_REPLACEMENT_DEFAULT = false;
 const USAGE_STATISTICS_SETTING_ID = "loramanager.usage_statistics";
 const USAGE_STATISTICS_DEFAULT = true;
 
+const ANIMA_LORA_BLOCK_REMAP_SETTING_ID = "loramanager.anima_lora_block_remap";
+const ANIMA_LORA_BLOCK_REMAP_DEFAULT = true;
+
 const NEW_TAB_TEMPLATE_ID = "loramanager.new_tab_template";
 const NEW_TAB_TEMPLATE_DEFAULT = "Default";
 
@@ -191,6 +194,46 @@ const setLoraManagerSettingValue = async (settingId, value) => {
     }
 
     return false;
+};
+
+// The Anima remap toggle lives in ComfyUI's settings (it controls a node's
+// behavior), but the value the Python loader reads is stored in LoRA Manager's
+// settings API. Keep the two in sync: pull the backend value on startup, push
+// user changes back to the backend, and ignore the change event fired by the
+// initial sync.
+let animaLoraBlockRemapSynced = false;
+
+const persistAnimaLoraBlockRemap = async (value) => {
+    try {
+        const response = await fetch(lmUrl("/api/lm/settings"), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ anima_lora_block_remap: value }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.warn("LoRA Manager: failed to persist Anima LoRA block remap setting", error);
+    }
+};
+
+const syncAnimaLoraBlockRemapFromBackend = async () => {
+    try {
+        const response = await fetch(lmUrl("/api/lm/settings"));
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const value = data?.settings?.anima_lora_block_remap !== false;
+        await setLoraManagerSettingValue(ANIMA_LORA_BLOCK_REMAP_SETTING_ID, value);
+    } catch (error) {
+        console.warn("LoRA Manager: failed to sync Anima LoRA block remap setting", error);
+    } finally {
+        animaLoraBlockRemapSynced = true;
+    }
 };
 
 const getAutocompleteAppendCommaPreference = (() => {
@@ -500,6 +543,20 @@ app.registerExtension({
             category: ["LoRA Manager", "Statistics", "Usage Tracking"],
         },
         {
+            id: ANIMA_LORA_BLOCK_REMAP_SETTING_ID,
+            name: "Legacy Anima LoRA block remap",
+            type: "boolean",
+            defaultValue: ANIMA_LORA_BLOCK_REMAP_DEFAULT,
+            tooltip: "Automatically remap LoRA block indices when an older Anima LoRA is loaded on Anima 2.9B (40 blocks) or 3.8B (52 blocks). Turn off to load the file unchanged.",
+            category: ["LoRA Manager", "LoRA Loader", "Anima Block Remap"],
+            onChange: async (value) => {
+                if (!animaLoraBlockRemapSynced) {
+                    return;
+                }
+                await persistAnimaLoraBlockRemap(value);
+            },
+        },
+        {
             id: NEW_TAB_TEMPLATE_ID,
             name: "New Tab Template Workflow",
             type: "combo",
@@ -524,6 +581,7 @@ app.registerExtension({
     ],
     async setup() {
         await loadWorkflowOptions();
+        await syncAnimaLoraBlockRemapFromBackend();
 
         const originalNewBlankWorkflow = async () => {
             const blankGraph = {

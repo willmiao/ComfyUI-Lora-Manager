@@ -156,6 +156,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
     "lora_syntax_format": "legacy",
+    # Remap legacy 28-block Anima LoRA keys onto the block layout of the
+    # connected Anima 2.9B (40) or 3.8B (52) model. Enabled by default because
+    # the raw LoRA otherwise lands on the wrong layers without any warning.
+    "anima_lora_block_remap": True,
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
     "show_quantization_on_card": True,

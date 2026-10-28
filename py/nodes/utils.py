@@ -58,6 +58,19 @@ def get_lora_syntax_format():
         return "legacy"
 
 
+def get_anima_lora_remap_enabled() -> bool:
+    """Return whether legacy Anima LoRA block remapping is enabled."""
+    try:
+        from ..services.settings_manager import get_settings_manager
+        value = get_settings_manager().get("anima_lora_block_remap", True)
+    except Exception:
+        return True
+
+    if isinstance(value, str):
+        return value.strip().lower() not in ("0", "false", "off", "no", "disabled")
+    return bool(value)
+
+
 def apply_lora_syntax_format(name):
     fmt = get_lora_syntax_format()
     if fmt == "legacy":
