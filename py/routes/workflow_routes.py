@@ -1,7 +1,10 @@
+import asyncio
+import hashlib
 import json
 import logging
 import os
-from typing import Any, Dict
+import tempfile
+from typing import Any, Dict, Optional
 
 from aiohttp import web
 
@@ -12,7 +15,14 @@ from ..services.model_lifecycle_service import _require_path_in_library_roots
 from ..services.service_registry import ServiceRegistry
 from ..services.workflow_service import WorkflowService
 from ..utils.constants import WORKFLOW_CIVITAI_TYPES
-from ..utils.workflow_extraction import load_artifact_workflow_document
+from ..utils.file_utils import calculate_sha256
+from ..utils.metadata_manager import MetadataManager
+from ..utils.models import WorkflowMetadata
+from ..utils.workflow_analysis import MAX_WORKFLOW_JSON_BYTES, analyze_workflow
+from ..utils.workflow_extraction import (
+    get_workflow_document_path,
+    load_artifact_workflow_document,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +76,11 @@ class WorkflowRoutes(BaseModelRoutes):
         # standalone mode too since no ComfyUI connection is involved.
         registrar.add_prefixed_route(
             'GET', '/api/lm/{prefix}/content', prefix, self.get_workflow_content
+        )
+        # Write the current ComfyUI graph back into the managed workflow
+        # document (ComfyUI-side "Update LM-managed workflow" entry point).
+        registrar.add_prefixed_route(
+            'PUT', '/api/lm/{prefix}/content', prefix, self.update_workflow_content
         )
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:
@@ -186,6 +201,13 @@ class WorkflowRoutes(BaseModelRoutes):
                 {
                     "workflow": workflow,
                     "name": os.path.splitext(os.path.basename(file_path))[0],
+                    # Provenance marker: the ComfyUI-side extension stamps this
+                    # onto the loaded graph so its "Update LM-managed workflow"
+                    # entry point can write edits back to the right document.
+                    "lm_source": {
+                        "file_path": file_path,
+                        "sha256": await self._document_sha256(file_path),
+                    },
                 },
             )
             return web.json_response({"success": True, "sent": True})
@@ -249,6 +271,171 @@ class WorkflowRoutes(BaseModelRoutes):
         files) resolve to their derived ``.workflow.json`` sidecar, which is
         materialized on demand when missing.
         """
-        import asyncio
 
         return await asyncio.to_thread(load_artifact_workflow_document, file_path)
+
+    async def _document_sha256(self, file_path: str) -> Optional[str]:
+        """SHA256 of the extracted workflow document on disk.
+
+        Callers must materialize the document first (``_load_workflow_payload``
+        does). Returns ``None`` when the document is missing/unreadable.
+        """
+
+        document_path = get_workflow_document_path(file_path)
+        try:
+            if not os.path.exists(document_path):
+                return None
+        except OSError:
+            return None
+        try:
+            return await calculate_sha256(document_path) or None
+        except OSError:
+            return None
+
+    async def update_workflow_content(self, request: web.Request) -> web.Response:
+        """Write the current ComfyUI graph back into a managed workflow.
+
+        The ComfyUI-side extension calls this with the serialized graph when
+        the user picks "Update LM-managed workflow". The write targets the
+        workflow document: ``.json`` artifacts are rewritten in place, while
+        container artifacts (``.zip``/images) keep their original bytes (the
+        SHA256 is their CivitAI identity) and receive the edited graph in the
+        derived ``.workflow.json`` sidecar.
+
+        Optimistic concurrency: when ``base_sha256`` (the document hash the
+        client saw when the workflow was opened) no longer matches the
+        document on disk, the write is rejected with 409 unless ``force`` is
+        set — someone else (re-download, update check) changed it meanwhile.
+        """
+        try:
+            if not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+
+            payload = await self._read_json_body(request)
+            file_path = (payload.get("file_path") or "").strip()
+            workflow = payload.get("workflow")
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "file_path is required"}, status=400
+                )
+            if not isinstance(workflow, dict):
+                return web.json_response(
+                    {"success": False, "error": "workflow is required"}, status=400
+                )
+
+            _require_path_in_library_roots(
+                file_path, self.service.scanner, label="File path"
+            )
+
+            # The provenance marker the client stamped for bookkeeping must
+            # never land in the library document.
+            extra = workflow.get("extra")
+            if isinstance(extra, dict):
+                extra.pop("lm_source", None)
+
+            analysis = analyze_workflow(workflow)
+            if analysis is None:
+                return web.json_response(
+                    {"success": False, "error": "workflow is not a ComfyUI graph document"},
+                    status=400,
+                )
+
+            text = json.dumps(workflow, ensure_ascii=False)
+            if len(text.encode("utf-8")) > MAX_WORKFLOW_JSON_BYTES:
+                return web.json_response(
+                    {"success": False, "error": "workflow exceeds the size limit"},
+                    status=400,
+                )
+
+            document_path = get_workflow_document_path(file_path)
+            base_sha256 = str(payload.get("base_sha256") or "").strip().lower()
+            force = bool(payload.get("force"))
+            if base_sha256 and not force and os.path.exists(document_path):
+                current_sha256 = await calculate_sha256(document_path)
+                if current_sha256 and current_sha256.lower() != base_sha256:
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "conflict",
+                            "current_sha256": current_sha256,
+                        },
+                        status=409,
+                    )
+
+            def _write_document() -> None:
+                os.makedirs(os.path.dirname(document_path), exist_ok=True)
+                fd, temp_path = tempfile.mkstemp(
+                    dir=os.path.dirname(document_path), suffix=".tmp"
+                )
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                        handle.write(text)
+                    os.replace(temp_path, document_path)
+                except BaseException:
+                    try:
+                        os.unlink(temp_path)
+                    except OSError:
+                        pass
+                    raise
+
+            await asyncio.to_thread(_write_document)
+
+            new_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            await self._refresh_metadata_after_write(
+                file_path, analysis, new_sha256
+            )
+            return web.json_response(
+                {"success": True, "file_path": file_path, "sha256": new_sha256}
+            )
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            logger.error("Error updating workflow content: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def _refresh_metadata_after_write(
+        self, file_path: str, analysis, document_sha256: str
+    ) -> None:
+        """Re-sync sidecar metadata and caches after a write-back.
+
+        Analysis fields (node classes, model refs, ...) always follow the new
+        document. The CivitAI-facing artifact hash/size/modified only move for
+        bare ``.json`` artifacts, whose bytes ARE the document; container
+        artifacts stay byte-identical.
+        """
+
+        try:
+            metadata, should_skip = await MetadataManager.load_metadata(
+                file_path, WorkflowMetadata
+            )
+            if should_skip or metadata is None:
+                return
+
+            metadata.workflow_format = analysis.workflow_format
+            metadata.node_count = analysis.node_count
+            metadata.node_classes = analysis.node_classes
+            metadata.model_refs = analysis.model_refs
+            metadata.civitai_refs = analysis.civitai_refs
+
+            if os.path.splitext(file_path)[1].lower() == ".json":
+                metadata.sha256 = document_sha256
+                real_path = os.path.realpath(file_path)
+                metadata.size = os.path.getsize(real_path)
+                metadata.modified = os.path.getmtime(real_path)
+
+            await MetadataManager.save_metadata(file_path, metadata)
+
+            scanner = getattr(self.service, "scanner", None)
+            if scanner is not None:
+                await scanner.sync_cache_from_metadata(
+                    file_path, metadata.to_dict()
+                )
+        except Exception:
+            logger.warning(
+                "Failed to refresh workflow metadata after write-back for %s",
+                file_path,
+                exc_info=True,
+            )

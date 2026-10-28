@@ -84,6 +84,8 @@ def test_common_and_specific_routes_registered():
     assert ("POST", "/api/lm/workflows/send-to-comfy") in registered
     assert ("GET", "/api/lm/workflows/send-to-comfy") in registered
     assert ("GET", "/api/lm/workflows/content") in registered
+    # Write-back from the ComfyUI-side "Update LM-managed workflow" entry.
+    assert ("PUT", "/api/lm/workflows/content") in registered
 
 
 def test_template_name_is_workflows_page():
@@ -302,9 +304,18 @@ async def test_send_to_comfy_broadcasts_workflow(routes, plugin_mode, tmp_path, 
     payload = json.loads(response.text)
 
     assert payload == {"success": True, "sent": True}
-    send_sync.assert_called_once_with(
-        "lm_load_workflow", {"workflow": workflow, "name": "flow"}
-    )
+    send_sync.assert_called_once()
+    channel, message = send_sync.call_args.args
+    assert channel == "lm_load_workflow"
+    assert message["workflow"] == workflow
+    assert message["name"] == "flow"
+    # Provenance marker for the ComfyUI-side write-back entry point.
+    assert message["lm_source"]["file_path"] == str(target)
+    import hashlib
+
+    assert message["lm_source"]["sha256"] == hashlib.sha256(
+        target.read_bytes()
+    ).hexdigest()
 
 
 async def test_send_to_comfy_accepts_get_with_query(routes, plugin_mode, tmp_path, monkeypatch):
@@ -358,11 +369,21 @@ async def test_send_to_comfy_reads_derived_document_for_zip(routes, plugin_mode,
     payload = json.loads(response.text)
 
     assert payload == {"success": True, "sent": True}
-    send_sync.assert_called_once_with(
-        "lm_load_workflow", {"workflow": workflow, "name": "pack"}
-    )
-    # The extraction is cached as a derived sidecar document.
-    assert (root / "pack.workflow.json").exists()
+    send_sync.assert_called_once()
+    channel, message = send_sync.call_args.args
+    assert channel == "lm_load_workflow"
+    assert message["workflow"] == workflow
+    assert message["name"] == "pack"
+    # The marker hashes the derived document (what the write-back edits), not
+    # the zip bytes.
+    derived = root / "pack.workflow.json"
+    assert derived.exists()
+    import hashlib
+
+    assert message["lm_source"] == {
+        "file_path": str(target),
+        "sha256": hashlib.sha256(derived.read_bytes()).hexdigest(),
+    }
 
 
 async def test_get_workflow_content_returns_document(routes, tmp_path):
@@ -456,6 +477,161 @@ async def test_get_workflow_content_rejected_when_feature_disabled(routes, tmp_p
     get_settings_manager().set("enable_workflows", False)
     response = await routes.get_workflow_content(
         DummyRequest(method="GET", query={"file_path": "/library/workflows/flow.json"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_update_workflow_content_rewrites_json_artifact(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    original = {"nodes": [{"id": 1, "type": "CLIPTextEncode"}], "links": []}
+    target = root / "flow.json"
+    target.write_text(json.dumps(original), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    updated = {
+        "nodes": [
+            {"id": 1, "type": "CLIPTextEncode"},
+            {"id": 2, "type": "KSampler"},
+        ],
+        "links": [],
+        # The client-side provenance marker must be stripped before persisting.
+        "extra": {"lm_source": {"file_path": str(target), "sha256": "x"}},
+    }
+    response = await routes.update_workflow_content(
+        DummyRequest(method="PUT", body={"file_path": str(target), "workflow": updated})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    written = json.loads(target.read_text(encoding="utf-8"))
+    assert written["nodes"] == updated["nodes"]
+    assert "lm_source" not in written.get("extra", {})
+
+
+async def test_update_workflow_content_conflict_then_force(routes, tmp_path):
+    import hashlib
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    workflow = {"nodes": [{"id": 1, "type": "CLIPTextEncode"}], "links": []}
+    target.write_text(json.dumps(workflow), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    stale_hash = hashlib.sha256(b"old-bytes").hexdigest()
+    response = await routes.update_workflow_content(
+        DummyRequest(
+            method="PUT",
+            body={
+                "file_path": str(target),
+                "workflow": workflow,
+                "base_sha256": stale_hash,
+            },
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 409
+    assert payload["error"] == "conflict"
+    assert payload["current_sha256"] == hashlib.sha256(
+        target.read_bytes()
+    ).hexdigest()
+
+    forced = await routes.update_workflow_content(
+        DummyRequest(
+            method="PUT",
+            body={
+                "file_path": str(target),
+                "workflow": workflow,
+                "base_sha256": stale_hash,
+                "force": True,
+            },
+        )
+    )
+    assert json.loads(forced.text)["success"] is True
+
+
+async def test_update_workflow_content_writes_derived_sidecar_for_zip(routes, tmp_path):
+    """Container artifacts stay byte-identical; edits land in the sidecar."""
+    import zipfile
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "pack.zip"
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr(
+            "workflow.json",
+            json.dumps({"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}),
+        )
+    original_bytes = target.read_bytes()
+    routes.service.scanner = StubScanner([str(root)])
+
+    updated = {"nodes": [{"id": 1, "type": "KSampler"}], "links": []}
+    response = await routes.update_workflow_content(
+        DummyRequest(method="PUT", body={"file_path": str(target), "workflow": updated})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert target.read_bytes() == original_bytes
+    derived = root / "pack.workflow.json"
+    assert json.loads(derived.read_text(encoding="utf-8"))["nodes"] == updated["nodes"]
+
+
+async def test_update_workflow_content_rejects_non_workflow(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    target.write_text("{}", encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.update_workflow_content(
+        DummyRequest(
+            method="PUT",
+            body={"file_path": str(target), "workflow": {"some": "config"}},
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_update_workflow_content_rejects_path_outside_library(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.update_workflow_content(
+        DummyRequest(
+            method="PUT",
+            body={
+                "file_path": str(tmp_path / "elsewhere.json"),
+                "workflow": {"nodes": [{"id": 1, "type": "KSampler"}], "links": []},
+            },
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_update_workflow_content_rejected_when_feature_disabled(routes):
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_workflows", False)
+    response = await routes.update_workflow_content(
+        DummyRequest(
+            method="PUT",
+            body={"file_path": "/library/workflows/flow.json", "workflow": {}},
+        )
     )
     payload = json.loads(response.text)
 
