@@ -11,13 +11,10 @@ from ..config import config
 from ..services.model_lifecycle_service import _require_path_in_library_roots
 from ..services.service_registry import ServiceRegistry
 from ..services.workflow_service import WorkflowService
-from ..utils.workflow_analysis import load_workflow_file
+from ..utils.constants import WORKFLOW_CIVITAI_TYPES
+from ..utils.workflow_extraction import load_artifact_workflow_document
 
 logger = logging.getLogger(__name__)
-
-# CivitAI model types that map onto the workflow library (ComfyWorkflows is
-# retired on CivitAI but grandfathered models still carry it).
-WORKFLOW_CIVITAI_TYPES = frozenset({"workflows", "comfyworkflows"})
 
 
 class WorkflowRoutes(BaseModelRoutes):
@@ -201,7 +198,12 @@ class WorkflowRoutes(BaseModelRoutes):
         return payload if isinstance(payload, dict) else {}
 
     async def _load_workflow_payload(self, file_path: str):
-        """Read and validate the workflow document off the event loop."""
+        """Read the extracted workflow document off the event loop.
+
+        ``.json`` artifacts are read directly; containers (``.zip``/image
+        files) resolve to their derived ``.workflow.json`` sidecar, which is
+        materialized on demand when missing.
+        """
         import asyncio
 
-        return await asyncio.to_thread(load_workflow_file, file_path)
+        return await asyncio.to_thread(load_artifact_workflow_document, file_path)

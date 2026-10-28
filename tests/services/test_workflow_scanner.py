@@ -48,7 +48,7 @@ def _make_scanner() -> WorkflowScanner:
     scanner = object.__new__(WorkflowScanner)
     scanner.model_type = "workflow"
     scanner.model_class = WorkflowMetadata
-    scanner.file_extensions = {".json"}
+    scanner.file_extensions = {".json", ".zip", ".png", ".webp"}
     return scanner
 
 
@@ -72,6 +72,9 @@ def test_filename_filter_rejects_sidecars(enable_workflows):
     assert scanner._is_indexable_filename("flow.json") is True
     assert scanner._is_indexable_filename("flow.metadata.json") is False
     assert scanner._is_indexable_filename("FLOW.METADATA.JSON") is False
+    # The derived workflow document of a container artifact is also a sidecar.
+    assert scanner._is_indexable_filename("flow.workflow.json") is False
+    assert scanner._is_indexable_filename("FLOW.WORKFLOW.JSON") is False
 
 
 async def test_create_default_metadata_parses_workflow(workflow_root, enable_workflows, tmp_path):
@@ -110,3 +113,126 @@ async def test_create_default_metadata_skips_sidecar(workflow_root, enable_workf
 
     scanner = _make_scanner()
     assert await scanner._create_default_metadata(str(file_path)) is None
+
+
+async def test_create_default_metadata_from_zip_artifact(workflow_root, enable_workflows):
+    import zipfile
+
+    workflow = {
+        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "base.safetensors"}},
+    }
+    file_path = workflow_root / "pack.zip"
+    with zipfile.ZipFile(file_path, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+        archive.writestr("readme.txt", "hello")
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert metadata.file_name == "pack"
+    assert metadata.workflow_format == "api"
+    assert metadata.node_count == 1
+    assert metadata.model_refs == ["base.safetensors"]
+    # The artifact is hashed, not the extracted document.
+    assert metadata.sha256
+
+    # The derived workflow document is materialized as a sidecar.
+    derived = workflow_root / "pack.workflow.json"
+    assert derived.exists()
+    assert json.loads(derived.read_text(encoding="utf-8")) == workflow
+
+
+async def test_create_default_metadata_skips_zip_without_workflow(workflow_root, enable_workflows):
+    import zipfile
+
+    file_path = workflow_root / "images.zip"
+    with zipfile.ZipFile(file_path, "w") as archive:
+        archive.writestr("note.txt", "no graphs here")
+
+    scanner = _make_scanner()
+    assert await scanner._create_default_metadata(str(file_path)) is None
+    assert not (workflow_root / "images.workflow.json").exists()
+
+
+async def test_create_default_metadata_image_artifact_self_preview(workflow_root, enable_workflows):
+    PIL = pytest.importorskip("PIL.Image")
+    from py.utils.exif_utils import ExifUtils
+
+    workflow = {
+        "nodes": [{"id": 1, "type": "CheckpointLoaderSimple"}],
+        "links": [],
+    }
+    file_path = workflow_root / "flow.png"
+    PIL.new("RGB", (8, 8)).save(file_path, format="PNG")
+    ExifUtils.embed_workflow(str(file_path), json.dumps(workflow))
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert metadata.workflow_format == "ui"
+    # The image artifact doubles as its own preview.
+    assert metadata.preview_url.replace(os.sep, "/").endswith("flow.png")
+
+
+async def test_create_default_metadata_plain_image_skipped(workflow_root, enable_workflows):
+    PIL = pytest.importorskip("PIL.Image")
+
+    file_path = workflow_root / "preview.png"
+    PIL.new("RGB", (8, 8)).save(file_path, format="PNG")
+
+    scanner = _make_scanner()
+    assert await scanner._create_default_metadata(str(file_path)) is None
+
+
+def test_adjust_metadata_fills_missing_analysis(workflow_root, enable_workflows):
+    """Downloaded entries carry CivitAI metadata but no analysis fields yet."""
+    import zipfile
+
+    workflow = {
+        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "base.safetensors"}},
+    }
+    file_path = workflow_root / "downloaded.zip"
+    with zipfile.ZipFile(file_path, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+
+    metadata = WorkflowMetadata(
+        file_name="downloaded",
+        model_name="downloaded",
+        file_path=_normalize(file_path),
+        size=file_path.stat().st_size,
+        modified=0,
+        sha256="abc",
+        base_model="Unknown",
+        preview_url="",
+        from_civitai=True,
+    )
+
+    scanner = _make_scanner()
+    adjusted = scanner.adjust_metadata(metadata, str(file_path), None)
+
+    assert adjusted.workflow_format == "api"
+    assert adjusted.node_count == 1
+    assert adjusted.model_refs == ["base.safetensors"]
+    assert (workflow_root / "downloaded.workflow.json").exists()
+
+
+def test_adjust_metadata_keeps_populated_analysis(workflow_root, enable_workflows):
+    metadata = WorkflowMetadata(
+        file_name="flow",
+        model_name="flow",
+        file_path=_normalize(workflow_root / "flow.json"),
+        size=1,
+        modified=0,
+        sha256="abc",
+        base_model="Unknown",
+        preview_url="",
+        workflow_format="ui",
+        node_count=7,
+    )
+
+    scanner = _make_scanner()
+    adjusted = scanner.adjust_metadata(metadata, str(workflow_root / "flow.json"), None)
+
+    assert adjusted.node_count == 7  # untouched: no re-extraction

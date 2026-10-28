@@ -83,6 +83,17 @@ def sniff_workflow_text(text: str) -> Optional[str]:
     return _sniff(data)
 
 
+def parse_workflow_text(text: str) -> Optional[Dict[str, Any]]:
+    """Parse + sniff raw JSON text; return the document when it is a workflow."""
+    try:
+        data = json.loads(text)
+    except (TypeError, ValueError):
+        return None
+    if _sniff(data) is None:
+        return None
+    return data
+
+
 def load_workflow_file(file_path: str) -> Optional[Dict[str, Any]]:
     """Load and sniff a workflow JSON file.
 

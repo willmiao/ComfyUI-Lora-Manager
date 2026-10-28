@@ -513,7 +513,10 @@ class WorkflowMetadata(BaseModelMetadata):
     ) -> "WorkflowMetadata":
         """Create WorkflowMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
-        base_name = strip_model_extension(file_name)
+        # Workflow artifacts are .json/.zip/.png/... — none of them weight
+        # extensions — so strip one real extension instead of consulting the
+        # weight-extension allowlist.
+        base_name = os.path.splitext(file_name)[0]
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
 

@@ -1080,3 +1080,122 @@ async def test_delete_model_falls_back_when_staging_fails(
     # staging parent, if left behind by the rollback, holds no data).
     staging_parent = root / PENDING_DELETE_DIR_NAME
     assert not staging_parent.exists() or not any(staging_parent.iterdir())
+
+
+@pytest.mark.asyncio
+async def test_delete_model_artifacts_removes_derived_workflow_document(tmp_path: Path):
+    from py.services.model_lifecycle_service import delete_model_artifacts
+
+    artifact = tmp_path / "pack.zip"
+    artifact.write_bytes(b"zip")
+    derived = tmp_path / "pack.workflow.json"
+    derived.write_text("{}", encoding="utf-8")
+    metadata = tmp_path / "pack.metadata.json"
+    metadata.write_text("{}", encoding="utf-8")
+
+    deleted = await delete_model_artifacts(
+        str(tmp_path), "pack", main_extension=".zip"
+    )
+
+    assert not artifact.exists()
+    assert not derived.exists()
+    assert not metadata.exists()
+    assert any(str(name).endswith("pack.workflow.json") for name in deleted)
+
+
+@pytest.mark.asyncio
+async def test_delete_model_artifacts_image_artifact_deleted_once(tmp_path: Path):
+    """An image workflow artifact doubles as its own preview: same path."""
+    from py.services.model_lifecycle_service import delete_model_artifacts
+
+    artifact = tmp_path / "flow.png"
+    artifact.write_bytes(b"png")
+
+    deleted = await delete_model_artifacts(
+        str(tmp_path), "flow", main_extension=".png"
+    )
+
+    assert not artifact.exists()
+    assert len(deleted) == len(set(deleted))
+
+
+@pytest.mark.asyncio
+async def test_rename_model_carries_derived_workflow_document(tmp_path: Path):
+    old_name = "pack"
+    new_name = "pack-renamed"
+
+    model_path = tmp_path / f"{old_name}.zip"
+    model_path.write_bytes(b"zip")
+
+    derived = tmp_path / f"{old_name}.workflow.json"
+    derived.write_text("{}", encoding="utf-8")
+
+    metadata_path = tmp_path / f"{old_name}.metadata.json"
+    metadata_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    scanner = DummyScanner()
+    metadata_manager = PassthroughMetadataManager()
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=metadata_manager,
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.rename_model(
+        file_path=model_path.as_posix(),
+        new_file_name=new_name,
+    )
+
+    assert (tmp_path / f"{new_name}.zip").exists()
+    assert (tmp_path / f"{new_name}.workflow.json").exists()
+    assert not derived.exists()
+    assert isinstance(result["new_file_path"], str)
+    assert result["new_file_path"].endswith(f"{new_name}.zip")
+
+
+@pytest.mark.asyncio
+async def test_rename_image_workflow_artifact_renames_main_file_once(tmp_path: Path):
+    """The image artifact matches both the main-file and a preview pattern."""
+    old_name = "flow"
+    new_name = "flow-renamed"
+
+    model_path = tmp_path / f"{old_name}.png"
+    model_path.write_bytes(b"png")
+
+    metadata_path = tmp_path / f"{old_name}.metadata.json"
+    metadata_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+        "preview_url": model_path.as_posix(),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    scanner = DummyScanner()
+    metadata_manager = PassthroughMetadataManager()
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=metadata_manager,
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.rename_model(
+        file_path=model_path.as_posix(),
+        new_file_name=new_name,
+    )
+
+    assert (tmp_path / f"{new_name}.png").exists()
+    assert not model_path.exists()
+    renamed = result["renamed_files"]
+    assert len(renamed) == len(set(renamed))

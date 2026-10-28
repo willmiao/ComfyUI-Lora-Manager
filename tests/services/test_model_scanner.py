@@ -269,6 +269,23 @@ async def test_initialize_cache_populates_cache(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_force_refresh_without_cache_falls_back_to_full_initialization(tmp_path: Path):
+    """A scan fired before background init has run has no cache to reconcile
+    against; it must initialize from scratch instead of crashing."""
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    assert scanner._cache is None
+
+    cache = await scanner.get_cached_data(force_refresh=True)
+
+    assert scanner._cache is not None
+    assert {item["file_path"] for item in cache.raw_data} == {
+        _normalize_path(tmp_path / "one.txt"),
+        _normalize_path(tmp_path / "nested" / "two.txt"),
+    }
+
+
+@pytest.mark.asyncio
 async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_path: Path, monkeypatch):
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)

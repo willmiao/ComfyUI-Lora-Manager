@@ -331,3 +331,34 @@ async def test_send_to_comfy_accepts_get_with_query(routes, plugin_mode, tmp_pat
     payload = json.loads(response.text)
     assert payload == {"success": True, "sent": True}
     send_sync.assert_called_once()
+
+
+async def test_send_to_comfy_reads_derived_document_for_zip(routes, plugin_mode, tmp_path, monkeypatch):
+    """Container artifacts send the extracted document, not the zip bytes."""
+    import server
+    import zipfile
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    send_sync = MagicMock()
+    monkeypatch.setattr(
+        server.PromptServer, "instance", SimpleNamespace(send_sync=send_sync)
+    )
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    workflow = {"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}
+    target = root / "pack.zip"
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.send_to_comfy(DummyRequest(body={"file_path": str(target)}))
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "sent": True}
+    send_sync.assert_called_once_with(
+        "lm_load_workflow", {"workflow": workflow, "name": "pack"}
+    )
+    # The extraction is cached as a derived sidecar document.
+    assert (root / "pack.workflow.json").exists()

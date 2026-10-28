@@ -1869,7 +1869,10 @@ class ModelScanner:
 
         # If force refresh is requested, initialize the cache directly
         if force_refresh:
-            if rebuild_cache:
+            # A reconcile diffs against the existing cache; when there is no
+            # cache yet (e.g. a scan fired while background initialization is
+            # still deferred), a full initialization is the only option.
+            if rebuild_cache or self._cache is None:
                 self._last_reconcile_summary = None
                 await self._initialize_cache()
             else:

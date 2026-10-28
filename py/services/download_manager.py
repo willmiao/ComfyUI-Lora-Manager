@@ -22,6 +22,7 @@ from ..utils.models import (
     CheckpointMetadata,
     EmbeddingMetadata,
     OtherModelMetadata,
+    WorkflowMetadata,
 )
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
@@ -32,6 +33,7 @@ from ..utils.constants import (
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
     VALID_OTHER_CIVITAI_TYPES,
+    WORKFLOW_CIVITAI_TYPES,
 )
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
 from ..utils.paid_access import (
@@ -106,6 +108,18 @@ def _other_models_disabled_response() -> Dict[str, Any]:
             "text encoder or CLIP files."
         ),
         "reason": "other_models_disabled",
+    }
+
+
+def _workflows_disabled_response() -> Dict[str, Any]:
+    """Structured rejection when Workflow management is turned off."""
+    return {
+        "success": False,
+        "error": (
+            "Workflow management is disabled. Enable it in "
+            "Settings > Library before downloading workflow files."
+        ),
+        "reason": "workflows_disabled",
     }
 
 
@@ -400,6 +414,8 @@ class DownloadManager:
             return await ServiceRegistry.get_embedding_scanner()
         if model_type == "other":
             return await ServiceRegistry.get_other_scanner()
+        if model_type == "workflow":
+            return await ServiceRegistry.get_workflow_scanner()
         if model_type == "lora":
             return await self._get_lora_scanner()
         raise ValueError(f'Unknown model type "{model_type}"')
@@ -485,6 +501,37 @@ class DownloadManager:
                 break
 
         return file_info
+
+    @staticmethod
+    def _select_workflow_download_file(
+        files: Any,
+    ) -> Optional[Dict[str, Any]]:
+        """Pick the workflow artifact within a workflow version's file list.
+
+        Workflow versions ship no weight files, so the generic
+        primary/weights selection finds nothing. The ranking mirrors
+        CivitAI's own default pick for Workflow resources (a single-workflow
+        Config .json first, then an Archive .zip, then an image carrying an
+        embedded workflow), with CivitAI's primary flag breaking ties.
+        """
+
+        def rank(file_info: Dict[str, Any]) -> int:
+            name = str(file_info.get("name") or "").lower()
+            if name.endswith(".json"):
+                return 0
+            if name.endswith(".zip"):
+                return 1
+            if name.endswith((".png", ".webp")):
+                return 2
+            return 3
+
+        candidates = [f for f in files or [] if isinstance(f, dict)]
+        if not candidates:
+            return None
+        candidates.sort(
+            key=lambda f: (not bool(f.get("primary")), rank(f), f.get("id") or 0)
+        )
+        return candidates[0]
 
     async def _find_local_file_entry(
         self,
@@ -1196,6 +1243,8 @@ class DownloadManager:
             return EmbeddingMetadata.from_civitai_info(version_info, file_info, save_path)
         if model_type == "other":
             return OtherModelMetadata.from_civitai_info(version_info, file_info, save_path)
+        if model_type == "workflow":
+            return WorkflowMetadata.from_civitai_info(version_info, file_info, save_path)
         return LoraMetadata.from_civitai_info(version_info, file_info, save_path)
 
     def _resolve_save_path_from_persisted_record(self, record: Dict[str, Any]) -> Optional[str]:
@@ -1708,6 +1757,17 @@ class DownloadManager:
                         "error": "Model version already exists in other library",
                     }
 
+                # Check workflow scanner (opt-in feature)
+                if get_settings_manager().is_workflows_enabled():
+                    workflow_scanner = await ServiceRegistry.get_workflow_scanner()
+                    if await workflow_scanner.check_model_version_exists(
+                        model_version_id
+                    ):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in workflow library",
+                        }
+
             # Use CivArchive provider directly when source is 'civarchive'
             # This prioritizes CivArchive metadata (with mirror availability info) over Civitai
             if source == "civarchive":
@@ -1823,6 +1883,10 @@ class DownloadManager:
                 if not get_settings_manager().is_other_models_enabled():
                     return _other_models_disabled_response()
                 model_type = "other"
+            elif model_type_from_info in WORKFLOW_CIVITAI_TYPES:
+                if not get_settings_manager().is_workflows_enabled():
+                    return _workflows_disabled_response()
+                model_type = "workflow"
             else:
                 return {
                     "success": False,
@@ -2002,6 +2066,13 @@ class DownloadManager:
                             "success": False,
                             "error": "Model version already exists in other library",
                         }
+                elif model_type == "workflow":
+                    workflow_scanner = await ServiceRegistry.get_workflow_scanner()
+                    if await workflow_scanner.check_model_version_exists(version_id):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in workflow library",
+                        }
 
             # Handle use_default_paths
             if use_default_paths:
@@ -2103,6 +2174,20 @@ class DownloadManager:
                                 "reason": reason,
                             }
                         save_dir = default_path
+                    elif model_type == "workflow":
+                        # Workflows have no default-root setting: the first
+                        # configured workflow root is the download target.
+                        workflow_scanner = await ServiceRegistry.get_workflow_scanner()
+                        workflow_roots = workflow_scanner.get_model_roots()
+                        if not workflow_roots:
+                            return {
+                                "success": False,
+                                "error": (
+                                    "No workflow folder configured. Add one in "
+                                    "Settings > Library before downloading workflows."
+                                ),
+                            }
+                        save_dir = workflow_roots[0]
 
                 # Calculate relative path using template
                 relative_path = self._calculate_relative_path(version_info, model_type)
@@ -2194,6 +2279,14 @@ class DownloadManager:
                 )
 
             # Fallback to primary file if no match found
+            if not file_info and model_type == "workflow":
+                file_info = self._select_workflow_download_file(files)
+                if file_info:
+                    logger.debug(
+                        "[download] Workflow file selected: id=%s, name=%s",
+                        file_info.get("id"), file_info.get("name"),
+                    )
+
             if not file_info:
                 logger.debug("[download] Looking for primary file as fallback")
                 # Prefer a weights-type file CivitAI marked primary; then any
@@ -2335,6 +2428,11 @@ class DownloadManager:
                     version_info, file_info, save_path
                 )
                 logger.info(f"Creating OtherModelMetadata for {file_name}")
+            elif model_type == "workflow":
+                metadata = WorkflowMetadata.from_civitai_info(
+                    version_info, file_info, save_path
+                )
+                logger.info(f"Creating WorkflowMetadata for {file_name}")
             else:
                 return {
                     "success": False,
@@ -2553,6 +2651,8 @@ class DownloadManager:
                 scanner = await ServiceRegistry.get_embedding_scanner()
             elif model_type == "other":
                 scanner = await ServiceRegistry.get_other_scanner()
+            elif model_type == "workflow":
+                scanner = await ServiceRegistry.get_workflow_scanner()
         except Exception as exc:
             logger.debug("Failed to acquire scanner for %s models: %s", model_type, exc)
 
@@ -3023,7 +3123,11 @@ class DownloadManager:
 
             # 4. Handle archive extraction and prepare per-file metadata
             actual_file_paths = [save_path]
-            if zipfile.is_zipfile(save_path):
+            # Workflow downloads never extract archives: the zip IS the
+            # artifact, kept byte-identical so its SHA256 stays the CivitAI
+            # identity; the workflow document is materialized into a derived
+            # sidecar by the scanner instead.
+            if model_type != "workflow" and zipfile.is_zipfile(save_path):
                 supported_extensions = self._get_supported_extensions_for_type(
                     model_type
                 )
@@ -3087,6 +3191,9 @@ class DownloadManager:
             elif model_type == "other":
                 scanner = await ServiceRegistry.get_other_scanner()
                 logger.info(f"Updating other-model cache for {actual_file_paths[0]}")
+            elif model_type == "workflow":
+                scanner = await ServiceRegistry.get_workflow_scanner()
+                logger.info(f"Updating workflow cache for {actual_file_paths[0]}")
 
             adjust_cached_entry = (
                 getattr(scanner, "adjust_cached_entry", None)

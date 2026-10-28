@@ -190,6 +190,9 @@ VALID_OTHER_CIVITAI_TYPES = {
     "controlnet",
     "other",
 }
+# CivitAI model.type values that map onto the workflow library (lowercased).
+# ComfyWorkflows is retired on CivitAI but grandfathered models still carry it.
+WORKFLOW_CIVITAI_TYPES = frozenset({"workflows", "comfyworkflows"})
 # CivitAI model.type -> internal sub_type for the "other" model page.
 CIVITAI_TYPE_TO_OTHER_SUB_TYPE = {
     "vae": "vae",
