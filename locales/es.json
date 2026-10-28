@@ -244,6 +244,7 @@
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "other": "Otros",
+            "workflows": "[TODO: Translate] Workflows",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -633,6 +634,10 @@
             "defaultControlnetRootHelp": "Establecer el directorio raíz predeterminado de ControlNet para descargas, importaciones y movimientos",
             "enableOtherModels": "Gestión de otros modelos",
             "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
+            "enableWorkflows": "[TODO: Translate] Workflow Management",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolders": "[TODO: Translate] Workflow Folders",
+            "workflowFoldersHelp": "[TODO: Translate] Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
             "otherSubTypes": "Tipos de modelos gestionados",
             "otherSubTypesHelp": "Elige qué categorías de otros modelos se escanean y se muestran en la página Otros modelos.",
             "subTypeVae": "VAE",
@@ -686,7 +691,8 @@
                 "text_encoders": "Rutas de Text Encoder",
                 "clip": "Rutas de CLIP (heredadas)",
                 "clip_vision": "Rutas de CLIP Vision",
-                "controlnet": "Rutas de ControlNet"
+                "controlnet": "Rutas de ControlNet",
+                "workflows": "[TODO: Translate] Workflow Paths"
             }
         },
         "directoryPicker": {
@@ -1445,6 +1451,33 @@
             "openSettings": "Abrir configuración",
             "openModelPaths": "Configurar carpetas de modelos",
             "openSettingsFolder": "Abrir carpeta de ajustes"
+        }
+    },
+    "workflows": {
+        "title": "[TODO: Translate] Workflows",
+        "contextMenu": {
+            "sendToComfy": "[TODO: Translate] Open in ComfyUI"
+        },
+        "sendToComfy": {
+            "success": "[TODO: Translate] Workflow sent to ComfyUI",
+            "failed": "[TODO: Translate] Failed to send workflow: {message}"
+        },
+        "disabled": {
+            "title": "[TODO: Translate] Workflow management is off",
+            "description": "[TODO: Translate] Enable it to scan and manage ComfyUI workflow files, keep their CivitAI metadata and previews, and send them into the running ComfyUI graph.",
+            "enableButton": "[TODO: Translate] Enable Workflows",
+            "hint": "[TODO: Translate] You can turn the feature off again later in Settings > Library.",
+            "enableFailed": "[TODO: Translate] Failed to enable Workflows"
+        },
+        "noPaths": {
+            "title": "[TODO: Translate] No workflow folders found",
+            "descriptionStandalone": "[TODO: Translate] Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Workflows are read from the folder_paths.workflows entries.",
+            "descriptionComfyUI": "[TODO: Translate] Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
+            "hintComfyUI": "[TODO: Translate] Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
+            "openSettings": "[TODO: Translate] Open Settings",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
         }
     },
     "sidebar": {
@@ -2271,6 +2304,10 @@
         "other": {
             "title": "Inicializando el gestor de otros modelos",
             "message": "Escaneando y construyendo la caché de modelos. Esto puede tomar unos minutos..."
+        },
+        "workflows": {
+            "title": "[TODO: Translate] Initializing Workflow Manager",
+            "message": "[TODO: Translate] Scanning and building workflow cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "Inicializando gestor de recetas",

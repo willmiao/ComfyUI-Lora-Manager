@@ -10,7 +10,7 @@ import { setStorageItem } from '../utils/storageHelpers.js';
 import { state } from '../state/index.js';
 import { escapeHtml } from './shared/utils.js';
 
-const LIBRARY_ORDER = ['loras', 'checkpoints', 'embeddings', 'other'];
+const LIBRARY_ORDER = ['loras', 'checkpoints', 'embeddings', 'other', 'workflows'];
 
 class FirstRunManager {
     constructor() {

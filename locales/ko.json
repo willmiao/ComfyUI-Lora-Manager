@@ -244,6 +244,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "기타",
+            "workflows": "[TODO: Translate] Workflows",
             "statistics": "통계"
         },
         "search": {
@@ -633,6 +634,10 @@
             "defaultControlnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 ControlNet 루트 디렉토리를 설정합니다",
             "enableOtherModels": "기타 모델 관리",
             "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
+            "enableWorkflows": "[TODO: Translate] Workflow Management",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolders": "[TODO: Translate] Workflow Folders",
+            "workflowFoldersHelp": "[TODO: Translate] Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
             "otherSubTypes": "관리할 모델 유형",
             "otherSubTypesHelp": "기타 모델 페이지에서 스캔하고 표시할 카테고리를 선택합니다.",
             "subTypeVae": "VAE",
@@ -686,7 +691,8 @@
                 "text_encoders": "Text Encoder 경로",
                 "clip": "CLIP 경로 (레거시)",
                 "clip_vision": "CLIP Vision 경로",
-                "controlnet": "ControlNet 경로"
+                "controlnet": "ControlNet 경로",
+                "workflows": "[TODO: Translate] Workflow Paths"
             }
         },
         "directoryPicker": {
@@ -1445,6 +1451,33 @@
             "openSettings": "설정 열기",
             "openModelPaths": "모델 폴더 구성",
             "openSettingsFolder": "설정 폴더 열기"
+        }
+    },
+    "workflows": {
+        "title": "[TODO: Translate] Workflows",
+        "contextMenu": {
+            "sendToComfy": "[TODO: Translate] Open in ComfyUI"
+        },
+        "sendToComfy": {
+            "success": "[TODO: Translate] Workflow sent to ComfyUI",
+            "failed": "[TODO: Translate] Failed to send workflow: {message}"
+        },
+        "disabled": {
+            "title": "[TODO: Translate] Workflow management is off",
+            "description": "[TODO: Translate] Enable it to scan and manage ComfyUI workflow files, keep their CivitAI metadata and previews, and send them into the running ComfyUI graph.",
+            "enableButton": "[TODO: Translate] Enable Workflows",
+            "hint": "[TODO: Translate] You can turn the feature off again later in Settings > Library.",
+            "enableFailed": "[TODO: Translate] Failed to enable Workflows"
+        },
+        "noPaths": {
+            "title": "[TODO: Translate] No workflow folders found",
+            "descriptionStandalone": "[TODO: Translate] Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Workflows are read from the folder_paths.workflows entries.",
+            "descriptionComfyUI": "[TODO: Translate] Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
+            "hintComfyUI": "[TODO: Translate] Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
+            "openSettings": "[TODO: Translate] Open Settings",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
         }
     },
     "sidebar": {
@@ -2271,6 +2304,10 @@
         "other": {
             "title": "기타 모델 관리자 초기화 중",
             "message": "모델 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "workflows": {
+            "title": "[TODO: Translate] Initializing Workflow Manager",
+            "message": "[TODO: Translate] Scanning and building workflow cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "레시피 매니저 초기화 중",

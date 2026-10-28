@@ -17,6 +17,8 @@
       {% set current_page = 'embeddings' %}
       {% elif current_path.startswith('/other') %}
       {% set current_page = 'other' %}
+      {% elif current_path.startswith('/workflows') %}
+      {% set current_page = 'workflows' %}
       {% elif current_path.startswith('/statistics') %}
       {% set current_page = 'statistics' %}
       {% else %}
@@ -41,6 +43,10 @@
         <a href="{{ rel_prefix }}other" class="nav-item{% if current_path.startswith('/other') %} active{% endif %}{% if not settings.get('enable_other_models') %} nav-item--hidden{% endif %}"
           id="otherNavItem">
           <i class="fas fa-shapes"></i> <span>{{ t('header.navigation.other') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}workflows" class="nav-item{% if current_path.startswith('/workflows') %} active{% endif %}{% if not settings.get('enable_workflows') %} nav-item--hidden{% endif %}"
+          id="workflowsNavItem">
+          <i class="fas fa-diagram-project"></i> <span>{{ t('header.navigation.workflows') }}</span>
         </a>
         <a href="{{ rel_prefix }}statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
           id="statisticsNavItem">

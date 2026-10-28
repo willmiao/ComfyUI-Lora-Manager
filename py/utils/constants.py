@@ -152,6 +152,9 @@ def folder_path_schema() -> List[Dict[str, Any]]:
         {"key": key, "category": "core", "sub_type": None}
         for key in CORE_FOLDER_PATH_KEYS
     ]
+    # Workflow roots are LoRA-Manager-only (no ComfyUI folder category); the
+    # standalone Model Paths UI gates this editor on ``enable_workflows``.
+    schema.append({"key": "workflows", "category": "workflow", "sub_type": None})
     schema.extend(
         {"key": folder_key, "category": "other", "sub_type": sub_type}
         for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items()

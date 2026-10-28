@@ -61,6 +61,25 @@ async def test_browse_directory_lists_subdirs_sorted_and_filters(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_browse_directory_preserves_symlinked_path(tmp_path):
+    # The picker result is stored as a configured library path (a business
+    # path): browsing through a symlink must keep the link path instead of
+    # resolving to the target.
+    real = tmp_path / "real-target"
+    real.mkdir()
+    (real / "child").mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(real)
+
+    response, payload = await _browse(_make_handler(), str(link))
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["current_path"] == str(link)
+    assert payload["directories"][0]["path"] == str(link / "child")
+
+
+@pytest.mark.asyncio
 async def test_browse_directory_missing_returns_404(tmp_path):
     response, payload = await _browse(_make_handler(), str(tmp_path / "nope"))
 
@@ -81,9 +100,9 @@ async def test_browse_directory_file_path_returns_400(tmp_path):
 
 @pytest.mark.asyncio
 async def test_browse_directory_relative_path_returns_403(monkeypatch):
-    # resolve() normally absolutizes relative paths against the cwd; bypass it
+    # abspath() normally absolutizes relative paths against the cwd; bypass it
     # to exercise the access-denied branch directly.
-    monkeypatch.setattr(Path, "resolve", lambda self: self)
+    monkeypatch.setattr(os.path, "abspath", lambda p: p)
 
     response, payload = await _browse(_make_handler(), "relative/path")
 

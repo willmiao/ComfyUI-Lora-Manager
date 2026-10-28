@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_embedding_root: '',
     default_other_roots: {},
     enable_other_models: false,
+    enable_workflows: false,
+    workflow_folder_paths: [],
     enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},
@@ -107,6 +109,7 @@ const loraPreviewVersions = getMapFromStorage('loras_preview_versions');
 const checkpointPreviewVersions = getMapFromStorage('checkpoints_preview_versions');
 const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions');
 const otherPreviewVersions = getMapFromStorage('other_preview_versions');
+const workflowPreviewVersions = getMapFromStorage('workflows_preview_versions');
 
 export const state = {
     // Global state
@@ -275,6 +278,43 @@ export const state = {
                 tags: false,
                 creator: false,
                 recursive: getStorageItem(`${MODEL_TYPES.OTHER}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
+            },
+            bulkMode: false,
+            selectedModels: new Set(),
+            metadataCache: new Map(),
+            showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
+            duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
+        },
+
+        [MODEL_TYPES.WORKFLOW]: {
+            currentPage: 1,
+            isLoading: false,
+            hasMore: true,
+            sortBy: 'name',
+            activeFolder: getStorageItem(`${MODEL_TYPES.WORKFLOW}_activeFolder`),
+            previewVersions: workflowPreviewVersions,
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.WORKFLOW}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],

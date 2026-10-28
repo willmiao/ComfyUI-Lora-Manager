@@ -541,6 +541,7 @@ class BannerService {
         if (path.includes('/checkpoints')) return 'checkpoints';
         if (path.includes('/embeddings')) return 'embeddings';
         if (path.includes('/other')) return 'other';
+        if (path.includes('/workflows')) return 'workflows';
         if (path.includes('/recipes')) return 'recipes';
         return 'loras';
     }
@@ -555,7 +556,8 @@ class BannerService {
             'loras': '/api/lm/loras/reload?rebuild=true',
             'checkpoints': '/api/lm/checkpoints/reload?rebuild=true',
             'embeddings': '/api/lm/embeddings/reload?rebuild=true',
-            'other': '/api/lm/other/reload?rebuild=true'
+            'other': '/api/lm/other/reload?rebuild=true',
+            'workflows': '/api/lm/workflows/reload?rebuild=true'
         };
         return endpoints[pageType] || endpoints['loras'];
     }

@@ -43,7 +43,11 @@ def browse_directory(directory_path: str) -> Tuple[Dict[str, Any], int]:
     if not directory_path:
         path = Path.home()
     else:
-        path = Path(directory_path).expanduser().resolve()
+        # Business-path convention: normalize lexically with abspath but
+        # never resolve symlinks (no resolve()/realpath). The picker result
+        # is stored as a configured library path, and stored paths must
+        # match what the user sees on disk.
+        path = Path(os.path.abspath(os.path.expanduser(directory_path)))
 
     # Access check: browsing intentionally covers the whole server
     # filesystem (the server operator browses their own machine). On
