@@ -112,6 +112,8 @@ export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     text_encoder: "Text Encoder",
     clip_vision: "CLIP Vision",
     controlnet: "ControlNet",
+    // Workflow sub-types
+    workflow: "Workflow",
 };
 
 // Backward compatibility alias
@@ -130,6 +132,7 @@ export const MODEL_SUBTYPE_ABBREVIATIONS = {
     text_encoder: "TE",
     clip_vision: "CV",
     controlnet: "CN",
+    workflow: "WF",
 };
 
 export function getSubTypeAbbreviation(subType) {
