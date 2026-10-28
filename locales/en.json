@@ -1456,11 +1456,15 @@
   "workflows": {
     "title": "Workflows",
     "contextMenu": {
-      "sendToComfy": "Open in ComfyUI"
+      "sendToComfy": "Open in ComfyUI",
+      "copyWorkflow": "Copy Workflow"
     },
     "sendToComfy": {
       "success": "Workflow sent to ComfyUI",
       "failed": "Failed to send workflow: {message}"
+    },
+    "copyWorkflow": {
+      "failed": "Failed to copy workflow: {message}"
     },
     "disabled": {
       "title": "Workflow management is off",

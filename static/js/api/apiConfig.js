@@ -183,6 +183,7 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
     [MODEL_TYPES.WORKFLOW]: {
         metadata: `/api/lm/${MODEL_TYPES.WORKFLOW}/metadata`,
         sendToComfy: `/api/lm/${MODEL_TYPES.WORKFLOW}/send-to-comfy`,
+        content: `/api/lm/${MODEL_TYPES.WORKFLOW}/content`,
     }
 };
 

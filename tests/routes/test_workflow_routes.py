@@ -83,6 +83,7 @@ def test_common_and_specific_routes_registered():
     # The companion browser extension is GET-only (see AGENTS.md).
     assert ("POST", "/api/lm/workflows/send-to-comfy") in registered
     assert ("GET", "/api/lm/workflows/send-to-comfy") in registered
+    assert ("GET", "/api/lm/workflows/content") in registered
 
 
 def test_template_name_is_workflows_page():
@@ -362,3 +363,101 @@ async def test_send_to_comfy_reads_derived_document_for_zip(routes, plugin_mode,
     )
     # The extraction is cached as a derived sidecar document.
     assert (root / "pack.workflow.json").exists()
+
+
+async def test_get_workflow_content_returns_document(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    workflow = {"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}
+    target = root / "flow.json"
+    target.write_text(json.dumps(workflow), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "workflow": workflow}
+
+
+async def test_get_workflow_content_works_in_standalone(routes, tmp_path, monkeypatch):
+    """The copy-to-clipboard flow needs no ComfyUI, unlike send-to-comfy."""
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    workflow = {"nodes": [{"id": 1, "type": "CLIPTextEncode"}], "links": []}
+    target = root / "flow.json"
+    target.write_text(json.dumps(workflow), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload == {"success": True, "workflow": workflow}
+
+
+async def test_get_workflow_content_reads_derived_document_for_zip(routes, tmp_path):
+    import zipfile
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    workflow = {"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}
+    target = root / "pack.zip"
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "workflow": workflow}
+
+
+async def test_get_workflow_content_404_for_non_workflow_json(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "config.json"
+    target.write_text(json.dumps({"some": "config"}), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 404
+    assert payload["error"] == "not_a_workflow"
+
+
+async def test_get_workflow_content_rejects_path_outside_library(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": str(tmp_path / "elsewhere.json")})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_get_workflow_content_rejected_when_feature_disabled(routes, tmp_path):
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_workflows", False)
+    response = await routes.get_workflow_content(
+        DummyRequest(method="GET", query={"file_path": "/library/workflows/flow.json"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False

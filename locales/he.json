@@ -1456,11 +1456,15 @@
     "workflows": {
         "title": "[TODO: Translate] Workflows",
         "contextMenu": {
-            "sendToComfy": "[TODO: Translate] Open in ComfyUI"
+            "sendToComfy": "[TODO: Translate] Open in ComfyUI",
+            "copyWorkflow": "[TODO: Translate] Copy Workflow"
         },
         "sendToComfy": {
             "success": "[TODO: Translate] Workflow sent to ComfyUI",
             "failed": "[TODO: Translate] Failed to send workflow: {message}"
+        },
+        "copyWorkflow": {
+            "failed": "[TODO: Translate] Failed to copy workflow: {message}"
         },
         "disabled": {
             "title": "[TODO: Translate] Workflow management is off",

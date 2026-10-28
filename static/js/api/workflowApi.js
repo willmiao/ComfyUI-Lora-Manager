@@ -20,4 +20,19 @@ export class WorkflowApiClient extends BaseModelApiClient {
         }
         return data;
     }
+
+    /**
+     * Fetch the extracted workflow document for a library entry.
+     * GET /api/lm/workflows/content?file_path=... (works in standalone mode).
+     * @returns {Promise<object>} The workflow JSON document.
+     */
+    async fetchWorkflowContent(filePath) {
+        const url = `${this.apiConfig.endpoints.specific.content}?file_path=${encodeURIComponent(filePath)}`;
+        const response = await fetch(url);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            throw new Error(data.error || data.message || `HTTP ${response.status}`);
+        }
+        return data.workflow;
+    }
 }

@@ -3,7 +3,8 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
-import { showToast } from '../../utils/uiHelpers.js';
+import { copyToClipboard, showToast } from '../../utils/uiHelpers.js';
+import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
     constructor() {
@@ -23,6 +24,12 @@ export class WorkflowContextMenu extends BaseContextMenu {
     showMenu(x, y, card) {
         super.showMenu(x, y, card);
         this.updateExcludeMenuItem();
+        // Standalone has no running ComfyUI to push a workflow into; the
+        // copy-to-clipboard action covers that mode instead.
+        const sendItem = this.menu?.querySelector('[data-action="send-to-comfy"]');
+        if (sendItem) {
+            sendItem.style.display = state?.global?.settings?.standalone_mode ? 'none' : '';
+        }
     }
 
     handleMenuAction(action) {
@@ -41,6 +48,9 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 break;
             case 'send-to-comfy':
                 this.sendToComfy(this.currentCard.dataset.filepath);
+                break;
+            case 'copy-workflow':
+                this.copyWorkflowToClipboard(this.currentCard.dataset.filepath);
                 break;
             case 'replace-preview':
                 // Add new action for replacing preview images
@@ -78,6 +88,16 @@ export class WorkflowContextMenu extends BaseContextMenu {
         } catch (error) {
             console.error('Failed to send workflow to ComfyUI:', error);
             showToast('workflows.sendToComfy.failed', { message: error.message }, 'error');
+        }
+    }
+
+    async copyWorkflowToClipboard(filePath) {
+        try {
+            const workflow = await getModelApiClient().fetchWorkflowContent(filePath);
+            await copyToClipboard(JSON.stringify(workflow));
+        } catch (error) {
+            console.error('Failed to copy workflow:', error);
+            showToast('workflows.copyWorkflow.failed', { message: error.message }, 'error');
         }
     }
 }

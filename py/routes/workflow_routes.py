@@ -62,6 +62,11 @@ class WorkflowRoutes(BaseModelRoutes):
         registrar.add_prefixed_route(
             'GET', '/api/lm/{prefix}/send-to-comfy', prefix, self.send_to_comfy
         )
+        # Read the workflow document itself (copy-to-clipboard flow); works in
+        # standalone mode too since no ComfyUI connection is involved.
+        registrar.add_prefixed_route(
+            'GET', '/api/lm/{prefix}/content', prefix, self.get_workflow_content
+        )
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for workflows (opt-in gated)."""
@@ -188,6 +193,46 @@ class WorkflowRoutes(BaseModelRoutes):
             return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
             logger.error("Error sending workflow to ComfyUI: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_workflow_content(self, request: web.Request) -> web.Response:
+        """Return the extracted workflow document for a library entry.
+
+        Used by the copy-to-clipboard flow; unlike send-to-comfy it does not
+        require a running ComfyUI, so it works in standalone mode as well.
+        """
+        try:
+            if not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+
+            file_path = (request.query.get("file_path") or "").strip()
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "file_path is required"}, status=400
+                )
+
+            _require_path_in_library_roots(
+                file_path, self.service.scanner, label="File path"
+            )
+
+            workflow = await self._load_workflow_payload(file_path)
+            if workflow is None:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "not_a_workflow",
+                        "message": "File is missing or is not a ComfyUI workflow",
+                    },
+                    status=404,
+                )
+            return web.json_response({"success": True, "workflow": workflow})
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            logger.error("Error reading workflow content: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def _read_json_body(self, request: web.Request) -> Dict[str, Any]:
