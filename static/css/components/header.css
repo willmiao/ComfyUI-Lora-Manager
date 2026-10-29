@@ -937,9 +937,12 @@
     margin: 0 4px;
   }
 
+  /* Same corner radius as the wide-screen field. With a pill radius the 1px
+     border disappeared along both arcs (the container's overflow:hidden
+     rounded clip), which read as a broken outline. */
   .header-search .search-container {
     width: 100%;
-    border-radius: 999px;
+    border-radius: var(--border-radius-sm, 6px);
   }
 
   .header-search input {
