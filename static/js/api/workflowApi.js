@@ -35,4 +35,39 @@ export class WorkflowApiClient extends BaseModelApiClient {
         }
         return data.workflow;
     }
+
+    /**
+     * List LM-managed workflows currently open in live ComfyUI tabs.
+     * GET /api/lm/workflows/comfyui-state
+     * @returns {Promise<Array>} [{client_id, file_path, sha256, dirty}, ...]
+     */
+    async fetchComfyuiState() {
+        const response = await fetch(this.apiConfig.endpoints.specific.comfyuiState);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            throw new Error(data.error || data.message || `HTTP ${response.status}`);
+        }
+        return data.states || [];
+    }
+
+    /**
+     * Ask the ComfyUI tab holding this workflow to write its graph back.
+     * POST /api/lm/workflows/update-from-comfy { file_path }
+     * The request resolves with the write-back outcome; `error` carries the
+     * failure kind ('not_open', 'no_changes', 'cancelled', 'timeout', ...).
+     */
+    async updateFromComfy(filePath) {
+        const response = await fetch(this.apiConfig.endpoints.specific.updateFromComfy, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_path: filePath }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            const error = new Error(data.message || data.error || `HTTP ${response.status}`);
+            error.kind = data.error || 'unknown';
+            throw error;
+        }
+        return data;
+    }
 }

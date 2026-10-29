@@ -86,6 +86,11 @@ def test_common_and_specific_routes_registered():
     assert ("GET", "/api/lm/workflows/content") in registered
     # Write-back from the ComfyUI-side "Update LM-managed workflow" entry.
     assert ("PUT", "/api/lm/workflows/content") in registered
+    # Link-state reporting + LM-page-triggered write-back ("Update from ComfyUI").
+    assert ("POST", "/api/lm/workflows/comfyui-state") in registered
+    assert ("GET", "/api/lm/workflows/comfyui-state") in registered
+    assert ("POST", "/api/lm/workflows/update-from-comfy") in registered
+    assert ("POST", "/api/lm/workflows/collect-result") in registered
 
 
 def test_template_name_is_workflows_page():
@@ -632,6 +637,240 @@ async def test_update_workflow_content_rejected_when_feature_disabled(routes):
             method="PUT",
             body={"file_path": "/library/workflows/flow.json", "workflow": {}},
         )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+# ---------------------------------------------------------------------------
+# ComfyUI link-state reporting + LM-page-triggered write-back
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def link_registry():
+    from py.services.workflow_link_registry import WorkflowLinkRegistry
+
+    WorkflowLinkRegistry.reset_instance()
+    yield
+    WorkflowLinkRegistry.reset_instance()
+
+
+def _mock_prompt_server(monkeypatch, sids=("c1",)):
+    import server
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+
+    send_sync = MagicMock()
+    monkeypatch.setattr(
+        server.PromptServer,
+        "instance",
+        SimpleNamespace(sockets={sid: object() for sid in sids}, send_sync=send_sync),
+    )
+    return send_sync
+
+
+async def test_comfyui_state_report_and_query_roundtrip(
+    routes, plugin_mode, link_registry, monkeypatch
+):
+    _mock_prompt_server(monkeypatch, sids=("c1",))
+
+    response = await routes.report_comfyui_state(
+        DummyRequest(
+            body={
+                "client_id": "c1",
+                "state": {
+                    "file_path": "/lib/flow.json",
+                    "sha256": "abc",
+                    "dirty": True,
+                },
+            }
+        )
+    )
+    assert json.loads(response.text)["success"] is True
+
+    response = await routes.get_comfyui_state(DummyRequest(method="GET"))
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert len(payload["states"]) == 1
+    state = payload["states"][0]
+    assert state["client_id"] == "c1"
+    assert state["file_path"] == "/lib/flow.json"
+    assert state["dirty"] is True
+
+
+async def test_comfyui_state_prunes_disconnected_clients(
+    routes, plugin_mode, link_registry, monkeypatch
+):
+    _mock_prompt_server(monkeypatch, sids=("c1",))
+
+    await routes.report_comfyui_state(
+        DummyRequest(
+            body={"client_id": "gone", "state": {"file_path": "/lib/a.json", "dirty": True}}
+        )
+    )
+    response = await routes.get_comfyui_state(DummyRequest(method="GET"))
+
+    assert json.loads(response.text)["states"] == []
+
+
+async def test_comfyui_state_null_clears_entry(
+    routes, plugin_mode, link_registry, monkeypatch
+):
+    _mock_prompt_server(monkeypatch, sids=("c1",))
+
+    await routes.report_comfyui_state(
+        DummyRequest(
+            body={"client_id": "c1", "state": {"file_path": "/lib/a.json", "dirty": True}}
+        )
+    )
+    await routes.report_comfyui_state(DummyRequest(body={"client_id": "c1", "state": None}))
+
+    response = await routes.get_comfyui_state(DummyRequest(method="GET"))
+    assert json.loads(response.text)["states"] == []
+
+
+async def test_report_comfyui_state_requires_client_id(routes, plugin_mode, link_registry):
+    response = await routes.report_comfyui_state(DummyRequest(body={"state": None}))
+    assert response.status == 400
+
+
+async def test_get_comfyui_state_empty_in_standalone(routes, monkeypatch, link_registry):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+
+    response = await routes.get_comfyui_state(DummyRequest(method="GET"))
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "states": []}
+
+
+async def test_collect_result_unknown_request(routes, plugin_mode, link_registry):
+    response = await routes.collect_result(
+        DummyRequest(body={"request_id": "nope", "success": True})
+    )
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "resolved": False}
+
+
+async def test_update_from_comfy_not_open(routes, plugin_mode, link_registry, tmp_path, monkeypatch):
+    _mock_prompt_server(monkeypatch)
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    target.write_text("{}", encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.update_from_comfy(
+        DummyRequest(body={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 404
+    assert payload["error"] == "not_open"
+
+
+async def test_update_from_comfy_roundtrip(
+    routes, plugin_mode, link_registry, tmp_path, monkeypatch
+):
+    import asyncio
+
+    send_sync = _mock_prompt_server(monkeypatch, sids=("c1",))
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    target.write_text("{}", encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    await routes.report_comfyui_state(
+        DummyRequest(
+            body={
+                "client_id": "c1",
+                "state": {"file_path": str(target), "sha256": "abc", "dirty": True},
+            }
+        )
+    )
+
+    task = asyncio.create_task(
+        routes.update_from_comfy(DummyRequest(body={"file_path": str(target)}))
+    )
+    for _ in range(100):
+        if send_sync.call_count:
+            break
+        await asyncio.sleep(0.01)
+    assert send_sync.call_count == 1
+
+    channel, message = send_sync.call_args.args[:2]
+    assert channel == "lm_collect_workflow"
+    assert message["file_path"] == str(target)
+    assert send_sync.call_args.kwargs.get("sid") == "c1"
+
+    await routes.collect_result(
+        DummyRequest(
+            body={
+                "request_id": message["request_id"],
+                "success": True,
+                "sha256": "new-hash",
+            }
+        )
+    )
+    response = await asyncio.wait_for(task, timeout=5)
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["sha256"] == "new-hash"
+
+
+async def test_update_from_comfy_no_changes_is_200(
+    routes, plugin_mode, link_registry, tmp_path, monkeypatch
+):
+    import asyncio
+
+    send_sync = _mock_prompt_server(monkeypatch, sids=("c1",))
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    target.write_text("{}", encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    await routes.report_comfyui_state(
+        DummyRequest(
+            body={"client_id": "c1", "state": {"file_path": str(target), "dirty": True}}
+        )
+    )
+
+    task = asyncio.create_task(
+        routes.update_from_comfy(DummyRequest(body={"file_path": str(target)}))
+    )
+    for _ in range(100):
+        if send_sync.call_count:
+            break
+        await asyncio.sleep(0.01)
+
+    request_id = send_sync.call_args.args[1]["request_id"]
+    await routes.collect_result(
+        DummyRequest(
+            body={"request_id": request_id, "success": False, "error": "no_changes"}
+        )
+    )
+    response = await asyncio.wait_for(task, timeout=5)
+
+    assert response.status == 200
+    assert json.loads(response.text)["error"] == "no_changes"
+
+
+async def test_update_from_comfy_rejected_in_standalone(routes, monkeypatch, link_registry):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+
+    response = await routes.update_from_comfy(
+        DummyRequest(body={"file_path": "/lib/flow.json"})
     )
     payload = json.loads(response.text)
 

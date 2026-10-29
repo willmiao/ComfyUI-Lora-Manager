@@ -1459,11 +1459,18 @@
         "title": "[TODO: Translate] Workflows",
         "contextMenu": {
             "sendToComfy": "[TODO: Translate] Open in ComfyUI",
+            "updateFromComfy": "[TODO: Translate] Update from ComfyUI",
             "copyWorkflow": "[TODO: Translate] Copy Workflow"
         },
         "sendToComfy": {
             "success": "[TODO: Translate] Workflow sent to ComfyUI",
             "failed": "[TODO: Translate] Failed to send workflow: {message}"
+        },
+        "updateFromComfy": {
+            "success": "[TODO: Translate] Workflow updated from ComfyUI",
+            "noChanges": "[TODO: Translate] No changes in ComfyUI to write back",
+            "cancelled": "[TODO: Translate] Update cancelled",
+            "failed": "[TODO: Translate] Failed to update from ComfyUI: {message}"
         },
         "copyWorkflow": {
             "failed": "[TODO: Translate] Failed to copy workflow: {message}"

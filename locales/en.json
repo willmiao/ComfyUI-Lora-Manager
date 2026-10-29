@@ -1459,11 +1459,18 @@
     "title": "Workflows",
     "contextMenu": {
       "sendToComfy": "Open in ComfyUI",
+      "updateFromComfy": "Update from ComfyUI",
       "copyWorkflow": "Copy Workflow"
     },
     "sendToComfy": {
       "success": "Workflow sent to ComfyUI",
       "failed": "Failed to send workflow: {message}"
+    },
+    "updateFromComfy": {
+      "success": "Workflow updated from ComfyUI",
+      "noChanges": "No changes in ComfyUI to write back",
+      "cancelled": "Update cancelled",
+      "failed": "Failed to update from ComfyUI: {message}"
     },
     "copyWorkflow": {
       "failed": "Failed to copy workflow: {message}"

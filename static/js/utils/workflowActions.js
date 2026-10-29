@@ -31,3 +31,24 @@ export async function copyWorkflowToClipboard(filePath) {
         showToast('workflows.copyWorkflow.failed', { message: error.message }, 'error');
     }
 }
+
+/**
+ * Ask the ComfyUI tab that has this workflow open (and edited) to write its
+ * current graph back into the managed library document.
+ * @param {string} filePath
+ */
+export async function updateWorkflowFromComfy(filePath) {
+    try {
+        await getModelApiClient(MODEL_TYPES.WORKFLOW).updateFromComfy(filePath);
+        showToast('workflows.updateFromComfy.success', {}, 'success');
+    } catch (error) {
+        const kind = error.kind || 'unknown';
+        if (kind === 'no_changes' || kind === 'cancelled') {
+            const key = kind === 'no_changes' ? 'noChanges' : 'cancelled';
+            showToast(`workflows.updateFromComfy.${key}`, {}, 'info');
+        } else {
+            console.error('Failed to update workflow from ComfyUI:', error);
+            showToast('workflows.updateFromComfy.failed', { message: error.message }, 'error');
+        }
+    }
+}

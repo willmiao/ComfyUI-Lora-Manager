@@ -13,6 +13,7 @@ from .model_route_registrar import ModelRouteRegistrar
 from ..config import config
 from ..services.model_lifecycle_service import _require_path_in_library_roots
 from ..services.service_registry import ServiceRegistry
+from ..services.workflow_link_registry import WorkflowLinkRegistry
 from ..services.workflow_service import WorkflowService
 from ..utils.constants import WORKFLOW_CIVITAI_TYPES
 from ..utils.file_utils import calculate_sha256
@@ -81,6 +82,21 @@ class WorkflowRoutes(BaseModelRoutes):
         # document (ComfyUI-side "Update LM-managed workflow" entry point).
         registrar.add_prefixed_route(
             'PUT', '/api/lm/{prefix}/content', prefix, self.update_workflow_content
+        )
+        # ComfyUI-side link-state reporting (which managed workflow is open
+        # and dirty in which client tab) and the LM-page-triggered write-back
+        # request/response pair ("Update from ComfyUI" card menu entry).
+        registrar.add_prefixed_route(
+            'POST', '/api/lm/{prefix}/comfyui-state', prefix, self.report_comfyui_state
+        )
+        registrar.add_prefixed_route(
+            'GET', '/api/lm/{prefix}/comfyui-state', prefix, self.get_comfyui_state
+        )
+        registrar.add_prefixed_route(
+            'POST', '/api/lm/{prefix}/update-from-comfy', prefix, self.update_from_comfy
+        )
+        registrar.add_prefixed_route(
+            'POST', '/api/lm/{prefix}/collect-result', prefix, self.collect_result
         )
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:
@@ -439,3 +455,136 @@ class WorkflowRoutes(BaseModelRoutes):
                 file_path,
                 exc_info=True,
             )
+
+    # ------------------------------------------------------------------
+    # ComfyUI link-state reporting + LM-page-triggered write-back
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_standalone() -> bool:
+        return os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+
+    @staticmethod
+    def _active_client_ids() -> set:
+        """Live ComfyUI websocket client ids; empty when unavailable."""
+        try:
+            from server import PromptServer  # pyright: ignore[reportMissingImports]
+
+            return set(PromptServer.instance.sockets.keys())
+        except Exception:
+            return set()
+
+    async def report_comfyui_state(self, request: web.Request) -> web.Response:
+        """ComfyUI client reports its active graph's LM link state.
+
+        Body: ``{client_id, state}`` where ``state`` is
+        ``{file_path, sha256, dirty, name}`` or ``null`` (active graph is not
+        LM-linked). In standalone mode there are no ComfyUI clients; the
+        report is accepted and dropped.
+        """
+        if self._is_standalone():
+            return web.json_response({"success": True})
+
+        payload = await self._read_json_body(request)
+        client_id = payload.get("client_id")
+        if not isinstance(client_id, str) or not client_id:
+            return web.json_response(
+                {"success": False, "error": "client_id is required"}, status=400
+            )
+        state = payload.get("state")
+        registry = await WorkflowLinkRegistry.get_instance()
+        await registry.report_state(
+            client_id, state if isinstance(state, dict) else None
+        )
+        return web.json_response({"success": True})
+
+    async def get_comfyui_state(self, request: web.Request) -> web.Response:
+        """List LM-linked workflows currently open in live ComfyUI tabs."""
+        if self._is_standalone():
+            return web.json_response({"success": True, "states": []})
+
+        registry = await WorkflowLinkRegistry.get_instance()
+        states = await registry.get_states(self._active_client_ids())
+        return web.json_response({"success": True, "states": states})
+
+    async def update_from_comfy(self, request: web.Request) -> web.Response:
+        """Ask the ComfyUI tab holding *file_path* to write its graph back.
+
+        The LM web UI's "Update from ComfyUI" card menu entry calls this; the
+        request blocks until the ComfyUI client performs the write-back (via
+        the regular ``PUT .../content`` endpoint) and reports the outcome, or
+        a timeout elapses.
+        """
+        try:
+            if self._is_standalone():
+                return web.json_response(
+                    {"success": False, "error": "Standalone Mode Active"}, status=400
+                )
+            if not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+
+            payload = await self._read_json_body(request)
+            file_path = (payload.get("file_path") or "").strip()
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "file_path is required"}, status=400
+                )
+            _require_path_in_library_roots(
+                file_path, self.service.scanner, label="File path"
+            )
+
+            registry = await WorkflowLinkRegistry.get_instance()
+            sid = await registry.find_client_for(file_path, self._active_client_ids())
+            if sid is None:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "not_open",
+                        "message": "Workflow is not open in any connected ComfyUI tab",
+                    },
+                    status=404,
+                )
+
+            request_id, future = registry.begin_collect()
+            from server import PromptServer  # pyright: ignore[reportMissingImports]
+
+            PromptServer.instance.send_sync(
+                "lm_collect_workflow",
+                {"request_id": request_id, "file_path": file_path},
+                sid=sid,
+            )
+            result = await registry.await_collect(request_id, future, timeout=20.0)
+            status = 200 if result.get("success") else 500
+            if result.get("error") in ("no_changes", "cancelled"):
+                status = 200
+            elif result.get("error") == "timeout":
+                status = 504
+            return web.json_response(result, status=status)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            logger.error("Error collecting workflow from ComfyUI: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def collect_result(self, request: web.Request) -> web.Response:
+        """ComfyUI client reports the outcome of a collect request."""
+        if self._is_standalone():
+            return web.json_response({"success": False, "error": "Standalone Mode Active"}, status=400)
+
+        payload = await self._read_json_body(request)
+        request_id = payload.get("request_id")
+        if not isinstance(request_id, str) or not request_id:
+            return web.json_response(
+                {"success": False, "error": "request_id is required"}, status=400
+            )
+        result = {
+            key: payload[key]
+            for key in ("success", "error", "sha256", "file_path")
+            if key in payload
+        }
+        registry = await WorkflowLinkRegistry.get_instance()
+        resolved = await registry.resolve_collect(request_id, result)
+        return web.json_response({"success": True, "resolved": resolved})

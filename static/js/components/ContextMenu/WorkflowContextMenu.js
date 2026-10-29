@@ -3,7 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
-import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workflowActions.js';
+import { copyWorkflowToClipboard, sendWorkflowToComfy, updateWorkflowFromComfy } from '../../utils/workflowActions.js';
 import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
@@ -27,8 +27,41 @@ export class WorkflowContextMenu extends BaseContextMenu {
         // Standalone has no running ComfyUI to push a workflow into; the
         // copy-to-clipboard action covers that mode instead.
         const sendItem = this.menu?.querySelector('[data-action="send-to-comfy"]');
+        const updateItem = this.menu?.querySelector('[data-action="update-from-comfy"]');
+        const standalone = state?.global?.settings?.standalone_mode;
         if (sendItem) {
-            sendItem.style.display = state?.global?.settings?.standalone_mode ? 'none' : '';
+            sendItem.style.display = standalone ? 'none' : '';
+        }
+        if (updateItem) {
+            if (standalone) {
+                updateItem.style.display = 'none';
+            } else {
+                updateItem.style.display = '';
+                this._refreshUpdateFromComfyItem(card, updateItem);
+            }
+        }
+    }
+
+    /**
+     * Enable "Update from ComfyUI" only when this workflow is the active
+     * graph in a connected ComfyUI tab and carries unsaved edits. The state
+     * is pushed by the ComfyUI-side extension; the item starts disabled and
+     * flips when the answer arrives while the menu is still open.
+     */
+    async _refreshUpdateFromComfyItem(card, item) {
+        item.classList.add('disabled');
+        const filePath = card?.dataset?.filepath;
+        if (!filePath) return;
+        try {
+            const states = await getModelApiClient().fetchComfyuiState();
+            // Menu may have been closed/re-opened for another card meanwhile.
+            if (this.currentCard !== card) return;
+            const linked = states.some(
+                (entry) => entry.file_path === filePath && entry.dirty
+            );
+            item.classList.toggle('disabled', !linked);
+        } catch (_error) {
+            // State endpoint unavailable (older backend): keep disabled.
         }
     }
 
@@ -48,6 +81,9 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 break;
             case 'send-to-comfy':
                 sendWorkflowToComfy(this.currentCard.dataset.filepath);
+                break;
+            case 'update-from-comfy':
+                updateWorkflowFromComfy(this.currentCard.dataset.filepath);
                 break;
             case 'copy-workflow':
                 copyWorkflowToClipboard(this.currentCard.dataset.filepath);
