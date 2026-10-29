@@ -699,22 +699,31 @@
   margin: 0.25rem 0;
 }
 
-/* Responsive: the Ctrl+F cue is pure decoration and, above 950px, the widest
-   thing inside the field. Below 1366px the header (branding + full nav) leaves
-   too little room for it, so it steps aside and the field reclaims its 58px.
-   The shortcut itself keeps working - only the visual hint is dropped. */
-@media (max-width: 1366px) {
-  .header-search .search-shortcut-cue {
-    display: none;
+/* Responsive ladder for the header.
+   Worst case measured in the browser (both opt-in pages enabled, 7 tabs):
+   icon + label nav ≈ 783px, labels only ≈ 619px (517px once the 1366px tier
+   below applies). The bar also spends a fixed ~424px on padding, branding,
+   the five round controls and gaps. Every tier below therefore exists to keep
+   the search field usable - at 1280px the old ladder left it 73px wide, i.e.
+   nothing but its two inline toggles. */
+
+/* ≤1500px: nav icons are a wide-screen affordance. The labels keep the tabs
+   scannable on their own, and dropping the icons hands ~168px back to the
+   search field. Above 1500px there is room for both. */
+@media (max-width: 1500px) {
+  .nav-item {
+    gap: 0;
   }
 
-  .header-search input {
-    padding-right: 4.25rem !important;
+  .nav-item i {
+    display: none;
   }
 }
 
-/* Responsive: Early optimization at 1200px - reduce gaps and padding */
-@media (max-width: 1200px) {
+/* ≤1366px: compact chrome (tighter gaps, padding and nav font), and drop the
+   Ctrl+F cue - it is pure decoration and the widest thing inside the field.
+   The shortcut itself keeps working; only the visual hint goes away. */
+@media (max-width: 1366px) {
   .header-container {
     gap: 0.75rem;
     padding: 0 12px;
@@ -732,34 +741,28 @@
   .header-controls {
     gap: 6px;
   }
-}
 
-/* Responsive: Hide nav icons at 1100px to save space */
-@media (max-width: 1100px) {
-  .nav-item {
-    gap: 0;
-    padding: 0.25rem 0.4rem;
-  }
-
-  .nav-item i {
+  .header-search .search-shortcut-cue {
     display: none;
   }
 
-  .header-search {
-    max-width: 450px;
+  .header-search input {
+    padding-right: 4.25rem !important;
   }
 }
 
-@media (max-width: 950px) {
+/* ≤1150px: the app title is the cheapest ~137px left in the bar - the logo
+   still identifies the app, while the nav labels are what people navigate by. */
+@media (max-width: 1150px) {
   .app-title {
     display: none !important;
   }
+}
 
-  .header-container {
-    padding: 0 10px;
-    gap: 0.5rem;
-  }
-
+/* ≤1100px: collapse the five round controls into the hamburger. Its dropdown
+   already carries the same five actions, so nothing is lost, and the bar
+   reclaims ~192px for the nav and the search field. */
+@media (max-width: 1100px) {
   .header-controls {
     display: none !important;
   }
@@ -774,6 +777,14 @@
 
   .hamburger-dropdown.active {
     display: flex;
+  }
+}
+
+/* ≤950px: give the search field the whole flexible row and tighten the nav. */
+@media (max-width: 950px) {
+  .header-container {
+    padding: 0 10px;
+    gap: 0.5rem;
   }
 
   .header-search {
@@ -794,26 +805,12 @@
   }
 }
 
-/* Responsive: Compact mode at 768px */
-@media (max-width: 768px) {
-  .header-search input {
-    padding: 0.4rem 0.6rem;
-    padding-left: 2rem !important;
-    padding-right: 4.5rem !important;
-    font-size: 0.9rem;
-  }
-
-  .header-search .search-container {
-    border-radius: var(--border-radius-xs, 4px);
-  }
-}
-
-/* For narrower screens - switch nav to icons only.
-   A labelled nav needs ~383px and a readable search field needs ~300px, so the
-   two cannot coexist below ~700px: at 601-700px the search input was previously
-   squeezed to 200px, leaving only ~96px of text room and overlapping the
-   placeholder with the inline toggles. Labels therefore collapse here. */
-@media (max-width: 700px) {
+/* Below 780px the labelled nav (461px) can no longer coexist with the 200px
+   search floor and the hamburger: the row overflowed and clipped the
+   hamburger by ~40px at 720px. Collapse the labels to icons (190px) and give
+   the width back to the search field. The tooltip + aria-label on each tab
+   keep the icon-only state usable. */
+@media (max-width: 780px) {
   .main-nav {
     display: flex;
     gap: 0.15rem;
@@ -833,6 +830,20 @@
   }
 }
 
+/* Responsive: Compact mode at 768px */
+@media (max-width: 768px) {
+  .header-search input {
+    padding: 0.4rem 0.6rem;
+    padding-left: 2rem !important;
+    padding-right: 4.5rem !important;
+    font-size: 0.9rem;
+  }
+
+  .header-search .search-container {
+    border-radius: var(--border-radius-xs, 4px);
+  }
+}
+
 /* For very small screens - tighten container spacing */
 @media (max-width: 600px) {
   .header-container {
@@ -847,6 +858,18 @@
 
   .nav-item i {
     font-size: 1rem;
+  }
+}
+
+/* Below ~490px the bar stops fitting: logo + icon nav + hamburger alone take
+   ~291px, so the 200px search floor pushed the row past the viewport and
+   clipped the hamburger (3px at 480px, ~93px at 390px). Drop the floor - the
+   field stays focusable and the page stays inside the viewport. A real phone
+   layout (nav inside the hamburger, search collapsed to a button) is a
+   separate change. */
+@media (max-width: 520px) {
+  .header-search {
+    min-width: 0;
   }
 }
 
