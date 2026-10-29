@@ -6,6 +6,7 @@ import os
 import tempfile
 from typing import Any, Dict, Optional
 
+import aiohttp
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
@@ -19,13 +20,21 @@ from ..utils.constants import WORKFLOW_CIVITAI_TYPES
 from ..utils.file_utils import calculate_sha256
 from ..utils.metadata_manager import MetadataManager
 from ..utils.models import WorkflowMetadata
-from ..utils.workflow_analysis import MAX_WORKFLOW_JSON_BYTES, analyze_workflow
+from ..utils.workflow_analysis import (
+    MAX_WORKFLOW_JSON_BYTES,
+    analyze_workflow,
+    load_workflow_file,
+)
 from ..utils.workflow_extraction import (
     get_workflow_document_path,
     load_artifact_workflow_document,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class WorkflowRestoreDownloadError(RuntimeError):
+    """Raised when a restore re-download fails before the file is replaced."""
 
 
 class WorkflowRoutes(BaseModelRoutes):
@@ -97,6 +106,10 @@ class WorkflowRoutes(BaseModelRoutes):
         )
         registrar.add_prefixed_route(
             'POST', '/api/lm/{prefix}/collect-result', prefix, self.collect_result
+        )
+        # Restore a workflow to its downloaded state (discard local edits).
+        registrar.add_prefixed_route(
+            'POST', '/api/lm/{prefix}/restore', prefix, self.restore_workflow
         )
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:
@@ -588,3 +601,238 @@ class WorkflowRoutes(BaseModelRoutes):
         registry = await WorkflowLinkRegistry.get_instance()
         resolved = await registry.resolve_collect(request_id, result)
         return web.json_response({"success": True, "resolved": resolved})
+
+    # ------------------------------------------------------------------
+    # Restore to downloaded state
+    # ------------------------------------------------------------------
+
+    async def restore_workflow(self, request: web.Request) -> web.Response:
+        """Restore a workflow to its downloaded state, discarding local edits.
+
+        Container artifacts (``.zip``/images) were never modified — write-backs
+        only touch the derived ``.workflow.json`` sidecar — so restore discards
+        the sidecar and re-extracts from the pristine archive. Bare ``.json``
+        artifacts are rewritten in place by write-backs, so restore
+        re-downloads the recorded CivitAI version file and replaces the local
+        copy (after validating the download and verifying its hash).
+        """
+        try:
+            if not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+
+            payload = await self._read_json_body(request)
+            file_path = (payload.get("file_path") or "").strip()
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "file_path is required"}, status=400
+                )
+            _require_path_in_library_roots(
+                file_path, self.service.scanner, label="File path"
+            )
+
+            if not os.path.exists(file_path):
+                return web.json_response(
+                    {"success": False, "error": "Workflow file not found"}, status=404
+                )
+
+            if os.path.splitext(file_path)[1].lower() == ".json":
+                return await self._restore_json_artifact(file_path)
+            return await self._restore_container_artifact(file_path)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            logger.error("Error restoring workflow: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def _restore_container_artifact(self, file_path: str) -> web.Response:
+        """Discard the derived document and re-extract from the archive."""
+
+        document_path = get_workflow_document_path(file_path)
+
+        def _discard_derived() -> None:
+            try:
+                os.unlink(document_path)
+            except FileNotFoundError:
+                pass
+
+        await asyncio.to_thread(_discard_derived)
+
+        document = await asyncio.to_thread(load_artifact_workflow_document, file_path)
+        if document is None:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "not_a_workflow",
+                    "message": "Archive does not contain a ComfyUI workflow",
+                },
+                status=404,
+            )
+
+        analysis = analyze_workflow(document)
+        doc_sha = hashlib.sha256(
+            json.dumps(document, ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        await self._refresh_metadata_after_write(file_path, analysis, doc_sha)
+        return web.json_response(
+            {"success": True, "file_path": file_path, "restored": "extracted"}
+        )
+
+    async def _restore_json_artifact(self, file_path: str) -> web.Response:
+        """Re-download the recorded CivitAI file over the local copy."""
+
+        metadata, should_skip = await MetadataManager.load_metadata(
+            file_path, WorkflowMetadata
+        )
+        version_info = (
+            metadata.civitai
+            if metadata is not None and not should_skip and metadata.from_civitai
+            else None
+        )
+        if not isinstance(version_info, dict) or not version_info:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "no_source",
+                    "message": "Workflow has no recorded CivitAI source to restore from",
+                },
+                status=400,
+            )
+
+        file_info = self._find_downloaded_file_info(version_info, file_path)
+        download_url = (file_info or {}).get("downloadUrl") or version_info.get(
+            "downloadUrl"
+        )
+        if not download_url:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "no_source",
+                    "message": "Recorded CivitAI version has no download URL",
+                },
+                status=400,
+            )
+        expected_sha256 = (
+            (((file_info or {}).get("hashes") or {}).get("SHA256") or "").lower()
+            or None
+        )
+
+        try:
+            new_sha256 = await self._download_and_replace(
+                download_url, file_path, expected_sha256=expected_sha256
+            )
+        except WorkflowRestoreDownloadError as exc:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "download_failed",
+                    "message": str(exc),
+                },
+                status=502,
+            )
+
+        document = await asyncio.to_thread(load_workflow_file, file_path)
+        if document is None:
+            # Defensive: the temp file was validated before the replace, so
+            # this can only fail on a race with an external writer.
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "not_a_workflow",
+                    "message": "Restored file is not a ComfyUI workflow",
+                },
+                status=422,
+            )
+
+        analysis = analyze_workflow(document)
+        await self._refresh_metadata_after_write(file_path, analysis, new_sha256)
+        return web.json_response(
+            {
+                "success": True,
+                "file_path": file_path,
+                "restored": "downloaded",
+                "sha256": new_sha256,
+            }
+        )
+
+    @staticmethod
+    def _find_downloaded_file_info(
+        version_info: Dict[str, Any], file_path: str
+    ) -> Optional[Dict[str, Any]]:
+        """Match the stored version's file entry to the local artifact."""
+
+        files = [f for f in version_info.get("files") or [] if isinstance(f, dict)]
+        if not files:
+            return None
+        basename = os.path.basename(file_path)
+        for file_info in files:
+            if file_info.get("name") == basename:
+                return file_info
+        return files[0] if len(files) == 1 else None
+
+    async def _download_and_replace(
+        self,
+        download_url: str,
+        file_path: str,
+        *,
+        expected_sha256: Optional[str] = None,
+    ) -> str:
+        """Download *download_url* and atomically replace *file_path*.
+
+        The download lands in a temp file next to the target and is only
+        swapped in after it parses as a workflow and (when known) matches the
+        recorded SHA256. Returns the downloaded file's SHA256.
+        """
+
+        api_key = (self._settings.get("civitai_api_key", "") or "").strip()
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        timeout = aiohttp.ClientTimeout(total=600)
+
+        fd, temp_path = tempfile.mkstemp(
+            dir=os.path.dirname(file_path), suffix=".download"
+        )
+        os.close(fd)
+        try:
+            async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
+                async with session.get(download_url) as response:
+                    if response.status != 200:
+                        raise WorkflowRestoreDownloadError(
+                            f"Download failed with HTTP {response.status}"
+                        )
+                    written = 0
+                    with open(temp_path, "wb") as handle:
+                        async for chunk in response.content.iter_chunked(1 << 20):
+                            written += len(chunk)
+                            if written > MAX_WORKFLOW_JSON_BYTES:
+                                raise WorkflowRestoreDownloadError(
+                                    "Downloaded file exceeds the workflow size limit"
+                                )
+                            handle.write(chunk)
+
+            if load_workflow_file(temp_path) is None:
+                raise WorkflowRestoreDownloadError(
+                    "Downloaded file is not a ComfyUI workflow"
+                )
+
+            new_sha256 = await calculate_sha256(temp_path)
+            if expected_sha256 and new_sha256.lower() != expected_sha256:
+                raise WorkflowRestoreDownloadError(
+                    "Downloaded file does not match the recorded SHA256"
+                )
+
+            await asyncio.to_thread(os.replace, temp_path, file_path)
+            return new_sha256
+        except WorkflowRestoreDownloadError:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
+        except Exception as exc:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise WorkflowRestoreDownloadError(str(exc)) from exc

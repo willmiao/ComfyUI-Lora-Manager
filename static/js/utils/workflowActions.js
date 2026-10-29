@@ -2,6 +2,7 @@ import { MODEL_TYPES } from '../api/apiConfig.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { state } from '../state/index.js';
 import { copyToClipboard, showToast } from './uiHelpers.js';
+import { translate } from './i18nHelpers.js';
 
 /**
  * Push a library workflow into the running ComfyUI graph (plugin mode only;
@@ -55,5 +56,28 @@ export async function updateWorkflowFromComfy(filePath) {
             console.error('Failed to update workflow from ComfyUI:', error);
             showToast('workflows.updateFromComfy.failed', { message: error.message }, 'error');
         }
+    }
+}
+
+/**
+ * Restore a workflow to its downloaded state, discarding local edits. Bare
+ * .json artifacts are re-downloaded from the recorded CivitAI version;
+ * container artifacts (.zip/images) are re-extracted from the pristine file.
+ * @param {string} filePath
+ */
+export async function restoreWorkflow(filePath) {
+    if (!window.confirm(translate('workflows.restoreDownloaded.confirm', {}))) {
+        return;
+    }
+    try {
+        const result = await getModelApiClient(MODEL_TYPES.WORKFLOW).restore(filePath);
+        showToast('workflows.restoreDownloaded.success', {}, 'success');
+        // Re-render the card in place: the scroller shows its shared
+        // "Updated" cue and the item picks up the restored document hash.
+        const updateData = result && result.sha256 ? { sha256: result.sha256 } : {};
+        state.virtualScroller?.updateSingleItem(filePath, updateData);
+    } catch (error) {
+        console.error('Failed to restore workflow:', error);
+        showToast('workflows.restoreDownloaded.failed', { message: error.message }, 'error');
     }
 }

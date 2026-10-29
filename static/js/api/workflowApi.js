@@ -70,4 +70,24 @@ export class WorkflowApiClient extends BaseModelApiClient {
         }
         return data;
     }
+
+    /**
+     * Restore a workflow to its downloaded state, discarding local edits.
+     * POST /api/lm/workflows/restore { file_path }
+     * `error` carries the failure kind ('no_source', 'download_failed', ...).
+     */
+    async restore(filePath) {
+        const response = await fetch(this.apiConfig.endpoints.specific.restore, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_path: filePath }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            const error = new Error(data.message || data.error || `HTTP ${response.status}`);
+            error.kind = data.error || 'unknown';
+            throw error;
+        }
+        return data;
+    }
 }

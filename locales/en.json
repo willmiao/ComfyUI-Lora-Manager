@@ -1460,11 +1460,17 @@
     "contextMenu": {
       "sendToComfy": "Open in ComfyUI",
       "updateFromComfy": "Update from ComfyUI",
-      "copyWorkflow": "Copy Workflow"
+      "copyWorkflow": "Copy Workflow",
+      "restoreDownloaded": "Restore Downloaded Version"
     },
     "sendToComfy": {
       "success": "Workflow sent to ComfyUI",
       "failed": "Failed to send workflow: {message}"
+    },
+    "restoreDownloaded": {
+      "confirm": "Restore this workflow to its downloaded version? Local edits will be overwritten.",
+      "success": "Workflow restored to its downloaded version",
+      "failed": "Failed to restore workflow: {message}"
     },
     "updateFromComfy": {
       "success": "Workflow updated from ComfyUI",

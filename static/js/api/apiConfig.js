@@ -186,6 +186,7 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         content: `/api/lm/${MODEL_TYPES.WORKFLOW}/content`,
         comfyuiState: `/api/lm/${MODEL_TYPES.WORKFLOW}/comfyui-state`,
         updateFromComfy: `/api/lm/${MODEL_TYPES.WORKFLOW}/update-from-comfy`,
+        restore: `/api/lm/${MODEL_TYPES.WORKFLOW}/restore`,
     }
 };
 

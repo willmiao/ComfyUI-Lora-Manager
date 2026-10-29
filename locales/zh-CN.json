@@ -1460,11 +1460,17 @@
         "contextMenu": {
             "sendToComfy": "[TODO: Translate] Open in ComfyUI",
             "updateFromComfy": "[TODO: Translate] Update from ComfyUI",
-            "copyWorkflow": "[TODO: Translate] Copy Workflow"
+            "copyWorkflow": "[TODO: Translate] Copy Workflow",
+            "restoreDownloaded": "[TODO: Translate] Restore Downloaded Version"
         },
         "sendToComfy": {
             "success": "[TODO: Translate] Workflow sent to ComfyUI",
             "failed": "[TODO: Translate] Failed to send workflow: {message}"
+        },
+        "restoreDownloaded": {
+            "confirm": "[TODO: Translate] Restore this workflow to its downloaded version? Local edits will be overwritten.",
+            "success": "[TODO: Translate] Workflow restored to its downloaded version",
+            "failed": "[TODO: Translate] Failed to restore workflow: {message}"
         },
         "updateFromComfy": {
             "success": "[TODO: Translate] Workflow updated from ComfyUI",

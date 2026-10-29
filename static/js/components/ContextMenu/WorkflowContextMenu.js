@@ -3,7 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
-import { copyWorkflowToClipboard, sendWorkflowToComfy, updateWorkflowFromComfy } from '../../utils/workflowActions.js';
+import { copyWorkflowToClipboard, restoreWorkflow, sendWorkflowToComfy, updateWorkflowFromComfy } from '../../utils/workflowActions.js';
 import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
@@ -40,6 +40,25 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 this._refreshUpdateFromComfyItem(card, updateItem);
             }
         }
+        const restoreItem = this.menu?.querySelector('[data-action="restore-download"]');
+        if (restoreItem) {
+            restoreItem.classList.toggle('disabled', !this._isRestorable(card));
+        }
+    }
+
+    /**
+     * Restore is available for container artifacts (re-extracted locally from
+     * the pristine archive) and for CivitAI-sourced .json artifacts
+     * (re-downloaded from the recorded version). Local-only .json files have
+     * no restore source; when the item is not in the loaded window we stay
+     * enabled and let the backend report "no_source".
+     */
+    _isRestorable(card) {
+        const filePath = card?.dataset?.filepath;
+        if (!filePath) return false;
+        if (!filePath.toLowerCase().endsWith('.json')) return true;
+        const item = state.virtualScroller?.items?.find((entry) => entry.file_path === filePath);
+        return item ? !!item.from_civitai : true;
     }
 
     /**
@@ -87,6 +106,9 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 break;
             case 'copy-workflow':
                 copyWorkflowToClipboard(this.currentCard.dataset.filepath);
+                break;
+            case 'restore-download':
+                restoreWorkflow(this.currentCard.dataset.filepath);
                 break;
             case 'replace-preview':
                 // Add new action for replacing preview images

@@ -6,6 +6,7 @@ const fetchWorkflowContentMock = vi.fn();
 const sendToComfyMock = vi.fn();
 const fetchComfyuiStateMock = vi.fn();
 const updateFromComfyMock = vi.fn();
+const restoreMock = vi.fn();
 const resetAndReloadMock = vi.fn();
 const updateSingleItemMock = vi.fn();
 
@@ -13,7 +14,7 @@ const stateStub = {
   global: { settings: { standalone_mode: false } },
   currentPageType: 'workflows',
   pages: {},
-  virtualScroller: { updateSingleItem: updateSingleItemMock },
+  virtualScroller: { updateSingleItem: updateSingleItemMock, items: [] },
 };
 
 vi.mock('../../../../static/js/utils/uiHelpers.js', () => ({
@@ -31,8 +32,13 @@ vi.mock('../../../../static/js/api/modelApiFactory.js', () => ({
     sendToComfy: sendToComfyMock,
     fetchComfyuiState: fetchComfyuiStateMock,
     updateFromComfy: updateFromComfyMock,
+    restore: restoreMock,
   })),
   resetAndReload: resetAndReloadMock,
+}));
+
+vi.mock('../../../../static/js/utils/i18nHelpers.js', () => ({
+  translate: (key) => key,
 }));
 
 vi.mock('../../../../static/js/managers/MoveManager.js', () => ({
@@ -62,6 +68,7 @@ function setupDom() {
       <div class="context-menu-item" data-action="send-to-comfy"></div>
       <div class="context-menu-item disabled" data-action="update-from-comfy"></div>
       <div class="context-menu-item" data-action="copy-workflow"></div>
+      <div class="context-menu-item" data-action="restore-download"></div>
     </div>
     <div class="model-card" data-filepath="/library/workflows/flow.json"></div>
     <select id="nsfwLevelSelector"></select>
@@ -75,6 +82,7 @@ describe('WorkflowContextMenu', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     stateStub.global.settings.standalone_mode = false;
+    stateStub.virtualScroller.items = [];
     fetchComfyuiStateMock.mockResolvedValue([]);
     setupDom();
     menu = new WorkflowContextMenu();
@@ -202,6 +210,83 @@ describe('WorkflowContextMenu', () => {
         'workflows.updateFromComfy.noChanges',
         {},
         'info'
+      )
+    );
+  });
+
+  it('disables restore-download for local-only .json workflows', () => {
+    stateStub.virtualScroller.items = [
+      { file_path: '/library/workflows/flow.json', from_civitai: false },
+    ];
+
+    menu.showMenu(10, 10, card);
+
+    const restoreItem = document.querySelector('[data-action="restore-download"]');
+    expect(restoreItem.classList.contains('disabled')).toBe(true);
+  });
+
+  it('enables restore-download for CivitAI-sourced .json workflows', () => {
+    stateStub.virtualScroller.items = [
+      { file_path: '/library/workflows/flow.json', from_civitai: true },
+    ];
+
+    menu.showMenu(10, 10, card);
+
+    const restoreItem = document.querySelector('[data-action="restore-download"]');
+    expect(restoreItem.classList.contains('disabled')).toBe(false);
+  });
+
+  it('enables restore-download for container artifacts without CivitAI data', () => {
+    card.dataset.filepath = '/library/workflows/pack.zip';
+
+    menu.showMenu(10, 10, card);
+
+    const restoreItem = document.querySelector('[data-action="restore-download"]');
+    expect(restoreItem.classList.contains('disabled')).toBe(false);
+  });
+
+  it('restores the workflow on restore-download after confirmation', async () => {
+    window.confirm = vi.fn(() => true);
+    restoreMock.mockResolvedValue({ success: true, restored: 'downloaded', sha256: 'restoredsha' });
+
+    menu.handleMenuAction('restore-download');
+    await vi.waitFor(() =>
+      expect(restoreMock).toHaveBeenCalledWith('/library/workflows/flow.json')
+    );
+    await vi.waitFor(() =>
+      expect(showToastMock).toHaveBeenCalledWith(
+        'workflows.restoreDownloaded.success',
+        {},
+        'success'
+      )
+    );
+    // The card is refreshed in place so it shows the "Updated" cue.
+    expect(updateSingleItemMock).toHaveBeenCalledWith('/library/workflows/flow.json', {
+      sha256: 'restoredsha',
+    });
+  });
+
+  it('does not call restore when the confirmation is declined', async () => {
+    window.confirm = vi.fn(() => false);
+
+    menu.handleMenuAction('restore-download');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(restoreMock).not.toHaveBeenCalled();
+  });
+
+  it('shows an error toast when restore fails', async () => {
+    window.confirm = vi.fn(() => true);
+    const error = new Error('Workflow has no recorded CivitAI source to restore from');
+    error.kind = 'no_source';
+    restoreMock.mockRejectedValue(error);
+
+    menu.handleMenuAction('restore-download');
+    await vi.waitFor(() =>
+      expect(showToastMock).toHaveBeenCalledWith(
+        'workflows.restoreDownloaded.failed',
+        { message: 'Workflow has no recorded CivitAI source to restore from' },
+        'error'
       )
     );
   });

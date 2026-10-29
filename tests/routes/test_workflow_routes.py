@@ -91,6 +91,8 @@ def test_common_and_specific_routes_registered():
     assert ("GET", "/api/lm/workflows/comfyui-state") in registered
     assert ("POST", "/api/lm/workflows/update-from-comfy") in registered
     assert ("POST", "/api/lm/workflows/collect-result") in registered
+    # Restore to downloaded state ("Restore Downloaded Version" card menu entry).
+    assert ("POST", "/api/lm/workflows/restore") in registered
 
 
 def test_template_name_is_workflows_page():
@@ -871,6 +873,197 @@ async def test_update_from_comfy_rejected_in_standalone(routes, monkeypatch, lin
 
     response = await routes.update_from_comfy(
         DummyRequest(body={"file_path": "/lib/flow.json"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_restore_container_reextracts_pristine_document(routes, tmp_path):
+    """Zip artifacts stay byte-identical; restore discards the edited sidecar."""
+    import zipfile
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "pack.zip"
+    original_doc = {"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(original_doc))
+    original_bytes = target.read_bytes()
+    routes.service.scanner = StubScanner([str(root)])
+
+    # Simulate a write-back: the derived sidecar now carries local edits.
+    edited = {"nodes": [{"id": 1, "type": "KSampler"}], "links": []}
+    response = await routes.update_workflow_content(
+        DummyRequest(method="PUT", body={"file_path": str(target), "workflow": edited})
+    )
+    assert json.loads(response.text)["success"] is True
+
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["restored"] == "extracted"
+    assert target.read_bytes() == original_bytes
+    derived = root / "pack.workflow.json"
+    assert json.loads(derived.read_text(encoding="utf-8")) == original_doc
+
+
+def _civitai_metadata(target, original_bytes, sha):
+    from py.utils.models import WorkflowMetadata
+
+    return WorkflowMetadata(
+        file_name="flow",
+        model_name="Flow",
+        file_path=str(target),
+        size=len(original_bytes),
+        modified=0,
+        sha256=sha,
+        base_model="SDXL",
+        preview_url="",
+        civitai={
+            "id": 3431529,
+            "files": [
+                {
+                    "name": "flow.json",
+                    "downloadUrl": "https://civitai.test/dl/flow.json",
+                    "hashes": {"SHA256": sha},
+                }
+            ],
+        },
+    )
+
+
+async def test_restore_json_requires_civitai_source(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    target.write_text(
+        json.dumps({"nodes": [{"id": 1, "type": "KSampler"}], "links": []}),
+        encoding="utf-8",
+    )
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+    assert payload["error"] == "no_source"
+
+
+async def test_restore_json_redownloads_recorded_version(routes, tmp_path, monkeypatch):
+    import hashlib
+
+    from py.utils.metadata_manager import MetadataManager
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    edited = {"nodes": [{"id": 1, "type": "KSampler"}], "links": []}
+    target.write_text(json.dumps(edited), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    original = {"nodes": [{"id": 1, "type": "CLIPTextEncode"}], "links": []}
+    original_bytes = json.dumps(original).encode("utf-8")
+    original_sha = hashlib.sha256(original_bytes).hexdigest()
+    await MetadataManager.save_metadata(
+        str(target), _civitai_metadata(target, original_bytes, original_sha)
+    )
+
+    async def fake_download(self, url, file_path, *, expected_sha256=None):
+        assert url == "https://civitai.test/dl/flow.json"
+        assert expected_sha256 == original_sha
+        with open(file_path, "wb") as handle:
+            handle.write(original_bytes)
+        return original_sha
+
+    monkeypatch.setattr(WorkflowRoutes, "_download_and_replace", fake_download)
+
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["restored"] == "downloaded"
+    assert payload["sha256"] == original_sha
+    assert json.loads(target.read_text(encoding="utf-8")) == original
+
+    # Metadata analysis and identity follow the restored document.
+    from py.utils.models import WorkflowMetadata
+
+    reloaded, should_skip = await MetadataManager.load_metadata(
+        str(target), WorkflowMetadata
+    )
+    assert not should_skip
+    assert reloaded.sha256 == original_sha
+    assert reloaded.node_classes == ["CLIPTextEncode"]
+
+
+async def test_restore_json_download_failure_surfaces_502(routes, tmp_path, monkeypatch):
+    import hashlib
+
+    from py.routes.workflow_routes import WorkflowRestoreDownloadError
+    from py.utils.metadata_manager import MetadataManager
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    edited = {"nodes": [{"id": 1, "type": "KSampler"}], "links": []}
+    edited_bytes = json.dumps(edited).encode("utf-8")
+    target.write_bytes(edited_bytes)
+    routes.service.scanner = StubScanner([str(root)])
+
+    original_sha = hashlib.sha256(b"original").hexdigest()
+    await MetadataManager.save_metadata(
+        str(target), _civitai_metadata(target, b"original", original_sha)
+    )
+
+    async def failing_download(self, url, file_path, *, expected_sha256=None):
+        raise WorkflowRestoreDownloadError("Download failed with HTTP 404")
+
+    monkeypatch.setattr(WorkflowRoutes, "_download_and_replace", failing_download)
+
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": str(target)})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 502
+    assert payload["success"] is False
+    assert payload["error"] == "download_failed"
+    # A failed restore never touches the local file.
+    assert target.read_bytes() == edited_bytes
+
+
+async def test_restore_rejected_when_feature_disabled(routes):
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_workflows", False)
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": "/library/workflows/flow.json"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_restore_rejects_path_outside_library(routes, tmp_path):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])
+
+    response = await routes.restore_workflow(
+        DummyRequest(method="POST", body={"file_path": str(tmp_path / "elsewhere.json")})
     )
     payload = json.loads(response.text)
 
