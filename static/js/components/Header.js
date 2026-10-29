@@ -72,19 +72,6 @@ export class HeaderManager {
         });
       }
 
-      // At phone widths the search collapses to a round button that expands
-      // over the header row while focused (see the <=600px block in
-      // components/header.css). Escape returns it to the button; keep the
-      // breakpoint in sync with that block.
-      const searchInput = document.getElementById('searchInput');
-      if (searchInput) {
-        searchInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape' && window.matchMedia('(max-width: 600px)').matches) {
-            searchInput.blur();
-          }
-        });
-      }
-
       const updateToggle = document.getElementById('updateToggleBtn');
       if (updateToggle) {
         updateToggle.addEventListener('click', () => {

@@ -1,29 +1,30 @@
+{% set current_path = request.path %}
+{% if current_path.startswith('/loras/recipes') %}
+{% set current_page = 'recipes' %}
+{% elif current_path.startswith('/checkpoints') %}
+{% set current_page = 'checkpoints' %}
+{% elif current_path.startswith('/embeddings') %}
+{% set current_page = 'embeddings' %}
+{% elif current_path.startswith('/other') %}
+{% set current_page = 'other' %}
+{% elif current_path.startswith('/workflows') %}
+{% set current_page = 'workflows' %}
+{% elif current_path.startswith('/statistics') %}
+{% set current_page = 'statistics' %}
+{% else %}
+{% set current_page = 'loras' %}
+{% endif %}
 <header class="app-header">
   <div class="header-container">
-    <!-- Left section: Logo + Navigation -->
+    <!-- Left section: Logo + page name + Navigation -->
     <div class="header-left">
       <div class="header-branding">
         <a href="{{ rel_prefix }}loras" class="logo-link">
           <img src="{{ rel_prefix }}loras_static/images/favicon-32x32.png" alt="LoRA Manager" class="app-logo">
           <span class="app-title">{{ t('header.appTitle') }}</span>
         </a>
+        <span class="page-title">{{ t('header.navigation.' ~ current_page) }}</span>
       </div>
-      {% set current_path = request.path %}
-      {% if current_path.startswith('/loras/recipes') %}
-      {% set current_page = 'recipes' %}
-      {% elif current_path.startswith('/checkpoints') %}
-      {% set current_page = 'checkpoints' %}
-      {% elif current_path.startswith('/embeddings') %}
-      {% set current_page = 'embeddings' %}
-      {% elif current_path.startswith('/other') %}
-      {% set current_page = 'other' %}
-      {% elif current_path.startswith('/workflows') %}
-      {% set current_page = 'workflows' %}
-      {% elif current_path.startswith('/statistics') %}
-      {% set current_page = 'statistics' %}
-      {% else %}
-      {% set current_page = 'loras' %}
-      {% endif %}
       <nav class="main-nav">
         <a href="{{ rel_prefix }}loras" class="nav-item{% if current_path == '/loras' %} active{% endif %}" id="lorasNavItem"
           title="{{ t('header.navigation.loras') }}" aria-label="{{ t('header.navigation.loras') }}"{% if current_path == '/loras' %} aria-current="page"{% endif %}>
@@ -112,7 +113,7 @@
       </button>
       <!-- Hamburger dropdown menu -->
       <div class="hamburger-dropdown" id="hamburgerDropdown">
-        <!-- Page tabs. The main nav is hidden on phone widths (<=600px), so the
+        <!-- Page tabs. The main nav is hidden on phone widths (<=520px), so the
              same entries are repeated here and only shown at that width. -->
         <a href="{{ rel_prefix }}loras" class="dropdown-item hamburger-nav-item{% if current_path == '/loras' %} active{% endif %}"
           data-nav-key="loras"{% if current_path == '/loras' %} aria-current="page"{% endif %}>

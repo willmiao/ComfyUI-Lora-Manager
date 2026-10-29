@@ -64,6 +64,20 @@
   margin: 0;
 }
 
+/* Current page name, shown next to the logo on phone widths where the tab bar
+   lives in the hamburger menu - without it the bar gives no sense of place. */
+.page-title {
+  display: none;
+  margin-left: 8px;
+  max-width: 7rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* Navigation styling */
 .main-nav {
   display: flex;
@@ -700,7 +714,7 @@
 }
 
 /* Page tabs inside the hamburger menu. They mirror the main nav for phone
-   widths, where the nav itself is hidden (see the <=600px block below);
+   widths, where the nav itself is hidden (see the <=520px block below);
    everywhere else they stay out of the menu. */
 .hamburger-dropdown .hamburger-nav-item,
 .hamburger-dropdown .hamburger-nav-divider {
@@ -714,7 +728,9 @@
 
 .hamburger-nav-item.active {
   color: var(--lora-accent);
-  background: var(--lora-surface-hover, oklch(95% 0.02 256));
+  /* Accent tint instead of the hover surface token, which has no dark-mode
+     value (its fallback is a fixed light grey). */
+  background: color-mix(in oklab, var(--lora-accent) 14%, transparent);
   font-weight: 600;
 }
 
@@ -868,18 +884,35 @@
   }
 }
 
-/* Phone widths: logo | search | menu. Seven tabs plus a usable search field do
-   not fit below 600px, so the tabs move into the hamburger menu (the same
-   entries are repeated there in the template) and the search collapses to a
-   round button that expands into a full-width field once focused. */
+/* Small tablets: keep the icon tabs, tighten the chrome. */
 @media (max-width: 600px) {
   .header-container {
     padding: 0 8px;
     gap: 0.4rem;
   }
 
+  .nav-item {
+    padding: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .nav-item i {
+    font-size: 1rem;
+  }
+}
+
+/* Phone widths (<=520px): seven icon tabs no longer fit next to a usable search
+   field, so the tabs move into the hamburger menu (the template repeats them
+   there) and the search becomes a full-width pill: logo + page name | search |
+   menu. 521px is the first width where the icon nav and the 200px search floor
+   coexist, which is where the cut belongs. */
+@media (max-width: 520px) {
   .main-nav {
     display: none;
+  }
+
+  .page-title {
+    display: inline-block;
   }
 
   .hamburger-dropdown .hamburger-nav-item {
@@ -896,95 +929,34 @@
     overflow-y: auto;
   }
 
-  .nav-item {
-    padding: 0.25rem;
-    font-size: 0.75rem;
-  }
-
-  .nav-item i {
-    font-size: 1rem;
-  }
-
-  /* Collapsed search: a single round magnifier. */
   .header-search {
-    flex: 0 0 auto;
-    width: 32px;
-    /* Overrides the 200px floor the <=950px tier set for the inline field. */
-    min-width: 32px;
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
     max-width: none;
-    margin: 0 auto;
+    margin: 0 4px;
   }
 
   .header-search .search-container {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
+    width: 100%;
+    border-radius: 999px;
   }
 
   .header-search input {
-    width: 32px;
-    min-width: 0;
-    padding: 0 !important;
-    cursor: pointer;
-    /* The placeholder would otherwise poke through the round button. The field
-       is only ever focused in its expanded form, so no text is hidden. */
-    color: transparent;
-  }
-
-  .header-search input::placeholder {
-    color: transparent;
-  }
-
-  .header-search .search-icon {
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .header-search .search-options-toggle,
-  .header-search .search-filter-toggle,
-  .header-search .search-clear,
-  .header-search .search-shortcut-cue {
-    display: none;
-  }
-
-  /* Expanded search: cover the whole header row, logo and menu included. */
-  .header-search:focus-within .search-container {
-    position: fixed;
-    left: 8px;
-    right: 8px;
-    top: 8px;
-    width: auto;
-    height: 32px;
-    border-radius: var(--border-radius-sm, 6px);
-    cursor: text;
-    z-index: 3;
-  }
-
-  .header-search:focus-within input {
     width: 100%;
+    min-width: 0;
     padding: 0.4rem 0.75rem !important;
     padding-left: 2rem !important;
     padding-right: 4.25rem !important;
-    /* 16px keeps mobile browsers from zooming the page on focus. */
+    /* 16px stops mobile browsers zooming the page on focus. */
     font-size: 1rem;
-    cursor: text;
-    color: var(--text-color);
   }
+}
 
-  .header-search:focus-within input::placeholder {
-    color: var(--text-muted);
-  }
-
-  .header-search:focus-within .search-icon {
-    left: 0.75rem;
-    transform: none;
-  }
-
-  .header-search:focus-within .search-options-toggle,
-  .header-search:focus-within .search-filter-toggle,
-  .header-search:focus-within .search-clear.visible {
-    display: flex;
+/* The smallest phones need the page name's width for the search field. */
+@media (max-width: 380px) {
+  .page-title {
+    display: none;
   }
 }
 
