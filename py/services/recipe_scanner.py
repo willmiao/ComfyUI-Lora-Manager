@@ -3176,6 +3176,51 @@ class RecipeScanner:
             logger.error(f"Error getting hash from Civitai: {e}")
             return None, False
 
+    async def get_local_lora_by_version_id(
+        self, model_version_id: Any
+    ) -> Optional[Dict[str, Any]]:
+        """Resolve a local LoRA by its CivitAI model version id.
+
+        Recipe parsers call this before asking a metadata provider so a model
+        that is already in the library is filled from the local cache (name,
+        base model, hash, preview) without a network request. The lookup uses
+        ``ModelCache.version_index``; a missing cache or an unknown id returns
+        ``None`` so callers can fall back to the remote provider.
+        """
+
+        if not self._lora_scanner or model_version_id is None:
+            return None
+
+        try:
+            await self._lora_scanner.get_cached_data()
+            return self._get_lora_from_version_index(model_version_id)
+        except Exception:
+            logger.debug(
+                "Local LoRA lookup by version id %s failed",
+                model_version_id,
+                exc_info=True,
+            )
+            return None
+
+    async def get_local_checkpoint_by_version_id(
+        self, model_version_id: Any
+    ) -> Optional[Dict[str, Any]]:
+        """Resolve a local checkpoint by its CivitAI model version id."""
+
+        if not self._checkpoint_scanner or model_version_id is None:
+            return None
+
+        try:
+            await self._checkpoint_scanner.get_cached_data()
+            return self._get_checkpoint_from_version_index(model_version_id)
+        except Exception:
+            logger.debug(
+                "Local checkpoint lookup by version id %s failed",
+                model_version_id,
+                exc_info=True,
+            )
+            return None
+
     def _get_lora_from_version_index(
         self, model_version_id: Any
     ) -> Optional[Dict[str, Any]]:

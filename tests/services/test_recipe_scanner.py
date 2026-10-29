@@ -1015,6 +1015,55 @@ async def test_find_local_checkpoints_by_name_uses_checkpoint_scanner(
 
 
 @pytest.mark.asyncio
+async def test_get_local_models_by_version_id_use_version_indexes():
+    """Version-id lookups resolve from the scanner caches without a provider."""
+
+    from py.services.recipe_scanner import RecipeScanner as RecipeScannerCls
+
+    lora_entry = {"file_path": "/models/loras/a.safetensors", "civitai": {"id": 111}}
+    checkpoint_entry = {
+        "file_path": "/models/checkpoints/c.safetensors",
+        "civitai": {"id": 222},
+    }
+
+    class StubLoraScanner:
+        _cache = SimpleNamespace(raw_data=[lora_entry], version_index={111: lora_entry})
+
+        async def get_cached_data(self):
+            return self._cache
+
+    class StubCheckpointScanner:
+        _cache = SimpleNamespace(
+            raw_data=[checkpoint_entry], version_index={222: checkpoint_entry}
+        )
+
+        async def get_cached_data(self):
+            return self._cache
+
+    RecipeScannerCls._instance = None
+    scanner = RecipeScannerCls(
+        lora_scanner=StubLoraScanner(),  # pyright: ignore[reportArgumentType]
+        checkpoint_scanner=StubCheckpointScanner(),  # pyright: ignore[reportArgumentType]
+    )
+
+    assert await scanner.get_local_lora_by_version_id(111) is lora_entry
+    # String ids from image metadata are normalised to ints.
+    assert await scanner.get_local_lora_by_version_id("111") is lora_entry
+    assert await scanner.get_local_lora_by_version_id(999) is None
+    assert await scanner.get_local_lora_by_version_id(None) is None
+    assert await scanner.get_local_lora_by_version_id("not-a-number") is None
+
+    assert await scanner.get_local_checkpoint_by_version_id(222) is checkpoint_entry
+    assert await scanner.get_local_checkpoint_by_version_id("222") is checkpoint_entry
+    assert await scanner.get_local_checkpoint_by_version_id(999) is None
+
+    scanner._lora_scanner = None
+    scanner._checkpoint_scanner = None
+    assert await scanner.get_local_lora_by_version_id(111) is None
+    assert await scanner.get_local_checkpoint_by_version_id(222) is None
+
+
+@pytest.mark.asyncio
 async def test_get_recipe_syntax_tokens_skips_unobtainable_loras(tmp_path: Path, recipe_scanner):
     scanner, _ = recipe_scanner
     recipes_dir = Path(config.loras_roots[0]) / "recipes"

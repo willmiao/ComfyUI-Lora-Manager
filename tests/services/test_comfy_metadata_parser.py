@@ -9,16 +9,28 @@ class LocalRecipeScanner:
         def has_hash(model_hash):
             return False
 
-    def __init__(self, models):
+    def __init__(self, models, models_by_version=None, checkpoints_by_version=None):
         self.models = models
+        self.models_by_version = models_by_version or {}
+        self.checkpoints_by_version = checkpoints_by_version or {}
         self.queries = []
         self.base_models = []
+        self.version_queries = []
+        self.checkpoint_version_queries = []
         self._lora_scanner = self.LoraScanner()
 
     async def get_local_lora(self, name, base_model=None):
         self.queries.append(name)
         self.base_models.append(base_model)
         return self.models.get(name)
+
+    async def get_local_lora_by_version_id(self, version_id):
+        self.version_queries.append(version_id)
+        return self.models_by_version.get(int(version_id))
+
+    async def get_local_checkpoint_by_version_id(self, version_id):
+        self.checkpoint_version_queries.append(version_id)
+        return self.checkpoints_by_version.get(int(version_id))
 
 
 def local_lora(file_name):
@@ -31,6 +43,32 @@ def local_lora(file_name):
         "base_model": "SDXL 1.0",
         "preview_url": "",
         "civitai": None,
+    }
+
+
+def local_lora_for_version(model_version_id):
+    return {
+        "file_path": "/models/loras/urn_local_lora.safetensors",
+        "file_name": "urn_local_lora",
+        "model_name": "URN Local LoRA",
+        "sha256": "e" * 64,
+        "size": 8192,
+        "base_model": "SDXL 1.0",
+        "preview_url": "/models/loras/urn_local_lora.preview.png",
+        "civitai": {"id": model_version_id, "modelId": 123, "name": "v2"},
+    }
+
+
+def local_checkpoint_for_version(model_version_id):
+    return {
+        "file_path": "/models/checkpoints/juggernaut_xl.safetensors",
+        "file_name": "juggernaut_xl",
+        "model_name": "Juggernaut XL",
+        "sha256": "d" * 64,
+        "size": 6_000_000_000,
+        "base_model": "SDXL 1.0",
+        "preview_url": "/models/checkpoints/juggernaut_xl.preview.png",
+        "civitai": {"id": model_version_id, "modelId": 1908679, "name": "v9"},
     }
 
 
@@ -346,3 +384,67 @@ async def test_parse_metadata_with_none_ckpt_name(monkeypatch):
     assert "error" not in result
     assert result["checkpoint"] is None
     assert result["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_resolves_urn_models_from_local_library(monkeypatch):
+    """URN models that exist locally must not trigger a CivitAI request."""
+
+    async def failing_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                raise AssertionError(
+                    f"Unexpected CivitAI lookup for local model {version_id}"
+                )
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.comfy.get_default_metadata_provider",
+        failing_metadata_provider,
+    )
+
+    scanner = LocalRecipeScanner(
+        {},
+        models_by_version={456: local_lora_for_version(456)},
+        checkpoints_by_version={2224012: local_checkpoint_for_version(2224012)},
+    )
+    metadata_json = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {
+                "ckpt_name": "urn:air:sdxl:checkpoint:civitai:1908679@2224012"
+            },
+        },
+        "2": {
+            "class_type": "LoraLoader",
+            "inputs": {
+                "lora_name": "urn:air:sdxl:lora:civitai:123@456",
+                "strength_model": 0.8,
+            },
+        },
+    }
+
+    result = await ComfyMetadataParser().parse_metadata(
+        json.dumps(metadata_json), scanner
+    )
+
+    assert scanner.checkpoint_version_queries == ["2224012"]
+    assert scanner.version_queries == ["456"]
+
+    checkpoint = result["checkpoint"]
+    assert checkpoint["existsLocally"] is True
+    assert checkpoint["name"] == "Juggernaut XL"
+    assert checkpoint["file_name"] == "juggernaut_xl"
+    assert checkpoint["baseModel"] == "SDXL 1.0"
+    assert checkpoint["hash"] == "d" * 64
+    assert checkpoint["localPath"] == "/models/checkpoints/juggernaut_xl.safetensors"
+
+    lora = result["loras"][0]
+    assert lora["existsLocally"] is True
+    assert lora["name"] == "URN Local LoRA"
+    assert lora["file_name"] == "urn_local_lora"
+    assert lora["weight"] == 0.8
+    assert lora["localPath"] == "/models/loras/urn_local_lora.safetensors"
+    assert result["base_model"] == "SDXL 1.0"
+
