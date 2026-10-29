@@ -7,11 +7,13 @@ const sendToComfyMock = vi.fn();
 const fetchComfyuiStateMock = vi.fn();
 const updateFromComfyMock = vi.fn();
 const resetAndReloadMock = vi.fn();
+const updateSingleItemMock = vi.fn();
 
 const stateStub = {
   global: { settings: { standalone_mode: false } },
   currentPageType: 'workflows',
   pages: {},
+  virtualScroller: { updateSingleItem: updateSingleItemMock },
 };
 
 vi.mock('../../../../static/js/utils/uiHelpers.js', () => ({
@@ -170,7 +172,7 @@ describe('WorkflowContextMenu', () => {
   });
 
   it('triggers the write-back flow on update-from-comfy', async () => {
-    updateFromComfyMock.mockResolvedValue({ success: true });
+    updateFromComfyMock.mockResolvedValue({ success: true, sha256: 'newhash123' });
 
     menu.handleMenuAction('update-from-comfy');
     await vi.waitFor(() =>
@@ -183,6 +185,10 @@ describe('WorkflowContextMenu', () => {
         'success'
       )
     );
+    // The card is refreshed in place so it shows the "Updated" cue.
+    expect(updateSingleItemMock).toHaveBeenCalledWith('/library/workflows/flow.json', {
+      sha256: 'newhash123',
+    });
   });
 
   it('surfaces no_changes as an info toast', async () => {

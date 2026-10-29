@@ -1,5 +1,6 @@
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { state } from '../state/index.js';
 import { copyToClipboard, showToast } from './uiHelpers.js';
 
 /**
@@ -39,8 +40,12 @@ export async function copyWorkflowToClipboard(filePath) {
  */
 export async function updateWorkflowFromComfy(filePath) {
     try {
-        await getModelApiClient(MODEL_TYPES.WORKFLOW).updateFromComfy(filePath);
+        const result = await getModelApiClient(MODEL_TYPES.WORKFLOW).updateFromComfy(filePath);
         showToast('workflows.updateFromComfy.success', {}, 'success');
+        // Re-render the card in place: the scroller shows its shared
+        // "Updated" cue and the item picks up the new document hash.
+        const updateData = result && result.sha256 ? { sha256: result.sha256 } : {};
+        state.virtualScroller?.updateSingleItem(filePath, updateData);
     } catch (error) {
         const kind = error.kind || 'unknown';
         if (kind === 'no_changes' || kind === 'cancelled') {
