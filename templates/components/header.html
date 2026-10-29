@@ -14,6 +14,10 @@
 {% else %}
 {% set current_page = 'loras' %}
 {% endif %}
+{# The key is resolved through a variable, like the search placeholder below:
+   writing t('header.navigation.' ~ current_page) makes the i18n scanner treat
+   the literal prefix as a key of its own. #}
+{% set page_title_key = 'header.navigation.' ~ current_page %}
 <header class="app-header">
   <div class="header-container">
     <!-- Left section: Logo + page name + Navigation -->
@@ -23,7 +27,7 @@
           <img src="{{ rel_prefix }}loras_static/images/favicon-32x32.png" alt="LoRA Manager" class="app-logo">
           <span class="app-title">{{ t('header.appTitle') }}</span>
         </a>
-        <span class="page-title">{{ t('header.navigation.' ~ current_page) }}</span>
+        <span class="page-title">{{ t(page_title_key) }}</span>
       </div>
       <nav class="main-nav">
         <a href="{{ rel_prefix }}loras" class="nav-item{% if current_path == '/loras' %} active{% endif %}" id="lorasNavItem"
