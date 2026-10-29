@@ -3,6 +3,7 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { state } from '../state/index.js';
 import { copyToClipboard, showToast } from './uiHelpers.js';
 import { translate } from './i18nHelpers.js';
+import { showConfirmationModal } from './modalUtils.js';
 
 /**
  * Push a library workflow into the running ComfyUI graph (plugin mode only;
@@ -66,9 +67,18 @@ export async function updateWorkflowFromComfy(filePath) {
  * @param {string} filePath
  */
 export async function restoreWorkflow(filePath) {
-    if (!window.confirm(translate('workflows.restoreDownloaded.confirm', {}))) {
+    const confirmed = await showConfirmationModal({
+        title: translate('workflows.restoreDownloaded.title', {}),
+        message: translate('workflows.restoreDownloaded.message', {}),
+        confirmText: translate('workflows.restoreDownloaded.confirmButton', {}),
+        danger: true,
+    });
+    if (!confirmed) {
         return;
     }
+    // .json restores re-download from CivitAI, which can take a moment; keep
+    // a blocking indicator up so the wait does not look like a dead click.
+    state.loadingManager?.showSimpleLoading(translate('workflows.restoreDownloaded.restoring', {}));
     try {
         const result = await getModelApiClient(MODEL_TYPES.WORKFLOW).restore(filePath);
         showToast('workflows.restoreDownloaded.success', {}, 'success');
@@ -79,5 +89,7 @@ export async function restoreWorkflow(filePath) {
     } catch (error) {
         console.error('Failed to restore workflow:', error);
         showToast('workflows.restoreDownloaded.failed', { message: error.message }, 'error');
+    } finally {
+        state.loadingManager?.hide();
     }
 }

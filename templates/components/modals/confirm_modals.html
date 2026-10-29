@@ -82,6 +82,19 @@
     </div>
 </div>
 
+<!-- Generic Confirmation Modal (title/message/confirm text are filled by JS;
+     use showConfirmationModal() from utils/modalUtils.js) -->
+<div id="confirmationModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-confirmation">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" data-action="confirm-confirmation"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Filename Template Apply/Revert Confirmation Modal
      Self-managed by SettingsManager (NOT registered with ModalManager): it
      stacks above the settings modal, like the directory picker. -->

@@ -1468,7 +1468,10 @@
       "failed": "Failed to send workflow: {message}"
     },
     "restoreDownloaded": {
-      "confirm": "Restore this workflow to its downloaded version? Local edits will be overwritten.",
+      "title": "Restore Downloaded Version?",
+      "message": "This discards local edits and restores the workflow to its downloaded version.",
+      "confirmButton": "Restore",
+      "restoring": "Restoring workflow...",
       "success": "Workflow restored to its downloaded version",
       "failed": "Failed to restore workflow: {message}"
     },

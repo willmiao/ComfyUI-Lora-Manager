@@ -9,12 +9,17 @@ const updateFromComfyMock = vi.fn();
 const restoreMock = vi.fn();
 const resetAndReloadMock = vi.fn();
 const updateSingleItemMock = vi.fn();
+const showConfirmationModalMock = vi.fn();
+
+const showSimpleLoadingMock = vi.fn();
+const hideLoadingMock = vi.fn();
 
 const stateStub = {
   global: { settings: { standalone_mode: false } },
   currentPageType: 'workflows',
   pages: {},
   virtualScroller: { updateSingleItem: updateSingleItemMock, items: [] },
+  loadingManager: { showSimpleLoading: showSimpleLoadingMock, hide: hideLoadingMock },
 };
 
 vi.mock('../../../../static/js/utils/uiHelpers.js', () => ({
@@ -48,6 +53,7 @@ vi.mock('../../../../static/js/managers/MoveManager.js', () => ({
 vi.mock('../../../../static/js/utils/modalUtils.js', () => ({
   showDeleteModal: vi.fn(),
   showExcludeModal: vi.fn(),
+  showConfirmationModal: showConfirmationModalMock,
 }));
 
 vi.mock('../../../../static/js/components/ContextMenu/ModelContextMenuMixin.js', () => ({
@@ -246,7 +252,7 @@ describe('WorkflowContextMenu', () => {
   });
 
   it('restores the workflow on restore-download after confirmation', async () => {
-    window.confirm = vi.fn(() => true);
+    showConfirmationModalMock.mockResolvedValue(true);
     restoreMock.mockResolvedValue({ success: true, restored: 'downloaded', sha256: 'restoredsha' });
 
     menu.handleMenuAction('restore-download');
@@ -260,6 +266,13 @@ describe('WorkflowContextMenu', () => {
         'success'
       )
     );
+    // The confirmation goes through the app's modal, not the browser dialog.
+    expect(showConfirmationModalMock).toHaveBeenCalledWith(
+      expect.objectContaining({ danger: true })
+    );
+    // A blocking indicator covers the (potentially slow) re-download.
+    expect(showSimpleLoadingMock).toHaveBeenCalled();
+    expect(hideLoadingMock).toHaveBeenCalled();
     // The card is refreshed in place so it shows the "Updated" cue.
     expect(updateSingleItemMock).toHaveBeenCalledWith('/library/workflows/flow.json', {
       sha256: 'restoredsha',
@@ -267,16 +280,17 @@ describe('WorkflowContextMenu', () => {
   });
 
   it('does not call restore when the confirmation is declined', async () => {
-    window.confirm = vi.fn(() => false);
+    showConfirmationModalMock.mockResolvedValue(false);
 
     menu.handleMenuAction('restore-download');
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.waitFor(() => expect(showConfirmationModalMock).toHaveBeenCalled());
 
     expect(restoreMock).not.toHaveBeenCalled();
+    expect(showSimpleLoadingMock).not.toHaveBeenCalled();
   });
 
-  it('shows an error toast when restore fails', async () => {
-    window.confirm = vi.fn(() => true);
+  it('shows an error toast when restore fails and still hides the loading', async () => {
+    showConfirmationModalMock.mockResolvedValue(true);
     const error = new Error('Workflow has no recorded CivitAI source to restore from');
     error.kind = 'no_source';
     restoreMock.mockRejectedValue(error);
@@ -289,5 +303,6 @@ describe('WorkflowContextMenu', () => {
         'error'
       )
     );
+    expect(hideLoadingMock).toHaveBeenCalled();
   });
 });

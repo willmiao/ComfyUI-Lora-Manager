@@ -1468,7 +1468,10 @@
             "failed": "[TODO: Translate] Failed to send workflow: {message}"
         },
         "restoreDownloaded": {
-            "confirm": "[TODO: Translate] Restore this workflow to its downloaded version? Local edits will be overwritten.",
+            "title": "[TODO: Translate] Restore Downloaded Version?",
+            "message": "[TODO: Translate] This discards local edits and restores the workflow to its downloaded version.",
+            "confirmButton": "[TODO: Translate] Restore",
+            "restoring": "[TODO: Translate] Restoring workflow...",
             "success": "[TODO: Translate] Workflow restored to its downloaded version",
             "failed": "[TODO: Translate] Failed to restore workflow: {message}"
         },

@@ -97,10 +97,10 @@ export function closeExcludeModal() {
 
 export async function confirmExclude() {
     if (!pendingExcludePath) return;
-    
+
     try {
         await getModelApiClient().excludeModel(pendingExcludePath);
-        
+
         closeExcludeModal();
 
         if (window.modelDuplicatesManager) {
@@ -109,4 +109,69 @@ export async function confirmExclude() {
     } catch (error) {
         console.error('Error excluding model:', error);
     }
+}
+
+/**
+ * Show the generic confirmation modal (#confirmationModal) and resolve with
+ * the user's choice. Text is provided by the caller (already translated).
+ * @param {Object} options
+ * @param {string} options.title - Modal heading
+ * @param {string} options.message - Body text
+ * @param {string} options.confirmText - Confirm button label
+ * @param {boolean} [options.danger=false] - Style the confirm button as destructive
+ * @returns {Promise<boolean>} true when confirmed, false otherwise
+ */
+export function showConfirmationModal({ title, message, confirmText, danger = false }) {
+    const modalElement = document.getElementById('confirmationModal');
+    if (!modalElement) {
+        // Template missing (unexpected): fall back to the browser dialog.
+        return Promise.resolve(window.confirm(`${title}\n${message}`));
+    }
+
+    const titleElement = modalElement.querySelector('[data-role="title"]');
+    const messageElement = modalElement.querySelector('[data-role="message"]');
+    const confirmButton = modalElement.querySelector('[data-action="confirm-confirmation"]');
+    const cancelButton = modalElement.querySelector('[data-action="cancel-confirmation"]');
+    if (!titleElement || !messageElement || !confirmButton || !cancelButton) {
+        return Promise.resolve(window.confirm(`${title}\n${message}`));
+    }
+
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    confirmButton.textContent = confirmText;
+    confirmButton.classList.toggle('delete-btn', danger);
+    confirmButton.classList.toggle('primary-btn', !danger);
+
+    return new Promise((resolve) => {
+        let resolved = false;
+
+        const cleanup = () => {
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+        };
+
+        const finalize = (proceed) => {
+            if (resolved) return;
+            resolved = true;
+            cleanup();
+            resolve(proceed);
+        };
+
+        const handleConfirm = (event) => {
+            event.preventDefault();
+            finalize(true);
+            modalManager.closeModal('confirmationModal');
+        };
+
+        const handleCancel = (event) => {
+            event.preventDefault();
+            finalize(false);
+            modalManager.closeModal('confirmationModal');
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+
+        modalManager.showModal('confirmationModal', null, () => finalize(false));
+    });
 }
