@@ -9,10 +9,14 @@ class LocalRecipeScanner:
         def has_hash(model_hash):
             return False
 
-    def __init__(self, models):
+    def __init__(self, models, models_by_version=None, checkpoints_by_version=None):
         self.models = models
+        self.models_by_version = models_by_version or {}
+        self.checkpoints_by_version = checkpoints_by_version or {}
         self.queries = []
         self.hash_queries = []
+        self.version_queries = []
+        self.checkpoint_version_queries = []
         self._lora_scanner = self.LoraScanner()
 
     async def get_local_lora(self, name, base_model=None):
@@ -22,6 +26,14 @@ class LocalRecipeScanner:
     async def get_local_lora_by_hash(self, hash_value):
         self.hash_queries.append(hash_value)
         return next((model for model in self.models.values() if model.get("sha256") == hash_value), None)
+
+    async def get_local_lora_by_version_id(self, version_id):
+        self.version_queries.append(version_id)
+        return self.models_by_version.get(int(version_id))
+
+    async def get_local_checkpoint_by_version_id(self, version_id):
+        self.checkpoint_version_queries.append(version_id)
+        return self.checkpoints_by_version.get(int(version_id))
 
 
 def local_lora(file_name="local_only"):
@@ -564,3 +576,88 @@ async def test_parse_metadata_keeps_empty_placeholder_hash_lora_unresolved(monke
     assert lora["hashInvalid"] is True
     assert lora["existsLocally"] is False
     assert lora["isDeleted"] is False
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_resolves_civitai_resources_from_local_library(monkeypatch):
+    """Resources whose version id is in the library must not hit CivitAI."""
+
+    async def failing_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                raise AssertionError(
+                    f"Unexpected CivitAI lookup for local model {version_id}"
+                )
+
+            async def get_model_by_hash(self, model_hash):
+                raise AssertionError(
+                    f"Unexpected CivitAI hash lookup for local model {model_hash}"
+                )
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        failing_metadata_provider,
+    )
+
+    checkpoint = {
+        "file_path": "/models/checkpoints/z_image_turbo.safetensors",
+        "file_name": "z_image_turbo",
+        "model_name": "Z Image",
+        "sha256": "b" * 64,
+        "size": 2048,
+        "base_model": "sdxl",
+        "preview_url": "/models/checkpoints/z_image_turbo.preview.png",
+        "civitai": {"id": 2442439, "modelId": 123456, "name": "Turbo"},
+    }
+    lora = {
+        "file_path": "/models/loras/styles/cfg_boost.safetensors",
+        "file_name": "cfg_boost",
+        "model_name": "CFG Boost",
+        "sha256": "c" * 64,
+        "size": 1024,
+        "base_model": "illustrious",
+        "preview_url": "/models/loras/styles/cfg_boost.preview.png",
+        "civitai": {"id": 947620, "modelId": 98765, "name": "v1"},
+    }
+    scanner = LocalRecipeScanner(
+        {},
+        models_by_version={947620: lora},
+        checkpoints_by_version={2442439: checkpoint},
+    )
+
+    metadata_text = (
+        "a vintage car at night\n"
+        "Negative prompt: fog\n"
+        "Steps: 23, Sampler: Euler, CFG scale: 3.5, Seed: 1760020955, "
+        "Size: 832x1216, "
+        'Civitai resources: ['
+        '{"type":"checkpoint","modelVersionId":2442439,"modelName":"Z Image","modelVersionName":"Turbo"},'
+        '{"type":"lora","modelVersionId":947620,"modelName":"cfg_scale_boost","weight":0.7}'
+        "]"
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(
+        metadata_text, recipe_scanner=scanner
+    )
+
+    assert scanner.checkpoint_version_queries == [2442439]
+    assert scanner.version_queries == [947620]
+
+    parsed_checkpoint = result["checkpoint"]
+    assert parsed_checkpoint["existsLocally"] is True
+    assert parsed_checkpoint["name"] == "Z Image"
+    assert parsed_checkpoint["file_name"] == "z_image_turbo"
+    assert parsed_checkpoint["hash"] == "b" * 64
+    assert parsed_checkpoint["localPath"] == "/models/checkpoints/z_image_turbo.safetensors"
+
+    assert len(result["loras"]) == 1
+    parsed_lora = result["loras"][0]
+    assert parsed_lora["existsLocally"] is True
+    assert parsed_lora["name"] == "CFG Boost"
+    assert parsed_lora["file_name"] == "cfg_boost"
+    assert parsed_lora["baseModel"] == "illustrious"
+    assert parsed_lora["weight"] == 0.7
+    assert result["base_model"] == "sdxl"
+

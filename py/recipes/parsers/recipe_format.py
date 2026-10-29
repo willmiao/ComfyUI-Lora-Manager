@@ -173,7 +173,16 @@ class RecipeFormatParser(RecipeMetadataParser):
                     'isDeleted': False
                 }
 
-                if metadata_provider:
+                # Resolve the version id against the local library first: the
+                # recipe only needs the CivitAI metadata when the file is gone.
+                local_checkpoint = await self.resolve_local_checkpoint_by_version_id(
+                    recipe_scanner, version_id
+                )
+                if local_checkpoint:
+                    checkpoint_entry = self.populate_checkpoint_from_local(
+                        checkpoint_entry, local_checkpoint
+                    )
+                elif metadata_provider:
                     try:
                         civitai_info = None
                         if version_id:

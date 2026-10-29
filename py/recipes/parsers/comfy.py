@@ -61,7 +61,17 @@ class ComfyMetadataParser(RecipeMetadataParser):
                                 'version': '',
                                 'type': 'checkpoint'
                             }
-                            if metadata_provider:
+                            # The URN only carries ids, so try the local version
+                            # index first: a checkpoint that is already in the
+                            # library is filled from the cache without a request.
+                            local_checkpoint = await self.resolve_local_checkpoint_by_version_id(
+                                recipe_scanner, checkpoint_version_id
+                            )
+                            if local_checkpoint:
+                                checkpoint = self.populate_checkpoint_from_local(
+                                    checkpoint, local_checkpoint
+                                )
+                            elif metadata_provider:
                                 try:
                                     civitai_info_tuple = await metadata_provider.get_model_version_info(checkpoint_version_id)
                                     civitai_info, _ = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
@@ -140,7 +150,14 @@ class ComfyMetadataParser(RecipeMetadataParser):
                 }
 
                 if lora_id_match:
-                    if metadata_provider:
+                    # Resolve from the local library before calling CivitAI:
+                    # the URN names a model the user very likely already has.
+                    local_lora = await self.resolve_local_lora_by_version_id(
+                        recipe_scanner, model_version_id
+                    )
+                    if local_lora:
+                        lora_entry = self.populate_lora_from_local(lora_entry, local_lora)
+                    elif metadata_provider:
                         try:
                             civitai_info_tuple = await metadata_provider.get_model_version_info(model_version_id)
                             populated_entry = await self.populate_lora_from_civitai(

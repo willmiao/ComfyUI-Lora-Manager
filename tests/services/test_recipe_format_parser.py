@@ -26,8 +26,14 @@ class _FakeLoraScanner:
 
 
 class _FakeRecipeScanner:
-    def __init__(self, lora_scanner):
+    def __init__(self, lora_scanner, checkpoints_by_version=None):
         self._lora_scanner = lora_scanner
+        self.checkpoints_by_version = checkpoints_by_version or {}
+        self.checkpoint_version_queries = []
+
+    async def get_local_checkpoint_by_version_id(self, version_id):
+        self.checkpoint_version_queries.append(version_id)
+        return self.checkpoints_by_version.get(int(version_id))
 
 
 async def _noop_metadata_provider():
@@ -425,6 +431,74 @@ async def test_recipe_format_parser_sha256_less_cache_item_no_keyerror(monkeypat
     lora_entry = result["loras"][0]
     assert lora_entry["existsLocally"] is False
     assert lora_entry["localPath"] is None
+
+
+@pytest.mark.asyncio
+async def test_recipe_format_parser_resolves_local_checkpoint_without_request(monkeypatch):
+    """A checkpoint version id present in the library must not hit CivitAI."""
+
+    async def failing_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                raise AssertionError(
+                    f"Unexpected CivitAI lookup for local checkpoint {version_id}"
+                )
+
+            async def get_model_by_hash(self, model_hash):
+                raise AssertionError(
+                    f"Unexpected CivitAI hash lookup for local checkpoint {model_hash}"
+                )
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.recipe_format.get_default_metadata_provider",
+        failing_metadata_provider,
+    )
+
+    cache_entry = {
+        "file_path": "/models/checkpoints/z_image_turbo.safetensors",
+        "file_name": "z_image_turbo",
+        "model_name": "Z Image",
+        "sha256": "b" * 64,
+        "size": 2048,
+        "base_model": "sdxl",
+        "preview_url": "/models/checkpoints/z_image_turbo.preview.png",
+        "civitai": {"id": 777111, "modelId": 333222, "name": "Turbo"},
+    }
+    scanner = _FakeRecipeScanner(
+        _FakeLoraScanner([]), checkpoints_by_version={777111: cache_entry}
+    )
+    recipe_metadata = {
+        "title": "Local checkpoint recipe",
+        "loras": [],
+        "base_model": "sdxl",
+        "checkpoint": {
+            "modelVersionId": 777111,
+            "modelId": 333222,
+            "name": "Z Image",
+            "version": "Turbo",
+            "hash": "abc123",
+            "type": "checkpoint",
+        },
+        "gen_params": {"steps": 20},
+        "tags": [],
+    }
+
+    result = await RecipeFormatParser().parse_metadata(
+        f"Recipe metadata: {json.dumps(recipe_metadata)}", recipe_scanner=scanner
+    )
+
+    assert scanner.checkpoint_version_queries == [777111]
+
+    checkpoint = result["checkpoint"]
+    assert checkpoint["existsLocally"] is True
+    assert checkpoint["localPath"] == "/models/checkpoints/z_image_turbo.safetensors"
+    assert checkpoint["file_name"] == "z_image_turbo"
+    assert checkpoint["name"] == "Z Image"
+    assert checkpoint["hash"] == "b" * 64
+    assert checkpoint["isDeleted"] is False
+
 
 
 def test_strip_recipe_metadata_removes_appended_marker():

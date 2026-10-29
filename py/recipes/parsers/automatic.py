@@ -256,7 +256,16 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                             'isDeleted': False
                         }
 
-                        if metadata_provider:
+                        # A resource id that resolves to a local file needs no
+                        # metadata request; fill the entry from the cache.
+                        local_checkpoint = await self.resolve_local_checkpoint_by_version_id(
+                            recipe_scanner, version_id
+                        )
+                        if local_checkpoint:
+                            checkpoint_entry = self.populate_checkpoint_from_local(
+                                checkpoint_entry, local_checkpoint
+                            )
+                        elif metadata_provider:
                             try:
                                 civitai_info = await metadata_provider.get_model_version_info(version_id_str)
                                 checkpoint_entry = await self.populate_checkpoint_from_civitai(
@@ -297,8 +306,16 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                             'isDeleted': False
                         }
                         
-                        # Get additional info from Civitai
-                        if metadata_provider:
+                        # Get additional info from Civitai only when the id is
+                        # not already present in the local library.
+                        local_lora = await self.resolve_local_lora_by_version_id(
+                            recipe_scanner, resource.get("modelVersionId")
+                        )
+                        if local_lora:
+                            lora_entry = self.populate_lora_from_local(
+                                lora_entry, local_lora, base_model_counts
+                            )
+                        elif metadata_provider:
                             try:
                                 civitai_info = await metadata_provider.get_model_version_info(resource.get("modelVersionId"))
                                 populated_entry = await self.populate_lora_from_civitai(
