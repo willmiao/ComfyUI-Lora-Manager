@@ -699,6 +699,30 @@
   margin: 0.25rem 0;
 }
 
+/* Page tabs inside the hamburger menu. They mirror the main nav for phone
+   widths, where the nav itself is hidden (see the <=600px block below);
+   everywhere else they stay out of the menu. */
+.hamburger-dropdown .hamburger-nav-item,
+.hamburger-dropdown .hamburger-nav-divider {
+  display: none;
+}
+
+/* SettingsManager hides the opt-in entries (Other, Workflows) on both copies. */
+.hamburger-dropdown .hamburger-nav-item[hidden] {
+  display: none !important;
+}
+
+.hamburger-nav-item.active {
+  color: var(--lora-accent);
+  background: var(--lora-surface-hover, oklch(95% 0.02 256));
+  font-weight: 600;
+}
+
+/* The menu entries are anchors (the actions are divs), so drop the UA underline. */
+.hamburger-dropdown a.hamburger-nav-item {
+  text-decoration: none;
+}
+
 /* Responsive ladder for the header.
    Worst case measured in the browser (both opt-in pages enabled, 7 tabs):
    icon + label nav ≈ 783px, labels only ≈ 619px (517px once the 1366px tier
@@ -844,11 +868,32 @@
   }
 }
 
-/* For very small screens - tighten container spacing */
+/* Phone widths: logo | search | menu. Seven tabs plus a usable search field do
+   not fit below 600px, so the tabs move into the hamburger menu (the same
+   entries are repeated there in the template) and the search collapses to a
+   round button that expands into a full-width field once focused. */
 @media (max-width: 600px) {
   .header-container {
     padding: 0 8px;
     gap: 0.4rem;
+  }
+
+  .main-nav {
+    display: none;
+  }
+
+  .hamburger-dropdown .hamburger-nav-item {
+    display: flex;
+  }
+
+  .hamburger-dropdown .hamburger-nav-divider {
+    display: block;
+  }
+
+  /* The menu now holds 7 tabs + 5 actions: let it scroll on short screens. */
+  .hamburger-dropdown {
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
   }
 
   .nav-item {
@@ -859,17 +904,87 @@
   .nav-item i {
     font-size: 1rem;
   }
-}
 
-/* Below ~490px the bar stops fitting: logo + icon nav + hamburger alone take
-   ~291px, so the 200px search floor pushed the row past the viewport and
-   clipped the hamburger (3px at 480px, ~93px at 390px). Drop the floor - the
-   field stays focusable and the page stays inside the viewport. A real phone
-   layout (nav inside the hamburger, search collapsed to a button) is a
-   separate change. */
-@media (max-width: 520px) {
+  /* Collapsed search: a single round magnifier. */
   .header-search {
+    flex: 0 0 auto;
+    width: 32px;
+    /* Overrides the 200px floor the <=950px tier set for the inline field. */
+    min-width: 32px;
+    max-width: none;
+    margin: 0 auto;
+  }
+
+  .header-search .search-container {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .header-search input {
+    width: 32px;
     min-width: 0;
+    padding: 0 !important;
+    cursor: pointer;
+    /* The placeholder would otherwise poke through the round button. The field
+       is only ever focused in its expanded form, so no text is hidden. */
+    color: transparent;
+  }
+
+  .header-search input::placeholder {
+    color: transparent;
+  }
+
+  .header-search .search-icon {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .header-search .search-options-toggle,
+  .header-search .search-filter-toggle,
+  .header-search .search-clear,
+  .header-search .search-shortcut-cue {
+    display: none;
+  }
+
+  /* Expanded search: cover the whole header row, logo and menu included. */
+  .header-search:focus-within .search-container {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    width: auto;
+    height: 32px;
+    border-radius: var(--border-radius-sm, 6px);
+    cursor: text;
+    z-index: 3;
+  }
+
+  .header-search:focus-within input {
+    width: 100%;
+    padding: 0.4rem 0.75rem !important;
+    padding-left: 2rem !important;
+    padding-right: 4.25rem !important;
+    /* 16px keeps mobile browsers from zooming the page on focus. */
+    font-size: 1rem;
+    cursor: text;
+    color: var(--text-color);
+  }
+
+  .header-search:focus-within input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .header-search:focus-within .search-icon {
+    left: 0.75rem;
+    transform: none;
+  }
+
+  .header-search:focus-within .search-options-toggle,
+  .header-search:focus-within .search-filter-toggle,
+  .header-search:focus-within .search-clear.visible {
+    display: flex;
   }
 }
 

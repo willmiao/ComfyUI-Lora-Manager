@@ -799,6 +799,24 @@ describe('SettingsManager Other Models nav and banner sync', () => {
         expect(navItem.classList.contains('nav-item--hidden')).toBe(false);
     });
 
+    it('keeps the hamburger menu copy of an opt-in entry in sync', () => {
+        const manager = createManager();
+        const navItem = document.createElement('a');
+        navItem.id = 'workflowsNavItem';
+        const menuItem = document.createElement('a');
+        menuItem.className = 'dropdown-item hamburger-nav-item';
+        menuItem.dataset.navKey = 'workflows';
+        document.body.append(navItem, menuItem);
+
+        manager.updateWorkflowsNavVisibility(false);
+        expect(navItem.classList.contains('nav-item--hidden')).toBe(true);
+        expect(menuItem.hidden).toBe(true);
+
+        manager.updateWorkflowsNavVisibility(true);
+        expect(navItem.classList.contains('nav-item--hidden')).toBe(false);
+        expect(menuItem.hidden).toBe(false);
+    });
+
     it('drops the announcement banner only when enabling', () => {
         const manager = createManager();
         const spy = vi

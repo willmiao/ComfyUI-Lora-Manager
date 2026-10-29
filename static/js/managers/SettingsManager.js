@@ -3606,10 +3606,7 @@ export class SettingsManager {
      * the settings modal (no reload needed).
      */
     updateOtherModelsNavVisibility(enabled) {
-        const navItem = document.getElementById('otherNavItem');
-        if (navItem) {
-            navItem.classList.toggle('nav-item--hidden', !enabled);
-        }
+        this.setNavEntryVisible('other', enabled);
     }
 
     /**
@@ -3618,10 +3615,23 @@ export class SettingsManager {
      * the settings modal (no reload needed).
      */
     updateWorkflowsNavVisibility(enabled) {
-        const navItem = document.getElementById('workflowsNavItem');
+        this.setNavEntryVisible('workflows', enabled);
+    }
+
+    /**
+     * Update both copies of an opt-in nav entry: the main nav link
+     * (`#otherNavItem` / `#workflowsNavItem`) and the copy inside the
+     * hamburger menu, which is the only nav a phone-width viewport shows.
+     */
+    setNavEntryVisible(key, enabled) {
+        const navItem = document.getElementById(`${key}NavItem`);
         if (navItem) {
             navItem.classList.toggle('nav-item--hidden', !enabled);
         }
+        document.querySelectorAll(`.hamburger-nav-item[data-nav-key="${key}"]`)
+            .forEach((item) => {
+                item.hidden = !enabled;
+            });
     }
 
     /**

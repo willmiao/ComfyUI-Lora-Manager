@@ -112,6 +112,44 @@
       </button>
       <!-- Hamburger dropdown menu -->
       <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <!-- Page tabs. The main nav is hidden on phone widths (<=600px), so the
+             same entries are repeated here and only shown at that width. -->
+        <a href="{{ rel_prefix }}loras" class="dropdown-item hamburger-nav-item{% if current_path == '/loras' %} active{% endif %}"
+          data-nav-key="loras"{% if current_path == '/loras' %} aria-current="page"{% endif %}>
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.loras') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}loras/recipes" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/loras/recipes') %} active{% endif %}"
+          data-nav-key="recipes"{% if current_path.startswith('/loras/recipes') %} aria-current="page"{% endif %}>
+          <i class="fas fa-book-open" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.recipes') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}checkpoints" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/checkpoints') %} active{% endif %}"
+          data-nav-key="checkpoints"{% if current_path.startswith('/checkpoints') %} aria-current="page"{% endif %}>
+          <i class="fas fa-check-circle" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.checkpoints') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}embeddings" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/embeddings') %} active{% endif %}"
+          data-nav-key="embeddings"{% if current_path.startswith('/embeddings') %} aria-current="page"{% endif %}>
+          <i class="fas fa-code" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.embeddings') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}other" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/other') %} active{% endif %}"
+          data-nav-key="other"{% if not settings.get('enable_other_models') %} hidden{% endif %}{% if current_path.startswith('/other') %} aria-current="page"{% endif %}>
+          <i class="fas fa-shapes" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.other') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}workflows" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/workflows') %} active{% endif %}"
+          data-nav-key="workflows"{% if not settings.get('enable_workflows') %} hidden{% endif %}{% if current_path.startswith('/workflows') %} aria-current="page"{% endif %}>
+          <i class="fas fa-diagram-project" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.workflows') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}statistics" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
+          data-nav-key="statistics"{% if current_path.startswith('/statistics') %} aria-current="page"{% endif %}>
+          <i class="fas fa-chart-bar" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.statistics') }}</span>
+        </a>
+        <div class="dropdown-divider hamburger-nav-divider"></div>
         <div class="dropdown-item theme-toggle-item" data-action="theme">
           <i class="fas fa-moon"></i>
           <span>{{ t('header.theme.toggle') }}</span>
