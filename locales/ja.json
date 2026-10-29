@@ -157,8 +157,8 @@
             "modelNameCopied": "モデル名をコピーしました",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
             "sendEmbeddingToWorkflow": "ComfyUIに送信",
-            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
-            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
+            "openInComfyUI": "ComfyUIで開く",
+            "copyWorkflowToClipboard": "ワークフローをクリップボードにコピー"
         },
         "nsfw": {
             "matureContent": "成人向けコンテンツ",
@@ -246,7 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "その他",
-            "workflows": "[TODO: Translate] Workflows",
+            "workflows": "ワークフロー",
             "statistics": "統計"
         },
         "search": {
@@ -636,10 +636,10 @@
             "defaultControlnetRootHelp": "ダウンロード、インポート、移動用のデフォルトControlNetルートディレクトリを設定",
             "enableOtherModels": "その他のモデル管理",
             "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
-            "enableWorkflows": "[TODO: Translate] Workflow Management",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolders": "[TODO: Translate] Workflow Folders",
-            "workflowFoldersHelp": "[TODO: Translate] Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflows": "ワークフロー管理",
+            "enableWorkflowsHelp": "オフにすると、ワークフローフォルダー（folder_paths.workflows）はスキャンされず、ワークフローページは無効のままになり、CivitAIのWorkflowリソースをリンクしたりダウンロードしたりできなくなります。",
+            "workflowFolders": "ワークフローフォルダー",
+            "workflowFoldersHelp": "ComfyUIのワークフローJSONファイルをスキャンするフォルダーです。LoRA Managerのみが管理し（ComfyUIとは共有されません）、変更はすぐに反映されます。",
             "otherSubTypes": "管理するモデルタイプ",
             "otherSubTypesHelp": "その他のモデルページでスキャンおよび表示するカテゴリを選択します。",
             "subTypeVae": "VAE",
@@ -694,7 +694,7 @@
                 "clip": "CLIPパス（レガシー）",
                 "clip_vision": "CLIP Visionパス",
                 "controlnet": "ControlNetパス",
-                "workflows": "[TODO: Translate] Workflow Paths"
+                "workflows": "ワークフローパス"
             }
         },
         "directoryPicker": {
@@ -1456,50 +1456,50 @@
         }
     },
     "workflows": {
-        "title": "[TODO: Translate] Workflows",
+        "title": "ワークフロー",
         "contextMenu": {
-            "sendToComfy": "[TODO: Translate] Open in ComfyUI",
-            "updateFromComfy": "[TODO: Translate] Update from ComfyUI",
-            "copyWorkflow": "[TODO: Translate] Copy Workflow",
-            "restoreDownloaded": "[TODO: Translate] Restore Downloaded Version"
+            "sendToComfy": "ComfyUIで開く",
+            "updateFromComfy": "ComfyUIから更新",
+            "copyWorkflow": "ワークフローをコピー",
+            "restoreDownloaded": "ダウンロード済みバージョンを復元"
         },
         "sendToComfy": {
-            "success": "[TODO: Translate] Workflow sent to ComfyUI",
-            "failed": "[TODO: Translate] Failed to send workflow: {message}"
+            "success": "ワークフローをComfyUIへ送信しました",
+            "failed": "ワークフローの送信に失敗しました：{message}"
         },
         "restoreDownloaded": {
-            "title": "[TODO: Translate] Restore Downloaded Version?",
-            "message": "[TODO: Translate] This discards local edits and restores the workflow to its downloaded version.",
-            "confirmButton": "[TODO: Translate] Restore",
-            "restoring": "[TODO: Translate] Restoring workflow...",
-            "success": "[TODO: Translate] Workflow restored to its downloaded version",
-            "failed": "[TODO: Translate] Failed to restore workflow: {message}"
+            "title": "ダウンロード済みバージョンを復元しますか？",
+            "message": "ローカルの編集内容は破棄され、ワークフローはダウンロード時のバージョンに復元されます。",
+            "confirmButton": "復元",
+            "restoring": "ワークフローを復元中...",
+            "success": "ワークフローをダウンロード済みバージョンに復元しました",
+            "failed": "ワークフローの復元に失敗しました：{message}"
         },
         "updateFromComfy": {
-            "success": "[TODO: Translate] Workflow updated from ComfyUI",
-            "noChanges": "[TODO: Translate] No changes in ComfyUI to write back",
-            "cancelled": "[TODO: Translate] Update cancelled",
-            "failed": "[TODO: Translate] Failed to update from ComfyUI: {message}"
+            "success": "ComfyUIからワークフローを更新しました",
+            "noChanges": "ComfyUI側に書き戻す変更はありません",
+            "cancelled": "更新はキャンセルされました",
+            "failed": "ComfyUIからの更新に失敗しました：{message}"
         },
         "copyWorkflow": {
-            "failed": "[TODO: Translate] Failed to copy workflow: {message}"
+            "failed": "ワークフローのコピーに失敗しました：{message}"
         },
         "disabled": {
-            "title": "[TODO: Translate] Workflow management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage ComfyUI workflow files, keep their CivitAI metadata and previews, and send them into the running ComfyUI graph.",
-            "enableButton": "[TODO: Translate] Enable Workflows",
-            "hint": "[TODO: Translate] You can turn the feature off again later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Workflows"
+            "title": "ワークフロー管理はオフです",
+            "description": "有効にすると、ComfyUIのワークフローファイルをスキャン・管理し、CivitAIのメタデータとプレビューを保持したまま、実行中のComfyUIに送信できます。",
+            "enableButton": "ワークフローを有効にする",
+            "hint": "この機能は後で「設定 > ライブラリ」から再度オフにできます。",
+            "enableFailed": "ワークフローの有効化に失敗しました"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folders found",
-            "descriptionStandalone": "[TODO: Translate] Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Workflows are read from the folder_paths.workflows entries.",
-            "descriptionComfyUI": "[TODO: Translate] Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
-            "hintComfyUI": "[TODO: Translate] Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
-            "openSettings": "[TODO: Translate] Open Settings",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "title": "ワークフローフォルダーが見つかりません",
+            "descriptionStandalone": "ワークフロー管理はオンですが、ワークフローフォルダーが見つかりませんでした。「設定 > モデルパス」でワークフローフォルダーを追加し、LoRA Managerを再起動してください。",
+            "hintStandalone": "ワークフローはfolder_paths.workflowsのエントリから読み込まれます。",
+            "descriptionComfyUI": "ワークフロー管理はオンですが、ワークフローフォルダーが設定されていません。「設定 > ライブラリ」でワークフローフォルダーを追加し、このページを再読み込みしてください。",
+            "hintComfyUI": "ワークフローは専用のライブラリフォルダー（folder_paths.workflows）に保存されます。ComfyUI標準のワークフローリストには影響しません。",
+            "openSettings": "設定を開く",
+            "openModelPaths": "モデルフォルダーを設定",
+            "openSettingsFolder": "設定フォルダーを開く"
         }
     },
     "sidebar": {
@@ -2328,8 +2328,8 @@
             "message": "モデルキャッシュをスキャンして構築中です。数分かかる場合があります..."
         },
         "workflows": {
-            "title": "[TODO: Translate] Initializing Workflow Manager",
-            "message": "[TODO: Translate] Scanning and building workflow cache. This may take a few minutes..."
+            "title": "ワークフローマネージャーを初期化中",
+            "message": "ワークフローキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "recipes": {
             "title": "レシピマネージャーを初期化中",

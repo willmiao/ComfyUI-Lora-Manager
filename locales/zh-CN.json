@@ -157,8 +157,8 @@
             "modelNameCopied": "模型名称已复制",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
             "sendEmbeddingToWorkflow": "发送到 ComfyUI",
-            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
-            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
+            "openInComfyUI": "在 ComfyUI 中打开",
+            "copyWorkflowToClipboard": "复制工作流到剪贴板"
         },
         "nsfw": {
             "matureContent": "成熟内容",
@@ -246,7 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "其他",
-            "workflows": "[TODO: Translate] Workflows",
+            "workflows": "工作流",
             "statistics": "统计"
         },
         "search": {
@@ -636,10 +636,10 @@
             "defaultControlnetRootHelp": "设置下载、导入和移动时的默认 ControlNet 根目录",
             "enableOtherModels": "其他模型管理",
             "enableOtherModelsHelp": "关闭后，不会扫描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 文件夹，其他模型页面保持禁用，且无法下载这些模型类型。",
-            "enableWorkflows": "[TODO: Translate] Workflow Management",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolders": "[TODO: Translate] Workflow Folders",
-            "workflowFoldersHelp": "[TODO: Translate] Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflows": "工作流管理",
+            "enableWorkflowsHelp": "关闭后，不会扫描工作流文件夹（folder_paths.workflows），工作流页面保持禁用，且无法关联或下载 CivitAI 的 Workflow 资源。",
+            "workflowFolders": "工作流文件夹",
+            "workflowFoldersHelp": "扫描 ComfyUI 工作流 JSON 文件的文件夹。仅由 LoRA Manager 管理（不与 ComfyUI 共享）；更改立即生效。",
             "otherSubTypes": "管理的模型类型",
             "otherSubTypesHelp": "选择要在其他模型页面中扫描和显示的其他模型类别。",
             "subTypeVae": "VAE",
@@ -694,7 +694,7 @@
                 "clip": "CLIP 路径（旧版）",
                 "clip_vision": "CLIP Vision 路径",
                 "controlnet": "ControlNet 路径",
-                "workflows": "[TODO: Translate] Workflow Paths"
+                "workflows": "工作流路径"
             }
         },
         "directoryPicker": {
@@ -1456,50 +1456,50 @@
         }
     },
     "workflows": {
-        "title": "[TODO: Translate] Workflows",
+        "title": "工作流",
         "contextMenu": {
-            "sendToComfy": "[TODO: Translate] Open in ComfyUI",
-            "updateFromComfy": "[TODO: Translate] Update from ComfyUI",
-            "copyWorkflow": "[TODO: Translate] Copy Workflow",
-            "restoreDownloaded": "[TODO: Translate] Restore Downloaded Version"
+            "sendToComfy": "在 ComfyUI 中打开",
+            "updateFromComfy": "从 ComfyUI 更新",
+            "copyWorkflow": "复制工作流",
+            "restoreDownloaded": "恢复已下载版本"
         },
         "sendToComfy": {
-            "success": "[TODO: Translate] Workflow sent to ComfyUI",
-            "failed": "[TODO: Translate] Failed to send workflow: {message}"
+            "success": "工作流已发送到 ComfyUI",
+            "failed": "发送工作流失败：{message}"
         },
         "restoreDownloaded": {
-            "title": "[TODO: Translate] Restore Downloaded Version?",
-            "message": "[TODO: Translate] This discards local edits and restores the workflow to its downloaded version.",
-            "confirmButton": "[TODO: Translate] Restore",
-            "restoring": "[TODO: Translate] Restoring workflow...",
-            "success": "[TODO: Translate] Workflow restored to its downloaded version",
-            "failed": "[TODO: Translate] Failed to restore workflow: {message}"
+            "title": "恢复已下载版本？",
+            "message": "这会丢弃本地修改，并将工作流恢复到下载时的版本。",
+            "confirmButton": "恢复",
+            "restoring": "正在恢复工作流...",
+            "success": "工作流已恢复到已下载版本",
+            "failed": "恢复工作流失败：{message}"
         },
         "updateFromComfy": {
-            "success": "[TODO: Translate] Workflow updated from ComfyUI",
-            "noChanges": "[TODO: Translate] No changes in ComfyUI to write back",
-            "cancelled": "[TODO: Translate] Update cancelled",
-            "failed": "[TODO: Translate] Failed to update from ComfyUI: {message}"
+            "success": "已从 ComfyUI 更新工作流",
+            "noChanges": "ComfyUI 中没有需要写回的更改",
+            "cancelled": "更新已取消",
+            "failed": "从 ComfyUI 更新失败：{message}"
         },
         "copyWorkflow": {
-            "failed": "[TODO: Translate] Failed to copy workflow: {message}"
+            "failed": "复制工作流失败：{message}"
         },
         "disabled": {
-            "title": "[TODO: Translate] Workflow management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage ComfyUI workflow files, keep their CivitAI metadata and previews, and send them into the running ComfyUI graph.",
-            "enableButton": "[TODO: Translate] Enable Workflows",
-            "hint": "[TODO: Translate] You can turn the feature off again later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Workflows"
+            "title": "工作流管理已关闭",
+            "description": "启用后可扫描和管理 ComfyUI 工作流文件，保留其 CivitAI 元数据和预览，并将它们发送到正在运行的 ComfyUI 中。",
+            "enableButton": "启用工作流",
+            "hint": "你可以稍后在“设置 > 库”中再次关闭此功能。",
+            "enableFailed": "启用工作流失败"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folders found",
-            "descriptionStandalone": "[TODO: Translate] Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Workflows are read from the folder_paths.workflows entries.",
-            "descriptionComfyUI": "[TODO: Translate] Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
-            "hintComfyUI": "[TODO: Translate] Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
-            "openSettings": "[TODO: Translate] Open Settings",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "title": "未找到工作流文件夹",
+            "descriptionStandalone": "工作流管理已开启，但未找到工作流文件夹。请在“设置 → 模型路径”中添加工作流文件夹，然后重启 LoRA Manager。",
+            "hintStandalone": "工作流从 folder_paths.workflows 条目中读取。",
+            "descriptionComfyUI": "工作流管理已开启，但未配置工作流文件夹。请在“设置 → 库”中添加工作流文件夹，然后重新加载此页面。",
+            "hintComfyUI": "工作流存放在独立的库文件夹中（folder_paths.workflows）；不会影响 ComfyUI 内置的工作流列表。",
+            "openSettings": "打开设置",
+            "openModelPaths": "配置模型文件夹",
+            "openSettingsFolder": "打开设置文件夹"
         }
     },
     "sidebar": {
@@ -2328,8 +2328,8 @@
             "message": "正在扫描并构建模型缓存。这可能需要几分钟..."
         },
         "workflows": {
-            "title": "[TODO: Translate] Initializing Workflow Manager",
-            "message": "[TODO: Translate] Scanning and building workflow cache. This may take a few minutes..."
+            "title": "初始化工作流管理器",
+            "message": "正在扫描并构建工作流缓存。这可能需要几分钟..."
         },
         "recipes": {
             "title": "初始化配方管理器",

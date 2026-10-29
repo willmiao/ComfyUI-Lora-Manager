@@ -239,6 +239,18 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `toast.contextMenu.linkHfSuccess` (the toast now says "model source" instead of
 > "HuggingFace", commit `5ab0e88ab`). No `[TODO: Translate]` placeholder remains.
 
+> **Status (2026-10, workflow management):** the Workflows page (`workflows.*`) manages the
+> ComfyUI workflow JSON files in their own library folders and shipped with the settings toggle
+> and folder list (`settings.folderSettings.enableWorkflows*` / `.workflowFolders*`), the folder
+> key label, the two folder-list nav paths and the initialization progress text — 41 keys
+> `[TODO: Translate]` in all 9 locales, now translated (terminology in §2, "Workflows feature").
+> `Workflow` reuses the term already fixed in §5 per locale: Latin in fr/de/es/ru/he (so
+> `header.navigation.workflows` and `workflows.title` stay `Workflows` there), 工作流 in
+> zh-CN/zh-TW, ワークフロー in ja, 워크플로 in ko. The three `workflows.noPaths.open*` buttons are
+> byte-identical to `other.noPaths.open*` (same actions), and the nav-path hints reuse
+> `other.disabled.hint`'s "Settings > Library" / `other.noPaths.descriptionStandalone`'s
+> "Settings → Model Paths" renderings. No `[TODO: Translate]` placeholder remains.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -927,6 +939,36 @@ Most of these strings are assembled from existing renderings rather than new ter
   changes (`(recommended)` instead of `(default)` / "centralized storage").
 - `firstRun.language.label` reuses `common.language.select` (zh-CN keeps its 选择语言 verb
   label rather than introducing a second rendering of "Language").
+
+### Workflows feature (page, folders, restore/update actions)
+
+The Workflows page (`workflows.*`) lists the ComfyUI workflow JSON files kept in their own
+library folders. **Workflow** is the §5 term per locale and never becomes a different noun;
+"workflow management" is the feature name, built from that noun plus the locale's management
+word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהול`).
+
+| Term | Rendering |
+|---|---|
+| Workflows (page title / nav) | zh-CN 工作流 · zh-TW 工作流 · ja ワークフロー · ko 워크플로 · fr/de/es/ru/he Workflows |
+| workflow (noun in prose) | zh-CN 工作流 · zh-TW 工作流 · ja ワークフロー · ko 워크플로 · fr workflow · de Workflow · es workflow · ru workflow · he workflow |
+| Workflow Management (settings toggle) | zh-CN 工作流管理 · zh-TW 工作流管理 · ja ワークフロー管理 · ko 워크플로 관리 · fr Gestion des workflows · de Workflow-Verwaltung · es Gestión de workflows · ru Управление workflow · he ניהול workflow |
+| Workflow Folders / Workflow Paths | zh-CN 工作流文件夹 / 工作流路径 · zh-TW 工作流資料夾 / 工作流路徑 · ja ワークフローフォルダー / ワークフローパス · ko 워크플로 폴더 / 워크플로 경로 · fr Dossiers de workflows / Chemins de workflows · de Workflow-Ordner / Workflow-Pfade · es Carpetas de workflows / Rutas de workflows · ru Папки workflow / Пути workflow · he תיקיות workflow / נתיבי workflow |
+| Open in ComfyUI (card action and context menu) | zh-CN 在 ComfyUI 中打开 · zh-TW 在 ComfyUI 中開啟 · ja ComfyUIで開く · ko ComfyUI에서 열기 · fr Ouvrir dans ComfyUI · de In ComfyUI öffnen · es Abrir en ComfyUI · ru Открыть в ComfyUI · he פתח ב-ComfyUI |
+| Update from ComfyUI | zh-CN 从 ComfyUI 更新 · zh-TW 從 ComfyUI 更新 · ja ComfyUIから更新 · ko ComfyUI에서 업데이트 · fr Mettre à jour depuis ComfyUI · de Von ComfyUI aktualisieren · es Actualizar desde ComfyUI · ru Обновить из ComfyUI · he עדכן מ-ComfyUI |
+| Restore Downloaded Version | zh-CN 恢复已下载版本 · zh-TW 還原已下載版本 · ja ダウンロード済みバージョンを復元 · ko 다운로드한 버전 복원 · fr Restaurer la version téléchargée · de Heruntergeladene Version wiederherstellen · es Restaurar versión descargada · ru Восстановить загруженную версию · he שחזר את הגרסה שהורדה |
+
+- "CivitAI Workflow resources" keeps `Workflow` in Latin even in the CJK locales: it names
+  CivitAI's resource type (the §2 "Other Models" rule for model-type names), not this page.
+- `folder_paths.workflows` is a JSON key and stays byte-identical in every locale.
+- `noPaths.descriptionStandalone` keeps the standalone split — **Settings → Model Paths** plus
+  a restart — while `.descriptionComfyUI` points at **Settings → Library** and a page reload;
+  both reuse the nav-path renderings of `other.noPaths.*` / `other.disabled.hint`.
+- `disabled.*` mirrors `other.disabled.*` sentence by sentence ("management is off", "Enable it
+  to …", "Failed to enable …"), and `noPaths.*` mirrors `other.noPaths.*` — including the three
+  `open*` buttons, which are byte-identical to their `other.noPaths.open*` twins.
+- Failure toasts carry `{message}` verbatim. CJK uses the full-width colon (`：`); ko and the
+  Latin/Cyrillic/Hebrew locales use ASCII (fr with its space, ` : `). The `restoring` loading
+  line follows each locale's existing "… in progress" shape (`recipesPathMigrating`).
 
 ---
 

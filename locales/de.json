@@ -157,8 +157,8 @@
             "modelNameCopied": "Modellname kopiert",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
             "sendEmbeddingToWorkflow": "An ComfyUI senden",
-            "openInComfyUI": "[TODO: Translate] Open in ComfyUI",
-            "copyWorkflowToClipboard": "[TODO: Translate] Copy workflow to clipboard"
+            "openInComfyUI": "In ComfyUI öffnen",
+            "copyWorkflowToClipboard": "Workflow in die Zwischenablage kopieren"
         },
         "nsfw": {
             "matureContent": "Nicht jugendfreie Inhalte",
@@ -246,7 +246,7 @@
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "other": "Andere",
-            "workflows": "[TODO: Translate] Workflows",
+            "workflows": "Workflows",
             "statistics": "Statistiken"
         },
         "search": {
@@ -636,10 +636,10 @@
             "defaultControlnetRootHelp": "Legen Sie den Standard-ControlNet-Stammordner für Downloads, Importe und Verschiebungen fest",
             "enableOtherModels": "Verwaltung weiterer Modelle",
             "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
-            "enableWorkflows": "[TODO: Translate] Workflow Management",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolders": "[TODO: Translate] Workflow Folders",
-            "workflowFoldersHelp": "[TODO: Translate] Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflows": "Workflow-Verwaltung",
+            "enableWorkflowsHelp": "Wenn deaktiviert, werden Workflow-Ordner (folder_paths.workflows) nicht gescannt, die Workflows-Seite bleibt deaktiviert und CivitAI-Workflow-Ressourcen können weder verknüpft noch heruntergeladen werden.",
+            "workflowFolders": "Workflow-Ordner",
+            "workflowFoldersHelp": "Ordner, die nach ComfyUI-Workflow-JSON-Dateien gescannt werden. Werden nur von LoRA Manager verwaltet (nicht mit ComfyUI geteilt); Änderungen gelten sofort.",
             "otherSubTypes": "Verwaltete Modelltypen",
             "otherSubTypesHelp": "Wählen Sie, welche Kategorien weiterer Modelle gescannt und auf der Seite für weitere Modelle angezeigt werden.",
             "subTypeVae": "VAE",
@@ -694,7 +694,7 @@
                 "clip": "CLIP-Pfade (Legacy)",
                 "clip_vision": "CLIP-Vision-Pfade",
                 "controlnet": "ControlNet-Pfade",
-                "workflows": "[TODO: Translate] Workflow Paths"
+                "workflows": "Workflow-Pfade"
             }
         },
         "directoryPicker": {
@@ -1456,50 +1456,50 @@
         }
     },
     "workflows": {
-        "title": "[TODO: Translate] Workflows",
+        "title": "Workflows",
         "contextMenu": {
-            "sendToComfy": "[TODO: Translate] Open in ComfyUI",
-            "updateFromComfy": "[TODO: Translate] Update from ComfyUI",
-            "copyWorkflow": "[TODO: Translate] Copy Workflow",
-            "restoreDownloaded": "[TODO: Translate] Restore Downloaded Version"
+            "sendToComfy": "In ComfyUI öffnen",
+            "updateFromComfy": "Von ComfyUI aktualisieren",
+            "copyWorkflow": "Workflow kopieren",
+            "restoreDownloaded": "Heruntergeladene Version wiederherstellen"
         },
         "sendToComfy": {
-            "success": "[TODO: Translate] Workflow sent to ComfyUI",
-            "failed": "[TODO: Translate] Failed to send workflow: {message}"
+            "success": "Workflow an ComfyUI gesendet",
+            "failed": "Fehler beim Senden des Workflows: {message}"
         },
         "restoreDownloaded": {
-            "title": "[TODO: Translate] Restore Downloaded Version?",
-            "message": "[TODO: Translate] This discards local edits and restores the workflow to its downloaded version.",
-            "confirmButton": "[TODO: Translate] Restore",
-            "restoring": "[TODO: Translate] Restoring workflow...",
-            "success": "[TODO: Translate] Workflow restored to its downloaded version",
-            "failed": "[TODO: Translate] Failed to restore workflow: {message}"
+            "title": "Heruntergeladene Version wiederherstellen?",
+            "message": "Dadurch werden lokale Änderungen verworfen und der Workflow auf die heruntergeladene Version zurückgesetzt.",
+            "confirmButton": "Wiederherstellen",
+            "restoring": "Workflow wird wiederhergestellt...",
+            "success": "Workflow auf die heruntergeladene Version zurückgesetzt",
+            "failed": "Fehler beim Wiederherstellen des Workflows: {message}"
         },
         "updateFromComfy": {
-            "success": "[TODO: Translate] Workflow updated from ComfyUI",
-            "noChanges": "[TODO: Translate] No changes in ComfyUI to write back",
-            "cancelled": "[TODO: Translate] Update cancelled",
-            "failed": "[TODO: Translate] Failed to update from ComfyUI: {message}"
+            "success": "Workflow von ComfyUI aktualisiert",
+            "noChanges": "Keine Änderungen in ComfyUI zum Zurückschreiben",
+            "cancelled": "Aktualisierung abgebrochen",
+            "failed": "Fehler beim Aktualisieren von ComfyUI: {message}"
         },
         "copyWorkflow": {
-            "failed": "[TODO: Translate] Failed to copy workflow: {message}"
+            "failed": "Fehler beim Kopieren des Workflows: {message}"
         },
         "disabled": {
-            "title": "[TODO: Translate] Workflow management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage ComfyUI workflow files, keep their CivitAI metadata and previews, and send them into the running ComfyUI graph.",
-            "enableButton": "[TODO: Translate] Enable Workflows",
-            "hint": "[TODO: Translate] You can turn the feature off again later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Workflows"
+            "title": "Die Workflow-Verwaltung ist deaktiviert",
+            "description": "Aktivieren Sie die Option, um ComfyUI-Workflow-Dateien zu scannen und zu verwalten, ihre CivitAI-Metadaten und Vorschaubilder zu behalten und sie in den laufenden ComfyUI-Graph zu senden.",
+            "enableButton": "Workflows aktivieren",
+            "hint": "Sie können die Funktion später unter Einstellungen > Bibliothek wieder deaktivieren.",
+            "enableFailed": "Aktivierung der Workflows fehlgeschlagen"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folders found",
-            "descriptionStandalone": "[TODO: Translate] Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Workflows are read from the folder_paths.workflows entries.",
-            "descriptionComfyUI": "[TODO: Translate] Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
-            "hintComfyUI": "[TODO: Translate] Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
-            "openSettings": "[TODO: Translate] Open Settings",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "title": "Keine Workflow-Ordner gefunden",
+            "descriptionStandalone": "Die Workflow-Verwaltung ist aktiviert, aber es wurden keine Workflow-Ordner gefunden. Fügen Sie Ihre Workflow-Ordner unter Einstellungen → Modellpfade hinzu und starten Sie LoRA Manager anschließend neu.",
+            "hintStandalone": "Workflows werden aus den folder_paths.workflows-Einträgen gelesen.",
+            "descriptionComfyUI": "Die Workflow-Verwaltung ist aktiviert, aber es sind keine Workflow-Ordner konfiguriert. Fügen Sie Workflow-Ordner unter Einstellungen → Bibliothek hinzu und laden Sie diese Seite neu.",
+            "hintComfyUI": "Workflows liegen in eigenen Bibliotheksordnern (folder_paths.workflows); die integrierte Workflow-Liste von ComfyUI wird nicht verändert.",
+            "openSettings": "Einstellungen öffnen",
+            "openModelPaths": "Modellordner konfigurieren",
+            "openSettingsFolder": "Einstellungsordner öffnen"
         }
     },
     "sidebar": {
@@ -2328,8 +2328,8 @@
             "message": "Modell-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
         "workflows": {
-            "title": "[TODO: Translate] Initializing Workflow Manager",
-            "message": "[TODO: Translate] Scanning and building workflow cache. This may take a few minutes..."
+            "title": "Workflow Manager wird initialisiert",
+            "message": "Workflow-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
         "recipes": {
             "title": "Rezept Manager wird initialisiert",
