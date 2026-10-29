@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 
 NETWORK_EXCEPTIONS = (ClientError, OSError, asyncio.TimeoutError)
 
+# Remote used when bootstrapping git in a ZIP-installed plugin folder. It is a
+# module-level constant so tests can substitute a local repository instead of
+# hitting GitHub.
+_GIT_REMOTE_URL = 'https://github.com/willmiao/ComfyUI-Lora-Manager.git'
+
+# Hard upper bound (seconds) for a git network command. A cold fetch pulls the
+# full ~140 MiB history, and a stalled connection otherwise hangs forever: git
+# has no default timeout for a handshake that never completes, and
+# ``http.lowSpeedLimit``/``http.lowSpeedTime`` do not cover it either (they
+# only apply once bytes start flowing). GitPython kills the process after this
+# delay instead.
+_GIT_NETWORK_TIMEOUT = 300
+
 # User-managed directories that live inside the plugin folder (portable
 # mode) and must survive a Git-based update. ``git clean -fd`` would
 # otherwise delete them because they are untracked and, in released tags,
@@ -409,11 +422,8 @@ class UpdateRoutes:
 
         try:
             repo = git.Repo.init(plugin_root)
-            origin = repo.create_remote(
-                'origin',
-                'https://github.com/willmiao/ComfyUI-Lora-Manager.git'
-            )
-            origin.fetch()
+            origin = repo.create_remote('origin', _GIT_REMOTE_URL)
+            origin.fetch(kill_after_timeout=_GIT_NETWORK_TIMEOUT)
 
             repo.create_head('main', origin.refs.main)
             repo.git.checkout('main', '--force')
@@ -678,7 +688,7 @@ class UpdateRoutes:
             
             # Fetch latest changes
             origin = repo.remotes.origin
-            origin.fetch()
+            origin.fetch(kill_after_timeout=_GIT_NETWORK_TIMEOUT)
             
             if nightly:
                 # Reset to discard any local changes
@@ -694,7 +704,7 @@ class UpdateRoutes:
                     repo.create_head(main_branch, origin.refs.main)
                 
                 repo.heads[main_branch].checkout()
-                origin.pull(main_branch)
+                origin.pull(main_branch, kill_after_timeout=_GIT_NETWORK_TIMEOUT)
                 
                 # Get new commit hash
                 new_version = f"main-{repo.head.commit.hexsha[:7]}"

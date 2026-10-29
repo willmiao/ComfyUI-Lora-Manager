@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import subprocess
 from aiohttp import ClientError
 from aiohttp import web
 import pytest
@@ -116,8 +117,8 @@ async def test_perform_git_update_preserves_user_dirs(monkeypatch, tmp_path):
             calls.append(("checkout", args))
 
     class FakeRemote:
-        def fetch(self):
-            calls.append(("fetch", ()))
+        def fetch(self, *args, **kwargs):
+            calls.append(("fetch", kwargs))
 
         def pull(self, *args, **kwargs):
             calls.append(("pull", args))
@@ -192,6 +193,10 @@ async def test_perform_git_update_preserves_user_dirs(monkeypatch, tmp_path):
         idx = clean_args.index(name)
         assert clean_args[idx - 1] == "-e"
 
+    # The fetch must be bounded, same as the bootstrap path.
+    fetch_calls = [c for c in calls if c[0] == "fetch"]
+    assert fetch_calls[0][1] == {"kill_after_timeout": update_routes._GIT_NETWORK_TIMEOUT}
+
 
 @pytest.mark.asyncio
 async def test_perform_git_update_stable_preserves_user_dirs(monkeypatch, tmp_path):
@@ -209,8 +214,8 @@ async def test_perform_git_update_stable_preserves_user_dirs(monkeypatch, tmp_pa
             calls.append(("checkout", args))
 
     class FakeRemote:
-        def fetch(self):
-            calls.append(("fetch", ()))
+        def fetch(self, *args, **kwargs):
+            calls.append(("fetch", kwargs))
 
     class FakeRemotes:
         origin = FakeRemote()
@@ -262,27 +267,149 @@ async def test_perform_git_update_stable_preserves_user_dirs(monkeypatch, tmp_pa
     for name in update_routes._PRESERVE_DIRS:
         assert name in clean_args, f"{name} missing from git clean excludes (stable)"
 
+
+def _run_git(*args, cwd):
+    """Run git in *cwd* with a throwaway identity (CI runners configure none)."""
+    return subprocess.run(
+        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def test_init_git_repo_creates_valid_repo(tmp_path, monkeypatch):
     if not shutil.which("git"):
         pytest.skip("git executable not found")
+
+    # A local repository stands in for the GitHub remote. Everything exercised
+    # here is plain git, so a network round trip buys nothing: the old version
+    # fetched the real repository (~140 MiB of history), took seconds even on a
+    # good connection, and could hang the whole suite on a stalled one.
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    _run_git("init", "-b", "main", cwd=upstream)
+    (upstream / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+    (upstream / "README.md").write_text("upstream\n")
+    _run_git("add", ".", cwd=upstream)
+    _run_git("commit", "-m", "init", cwd=upstream)
+    head_sha = _run_git("rev-parse", "HEAD", cwd=upstream).stdout.strip()
 
     plugin_root = tmp_path / "plugin"
     plugin_root.mkdir()
     (plugin_root / ".tracking").write_text("pyproject.toml")
     (plugin_root / "settings.json").write_text('{"some": "value"}')
+    preserved_dirs = [
+        name for name in update_routes._PRESERVE_DIRS if name != "settings.json"
+    ]
+    for name in preserved_dirs:
+        (plugin_root / name).mkdir()
+        (plugin_root / name / "user-file.txt").write_text("keep me")
 
-    try:
-        success, version = update_routes.UpdateRoutes._init_git_repo(str(plugin_root))
-    except Exception as e:
-        pytest.skip(f"Network unavailable for git fetch: {e}")
+    monkeypatch.setattr(update_routes, "_GIT_REMOTE_URL", str(upstream))
+
+    success, version = update_routes.UpdateRoutes._init_git_repo(str(plugin_root))
 
     assert success is True
-    assert version.startswith("main-")
-    assert len(version) > len("main-")
+    assert version == f"main-{head_sha[:7]}"
     assert (plugin_root / ".git").is_dir()
     assert not (plugin_root / ".tracking").exists()
-    assert (plugin_root / "settings.json").exists()
+    # Tracked content is checked out from the remote ...
     assert (plugin_root / "pyproject.toml").exists()
+    assert (plugin_root / "README.md").exists()
+    # ... while user data survives ``git clean -fd``. This is the behaviour that
+    # needs a real git binary; asserting the ``-e`` arguments on a fake repo
+    # (as the other tests do) cannot prove the files really stay.
+    assert (plugin_root / "settings.json").read_text() == '{"some": "value"}'
+    for name in preserved_dirs:
+        assert (plugin_root / name / "user-file.txt").exists(), f"{name} was cleaned"
+
+
+def test_init_git_repo_fetch_is_bounded(tmp_path, monkeypatch):
+    """The bootstrap fetch must carry a timeout: git has none by default, so a
+    stalled connection otherwise hangs the update endpoint forever."""
+    fetch_kwargs = {}
+    clean_args = ()
+
+    class FakeRemote:
+        refs = type("Refs", (), {"main": "refs/heads/main"})()
+
+        def fetch(self, **kwargs):
+            fetch_kwargs.update(kwargs)
+
+    class FakeGit:
+        def checkout(self, *args, **kwargs):
+            pass
+
+        def reset(self, *args, **kwargs):
+            pass
+
+        def clean(self, *args, **kwargs):
+            nonlocal clean_args
+            clean_args = args
+
+    class FakeHead:
+        class commit:
+            hexsha = "0" * 40
+
+    class FakeRepo:
+        git = FakeGit()
+        head = FakeHead()
+
+        def create_remote(self, name, url):
+            return FakeRemote()
+
+        def create_head(self, *args, **kwargs):
+            pass
+
+    class FakeGitModule:
+        class Repo:
+            @staticmethod
+            def init(path):
+                return FakeRepo()
+
+        class exc:
+            class GitError(Exception):
+                pass
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "git":
+            return FakeGitModule
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    success, version = update_routes.UpdateRoutes._init_git_repo(str(tmp_path))
+
+    assert success is True
+    assert version == "main-0000000"
+    assert fetch_kwargs == {"kill_after_timeout": update_routes._GIT_NETWORK_TIMEOUT}
+    for name in update_routes._PRESERVE_DIRS:
+        assert name in clean_args, f"{name} missing from git clean excludes (init)"
+
+
+def test_init_git_repo_reports_failure_instead_of_raising(tmp_path, monkeypatch):
+    """A failed fetch surfaces as ``(False, "")``; callers branch on it.
+
+    This is also why the old network-backed test *failed* instead of skipping
+    on a bad connection: ``_init_git_repo`` catches its own exceptions, so a
+    ``try/except: pytest.skip`` around the call never fires.
+    """
+    if not shutil.which("git"):
+        pytest.skip("git executable not found")
+
+    plugin_root = tmp_path / "plugin"
+    plugin_root.mkdir()
+    monkeypatch.setattr(
+        update_routes, "_GIT_REMOTE_URL", str(tmp_path / "missing-repository")
+    )
+
+    assert update_routes.UpdateRoutes._init_git_repo(str(plugin_root)) == (False, "")
 
 
 @pytest.mark.asyncio
