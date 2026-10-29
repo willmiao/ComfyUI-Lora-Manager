@@ -209,8 +209,25 @@ describe('DownloadManager post-download in-place reconciliation (#1078)', () => 
     });
   });
 
-  describe('_reconcileViewAfterDownload', () => {
-    it('removes the model cards in the Updates view when the latest version was installed', async () => {
+  describe('_computeWasLocallyOwned', () => {
+    it('returns null when no version list is available', () => {
+      expect(manager._computeWasLocallyOwned(null)).toBe(null);
+      expect(manager._computeWasLocallyOwned(undefined)).toBe(null);
+      expect(manager._computeWasLocallyOwned([])).toBe(null);
+    });
+
+    it('returns true when any version was already local', () => {
+      const versions = [{ id: 1, existsLocally: false }, { id: 2, existsLocally: true }];
+      expect(manager._computeWasLocallyOwned(versions)).toBe(true);
+    });
+
+    it('returns false when no version was local (brand-new model)', () => {
+      const versions = [{ id: 1, existsLocally: false }, { id: 2, existsLocally: false }];
+      expect(manager._computeWasLocallyOwned(versions)).toBe(false);
+    });
+  });
+
+  describe('_reconcileViewAfterDownload', () => {    it('removes the model cards in the Updates view when the latest version was installed', async () => {
       stateMock.virtualScroller.items = [
         makeItem('/models/loras/old.safetensors', 837884),
         makeItem('/models/loras/unrelated.safetensors', 999999),
@@ -260,17 +277,49 @@ describe('DownloadManager post-download in-place reconciliation (#1078)', () => 
       expect(sidebarRefreshMock).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the listing untouched when the downloaded model is not in the current view', async () => {
+    it('keeps the listing untouched when an owned model is not in the current view', async () => {
       stateMock.virtualScroller.items = [makeItem('/models/loras/other.safetensors', 999999)];
       mockApiClient.getPageState.mockReturnValue({ showUpdateAvailableOnly: true });
 
-      const result = await manager._reconcileViewAfterDownload({ modelId: 837884, isLatestVersion: true });
+      const result = await manager._reconcileViewAfterDownload({
+        modelId: 837884,
+        isLatestVersion: true,
+        wasLocallyOwned: true,
+      });
 
       expect(result).toBe(false);
       expect(mockScroller.removeMultipleItemsByFilePath).not.toHaveBeenCalled();
       expect(mockScroller.updateSingleItem).not.toHaveBeenCalled();
       expect(resetAndReloadMock).not.toHaveBeenCalled();
       expect(sidebarRefreshMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('reloads the listing when a brand-new model has no card to reconcile', async () => {
+      stateMock.virtualScroller.items = [makeItem('/models/loras/other.safetensors', 999999)];
+      mockApiClient.getPageState.mockReturnValue({ showUpdateAvailableOnly: true });
+
+      const result = await manager._reconcileViewAfterDownload({
+        modelId: 837884,
+        isLatestVersion: true,
+        wasLocallyOwned: false,
+      });
+
+      expect(result).toBe(true);
+      expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+      expect(mockScroller.removeMultipleItemsByFilePath).not.toHaveBeenCalled();
+      expect(mockScroller.updateSingleItem).not.toHaveBeenCalled();
+      expect(sidebarRefreshMock).not.toHaveBeenCalled();
+    });
+
+    it('reloads the listing when ownership is unknown and no card matches', async () => {
+      stateMock.virtualScroller.items = [makeItem('/models/loras/other.safetensors', 999999)];
+      mockApiClient.getPageState.mockReturnValue({ showUpdateAvailableOnly: true });
+
+      const result = await manager._reconcileViewAfterDownload({ modelId: 837884, isLatestVersion: true });
+
+      expect(result).toBe(true);
+      expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+      expect(sidebarRefreshMock).not.toHaveBeenCalled();
     });
 
     it('no-ops for models without a CivitAI identity (HF downloads)', async () => {

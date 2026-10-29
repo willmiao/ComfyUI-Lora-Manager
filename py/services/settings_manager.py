@@ -130,6 +130,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     # for download until the user turns the feature on.
     "enable_other_models": False,
     "enabled_other_sub_types": list(DEFAULT_ENABLED_OTHER_SUB_TYPES),
+    # Workflow management is likewise opt-in (ComfyUI workflow JSON library).
+    "enable_workflows": False,
     "recipes_path": "",
     "sidecar_storage_mode": "alongside",
     "sidecar_storage_path": "",
@@ -823,6 +825,40 @@ class SettingsManager:
         """Return True when the opt-in Other Models management is enabled."""
         return bool(self.settings.get("enable_other_models", False))
 
+    def is_workflows_enabled(self) -> bool:
+        """Return True when the opt-in Workflow management is enabled."""
+        return bool(self.settings.get("enable_workflows", False))
+
+    def get_workflow_folder_paths(self) -> List[str]:
+        """Workflow roots configured for the active library (normalized)."""
+        folder_paths = self.settings.get("folder_paths", {})
+        if not isinstance(folder_paths, Mapping):
+            return []
+        normalized = self._normalize_folder_paths(
+            {"workflows": folder_paths.get("workflows", [])}
+        )
+        return normalized.get("workflows", [])
+
+    def set_workflow_folder_paths(self, paths: Any) -> List[str]:
+        """Replace the active library's workflow roots and apply them live.
+
+        Unlike the core folder_paths keys (host-owned in plugin mode, applied
+        on restart in standalone), workflow roots are LoRA-Manager-only in
+        both modes, so they merge into the stored folder_paths map and take
+        effect immediately via ``_apply_workflow_settings_change``.
+        """
+        normalized = self._normalize_folder_paths({"workflows": paths}).get(
+            "workflows", []
+        )
+        folder_paths = dict(self.settings.get("folder_paths") or {})
+        if normalized:
+            folder_paths["workflows"] = normalized
+        else:
+            folder_paths.pop("workflows", None)
+        self.set("folder_paths", folder_paths)
+        self._apply_workflow_settings_change()
+        return normalized
+
     def get_enabled_other_sub_types(self) -> List[str]:
         """Return the enabled other-model sub_types (empty when the feature is off)."""
         if not self.is_other_models_enabled():
@@ -854,6 +890,28 @@ class SettingsManager:
                 scanner.on_library_changed(reconcile=True)
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.debug("Failed to refresh other scanner after settings change: %s", exc)
+
+    def _apply_workflow_settings_change(self) -> None:
+        """Rebuild workflow roots and refresh the workflow scanner after a toggle."""
+        try:
+            from ..config import config  # Local import to avoid circular dependency
+
+            config.refresh_workflow_roots()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Failed to refresh workflow roots: %s", exc)
+
+        try:
+            from .service_registry import ServiceRegistry  # pyright: ignore[reportImportCycles]
+
+            scanner = ServiceRegistry.get_service_sync("workflow_scanner")
+            if scanner is not None and hasattr(scanner, "on_library_changed"):
+                # reconcile=True lets the scanner pick up newly enabled roots and
+                # purge rows for folders that are no longer managed.
+                scanner.on_library_changed(reconcile=True)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "Failed to refresh workflow scanner after settings change: %s", exc
+            )
 
     def _has_configured_paths(self, folder_paths: Any) -> bool:
         if not isinstance(folder_paths, Mapping):
@@ -2040,6 +2098,8 @@ class SettingsManager:
             value = normalize_other_sub_types(value)
         elif key == "enable_other_models":
             value = bool(value)
+        elif key == "enable_workflows":
+            value = bool(value)
         elif key == "recipes_path":
             current_recipes_dir = self._get_effective_recipes_dir()
             value = self._normalize_recipes_path_value(value)
@@ -2086,6 +2146,8 @@ class SettingsManager:
             self._refresh_sidecar_storage_config()
         if key in ("enable_other_models", "enabled_other_sub_types"):
             self._apply_other_model_settings_change()
+        if key == "enable_workflows":
+            self._apply_workflow_settings_change()
         if portable_switch_pending:
             self._finalize_portable_switch()
 

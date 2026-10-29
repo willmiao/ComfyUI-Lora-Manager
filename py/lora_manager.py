@@ -275,6 +275,11 @@ class LoraManager:
         checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
         embedding_scanner = await ServiceRegistry.get_embedding_scanner()
         other_scanner = await ServiceRegistry.get_other_scanner()
+        # Opt-in but always initialized: an empty-roots scan is trivial, and
+        # without a cache the /workflows page would sit on the initialization
+        # screen forever (even the "feature disabled" empty state needs the
+        # scanner past the initializing check).
+        workflow_scanner = await ServiceRegistry.get_workflow_scanner()
 
         # Initialize recipe scanner if needed
         recipe_scanner = await ServiceRegistry.get_recipe_scanner()
@@ -295,6 +300,10 @@ class LoraManager:
             asyncio.create_task(
                 other_scanner.initialize_in_background(),
                 name="other_cache_init",
+            ),
+            asyncio.create_task(
+                workflow_scanner.initialize_in_background(),
+                name="workflow_cache_init",
             ),
             asyncio.create_task(
                 recipe_scanner.initialize_in_background(), name="recipe_cache_init"

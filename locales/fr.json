@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Syntaxe dembedding copiée",
             "modelNameCopied": "Nom du modèle copié",
             "sendCheckpointToWorkflow": "Envoyer vers ComfyUI",
-            "sendEmbeddingToWorkflow": "Envoyer vers ComfyUI"
+            "sendEmbeddingToWorkflow": "Envoyer vers ComfyUI",
+            "openInComfyUI": "Ouvrir dans ComfyUI",
+            "copyWorkflowToClipboard": "Copier le workflow dans le presse-papiers"
         },
         "nsfw": {
             "matureContent": "Contenu pour adultes",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "other": "Autres",
+            "workflows": "Workflows",
             "statistics": "Statistiques"
         },
         "search": {
@@ -633,6 +636,10 @@
             "defaultControlnetRootHelp": "Définir le répertoire racine ControlNet par défaut pour les téléchargements, imports et déplacements",
             "enableOtherModels": "Gestion des autres modèles",
             "enableOtherModelsHelp": "Lorsque cette option est désactivée, les dossiers VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet ne sont pas analysés, la page Autres modèles reste désactivée et ces types de modèles ne peuvent pas être téléchargés.",
+            "enableWorkflows": "Gestion des workflows",
+            "enableWorkflowsHelp": "Lorsque cette option est désactivée, les dossiers de workflows (folder_paths.workflows) ne sont pas analysés, la page Workflows reste désactivée et les ressources Workflow de CivitAI ne peuvent pas être liées ni téléchargées.",
+            "workflowFolders": "Dossiers de workflows",
+            "workflowFoldersHelp": "Dossiers analysés pour les fichiers JSON de workflow ComfyUI. Gérés uniquement par LoRA Manager (non partagés avec ComfyUI) ; les modifications s'appliquent immédiatement.",
             "otherSubTypes": "Types de modèles gérés",
             "otherSubTypesHelp": "Choisissez les catégories d’autres modèles analysées et affichées sur la page Autres modèles.",
             "subTypeVae": "VAE",
@@ -686,7 +693,8 @@
                 "text_encoders": "Chemins Text Encoder",
                 "clip": "Chemins CLIP (hérité)",
                 "clip_vision": "Chemins CLIP Vision",
-                "controlnet": "Chemins ControlNet"
+                "controlnet": "Chemins ControlNet",
+                "workflows": "Chemins de workflows"
             }
         },
         "directoryPicker": {
@@ -1442,6 +1450,53 @@
             "hintStandalone": "Seuls les types de modèles activés sont analysés ; activez les types dont vous avez besoin dans Bibliothèque → Racines par défaut.",
             "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
             "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
+            "openSettings": "Ouvrir les paramètres",
+            "openModelPaths": "Configurer les dossiers de modèles",
+            "openSettingsFolder": "Ouvrir le dossier des paramètres"
+        }
+    },
+    "workflows": {
+        "title": "Workflows",
+        "contextMenu": {
+            "sendToComfy": "Ouvrir dans ComfyUI",
+            "updateFromComfy": "Mettre à jour depuis ComfyUI",
+            "copyWorkflow": "Copier le workflow",
+            "restoreDownloaded": "Restaurer la version téléchargée"
+        },
+        "sendToComfy": {
+            "success": "Workflow envoyé vers ComfyUI",
+            "failed": "Échec de l'envoi du workflow : {message}"
+        },
+        "restoreDownloaded": {
+            "title": "Restaurer la version téléchargée ?",
+            "message": "Cela supprime les modifications locales et restaure le workflow dans sa version téléchargée.",
+            "confirmButton": "Restaurer",
+            "restoring": "Restauration du workflow en cours...",
+            "success": "Workflow restauré dans sa version téléchargée",
+            "failed": "Échec de la restauration du workflow : {message}"
+        },
+        "updateFromComfy": {
+            "success": "Workflow mis à jour depuis ComfyUI",
+            "noChanges": "Aucune modification à réécrire depuis ComfyUI",
+            "cancelled": "Mise à jour annulée",
+            "failed": "Échec de la mise à jour depuis ComfyUI : {message}"
+        },
+        "copyWorkflow": {
+            "failed": "Échec de la copie du workflow : {message}"
+        },
+        "disabled": {
+            "title": "La gestion des workflows est désactivée",
+            "description": "Activez-la pour analyser et gérer les fichiers de workflow ComfyUI, conserver leurs métadonnées et aperçus CivitAI et les envoyer dans le graphe ComfyUI en cours d'exécution.",
+            "enableButton": "Activer les workflows",
+            "hint": "Vous pourrez désactiver cette fonctionnalité plus tard dans Paramètres > Bibliothèque.",
+            "enableFailed": "Échec de l'activation des workflows"
+        },
+        "noPaths": {
+            "title": "Aucun dossier de workflows trouvé",
+            "descriptionStandalone": "La gestion des workflows est activée, mais aucun dossier de workflows n'a été trouvé. Ajoutez vos dossiers de workflows dans Paramètres → Chemins de modèles, puis redémarrez LoRA Manager.",
+            "hintStandalone": "Les workflows sont lus depuis les entrées folder_paths.workflows.",
+            "descriptionComfyUI": "La gestion des workflows est activée, mais aucun dossier de workflows n'est configuré. Ajoutez des dossiers de workflows dans Paramètres → Bibliothèque, puis rechargez cette page.",
+            "hintComfyUI": "Les workflows résident dans leurs propres dossiers de bibliothèque (folder_paths.workflows) ; la liste de workflows intégrée à ComfyUI n'est pas modifiée.",
             "openSettings": "Ouvrir les paramètres",
             "openModelPaths": "Configurer les dossiers de modèles",
             "openSettingsFolder": "Ouvrir le dossier des paramètres"
@@ -2271,6 +2326,10 @@
         "other": {
             "title": "Initialisation du gestionnaire Autres modèles",
             "message": "Analyse et construction du cache de modèles. Cela peut prendre quelques minutes..."
+        },
+        "workflows": {
+            "title": "Initialisation du gestionnaire de workflows",
+            "message": "Scan et construction du cache workflow. Cela peut prendre quelques minutes..."
         },
         "recipes": {
             "title": "Initialisation du gestionnaire de recipes",

@@ -1,0 +1,84 @@
+import os
+import logging
+from typing import Any, Dict, Optional
+
+from .base_model_service import BaseModelService
+from .auto_tag_service import extract_auto_tags
+from ..utils.models import WorkflowMetadata
+from ..config import config
+
+logger = logging.getLogger(__name__)
+
+
+class WorkflowService(BaseModelService):
+    """Workflow-specific service implementation (ComfyUI workflow JSON)."""
+
+    def __init__(self, scanner, update_service=None):
+        """Initialize Workflow service
+
+        Args:
+            scanner: Workflow scanner instance
+            update_service: Optional service for remote update tracking.
+        """
+        super().__init__(
+            "workflow", scanner, WorkflowMetadata, update_service=update_service
+        )
+
+    async def format_response(self, model_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Format workflow data for API response.
+
+        Returns None when the entry is missing critical fields (corrupted cache
+        row), so the handler layer can filter it out. See issue #730.
+        """
+        file_path = model_data.get("file_path")
+        if not file_path or not isinstance(file_path, str):
+            logger.warning(
+                "Skipping corrupted workflow entry (missing file_path): %s",
+                model_data.get("file_name", "<unknown>"),
+            )
+            return None
+
+        file_name = model_data.get("file_name") or ""
+        model_name = model_data.get("model_name") or file_name
+        folder = model_data.get("folder") or ""
+
+        return {
+            "model_name": model_name,
+            "file_name": file_name,
+            "preview_url": config.get_preview_static_url(model_data.get("preview_url", "")),
+            "preview_nsfw_level": model_data.get("preview_nsfw_level", 0),
+            "base_model": model_data.get("base_model", ""),
+            "folder": folder,
+            "sha256": model_data.get("sha256", ""),
+            "file_path": file_path.replace(os.sep, "/"),
+            "file_size": model_data.get("size", 0),
+            "modified": model_data.get("modified", ""),
+            "tags": model_data.get("tags", []),
+            "from_civitai": model_data.get("from_civitai", True),
+            "notes": model_data.get("notes", ""),
+            "sub_type": "workflow",
+            "favorite": model_data.get("favorite", False),
+            "exclude": bool(model_data.get("exclude", False)),
+            "update_available": bool(model_data.get("update_available", False)),
+            "skip_metadata_refresh": bool(model_data.get("skip_metadata_refresh", False)),
+            "civitai": self.filter_civitai_data(model_data.get("civitai", {}), minimal=True),
+            "auto_tags": model_data.get("auto_tags") or extract_auto_tags(model_data),
+            "version_count": model_data.get("version_count"),
+            "source_platform": model_data.get("source_platform", ""),
+            "source_url": model_data.get("source_url", ""),
+            "source_model_id": model_data.get("source_model_id", ""),
+            "source_version_id": model_data.get("source_version_id", ""),
+            "workflow_format": model_data.get("workflow_format", ""),
+            "node_count": model_data.get("node_count", 0),
+            "node_classes": model_data.get("node_classes", []),
+            "model_refs": model_data.get("model_refs", []),
+            "civitai_refs": model_data.get("civitai_refs", []),
+        }
+
+    def find_duplicate_hashes(self) -> Dict[str, Any]:
+        """Find workflows with duplicate SHA256 hashes"""
+        return self.scanner._hash_index.get_duplicate_hashes()
+
+    def find_duplicate_filenames(self) -> Dict[str, Any]:
+        """Find workflows with conflicting filenames"""
+        return self.scanner._hash_index.get_duplicate_filenames()

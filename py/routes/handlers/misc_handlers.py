@@ -716,6 +716,7 @@ class HealthCheckHandler:
             "checkpoint": ServiceRegistry.get_checkpoint_scanner,
             "embedding": ServiceRegistry.get_embedding_scanner,
             "other": ServiceRegistry.get_other_scanner,
+            "workflow": ServiceRegistry.get_workflow_scanner,
             "recipe": ServiceRegistry.get_recipe_scanner,
         }
         self._first_run_manager = first_run_manager
@@ -723,13 +724,14 @@ class HealthCheckHandler:
     def _active_scanner_getters(
         self,
     ) -> Mapping[str, Callable[[], Awaitable[Any]]]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
-        getters = self._scanner_getters
-        if "other" not in getters:
-            return getters
-        if get_settings_manager().is_other_models_enabled():
-            return getters
-        return {name: getter for name, getter in getters.items() if name != "other"}
+        """Drop the opt-in scanners while their features are disabled."""
+        settings = get_settings_manager()
+        active = dict(self._scanner_getters)
+        if not settings.is_other_models_enabled():
+            active.pop("other", None)
+        if not settings.is_workflows_enabled():
+            active.pop("workflow", None)
+        return active
 
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
@@ -743,6 +745,7 @@ class HealthCheckHandler:
         "checkpoints": ("checkpoint",),
         "embeddings": ("embedding",),
         "other": ("other",),
+        "workflows": ("workflow",),
         "recipes": ("recipe",),
     }
 
@@ -965,6 +968,7 @@ class DoctorHandler:
                 ("checkpoint", "Checkpoints", ServiceRegistry.get_checkpoint_scanner),
                 ("embedding", "Embeddings", ServiceRegistry.get_embedding_scanner),
                 ("other", "Other Models", ServiceRegistry.get_other_scanner),
+                ("workflow", "Workflows", ServiceRegistry.get_workflow_scanner),
             )
         )
         self._app_version_getter = app_version_getter
@@ -972,10 +976,13 @@ class DoctorHandler:
     def _active_scanner_factories(
         self,
     ) -> Sequence[tuple[str, str, Callable[[], Awaitable[Any]]]]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
-        if self._settings.is_other_models_enabled():
-            return self._scanner_factories
-        return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
+        """Drop the opt-in scanners while their features are disabled."""
+        factories = self._scanner_factories
+        if not self._settings.is_other_models_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "other")
+        if not self._settings.is_workflows_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "workflow")
+        return factories
 
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
@@ -1852,6 +1859,15 @@ class SettingsHandler:
                 response_data["other_models_paths_available"] = None
             standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
             response_data["standalone_mode"] = standalone_mode
+            # Workflow roots are LoRA-Manager-only in BOTH modes (the ComfyUI
+            # host has no such folder category), so expose them to the
+            # settings UI regardless of standalone_mode.
+            get_workflow_paths = getattr(
+                self._settings, "get_workflow_folder_paths", None
+            )
+            response_data["workflow_folder_paths"] = (
+                get_workflow_paths() if get_workflow_paths else []
+            )
             if standalone_mode:
                 # Standalone reads its model roots exclusively from
                 # settings.json, so the Model Paths settings UI needs the
@@ -1958,6 +1974,14 @@ class SettingsHandler:
             proxy_changed = False
 
             for key, value in data.items():
+                if key == "workflow_folder_paths":
+                    # Pseudo-key: replaces only the workflows entry of the
+                    # active library's folder_paths (core keys are host-owned
+                    # in plugin mode and must not be clobbered), then applies
+                    # the new roots live without a restart.
+                    self._settings.set_workflow_folder_paths(value)
+                    continue
+
                 if value == self._settings.get(key):
                     continue
 
@@ -2418,6 +2442,7 @@ class ServiceRegistryAdapter:
     get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
     get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
     get_other_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_other_scanner
+    get_workflow_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_workflow_scanner
 
 
 class ModelLibraryHandler:
@@ -2444,6 +2469,8 @@ class ModelLibraryHandler:
             return "embedding"
         if normalized in VALID_OTHER_CIVITAI_TYPES:
             return "other"
+        if normalized in {"workflow", "workflows", "comfyworkflows"}:
+            return "workflow"
         return None
 
     async def _get_scanner_for_type(self, model_type: str | None):
@@ -2461,6 +2488,11 @@ class ModelLibraryHandler:
             if not get_settings_manager().is_other_models_enabled():
                 return None, None
             return normalized_type, await self._service_registry.get_other_scanner()
+        if normalized_type == "workflow":
+            # Same opt-in posture as other models.
+            if not get_settings_manager().is_workflows_enabled():
+                return None, None
+            return normalized_type, await self._service_registry.get_workflow_scanner()
         return None, None
 
     async def _get_download_history_service(self):

@@ -115,7 +115,8 @@ export const ModelContextMenuMixin = {
             lora: 'loras',
             checkpoint: 'checkpoints',
             embedding: 'embeddings',
-            other: 'other'
+            other: 'other',
+            workflow: 'workflows'
         };
         return prefixMap[this.modelType] || 'loras';
     },

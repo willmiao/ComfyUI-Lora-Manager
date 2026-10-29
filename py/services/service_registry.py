@@ -357,6 +357,27 @@ class ServiceRegistry:
             return scanner
 
     @classmethod
+    async def get_workflow_scanner(cls):
+        """Get or create Workflow scanner instance"""
+        service_name = "workflow_scanner"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            # Double-check after acquiring lock
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            # Import here to avoid circular imports
+            from .workflow_scanner import WorkflowScanner
+
+            scanner = await WorkflowScanner.get_instance()
+            cls._services[service_name] = scanner
+            logger.debug(f"Created and registered {service_name}")
+            return scanner
+
+    @classmethod
     def clear_services(cls):
         """Clear all registered services - mainly for testing"""
         cls._services.clear()

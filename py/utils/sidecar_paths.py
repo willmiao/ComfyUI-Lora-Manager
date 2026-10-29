@@ -205,10 +205,12 @@ def _iter_model_roots() -> List[str]:
         "base_models_roots",
         "embeddings_roots",
         "other_roots",
+        "workflows_roots",
         "extra_loras_roots",
         "extra_checkpoints_roots",
         "extra_unet_roots",
         "extra_embeddings_roots",
+        "extra_workflows_roots",
     ):
         value = getattr(config, attr, None)
         if value:

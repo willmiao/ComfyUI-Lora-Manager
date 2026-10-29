@@ -289,6 +289,54 @@ describe("LoraManager.WorkflowRegistry", () => {
       expect(appMock.loadApiJson).not.toHaveBeenCalled();
     });
 
+    it("stamps the lm_source marker into extra for UI-format workflows", async () => {
+      const workflow = { nodes: [{ id: 1 }], links: [], extra: { ds: { scale: 1 } } };
+
+      await extension.loadWorkflowFromMessage({
+        workflow,
+        name: "Managed",
+        lm_source: { file_path: "/lib/flow.json", sha256: "abc123" },
+      });
+
+      const loaded = appMock.loadGraphData.mock.calls[0][0];
+      expect(loaded.extra.lm_source).toEqual({
+        file_path: "/lib/flow.json",
+        sha256: "abc123",
+      });
+      // Pre-existing extra keys are preserved.
+      expect(loaded.extra.ds).toEqual({ scale: 1 });
+    });
+
+    it("stamps the lm_source marker onto the live graph for API-format workflows", async () => {
+      const rootGraph = { extra: undefined };
+      appMock.rootGraph = rootGraph;
+      try {
+        const workflow = { "1": { class_type: "KSampler", inputs: {} } };
+
+        await extension.loadWorkflowFromMessage({
+          workflow,
+          name: "Managed API",
+          lm_source: { file_path: "/lib/flow.json", sha256: null },
+        });
+
+        expect(rootGraph.extra.lm_source).toEqual({
+          file_path: "/lib/flow.json",
+          sha256: null,
+        });
+      } finally {
+        delete appMock.rootGraph;
+      }
+    });
+
+    it("does not add a marker when the payload has no lm_source", async () => {
+      const workflow = { nodes: [{ id: 1 }], links: [] };
+
+      await extension.loadWorkflowFromMessage({ workflow, name: "Plain" });
+
+      const loaded = appMock.loadGraphData.mock.calls[0][0];
+      expect(loaded.extra).toBeUndefined();
+    });
+
     it("defaults the workflow name to 'Recipe Workflow'", async () => {
       const workflow = { nodes: [], links: [] };
 

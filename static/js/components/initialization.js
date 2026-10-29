@@ -79,6 +79,8 @@ class InitializationManager {
             this.pageType = 'checkpoints';
         } else if (path.includes('/other')) {
             this.pageType = 'other';
+        } else if (path.includes('/workflows')) {
+            this.pageType = 'workflows';
         } else if (path.includes('/loras')) {
             this.pageType = 'loras';
         } else if (path.includes('/embeddings')) {
@@ -268,6 +270,7 @@ class InitializationManager {
                 'checkpoint': 'checkpoints',
                 'embedding': 'embeddings',
                 'other': 'other',
+                'workflow': 'workflows',
                 'recipe': 'recipes'
             };
             

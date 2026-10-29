@@ -488,3 +488,58 @@ class EmbeddingMetadata(BaseModelMetadata):
             # Direct read: the downloaded file IS file_info, no SHA256 matching.
             autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
         )
+
+
+@dataclass
+class WorkflowMetadata(BaseModelMetadata):
+    """Represents the metadata structure for a ComfyUI workflow resource.
+
+    Workflows are JSON graph documents (CivitAI model type ``Workflows`` /
+    retired ``ComfyWorkflows``), managed like any other model: dedicated roots,
+    sidecar metadata, previews, and version tracking. The workflow-specific
+    fields are populated by ``py.utils.workflow_analysis`` during scanning.
+    """
+
+    sub_type: str = "workflow"
+    workflow_format: str = ""  # "ui" | "api"; empty until analyzed
+    node_count: int = 0
+    node_classes: List[str] = field(default_factory=list)
+    model_refs: List[str] = field(default_factory=list)
+    civitai_refs: List[str] = field(default_factory=list)
+
+    @classmethod
+    def from_civitai_info(
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
+    ) -> "WorkflowMetadata":
+        """Create WorkflowMetadata instance from Civitai version info"""
+        file_name = file_info.get("name", "")
+        # Workflow artifacts are .json/.zip/.png/... — none of them weight
+        # extensions — so strip one real extension instead of consulting the
+        # weight-extension allowlist.
+        base_name = os.path.splitext(file_name)[0]
+        base_model = determine_base_model(version_info.get("baseModel", ""))
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
+
+        tags = []
+        description = ""
+        model_data = version_info.get("model") or {}
+        if "tags" in model_data:
+            tags = model_data["tags"]
+        if "description" in model_data:
+            description = model_data["description"]
+
+        return cls(
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
+            file_path=save_path.replace(os.sep, "/"),
+            size=file_info.get("sizeKB", 0) * 1024,
+            modified=datetime.now().timestamp(),
+            sha256=sha256_value,
+            base_model=base_model,
+            preview_url="",  # Will be updated after preview download
+            preview_nsfw_level=0,
+            from_civitai=True,
+            civitai=version_info,
+            tags=tags,
+            modelDescription=description,
+        )

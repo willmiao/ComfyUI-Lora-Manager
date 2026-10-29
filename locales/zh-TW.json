@@ -156,7 +156,9 @@
             "embeddingNameCopied": "已複製 Embedding 語法",
             "modelNameCopied": "模型名稱已複製",
             "sendCheckpointToWorkflow": "傳送到 ComfyUI",
-            "sendEmbeddingToWorkflow": "傳送到 ComfyUI"
+            "sendEmbeddingToWorkflow": "傳送到 ComfyUI",
+            "openInComfyUI": "在 ComfyUI 中開啟",
+            "copyWorkflowToClipboard": "複製工作流到剪貼簿"
         },
         "nsfw": {
             "matureContent": "成熟內容",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "其他",
+            "workflows": "工作流",
             "statistics": "統計"
         },
         "search": {
@@ -633,6 +636,10 @@
             "defaultControlnetRootHelp": "設定下載、匯入和移動時的預設 ControlNet 根目錄",
             "enableOtherModels": "其他模型管理",
             "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
+            "enableWorkflows": "工作流管理",
+            "enableWorkflowsHelp": "關閉後，不會掃描工作流資料夾（folder_paths.workflows），工作流頁面會保持停用，且無法連結或下載 CivitAI 的 Workflow 資源。",
+            "workflowFolders": "工作流資料夾",
+            "workflowFoldersHelp": "掃描 ComfyUI 工作流 JSON 檔案的資料夾。僅由 LoRA Manager 管理（不與 ComfyUI 共用）；變更立即生效。",
             "otherSubTypes": "管理的模型類型",
             "otherSubTypesHelp": "選擇要在其他模型頁面中掃描和顯示的其他模型類別。",
             "subTypeVae": "VAE",
@@ -686,7 +693,8 @@
                 "text_encoders": "Text Encoder 路徑",
                 "clip": "CLIP 路徑（舊版）",
                 "clip_vision": "CLIP Vision 路徑",
-                "controlnet": "ControlNet 路徑"
+                "controlnet": "ControlNet 路徑",
+                "workflows": "工作流路徑"
             }
         },
         "directoryPicker": {
@@ -1442,6 +1450,53 @@
             "hintStandalone": "僅會掃描已啟用的模型類型；請在「模型庫 > 預設根目錄」中啟用您需要的類型。",
             "descriptionComfyUI": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將對應的模型資料夾加入 ComfyUI 的模型路徑，然後重新載入此頁面。",
             "hintComfyUI": "其他模型會從 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 資料夾讀取。",
+            "openSettings": "開啟設定",
+            "openModelPaths": "設定模型資料夾",
+            "openSettingsFolder": "開啟設定資料夾"
+        }
+    },
+    "workflows": {
+        "title": "工作流",
+        "contextMenu": {
+            "sendToComfy": "在 ComfyUI 中開啟",
+            "updateFromComfy": "從 ComfyUI 更新",
+            "copyWorkflow": "複製工作流",
+            "restoreDownloaded": "還原已下載版本"
+        },
+        "sendToComfy": {
+            "success": "工作流已傳送到 ComfyUI",
+            "failed": "傳送工作流失敗：{message}"
+        },
+        "restoreDownloaded": {
+            "title": "要還原已下載版本嗎？",
+            "message": "這會捨棄本機修改，並將工作流還原為下載時的版本。",
+            "confirmButton": "還原",
+            "restoring": "正在還原工作流...",
+            "success": "工作流已還原為已下載版本",
+            "failed": "還原工作流失敗：{message}"
+        },
+        "updateFromComfy": {
+            "success": "已從 ComfyUI 更新工作流",
+            "noChanges": "ComfyUI 中沒有需要寫回的變更",
+            "cancelled": "更新已取消",
+            "failed": "從 ComfyUI 更新失敗：{message}"
+        },
+        "copyWorkflow": {
+            "failed": "複製工作流失敗：{message}"
+        },
+        "disabled": {
+            "title": "工作流管理已關閉",
+            "description": "啟用後可掃描和管理 ComfyUI 工作流檔案，保留其 CivitAI 中繼資料和預覽，並將它們傳送到執行中的 ComfyUI 中。",
+            "enableButton": "啟用工作流",
+            "hint": "您稍後可以在「設定 > 模型庫」中再次關閉此功能。",
+            "enableFailed": "啟用工作流失敗"
+        },
+        "noPaths": {
+            "title": "找不到工作流資料夾",
+            "descriptionStandalone": "工作流管理已開啟，但找不到工作流資料夾。請在「設定 > 模型路徑」中加入工作流資料夾，然後重新啟動 LoRA Manager。",
+            "hintStandalone": "工作流會從 folder_paths.workflows 項目讀取。",
+            "descriptionComfyUI": "工作流管理已開啟，但未設定工作流資料夾。請在「設定 > 模型庫」中加入工作流資料夾，然後重新載入此頁面。",
+            "hintComfyUI": "工作流存放在獨立的模型庫資料夾中（folder_paths.workflows）；不會影響 ComfyUI 內建的工作流清單。",
             "openSettings": "開啟設定",
             "openModelPaths": "設定模型資料夾",
             "openSettingsFolder": "開啟設定資料夾"
@@ -2271,6 +2326,10 @@
         "other": {
             "title": "正在初始化其他模型管理器",
             "message": "正在掃描並建立模型快取。這可能需要幾分鐘..."
+        },
+        "workflows": {
+            "title": "初始化工作流管理器",
+            "message": "正在掃描並建立工作流快取。這可能需要幾分鐘..."
         },
         "recipes": {
             "title": "初始化配方管理器",

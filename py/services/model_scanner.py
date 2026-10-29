@@ -101,6 +101,7 @@ PAGE_TYPE_MAP = {
     'checkpoint': 'checkpoints',
     'embedding': 'embeddings',
     'other': 'other',
+    'workflow': 'workflows',
 }
 
 # Case-insensitive cache matching is a Windows-only safety net (NTFS treats
@@ -629,6 +630,7 @@ def _walk_root_for_reconcile(
     expected_folder_of: Callable[[str], str],
     walk_path: Optional[str] = None,
     unreachable: Optional[_UnreachablePaths] = None,
+    filename_filter: Optional[Callable[[str], bool]] = None,
 ) -> _RootWalkResult:
     """Walk one model root and classify every model file found.
 
@@ -710,6 +712,8 @@ def _walk_root_for_reconcile(
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext not in file_extensions:
+                continue
+            if filename_filter is not None and not filename_filter(file):
                 continue
 
             result.files_seen += 1
@@ -1211,6 +1215,20 @@ class ModelScanner:
         if hash_status:
             entry['hash_status'] = hash_status
 
+        # Workflow analysis fields (workflows only): copied through whenever
+        # the source carries them so the cache and API expose the parsed graph
+        # summary; other model types never define these keys.
+        for key in (
+            'workflow_format',
+            'node_count',
+            'node_classes',
+            'model_refs',
+            'civitai_refs',
+        ):
+            value = get_value(key, None)
+            if value is not None:
+                entry[key] = value
+
         return entry
 
     def _ensure_license_flags(self, entry: Dict[str, Any]) -> None:
@@ -1689,6 +1707,8 @@ class ModelScanner:
                                 ext = os.path.splitext(entry.name)[1].lower()
                                 if ext not in self.file_extensions:
                                     continue
+                                if not self._is_indexable_filename(entry.name):
+                                    continue
                                 real_file_path = os.path.realpath(entry.path)
                                 if real_file_path in seen_real_files:
                                     continue
@@ -1849,7 +1869,10 @@ class ModelScanner:
 
         # If force refresh is requested, initialize the cache directly
         if force_refresh:
-            if rebuild_cache:
+            # A reconcile diffs against the existing cache; when there is no
+            # cache yet (e.g. a scan fired while background initialization is
+            # still deferred), a full initialization is the only option.
+            if rebuild_cache or self._cache is None:
                 self._last_reconcile_summary = None
                 await self._initialize_cache()
             else:
@@ -2700,6 +2723,7 @@ class ModelScanner:
                     report_progress=report_progress,
                     expected_folder_of=expected_folder_of,
                     unreachable=unreachable,
+                    filename_filter=self._is_indexable_filename,
                 )
             finally:
                 tracker.finish_root(root_path)
@@ -3416,6 +3440,15 @@ class ModelScanner:
     def adjust_metadata(self, metadata, file_path, root_path):
         """Hook for subclasses: adjust metadata during scanning"""
         return metadata
+
+    def _is_indexable_filename(self, filename: str) -> bool:
+        """Hook for subclasses: whether a matching-extension file is indexable.
+
+        Scanners whose extension set collides with sidecar formats (e.g. the
+        workflow scanner's ``.json`` vs ``.metadata.json``) override this to
+        keep sidecars out of the library walk.
+        """
+        return True
 
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         """Hook for subclasses: adjust entries loaded from the persisted cache."""

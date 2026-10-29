@@ -444,11 +444,17 @@ app.registerExtension({
      * Load a workflow received from the backend onto the ComfyUI canvas.
      *
      * The payload (`detail`) is expected to be:
-     *   { workflow: <workflow JSON>, name: <string>, recipe_id: <string> }
+     *   { workflow: <workflow JSON>, name: <string>, recipe_id: <string>,
+     *     lm_source?: { file_path: <string>, sha256: <string|null> } }
      *
      * Two formats are supported, detected by the presence of `class_type`
      * entries (API/prompt format: { node_id: { class_type, inputs } }) versus
      * the UI format ({ nodes: [...], links: [...] }).
+     *
+     * When `lm_source` is present (workflow library "Open in ComfyUI"), the
+     * provenance marker is stamped onto the loaded graph's `extra` so the
+     * write-back entry point (LoraManager.WorkflowWriteback) can match the
+     * open graph against the managed document.
      *
      * @param {Object} detail - message payload from the backend
      */
@@ -476,11 +482,32 @@ app.registerExtension({
 
         const workflowName = detail.name || "Recipe Workflow";
 
+        const lmSource = detail?.lm_source?.file_path
+            ? {
+                  file_path: detail.lm_source.file_path,
+                  sha256: detail.lm_source.sha256 || null,
+              }
+            : null;
+
         try {
             if (isApiFormat) {
                 await app.loadApiJson(workflow, workflowName);
             } else {
+                // UI format: the marker rides the document's `extra`, which
+                // loadGraphData restores onto the graph and serializes back —
+                // it survives tab switches and browser reloads with the draft.
+                if (lmSource) {
+                    workflow.extra = { ...(workflow.extra || {}), lm_source: lmSource };
+                }
                 await app.loadGraphData(workflow, true, true, workflowName, { openSource: "file_button" });
+            }
+            // API format has no `extra` carrier, so stamp the live graph
+            // directly after the load.
+            if (lmSource && isApiFormat) {
+                const rootGraph = app.rootGraph ?? app.graph;
+                if (rootGraph) {
+                    rootGraph.extra = { ...(rootGraph.extra || {}), lm_source: lmSource };
+                }
             }
             this._log("workflow loaded from backend message (%s): %s", isApiFormat ? "api" : "graph", workflowName);
         } catch (error) {

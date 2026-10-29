@@ -15904,6 +15904,34 @@ function findModeAccessor(node) {
   return null;
 }
 function interceptModeChange(node, onModeChange) {
+  if (!node || typeof onModeChange !== "function") {
+    return;
+  }
+  if (!Array.isArray(node._lmModeChangeListeners)) {
+    Object.defineProperty(node, "_lmModeChangeListeners", {
+      configurable: true,
+      writable: true,
+      value: []
+    });
+  }
+  node._lmModeChangeListeners.push(onModeChange);
+  if (node._lmModeChangeIntercepted) {
+    return;
+  }
+  Object.defineProperty(node, "_lmModeChangeIntercepted", {
+    configurable: true,
+    writable: true,
+    value: true
+  });
+  const notify = (newMode, oldMode) => {
+    for (const listener of node._lmModeChangeListeners ?? []) {
+      try {
+        listener(newMode, oldMode);
+      } catch (listenerError) {
+        console.error("LoRA Manager: mode change listener failed", listenerError);
+      }
+    }
+  };
   const delegate = findModeAccessor(node);
   if (delegate && typeof delegate.get === "function" && typeof delegate.set === "function") {
     Object.defineProperty(node, "mode", {
@@ -15915,7 +15943,7 @@ function interceptModeChange(node, onModeChange) {
         const oldValue = delegate.get.call(this);
         delegate.set.call(this, value);
         if (oldValue !== value) {
-          onModeChange(value, oldValue);
+          notify(value, oldValue);
         }
       }
     });
@@ -15931,7 +15959,7 @@ function interceptModeChange(node, onModeChange) {
       const oldValue = currentMode;
       currentMode = value;
       if (oldValue !== value) {
-        onModeChange(value, oldValue);
+        notify(value, oldValue);
       }
     }
   });

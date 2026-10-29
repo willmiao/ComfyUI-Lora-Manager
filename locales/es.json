@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Sintaxis de embedding copiada",
             "modelNameCopied": "Nombre del modelo copiado",
             "sendCheckpointToWorkflow": "Enviar a ComfyUI",
-            "sendEmbeddingToWorkflow": "Enviar a ComfyUI"
+            "sendEmbeddingToWorkflow": "Enviar a ComfyUI",
+            "openInComfyUI": "Abrir en ComfyUI",
+            "copyWorkflowToClipboard": "Copiar el workflow al portapapeles"
         },
         "nsfw": {
             "matureContent": "Contenido para adultos",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "other": "Otros",
+            "workflows": "Workflows",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -633,6 +636,10 @@
             "defaultControlnetRootHelp": "Establecer el directorio raíz predeterminado de ControlNet para descargas, importaciones y movimientos",
             "enableOtherModels": "Gestión de otros modelos",
             "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
+            "enableWorkflows": "Gestión de workflows",
+            "enableWorkflowsHelp": "Cuando está desactivado, las carpetas de workflows (folder_paths.workflows) no se escanean, la página Workflows permanece desactivada y los recursos Workflow de CivitAI no se pueden vincular ni descargar.",
+            "workflowFolders": "Carpetas de workflows",
+            "workflowFoldersHelp": "Carpetas que se escanean en busca de archivos JSON de workflow de ComfyUI. Gestionadas solo por LoRA Manager (no se comparten con ComfyUI); los cambios se aplican de inmediato.",
             "otherSubTypes": "Tipos de modelos gestionados",
             "otherSubTypesHelp": "Elige qué categorías de otros modelos se escanean y se muestran en la página Otros modelos.",
             "subTypeVae": "VAE",
@@ -686,7 +693,8 @@
                 "text_encoders": "Rutas de Text Encoder",
                 "clip": "Rutas de CLIP (heredadas)",
                 "clip_vision": "Rutas de CLIP Vision",
-                "controlnet": "Rutas de ControlNet"
+                "controlnet": "Rutas de ControlNet",
+                "workflows": "Rutas de workflows"
             }
         },
         "directoryPicker": {
@@ -1442,6 +1450,53 @@
             "hintStandalone": "Solo se escanean los tipos de modelos habilitados; activa los tipos que necesites en Biblioteca → Raíces predeterminadas.",
             "descriptionComfyUI": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las carpetas de modelos correspondientes a tus rutas de modelos de ComfyUI y recarga esta página.",
             "hintComfyUI": "Los otros modelos se leen de las carpetas vae, upscale_models, text_encoders, clip_vision y controlnet de ComfyUI.",
+            "openSettings": "Abrir configuración",
+            "openModelPaths": "Configurar carpetas de modelos",
+            "openSettingsFolder": "Abrir carpeta de ajustes"
+        }
+    },
+    "workflows": {
+        "title": "Workflows",
+        "contextMenu": {
+            "sendToComfy": "Abrir en ComfyUI",
+            "updateFromComfy": "Actualizar desde ComfyUI",
+            "copyWorkflow": "Copiar workflow",
+            "restoreDownloaded": "Restaurar versión descargada"
+        },
+        "sendToComfy": {
+            "success": "Workflow enviado a ComfyUI",
+            "failed": "Error al enviar el workflow: {message}"
+        },
+        "restoreDownloaded": {
+            "title": "¿Restaurar versión descargada?",
+            "message": "Esto descarta los cambios locales y restaura el workflow a su versión descargada.",
+            "confirmButton": "Restaurar",
+            "restoring": "Restaurando el workflow...",
+            "success": "Workflow restaurado a su versión descargada",
+            "failed": "Error al restaurar el workflow: {message}"
+        },
+        "updateFromComfy": {
+            "success": "Workflow actualizado desde ComfyUI",
+            "noChanges": "No hay cambios en ComfyUI que escribir de vuelta",
+            "cancelled": "Actualización cancelada",
+            "failed": "Error al actualizar desde ComfyUI: {message}"
+        },
+        "copyWorkflow": {
+            "failed": "Error al copiar el workflow: {message}"
+        },
+        "disabled": {
+            "title": "La gestión de workflows está desactivada",
+            "description": "Actívala para escanear y gestionar archivos de workflow de ComfyUI, conservar sus metadatos y vistas previas de CivitAI y enviarlos al grafo de ComfyUI en ejecución.",
+            "enableButton": "Activar workflows",
+            "hint": "Puedes desactivar esta función más adelante en Configuración > Biblioteca.",
+            "enableFailed": "No se pudieron activar los workflows"
+        },
+        "noPaths": {
+            "title": "No se encontraron carpetas de workflows",
+            "descriptionStandalone": "La gestión de workflows está activada, pero no se encontraron carpetas de workflows. Añade tus carpetas de workflows en Configuración → Rutas de modelos y reinicia LoRA Manager.",
+            "hintStandalone": "Los workflows se leen de las entradas folder_paths.workflows.",
+            "descriptionComfyUI": "La gestión de workflows está activada, pero no hay carpetas de workflows configuradas. Añade carpetas de workflows en Configuración → Biblioteca y recarga esta página.",
+            "hintComfyUI": "Los workflows se guardan en sus propias carpetas de biblioteca (folder_paths.workflows); la lista de workflows integrada de ComfyUI no se modifica.",
             "openSettings": "Abrir configuración",
             "openModelPaths": "Configurar carpetas de modelos",
             "openSettingsFolder": "Abrir carpeta de ajustes"
@@ -2271,6 +2326,10 @@
         "other": {
             "title": "Inicializando el gestor de otros modelos",
             "message": "Escaneando y construyendo la caché de modelos. Esto puede tomar unos minutos..."
+        },
+        "workflows": {
+            "title": "Inicializando gestor de workflows",
+            "message": "Escaneando y construyendo caché de workflows. Esto puede tomar unos minutos..."
         },
         "recipes": {
             "title": "Inicializando gestor de recetas",

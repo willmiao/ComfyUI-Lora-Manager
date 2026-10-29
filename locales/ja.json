@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Embedding構文をコピーしました",
             "modelNameCopied": "モデル名をコピーしました",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
-            "sendEmbeddingToWorkflow": "ComfyUIに送信"
+            "sendEmbeddingToWorkflow": "ComfyUIに送信",
+            "openInComfyUI": "ComfyUIで開く",
+            "copyWorkflowToClipboard": "ワークフローをクリップボードにコピー"
         },
         "nsfw": {
             "matureContent": "成人向けコンテンツ",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "その他",
+            "workflows": "ワークフロー",
             "statistics": "統計"
         },
         "search": {
@@ -633,6 +636,10 @@
             "defaultControlnetRootHelp": "ダウンロード、インポート、移動用のデフォルトControlNetルートディレクトリを設定",
             "enableOtherModels": "その他のモデル管理",
             "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
+            "enableWorkflows": "ワークフロー管理",
+            "enableWorkflowsHelp": "オフにすると、ワークフローフォルダー（folder_paths.workflows）はスキャンされず、ワークフローページは無効のままになり、CivitAIのWorkflowリソースをリンクしたりダウンロードしたりできなくなります。",
+            "workflowFolders": "ワークフローフォルダー",
+            "workflowFoldersHelp": "ComfyUIのワークフローJSONファイルをスキャンするフォルダーです。LoRA Managerのみが管理し（ComfyUIとは共有されません）、変更はすぐに反映されます。",
             "otherSubTypes": "管理するモデルタイプ",
             "otherSubTypesHelp": "その他のモデルページでスキャンおよび表示するカテゴリを選択します。",
             "subTypeVae": "VAE",
@@ -686,7 +693,8 @@
                 "text_encoders": "Text Encoderパス",
                 "clip": "CLIPパス（レガシー）",
                 "clip_vision": "CLIP Visionパス",
-                "controlnet": "ControlNetパス"
+                "controlnet": "ControlNetパス",
+                "workflows": "ワークフローパス"
             }
         },
         "directoryPicker": {
@@ -1442,6 +1450,53 @@
             "hintStandalone": "有効になっているモデルタイプのみがスキャンされます。必要なタイプは「ライブラリ > デフォルトルート」で有効にしてください。",
             "descriptionComfyUI": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。該当するモデルフォルダーをComfyUIのモデルパスに追加し、このページを再読み込みしてください。",
             "hintComfyUI": "その他のモデルは、ComfyUIのvae、upscale_models、text_encoders、clip_vision、controlnetフォルダーから読み込まれます。",
+            "openSettings": "設定を開く",
+            "openModelPaths": "モデルフォルダーを設定",
+            "openSettingsFolder": "設定フォルダーを開く"
+        }
+    },
+    "workflows": {
+        "title": "ワークフロー",
+        "contextMenu": {
+            "sendToComfy": "ComfyUIで開く",
+            "updateFromComfy": "ComfyUIから更新",
+            "copyWorkflow": "ワークフローをコピー",
+            "restoreDownloaded": "ダウンロード済みバージョンを復元"
+        },
+        "sendToComfy": {
+            "success": "ワークフローをComfyUIへ送信しました",
+            "failed": "ワークフローの送信に失敗しました：{message}"
+        },
+        "restoreDownloaded": {
+            "title": "ダウンロード済みバージョンを復元しますか？",
+            "message": "ローカルの編集内容は破棄され、ワークフローはダウンロード時のバージョンに復元されます。",
+            "confirmButton": "復元",
+            "restoring": "ワークフローを復元中...",
+            "success": "ワークフローをダウンロード済みバージョンに復元しました",
+            "failed": "ワークフローの復元に失敗しました：{message}"
+        },
+        "updateFromComfy": {
+            "success": "ComfyUIからワークフローを更新しました",
+            "noChanges": "ComfyUI側に書き戻す変更はありません",
+            "cancelled": "更新はキャンセルされました",
+            "failed": "ComfyUIからの更新に失敗しました：{message}"
+        },
+        "copyWorkflow": {
+            "failed": "ワークフローのコピーに失敗しました：{message}"
+        },
+        "disabled": {
+            "title": "ワークフロー管理はオフです",
+            "description": "有効にすると、ComfyUIのワークフローファイルをスキャン・管理し、CivitAIのメタデータとプレビューを保持したまま、実行中のComfyUIに送信できます。",
+            "enableButton": "ワークフローを有効にする",
+            "hint": "この機能は後で「設定 > ライブラリ」から再度オフにできます。",
+            "enableFailed": "ワークフローの有効化に失敗しました"
+        },
+        "noPaths": {
+            "title": "ワークフローフォルダーが見つかりません",
+            "descriptionStandalone": "ワークフロー管理はオンですが、ワークフローフォルダーが見つかりませんでした。「設定 > モデルパス」でワークフローフォルダーを追加し、LoRA Managerを再起動してください。",
+            "hintStandalone": "ワークフローはfolder_paths.workflowsのエントリから読み込まれます。",
+            "descriptionComfyUI": "ワークフロー管理はオンですが、ワークフローフォルダーが設定されていません。「設定 > ライブラリ」でワークフローフォルダーを追加し、このページを再読み込みしてください。",
+            "hintComfyUI": "ワークフローは専用のライブラリフォルダー（folder_paths.workflows）に保存されます。ComfyUI標準のワークフローリストには影響しません。",
             "openSettings": "設定を開く",
             "openModelPaths": "モデルフォルダーを設定",
             "openSettingsFolder": "設定フォルダーを開く"
@@ -2271,6 +2326,10 @@
         "other": {
             "title": "その他のモデルマネージャーを初期化中",
             "message": "モデルキャッシュをスキャンして構築中です。数分かかる場合があります..."
+        },
+        "workflows": {
+            "title": "ワークフローマネージャーを初期化中",
+            "message": "ワークフローキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "recipes": {
             "title": "レシピマネージャーを初期化中",

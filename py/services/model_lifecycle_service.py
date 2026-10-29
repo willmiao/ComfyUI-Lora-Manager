@@ -14,6 +14,7 @@ from ..services.pending_delete_service import get_pending_delete_service
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_sidecar_dir
+from ..utils.workflow_extraction import WORKFLOW_DOCUMENT_SUFFIX
 
 logger = logging.getLogger(__name__)
 
@@ -55,20 +56,28 @@ async def delete_model_artifacts(
     model_path = os.path.join(target_dir, main_file)
     sidecar_dir = get_sidecar_dir(model_path)
     patterns = [os.path.basename(get_metadata_path(model_path))]
+    # Derived workflow document (workflow artifacts only; absent elsewhere).
+    patterns.append(f"{file_name}{WORKFLOW_DOCUMENT_SUFFIX}")
     for ext in PREVIEW_EXTENSIONS:
         patterns.append(f"{file_name}{ext}")
 
     deleted: List[str] = []
     main_path = model_path.replace(os.sep, "/")
+    deleted_paths: set[str] = set()
 
     if os.path.exists(main_path):
         os.remove(main_path)
         deleted.append(main_path)
+        deleted_paths.add(os.path.normcase(os.path.abspath(main_path)))
     else:
         logger.warning("Model file not found: %s", main_file)
 
     for pattern in patterns:
         path = os.path.join(sidecar_dir, pattern)
+        # The model file can double as its own preview (workflow image
+        # artifacts); never delete the same path twice.
+        if os.path.normcase(os.path.abspath(path)) in deleted_paths:
+            continue
         if os.path.exists(path):
             try:
                 os.remove(path)
@@ -467,14 +476,24 @@ class ModelLifecycleService:
             (target_dir, f"{old_file_name}{old_extension}"),
             (sidecar_dir, metadata_filename),
             (sidecar_dir, f"{metadata_filename}.bak"),
+            # Derived workflow document (workflow artifacts only).
+            (sidecar_dir, f"{old_file_name}{WORKFLOW_DOCUMENT_SUFFIX}"),
         ]
         for ext in PREVIEW_EXTENSIONS:
             patterns.append((sidecar_dir, f"{old_file_name}{ext}"))
 
         existing_files: List[tuple[str, str]] = []
+        seen_paths: set[str] = set()
         for pattern_dir, pattern in patterns:
             path = os.path.join(pattern_dir, pattern)
+            # An image workflow artifact doubles as its own preview: the same
+            # path then appears under both the main-file and preview patterns
+            # and must only be renamed once.
+            dedupe_key = os.path.normcase(os.path.abspath(path))
+            if dedupe_key in seen_paths:
+                continue
             if os.path.exists(path):
+                seen_paths.add(dedupe_key)
                 existing_files.append((path, pattern))
 
         metadata_path = get_metadata_path(file_path)
@@ -585,6 +604,7 @@ class ModelLifecycleService:
         known_suffixes = [
             ".metadata.json.bak",
             ".metadata.json",
+            WORKFLOW_DOCUMENT_SUFFIX,
             ".safetensors",
             *PREVIEW_EXTENSIONS,
         ]

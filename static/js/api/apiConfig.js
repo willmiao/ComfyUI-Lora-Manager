@@ -10,7 +10,8 @@ export const MODEL_TYPES = {
     LORA: 'loras',
     CHECKPOINT: 'checkpoints',
     EMBEDDING: 'embeddings',
-    OTHER: 'other'
+    OTHER: 'other',
+    WORKFLOW: 'workflows'
 };
 
 // Base API configuration for each model type
@@ -54,6 +55,16 @@ export const MODEL_CONFIG = {
         supportsMove: true,
         supportsFolderManagement: true,
         templateName: 'other.html'
+    },
+    [MODEL_TYPES.WORKFLOW]: {
+        displayName: 'Workflow',
+        singularName: 'workflow',
+        defaultPageSize: 100,
+        supportsLetterFilter: false,
+        supportsBulkOperations: true,
+        supportsMove: true,
+        supportsFolderManagement: true,
+        templateName: 'workflows.html'
     }
 };
 
@@ -168,6 +179,14 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
     [MODEL_TYPES.OTHER]: {
         metadata: `/api/lm/${MODEL_TYPES.OTHER}/metadata`,
         roots_by_subtype: `/api/lm/${MODEL_TYPES.OTHER}/roots_by_subtype`,
+    },
+    [MODEL_TYPES.WORKFLOW]: {
+        metadata: `/api/lm/${MODEL_TYPES.WORKFLOW}/metadata`,
+        sendToComfy: `/api/lm/${MODEL_TYPES.WORKFLOW}/send-to-comfy`,
+        content: `/api/lm/${MODEL_TYPES.WORKFLOW}/content`,
+        comfyuiState: `/api/lm/${MODEL_TYPES.WORKFLOW}/comfyui-state`,
+        updateFromComfy: `/api/lm/${MODEL_TYPES.WORKFLOW}/update-from-comfy`,
+        restore: `/api/lm/${MODEL_TYPES.WORKFLOW}/restore`,
     }
 };
 

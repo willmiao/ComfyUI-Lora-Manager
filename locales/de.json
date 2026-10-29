@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Embedding-Syntax kopiert",
             "modelNameCopied": "Modellname kopiert",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
-            "sendEmbeddingToWorkflow": "An ComfyUI senden"
+            "sendEmbeddingToWorkflow": "An ComfyUI senden",
+            "openInComfyUI": "In ComfyUI öffnen",
+            "copyWorkflowToClipboard": "Workflow in die Zwischenablage kopieren"
         },
         "nsfw": {
             "matureContent": "Nicht jugendfreie Inhalte",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "other": "Andere",
+            "workflows": "Workflows",
             "statistics": "Statistiken"
         },
         "search": {
@@ -633,6 +636,10 @@
             "defaultControlnetRootHelp": "Legen Sie den Standard-ControlNet-Stammordner für Downloads, Importe und Verschiebungen fest",
             "enableOtherModels": "Verwaltung weiterer Modelle",
             "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
+            "enableWorkflows": "Workflow-Verwaltung",
+            "enableWorkflowsHelp": "Wenn deaktiviert, werden Workflow-Ordner (folder_paths.workflows) nicht gescannt, die Workflows-Seite bleibt deaktiviert und CivitAI-Workflow-Ressourcen können weder verknüpft noch heruntergeladen werden.",
+            "workflowFolders": "Workflow-Ordner",
+            "workflowFoldersHelp": "Ordner, die nach ComfyUI-Workflow-JSON-Dateien gescannt werden. Werden nur von LoRA Manager verwaltet (nicht mit ComfyUI geteilt); Änderungen gelten sofort.",
             "otherSubTypes": "Verwaltete Modelltypen",
             "otherSubTypesHelp": "Wählen Sie, welche Kategorien weiterer Modelle gescannt und auf der Seite für weitere Modelle angezeigt werden.",
             "subTypeVae": "VAE",
@@ -686,7 +693,8 @@
                 "text_encoders": "Text-Encoder-Pfade",
                 "clip": "CLIP-Pfade (Legacy)",
                 "clip_vision": "CLIP-Vision-Pfade",
-                "controlnet": "ControlNet-Pfade"
+                "controlnet": "ControlNet-Pfade",
+                "workflows": "Workflow-Pfade"
             }
         },
         "directoryPicker": {
@@ -1442,6 +1450,53 @@
             "hintStandalone": "Es werden nur aktivierte Modelltypen gescannt. Aktivieren Sie die benötigten Typen unter Bibliothek → Standard-Roots.",
             "descriptionComfyUI": "Die Verwaltung weiterer Modelle ist aktiviert, aber keiner der konfigurierten Modellordner existiert auf dem Datenträger. Fügen Sie die entsprechenden Modellordner zu Ihren ComfyUI-Modellpfaden hinzu und laden Sie diese Seite neu.",
             "hintComfyUI": "Weitere Modelle werden aus den Ordnern vae, upscale_models, text_encoders, clip_vision und controlnet von ComfyUI gelesen.",
+            "openSettings": "Einstellungen öffnen",
+            "openModelPaths": "Modellordner konfigurieren",
+            "openSettingsFolder": "Einstellungsordner öffnen"
+        }
+    },
+    "workflows": {
+        "title": "Workflows",
+        "contextMenu": {
+            "sendToComfy": "In ComfyUI öffnen",
+            "updateFromComfy": "Von ComfyUI aktualisieren",
+            "copyWorkflow": "Workflow kopieren",
+            "restoreDownloaded": "Heruntergeladene Version wiederherstellen"
+        },
+        "sendToComfy": {
+            "success": "Workflow an ComfyUI gesendet",
+            "failed": "Fehler beim Senden des Workflows: {message}"
+        },
+        "restoreDownloaded": {
+            "title": "Heruntergeladene Version wiederherstellen?",
+            "message": "Dadurch werden lokale Änderungen verworfen und der Workflow auf die heruntergeladene Version zurückgesetzt.",
+            "confirmButton": "Wiederherstellen",
+            "restoring": "Workflow wird wiederhergestellt...",
+            "success": "Workflow auf die heruntergeladene Version zurückgesetzt",
+            "failed": "Fehler beim Wiederherstellen des Workflows: {message}"
+        },
+        "updateFromComfy": {
+            "success": "Workflow von ComfyUI aktualisiert",
+            "noChanges": "Keine Änderungen in ComfyUI zum Zurückschreiben",
+            "cancelled": "Aktualisierung abgebrochen",
+            "failed": "Fehler beim Aktualisieren von ComfyUI: {message}"
+        },
+        "copyWorkflow": {
+            "failed": "Fehler beim Kopieren des Workflows: {message}"
+        },
+        "disabled": {
+            "title": "Die Workflow-Verwaltung ist deaktiviert",
+            "description": "Aktivieren Sie die Option, um ComfyUI-Workflow-Dateien zu scannen und zu verwalten, ihre CivitAI-Metadaten und Vorschaubilder zu behalten und sie in den laufenden ComfyUI-Graph zu senden.",
+            "enableButton": "Workflows aktivieren",
+            "hint": "Sie können die Funktion später unter Einstellungen > Bibliothek wieder deaktivieren.",
+            "enableFailed": "Aktivierung der Workflows fehlgeschlagen"
+        },
+        "noPaths": {
+            "title": "Keine Workflow-Ordner gefunden",
+            "descriptionStandalone": "Die Workflow-Verwaltung ist aktiviert, aber es wurden keine Workflow-Ordner gefunden. Fügen Sie Ihre Workflow-Ordner unter Einstellungen → Modellpfade hinzu und starten Sie LoRA Manager anschließend neu.",
+            "hintStandalone": "Workflows werden aus den folder_paths.workflows-Einträgen gelesen.",
+            "descriptionComfyUI": "Die Workflow-Verwaltung ist aktiviert, aber es sind keine Workflow-Ordner konfiguriert. Fügen Sie Workflow-Ordner unter Einstellungen → Bibliothek hinzu und laden Sie diese Seite neu.",
+            "hintComfyUI": "Workflows liegen in eigenen Bibliotheksordnern (folder_paths.workflows); die integrierte Workflow-Liste von ComfyUI wird nicht verändert.",
             "openSettings": "Einstellungen öffnen",
             "openModelPaths": "Modellordner konfigurieren",
             "openSettingsFolder": "Einstellungsordner öffnen"
@@ -2271,6 +2326,10 @@
         "other": {
             "title": "Manager für weitere Modelle wird initialisiert",
             "message": "Modell-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
+        },
+        "workflows": {
+            "title": "Workflow Manager wird initialisiert",
+            "message": "Workflow-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
         "recipes": {
             "title": "Rezept Manager wird initialisiert",

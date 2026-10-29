@@ -162,6 +162,16 @@ class ExifUtils:
         return str(value)
 
     @staticmethod
+    def load_structured_metadata(image_path: str) -> dict[str, Optional[str]]:
+        """Public wrapper for the structured-metadata reader.
+
+        Returns a dict with ``parameters``/``prompt``/``workflow``/``comment``
+        keys (values may be None). May raise on unreadable images; callers
+        that treat metadata as optional should catch exceptions.
+        """
+        return ExifUtils._load_structured_metadata(image_path)
+
+    @staticmethod
     def _load_structured_metadata(image_path: str) -> dict[str, Optional[str]]:
         metadata: dict[str, Optional[str]] = {
             "parameters": None,

@@ -1888,3 +1888,44 @@ def test_download_root_rules_accept_remote_only_base_models(manager, monkeypatch
             "root": "/loras-archive",
         }
     ]
+
+
+def test_get_workflow_folder_paths_defaults_to_empty(manager):
+    assert manager.get_workflow_folder_paths() == []
+
+
+def test_set_workflow_folder_paths_merges_into_active_library(manager):
+    _configure_lora_roots(manager, "/loras-main")
+
+    result = manager.set_workflow_folder_paths(["/workflows", " /workflows ", ""])
+
+    assert result == ["/workflows"]
+    # Core keys are preserved; workflows rides the same folder_paths map.
+    assert manager.settings["folder_paths"] == {
+        "loras": ["/loras-main"],
+        "workflows": ["/workflows"],
+    }
+    assert manager.get_workflow_folder_paths() == ["/workflows"]
+    active = manager.get_active_library()
+    assert active.get("folder_paths", {}).get("workflows") == ["/workflows"]
+
+
+def test_set_workflow_folder_paths_empty_removes_key(manager):
+    manager.set_workflow_folder_paths(["/workflows"])
+
+    result = manager.set_workflow_folder_paths([])
+
+    assert result == []
+    assert "workflows" not in manager.settings["folder_paths"]
+    assert manager.get_workflow_folder_paths() == []
+
+
+def test_set_workflow_folder_paths_rejects_overlap_with_other_library(manager):
+    manager.settings["libraries"] = {
+        "default": manager.get_active_library(),
+        "other": {"folder_paths": {"workflows": ["/shared-workflows"]}},
+    }
+    manager.settings["active_library"] = "default"
+
+    with pytest.raises(ValueError):
+        manager.set_workflow_folder_paths(["/shared-workflows"])

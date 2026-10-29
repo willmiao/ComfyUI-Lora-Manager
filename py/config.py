@@ -209,6 +209,12 @@ class Config:
         self.other_root_subtypes: Dict[str, str] = {}
         self.other_folder_roots: Dict[str, List[str]] = {}
         self.other_roots = self._init_other_paths()
+        # Workflow roots (ComfyUI workflow JSON library). Opt-in feature:
+        # empty while ``enable_workflows`` is off. Not a ComfyUI folder_paths
+        # category — sourced from LoRA Manager's own settings in both modes.
+        self.workflows_roots: List[str] = []
+        self.extra_workflows_roots: List[str] = []
+        self.workflows_roots = self._init_workflow_paths()
         # Extra paths (only for LoRA Manager, not shared with ComfyUI)
         self.extra_loras_roots: List[str] = []
         self.extra_checkpoints_roots: List[str] = []
@@ -265,8 +271,9 @@ class Config:
             extra_checkpoint = extra_folder_paths.get("checkpoints", []) or []
             extra_unet = extra_folder_paths.get("unet", []) or []
             extra_embedding = extra_folder_paths.get("embeddings", []) or []
+            extra_workflows = extra_folder_paths.get("workflows", []) or []
 
-            if not any([extra_lora, extra_checkpoint, extra_unet, extra_embedding]):
+            if not any([extra_lora, extra_checkpoint, extra_unet, extra_embedding, extra_workflows]):
                 return
 
             filtered_extra_lora = self._filter_overlapping_extra_lora_paths(
@@ -281,6 +288,8 @@ class Config:
             self.extra_embeddings_roots = self._prepare_embedding_paths(
                 extra_embedding
             )
+            if settings_manager.is_workflows_enabled():
+                self.extra_workflows_roots = self._prepare_lora_paths(extra_workflows)
 
             if self.extra_loras_roots:
                 logger.info(
@@ -460,6 +469,15 @@ class Config:
                     self.embeddings_roots or [],
                 ),
             }
+            # Workflow roots live only in our settings (the host has no such
+            # category); persist them so the whitelist rebuild above does not
+            # erase the key. Empty lists are still written when the key was
+            # configured before, so a deliberate removal round-trips.
+            workflow_configured = self.configured_roots_for("workflow")
+            if workflow_configured or self.workflows_roots:
+                target_folder_paths["workflows"] = _append_new_paths(
+                    workflow_configured, self.workflows_roots or []
+                )
             # Persist the other-model roots under their original folder_paths
             # keys so library switching round-trips them.
             for key, roots in (self.other_folder_roots or {}).items():
@@ -1124,6 +1142,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.other_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        for root in self.workflows_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
         # Include extra paths for preview access
         for root in self.extra_loras_roots or []:
             preview_roots.update(self._expand_preview_root(root))
@@ -1132,6 +1152,8 @@ class Config:
         for root in self.extra_unet_roots or []:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.extra_embeddings_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.extra_workflows_roots or []:
             preview_roots.update(self._expand_preview_root(root))
         if self.recipes_path:
             preview_roots.update(self._expand_preview_root(self.recipes_path))
@@ -1596,12 +1618,28 @@ class Config:
             self.other_folder_roots,
         ) = self._prepare_other_paths(other_path_map)
 
+        # Workflow roots ride the same library folder_paths structure but are
+        # not a ComfyUI category; the live list stays empty while the opt-in
+        # feature is off.
+        workflow_paths = folder_paths.get("workflows", []) or []
+        self._remember_configured_paths("workflow", workflow_paths)
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            workflows_enabled = get_settings_manager().is_workflows_enabled()
+        except Exception:  # pragma: no cover - defensive fallback
+            workflows_enabled = False
+        self.workflows_roots = (
+            self._prepare_lora_paths(workflow_paths) if workflows_enabled else []
+        )
+
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
         extra_paths = extra_folder_paths or {}
         extra_lora_paths = extra_paths.get("loras", []) or []
         extra_checkpoint_paths = extra_paths.get("checkpoints", []) or []
         extra_unet_paths = extra_paths.get("unet", []) or []
         extra_embedding_paths = extra_paths.get("embeddings", []) or []
+        extra_workflow_paths = extra_paths.get("workflows", []) or []
 
         filtered_extra_lora_paths = self._filter_overlapping_extra_lora_paths(
             self.loras_roots,
@@ -1615,6 +1653,9 @@ class Config:
         ) = self._prepare_checkpoint_paths(extra_checkpoint_paths, extra_unet_paths)
         self.extra_embeddings_roots = self._prepare_embedding_paths(
             extra_embedding_paths
+        )
+        self.extra_workflows_roots = (
+            self._prepare_lora_paths(extra_workflow_paths) if workflows_enabled else []
         )
 
         # Log extra folder paths
@@ -1808,6 +1849,85 @@ class Config:
         except Exception as e:
             logger.warning(f"Error initializing other model paths: {e}")
             return []
+
+    def _get_configured_workflow_paths(self) -> List[str]:
+        """Read the workflows folder_paths entry from the active library.
+
+        "workflows" is not a ComfyUI folder_paths category (the host raises
+        KeyError for unknown keys), so both modes source workflow roots from
+        LoRA Manager's own settings.
+        """
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            library_config = get_settings_manager().get_active_library()
+        except Exception:
+            return []
+        if not isinstance(library_config, Mapping):
+            return []
+        folder_paths_config = library_config.get("folder_paths")
+        if not isinstance(folder_paths_config, Mapping):
+            return []
+        raw_paths = folder_paths_config.get("workflows", [])
+        if not isinstance(raw_paths, list):
+            return []
+        return [path for path in raw_paths if isinstance(path, str) and path.strip()]
+
+    def _init_workflow_paths(self) -> List[str]:
+        """Initialize and validate workflow roots.
+
+        Opt-in feature: the live root list stays empty while
+        ``enable_workflows`` is off, but the configured paths are still
+        remembered so ``save_folder_paths_to_settings()`` round-trips them.
+        """
+        try:
+            raw_paths = self._get_configured_workflow_paths()
+            self._remember_configured_paths("workflow", raw_paths)
+
+            from .services.settings_manager import get_settings_manager
+
+            if not get_settings_manager().is_workflows_enabled():
+                return []
+
+            unique_paths = self._prepare_lora_paths(raw_paths)
+            logger.info(
+                "Found workflow roots:"
+                + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]")
+            )
+            return unique_paths
+        except Exception as e:
+            logger.warning(f"Error initializing workflow paths: {e}")
+            return []
+
+    def refresh_workflow_roots(self) -> None:
+        """Rebuild workflow roots after the opt-in toggle or paths change.
+
+        Called when ``enable_workflows`` or the workflows folder_paths are
+        updated so the scanner immediately reflects the new folder set
+        without a full application restart.
+        """
+        self.workflows_roots = self._init_workflow_paths()
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            settings_manager = get_settings_manager()
+            extra_workflows: List[str] = []
+            if settings_manager.is_workflows_enabled():
+                library_config = settings_manager.get_active_library()
+                if isinstance(library_config, Mapping):
+                    extra_config = library_config.get("extra_folder_paths")
+                    if isinstance(extra_config, Mapping):
+                        raw_extra = extra_config.get("workflows", [])
+                        if isinstance(raw_extra, list):
+                            extra_workflows = [
+                                path
+                                for path in raw_extra
+                                if isinstance(path, str) and path.strip()
+                            ]
+            self.extra_workflows_roots = self._prepare_lora_paths(extra_workflows)
+        except Exception:  # pragma: no cover - defensive fallback
+            self.extra_workflows_roots = []
+        self._rebuild_preview_roots()
 
     def _remember_configured_paths(
         self, model_type: str, paths: Iterable[str]

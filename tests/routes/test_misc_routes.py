@@ -80,6 +80,9 @@ class DummySettings:
     def is_other_models_enabled(self):
         return bool(self.data.get("enable_other_models", False))
 
+    def is_workflows_enabled(self):
+        return bool(self.data.get("enable_workflows", False))
+
     def get_enabled_other_sub_types(self):
         return list(self.data.get("enabled_other_sub_types") or [])
 
