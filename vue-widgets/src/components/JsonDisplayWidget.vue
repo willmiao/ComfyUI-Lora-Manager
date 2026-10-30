@@ -126,7 +126,8 @@ onMounted(() => {
 <style scoped>
 .json-display-widget {
   padding: 8px;
-  background: rgba(40, 44, 52, 0.6);
+  /* Let the node surface show through; only inner controls are painted. */
+  background: transparent;
   border-radius: 6px;
   height: 100%;
   display: flex;
@@ -142,7 +143,7 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--lm-fg);
 }
 
 .json-content pre {
@@ -152,7 +153,7 @@ onMounted(() => {
 
 .placeholder {
   font-style: italic;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
   text-align: center;
   padding: 20px 0;
 }

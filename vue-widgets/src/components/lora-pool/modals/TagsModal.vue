@@ -170,27 +170,27 @@ watch(() => props.tags, () => {
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
 }
 
 .search-input {
   width: 100%;
   padding: 8px 12px 8px 32px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 6px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 13px;
   outline: none;
 }
 
 .search-input:focus {
-  border-color: var(--fg-color, #fff);
+  border-color: var(--lm-fg);
 }
 
 .search-input::placeholder {
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.4;
 }
 
@@ -219,7 +219,7 @@ watch(() => props.tags, () => {
 .clear-button svg {
   width: 12px;
   height: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
 }
 
 .tags-container {
@@ -230,10 +230,10 @@ watch(() => props.tags, () => {
 
 .tag-chip {
   padding: 6px 12px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #555);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 16px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
@@ -241,53 +241,53 @@ watch(() => props.tags, () => {
 
 /* Default hover (gray for neutral) */
 .tag-chip:hover:not(.tag-chip--selected) {
-  border-color: rgba(226, 232, 240, 0.5);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--lm-fg-subtle);
+  background: var(--lm-surface-hover);
 }
 
 /* Include variant hover - blue tint */
 .tags-modal--include .tag-chip:hover:not(.tag-chip--selected) {
-  border-color: rgba(66, 153, 225, 0.4);
-  background: rgba(66, 153, 225, 0.08);
+  border-color: var(--lm-accent-border);
+  background: var(--lm-accent-soft);
 }
 
 /* Exclude variant hover - red tint */
 .tags-modal--exclude .tag-chip:hover:not(.tag-chip--selected) {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.08);
+  border-color: var(--lm-danger-border);
+  background: var(--lm-danger-soft);
 }
 
 /* Selected chips hover - slightly deepen the color */
 .tags-modal--include .tag-chip--selected:hover {
-  background: rgba(66, 153, 225, 0.25);
-  border-color: rgba(66, 153, 225, 0.7);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent);
 }
 
 .tags-modal--exclude .tag-chip--selected:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.7);
+  background: var(--lm-danger-soft);
+  border-color: var(--lm-danger-border);
 }
 
 /* Include variant - blue when selected */
 .tags-modal--include .tag-chip--selected,
 .tag-chip--selected {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.6);
-  color: #4299e1;
+  background: var(--lm-surface-selected);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-accent-text);
 }
 
 /* Exclude variant - red when selected */
 .tags-modal--exclude .tag-chip--selected {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.6);
-  color: #ef4444;
+  background: var(--lm-danger-soft);
+  border-color: var(--lm-danger-border);
+  color: var(--lm-danger-text);
 }
 
 .no-results {
   width: 100%;
   padding: 20px;
   text-align: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   font-size: 13px;
 }
@@ -296,7 +296,7 @@ watch(() => props.tags, () => {
   width: 100%;
   padding: 12px;
   text-align: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.4;
   font-size: 12px;
   font-style: italic;

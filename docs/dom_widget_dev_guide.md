@@ -544,3 +544,55 @@ app.registerExtension({
     }
 });
 ```
+
+---
+
+## 8. Theme-Aware Styling (required)
+
+ComfyUI ships several palettes (Dark, Light, Solarized, Arc, Nord, Github) plus user-imported ones, and the Vue node renderer uses a different token family than the canvas renderer. A widget styled with literal colours will look right on the default dark palette and wrong everywhere else — this is exactly how the prompt textarea ended up charcoal inside a white node under the Light palette.
+
+### 8.1 Rules
+
+1. **No colour literals** in `web/comfyui/*.js` inline styles, `web/comfyui/lm_styles.css`, or Vue `<style>` blocks. `tests/frontend/regression/comfyWidgetThemeTokens.test.js` enforces this; only preview-image overlays are allow-listed.
+2. **Use the `--lm-*` semantic tokens** from `web/comfyui/lm_theme.css`. They alias the ComfyUI tokens and are already mode-aware.
+3. **Tag the widget root** so the tokens resolve in the right context:
+
+```js
+container.classList.add("lm-widget-root"); // node widget (canvas or Vue node)
+container.classList.add("lm-popover");     // any menu/dropdown appended to <body>
+```
+
+`main.ts` does this for Vue widgets (`applyWidgetThemeClasses`). Canvas widgets such as `loras_widget.js` set `lm-widget-root` on the container themselves.
+
+4. **Never use design-system scale tokens** (`--color-charcoal-400`, `--color-smoke-200`, …) as surfaces or text colours. They are fixed values that do not flip with the theme; only the semantic tokens (`--comfy-input-bg`, `--component-node-*`, `--border-color`, …) do.
+5. **Do not paint whole-node containers.** Leave the root transparent (the node surface shows through) and paint only inputs, cards and buttons. A translucent dark container over a light node renders as grey mud.
+
+### 8.2 Token map
+
+| Need | Token | Notes |
+| --- | --- | --- |
+| Input / panel surface | `--lm-surface` | canvas: `--comfy-input-bg`; Vue node: `--component-node-widget-background` |
+| Card / raised row | `--lm-surface-raised` | derived, always a step away from the surface |
+| Hover / selected row | `--lm-surface-hover`, `--lm-surface-selected` | |
+| Borders | `--lm-border`, `--lm-border-soft` | |
+| Text | `--lm-fg`, `--lm-fg-muted`, `--lm-fg-subtle` | |
+| Accent | `--lm-accent`, `--lm-accent-text`, `--lm-accent-soft`, `--lm-accent-border` | use `-text` for accent-coloured labels |
+| Status | `--lm-danger(-text/-soft/-border)`, `--lm-warning(-soft/-border)`, `--lm-ok` | the only values with a light/dark variant |
+| Depth | `--lm-shadow`, `--lm-shadow-lg`, `--lm-scrim` | |
+| Tag category hues | `--lm-cat-<category>` | mix with `oklab` for badge fill/text |
+
+### 8.3 Blend, don't overlay
+
+Replace translucent dark fills with a `color-mix` against the surface token, so the node colour underneath can never bleed through:
+
+```css
+/* Don't */ background: rgba(45, 55, 72, 0.7);
+/* Do */    background: var(--lm-surface-raised);
+/* Tints */ background: color-mix(in srgb, var(--lm-accent) 20%, transparent);
+```
+
+Text size in widgets should follow `--comfy-textarea-font-size` (10px) to stay aligned with ComfyUI's own text widgets.
+
+### 8.4 Verifying
+
+Switch ComfyUI between the Light and Dark palettes (and at least one tinted dark palette) in **Settings → Color Palette** and check every LM node in both canvas and Vue node mode. Theme switches are pure CSS-variable changes: no re-render or JS listener should be needed.

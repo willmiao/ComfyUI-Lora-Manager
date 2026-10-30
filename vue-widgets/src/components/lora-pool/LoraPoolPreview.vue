@@ -81,7 +81,7 @@ const onImageError = (event: Event) => {
 <style scoped>
 .preview {
   padding-top: 12px;
-  border-top: 1px solid var(--border-color, #444);
+  border-top: 1px solid var(--lm-border);
   position: relative;
 }
 
@@ -95,7 +95,7 @@ const onImageError = (event: Event) => {
 .preview__title {
   font-size: 12px;
   font-weight: 500;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
 }
 
 .preview__refresh {
@@ -106,7 +106,7 @@ const onImageError = (event: Event) => {
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   cursor: pointer;
   opacity: 0.6;
   border-radius: 4px;
@@ -115,7 +115,7 @@ const onImageError = (event: Event) => {
 
 .preview__refresh:hover {
   opacity: 1;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
 }
 
 .preview__refresh:disabled {
@@ -148,10 +148,10 @@ const onImageError = (event: Event) => {
 
 .preview__tooltip-content {
   background: var(--comfy-menu-bg, #1a1a1a);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--lm-border);
   border-radius: 6px;
   padding: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--lm-shadow);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -162,7 +162,7 @@ const onImageError = (event: Event) => {
   align-items: center;
   gap: 8px;
   padding: 4px 6px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border-radius: 4px;
 }
 
@@ -172,14 +172,14 @@ const onImageError = (event: Event) => {
   object-fit: cover;
   border-radius: 3px;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--lm-surface-hover);
 }
 
 .preview__thumb--placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.2;
 }
 
@@ -191,7 +191,7 @@ const onImageError = (event: Event) => {
 .preview__name {
   flex: 1;
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -199,7 +199,7 @@ const onImageError = (event: Event) => {
 
 .preview__more {
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   text-align: center;
   padding: 4px;
@@ -207,7 +207,7 @@ const onImageError = (event: Event) => {
 
 .preview__empty {
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.4;
   text-align: center;
   padding: 8px 0 0 0;

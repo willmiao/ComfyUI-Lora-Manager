@@ -78,7 +78,7 @@ defineEmits<{
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
@@ -107,11 +107,11 @@ defineEmits<{
 }
 
 .section__column-title--include {
-  color: #4299e1;
+  color: var(--lm-accent-text);
 }
 
 .section__column-title--exclude {
-  color: #ef4444;
+  color: var(--lm-danger-text);
 }
 
 .section__column-content {
@@ -121,10 +121,10 @@ defineEmits<{
 .section__empty {
   width: 100%;
   padding: 8px 12px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border-radius: 4px;
   font-size: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   text-align: center;
   box-sizing: border-box;

@@ -112,7 +112,7 @@ const handleRowClick = (e: MouseEvent) => {
 }
 
 .tree-node__item:hover {
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
 }
 
 .tree-node__toggle {
@@ -123,7 +123,7 @@ const handleRowClick = (e: MouseEvent) => {
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   cursor: pointer;
   opacity: 0.5;
   padding: 0;
@@ -167,37 +167,37 @@ const handleRowClick = (e: MouseEvent) => {
   justify-content: center;
   width: 16px;
   height: 16px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #555);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 3px;
   flex-shrink: 0;
   transition: all 0.15s;
 }
 
 .tree-node__item:hover .tree-node__checkbox-visual {
-  border-color: var(--fg-color, #fff);
+  border-color: var(--lm-fg);
 }
 
 .tree-node__checkbox:checked + .tree-node__checkbox-visual--include {
-  background: #4299e1;
-  border-color: #4299e1;
+  background: var(--lm-accent);
+  border-color: var(--lm-accent);
 }
 
 .tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude {
-  background: #ef4444;
-  border-color: #ef4444;
+  background: var(--lm-danger);
+  border-color: var(--lm-danger);
 }
 
 .tree-node__check-icon {
   width: 10px;
   height: 10px;
-  color: #fff;
+  color: var(--lm-fg);
 }
 
 .tree-node__folder-icon {
   width: 14px;
   height: 14px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
   flex-shrink: 0;
 }
@@ -205,7 +205,7 @@ const handleRowClick = (e: MouseEvent) => {
 .tree-node__label {
   flex: 1;
   font-size: 13px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

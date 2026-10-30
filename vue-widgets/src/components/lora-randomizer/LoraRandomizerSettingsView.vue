@@ -282,7 +282,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #e4e4e7;
+  color: var(--lm-fg);
 }
 
 .settings-header {
@@ -293,7 +293,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
   margin: 0;
   text-transform: uppercase;
@@ -306,7 +306,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .setting-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--lm-fg-muted);
   display: block;
   margin-bottom: 8px;
 }
@@ -325,8 +325,8 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 /* Count Mode Tabs */
 .count-mode-tabs {
   display: flex;
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 8px;
@@ -351,21 +351,21 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .count-mode-tab-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.7);
+  color: var(--lm-fg-muted);
   transition: all 0.2s ease;
 }
 
 .count-mode-tab:hover .count-mode-tab-label {
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--lm-fg);
 }
 
 .count-mode-tab.active .count-mode-tab-label {
-  color: rgba(191, 219, 254, 1);
+  color: var(--lm-accent-text);
   font-weight: 600;
 }
 
 .count-mode-tab.active {
-  background: rgba(66, 153, 225, 0.2);
+  background: var(--lm-surface-selected);
 }
 
 .count-mode-tab.active::after {
@@ -375,12 +375,12 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(66, 153, 225, 0.9);
+  background: var(--lm-accent);
 }
 
 .slider-container {
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
   padding: 6px;
 }
@@ -404,15 +404,15 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .toggle-switch__track {
   position: absolute;
   inset: 0;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 10px;
   transition: all 0.2s;
 }
 
 .toggle-switch--active .toggle-switch__track {
-  background: rgba(66, 153, 225, 0.3);
-  border-color: rgba(66, 153, 225, 0.6);
+  background: var(--lm-surface-selected);
+  border-color: var(--lm-accent-border);
 }
 
 .toggle-switch__thumb {
@@ -421,7 +421,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   left: 2px;
   width: 14px;
   height: 14px;
-  background: var(--fg-color, #fff);
+  background: var(--lm-fg);
   border-radius: 50%;
   transition: all 0.2s;
   opacity: 0.6;
@@ -429,7 +429,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 
 .toggle-switch--active .toggle-switch__thumb {
   transform: translateX(16px);
-  background: #4299e1;
+  background: var(--lm-accent);
   opacity: 1;
 }
 
@@ -451,15 +451,15 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 
 .roll-button {
   padding: 6px 8px;
-  background: rgba(30, 30, 36, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #e4e4e7;
+  color: var(--lm-fg);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -468,16 +468,16 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 }
 
 .roll-button:hover:not(:disabled) {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: #bfdbfe;
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-accent-text);
 }
 
 .roll-button.selected {
-  background: rgba(66, 153, 225, 0.3);
-  border-color: rgba(66, 153, 225, 0.6);
-  color: #e4e4e7;
-  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
+  background: var(--lm-surface-selected);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-fg);
+  box-shadow: 0 0 0 1px var(--lm-accent-soft);
 }
 
 .roll-button:disabled {

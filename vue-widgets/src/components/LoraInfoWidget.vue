@@ -364,7 +364,8 @@ onMounted(() => {
 <style scoped>
 .lora-info-widget {
   padding: 12px;
-  background: rgba(40, 44, 52, 0.6);
+  /* Let the node surface show through; only inner controls are painted. */
+  background: transparent;
   border-radius: 4px;
   height: 100%;
   display: flex;
@@ -387,7 +388,7 @@ onMounted(() => {
   display: flex;
   gap: 0;
   margin-bottom: 10px;
-  border-bottom: 1px solid var(--border-color, #444);
+  border-bottom: 1px solid var(--lm-border);
   flex-shrink: 0;
 }
 
@@ -409,7 +410,7 @@ onMounted(() => {
 .lora-info-tab-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
@@ -429,7 +430,7 @@ onMounted(() => {
   left: 25%;
   right: 25%;
   height: 2px;
-  background: rgba(66, 153, 225, 0.8);
+  background: var(--lm-accent);
   border-radius: 1px;
 }
 
@@ -464,14 +465,14 @@ onMounted(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
 .lora-filename {
   font-size: 13px;
   font-weight: 500;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   word-break: break-all;
   margin-bottom: 8px;
   /* Override node-level grab cursor and user-select:none from .lg-node.cursor-grab */
@@ -491,9 +492,9 @@ onMounted(() => {
   min-height: 60px;
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid var(--border-color, #444);
-  background: var(--comfy-input-bg, #333);
-  color: var(--fg-color, #fff);
+  border: 1px solid var(--lm-border);
+  background: var(--lm-surface);
+  color: var(--lm-fg);
   font-size: 12px;
   resize: none;
   box-sizing: border-box;
@@ -515,9 +516,9 @@ onMounted(() => {
   margin-top: 8px;
   padding: 6px 12px;
   border-radius: 4px;
-  border: 1px solid rgba(66, 153, 225, 0.4);
-  background: rgba(66, 153, 225, 0.15);
-  color: var(--fg-color, #fff);
+  border: 1px solid var(--lm-accent-border);
+  background: var(--lm-accent-soft);
+  color: var(--lm-fg);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -526,15 +527,15 @@ onMounted(() => {
 }
 
 .save-btn:hover:not(:disabled) {
-  background: rgba(66, 153, 225, 0.25);
-  border-color: rgba(66, 153, 225, 0.6);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
 }
 
 .save-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  background: rgba(66, 153, 225, 0.05);
-  border-color: rgba(226, 232, 240, 0.1);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-border-soft);
 }
 
 /* ── Description states ── */
@@ -544,7 +545,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 24px 16px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   font-size: 12px;
   min-height: 0;
@@ -553,7 +554,7 @@ onMounted(() => {
 
 .description-state.error {
   opacity: 0.7;
-  color: #f87171;
+  color: var(--lm-danger-text);
 }
 
 /* ── Description content ── */
@@ -573,7 +574,7 @@ onMounted(() => {
   padding: 8px 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.85;
   word-break: break-word;
   /* Override node-level grab cursor and user-select:none from .lg-node.cursor-grab */
@@ -591,7 +592,7 @@ onMounted(() => {
 }
 
 .description-text :deep(a) {
-  color: rgba(66, 153, 225, 0.9);
+  color: var(--lm-accent);
 }
 
 .description-text :deep(ul),
@@ -610,7 +611,7 @@ onMounted(() => {
 }
 
 .description-text :deep(code) {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--lm-surface-hover);
   padding: 1px 4px;
   border-radius: 3px;
   font-size: 11px;
@@ -624,7 +625,7 @@ onMounted(() => {
 /* ── Placeholder (shared) ── */
 .placeholder {
   font-style: italic;
-  color: rgba(226, 232, 240, 0.5);
+  color: var(--lm-fg-subtle);
   text-align: center;
   padding: 16px 0;
   font-size: 12px;

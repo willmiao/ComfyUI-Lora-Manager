@@ -82,7 +82,7 @@ watch(() => props.visible, (isVisible) => {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--lm-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,9 +91,9 @@ watch(() => props.visible, (isVisible) => {
 
 .lora-pool-modal {
   background: var(--comfy-menu-bg, #1a1a1a);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--lm-border);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--lm-shadow-lg);
   max-width: 400px;
   width: 90%;
   max-height: 70vh;
@@ -106,7 +106,7 @@ watch(() => props.visible, (isVisible) => {
   align-items: flex-start;
   justify-content: space-between;
   padding: 16px;
-  border-bottom: 1px solid var(--border-color, #444);
+  border-bottom: 1px solid var(--lm-border);
 }
 
 .lora-pool-modal__title-container {
@@ -116,13 +116,13 @@ watch(() => props.visible, (isVisible) => {
 .lora-pool-modal__title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   margin: 0;
 }
 
 .lora-pool-modal__subtitle {
   font-size: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
   margin: 4px 0 0 0;
 }
@@ -135,7 +135,7 @@ watch(() => props.visible, (isVisible) => {
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 22px;
   cursor: pointer;
   opacity: 0.7;
@@ -147,12 +147,12 @@ watch(() => props.visible, (isVisible) => {
 
 .lora-pool-modal__close:hover {
   opacity: 1;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
 }
 
 .lora-pool-modal__search {
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color, #444);
+  border-bottom: 1px solid var(--lm-border);
 }
 
 .lora-pool-modal__body {

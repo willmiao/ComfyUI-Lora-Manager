@@ -683,6 +683,22 @@ app.registerExtension({
     },
 
     /**
+     * Resolve the flash colour from the theme token so the highlight tracks
+     * the active palette instead of hard-coding the LM brand accent.
+     */
+    _resolveFlashColor() {
+        const fallback = '#4299E0';
+        try {
+            const value = getComputedStyle(document.documentElement)
+                .getPropertyValue('--lm-accent')
+                .trim();
+            return value || fallback;
+        } catch (e) {
+            return fallback;
+        }
+    },
+
+    /**
      * Add a temporary visual highlight to a widget after its value is updated.
      *
      * Both rendering modes shift the value text color to the LM brand accent
@@ -700,7 +716,7 @@ app.registerExtension({
     flashWidget(node, widget) {
         const FLASH_DURATION = 3000;
         const FADE_IN_MS = 250;
-        const VALUE_COLOR = '#4299E0'; // LM brand accent — consistent with selection/border/drop-indicator
+        const VALUE_COLOR = this._resolveFlashColor();
         const nodeId = node.id;
 
         // ---- Vue Nodes mode: CSS class for value text color ----
@@ -829,7 +845,13 @@ app.registerExtension({
     _flashCanvasWidget(node, widget, { FLASH_DURATION, FADE_IN_MS, VALUE_COLOR }) {
         const FADE_OUT_MS = 400;
         const FADE_OUT_START = FLASH_DURATION - FADE_OUT_MS;
-        const DEFAULT_RGB = hexToRgb('#DDD'); // LiteGraph WIDGET_TEXT_COLOR
+        // Respect the active palette: LiteGraph.WIDGET_TEXT_COLOR is updated by
+        // ComfyUI whenever the color palette changes.
+        const DEFAULT_RGB = hexToRgb(
+            typeof LiteGraph !== 'undefined' && LiteGraph.WIDGET_TEXT_COLOR
+                ? LiteGraph.WIDGET_TEXT_COLOR
+                : '#DDD',
+        );
         const FLASH_RGB = hexToRgb(VALUE_COLOR);
 
         /**

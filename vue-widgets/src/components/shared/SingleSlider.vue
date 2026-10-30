@@ -182,7 +182,7 @@ const stopDrag = (event?: PointerEvent) => {
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border-radius: 4px;
   cursor: default !important;
 }
@@ -190,7 +190,7 @@ const stopDrag = (event?: PointerEvent) => {
 .slider-track__bg {
   position: absolute;
   inset: 0;
-  background: rgba(66, 153, 225, 0.15);
+  background: var(--lm-accent-track);
   border-radius: 2px;
 }
 
@@ -199,7 +199,7 @@ const stopDrag = (event?: PointerEvent) => {
   top: 0;
   bottom: 0;
   left: 0;
-  background: rgba(66, 153, 225, 0.6);
+  background: var(--lm-accent-fill);
   border-radius: 2px;
   transition: width 0.05s linear;
 }
@@ -208,7 +208,7 @@ const stopDrag = (event?: PointerEvent) => {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(66, 153, 225, 0.1);
+  background: var(--lm-accent-track);
   border-radius: 2px;
 }
 
@@ -224,12 +224,12 @@ const stopDrag = (event?: PointerEvent) => {
 .slider-handle__thumb {
   width: 14px;
   height: 14px;
-  background: var(--fg-color, #fff);
+  background: var(--lm-fg);
   border-radius: 50%;
   position: absolute;
   top: 7px;
   left: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--lm-shadow);
   transition: transform 0.15s ease;
 }
 
@@ -248,7 +248,7 @@ const stopDrag = (event?: PointerEvent) => {
   transform: translateX(-50%);
   font-size: 12px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.8;
   white-space: nowrap;
   pointer-events: none;

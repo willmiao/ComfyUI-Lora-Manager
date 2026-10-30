@@ -134,27 +134,27 @@ watch(() => props.visible, (isVisible) => {
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
 }
 
 .search-input {
   width: 100%;
   padding: 8px 12px 8px 32px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 6px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 13px;
   outline: none;
 }
 
 .search-input:focus {
-  border-color: var(--fg-color, #fff);
+  border-color: var(--lm-fg);
 }
 
 .search-input::placeholder {
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.4;
 }
 
@@ -166,7 +166,7 @@ watch(() => props.visible, (isVisible) => {
 .no-results {
   padding: 20px;
   text-align: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   font-size: 13px;
 }

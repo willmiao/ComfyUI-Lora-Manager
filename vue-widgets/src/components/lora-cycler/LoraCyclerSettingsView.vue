@@ -312,7 +312,7 @@ const onRepeatBlur = (event: Event) => {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #e4e4e7;
+  color: var(--lm-fg);
 }
 
 .settings-header {
@@ -323,7 +323,7 @@ const onRepeatBlur = (event: Event) => {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
   margin: 0;
   text-transform: uppercase;
@@ -336,7 +336,7 @@ const onRepeatBlur = (event: Event) => {
 .setting-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--lm-fg-muted);
   display: block;
   margin-bottom: 6px;
 }
@@ -347,8 +347,8 @@ const onRepeatBlur = (event: Event) => {
 }
 
 .progress-display {
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
   padding: 8px 10px;
   display: flex;
@@ -358,13 +358,13 @@ const onRepeatBlur = (event: Event) => {
 }
 
 .progress-display.executing {
-  border-color: rgba(66, 153, 225, 0.5);
+  border-color: var(--lm-accent-border);
   animation: pulse 2s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { border-color: rgba(66, 153, 225, 0.3); }
-  50% { border-color: rgba(66, 153, 225, 0.7); }
+  0%, 100% { border-color: var(--lm-accent-soft); }
+  50% { border-color: var(--lm-accent); }
 }
 
 .progress-info {
@@ -378,7 +378,7 @@ const onRepeatBlur = (event: Event) => {
 .progress-label {
   font-size: 10px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.5);
+  color: var(--lm-fg-subtle);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -386,7 +386,7 @@ const onRepeatBlur = (event: Event) => {
 .progress-name {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(191, 219, 254, 1);
+  color: var(--lm-accent-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -404,18 +404,18 @@ const onRepeatBlur = (event: Event) => {
 }
 
 .progress-name.clickable:hover:not(.disabled) {
-  background: rgba(66, 153, 225, 0.2);
-  color: rgba(191, 219, 254, 1);
+  background: var(--lm-accent-soft);
+  color: var(--lm-accent-text);
 }
 
 .progress-name.no-lora {
   font-style: italic;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 .progress-name.clickable.no-lora:hover:not(.disabled) {
-  background: rgba(160, 174, 192, 0.2);
-  color: rgba(226, 232, 240, 0.8);
+  background: var(--lm-surface-hover);
+  color: var(--lm-fg-muted);
 }
 
 .progress-name.clickable.disabled {
@@ -449,7 +449,7 @@ const onRepeatBlur = (event: Event) => {
 .progress-index {
   font-size: 18px;
   font-weight: 600;
-  color: rgba(66, 153, 225, 1);
+  color: var(--lm-accent);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   min-width: 4ch;
   text-align: right;
@@ -458,14 +458,14 @@ const onRepeatBlur = (event: Event) => {
 
 .progress-separator {
   font-size: 14px;
-  color: rgba(226, 232, 240, 0.4);
+  color: var(--lm-fg-subtle);
   margin: 0 2px;
 }
 
 .progress-total {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   min-width: 4ch;
   text-align: left;
@@ -479,34 +479,34 @@ const onRepeatBlur = (event: Event) => {
   gap: 6px;
   margin-left: 8px;
   padding: 2px 6px;
-  background: rgba(26, 32, 44, 0.6);
-  border: 1px solid rgba(226, 232, 240, 0.1);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 4px;
 }
 
 .repeat-progress-track {
   width: 32px;
   height: 4px;
-  background: rgba(226, 232, 240, 0.15);
+  background: var(--lm-border-soft);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .repeat-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  background: var(--lm-warning-progress);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
 .repeat-progress-fill.is-complete {
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: var(--lm-ok-progress);
 }
 
 .repeat-progress-text {
   font-size: 10px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
-  color: rgba(253, 230, 138, 0.9);
+  color: var(--lm-warning);
   min-width: 3ch;
   font-variant-numeric: tabular-nums;
 }
@@ -528,7 +528,7 @@ const onRepeatBlur = (event: Event) => {
 .control-group-label {
   font-size: 11px;
   font-weight: 500;
-  color: rgba(226, 232, 240, 0.5);
+  color: var(--lm-fg-subtle);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   line-height: 1;
@@ -545,10 +545,10 @@ const onRepeatBlur = (event: Event) => {
   width: 50px;
   height: 32px;
   padding: 0 8px;
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
-  color: #e4e4e7;
+  color: var(--lm-fg);
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   line-height: 32px;
@@ -557,7 +557,7 @@ const onRepeatBlur = (event: Event) => {
 
 .index-input:focus {
   outline: none;
-  border-color: rgba(66, 153, 225, 0.6);
+  border-color: var(--lm-accent-border);
 }
 
 .index-input:disabled {
@@ -567,7 +567,7 @@ const onRepeatBlur = (event: Event) => {
 
 .index-hint {
   font-size: 12px;
-  color: rgba(226, 232, 240, 0.4);
+  color: var(--lm-fg-subtle);
   font-variant-numeric: tabular-nums;
   line-height: 32px;
 }
@@ -577,10 +577,10 @@ const onRepeatBlur = (event: Event) => {
   width: 50px;
   height: 32px;
   padding: 0 6px;
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
-  color: #e4e4e7;
+  color: var(--lm-fg);
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   text-align: center;
@@ -590,12 +590,12 @@ const onRepeatBlur = (event: Event) => {
 
 .repeat-input:focus {
   outline: none;
-  border-color: rgba(66, 153, 225, 0.6);
+  border-color: var(--lm-accent-border);
 }
 
 .repeat-suffix {
   font-size: 13px;
-  color: rgba(226, 232, 240, 0.4);
+  color: var(--lm-fg-subtle);
   font-weight: 500;
   line-height: 32px;
 }
@@ -617,17 +617,17 @@ const onRepeatBlur = (event: Event) => {
   height: 24px;
   padding: 0;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 4px;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .control-btn:hover:not(:disabled) {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: rgba(191, 219, 254, 1);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-accent-text);
 }
 
 .control-btn:disabled {
@@ -636,14 +636,14 @@ const onRepeatBlur = (event: Event) => {
 }
 
 .control-btn.active {
-  background: rgba(245, 158, 11, 0.2);
-  border-color: rgba(245, 158, 11, 0.5);
-  color: rgba(253, 230, 138, 1);
+  background: var(--lm-warning-soft);
+  border-color: var(--lm-warning-border);
+  color: var(--lm-warning);
 }
 
 .control-btn.active:hover {
-  background: rgba(245, 158, 11, 0.3);
-  border-color: rgba(245, 158, 11, 0.6);
+  background: var(--lm-warning-soft);
+  border-color: var(--lm-warning-border);
 }
 
 .control-icon {
@@ -653,8 +653,8 @@ const onRepeatBlur = (event: Event) => {
 
 /* Slider Container */
 .slider-container {
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 6px;
   padding: 6px;
 }
@@ -689,15 +689,15 @@ const onRepeatBlur = (event: Event) => {
 .toggle-switch__track {
   position: absolute;
   inset: 0;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 10px;
   transition: all 0.2s;
 }
 
 .toggle-switch--active .toggle-switch__track {
-  background: rgba(66, 153, 225, 0.3);
-  border-color: rgba(66, 153, 225, 0.6);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
 }
 
 .toggle-switch__thumb {
@@ -706,7 +706,7 @@ const onRepeatBlur = (event: Event) => {
   left: 2px;
   width: 14px;
   height: 14px;
-  background: var(--fg-color, #fff);
+  background: var(--lm-fg);
   border-radius: 50%;
   transition: all 0.2s;
   opacity: 0.6;
@@ -714,7 +714,7 @@ const onRepeatBlur = (event: Event) => {
 
 .toggle-switch--active .toggle-switch__thumb {
   transform: translateX(16px);
-  background: #4299e1;
+  background: var(--lm-accent);
   opacity: 1;
 }
 

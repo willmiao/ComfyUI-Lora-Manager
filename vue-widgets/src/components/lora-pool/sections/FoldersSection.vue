@@ -112,7 +112,7 @@ const removeExclude = (path: string) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
@@ -141,11 +141,11 @@ const removeExclude = (path: string) => {
 }
 
 .section__column-title--include {
-  color: #4299e1;
+  color: var(--lm-accent-text);
 }
 
 .section__column-title--exclude {
-  color: #ef4444;
+  color: var(--lm-danger-text);
 }
 
 .section__edit-btn {
@@ -156,7 +156,7 @@ const removeExclude = (path: string) => {
   justify-content: center;
   background: transparent;
   border: none;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   cursor: pointer;
   opacity: 0.5;
   border-radius: 3px;
@@ -171,15 +171,15 @@ const removeExclude = (path: string) => {
 
 .section__edit-btn:hover {
   opacity: 1;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
 }
 
 .section__edit-btn--include:hover {
-  color: #4299e1;
+  color: var(--lm-accent-text);
 }
 
 .section__edit-btn--exclude:hover {
-  color: #ef4444;
+  color: var(--lm-danger-text);
 }
 
 .section__content {
@@ -195,7 +195,7 @@ const removeExclude = (path: string) => {
 
 .section__empty {
   font-size: 10px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.3;
   font-style: italic;
   min-height: 22px;

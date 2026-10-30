@@ -63,7 +63,7 @@ defineEmits<{
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
@@ -81,7 +81,7 @@ defineEmits<{
 
 .toggle-item__label {
   font-size: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
 }
 
 .toggle-switch {
@@ -97,15 +97,15 @@ defineEmits<{
 .toggle-switch__track {
   position: absolute;
   inset: 0;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 10px;
   transition: all 0.2s;
 }
 
 .toggle-switch--active .toggle-switch__track {
-  background: rgba(66, 153, 225, 0.3);
-  border-color: rgba(66, 153, 225, 0.6);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
 }
 
 .toggle-switch__thumb {
@@ -114,7 +114,7 @@ defineEmits<{
   left: 2px;
   width: 14px;
   height: 14px;
-  background: var(--fg-color, #fff);
+  background: var(--lm-fg);
   border-radius: 50%;
   transition: all 0.2s;
   opacity: 0.6;
@@ -122,7 +122,7 @@ defineEmits<{
 
 .toggle-switch--active .toggle-switch__thumb {
   transform: translateX(16px);
-  background: #4299e1;
+  background: var(--lm-accent);
   opacity: 1;
 }
 

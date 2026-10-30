@@ -47,6 +47,8 @@ import { api } from '../../../scripts/api.js'
 import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
 // @ts-ignore
 import { stripAutocompleteMetadataFromPromptResult } from '../../web/comfyui/autocomplete.js'
+// @ts-ignore
+import { ensureLmStyles } from '../../web/comfyui/lm_styles_loader.js'
 
 // Strip the autocomplete lastAccepted boundary from exported workflows.
 // lastAccepted carries old prompt text (insertedText/textSnapshot) and is
@@ -56,6 +58,10 @@ import { stripAutocompleteMetadataFromPromptResult } from '../../web/comfyui/aut
 // are intentionally left untouched so cross-session caret continuity is kept.
 // Post-processing the resolved result avoids any window/race with
 // change-tracker or copy/paste serialization of live state.
+// Vue widgets consume the shared --lm-* theme tokens, so the token layer and
+// widget stylesheet must be present before the first widget mounts.
+ensureLmStyles()
+
 const originalGraphToPrompt = app.graphToPrompt.bind(app)
 app.graphToPrompt = async (...args: unknown[]) => {
   const result = await originalGraphToPrompt(...args)
@@ -97,6 +103,37 @@ function forwardMiddleMouseToCanvas(container: HTMLElement) {
 const vueApps = new Map<number | string, VueApp>()
 let autocompleteTextWidgetInstanceId = 0
 
+/** Whether ComfyUI currently renders nodes with the Vue node renderer. */
+function isVueNodesMode(): boolean {
+  const enabled = app.ui?.settings?.getSettingValue?.('Comfy.VueNodes.Enabled')
+  if (typeof enabled === 'boolean') return enabled
+  return typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode === true
+}
+
+/**
+ * Tag an LM widget container with the classes that resolve the LM theme
+ * tokens (web/comfyui/lm_theme.css).
+ *
+ * `lm-vue-node` selects the token family the built-in widgets use in that
+ * renderer, so an LM widget always matches its neighbours: the canvas
+ * widget palette (--comfy-input-bg) in canvas mode, the component node
+ * palette (--component-node-widget-background) in Vue node mode.
+ */
+function applyWidgetThemeClasses(container: HTMLElement): void {
+  container.classList.add('lm-widget-root')
+  container.classList.toggle('lm-vue-node', isVueNodesMode())
+}
+
+// Keep every mounted LM widget in sync when the renderer is switched at
+// runtime. One document-level listener for all widgets avoids per-node
+// listener bookkeeping (containers are removed together with their node).
+document.addEventListener('lora-manager:vue-mode-change', (event) => {
+  const isVueNodes = Boolean((event as CustomEvent).detail?.isVueDomMode)
+  for (const el of document.querySelectorAll<HTMLElement>('.lm-widget-root')) {
+    el.classList.toggle('lm-vue-node', isVueNodes)
+  }
+})
+
 export function createAutocompleteTextWidgetInstanceId() {
   autocompleteTextWidgetInstanceId += 1
   return autocompleteTextWidgetInstanceId
@@ -112,6 +149,7 @@ function createLoraPoolWidget(node) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  applyWidgetThemeClasses(container)
   forwardMiddleMouseToCanvas(container)
 
   let internalValue: LoraPoolConfig | undefined
@@ -184,6 +222,7 @@ function createLoraRandomizerWidget(node) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  applyWidgetThemeClasses(container)
   forwardMiddleMouseToCanvas(container)
 
   // Initialize with default config to avoid sending undefined/empty string to backend
@@ -280,6 +319,7 @@ function createLoraCyclerWidget(node) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  applyWidgetThemeClasses(container)
   forwardMiddleMouseToCanvas(container)
 
   const defaultConfig: CyclerConfig = {
@@ -373,6 +413,7 @@ function createJsonDisplayWidget(node) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  applyWidgetThemeClasses(container)
   forwardMiddleMouseToCanvas(container)
 
   let internalValue: Record<string, unknown> | undefined
@@ -679,6 +720,7 @@ function createLoraInfoWidget(node: any) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  applyWidgetThemeClasses(container)
   forwardMiddleMouseToCanvas(container)
 
   let internalValue: { name?: string; notes?: string; filePath?: string; activeTab?: string } | undefined
@@ -770,6 +812,7 @@ function createAutocompleteTextWidgetFactory(
     container.style.display = 'flex'
     container.style.flexDirection = 'column'
     container.style.overflow = 'hidden'
+    applyWidgetThemeClasses(container)
     forwardMiddleMouseToCanvas(container)
   }
 

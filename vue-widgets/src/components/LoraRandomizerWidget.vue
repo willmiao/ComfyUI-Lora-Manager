@@ -338,7 +338,8 @@ onMounted(async () => {
 <style scoped>
 .lora-randomizer-widget {
   padding: 6px;
-  background: rgba(40, 44, 52, 0.6);
+  /* Let the node surface show through; only inner controls are painted. */
+  background: transparent;
   border-radius: 6px;
   height: 100%;
   display: flex;

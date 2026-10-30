@@ -178,7 +178,9 @@ onMounted(async () => {
 <style scoped>
 .lora-pool-widget {
   padding: 12px;
-  background: rgba(40, 44, 52, 0.6);
+  /* The node surface shows through; only interactive controls and cards are
+     painted, so the widget never looks like a darkened slab on light themes. */
+  background: transparent;
   border-radius: 4px;
   height: 100%;
   display: flex;

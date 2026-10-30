@@ -84,10 +84,10 @@ const onImageError = (loraName: string) => {
 
 .last-used-preview__content {
   background: var(--comfy-menu-bg, #1a1a1a);
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--lm-border);
   border-radius: 6px;
   padding: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--lm-shadow);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -98,7 +98,7 @@ const onImageError = (loraName: string) => {
   align-items: center;
   gap: 8px;
   padding: 6px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border-radius: 6px;
 }
 
@@ -108,14 +108,14 @@ const onImageError = (loraName: string) => {
   object-fit: cover;
   border-radius: 3px;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--lm-surface-hover);
 }
 
 .last-used-preview__thumb--placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.2;
 }
 
@@ -134,7 +134,7 @@ const onImageError = (loraName: string) => {
 
 .last-used-preview__name {
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -142,13 +142,13 @@ const onImageError = (loraName: string) => {
 
 .last-used-preview__strength {
   font-size: 10px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
 }
 
 .last-used-preview__more {
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   text-align: center;
   padding: 4px;

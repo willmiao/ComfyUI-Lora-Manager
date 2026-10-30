@@ -58,7 +58,7 @@ const getCount = (name: string) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
@@ -71,10 +71,10 @@ const getCount = (name: string) => {
 .section__placeholder {
   width: 100%;
   padding: 8px 12px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border-radius: 4px;
   font-size: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   text-align: center;
   box-sizing: border-box;

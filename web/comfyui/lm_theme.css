@@ -1,0 +1,125 @@
+/* LoRA Manager widget palette.
+ *
+ * Every value aliases a ComfyUI theme token (or is derived from one with
+ * color-mix), so all built-in palettes and user-imported custom palettes are
+ * handled without per-theme rules. Only genuinely "directional" values
+ * (status colors, shadows, scrims) have a light and a dark variant, keyed on
+ * the `.dark-theme` class ComfyUI puts on <html>.
+ *
+ * Three contexts:
+ *   .lm-widget-root  inline node widget (canvas DOM widget or Vue node)
+ *   .lm-vue-node     same, rendered by ComfyUI's Vue node renderer; built-in
+ *                    widgets there use the --component-node-* token family
+ *   .lm-popover      menus / dropdowns appended to <body>
+ *
+ * Never style an LM widget with --color-* scale tokens (e.g.
+ * --color-charcoal-400): those are fixed values that do not flip with the
+ * theme.
+ */
+
+/* :root carries the token defaults so LM can also style ComfyUI-owned rows
+   (e.g. the .lm-flash value highlight) that live outside LM containers. */
+:root,
+.lm-widget-root,
+.lm-popover {
+  /* Surfaces */
+  --lm-surface: var(--comfy-input-bg, #222);
+  /* Raised/hovered steps always move away from the surface towards the text
+     colour, so they read as "more contrast" in both directions. */
+  --lm-surface-raised: color-mix(in srgb, var(--lm-surface) 94%, var(--lm-fg));
+  --lm-surface-hover: color-mix(in srgb, var(--lm-surface) 86%, var(--lm-fg));
+  --lm-surface-selected: color-mix(in srgb, var(--lm-accent) 22%, var(--lm-surface));
+
+  /* Lines */
+  --lm-border: var(--border-color, #4e4e4e);
+  --lm-border-soft: color-mix(in srgb, var(--lm-border) 45%, transparent);
+
+  /* Text */
+  --lm-fg: var(--input-text, #ddd);
+  --lm-fg-muted: var(--descrip-text, #999);
+  --lm-fg-subtle: color-mix(in srgb, var(--lm-fg) 60%, transparent);
+
+  /* Brand accent */
+  --lm-accent: #4299e1;
+  --lm-accent-text: color-mix(in oklab, var(--lm-accent) 60%, var(--lm-fg));
+  --lm-accent-soft: color-mix(in srgb, var(--lm-accent) 18%, transparent);
+  --lm-accent-track: color-mix(in srgb, var(--lm-accent) 15%, transparent);
+  --lm-on-accent: #fff;
+  --lm-accent-fill: color-mix(in srgb, var(--lm-accent) 65%, transparent);
+  --lm-accent-border: color-mix(in srgb, var(--lm-accent) 55%, transparent);
+
+  /* Status */
+  --lm-danger: var(--error-text, #f44);
+  --lm-danger-text: color-mix(in oklab, var(--lm-danger) 60%, var(--lm-fg));
+  --lm-danger-soft: color-mix(in srgb, var(--lm-danger) 12%, transparent);
+  --lm-danger-border: color-mix(in srgb, var(--lm-danger) 45%, transparent);
+  --lm-warning: #8a5a00;
+  --lm-warning-soft: color-mix(in srgb, #f0b429 20%, transparent);
+  --lm-warning-border: color-mix(in srgb, #f0b429 55%, transparent);
+  --lm-ok: #0f7b3f;
+
+  /* Depth */
+  --lm-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+  --lm-shadow-lg: 0 10px 25px rgb(0 0 0 / 0.18);
+  --lm-scrim: rgb(0 0 0 / 0.45);
+
+  /* Autocomplete tag category hues */
+  --lm-cat-general: oklch(0.62 0.13 240);
+  --lm-cat-artist: oklch(0.65 0.14 20);
+  --lm-cat-copyright: oklch(0.62 0.15 300);
+  --lm-cat-character: oklch(0.63 0.14 145);
+  --lm-cat-meta: oklch(0.7 0.12 85);
+  --lm-cat-species: oklch(0.66 0.14 45);
+  --lm-cat-lore: oklch(0.64 0.11 180);
+}
+
+/* Scoped to LM surfaces: native scrollbars, <select> popups and range inputs
+   then follow the active palette without touching ComfyUI's own chrome. */
+.lm-widget-root,
+.lm-popover {
+  color-scheme: light;
+}
+
+/* ComfyUI Vue node mode: match the built-in widget token family. */
+.lm-widget-root.lm-vue-node {
+  --lm-surface: var(--component-node-widget-background, var(--comfy-input-bg, #222));
+  --lm-fg: var(--component-node-foreground, var(--input-text, #ddd));
+  --lm-fg-muted: var(--component-node-foreground-secondary, var(--descrip-text, #999));
+  --lm-border: var(--component-node-border, var(--border-color, #4e4e4e));
+}
+
+/* Menus and dropdowns live outside the node, over the app chrome. */
+.lm-popover {
+  --lm-surface: var(--comfy-menu-bg, #1a1a1a);
+  --lm-surface-raised: var(--comfy-menu-secondary-bg, #292929);
+  --lm-surface-hover: var(--comfy-menu-secondary-bg, #292929);
+  --lm-fg: var(--fg-color, #fff);
+  --lm-fg-muted: var(--descrip-text, #999);
+  --lm-border: var(--border-color, #4e4e4e);
+}
+
+/* Derived per-context values: declared on the elements that carry the context
+   tokens so they pick up the palette/renderer-specific --lm-warning / --lm-ok
+   instead of the :root defaults. */
+.lm-widget-root {
+  --lm-warning-progress: linear-gradient(
+    90deg,
+    var(--lm-warning),
+    color-mix(in srgb, var(--lm-warning) 60%, #fff)
+  );
+  --lm-ok-progress: linear-gradient(
+    90deg,
+    var(--lm-ok),
+    color-mix(in srgb, var(--lm-ok) 60%, #fff)
+  );
+}
+
+html.dark-theme .lm-widget-root,
+html.dark-theme .lm-popover {
+  --lm-warning: #f0b429;
+  --lm-ok: #4ade80;
+  --lm-shadow: 0 2px 10px rgb(0 0 0 / 0.45);
+  --lm-shadow-lg: 0 10px 25px rgb(0 0 0 / 0.55);
+  --lm-scrim: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}

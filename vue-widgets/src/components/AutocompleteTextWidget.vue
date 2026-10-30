@@ -355,12 +355,14 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* Canvas mode styles (default) - matches built-in comfy-multiline-input */
+/* Theme tokens (--lm-*) come from the widget container, which ComfyUI's
+   renderer switches between the canvas widget palette and the Vue node
+   widget palette. Text size matches ComfyUI's own textarea in both modes. */
 .text-input {
   flex: 1;
   width: 100%;
-  background-color: var(--comfy-input-bg, #222);
-  color: var(--input-text, #ddd);
+  background-color: var(--lm-surface);
+  color: var(--lm-fg);
   overflow: hidden;
   overflow-y: auto;
   padding: 2px 2px 24px 2px;  /* Reserve bottom space for clear button */
@@ -374,14 +376,12 @@ onUnmounted(() => {
   resize: none;
 }
 
-/* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
+/* Vue DOM mode: same surface/foreground as the built-in WidgetTextarea,
+   only the box metrics differ. */
 .text-input.vue-dom-mode {
-  background-color: var(--color-charcoal-400, #313235);
-  color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 6px;  /* matches ComfyUI's rounded-md textarea */
   font-family: inherit;
 }
 
@@ -400,8 +400,8 @@ onUnmounted(() => {
   margin: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(128, 128, 128, 0.5);
-  color: #fff;
+  background: color-mix(in srgb, var(--lm-fg) 28%, transparent);
+  color: var(--lm-fg);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -420,7 +420,8 @@ onUnmounted(() => {
 
 .clear-button:hover {
   opacity: 1;
-  background: rgba(255, 100, 100, 0.8);
+  background: var(--lm-danger-soft);
+  color: var(--lm-danger-text);
 }
 
 .clear-button svg {
@@ -434,11 +435,6 @@ onUnmounted(() => {
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
-  background: rgba(107, 114, 128, 0.6);
-}
-
-.text-input.vue-dom-mode ~ .clear-button:hover {
-  background: oklch(62% 0.18 25);
 }
 
 .text-input.vue-dom-mode ~ .clear-button svg {

@@ -724,7 +724,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   }
 
   const menu = document.createElement('div');
-  menu.className = 'lm-lora-context-menu';
+  menu.className = 'lm-popover lm-lora-context-menu';
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
   // Render off-screen until measured so we can adjust for viewport edges

@@ -41,8 +41,12 @@ export function addLorasWidget(node, name, opts, callback) {
 
   if (!container) {
     container = document.createElement("div");
-    container.className = "lm-loras-container";
+    container.className = "lm-widget-root lm-loras-container";
   }
+
+  // Containers reused from a previous mount (undo/redo) may predate the
+  // theme context class, so always make sure it is present.
+  container.classList.add("lm-widget-root");
 
   if (!reuseExisting) {
     forwardMiddleMouseToCanvas(container);

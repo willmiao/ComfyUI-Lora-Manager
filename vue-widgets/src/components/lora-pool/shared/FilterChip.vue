@@ -82,26 +82,26 @@ const variantClass = computed(() => {
 
 /* Variants */
 .filter-chip--include {
-  background: rgba(66, 153, 225, 0.15);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: #4299e1;
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-accent);
 }
 
 .filter-chip--exclude {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  background: var(--lm-danger-soft);
+  border-color: var(--lm-danger-border);
+  color: var(--lm-danger-text);
 }
 
 .filter-chip--neutral {
-  background: rgba(100, 100, 100, 0.3);
-  border-color: rgba(150, 150, 150, 0.4);
+  background: var(--lm-surface-raised);
+  border-color: var(--lm-border);
   color: var(--fg-color);
 }
 
 .filter-chip--path {
-  background: rgba(30, 30, 30, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--lm-surface);
+  border-color: var(--lm-border-soft);
   color: var(--fg-color);
   font-family: monospace;
   font-size: 10px;

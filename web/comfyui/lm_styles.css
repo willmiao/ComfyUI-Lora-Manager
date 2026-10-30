@@ -112,7 +112,7 @@
   flex-direction: column;
   gap: 5px;
   padding: 6px;
-  background-color: rgba(40, 44, 52, 0.6);
+  background-color: var(--lm-surface);
   border-radius: 6px;
   width: 100%;
   box-sizing: border-box;
@@ -133,6 +133,11 @@
   outline: none;
 }
 
+/* Trigger-word widget container (tags_widget.js) */
+.comfy-tags-container {
+  background-color: var(--lm-surface);
+}
+
 /* Vue node mode: prevent content from pushing node size via ResizeObserver.
    Same technique as .lm-loras-container.lm-vue-node above. */
 .comfy-tags-container.lm-vue-node {
@@ -141,10 +146,15 @@
   contain: layout size;
 }
 
+/* Empty-state copy. The font size must be explicit: in canvas mode these
+   elements inherit ComfyUI's body size (16px) instead of the smaller widget
+   size used by the Vue node renderer, which made the placeholder look bold
+   and oversized — most visibly on light palettes. */
 .lm-lora-empty-state {
   text-align: center;
-  padding: 20px 0;
-  color: rgba(226, 232, 240, 0.8);
+  padding: 16px 0;
+  color: var(--lm-fg-subtle);
+  font-size: 12px;
   font-style: italic;
   user-select: none;
   -webkit-user-select: none;
@@ -158,7 +168,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 4px 8px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.2);
+  border-bottom: 1px solid var(--lm-border-soft);
   margin-bottom: 5px;
   position: relative;
   cursor: ew-resize;
@@ -172,7 +182,7 @@
 
 .lm-toggle-label,
 .lm-strength-label {
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--lm-fg-muted);
   font-size: 13px;
   user-select: none;
   -webkit-user-select: none;
@@ -210,60 +220,60 @@
   transition: all 0.2s ease;
   margin-bottom: 4px;
   border: 1px solid transparent;
-  background-color: rgba(45, 55, 72, 0.7);
+  background-color: var(--lm-surface-raised);
   touch-action: none;
   cursor: pointer !important;
 }
 
 .lm-lora-entry[data-active="false"] {
-  background-color: rgba(35, 40, 50, 0.5);
+  background-color: var(--lm-surface);
 }
 
 .lm-lora-entry:hover {
-  background-color: rgba(50, 60, 80, 0.8);
+  background-color: var(--lm-surface-hover);
 }
 
 .lm-lora-entry[data-active="false"]:hover {
-  background-color: rgba(40, 45, 55, 0.6);
+  background-color: var(--lm-surface-hover);
 }
 
 .lm-lora-entry[data-selected="true"] {
-  background-color: rgba(66, 153, 225, 0.3) !important;
-  border: 1px solid rgba(66, 153, 225, 0.6) !important;
-  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3) !important;
+  background-color: var(--lm-surface-selected) !important;
+  border: 1px solid var(--lm-accent-border) !important;
+  box-shadow: 0 0 0 1px var(--lm-accent-soft) !important;
 }
 
 .lm-lora-entry[data-selected="true"][data-locked="true"] {
-  background-color: rgba(66, 153, 225, 0.2) !important;
-  border-left: 3px solid rgba(245, 158, 11, 0.8) !important;
-  border-right: 1px solid rgba(66, 153, 225, 0.6) !important;
-  border-top: 1px solid rgba(66, 153, 225, 0.6) !important;
-  border-bottom: 1px solid rgba(66, 153, 225, 0.6) !important;
-  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3), inset 0 0 20px rgba(245, 158, 11, 0.04) !important;
+  background-color: var(--lm-surface-selected) !important;
+  border-left: 3px solid var(--lm-warning-border) !important;
+  border-right: 1px solid var(--lm-accent-border) !important;
+  border-top: 1px solid var(--lm-accent-border) !important;
+  border-bottom: 1px solid var(--lm-accent-border) !important;
+  box-shadow: 0 0 0 1px var(--lm-accent-soft), inset 0 0 20px color-mix(in srgb, var(--lm-warning) 6%, transparent) !important;
 }
 
 .lm-lora-entry[data-selected="true"][data-locked="true"][data-active="false"] {
-  background-color: rgba(48, 42, 36, 0.5) !important;
-  border-left: 3px solid rgba(245, 158, 11, 0.6) !important;
+  background-color: color-mix(in srgb, var(--lm-warning) 10%, var(--lm-surface)) !important;
+  border-left: 3px solid var(--lm-warning-border) !important;
 }
 
 .lm-lora-entry[data-missing="true"] {
-  background-color: rgba(220, 38, 38, 0.16);
-  border: 1px solid rgba(220, 38, 38, 0.5);
+  background-color: var(--lm-danger-soft);
+  border: 1px solid var(--lm-danger-border);
 }
 
 .lm-lora-entry[data-missing="true"] .lm-lora-name {
-  color: rgba(252, 165, 165, 0.95);
+  color: var(--lm-danger-text);
 }
 
 .lm-lora-clip-entry[data-missing="true"] {
-  background-color: rgba(220, 38, 38, 0.12);
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  border-left: 2px solid rgba(220, 38, 38, 0.6);
+  background-color: var(--lm-danger-soft);
+  border: 1px solid var(--lm-danger-border);
+  border-left: 2px solid var(--lm-danger-border);
 }
 
 .lm-lora-clip-entry[data-missing="true"] .lm-lora-name {
-  color: rgba(252, 165, 165, 0.95);
+  color: var(--lm-danger-text);
 }
 
 .lm-lora-name {
@@ -272,7 +282,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--lm-fg);
   font-size: 13px;
   user-select: none;
   -webkit-user-select: none;
@@ -281,7 +291,7 @@
 }
 
 .lm-lora-entry[data-active="false"] .lm-lora-name {
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 .lm-lora-strength-control {
@@ -295,9 +305,9 @@
   min-width: 50px;
   padding: 2px 4px;
   border-radius: 4px;
-  border: 1px solid rgba(226, 232, 240, 0.2);
-  background: rgba(26, 32, 44, 0.9);
-  color: rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--lm-border-soft);
+  background: var(--lm-surface);
+  color: var(--lm-fg);
   text-align: center;
   font-size: 13px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -305,20 +315,20 @@
 
 .lm-lora-strength-input:focus {
   outline: none;
-  border-color: rgba(66, 153, 225, 0.9);
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.3);
+  border-color: var(--lm-accent);
+  box-shadow: 0 0 0 2px var(--lm-accent-soft);
 }
 
 /* Advisory cue: strength is outside the usage-tips recommended range.
    Amber to distinguish it from the red "missing LoRA" error state. */
 .lm-lora-strength-input.lm-strength-out-of-range {
-  border-color: rgba(245, 158, 11, 0.75);
-  color: rgba(252, 211, 77, 0.95);
+  border-color: var(--lm-warning);
+  color: var(--lm-warning);
 }
 
 .lm-lora-strength-input.lm-strength-out-of-range:focus {
-  border-color: rgba(245, 158, 11, 0.9);
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+  border-color: var(--lm-warning-border);
+  box-shadow: 0 0 0 2px var(--lm-warning-soft);
 }
 
 .lm-lora-strength-buttons {
@@ -328,7 +338,7 @@
 }
 
 .lm-lora-entry[data-active="false"] .lm-lora-strength-input {
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 .lm-lora-arrow {
@@ -339,12 +349,12 @@
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--lm-fg-muted);
   transition: all 0.2s ease;
 }
 
 .lm-lora-arrow:hover {
-  color: white;
+  color: var(--lm-fg);
   transform: scale(1.2);
 }
 
@@ -361,9 +371,9 @@
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  color: rgba(226, 232, 240, 0.7);
-  background-color: rgba(45, 55, 72, 0.3);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  color: var(--lm-fg-muted);
+  background-color: var(--lm-surface-hover);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 3px;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -372,15 +382,15 @@
 }
 
 .lm-lora-expand-button:hover {
-  background-color: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: rgba(226, 232, 240, 0.9);
+  background-color: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-fg);
   transform: scale(1.05);
 }
 
 .lm-lora-expand-button:active {
   transform: scale(0.95);
-  background-color: rgba(66, 153, 225, 0.3);
+  background-color: var(--lm-accent-soft);
 }
 
 .lm-lora-expand-button:focus {
@@ -388,7 +398,7 @@
 }
 
 .lm-lora-expand-button:focus-visible {
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+  box-shadow: 0 0 0 2px var(--lm-accent-border);
 }
 
 .lm-lora-toggle {
@@ -397,18 +407,18 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: rgba(45, 55, 72, 0.7);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background-color: var(--lm-surface-raised);
+  border: 1px solid var(--lm-border-soft);
 }
 
 .lm-lora-toggle--active {
-  background-color: rgba(66, 153, 225, 0.9);
-  border-color: rgba(66, 153, 225, 0.9);
+  background-color: var(--lm-accent);
+  border-color: var(--lm-accent);
 }
 
 .lm-lora-toggle:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--lm-shadow);
 }
 
 .lm-lora-drag-handle {
@@ -419,7 +429,7 @@
   justify-content: center;
   cursor: grab;
   user-select: none;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
   transition: all 0.2s ease;
   margin-right: 8px;
   flex-shrink: 0;
@@ -431,7 +441,7 @@
 }
 
 .lm-lora-drag-handle:hover {
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--lm-fg);
   transform: scale(1.1);
 }
 
@@ -447,15 +457,15 @@
   justify-content: center;
   cursor: pointer;
   user-select: none;
-  background-color: rgba(45, 55, 72, 0.3);
-  border: 1px solid rgba(226, 232, 240, 0.2);
+  background-color: var(--lm-surface-hover);
+  border: 1px solid var(--lm-border-soft);
   border-radius: 3px;
   transition: all 0.2s ease;
   flex-shrink: 0;
   padding: 0;
   box-sizing: border-box;
   margin-right: 8px;
-  color: rgba(226, 232, 240, 0.8);
+  color: var(--lm-fg-muted);
 }
 
 .lm-lora-lock-button svg {
@@ -464,9 +474,9 @@
 }
 
 .lm-lora-lock-button:hover {
-  background-color: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: rgba(226, 232, 240, 0.95);
+  background-color: var(--lm-accent-soft);
+  border-color: var(--lm-accent-border);
+  color: var(--lm-fg);
   transform: scale(1.05);
 }
 
@@ -479,41 +489,41 @@
 }
 
 .lm-lora-lock-button:focus-visible {
-  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+  box-shadow: 0 0 0 2px var(--lm-accent-border);
 }
 
 .lm-lora-lock-button--locked {
-  background-color: rgba(245, 158, 11, 0.25);
-  border-color: rgba(245, 158, 11, 0.7);
-  color: rgba(251, 191, 36, 0.95);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);
+  background-color: var(--lm-warning-soft);
+  border-color: var(--lm-warning-border);
+  color: var(--lm-warning);
+  box-shadow: 0 0 8px var(--lm-warning-soft);
 }
 
 .lm-lora-lock-button--locked:hover {
-  background-color: rgba(245, 158, 11, 0.35);
-  border-color: rgba(245, 158, 11, 0.85);
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  background-color: var(--lm-warning-soft);
+  border-color: var(--lm-warning-border);
+  box-shadow: 0 0 12px var(--lm-warning-soft);
 }
 
 /* Visual styling for locked lora entries */
 .lm-lora-entry[data-locked="true"] {
-  background-color: rgba(60, 50, 40, 0.75);
-  border-left: 3px solid rgba(245, 158, 11, 0.7);
-  box-shadow: inset 0 0 20px rgba(245, 158, 11, 0.04);
+  background-color: color-mix(in srgb, var(--lm-warning) 14%, var(--lm-surface));
+  border-left: 3px solid var(--lm-warning-border);
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--lm-warning) 6%, transparent);
 }
 
 .lm-lora-entry[data-locked="true"]:hover {
-  background-color: rgba(65, 55, 45, 0.85);
-  box-shadow: inset 0 0 24px rgba(245, 158, 11, 0.06);
+  background-color: color-mix(in srgb, var(--lm-warning) 18%, var(--lm-surface));
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--lm-warning) 8%, transparent);
 }
 
 .lm-lora-entry[data-locked="true"][data-active="false"] {
-  background-color: rgba(48, 42, 36, 0.6);
-  border-left: 3px solid rgba(245, 158, 11, 0.5);
+  background-color: color-mix(in srgb, var(--lm-warning) 10%, var(--lm-surface));
+  border-left: 3px solid var(--lm-warning-border);
 }
 
 .lm-lora-entry[data-locked="true"][data-active="false"]:hover {
-  background-color: rgba(52, 46, 40, 0.7);
+  background-color: color-mix(in srgb, var(--lm-warning) 12%, var(--lm-surface));
 }
 
 body.lm-lora-strength-dragging,
@@ -538,11 +548,11 @@ body.lm-lora-reordering * {
   left: 0;
   right: 0;
   height: 3px;
-  background-color: rgba(66, 153, 225, 0.9);
+  background-color: var(--lm-accent);
   border-radius: 2px;
   opacity: 0;
   transition: opacity 0.2s ease;
-  box-shadow: 0 0 6px rgba(66, 153, 225, 0.8);
+  box-shadow: 0 0 6px var(--lm-accent);
   z-index: 10;
   pointer-events: none;
 }
@@ -567,9 +577,9 @@ body.lm-lora-reordering * {
   padding: 6px;
   padding-left: 20px;
   border-radius: 6px;
-  background-color: rgba(65, 70, 90, 0.6);
-  border: 1px solid rgba(66, 153, 225, 0.2);
-  border-left: 2px solid rgba(72, 118, 255, 0.6);
+  background-color: var(--lm-surface-raised);
+  border: 1px solid var(--lm-accent-soft);
+  border-left: 2px solid var(--lm-accent-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -580,42 +590,42 @@ body.lm-lora-reordering * {
 }
 
 .lm-lora-clip-entry[data-active="false"] {
-  background-color: rgba(50, 55, 65, 0.5);
-  border-color: rgba(66, 153, 225, 0.1);
-  border-left-color: rgba(66, 153, 225, 0.3);
+  background-color: var(--lm-surface);
+  border-color: var(--lm-accent-soft);
+  border-left-color: var(--lm-accent-soft);
 }
 
 .lm-lora-clip-entry:hover {
-  background-color: rgba(70, 75, 95, 0.7);
+  background-color: var(--lm-surface-hover);
 }
 
 .lm-lora-clip-entry[data-active="false"]:hover {
-  background-color: rgba(55, 60, 70, 0.6);
+  background-color: var(--lm-surface-hover);
 }
 
 .lm-lora-clip-entry .lm-lora-name {
   font-size: 13px;
-  color: rgba(200, 215, 240, 0.9);
+  color: var(--lm-fg);
   margin-left: 0;
 }
 
 .lm-lora-clip-entry[data-active="false"] .lm-lora-name {
-  color: rgba(200, 215, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 .lm-lora-clip-entry .lm-lora-strength-input {
-  color: rgba(200, 215, 240, 0.9);
+  color: var(--lm-fg);
 }
 
 .lm-lora-clip-entry[data-active="false"] .lm-lora-strength-input {
-  color: rgba(200, 215, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 .lm-lora-badge {
   padding: 2px 6px;
   border-radius: 12px;
-  background: rgba(66, 153, 225, 0.2);
-  color: rgba(226, 232, 240, 0.85);
+  background: var(--lm-accent-soft);
+  color: var(--lm-fg-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -623,20 +633,20 @@ body.lm-lora-reordering * {
 
 .lm-lora-context-menu {
   position: fixed;
-  background: rgba(26, 32, 44, 0.95);
+  background: var(--lm-surface);
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--lm-shadow-lg);
   padding: 8px 0;
   z-index: 10000;
   min-width: 180px;
-  border: 1px solid rgba(66, 153, 225, 0.3);
+  border: 1px solid var(--lm-accent-soft);
   backdrop-filter: blur(6px);
 }
 
 .lm-lora-menu-item {
   padding: 6px 20px;
   cursor: pointer;
-  color: rgba(226, 232, 240, 0.9);
+  color: var(--lm-fg);
   font-size: 13px;
   user-select: none;
   display: flex;
@@ -645,7 +655,7 @@ body.lm-lora-reordering * {
 }
 
 .lm-lora-menu-item:hover {
-  background-color: rgba(66, 153, 225, 0.2);
+  background-color: var(--lm-accent-soft);
 }
 
 .lm-lora-menu-item-icon {
@@ -658,16 +668,20 @@ body.lm-lora-reordering * {
 
 .lm-lora-context-menu hr {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--lm-border-soft);
   margin: 6px 0;
 }
 
 .lm-trigger-count-badge {
   font-variant-numeric: tabular-nums;
+  background-color: color-mix(in srgb, var(--lm-fg) 14%, transparent);
+  color: inherit;
 }
 
 .lm-trigger-count-badge--edited {
-  color: rgba(226, 232, 240, 0.92);
+  color: var(--lm-fg);
+  background-color: color-mix(in srgb, var(--lm-fg) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lm-fg) 28%, transparent);
 }
 
 .lm-trigger-group-edit-button {
@@ -675,23 +689,23 @@ body.lm-lora-reordering * {
 }
 
 .lm-trigger-group-edit-button:hover {
-  color: rgba(255, 255, 255, 0.98);
+  color: var(--lm-fg);
 }
 
 .lm-trigger-group-editor {
-  background: rgba(26, 32, 44, 0.95);
-  border: 1px solid rgba(66, 153, 225, 0.24);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-accent-soft);
+  box-shadow: var(--lm-shadow-lg);
   backdrop-filter: blur(6px);
 }
 
 .lm-trigger-group-editor__title {
-  color: rgba(226, 232, 240, 0.96);
+  color: var(--lm-fg);
 }
 
 .lm-trigger-group-editor__subtitle,
 .lm-trigger-group-editor__empty {
-  color: rgba(226, 232, 240, 0.72);
+  color: var(--lm-fg-muted);
 }
 
 /* Autocomplete styling */
@@ -711,51 +725,28 @@ body.lm-lora-reordering * {
 
 .lm-autocomplete-count {
   font-size: 11px;
-  color: rgba(226, 232, 240, 0.5);
+  color: var(--lm-fg-subtle);
 }
 
+/* Category badges: one hue per category, mixed against the popover surface
+   so both the tint and the text contrast flip with the theme. */
 .lm-autocomplete-category {
+  --lm-cat: var(--lm-cat-general);
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 10px;
   white-space: nowrap;
+  background: color-mix(in oklab, var(--lm-cat) 22%, var(--lm-surface));
+  color: color-mix(in oklab, var(--lm-cat) 60%, var(--lm-fg));
 }
 
-/* Category-specific badge colors */
-.lm-autocomplete-category--general {
-  background: rgba(0, 155, 230, 0.2);
-  color: #4bb4ff;
-}
-
-.lm-autocomplete-category--artist {
-  background: rgba(255, 138, 139, 0.2);
-  color: #ffc3c3;
-}
-
-.lm-autocomplete-category--copyright {
-  background: rgba(199, 151, 255, 0.2);
-  color: #ddc9fb;
-}
-
-.lm-autocomplete-category--character {
-  background: rgba(53, 198, 74, 0.2);
-  color: #93e49a;
-}
-
-.lm-autocomplete-category--meta {
-  background: rgba(234, 208, 132, 0.2);
-  color: #f7e7c3;
-}
-
-.lm-autocomplete-category--species {
-  background: rgba(237, 137, 54, 0.2);
-  color: #f6ad55;
-}
-
-.lm-autocomplete-category--lore {
-  background: rgba(72, 187, 120, 0.2);
-  color: #68d391;
-}
+.lm-autocomplete-category--general { --lm-cat: var(--lm-cat-general); }
+.lm-autocomplete-category--artist { --lm-cat: var(--lm-cat-artist); }
+.lm-autocomplete-category--copyright { --lm-cat: var(--lm-cat-copyright); }
+.lm-autocomplete-category--character { --lm-cat: var(--lm-cat-character); }
+.lm-autocomplete-category--meta { --lm-cat: var(--lm-cat-meta); }
+.lm-autocomplete-category--species { --lm-cat: var(--lm-cat-species); }
+.lm-autocomplete-category--lore { --lm-cat: var(--lm-cat-lore); }
 
 /* Command list styling */
 .comfy-autocomplete-command {
@@ -767,12 +758,12 @@ body.lm-lora-reordering * {
 
 .lm-autocomplete-command-name {
   font-family: 'Consolas', 'Monaco', monospace;
-  color: rgba(66, 153, 225, 0.9);
+  color: var(--lm-accent-text);
 }
 
 .lm-autocomplete-command-label {
   font-size: 12px;
-  color: rgba(226, 232, 240, 0.6);
+  color: var(--lm-fg-subtle);
 }
 
 /* ---- Widget flash highlight (visual cue after a value is sent to a node) ---- */
@@ -793,6 +784,219 @@ body.lm-lora-reordering * {
 .lm-flash input,
 .lm-flash textarea,
 .lm-flash [role="combobox"] {
-  color: #4299E0 !important;
-  -webkit-text-fill-color: #4299E0 !important;
+  color: var(--lm-accent) !important;
+  -webkit-text-fill-color: var(--lm-accent) !important;
+}
+
+/* ---- Autocomplete dropdown (appended to <body>, so it is an .lm-popover) ---- */
+.comfy-autocomplete-dropdown {
+  background-color: var(--lm-surface);
+  border: 1px solid var(--lm-border-soft);
+  border-radius: 8px;
+  box-shadow: var(--lm-shadow-lg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.comfy-autocomplete-dropdown::-webkit-scrollbar,
+.comfy-autocomplete-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.comfy-autocomplete-dropdown::-webkit-scrollbar-track,
+.comfy-autocomplete-scroll-container::-webkit-scrollbar-track {
+  background: var(--lm-surface-raised);
+  border-radius: 4px;
+}
+
+.comfy-autocomplete-dropdown::-webkit-scrollbar-thumb,
+.comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--lm-border);
+  border-radius: 4px;
+}
+
+.comfy-autocomplete-dropdown::-webkit-scrollbar-thumb:hover,
+.comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--lm-fg-subtle);
+}
+
+.comfy-autocomplete-item {
+  color: var(--lm-fg-muted);
+  border-bottom: 1px solid var(--lm-border-soft);
+  transition: background-color 0.12s ease;
+}
+
+.comfy-autocomplete-item-selected,
+.comfy-autocomplete-item:hover {
+  background-color: var(--lm-surface-selected);
+}
+
+.comfy-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.comfy-autocomplete-info-item {
+  cursor: default;
+  color: var(--lm-fg-muted);
+}
+
+.comfy-autocomplete-loading {
+  color: var(--lm-fg-subtle);
+}
+
+.lm-matched-alias {
+  font-size: 11px;
+  color: var(--lm-fg-subtle);
+}
+
+.lm-autocomplete-command-footer {
+  color: var(--lm-fg-subtle);
+  border-top: 1px solid var(--lm-border-soft);
+}
+
+.lm-autocomplete-first-run-hint {
+  color: var(--lm-fg-subtle);
+  border-bottom: 1px solid var(--lm-border-soft);
+}
+
+.lm-autocomplete-first-run-hint__dismiss {
+  background: none;
+  border: none;
+  color: var(--lm-fg-subtle);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.lm-autocomplete-first-run-hint__dismiss:hover {
+  color: var(--lm-fg);
+}
+
+.lm-autocomplete-info-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.lm-autocomplete-info-description {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--lm-fg-muted);
+}
+
+/* Wildcards info item: path block + usage examples + action buttons */
+.lm-autocomplete-info-path {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--lm-surface-raised);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.lm-autocomplete-info-path strong {
+  color: var(--lm-fg);
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.lm-autocomplete-info-path code {
+  color: var(--lm-accent-text);
+  word-break: break-all;
+}
+
+.lm-autocomplete-info-note {
+  margin-top: 6px;
+  color: var(--lm-fg-subtle);
+}
+
+.lm-autocomplete-info-examples {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--lm-fg-muted);
+}
+
+.lm-autocomplete-info-examples strong {
+  display: block;
+  color: var(--lm-fg);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.lm-autocomplete-info-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.lm-autocomplete-action {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.lm-autocomplete-action--primary {
+  border: 1px solid var(--lm-accent-border);
+  background: var(--lm-accent-soft);
+  color: var(--lm-accent-text);
+}
+
+.lm-autocomplete-action--secondary {
+  border: 1px solid var(--lm-border-soft);
+  background: var(--lm-surface-hover);
+  color: var(--lm-fg);
+}
+
+.lm-autocomplete-match {
+  background-color: var(--lm-accent-soft);
+  color: var(--lm-accent-text);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* ---- Trigger-word chips (created in tags_widget.js) ---- */
+.comfy-tag {
+  background-color: var(--lm-surface-raised);
+  color: var(--lm-fg-muted);
+  border: 1px solid var(--lm-border-soft);
+  box-shadow: var(--lm-shadow);
+}
+
+.comfy-tag[data-active="true"] {
+  background-color: var(--lm-accent);
+  border-color: var(--lm-accent);
+  color: var(--lm-on-accent);
+}
+
+.comfy-tag[data-highlighted="true"] {
+  border-color: var(--lm-warning-border);
+  box-shadow: 0 0 0 2px var(--lm-warning-border), var(--lm-shadow);
+}
+
+.comfy-tag:hover {
+  box-shadow: var(--lm-shadow-lg);
+}
+
+.comfy-tag-strength {
+  background-color: var(--lm-surface-hover);
+  color: var(--lm-fg);
+  border: 1px solid var(--lm-border-soft);
+}
+
+/* See .lm-lora-empty-state: canvas mode needs an explicit size so the
+   placeholder matches the Vue node renderer's typography. */
+.lm-tags-empty {
+  color: var(--lm-fg-subtle);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+  padding: 16px 0;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
 }

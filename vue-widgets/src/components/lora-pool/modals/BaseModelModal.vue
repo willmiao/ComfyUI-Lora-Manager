@@ -126,27 +126,27 @@ watch(() => props.visible, (isVisible) => {
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
 }
 
 .search-input {
   width: 100%;
   padding: 8px 12px 8px 32px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 6px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 13px;
   outline: none;
 }
 
 .search-input:focus {
-  border-color: var(--fg-color, #fff);
+  border-color: var(--lm-fg);
 }
 
 .search-input::placeholder {
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.4;
 }
 
@@ -175,7 +175,7 @@ watch(() => props.visible, (isVisible) => {
 .clear-button svg {
   width: 12px;
   height: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
 }
 
 .model-list {
@@ -195,7 +195,7 @@ watch(() => props.visible, (isVisible) => {
 }
 
 .model-item:hover {
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
 }
 
 .model-checkbox {
@@ -210,20 +210,20 @@ watch(() => props.visible, (isVisible) => {
   justify-content: center;
   width: 18px;
   height: 18px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #555);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
   border-radius: 4px;
   flex-shrink: 0;
   transition: all 0.15s;
 }
 
 .model-item:hover .model-checkbox-visual {
-  border-color: var(--fg-color, #fff);
+  border-color: var(--lm-fg);
 }
 
 .model-checkbox:checked + .model-checkbox-visual {
-  background: var(--fg-color, #fff);
-  border-color: var(--fg-color, #fff);
+  background: var(--lm-fg);
+  border-color: var(--lm-fg);
 }
 
 .check-icon {
@@ -235,19 +235,19 @@ watch(() => props.visible, (isVisible) => {
 .model-name {
   flex: 1;
   font-size: 13px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
 }
 
 .model-count {
   font-size: 12px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
 }
 
 .no-results {
   padding: 20px;
   text-align: center;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.5;
   font-size: 13px;
 }

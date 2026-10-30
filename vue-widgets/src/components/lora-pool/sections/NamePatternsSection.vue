@@ -136,7 +136,7 @@ const removeExclude = (pattern: string) => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.6;
 }
 
@@ -146,7 +146,7 @@ const removeExclude = (pattern: string) => {
   gap: 6px;
   cursor: pointer;
   font-size: 11px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.7;
 }
 
@@ -186,11 +186,11 @@ const removeExclude = (pattern: string) => {
 }
 
 .section__column-title--include {
-  color: #4299e1;
+  color: var(--lm-accent-text);
 }
 
 .section__column-title--exclude {
-  color: #ef4444;
+  color: var(--lm-danger-text);
 }
 
 .section__input-wrapper {
@@ -203,16 +203,16 @@ const removeExclude = (pattern: string) => {
   flex: 1;
   min-width: 0;
   padding: 6px 8px;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border: 1px solid var(--comfy-input-border, #444);
   border-radius: 4px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 12px;
   outline: none;
 }
 
 .section__input:focus {
-  border-color: #4299e1;
+  border-color: var(--lm-accent);
 }
 
 .section__add-btn {
@@ -221,10 +221,10 @@ const removeExclude = (pattern: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--comfy-input-bg, #333);
+  background: var(--lm-surface);
   border: 1px solid var(--comfy-input-border, #444);
   border-radius: 4px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   font-size: 16px;
   font-weight: 500;
   cursor: pointer;
@@ -233,7 +233,7 @@ const removeExclude = (pattern: string) => {
 
 .section__add-btn:hover {
   background: var(--comfy-input-bg-hover, #444);
-  border-color: #4299e1;
+  border-color: var(--lm-accent);
 }
 
 .section__patterns {
@@ -245,7 +245,7 @@ const removeExclude = (pattern: string) => {
 
 .section__empty {
   font-size: 10px;
-  color: var(--fg-color, #fff);
+  color: var(--lm-fg);
   opacity: 0.3;
   font-style: italic;
   min-height: 22px;

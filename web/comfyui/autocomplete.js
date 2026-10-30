@@ -77,19 +77,22 @@ const LORAS_COMMANDS = {
     },
 };
 
-// Category display information
-const CATEGORY_INFO = {    0: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
-    1: { bg: 'rgba(255, 138, 139, 0.2)', text: '#ffc3c3', label: 'Artist' },
-    3: { bg: 'rgba(199, 151, 255, 0.2)', text: '#ddc9fb', label: 'Copyright' },
-    4: { bg: 'rgba(53, 198, 74, 0.2)', text: '#93e49a', label: 'Character' },
-    5: { bg: 'rgba(234, 208, 132, 0.2)', text: '#f7e7c3', label: 'Meta' },
-    7: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
-    8: { bg: 'rgba(255, 138, 139, 0.2)', text: '#ffc3c3', label: 'Artist' },
-    10: { bg: 'rgba(199, 151, 255, 0.2)', text: '#ddc9fb', label: 'Copyright' },
-    11: { bg: 'rgba(53, 198, 74, 0.2)', text: '#93e49a', label: 'Character' },
-    12: { bg: 'rgba(237, 137, 54, 0.2)', text: '#f6ad55', label: 'Species' },
-    14: { bg: 'rgba(234, 208, 132, 0.2)', text: '#f7e7c3', label: 'Meta' },
-    15: { bg: 'rgba(72, 187, 120, 0.2)', text: '#68d391', label: 'Lore' },
+// Category display information. Colours are intentionally absent: the badge
+// hue is derived from the category class in lm_styles.css so it adapts to the
+// active ComfyUI theme.
+const CATEGORY_INFO = {
+    0: { label: 'General', slug: 'general' },
+    1: { label: 'Artist', slug: 'artist' },
+    3: { label: 'Copyright', slug: 'copyright' },
+    4: { label: 'Character', slug: 'character' },
+    5: { label: 'Meta', slug: 'meta' },
+    7: { label: 'General', slug: 'general' },
+    8: { label: 'Artist', slug: 'artist' },
+    10: { label: 'Copyright', slug: 'copyright' },
+    11: { label: 'Character', slug: 'character' },
+    12: { label: 'Species', slug: 'species' },
+    14: { label: 'Meta', slug: 'meta' },
+    15: { label: 'Lore', slug: 'lore' },
 };
 
 // Format post count with K/M suffix
@@ -630,22 +633,17 @@ class AutoComplete {
     
     createDropdown() {
         this.dropdown = document.createElement('div');
-        this.dropdown.className = 'comfy-autocomplete-dropdown';
+        // `lm-popover` resolves the LM theme tokens against the app menu
+        // palette; all colours/borders come from lm_styles.css.
+        this.dropdown.className = 'lm-popover comfy-autocomplete-dropdown';
 
-        // Apply new color scheme
         this.dropdown.style.cssText = `
             position: absolute;
             z-index: 10000;
             overflow: hidden;
-            background-color: rgba(40, 44, 52, 0.95);
-            border: 1px solid rgba(226, 232, 240, 0.2);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             display: none;
             min-width: 200px;
             width: auto;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
         `;
 
         if (this.options.enableVirtualScroll) {
@@ -669,46 +667,6 @@ class AutoComplete {
             this.scrollContainer.appendChild(this.contentContainer);
             this.dropdown.appendChild(this.scrollContainer);
         }
-
-        // Custom scrollbar styles with new color scheme
-        const style = document.createElement('style');
-        style.textContent = `
-            .comfy-autocomplete-dropdown::-webkit-scrollbar {
-                width: 8px;
-            }
-            .comfy-autocomplete-dropdown::-webkit-scrollbar-track {
-                background: rgba(40, 44, 52, 0.3);
-                border-radius: 4px;
-            }
-            .comfy-autocomplete-dropdown::-webkit-scrollbar-thumb {
-                background: rgba(226, 232, 240, 0.2);
-                border-radius: 4px;
-            }
-            .comfy-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
-                background: rgba(226, 232, 240, 0.4);
-            }
-            .comfy-autocomplete-scroll-container::-webkit-scrollbar {
-                width: 8px;
-            }
-            .comfy-autocomplete-scroll-container::-webkit-scrollbar-track {
-                background: rgba(40, 44, 52, 0.3);
-                border-radius: 4px;
-            }
-            .comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb {
-                background: rgba(226, 232, 240, 0.2);
-                border-radius: 4px;
-            }
-            .comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb:hover {
-                background: rgba(226, 232, 240, 0.4);
-            }
-            .comfy-autocomplete-loading {
-                padding: 12px;
-                text-align: center;
-                color: rgba(226, 232, 240, 0.5);
-                font-size: 12px;
-            }
-        `;
-        document.head.appendChild(style);
 
         // Append to body to avoid overflow issues
         document.body.appendChild(this.dropdown);
@@ -1712,9 +1670,6 @@ class AutoComplete {
             itemEl.style.cssText = `
                 padding: 8px 12px;
                 cursor: pointer;
-                color: rgba(226, 232, 240, 0.8);
-                border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-                transition: all 0.2s ease;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1805,8 +1760,6 @@ class AutoComplete {
         footer.style.cssText = `
             padding: 6px 12px;
             font-size: 11px;
-            color: rgba(226, 232, 240, 0.5);
-            border-top: 1px solid rgba(226, 232, 240, 0.1);
             white-space: nowrap;
         `;
         // Keep focus in the textarea when the hint is clicked
@@ -1878,8 +1831,6 @@ class AutoComplete {
             gap: 8px;
             padding: 6px 12px;
             font-size: 11px;
-            color: rgba(226, 232, 240, 0.6);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.1);
         `;
 
         const text = document.createElement('span');
@@ -1889,15 +1840,7 @@ class AutoComplete {
         closeBtn.type = 'button';
         closeBtn.textContent = '×';
         closeBtn.title = 'Dismiss';
-        closeBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: rgba(226, 232, 240, 0.5);
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
-            padding: 0 2px;
-        `;
+        closeBtn.className = 'lm-autocomplete-first-run-hint__dismiss';
         closeBtn.addEventListener('click', () => {
             try {
                 localStorage.setItem(storageKey, '1');
@@ -2022,10 +1965,6 @@ class AutoComplete {
             const aliasSpan = document.createElement('span');
             aliasSpan.className = 'lm-matched-alias';
             aliasSpan.innerHTML = '← ' + this.highlightMatch(itemData.matched_alias, searchTerm);
-            aliasSpan.style.cssText = `
-                font-size: 11px;
-                color: rgba(226, 232, 240, 0.5);
-            `;
             nameSpan.appendChild(aliasSpan);
         } else {
             nameSpan.innerHTML = this.highlightMatch(itemData.tag_name, searchTerm);
@@ -2053,10 +1992,6 @@ class AutoComplete {
             const countSpan = document.createElement('span');
             countSpan.className = 'lm-autocomplete-count';
             countSpan.textContent = formatPostCount(itemData.post_count);
-            countSpan.style.cssText = `
-                font-size: 11px;
-                color: rgba(226, 232, 240, 0.5);
-            `;
             metaSpan.appendChild(countSpan);
         }
 
@@ -2064,16 +1999,8 @@ class AutoComplete {
         const categoryInfo = CATEGORY_INFO[itemData.category];
         if (categoryInfo) {
             const badgeSpan = document.createElement('span');
-            badgeSpan.className = 'lm-autocomplete-category';
+            badgeSpan.className = `lm-autocomplete-category lm-autocomplete-category--${categoryInfo.slug}`;
             badgeSpan.textContent = categoryInfo.label;
-            badgeSpan.style.cssText = `
-                font-size: 10px;
-                padding: 2px 6px;
-                border-radius: 10px;
-                background: ${categoryInfo.bg};
-                color: ${categoryInfo.text};
-                white-space: nowrap;
-            `;
             metaSpan.appendChild(badgeSpan);
         }
 
@@ -2085,9 +2012,6 @@ class AutoComplete {
         itemEl.classList.add('comfy-autocomplete-info-item');
         itemEl.style.cssText = `
             padding: 12px;
-            color: rgba(226, 232, 240, 0.88);
-            border-bottom: none;
-            cursor: default;
             display: block;
             white-space: normal;
             height: auto;
@@ -2096,21 +2020,13 @@ class AutoComplete {
         const title = document.createElement('div');
         title.className = 'lm-autocomplete-info-title';
         title.textContent = itemData.title || 'Wildcards';
-        title.style.cssText = `
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-        `;
+        title.style.marginBottom = '6px';
         itemEl.appendChild(title);
 
         const description = document.createElement('div');
         description.className = 'lm-autocomplete-info-description';
         description.textContent = itemData.description || '';
-        description.style.cssText = `
-            font-size: 12px;
-            line-height: 1.45;
-            color: rgba(226, 232, 240, 0.72);
-        `;
+        description.className = 'lm-autocomplete-info-description';
         itemEl.appendChild(description);
 
         if (itemData.type === 'wildcard_no_matches') {
@@ -2118,30 +2034,18 @@ class AutoComplete {
         }
 
         const pathBlock = document.createElement('div');
-        pathBlock.style.cssText = `
-            margin-top: 10px;
-            padding: 8px 10px;
-            border-radius: 6px;
-            background: rgba(15, 23, 42, 0.6);
-            font-size: 11px;
-            line-height: 1.5;
-        `;
+        pathBlock.className = 'lm-autocomplete-info-path';
         pathBlock.innerHTML = [
-            '<div style="font-weight: 600; margin-bottom: 4px;">Wildcards folder</div>',
-            `<code style="word-break: break-all; color: #dbeafe;">${itemData.wildcardsDir || '(unavailable)'}</code>`,
-            `<div style="margin-top: 6px; color: rgba(226, 232, 240, 0.68);">Supported formats: ${(itemData.supportedFormats || []).join(', ')}</div>`,
+            '<strong>Wildcards folder</strong>',
+            `<code>${itemData.wildcardsDir || '(unavailable)'}</code>`,
+            `<div class="lm-autocomplete-info-note">Supported formats: ${(itemData.supportedFormats || []).join(', ')}</div>`,
         ].join('');
         itemEl.appendChild(pathBlock);
 
         const examples = document.createElement('div');
-        examples.style.cssText = `
-            margin-top: 10px;
-            font-size: 11px;
-            line-height: 1.55;
-            color: rgba(226, 232, 240, 0.72);
-        `;
+        examples.className = 'lm-autocomplete-info-examples';
         examples.innerHTML = [
-            '<div style="font-weight: 600; color: rgba(226, 232, 240, 0.88); margin-bottom: 4px;">Examples</div>',
+            '<strong>Examples</strong>',
             '<div><code>animals/cat.txt</code> -> use <code>__animals/cat__</code></div>',
             '<div><code>colors.yaml</code> with <code>palette: { warm: [red, orange] }</code> -> use <code>__palette/warm__</code></div>',
             '<div style="margin-top: 6px;">Text files use one option per line. YAML/JSON use nested keys ending in string arrays.</div>',
@@ -2149,26 +2053,13 @@ class AutoComplete {
         itemEl.appendChild(examples);
 
         const actions = document.createElement('div');
-        actions.style.cssText = `
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        `;
+        actions.className = 'lm-autocomplete-info-actions';
 
         const openButton = document.createElement('button');
         openButton.type = 'button';
         openButton.dataset.action = 'open-wildcards-folder';
         openButton.textContent = 'Open wildcards folder';
-        openButton.style.cssText = `
-            border: 1px solid rgba(96, 165, 250, 0.45);
-            background: rgba(37, 99, 235, 0.18);
-            color: #dbeafe;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 11px;
-            cursor: pointer;
-        `;
+        openButton.className = 'lm-autocomplete-action lm-autocomplete-action--primary';
         openButton.addEventListener('click', async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -2180,15 +2071,7 @@ class AutoComplete {
         copyButton.type = 'button';
         copyButton.dataset.action = 'copy-wildcards-path';
         copyButton.textContent = 'Copy path';
-        copyButton.style.cssText = `
-            border: 1px solid rgba(226, 232, 240, 0.2);
-            background: rgba(148, 163, 184, 0.12);
-            color: rgba(226, 232, 240, 0.88);
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 11px;
-            cursor: pointer;
-        `;
+        copyButton.className = 'lm-autocomplete-action lm-autocomplete-action--secondary';
         copyButton.addEventListener('click', async (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -2212,7 +2095,7 @@ class AutoComplete {
         const regex = new RegExp(`(${sanitizedTokens.join('|')})`, 'gi');
         return text.replace(
             regex,
-            '<span style="background-color: rgba(66, 153, 225, 0.3); color: white; padding: 1px 2px; border-radius: 2px;">$1</span>',
+            '<span class="lm-autocomplete-match">$1</span>',
         );
     }
 
@@ -2444,7 +2327,6 @@ class AutoComplete {
             loadingEl.style.cssText = `
                 padding: 12px;
                 text-align: center;
-                color: rgba(226, 232, 240, 0.5);
                 font-size: 12px;
             `;
             this.contentContainer.appendChild(loadingEl);
@@ -2549,7 +2431,6 @@ class AutoComplete {
             const selectedEl = this.contentContainer.querySelector(`.comfy-autocomplete-item[data-index="${this.selectedIndex}"]`);
             if (selectedEl) {
                 selectedEl.classList.add('comfy-autocomplete-item-selected');
-                selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
             }
         }
     }
@@ -2565,9 +2446,6 @@ class AutoComplete {
             height: ${this.options.itemHeight}px;
             padding: 8px 12px;
             cursor: pointer;
-            color: rgba(226, 232, 240, 0.8);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-            transition: all 0.2s ease;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -2765,7 +2643,6 @@ class AutoComplete {
         const items = this.dropdown.querySelectorAll('.comfy-autocomplete-item');
         items.forEach(item => {
             item.classList.remove('comfy-autocomplete-item-selected');
-            item.style.backgroundColor = '';
         });
     }
     
@@ -2777,7 +2654,6 @@ class AutoComplete {
         const prevSelected = container.querySelector('.comfy-autocomplete-item-selected');
         if (prevSelected) {
             prevSelected.classList.remove('comfy-autocomplete-item-selected');
-            prevSelected.style.backgroundColor = '';
         }
 
         // Add new selection
@@ -2818,7 +2694,6 @@ class AutoComplete {
                 const item = container.children[index];
                 if (item) {
                     item.classList.add('comfy-autocomplete-item-selected');
-                    item.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
 
                     // Scroll into view if needed
                     item.scrollIntoView({ block: 'nearest' });
@@ -2848,7 +2723,6 @@ class AutoComplete {
 
         if (selectedEl) {
             selectedEl.classList.add('comfy-autocomplete-item-selected');
-            selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
 
             // Show preview for selected item
             if (this.options.showPreview && !this._isSelectableInfoItem(this.items[index])) {
