@@ -681,6 +681,11 @@ function findOpenWorkflowMenu() {
     // core items (pencil = Rename, save = Save, download = Export); icon
     // classes are locale-independent.
     for (const menu of document.querySelectorAll('[role="menu"]')) {
+        // The workflow tab context menu has the same core icons; skip it so
+        // the two injection paths never write into each other's menu.
+        if (menu.querySelector(".pi-arrows-h")) {
+            continue;
+        }
         if (
             menu.querySelector(".pi-pencil") &&
             menu.querySelector(".pi-save") &&
@@ -690,6 +695,305 @@ function findOpenWorkflowMenu() {
         }
     }
     return null;
+}
+
+// ---------------------------------------------------------------------------
+// Workflow tab context menu injection
+// ---------------------------------------------------------------------------
+//
+// ComfyUI exposes commands and the File menu to extensions, but the workflow
+// tab context menu is built inside WorkflowTab.vue with no extension hook.
+// Fall back to the same portal injection used for the Graph menu: the items
+// still call the registered create/update actions, and they first activate the
+// right-clicked tab so Save-style actions always target that workflow.
+
+const TAB_UPDATE_UNAVAILABLE_TITLE =
+    "This workflow is not linked to the LoRA Manager library";
+
+function getTabWorkflow(tab) {
+    // Scope to the tab strip so a hidden second view (graph vs linear) can
+    // never shift the index that maps a tab to openWorkflows.
+    const container = tab.closest(".workflow-tabs-container") ?? document;
+    const index = Array.from(container.querySelectorAll(".workflow-tab")).indexOf(
+        tab
+    );
+    if (index < 0) {
+        return null;
+    }
+    const workflow = app.extensionManager?.workflow?.openWorkflows?.[index];
+    return workflow && typeof workflow === "object" ? workflow : null;
+}
+
+function getTabLmSource(tab) {
+    const workflow = getTabWorkflow(tab);
+    const store = app.extensionManager?.workflow;
+    if (!workflow || !store) {
+        return null;
+    }
+    if (store.activeWorkflow === workflow) {
+        return getActiveLmSource();
+    }
+    const marker = workflow.activeState?.extra?.[MARKER_KEY];
+    return marker &&
+        typeof marker === "object" &&
+        typeof marker.file_path === "string"
+        ? marker
+        : null;
+}
+
+/**
+ * Make the right-clicked tab active, the way the native Save/Export entries
+ * do, so the LM action operates on that tab instead of whichever graph was
+ * previously active.
+ */
+async function activateTabWorkflow(tab) {
+    const workflow = getTabWorkflow(tab);
+    const store = app.extensionManager?.workflow;
+    if (!workflow || !store) {
+        return false;
+    }
+    if (store.activeWorkflow !== workflow) {
+        if (typeof store.openWorkflow !== "function") {
+            return false;
+        }
+        await store.openWorkflow(workflow);
+    }
+    return true;
+}
+
+function applyTabUpdateState(item, tab) {
+    if (!item) {
+        return;
+    }
+    const linked = getTabLmSource(tab) !== null;
+    applyItemState(item, linked);
+    if (linked) {
+        item.removeAttribute("aria-disabled");
+        item.removeAttribute("title");
+    } else {
+        item.setAttribute("aria-disabled", "true");
+        item.title = TAB_UPDATE_UNAVAILABLE_TITLE;
+    }
+}
+
+function buildTabActionItem(action, label, icon, tab) {
+    const item = document.createElement("div");
+    item.setAttribute("role", "menuitem");
+    item.dataset.lmTabAction =
+        action === "create" ? "create-workflow" : "update-workflow";
+    item.className = ITEM_CLASSES;
+
+    const iconElement = document.createElement("i");
+    iconElement.className = icon;
+    const labelElement = document.createElement("span");
+    labelElement.className = "flex-1";
+    labelElement.textContent = label;
+    item.append(iconElement, labelElement);
+
+    item.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (item.getAttribute("aria-disabled") === "true") {
+            return;
+        }
+        closeMenu(item);
+        try {
+            if (!(await activateTabWorkflow(tab))) {
+                return;
+            }
+        } catch (error) {
+            console.warn("LoRA Manager: could not activate workflow tab", error);
+            showToast({
+                severity: "warn",
+                summary: "LoRA Manager",
+                detail: "Could not switch to that workflow tab.",
+                life: 5000,
+            });
+            return;
+        }
+        if (action === "create") {
+            await createManagedWorkflow();
+        } else {
+            await updateManagedWorkflow();
+        }
+    });
+
+    return item;
+}
+
+function findTabMenuCloseSeparator(menu) {
+    // The last separator divides the workflow actions from the tab-close
+    // group; put the LM group just above it.
+    let separators = Array.from(menu.querySelectorAll('[role="separator"]'));
+    if (separators.length === 0) {
+        separators = Array.from(
+            menu.querySelectorAll(".my-1.w-full.border-b")
+        );
+    }
+    return separators.at(-1) ?? null;
+}
+
+function findTabContextMenu(tab) {
+    // reka-ui links the open trigger to its portalled content. Use that when
+    // available; otherwise pick the visible menu that carries the distinctive
+    // tab-close overlay icon (pi-arrows-h).
+    const contentId = tab.getAttribute("aria-controls");
+    if (contentId) {
+        const menu = document.getElementById(contentId);
+        if (
+            menu &&
+            menu.getAttribute("role") === "menu" &&
+            menu.dataset.state !== "closed"
+        ) {
+            return menu;
+        }
+    }
+    const menus = Array.from(document.querySelectorAll('[role="menu"]')).filter(
+        (menu) => menu.getClientRects().length > 0 && menu.querySelector(".pi-arrows-h")
+    );
+    return menus.at(-1) ?? null;
+}
+
+/**
+ * Append the LM entries to the workflow tab context menu, once per menu
+ * instance. Unlike the Graph menu, Update reflects the marker of the
+ * right-clicked tab, not only the active graph.
+ */
+function injectIntoTabMenu(tab) {
+    const menu = findTabContextMenu(tab);
+    if (!menu || menu.dataset.lmTabMenuInjected) {
+        return;
+    }
+    // Wait until the tab-close group has rendered (pi-arrows-h belongs to
+    // Close Other Tabs) so the LM group is inserted above it, not after a
+    // half-built menu.
+    if (!menu.querySelector(".pi-arrows-h")) {
+        return;
+    }
+    menu.dataset.lmTabMenuInjected = "1";
+
+    const createItem = buildTabActionItem(
+        "create",
+        CREATE_MENU_LABEL,
+        CREATE_MENU_ICON,
+        tab
+    );
+    const updateItem = buildTabActionItem(
+        "update",
+        MENU_LABEL,
+        MENU_ICON,
+        tab
+    );
+    applyCreateAvailability(createItem);
+    applyTabUpdateState(updateItem, tab);
+
+    const separator = document.createElement("div");
+    separator.setAttribute("role", "separator");
+    separator.className = SEPARATOR_CLASSES;
+
+    const anchor = findTabMenuCloseSeparator(menu);
+    if (anchor) {
+        anchor.before(separator, createItem, updateItem);
+    } else {
+        menu.append(separator, createItem, updateItem);
+    }
+
+    const marker = getTabLmSource(tab);
+    if (marker) {
+        // An inactive tab can carry a marker whose library entry was already
+        // deleted. Keep Update disabled for that case; opening the tab later
+        // clears the marker through afterConfigureGraph.
+        isLinkedDocumentAlive(marker).then((alive) => {
+            if (!alive && updateItem.isConnected) {
+                applyItemState(updateItem, false);
+                updateItem.setAttribute("aria-disabled", "true");
+                updateItem.title = "The library copy was deleted or moved";
+            }
+        });
+    }
+
+    if (workflowLibraryState === null) {
+        refreshWorkflowLibraryState().then(() => {
+            if (createItem.isConnected) {
+                applyCreateAvailability(createItem);
+            }
+        });
+    }
+}
+
+function safeInjectIntoTabMenu(tab) {
+    try {
+        injectIntoTabMenu(tab);
+    } catch (error) {
+        console.warn("LoRA Manager: workflow tab menu injection failed", error);
+    }
+}
+
+function installTabContextMenuInjection() {
+    let lastContextTab = null;
+    const scheduleInjection = (tab) => {
+        // The portal mounts after the contextmenu event; poll briefly.
+        for (const delay of [0, 40, 120]) {
+            setTimeout(() => {
+                if (tab.isConnected) {
+                    safeInjectIntoTabMenu(tab);
+                }
+            }, delay);
+        }
+    };
+
+    document.addEventListener(
+        "contextmenu",
+        (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) {
+                return;
+            }
+            const tab = target.closest(".workflow-tab");
+            if (!tab) {
+                return;
+            }
+            lastContextTab = tab;
+            scheduleInjection(tab);
+        },
+        true
+    );
+
+    // Keyboard/long-press openings do not fire a contextmenu event on the
+    // tab; catch the menu as it mounts while a tab is in the open state.
+    // Ignore unrelated DOM churn so graph edits do not trigger menu scans.
+    const observer = new MutationObserver((mutations) => {
+        let menuAdded = false;
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (
+                    node instanceof Element &&
+                    (node.matches('[role="menu"]') ||
+                        node.querySelector('[role="menu"]'))
+                ) {
+                    menuAdded = true;
+                    break;
+                }
+            }
+            if (menuAdded) {
+                break;
+            }
+        }
+        if (!menuAdded) {
+            return;
+        }
+        const tab =
+            document.querySelector('.workflow-tab[data-state="open"]') ??
+            lastContextTab;
+        if (!tab || !tab.isConnected) {
+            return;
+        }
+        const menu = findTabContextMenu(tab);
+        if (menu && !menu.dataset.lmTabMenuInjected) {
+            safeInjectIntoTabMenu(tab);
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 function installDropdownInjection() {
@@ -760,6 +1064,12 @@ app.registerExtension({
             installDropdownInjection();
         } catch (error) {
             console.warn("LoRA Manager: workflow dropdown injection unavailable", error);
+        }
+
+        try {
+            installTabContextMenuInjection();
+        } catch (error) {
+            console.warn("LoRA Manager: workflow tab menu injection unavailable", error);
         }
 
         // Resolve whether the library can accept a new entry before the user

@@ -152,6 +152,133 @@ describe("LoraManager.WorkflowWriteback", () => {
     });
   });
 
+  describe("workflow tab context menu injection", () => {
+    function mountTabs({ marker = null } = {}) {
+      document.body.innerHTML = `
+        <div class="workflow-tab" data-state="closed" aria-controls="tab-menu-other">
+          <span class="workflow-label">Other Flow</span>
+        </div>
+        <div class="workflow-tab" data-state="closed" aria-controls="tab-menu-target">
+          <span class="workflow-label">My Flow</span>
+        </div>
+        <div id="tab-menu-target" role="menu">
+          <div role="menuitem"><i class="pi pi-pencil"></i><span>Rename</span></div>
+          <div role="separator"></div>
+          <div role="menuitem"><i class="pi pi-save"></i><span>Save</span></div>
+          <div role="separator"></div>
+          <div role="menuitem"><i class="pi pi-times"></i><span>Close Tab</span></div>
+          <div role="menuitem">
+            <span><i class="pi pi-times"></i><i class="pi pi-arrows-h"></i></span>
+            <span>Close Other Tabs</span>
+          </div>
+        </div>
+      `;
+      const activeWorkflow = { filename: "Other Flow" };
+      const targetWorkflow = {
+        filename: "My Flow",
+        activeState: marker ? { extra: { lm_source: marker } } : {},
+      };
+      appMock.extensionManager.workflow = {
+        activeWorkflow,
+        openWorkflows: [activeWorkflow, targetWorkflow],
+        openWorkflow: vi.fn(),
+      };
+      return { activeWorkflow, targetWorkflow };
+    }
+
+    function openTabMenu() {
+      const tabs = document.querySelectorAll(".workflow-tab");
+      tabs[1].dispatchEvent(
+        new MouseEvent("contextmenu", { bubbles: true, cancelable: true })
+      );
+    }
+
+    it("adds create/update before the close group using the tab's own marker", async () => {
+      const marker = { file_path: "/lib/target.json", sha256: "abc" };
+      mountTabs({ marker });
+      appMock.rootGraph = createRootGraph();
+      extension.setup();
+
+      openTabMenu();
+      await vi.waitFor(() => {
+        expect(
+          document.querySelector('[data-lm-tab-action="create-workflow"]')
+        ).not.toBeNull();
+      });
+
+      const menu = document.getElementById("tab-menu-target");
+      const createItem = menu.querySelector(
+        '[data-lm-tab-action="create-workflow"]'
+      );
+      const updateItem = menu.querySelector(
+        '[data-lm-tab-action="update-workflow"]'
+      );
+      expect(createItem.textContent).toContain("Create LM-managed workflow");
+      expect(updateItem.textContent).toContain("Update LM-managed workflow");
+      // Active graph has no marker, but the right-clicked tab does.
+      expect(updateItem.className).toContain("cursor-pointer");
+      // Both keep the native menu-item layout and sit before Close Tab.
+      for (const item of [createItem, updateItem]) {
+        expect(item.className).toContain("flex");
+        expect(item.className).toContain("p-2");
+      }
+      const closeTab = Array.from(menu.querySelectorAll('[role="menuitem"]')).find(
+        (item) => item.textContent.includes("Close Tab")
+      );
+      expect(
+        createItem.compareDocumentPosition(closeTab) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      // Re-opening the same menu instance must not duplicate the entries.
+      openTabMenu();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(
+        menu.querySelectorAll('[data-lm-tab-action="create-workflow"]').length
+      ).toBe(1);
+    });
+
+    it("activates the right-clicked tab before updating it", async () => {
+      const marker = { file_path: "/lib/target.json", sha256: "abc" };
+      const { targetWorkflow } = mountTabs({ marker });
+      appMock.rootGraph = createRootGraph();
+      const openWorkflow = appMock.extensionManager.workflow.openWorkflow;
+      openWorkflow.mockImplementation(async (workflow) => {
+        appMock.extensionManager.workflow.activeWorkflow = workflow;
+        appMock.rootGraph = createRootGraph({ marker });
+        return workflow;
+      });
+      fetchMock.mockImplementation(async (url) => {
+        if (
+          typeof url === "string" &&
+          url.startsWith("/api/lm/workflows/link-status")
+        ) {
+          return okResponse({ success: true, exists: true });
+        }
+        return okResponse();
+      });
+      extension.setup();
+
+      openTabMenu();
+      await vi.waitFor(() => {
+        expect(
+          document.querySelector('[data-lm-tab-action="update-workflow"]')
+        ).not.toBeNull();
+      });
+      document
+        .querySelector('[data-lm-tab-action="update-workflow"]')
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      await vi.waitFor(() => {
+        expect(fetchCalls(fetchMock, "/api/lm/workflows/content")).toHaveLength(1);
+      });
+      expect(openWorkflow).toHaveBeenCalledWith(targetWorkflow);
+      const body = JSON.parse(
+        fetchCalls(fetchMock, "/api/lm/workflows/content")[0][1].body
+      );
+      expect(body.file_path).toBe(marker.file_path);
+    });
+  });
+
   describe("getActiveLmSource", () => {
     it("returns null when the graph carries no marker", () => {
       appMock.rootGraph = createRootGraph();
