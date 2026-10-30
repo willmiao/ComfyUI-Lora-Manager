@@ -1457,40 +1457,40 @@
     },
     "workflows": {
         "title": "ワークフロー",
-        "itemLabel": "[TODO: Translate] Workflow",
+        "itemLabel": "ワークフロー",
         "contextMenu": {
             "sendToComfy": "ComfyUIで開く",
             "updateFromComfy": "ComfyUIから更新",
             "copyWorkflow": "ワークフローをコピー",
             "restoreDownloaded": "ダウンロード済みバージョンを復元",
-            "copyFilename": "[TODO: Translate] Copy Workflow Filename",
-            "moveWorkflow": "[TODO: Translate] Move Workflow to Folder",
-            "deleteWorkflow": "[TODO: Translate] Delete Workflow"
+            "copyFilename": "ワークフローファイル名をコピー",
+            "moveWorkflow": "ワークフローをフォルダに移動",
+            "deleteWorkflow": "ワークフローを削除"
         },
         "modals": {
             "delete": {
-                "title": "[TODO: Translate] Delete Workflow",
-                "message": "[TODO: Translate] Are you sure you want to delete this workflow and all associated files?",
-                "failed": "[TODO: Translate] Failed to delete workflow: {message}"
+                "title": "ワークフローを削除",
+                "message": "このワークフローと関連するすべてのファイルを削除してもよろしいですか？",
+                "failed": "ワークフローの削除に失敗しました：{message}"
             },
             "move": {
-                "title": "[TODO: Translate] Move Workflow",
-                "bulkTitle": "[TODO: Translate] Move {count} Workflows",
-                "selectRoot": "[TODO: Translate] Select Workflow Root:",
-                "targetHint": "[TODO: Translate] Select a workflow root directory",
-                "noRoots": "[TODO: Translate] No workflow roots found",
-                "noSelection": "[TODO: Translate] No workflows selected",
-                "failed": "[TODO: Translate] Failed to move workflow(s): {message}"
+                "title": "ワークフローを移動",
+                "bulkTitle": "{count} 件のワークフローを移動",
+                "selectRoot": "ワークフロールートを選択：",
+                "targetHint": "ワークフローのルートディレクトリを選択",
+                "noRoots": "ワークフロールートが見つかりません",
+                "noSelection": "ワークフローが選択されていません",
+                "failed": "ワークフローの移動に失敗しました：{message}"
             },
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Multiple Workflows",
-                "message": "[TODO: Translate] Are you sure you want to delete all selected workflows and their associated files?",
-                "countMessage": "[TODO: Translate] workflows will be permanently deleted."
+                "title": "複数のワークフローを削除",
+                "message": "選択したすべてのワークフローと関連ファイルを削除してもよろしいですか？",
+                "countMessage": "ワークフローが完全に削除されます。"
             }
         },
         "relink": {
-            "success": "[TODO: Translate] Workflow successfully re-linked to CivitAI",
-            "civArchiveSuccess": "[TODO: Translate] Workflow successfully re-linked via CivitArchive"
+            "success": "ワークフローがCivitAIに正常に再リンクされました",
+            "civArchiveSuccess": "ワークフローがCivitArchive経由で正常に再リンクされました"
         },
         "sendToComfy": {
             "success": "ワークフローをComfyUIへ送信しました",

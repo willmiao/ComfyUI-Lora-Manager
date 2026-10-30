@@ -1457,40 +1457,40 @@
     },
     "workflows": {
         "title": "Workflows",
-        "itemLabel": "[TODO: Translate] Workflow",
+        "itemLabel": "Workflow",
         "contextMenu": {
             "sendToComfy": "Abrir en ComfyUI",
             "updateFromComfy": "Actualizar desde ComfyUI",
             "copyWorkflow": "Copiar workflow",
             "restoreDownloaded": "Restaurar versión descargada",
-            "copyFilename": "[TODO: Translate] Copy Workflow Filename",
-            "moveWorkflow": "[TODO: Translate] Move Workflow to Folder",
-            "deleteWorkflow": "[TODO: Translate] Delete Workflow"
+            "copyFilename": "Copiar nombre de archivo del workflow",
+            "moveWorkflow": "Mover workflow a carpeta",
+            "deleteWorkflow": "Eliminar workflow"
         },
         "modals": {
             "delete": {
-                "title": "[TODO: Translate] Delete Workflow",
-                "message": "[TODO: Translate] Are you sure you want to delete this workflow and all associated files?",
-                "failed": "[TODO: Translate] Failed to delete workflow: {message}"
+                "title": "Eliminar workflow",
+                "message": "¿Estás seguro de que quieres eliminar este workflow y todos los archivos asociados?",
+                "failed": "Error al eliminar el workflow: {message}"
             },
             "move": {
-                "title": "[TODO: Translate] Move Workflow",
-                "bulkTitle": "[TODO: Translate] Move {count} Workflows",
-                "selectRoot": "[TODO: Translate] Select Workflow Root:",
-                "targetHint": "[TODO: Translate] Select a workflow root directory",
-                "noRoots": "[TODO: Translate] No workflow roots found",
-                "noSelection": "[TODO: Translate] No workflows selected",
-                "failed": "[TODO: Translate] Failed to move workflow(s): {message}"
+                "title": "Mover workflow",
+                "bulkTitle": "Mover {count} workflows",
+                "selectRoot": "Seleccionar raíz del workflow:",
+                "targetHint": "Selecciona un directorio raíz de workflows",
+                "noRoots": "No se encontró ninguna raíz de workflows",
+                "noSelection": "No hay workflows seleccionados",
+                "failed": "Error al mover workflow(s): {message}"
             },
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Multiple Workflows",
-                "message": "[TODO: Translate] Are you sure you want to delete all selected workflows and their associated files?",
-                "countMessage": "[TODO: Translate] workflows will be permanently deleted."
+                "title": "Eliminar múltiples workflows",
+                "message": "¿Estás seguro de que quieres eliminar todos los workflows seleccionados y sus archivos asociados?",
+                "countMessage": "workflows serán eliminados permanentemente."
             }
         },
         "relink": {
-            "success": "[TODO: Translate] Workflow successfully re-linked to CivitAI",
-            "civArchiveSuccess": "[TODO: Translate] Workflow successfully re-linked via CivitArchive"
+            "success": "Workflow re-vinculado exitosamente a CivitAI",
+            "civArchiveSuccess": "Workflow re-vinculado exitosamente mediante CivitArchive"
         },
         "sendToComfy": {
             "success": "Workflow enviado a ComfyUI",
