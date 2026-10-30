@@ -1013,12 +1013,14 @@
       "skipMetadataRefreshCount": "Skip ({count} models)",
       "resumeMetadataRefreshCount": "Resume ({count} models)",
       "sendToWorkflow": "Send to Workflow",
+      "pinToNvme": "Pin Selected to NVMe",
       "sections": {
         "workflow": "Workflow",
         "metadata": "Metadata",
         "attributes": "Attributes",
         "organize": "Organize",
-        "download": "Download"
+        "download": "Download",
+        "nvme": "NVMe Cache"
       },
       "autoOrganizeProgress": {
         "initializing": "Initializing auto-organize...",

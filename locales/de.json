@@ -1013,12 +1013,14 @@
             "skipMetadataRefreshCount": "Überspringen({count} Modelle)",
             "resumeMetadataRefreshCount": "Fortsetzen({count} Modelle)",
             "sendToWorkflow": "An Workflow senden",
+            "pinToNvme": "[TODO: Translate] Pin Selected to NVMe",
             "sections": {
                 "workflow": "Workflow",
                 "metadata": "Metadaten",
                 "attributes": "Attribute",
                 "organize": "Organisieren",
-                "download": "Download"
+                "download": "Download",
+                "nvme": "[TODO: Translate] NVMe Cache"
             },
             "autoOrganizeProgress": {
                 "initializing": "Automatische Organisation wird initialisiert...",

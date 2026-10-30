@@ -1,0 +1,139 @@
+# SpecStory CLI Configuration
+#
+# This is the project-level config file for SpecStory CLI.
+# All settings here apply to this project unless overridden by CLI flags.
+#
+# Uncomment (remove the #) the line and edit any setting below to change the default behavior.
+# For more information, see: https://docs.specstory.com/integrations/terminal-coding-agents/usage
+
+[local_sync]
+# Write markdown files locally. (default: true)
+# enabled = false # equivalent to --only-cloud-sync
+
+# Custom output directory for markdown files.
+# Default: ./.specstory/history (relative to the project directory)
+# output_dir = "~/.specstory/history" # equivalent to --output-dir "~/.specstory/history"
+
+# Use local timezone for file name and content timestamps (default: false, UTC)
+# local_time_zone = true # equivalent to --local-time-zone
+
+[cloud_sync]
+# Sync session data to SpecStory Cloud. (default: true, when logged in to SpecStory Cloud)
+# enabled = false # equivalent to --no-cloud-sync
+
+[logging]
+# Write logs to .specstory/debug/debug.log (default: false)
+# log = true # equivalent to --log        
+
+# Debug-level output, requires console or log (default: false)
+# debug = true # equivalent to --debug 
+
+# Custom output directory for debug data.
+# Default: ./.specstory/debug (relative to the project directory)
+# debug_dir = "~/.specstory/debug" # equivalent to --debug-dir "~/.specstory/debug"
+
+# Error/warn/info output to stdout (default: false)
+# console = true # equivalent to --console
+
+# Suppress all non-error output (default: false)
+# silent = true	# equivalent to --silent
+
+[version_check]
+# Check for new versions of the CLI on startup.
+# Default: true
+# enabled = false # equivalent to --no-version-check
+
+[analytics]
+# Send anonymous product usage analytics to help improve SpecStory.
+# Default: true
+# enabled = false # equivalent to --no-usage-analytics
+
+[telemetry]
+# OTLP gRPC collector endpoint (e.g., "localhost:4317" or "http://localhost:4317")
+# endpoint = "localhost:4317"
+
+# Override the default service name (default: "specstory-cli")
+# service_name = "my-service-name"
+
+# Include user prompt text in telemetry spans (default: true)
+# prompts = false
+
+[resume]
+# Default view mode for the 'specstory resume' picker: "dense" (more sessions) or
+# "sparse" (more detail per session). The picker also remembers your last choice here.
+# view_mode = "sparse"
+#
+# (managed automatically) the agent you last resumed into — used as the default target.
+# last_agent = "claude"
+
+[redaction]
+# Redact secrets and API keys from saved markdown history and cloud-synced
+# session data. (default: true)
+# Detection uses the betterleaks ruleset, covering API keys, tokens, private
+# keys, and other credentials for many providers.
+# enabled = false # equivalent to --no-redact-secrets
+
+[providers]
+# Agent execution commands by provider (used by specstory run)
+# Pass custom flags (e.g. claude_cmd = "claude --allow-dangerously-skip-permissions")
+# Use of these is equivalent to -c "custom command"
+
+# Claude Code command
+# claude_cmd = "claude"
+
+# Codex CLI command
+# codex_cmd = "codex"
+
+# Copilot IDE commands (used by specstory run copilotide[-variant] to open the IDE)
+# copilotide_cmd = "code"
+# copilotide_insiders_cmd = "code-insiders"
+# copilotide_vscodium_cmd = "codium"
+# copilotide_vscodium_insiders_cmd = "codium-insiders"
+
+# Cursor CLI command
+# cursor_cmd = "cursor-agent"
+
+# Cursor IDE command (used by specstory run cursoride to open the IDE)
+# cursoride_cmd = "cursor"
+
+# Cursor Cloud Agent: command used by specstory run cursorcloud to open the new
+# agent's page on cursor.com. The default is the system URL opener for your OS,
+# shown below; set it to open a specific browser instead.
+# cursorcloud_cmd = "open"                                  # macOS default
+# cursorcloud_cmd = "xdg-open"                              # Linux default
+# cursorcloud_cmd = "rundll32 url.dll,FileProtocolHandler"  # Windows default
+
+# Cursor API key for reading cloud agents (create one at https://cursor.com/dashboard/api).
+# The CURSOR_API_KEY environment variable takes precedence. Prefer it, or your user
+# config (~/.specstory/cli/config.toml): a key in a project config is readable by
+# anyone who can read the project, and is committed unless .specstory/cli/ is ignored.
+# cursor_api_key = "crsr_..."
+# Where raw cloud agent transcripts are mirrored (default: .specstory/cursorcloud in the project)
+# cursorcloud_mirror_dir = "~/.specstory/cursorcloud"
+
+# Droid CLI command
+# droid_cmd = "droid"
+
+# Gemini CLI command
+# gemini_cmd = "gemini"
+
+# DeepSeek TUI command
+# deepseek_cmd = "deepseek"
+
+# Antigravity CLI command
+# antigravity_cmd = "agy"
+
+# Grok Build command
+# grok_cmd = "grok"
+
+# Muse Code command
+# muse_cmd = "muse"
+
+# OpenCode command
+# opencode_cmd = "opencode"
+
+# Pi command
+# pi_cmd = "pi"
+
+# Qwen Code command
+# qwen_cmd = "qwen"

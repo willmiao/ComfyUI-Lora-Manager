@@ -1,0 +1,6 @@
+# SpecStory internal files: rewritten on every session update, ignored so they
+# stay out of commits and out of Claude Code's per-command edit diff
+# (https://github.com/specstoryai/getspecstory/issues/317)
+/debug/
+/statistics.json
+bin/

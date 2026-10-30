@@ -1013,12 +1013,14 @@
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",
             "resumeMetadataRefreshCount": "재개（{count}개 모델）",
             "sendToWorkflow": "워크플로로 보내기",
+            "pinToNvme": "[TODO: Translate] Pin Selected to NVMe",
             "sections": {
                 "workflow": "워크플로",
                 "metadata": "메타데이터",
                 "attributes": "속성",
                 "organize": "정리",
-                "download": "다운로드"
+                "download": "다운로드",
+                "nvme": "[TODO: Translate] NVMe Cache"
             },
             "autoOrganizeProgress": {
                 "initializing": "자동 정리 초기화 중...",

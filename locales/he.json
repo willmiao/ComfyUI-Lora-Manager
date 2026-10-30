@@ -1013,12 +1013,14 @@
             "skipMetadataRefreshCount": "דילוג({count} מודלים)",
             "resumeMetadataRefreshCount": "המשך({count} מודלים)",
             "sendToWorkflow": "שלח ל-Workflow",
+            "pinToNvme": "[TODO: Translate] Pin Selected to NVMe",
             "sections": {
                 "workflow": "Workflow",
                 "metadata": "מטא-נתונים",
                 "attributes": "מאפיינים",
                 "organize": "ארגן",
-                "download": "הורדה"
+                "download": "הורדה",
+                "nvme": "[TODO: Translate] NVMe Cache"
             },
             "autoOrganizeProgress": {
                 "initializing": "מאתחל ארגון אוטומטי...",

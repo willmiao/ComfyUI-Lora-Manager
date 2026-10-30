@@ -1013,12 +1013,14 @@
             "skipMetadataRefreshCount": "Ignorer({count} modèles)",
             "resumeMetadataRefreshCount": "Reprendre({count} modèles)",
             "sendToWorkflow": "Envoyer au workflow",
+            "pinToNvme": "[TODO: Translate] Pin Selected to NVMe",
             "sections": {
                 "workflow": "Workflow",
                 "metadata": "Métadonnées",
                 "attributes": "Attributs",
                 "organize": "Organiser",
-                "download": "Télécharger"
+                "download": "Télécharger",
+                "nvme": "[TODO: Translate] NVMe Cache"
             },
             "autoOrganizeProgress": {
                 "initializing": "Initialisation de l'auto-organisation...",

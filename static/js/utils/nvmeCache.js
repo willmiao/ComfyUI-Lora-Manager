@@ -159,13 +159,14 @@ function confirmEviction(plan, detail) {
 
 /**
  * Run `op` for a model, handling the eviction 409 by asking the user first.
+ * `extra` is merged into the request body (e.g. a batch's `exclude` list).
  * Returns the final response, or null if the user declined.
  */
-async function runWithEvictionPrompt(op, rel, detail) {
-    let result = await nvmePost(op, { rel });
+async function runWithEvictionPrompt(op, rel, detail, extra = {}) {
+    let result = await nvmePost(op, { rel, ...extra });
     if (result.status === 409 && result.data?.eviction_required) {
         if (!confirmEviction(result.data, detail)) return null;
-        result = await nvmePost(op, { rel, allow_evict: result.data.to_evict });
+        result = await nvmePost(op, { rel, ...extra, allow_evict: result.data.to_evict });
     }
     if (!result.ok) {
         throw new Error(result.data?.error || `Request failed (HTTP ${result.status})`);
@@ -294,6 +295,71 @@ export async function togglePinNvme(filePath) {
         console.error('NVMe pin/unpin failed:', error);
         showToast(`NVMe action failed: ${error.message}`, {}, 'error');
     }
+}
+
+/**
+ * Pin several models at once, for bulk mode. Models already pinned, or that
+ * the cache cannot act on, are skipped and counted in the closing summary.
+ *
+ * Models already on NVMe are pinned first: that is a synchronous flag flip,
+ * and it keeps them from being evicted by the promotions that follow. Models
+ * still on the HDD are then pinned one at a time, waiting for each copy to
+ * finish, because the server's capacity check only sees the space free when
+ * the request arrives. Every model in the batch is passed as `exclude`, so
+ * pinning one never evicts another that is waiting its turn.
+ * @param {string[]} filePaths Absolute paths as reported by ComfyUI.
+ */
+export async function pinManyNvme(filePaths) {
+    const infos = await Promise.all(filePaths.map(getNvmeStatus));
+    const counts = { pinned: 0, alreadyPinned: 0, unmanaged: 0, declined: 0, failed: 0 };
+    const targets = [];
+    filePaths.forEach((filePath, i) => {
+        const info = infos[i];
+        if (!info || info.status === 'missing' || info.status === 'unadopted') {
+            counts.unmanaged++;
+        } else if (info.status === 'pinned') {
+            counts.alreadyPinned++;
+        } else {
+            targets.push({ filePath, ...info });
+        }
+    });
+    targets.sort((a, b) => ON_NVME.has(b.status) - ON_NVME.has(a.status));
+
+    const exclude = targets.map((target) => target.rel);
+    for (const [index, { filePath, rel }] of targets.entries()) {
+        const name = baseName(rel);
+        try {
+            const result = await runWithEvictionPrompt(
+                '/pin', rel,
+                `Pinning ${name} (${index + 1} of ${targets.length}) has to promote it first, and the cache is full.`,
+                { exclude }
+            );
+            if (!result) {
+                counts.declined++;
+            } else if (result.data?.job_id) {
+                const ok = await trackJob(result.data.job_id, 'Pinning', name);
+                counts[ok ? 'pinned' : 'failed']++;
+            } else {
+                counts.pinned++;
+            }
+        } catch (error) {
+            console.error(`NVMe pin failed for ${rel}:`, error);
+            counts.failed++;
+        } finally {
+            invalidateNvmeStatus(filePath);
+            const card = [...document.querySelectorAll('.model-card')]
+                .find((el) => el.dataset.filepath === filePath);
+            if (card) applyNvmeCardState(card);
+        }
+    }
+
+    const parts = [`Pinned ${counts.pinned} to NVMe`];
+    if (counts.alreadyPinned) parts.push(`${counts.alreadyPinned} already pinned`);
+    if (counts.unmanaged) parts.push(`${counts.unmanaged} not pinnable (not in the cache roots, missing, or not adopted)`);
+    if (counts.declined) parts.push(`${counts.declined} skipped (eviction declined)`);
+    if (counts.failed) parts.push(`${counts.failed} failed`);
+    const type = counts.failed ? (counts.pinned ? 'warning' : 'error') : 'success';
+    showToast(parts.join(', '), {}, type);
 }
 
 // ---------------------------------------------------------------------------

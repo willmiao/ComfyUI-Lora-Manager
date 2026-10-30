@@ -1013,12 +1013,14 @@
             "skipMetadataRefreshCount": "スキップ（{count}モデル）",
             "resumeMetadataRefreshCount": "再開（{count}モデル）",
             "sendToWorkflow": "ワークフローに送信",
+            "pinToNvme": "[TODO: Translate] Pin Selected to NVMe",
             "sections": {
                 "workflow": "ワークフロー",
                 "metadata": "メタデータ",
                 "attributes": "属性",
                 "organize": "整理",
-                "download": "ダウンロード"
+                "download": "ダウンロード",
+                "nvme": "[TODO: Translate] NVMe Cache"
             },
             "autoOrganizeProgress": {
                 "initializing": "自動整理を初期化中...",

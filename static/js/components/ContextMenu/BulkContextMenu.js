@@ -5,6 +5,7 @@ import { updateElementText, translate } from '../../utils/i18nHelpers.js';
 import { bulkMissingLoraDownloadManager } from '../../managers/BulkMissingLoraDownloadManager.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { getNvmeStatus, pinManyNvme } from '../../utils/nvmeCache.js';
 
 export class BulkContextMenu extends BaseContextMenu {
     constructor() {
@@ -182,6 +183,12 @@ export class BulkContextMenu extends BaseContextMenu {
             }
         }
 
+        // Shown by updateNvmeMenuItem once a status lookup confirms it applies.
+        const nvmePinAllItem = this.menu.querySelector('[data-action="nvme-pin-all"]');
+        if (nvmePinAllItem) {
+            nvmePinAllItem.style.display = 'none';
+        }
+
         // Hide empty sections
         this.menu.querySelectorAll('.context-menu-section').forEach(section => {
             const items = Array.from(section.querySelectorAll('.context-menu-item'))
@@ -233,6 +240,20 @@ export class BulkContextMenu extends BaseContextMenu {
         this.updateMenuItemsForModelType();
         this.updateSelectedCountHeader();
         super.showMenu(x, y, card);
+        this.updateNvmeMenuItem();
+    }
+
+    // Like the single-card NVMe items, this only appears when the cache manages
+    // at least one selected model. The lookup is batched into one request, and a
+    // menu has to open instantly, so the item appears when the answer lands.
+    async updateNvmeMenuItem() {
+        const item = this.menu.querySelector('[data-action="nvme-pin-all"]');
+        if (!item || !['loras', 'checkpoints', 'embeddings'].includes(state.currentPageType)) return;
+
+        const infos = await Promise.all([...state.selectedModels].map(getNvmeStatus));
+        if (!infos.some(Boolean)) return;
+        item.style.display = 'flex';
+        item.closest('.context-menu-section').style.display = '';
     }
 
     handleMenuAction(action, menuItem) {
@@ -299,6 +320,14 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'download-example-images':
                 this.handleDownloadExampleImages({ force: true });
                 break;
+            case 'nvme-pin-all': {
+                // Pinning copies files one at a time and can run for minutes,
+                // so leave bulk mode now rather than when it finishes.
+                const filePaths = [...state.selectedModels];
+                if (state.bulkMode) bulkManager.toggleBulkMode();
+                pinManyNvme(filePaths);
+                break;
+            }
             case 'clear':
                 bulkManager.clearSelection();
                 break;
