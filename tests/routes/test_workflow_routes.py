@@ -27,15 +27,20 @@ class StubScanner:
     def __init__(self, roots=None):
         self._roots = roots or []
         self.registered = []
+        self.hints = []
 
     def get_model_roots(self):
         return list(self._roots)
 
-    async def register_local_artifact(self, file_path):
+    async def register_local_artifact(self, file_path, *, checkpoint_name_hint=None):
         self.registered.append(file_path)
+        self.hints.append(checkpoint_name_hint)
         return SimpleNamespace(
             file_path=file_path.replace(os.sep, "/"), preview_url=""
         )
+
+    async def sync_cache_from_metadata(self, file_path, metadata_dict):
+        return True
 
 
 class StubWorkflowService:
@@ -72,6 +77,19 @@ def enable_workflows():
 def plugin_mode(monkeypatch):
     """send_to_comfy refuses to run in standalone mode; default to plugin mode."""
     monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def stub_base_model_resolution(monkeypatch):
+    """Keep route tests hermetic; resolution itself is covered in
+    tests/services/test_workflow_base_model.py."""
+
+    async def _resolve(**kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", _resolve
+    )
 
 
 def test_common_and_specific_routes_registered():
@@ -530,6 +548,56 @@ async def test_update_workflow_content_rewrites_json_artifact(routes, tmp_path):
     written = json.loads(target.read_text(encoding="utf-8"))
     assert written["nodes"] == updated["nodes"]
     assert "lm_source" not in written.get("extra", {})
+
+
+async def test_update_workflow_content_keeps_base_model(routes, tmp_path):
+    """Write-back refreshes analysis fields but never re-resolves the base
+    model: base model resolution happens at create time only."""
+    from py.utils.metadata_manager import MetadataManager
+    from py.utils.models import WorkflowMetadata
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    target = root / "flow.json"
+    workflow = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": "sd_xl_base_1.0.safetensors"},
+        },
+    }
+    target.write_text(json.dumps(workflow), encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])
+
+    await MetadataManager.save_metadata(
+        str(target),
+        WorkflowMetadata(
+            file_name="flow",
+            model_name="flow",
+            file_path=str(target).replace(os.sep, "/"),
+            size=1,
+            modified=0,
+            sha256="abc",
+            base_model="Flux.1 D",
+            preview_url="",
+            from_civitai=False,
+        ),
+    )
+
+    response = await routes.update_workflow_content(
+        DummyRequest(method="PUT", body={"file_path": str(target), "workflow": workflow})
+    )
+    payload = json.loads(response.text)
+    assert response.status == 200
+    assert payload["success"] is True
+
+    reloaded, should_skip = await MetadataManager.load_metadata(
+        str(target), WorkflowMetadata
+    )
+    assert not should_skip
+    # The edited graph points at an SDXL checkpoint, but the stored label is
+    # left untouched.
+    assert reloaded.base_model == "Flux.1 D"
+    assert reloaded.primary_model_refs == ["sd_xl_base_1.0.safetensors"]
 
 
 async def test_update_workflow_content_conflict_then_force(routes, tmp_path):
@@ -1268,7 +1336,7 @@ async def test_create_workflow_rolls_back_when_registration_fails(
     routes, plugin_mode, tmp_path, monkeypatch
 ):
     class FailingScanner(StubScanner):
-        async def register_local_artifact(self, file_path):
+        async def register_local_artifact(self, file_path, *, checkpoint_name_hint=None):
             return None
 
     root = tmp_path / "workflows"
@@ -1429,6 +1497,95 @@ async def test_create_workflow_skips_preview_for_other_prompt(
     assert response.status == 200
     assert payload["preview"] is False
     assert list(root.glob("*.preview.webp")) == []
+
+
+async def test_create_workflow_forwards_primary_checkpoint_hint(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    import py.routes.workflow_routes as workflow_routes_module
+
+    monkeypatch.setattr(
+        workflow_routes_module,
+        "_resolve_primary_checkpoint_hint",
+        lambda _prompt_id: "primary.safetensors",
+    )
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    response = await routes.create_workflow(
+        DummyRequest(
+            body={
+                "name": "Hinted",
+                "workflow": UI_GRAPH,
+                "preview_prompt_id": "p-1",
+            }
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert routes.service.scanner.hints == ["primary.safetensors"]  # pyright: ignore[reportAttributeAccessIssue]
+
+
+async def test_create_workflow_without_prompt_id_has_no_hint(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"name": "No Hint", "workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert routes.service.scanner.hints == [None]  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_resolve_primary_checkpoint_hint_requires_matching_prompt(monkeypatch):
+    from py.metadata_collector.metadata_processor import MetadataProcessor
+    from py.routes.workflow_routes import _resolve_primary_checkpoint_hint
+
+    class FakeRegistry:
+        def __init__(self):
+            self.current_prompt_id = "p-1"
+
+        def get_metadata(self, prompt_id=None):
+            return {"nodes": {}}
+
+    monkeypatch.setattr(
+        MetadataProcessor,
+        "extract_generation_params",
+        staticmethod(lambda metadata: {"checkpoint": "  primary.safetensors  "}),
+    )
+
+    assert (
+        _resolve_primary_checkpoint_hint("p-1", registry_cls=FakeRegistry)
+        == "primary.safetensors"
+    )
+    assert _resolve_primary_checkpoint_hint("p-2", registry_cls=FakeRegistry) is None
+
+
+def test_resolve_primary_checkpoint_hint_returns_none_without_metadata():
+    from py.routes.workflow_routes import _resolve_primary_checkpoint_hint
+
+    class FakeRegistry:
+        def __init__(self):
+            self.current_prompt_id = "p-1"
+
+        def get_metadata(self, prompt_id=None):
+            return {}
+
+    assert _resolve_primary_checkpoint_hint("p-1", registry_cls=FakeRegistry) is None
 
 
 def test_resolve_workflow_preview_requires_matching_prompt():

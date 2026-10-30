@@ -1440,6 +1440,13 @@ class MetadataOverwriteExtractor(NodeMetadataExtractor):
 
 # Registry of node-specific extractors
 # Keys are node class names
+# NOTE: keys below are Python class names — the hook matches them against
+# ``obj.__class__.__name__``. py/utils/workflow_analysis.py keeps a
+# static-analysis counterpart of the loader section
+# (_CHECKPOINT_LOADER_MODEL_FIELDS) keyed by the node NAME strings stored in
+# workflow JSON instead (e.g. "Checkpoint Loader (LoraManager)" here is
+# CheckpointLoaderLM below). When loader support is added here, keep that
+# table in sync.
 NODE_EXTRACTORS = {
     # Sampling
     "KSampler": SamplerExtractor,

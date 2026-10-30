@@ -51,6 +51,19 @@ def _make_scanner() -> WorkflowScanner:
     return scanner
 
 
+@pytest.fixture(autouse=True)
+def stub_base_model_resolution(monkeypatch):
+    """Keep scanner tests hermetic; resolution itself is covered in
+    tests/services/test_workflow_base_model.py."""
+
+    async def _resolve(**kwargs):
+        return None
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", _resolve
+    )
+
+
 def test_roots_empty_while_feature_disabled(workflow_root, monkeypatch):
     from py.services.settings_manager import get_settings_manager
 
@@ -292,3 +305,147 @@ async def test_register_local_artifact_returns_none_for_non_workflow(
 
     assert await scanner.register_local_artifact(str(file_path)) is None
     assert synced == []
+
+
+async def test_create_default_metadata_resolves_base_model(
+    workflow_root, enable_workflows, monkeypatch
+):
+    workflow = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": "base.safetensors"},
+        },
+    }
+    file_path = workflow_root / "flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    captured = {}
+
+    async def fake_resolve(**kwargs):
+        captured.update(kwargs)
+        return "SDXL 1.0"
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", fake_resolve
+    )
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert metadata.base_model == "SDXL 1.0"
+    assert metadata.primary_model_refs == ["base.safetensors"]
+    assert captured["primary_model_refs"] == ["base.safetensors"]
+    # Scan-time metadata creation never hits remote providers.
+    assert captured["include_remote"] is False
+
+
+async def test_create_default_metadata_falls_back_to_unknown(
+    workflow_root, enable_workflows
+):
+    """The stubbed resolver returns None; the stored label stays "Unknown"."""
+    workflow = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": "not-in-library.safetensors"},
+        },
+    }
+    file_path = workflow_root / "flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert metadata.base_model == "Unknown"
+
+
+async def test_register_local_artifact_forwards_checkpoint_name_hint(
+    workflow_root, enable_workflows, monkeypatch
+):
+    """The create flow passes the generation-time checkpoint hint through."""
+    workflow = {"1": {"class_type": "KSampler", "inputs": {}}}
+    file_path = workflow_root / "created_flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    captured = {}
+
+    async def fake_resolve(**kwargs):
+        captured.update(kwargs)
+        return "Illustrious"
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", fake_resolve
+    )
+
+    scanner = _make_scanner()
+
+    async def fake_sync(path, metadata_dict):
+        return True
+
+    monkeypatch.setattr(scanner, "sync_cache_from_metadata", fake_sync)
+
+    metadata = await scanner.register_local_artifact(
+        str(file_path), checkpoint_name_hint="primary.safetensors"
+    )
+
+    assert metadata is not None
+    assert metadata.base_model == "Illustrious"
+    assert captured["checkpoint_name_hint"] == "primary.safetensors"
+
+
+async def test_create_default_metadata_defaults_hint_to_none(
+    workflow_root, enable_workflows, monkeypatch
+):
+    """Scan-time metadata creation carries no generation-time hint."""
+    workflow = {"1": {"class_type": "KSampler", "inputs": {}}}
+    file_path = workflow_root / "flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    captured = {}
+
+    async def fake_resolve(**kwargs):
+        captured.update(kwargs)
+        return None
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", fake_resolve
+    )
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert captured["checkpoint_name_hint"] is None
+
+
+async def test_register_local_artifact_allows_remote_resolution(
+    workflow_root, enable_workflows, monkeypatch
+):
+    """The create flow is a one-off user action, so CivitAI URNs may be used."""
+    workflow = {"1": {"class_type": "KSampler", "inputs": {}}}
+    file_path = workflow_root / "created_flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    captured = {}
+
+    async def fake_resolve(**kwargs):
+        captured.update(kwargs)
+        return "SD 1.5"
+
+    monkeypatch.setattr(
+        "py.services.workflow_base_model.resolve_workflow_base_model", fake_resolve
+    )
+
+    scanner = _make_scanner()
+
+    async def fake_sync(path, metadata_dict):
+        return True
+
+    monkeypatch.setattr(scanner, "sync_cache_from_metadata", fake_sync)
+
+    metadata = await scanner.register_local_artifact(str(file_path))
+
+    assert metadata is not None
+    assert metadata.base_model == "SD 1.5"
+    assert captured["include_remote"] is True

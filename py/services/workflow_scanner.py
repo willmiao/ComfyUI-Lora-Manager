@@ -115,15 +115,25 @@ class WorkflowScanner(ModelScanner):
         metadata.node_classes = analysis.node_classes
         metadata.model_refs = analysis.model_refs
         metadata.civitai_refs = analysis.civitai_refs
+        metadata.primary_model_refs = analysis.primary_model_refs
         return metadata
 
     async def _create_default_metadata(
-        self, file_path: str
+        self,
+        file_path: str,
+        *,
+        include_remote: bool = False,
+        checkpoint_name_hint: Optional[str] = None,
     ) -> Optional[WorkflowMetadata]:
         """Create metadata by hashing the artifact and analyzing its workflow.
 
         Returns None for files that carry no ComfyUI workflow document, so
-        they stay out of the library.
+        they stay out of the library. The base model is resolved from the
+        workflow's referenced models against the local library;
+        ``include_remote`` (one-off user actions only, never scans) also
+        allows the CivitAI URN fallback. ``checkpoint_name_hint`` names the
+        primary checkpoint observed at generation time and outranks the
+        static votes when it resolves locally.
         """
         try:
             real_path = os.path.realpath(file_path)
@@ -153,6 +163,22 @@ class WorkflowScanner(ModelScanner):
                 )
                 return None
 
+            try:
+                from .workflow_base_model import resolve_workflow_base_model
+
+                base_model = await resolve_workflow_base_model(
+                    primary_model_refs=analysis.primary_model_refs,
+                    model_refs=analysis.model_refs,
+                    civitai_refs=analysis.civitai_refs,
+                    include_remote=include_remote,
+                    checkpoint_name_hint=checkpoint_name_hint,
+                )
+            except Exception:
+                logger.debug(
+                    "Base model resolution failed for %s", file_path, exc_info=True
+                )
+                base_model = None
+
             metadata = WorkflowMetadata(
                 file_name=base_name,
                 model_name=base_name,
@@ -160,7 +186,7 @@ class WorkflowScanner(ModelScanner):
                 size=os.path.getsize(real_path),
                 modified=datetime.now().timestamp(),
                 sha256=sha256,
-                base_model="Unknown",
+                base_model=base_model or "Unknown",
                 preview_url=normalize_path(preview_url),
                 tags=[],
                 modelDescription="",
@@ -170,6 +196,7 @@ class WorkflowScanner(ModelScanner):
                 node_classes=analysis.node_classes,
                 model_refs=analysis.model_refs,
                 civitai_refs=analysis.civitai_refs,
+                primary_model_refs=analysis.primary_model_refs,
             )
 
             logger.info(f"Creating workflow metadata for {file_path}")
@@ -184,16 +211,24 @@ class WorkflowScanner(ModelScanner):
             return None
 
     async def register_local_artifact(
-        self, file_path: str
+        self,
+        file_path: str,
+        *,
+        checkpoint_name_hint: Optional[str] = None,
     ) -> Optional[WorkflowMetadata]:
         """Create metadata and cache entry for a workflow written by LM.
 
         Used by the "Create LM-managed workflow" flow: the file is already on
         disk, so this reuses the scanner's metadata builder (analysis fields,
         preview lookup, sidecar write) and then inserts/updates the cache entry
-        without forcing a full rescan.
+        without forcing a full rescan. Being a one-off user action, base model
+        resolution here may also consult CivitAI URNs embedded in the graph.
+        ``checkpoint_name_hint`` names the primary checkpoint observed at
+        generation time and outranks the static votes when it resolves locally.
         """
-        metadata = await self._create_default_metadata(file_path)
+        metadata = await self._create_default_metadata(
+            file_path, include_remote=True, checkpoint_name_hint=checkpoint_name_hint
+        )
         if metadata is None:
             return None
         await self.sync_cache_from_metadata(file_path, metadata.to_dict())

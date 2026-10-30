@@ -506,6 +506,9 @@ class WorkflowMetadata(BaseModelMetadata):
     node_classes: List[str] = field(default_factory=list)
     model_refs: List[str] = field(default_factory=list)
     civitai_refs: List[str] = field(default_factory=list)
+    # Model names attributed to known checkpoint/diffusion loader nodes;
+    # the input for local base model resolution.
+    primary_model_refs: List[str] = field(default_factory=list)
 
     @classmethod
     def from_civitai_info(

@@ -124,6 +124,41 @@ def _resolve_workflow_preview(
         return None
 
 
+def _resolve_primary_checkpoint_hint(
+    prompt_id: str, *, registry_cls: Any = None
+) -> Optional[str]:
+    """Return the generation-time primary checkpoint name for ``prompt_id``.
+
+    Same ownership rule as the preview: the registry only answers while
+    ``prompt_id`` is still its current prompt. Checkpoint semantics match the
+    recipe flow (primary-sampler tracing plus ``lm_marker_role`` user marks)
+    via ``MetadataProcessor.extract_generation_params``.
+    """
+
+    try:
+        if registry_cls is None:
+            from ..metadata_collector.metadata_registry import MetadataRegistry
+
+            registry_cls = MetadataRegistry
+
+        registry = registry_cls()
+        if registry.current_prompt_id != prompt_id:
+            return None
+        metadata = registry.get_metadata(prompt_id)
+        if not metadata:
+            return None
+        from ..metadata_collector.metadata_processor import MetadataProcessor
+
+        params = MetadataProcessor.extract_generation_params(metadata)
+        checkpoint = params.get("checkpoint")
+        if isinstance(checkpoint, str) and checkpoint.strip():
+            return checkpoint.strip()
+        return None
+    except Exception:
+        logger.warning("Failed to resolve primary checkpoint hint", exc_info=True)
+        return None
+
+
 def _write_workflow_preview(file_path: str, image_bytes: bytes) -> Optional[str]:
     """Optimize and store the preview sidecar next to a workflow document."""
 
@@ -551,10 +586,15 @@ class WorkflowRoutes(BaseModelRoutes):
             # backend only honors it while it is still the registry's current
             # prompt, so the image belongs to this client's run.
             preview_bytes: Optional[bytes] = None
+            checkpoint_name_hint: Optional[str] = None
             preview_prompt_id = payload.get("preview_prompt_id")
             if isinstance(preview_prompt_id, str) and preview_prompt_id.strip():
+                preview_prompt_id = preview_prompt_id.strip()
                 preview_bytes = await asyncio.to_thread(
-                    _resolve_workflow_preview, preview_prompt_id.strip()
+                    _resolve_workflow_preview, preview_prompt_id
+                )
+                checkpoint_name_hint = await asyncio.to_thread(
+                    _resolve_primary_checkpoint_hint, preview_prompt_id
                 )
 
             library_dir = self._settings.get_workflow_path()
@@ -615,7 +655,9 @@ class WorkflowRoutes(BaseModelRoutes):
                     status=500,
                 )
 
-            metadata = await scanner.register_local_artifact(file_path)
+            metadata = await scanner.register_local_artifact(
+                file_path, checkpoint_name_hint=checkpoint_name_hint
+            )
             if metadata is None:
                 await asyncio.to_thread(_remove_file_quietly, file_path)
                 if preview_path:
@@ -792,6 +834,7 @@ class WorkflowRoutes(BaseModelRoutes):
             metadata.node_classes = analysis.node_classes
             metadata.model_refs = analysis.model_refs
             metadata.civitai_refs = analysis.civitai_refs
+            metadata.primary_model_refs = analysis.primary_model_refs
 
             if os.path.splitext(file_path)[1].lower() == ".json":
                 metadata.sha256 = document_sha256

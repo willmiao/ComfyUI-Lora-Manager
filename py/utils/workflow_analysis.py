@@ -31,20 +31,31 @@ MAX_WORKFLOW_JSON_BYTES = 64 * 1024 * 1024
 
 _CIVITAI_URN_PATTERN = re.compile(r"civitai:(\d+)@(\d+)")
 
-# Loader input keys whose string values name a model file. Used for the API
-# format; the UI format is handled by the generic extension scan below.
-_LOADER_INPUT_KEYS = frozenset(
-    {
-        "lora_name",
-        "ckpt_name",
-        "unet_name",
-        "vae_name",
-        "clip_name",
-        "control_net_name",
-        "embedding_name",
-        "model_name",
-    }
-)
+# Checkpoint/diffusion loader node classes and the widget/input field that
+# carries the base model file name. Keys are the type strings stored in
+# workflow JSON (each node's registered NAME — e.g. LoRA Manager nodes use
+# their display names like "Checkpoint Loader (LoraManager)"), NOT the Python
+# class names that py/metadata_collector/node_extractors.py keys on (its
+# execution-time hook matches ``obj.__class__.__name__``). When loader support
+# is added on either side, keep the two in sync.
+_CHECKPOINT_LOADER_MODEL_FIELDS = {
+    "CheckpointLoader": "ckpt_name",
+    "CheckpointLoaderSimple": "ckpt_name",
+    "CheckpointLoaderSimpleWithImages": "ckpt_name",  # CheckpointLoader|pysssss
+    "CheckpointLoaderKJ": "ckpt_name",  # KJNodes
+    "Checkpoint Loader (LoraManager)": "ckpt_name",  # LoRA Manager
+    "TSC_EfficientLoader": "ckpt_name",  # Efficient Nodes
+    "comfyLoader": "ckpt_name",  # ComfyUI-Easy-Use
+    "UNETLoader": "unet_name",
+    "UnetLoaderGGUF": "unet_name",
+    "Unet Loader (LoraManager)": "unet_name",  # LoRA Manager
+    "LoaderGGUF": "gguf_name",  # calcuis gguf
+    "LoaderGGUFAdvanced": "gguf_name",  # calcuis gguf
+    "GGUFLoaderKJ": "model_name",  # KJNodes
+    "DiffusionModelLoaderKJ": "model_name",  # KJNodes
+    "NunchakuFluxDiTLoader": "model_path",  # ComfyUI-Nunchaku
+    "NunchakuQwenImageDiTLoader": "model_name",  # ComfyUI-Nunchaku
+}
 
 
 @dataclass
@@ -56,6 +67,12 @@ class WorkflowAnalysis:
     node_classes: List[str] = field(default_factory=list)
     model_refs: List[str] = field(default_factory=list)
     civitai_refs: List[str] = field(default_factory=list)
+    # Model names pulled from known checkpoint/diffusion loader nodes (the
+    # structured counterpart of model_refs). Unlike model_refs these are
+    # attributed to a loader slot, and loader widget values are accepted
+    # verbatim — including file names containing spaces, which the generic
+    # model_refs string scan rejects to keep prompt text out.
+    primary_model_refs: List[str] = field(default_factory=list)
 
 
 def _sniff(data: Any) -> Optional[str]:
@@ -131,6 +148,48 @@ def _walk_strings(value: Any, out: List[str], depth: int = 0) -> None:
             _walk_strings(item, out, depth + 1)
 
 
+def _is_model_filename(value: str) -> bool:
+    lowered = value.lower()
+    return any(lowered.endswith(ext) for ext in MODEL_FILE_EXTENSIONS)
+
+
+def _extract_primary_refs_api(data: Dict[str, Any]) -> Set[str]:
+    """Collect base model names from loader node inputs (API format)."""
+    refs: Set[str] = set()
+    for node in data.values():
+        class_type = node.get("class_type")
+        field = (
+            _CHECKPOINT_LOADER_MODEL_FIELDS.get(class_type)
+            if isinstance(class_type, str)
+            else None
+        )
+        if not field:
+            continue
+        inputs = node.get("inputs")
+        if not isinstance(inputs, dict):
+            continue
+        value = inputs.get(field)
+        if isinstance(value, str) and _is_model_filename(value.strip()):
+            refs.add(value.strip())
+    return refs
+
+
+def _extract_primary_ref_ui(node: Dict[str, Any]) -> Optional[str]:
+    """First model-filename widget value of a loader node (UI format).
+
+    UI workflows store widget values positionally without field names, but the
+    model name is the first widget in every supported loader, so the first
+    value that looks like a model file is the loader's model.
+    """
+    widgets = node.get("widgets_values")
+    if not isinstance(widgets, list):
+        return None
+    for value in widgets:
+        if isinstance(value, str) and _is_model_filename(value.strip()):
+            return value.strip()
+    return None
+
+
 def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
     """Analyze a parsed workflow document. None when not a workflow."""
     workflow_format = _sniff(data)
@@ -139,6 +198,7 @@ def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
 
     node_classes: Set[str] = set()
     node_count = 0
+    primary_model_refs: Set[str] = set()
 
     if workflow_format == WORKFLOW_FORMAT_API:
         node_count = len(data)
@@ -146,6 +206,7 @@ def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
             class_type = node.get("class_type")
             if isinstance(class_type, str) and class_type:
                 node_classes.add(class_type)
+        primary_model_refs = _extract_primary_refs_api(data)
     else:
         nodes = data.get("nodes") or []
         node_count = len(nodes)
@@ -155,6 +216,10 @@ def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
             class_type = node.get("type")
             if isinstance(class_type, str) and class_type:
                 node_classes.add(class_type)
+                if class_type in _CHECKPOINT_LOADER_MODEL_FIELDS:
+                    ref = _extract_primary_ref_ui(node)
+                    if ref:
+                        primary_model_refs.add(ref)
 
     strings: List[str] = []
     _walk_strings(data, strings)
@@ -164,8 +229,7 @@ def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
     for value in strings:
         for match in _CIVITAI_URN_PATTERN.finditer(value):
             civitai_refs.add(f"civitai:{match.group(1)}@{match.group(2)}")
-        lowered = value.lower()
-        if any(lowered.endswith(ext) for ext in MODEL_FILE_EXTENSIONS):
+        if _is_model_filename(value):
             # Widget values are single model filenames; skip strings that
             # clearly carry more (URLs, prompts with punctuation-heavy tails
             # still end in an extension, so also bound the length).
@@ -178,6 +242,7 @@ def analyze_workflow(data: Dict[str, Any]) -> Optional[WorkflowAnalysis]:
         node_classes=sorted(node_classes),
         model_refs=sorted(model_refs),
         civitai_refs=sorted(civitai_refs),
+        primary_model_refs=sorted(primary_model_refs),
     )
 
 

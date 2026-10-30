@@ -99,3 +99,109 @@ def test_load_workflow_file_rejects_sidecar(tmp_path):
 
 def test_load_workflow_file_handles_missing(tmp_path):
     assert load_workflow_file(str(tmp_path / "nope.json")) is None
+
+
+def test_analyze_api_format_extracts_primary_model_refs():
+    workflow = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": "My Model v2.safetensors"},
+        },
+        "2": {
+            "class_type": "UNETLoader",
+            "inputs": {"unet_name": "flux1-dev.safetensors", "weight_dtype": "default"},
+        },
+        # LoRA loaders and encoders are not base-model loaders.
+        "3": {"class_type": "LoraLoader", "inputs": {"lora_name": "detail.safetensors"}},
+        "4": {"class_type": "CLIPTextEncode", "inputs": {"text": "a cat.safetensors"}},
+    }
+    analysis = analyze_workflow(workflow)
+    assert analysis is not None
+    # Loader-attributed refs accept file names with spaces, which the generic
+    # model_refs scan rejects to keep prompt text out.
+    assert analysis.primary_model_refs == [
+        "My Model v2.safetensors",
+        "flux1-dev.safetensors",
+    ]
+    # The space-carrying name stays out of the generic refs; the LoRA and the
+    # prompt-like string behave as before.
+    assert analysis.model_refs == ["detail.safetensors", "flux1-dev.safetensors"]
+
+
+def test_analyze_ui_format_extracts_primary_model_refs():
+    workflow = {
+        "nodes": [
+            {
+                "id": 1,
+                "type": "CheckpointLoaderSimple",
+                "widgets_values": ["SDXL/My Model.safetensors"],
+            },
+            {
+                "id": 2,
+                "type": "UNETLoader",
+                "widgets_values": ["flux dev.safetensors", "default"],
+            },
+            # LoRA loaders are not base-model loaders.
+            {
+                "id": 3,
+                "type": "LoraLoader",
+                "widgets_values": ["style.safetensors", 1.0, 1.0],
+            },
+            # A model name fed through a non-loader node (e.g. a converted
+            # widget's PrimitiveNode source) is not attributed to a loader.
+            {
+                "id": 4,
+                "type": "PrimitiveNode",
+                "widgets_values": ["wired checkpoint.safetensors"],
+            },
+        ],
+        "links": [],
+    }
+    analysis = analyze_workflow(workflow)
+    assert analysis is not None
+    assert analysis.primary_model_refs == [
+        "SDXL/My Model.safetensors",
+        "flux dev.safetensors",
+    ]
+
+
+def test_analyze_primary_refs_empty_without_loader_nodes():
+    analysis = analyze_workflow({"1": {"class_type": "KSampler", "inputs": {"seed": 1}}})
+    assert analysis is not None
+    assert analysis.primary_model_refs == []
+
+
+def test_analyze_recognizes_lora_manager_display_name_loaders():
+    """LoRA Manager nodes register their display NAME ("Checkpoint Loader
+    (LoraManager)") as the workflow JSON type — not the Python class name."""
+    ui_workflow = {
+        "nodes": [
+            {
+                "id": 1,
+                "type": "Checkpoint Loader (LoraManager)",
+                "widgets_values": ["Illustrious/anime/waiIllustriousSDXL_v140.safetensors"],
+            },
+            {
+                "id": 2,
+                "type": "Unet Loader (LoraManager)",
+                "widgets_values": ["Qwen/qwenImageEdit_fp8.safetensors", "default"],
+            },
+        ],
+        "links": [],
+    }
+    analysis = analyze_workflow(ui_workflow)
+    assert analysis is not None
+    assert analysis.primary_model_refs == [
+        "Illustrious/anime/waiIllustriousSDXL_v140.safetensors",
+        "Qwen/qwenImageEdit_fp8.safetensors",
+    ]
+
+    api_workflow = {
+        "1": {
+            "class_type": "Checkpoint Loader (LoraManager)",
+            "inputs": {"ckpt_name": "sd_xl_base_1.0.safetensors", "base_model": "Any"},
+        },
+    }
+    analysis = analyze_workflow(api_workflow)
+    assert analysis is not None
+    assert analysis.primary_model_refs == ["sd_xl_base_1.0.safetensors"]
