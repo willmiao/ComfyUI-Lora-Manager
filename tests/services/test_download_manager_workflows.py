@@ -285,6 +285,7 @@ async def test_default_paths_error_without_workflow_root(
 
     assert result["success"] is False
     assert "workflow folder" in result["error"]
+    assert result["reason"] == "workflows_no_paths"
 
 
 @pytest.mark.asyncio

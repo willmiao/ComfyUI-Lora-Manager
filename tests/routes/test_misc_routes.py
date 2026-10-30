@@ -2356,6 +2356,12 @@ def _set_other_models_enabled(enabled: bool) -> None:
     get_settings_manager().set("enable_other_models", enabled)
 
 
+def _set_workflows_enabled(enabled: bool) -> None:
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_workflows", enabled)
+
+
 @pytest.mark.asyncio
 async def test_check_model_exists_with_other_models_enabled():
     """An other-type version resolves through the other scanner when opted in."""
@@ -2502,6 +2508,192 @@ async def test_check_models_exist_ignores_other_scanner_when_disabled():
         }
     ]
     assert other_scanner.version_calls == []
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_with_workflows_enabled():
+    """A workflow version resolves through the workflow scanner when opted in."""
+    _set_workflows_enabled(True)
+    _set_other_models_enabled(False)
+    workflow_scanner = OtherRecordingScanner(version_ids={500})
+
+    async def workflow_factory():
+        return workflow_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_workflow_scanner=workflow_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(
+        FakeRequest(query={"modelId": "5", "modelVersionId": "500"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload == {
+        "success": True,
+        "exists": True,
+        "modelType": "workflow",
+        "hasBeenDownloaded": False,
+        "downloadedFiles": [],
+    }
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_skips_workflow_scanner_when_disabled():
+    """Opt-out stays byte-identical: no workflow probe, modelType stays null."""
+    _set_workflows_enabled(False)
+    workflow_scanner = OtherRecordingScanner(
+        versions_by_model_id={5: [{"versionId": 500}]},
+        version_ids={500},
+    )
+
+    async def workflow_factory():
+        return workflow_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_workflow_scanner=workflow_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(
+        FakeRequest(query={"modelId": "5", "modelVersionId": "500"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload == {
+        "success": True,
+        "exists": False,
+        "modelType": None,
+        "hasBeenDownloaded": False,
+        "downloadedFiles": [],
+    }
+    assert workflow_scanner.version_calls == []
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_workflow_history_fallback():
+    """A deleted workflow file still reports its versioned download history."""
+    _set_workflows_enabled(True)
+    _set_other_models_enabled(False)
+    history_service = FakeDownloadHistoryService(
+        downloaded_by_type={"workflow": {600}}
+    )
+
+    async def history_factory():
+        return history_service
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_workflow_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=history_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(
+        FakeRequest(query={"modelId": "5", "modelVersionId": "600"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload["exists"] is False
+    assert payload["modelType"] == "workflow"
+    assert payload["hasBeenDownloaded"] is True
+
+
+@pytest.mark.asyncio
+async def test_check_models_exist_resolves_workflow_ids():
+    """Mixed lora + workflow ids resolve independently in the batch endpoint."""
+    _set_workflows_enabled(True)
+    _set_other_models_enabled(False)
+    lora_scanner = OtherRecordingScanner(
+        versions_by_model_id={5: [{"versionId": 11, "name": "v1"}]}
+    )
+    workflow_scanner = OtherRecordingScanner(
+        versions_by_model_id={7: [{"versionId": 700, "name": "flow-v1"}]}
+    )
+
+    async def lora_factory():
+        return lora_scanner
+
+    async def workflow_factory():
+        return workflow_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=lora_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_workflow_scanner=workflow_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_models_exist(
+        FakeRequest(query={"modelIds": "5,7"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    results = {item["modelId"]: item for item in payload["results"]}
+    assert results[5]["modelType"] == "lora"
+    assert results[7]["modelType"] == "workflow"
+    assert results[7]["versions"] == [
+        {"versionId": 700, "name": "flow-v1", "hasBeenDownloaded": True}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_check_models_exist_ignores_workflow_scanner_when_disabled():
+    _set_workflows_enabled(False)
+    workflow_scanner = OtherRecordingScanner(
+        versions_by_model_id={7: [{"versionId": 700}]}
+    )
+
+    async def workflow_factory():
+        return workflow_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_workflow_scanner=workflow_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_models_exist(
+        FakeRequest(query={"modelIds": "7"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload["results"] == [
+        {
+            "modelId": 7,
+            "modelType": None,
+            "versions": [],
+            "downloadedVersionIds": [],
+        }
+    ]
+    assert workflow_scanner.version_calls == []
 
 
 @pytest.mark.asyncio
@@ -3059,12 +3251,15 @@ class StaticMetadataProvider:
         return None
 
 
-def _versions_status_handler(payload, *, other_scanner=None):
+def _versions_status_handler(payload, *, other_scanner=None, workflow_scanner=None):
     async def metadata_factory():
         return StaticMetadataProvider(payload)
 
     async def other_factory():
         return other_scanner
+
+    async def workflow_factory():
+        return workflow_scanner
 
     return ModelLibraryHandler(
         ServiceRegistryAdapter(
@@ -3072,6 +3267,7 @@ def _versions_status_handler(payload, *, other_scanner=None):
             get_checkpoint_scanner=fake_scanner_factory,
             get_embedding_scanner=fake_scanner_factory,
             get_other_scanner=other_factory,
+            get_workflow_scanner=workflow_factory,
             get_downloaded_version_history_service=fake_download_history_service_factory,
         ),
         metadata_provider_factory=metadata_factory,
@@ -3142,6 +3338,66 @@ async def test_get_model_versions_status_other_disabled_is_read_only():
     assert payload["supported"] is False
     assert payload["reason"] == "other_models_disabled"
     assert payload["modelType"] == "vae"
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_workflows_disabled_is_read_only():
+    """A disabled Workflow management switch gets its own machine reason."""
+    _set_workflows_enabled(False)
+    handler = _versions_status_handler(
+        {
+            "name": "Some Workflow",
+            "type": "Workflows",
+            "modelVersions": [{"id": 3432776, "name": "v10.4", "images": []}],
+        }
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "2221604"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["supported"] is False
+    assert payload["reason"] == "workflows_disabled"
+    assert payload["modelType"] == "workflows"
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_workflows_enabled_is_interactive():
+    """Enabled Workflow management enriches the list from the workflow scanner."""
+    _set_workflows_enabled(True)
+    workflow_scanner = OtherRecordingScanner(
+        versions_by_model_id={2221604: [{"versionId": 3432776}]}
+    )
+    handler = _versions_status_handler(
+        {
+            "name": "Some Workflow",
+            "type": "Workflows",
+            "modelVersions": [{"id": 3432776, "name": "v10.4", "images": []}],
+        },
+        workflow_scanner=workflow_scanner,
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "2221604"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["supported"] is True
+    assert "reason" not in payload
+    assert payload["versions"] == [
+        {
+            "id": 3432776,
+            "name": "v10.4",
+            "thumbnailUrl": None,
+            "inLibrary": True,
+            "hasBeenDownloaded": False,
+        }
+    ]
 
 
 @pytest.mark.asyncio

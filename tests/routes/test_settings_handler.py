@@ -311,6 +311,8 @@ async def test_get_settings_exposes_workflow_path_in_plugin_mode(
     assert settings["standalone_mode"] is False
     assert "folder_paths" not in settings
     assert settings["workflow_path"] == "/library/workflows"
+    # Companion extension compatibility: a one-item list mirrors the single path.
+    assert settings["workflow_folder_paths"] == ["/library/workflows"]
 
 
 @pytest.mark.asyncio
@@ -325,6 +327,7 @@ async def test_get_settings_workflow_path_fallback_when_stub_lacks_method(
 
     assert response.status == 200
     assert payload["settings"]["workflow_path"] == ""
+    assert payload["settings"]["workflow_folder_paths"] == []
 
 
 @pytest.mark.asyncio
