@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { afterEach, describe, it, beforeEach, expect, vi } from 'vitest';
 
 const {
   MODAL_UTILS_MODULE,
@@ -179,5 +179,64 @@ describe('modalUtils showDeleteModal warning copy and size line', () => {
     showDeleteModal('/models/foo.safetensors');
 
     expect(modelInfoHtml()).not.toContain('modals.deleteModel.freesSpace');
+  });
+});
+
+describe('modalUtils workflow wording', () => {
+  let state;
+
+  beforeEach(async () => {
+    ({ state } = await import('../../../static/js/state/index.js'));
+    state.currentPageType = 'workflows';
+    showModalMock.mockReset();
+    closeModalMock.mockReset();
+    translateMock.mockReset();
+    translateMock.mockImplementation((key) => key);
+    document.body.innerHTML = `
+      <div class="model-card" data-filepath="/library/workflows/flow.json" data-name="Flow"></div>
+      <div id="deleteModal">
+        <h2>Delete Model</h2>
+        <p class="delete-message">model copy</p>
+        <div class="delete-model-info"></div>
+      </div>
+      <div id="excludeModal">
+        <h2>Exclude Model</h2>
+        <p class="delete-message">model copy</p>
+        <div class="exclude-model-info"></div>
+      </div>
+    `;
+  });
+
+  afterEach(() => {
+    state.currentPageType = 'loras';
+  });
+
+  it('rewrites the delete dialog copy for workflows', async () => {
+    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
+    showDeleteModal('/library/workflows/flow.json');
+
+    expect(document.querySelector('#deleteModal h2').textContent).toBe('workflows.modals.delete.title');
+    expect(document.querySelector('#deleteModal .delete-message').textContent).toBe('workflows.modals.delete.message');
+    expect(document.querySelector('#deleteModal .delete-model-info').innerHTML).toContain('workflows.itemLabel');
+  });
+
+  it('preserves the exclude modal copy on the workflows page', async () => {
+    // Workflows have no exclusion concept; the shared exclude dialog stays
+    // model-worded because only model pages can reach it.
+    const { showExcludeModal } = await import(MODAL_UTILS_MODULE);
+    showExcludeModal('/library/workflows/flow.json');
+
+    expect(document.querySelector('#excludeModal h2').textContent).toBe('Exclude Model');
+    expect(document.querySelector('#excludeModal .exclude-model-info').innerHTML).toContain('Model:');
+  });
+
+  it('keeps the model dialog copy on model pages', async () => {
+    state.currentPageType = 'loras';
+
+    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
+    showDeleteModal('/library/workflows/flow.json');
+
+    expect(document.querySelector('#deleteModal h2').textContent).toBe('Delete Model');
+    expect(document.querySelector('#deleteModal .delete-model-info').innerHTML).toContain('Model:');
   });
 });

@@ -1457,11 +1457,40 @@
     },
     "workflows": {
         "title": "Workflows",
+        "itemLabel": "[TODO: Translate] Workflow",
         "contextMenu": {
             "sendToComfy": "In ComfyUI öffnen",
             "updateFromComfy": "Von ComfyUI aktualisieren",
             "copyWorkflow": "Workflow kopieren",
-            "restoreDownloaded": "Heruntergeladene Version wiederherstellen"
+            "restoreDownloaded": "Heruntergeladene Version wiederherstellen",
+            "copyFilename": "[TODO: Translate] Copy Workflow Filename",
+            "moveWorkflow": "[TODO: Translate] Move Workflow to Folder",
+            "deleteWorkflow": "[TODO: Translate] Delete Workflow"
+        },
+        "modals": {
+            "delete": {
+                "title": "[TODO: Translate] Delete Workflow",
+                "message": "[TODO: Translate] Are you sure you want to delete this workflow and all associated files?",
+                "failed": "[TODO: Translate] Failed to delete workflow: {message}"
+            },
+            "move": {
+                "title": "[TODO: Translate] Move Workflow",
+                "bulkTitle": "[TODO: Translate] Move {count} Workflows",
+                "selectRoot": "[TODO: Translate] Select Workflow Root:",
+                "targetHint": "[TODO: Translate] Select a workflow root directory",
+                "noRoots": "[TODO: Translate] No workflow roots found",
+                "noSelection": "[TODO: Translate] No workflows selected",
+                "failed": "[TODO: Translate] Failed to move workflow(s): {message}"
+            },
+            "bulkDelete": {
+                "title": "[TODO: Translate] Delete Multiple Workflows",
+                "message": "[TODO: Translate] Are you sure you want to delete all selected workflows and their associated files?",
+                "countMessage": "[TODO: Translate] workflows will be permanently deleted."
+            }
+        },
+        "relink": {
+            "success": "[TODO: Translate] Workflow successfully re-linked to CivitAI",
+            "civArchiveSuccess": "[TODO: Translate] Workflow successfully re-linked via CivitArchive"
         },
         "sendToComfy": {
             "success": "Workflow an ComfyUI gesendet",

@@ -9,9 +9,31 @@ describe('ModelContextMenuMixin.getModelTypePrefix', () => {
     expect(ModelContextMenuMixin.getModelTypePrefix.call({ modelType: 'embedding' })).toBe('embeddings');
   });
 
+  it('maps workflows to the workflows prefix', () => {
+    expect(ModelContextMenuMixin.getModelTypePrefix.call({ modelType: 'workflow' })).toBe('workflows');
+    // WorkflowContextMenu stores the plural page type.
+    expect(ModelContextMenuMixin.getModelTypePrefix.call({ modelType: 'workflows' })).toBe('workflows');
+  });
+
   it('falls back to the loras prefix for unknown types', () => {
     expect(ModelContextMenuMixin.getModelTypePrefix.call({ modelType: 'unknown' })).toBe('loras');
     expect(ModelContextMenuMixin.getModelTypePrefix.call({})).toBe('loras');
+  });
+});
+
+describe('ModelContextMenuMixin.updateExcludeMenuItem', () => {
+  function setupMenu(isExcludedView = false) {
+    document.body.innerHTML = '<div id="menu"><div data-action="exclude"></div></div>';
+    return { menu: document.getElementById('menu'), isExcludedView: () => isExcludedView };
+  }
+
+  it('excludes a model on model pages', () => {
+    const context = { ...setupMenu(), modelType: 'lora' };
+    ModelContextMenuMixin.updateExcludeMenuItem.call(context);
+
+    const item = context.menu.querySelector('[data-action]');
+    expect(item.dataset.action).toBe('exclude');
+    expect(item.textContent).toContain('Exclude model');
   });
 });
 

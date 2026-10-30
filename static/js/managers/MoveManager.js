@@ -8,6 +8,7 @@ import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { sidebarManager } from '../components/SidebarManager.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { MODEL_TYPES } from '../api/apiConfig.js';
 
 class MoveManager {
     constructor() {
@@ -61,25 +62,40 @@ class MoveManager {
 
         const apiClient = this._getApiClient(modelType);
         const modelConfig = apiClient.apiConfig.config;
+        // Workflows are a separate library, so their copy must say "workflow"
+        // rather than reusing the model wording.
+        const isWorkflow = apiClient.modelType === MODEL_TYPES.WORKFLOW;
 
         // Handle bulk mode
         if (filePath === 'bulk') {
             const selectedPaths = Array.from(state.selectedModels);
             if (selectedPaths.length === 0) {
-                showToast('toast.models.noModelsSelected', {}, 'warning');
+                showToast(isWorkflow ? 'workflows.modals.move.noSelection' : 'toast.models.noModelsSelected', {}, 'warning');
                 return;
             }
             this.bulkFilePaths = selectedPaths;
-            document.getElementById('moveModalTitle').textContent = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
+            const title = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
+            document.getElementById('moveModalTitle').textContent = isWorkflow
+                ? translate('workflows.modals.move.bulkTitle', { count: selectedPaths.length }, title)
+                : title;
         } else {
             // Single file mode
             this.currentFilePath = filePath;
-            document.getElementById('moveModalTitle').textContent = `Move ${modelConfig.displayName}`;
+            const title = `Move ${modelConfig.displayName}`;
+            document.getElementById('moveModalTitle').textContent = isWorkflow
+                ? translate('workflows.modals.move.title', {}, title)
+                : title;
         }
 
         // Update UI labels based on model type
-        document.getElementById('moveRootLabel').textContent = `Select ${modelConfig.displayName} Root:`;
-        document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
+        const rootLabel = `Select ${modelConfig.displayName} Root:`;
+        const targetHint = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
+        document.getElementById('moveRootLabel').textContent = isWorkflow
+            ? translate('workflows.modals.move.selectRoot', {}, rootLabel)
+            : rootLabel;
+        document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = isWorkflow
+            ? translate('workflows.modals.move.targetHint', {}, targetHint)
+            : targetHint;
 
         // Clear folder path input
         const folderPathInput = document.getElementById('moveFolderPath');
@@ -103,7 +119,9 @@ class MoveManager {
             }
 
             if (!rootsData.roots || rootsData.roots.length === 0) {
-                throw new Error(`No ${modelConfig.displayName.toLowerCase()} roots found`);
+                throw new Error(isWorkflow
+                    ? translate('workflows.modals.move.noRoots', {}, 'No workflow roots found')
+                    : `No ${modelConfig.displayName.toLowerCase()} roots found`);
             }
 
             // Populate model root selector
@@ -148,7 +166,7 @@ class MoveManager {
 
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
-            showToast('toast.models.moveFailed', { message: error.message }, 'error');
+            showToast(isWorkflow ? 'workflows.modals.move.failed' : 'toast.models.moveFailed', { message: error.message }, 'error');
         }
     }
 
@@ -426,7 +444,11 @@ class MoveManager {
 
         } catch (error) {
             console.error('Error moving model(s):', error);
-            showToast('toast.models.moveFailed', { message: error.message }, 'error');
+            showToast(
+                apiClient.modelType === MODEL_TYPES.WORKFLOW ? 'workflows.modals.move.failed' : 'toast.models.moveFailed',
+                { message: error.message },
+                'error'
+            );
         }
     }
 }

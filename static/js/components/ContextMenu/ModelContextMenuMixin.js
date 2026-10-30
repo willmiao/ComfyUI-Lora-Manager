@@ -3,7 +3,7 @@ import { modalManager } from '../../managers/ModalManager.js';
 import { state } from '../../state/index.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { bulkManager } from '../../managers/BulkManager.js';
-import { MODEL_CONFIG } from '../../api/apiConfig.js';
+import { MODEL_CONFIG, MODEL_TYPES, isValidModelType } from '../../api/apiConfig.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
 import { classifyModelRelinkUrl } from '../../utils/civitaiUtils.js';
@@ -14,6 +14,10 @@ import { escapeHtml } from '../shared/utils.js';
 export const ModelContextMenuMixin = {
     isExcludedView() {
         return state?.pages?.[state.currentPageType]?.viewMode === 'excluded';
+    },
+
+    isWorkflowMenu() {
+        return this.modelType === MODEL_TYPES.WORKFLOW;
     },
 
     updateExcludeMenuItem() {
@@ -118,7 +122,12 @@ export const ModelContextMenuMixin = {
             other: 'other',
             workflow: 'workflows'
         };
-        return prefixMap[this.modelType] || 'loras';
+        if (prefixMap[this.modelType]) {
+            return prefixMap[this.modelType];
+        }
+        // Some context menus store the plural page type (e.g. WorkflowContextMenu
+        // uses 'workflows'), which is also a valid route prefix.
+        return isValidModelType(this.modelType) ? this.modelType : 'loras';
     },
 
     showRelinkCivitaiModal() {
@@ -176,21 +185,21 @@ export const ModelContextMenuMixin = {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Failed to re-link model: ${response.statusText}`);
+                    throw new Error(`Failed to re-link: ${response.statusText}`);
                 }
 
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast(
-                        isCivArchive ? 'toast.contextMenu.linkCivArchSuccess' : 'toast.contextMenu.relinkSuccess',
-                        {},
-                        'success'
-                    );
+                    const isWorkflow = this.isWorkflowMenu();
+                    const successKey = isCivArchive
+                        ? (isWorkflow ? 'workflows.relink.civArchiveSuccess' : 'toast.contextMenu.linkCivArchSuccess')
+                        : (isWorkflow ? 'workflows.relink.success' : 'toast.contextMenu.relinkSuccess');
+                    showToast(successKey, {}, 'success');
                     // Reload the current view to show updated data
                     await this.resetAndReload();
                 } else {
-                    throw new Error(data.error || 'Failed to re-link model');
+                    throw new Error(data.error || 'Failed to re-link');
                 }
             } catch (error) {
                 console.error('Error re-linking model:', error);

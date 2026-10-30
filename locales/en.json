@@ -1457,11 +1457,40 @@
   },
   "workflows": {
     "title": "Workflows",
+    "itemLabel": "Workflow",
     "contextMenu": {
       "sendToComfy": "Open in ComfyUI",
       "updateFromComfy": "Update from ComfyUI",
       "copyWorkflow": "Copy Workflow",
-      "restoreDownloaded": "Restore Downloaded Version"
+      "restoreDownloaded": "Restore Downloaded Version",
+      "copyFilename": "Copy Workflow Filename",
+      "moveWorkflow": "Move Workflow to Folder",
+      "deleteWorkflow": "Delete Workflow"
+    },
+    "modals": {
+      "delete": {
+        "title": "Delete Workflow",
+        "message": "Are you sure you want to delete this workflow and all associated files?",
+        "failed": "Failed to delete workflow: {message}"
+      },
+      "move": {
+        "title": "Move Workflow",
+        "bulkTitle": "Move {count} Workflows",
+        "selectRoot": "Select Workflow Root:",
+        "targetHint": "Select a workflow root directory",
+        "noRoots": "No workflow roots found",
+        "noSelection": "No workflows selected",
+        "failed": "Failed to move workflow(s): {message}"
+      },
+      "bulkDelete": {
+        "title": "Delete Multiple Workflows",
+        "message": "Are you sure you want to delete all selected workflows and their associated files?",
+        "countMessage": "workflows will be permanently deleted."
+      }
+    },
+    "relink": {
+      "success": "Workflow successfully re-linked to CivitAI",
+      "civArchiveSuccess": "Workflow successfully re-linked via CivitArchive"
     },
     "sendToComfy": {
       "success": "Workflow sent to ComfyUI",

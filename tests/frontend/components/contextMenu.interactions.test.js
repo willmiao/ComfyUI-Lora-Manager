@@ -106,15 +106,14 @@ vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
   resetAndReload: resetAndReloadMock,
 }));
 
-vi.mock('../../../static/js/api/apiConfig.js', () => ({
-  getCompleteApiConfig: getCompleteApiConfigMock,
-  getCurrentModelType: getCurrentModelTypeMock,
-  MODEL_TYPES: {
-    LORA: 'loras',
-    CHECKPOINT: 'checkpoints',
-    EMBEDDING: 'embeddings',
-  },
-}));
+vi.mock('../../../static/js/api/apiConfig.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getCompleteApiConfig: getCompleteApiConfigMock,
+    getCurrentModelType: getCurrentModelTypeMock,
+  };
+});
 
 vi.mock('../../../static/js/state/index.js', () => ({
   state: stateStub,
@@ -2200,6 +2199,28 @@ describe('Interaction-level regression coverage', () => {
     const excludedItem = document.querySelector('[data-action="manage-excluded-models"]');
     excludedItem.dispatchEvent(new Event('click', { bubbles: true }));
     expect(window.pageControls.enterExcludedView).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the excluded-models entry on the workflows page', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="manage-excluded-models"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const excludedItem = document.querySelector('[data-action="manage-excluded-models"]');
+
+    stateStub.currentPageType = 'workflows';
+    menu.showMenu(100, 200);
+    expect(excludedItem.classList.contains('hidden')).toBe(true);
+
+    stateStub.currentPageType = 'loras';
+    menu.showMenu(100, 200);
+    expect(excludedItem.classList.contains('hidden')).toBe(false);
+
+    delete stateStub.currentPageType;
   });
 
   it('routes single-model example downloads to missing-only and force paths', async () => {

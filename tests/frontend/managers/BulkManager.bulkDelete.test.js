@@ -63,7 +63,7 @@ vi.mock('../../../static/js/api/recipeApi.js', () => ({
 }));
 
 vi.mock('../../../static/js/api/apiConfig.js', () => ({
-  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings' },
+  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings', WORKFLOW: 'workflows' },
   MODEL_CONFIG: {},
 }));
 
@@ -301,6 +301,27 @@ describe('BulkManager.confirmBulkDelete undo flows', () => {
 
     expect(showToastMock).toHaveBeenCalledWith('toast.api.operationCancelled', {}, 'info');
     expect(showActionToastMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the workflow wording in the bulk delete dialog on the workflows page', async () => {
+    stateStub.currentPageType = 'workflows';
+    document.body.innerHTML = `
+      <div id="bulkDeleteModal">
+        <h2></h2>
+        <p class="delete-message"></p>
+        <div class="delete-model-info"><p></p></div>
+      </div>
+    `;
+
+    const bulk = await createBulkManager();
+    bulk.showBulkDeleteModal();
+
+    expect(document.querySelector('#bulkDeleteModal h2').textContent).toBe(
+      'workflows.modals.bulkDelete.title'
+    );
+    expect(document.querySelector('#bulkDeleteModal .delete-message').textContent).toBe(
+      'workflows.modals.bulkDelete.message'
+    );
   });
 
   it('refreshes recipes through window.recipeManager when undoing a recipe bulk delete', async () => {

@@ -4,10 +4,46 @@ import { showActionToast } from './uiHelpers.js';
 import { translate } from './i18nHelpers.js';
 import { handleUndoDelete } from './undoHelpers.js';
 import { formatFileSize } from '../components/shared/utils.js';
+import { state } from '../state/index.js';
+import { MODEL_TYPES } from '../api/apiConfig.js';
 
 let pendingDeletePath = null;
 let pendingDeleteName = null;
 let pendingExcludePath = null;
+
+/**
+ * Workflows live in their own library, so the shared delete/exclude dialogs
+ * must not call them "models" while the Workflows page is active.
+ */
+function isWorkflowPage() {
+    return state.currentPageType === MODEL_TYPES.WORKFLOW;
+}
+
+/**
+ * Singular noun for the deleted/excluded item, used as the info-box label
+ * ("Model:" / "Workflow:").
+ */
+function getItemTypeLabel() {
+    return isWorkflowPage()
+        ? translate('workflows.itemLabel', {}, 'Workflow')
+        : 'Model';
+}
+
+/**
+ * Swap the dialog heading/body copy to the workflow wording. The template
+ * ships the model wording, so the workflow branch overrides it at open time.
+ */
+function applyWorkflowCopy(modal, titleKey, messageKey, titleFallback, messageFallback) {
+    if (!isWorkflowPage() || !modal) return;
+    const titleEl = modal.querySelector('h2');
+    if (titleEl) {
+        titleEl.textContent = translate(titleKey, {}, titleFallback);
+    }
+    const messageEl = modal.querySelector('.delete-message');
+    if (messageEl) {
+        messageEl.textContent = translate(messageKey, {}, messageFallback);
+    }
+}
 
 export function showDeleteModal(filePath) {
     pendingDeletePath = filePath;
@@ -21,13 +57,21 @@ export function showDeleteModal(filePath) {
     const modal = modalManager.getModal('deleteModal').element;
     const modelInfo = modal.querySelector('.delete-model-info');
 
+    applyWorkflowCopy(
+        modal,
+        'workflows.modals.delete.title',
+        'workflows.modals.delete.message',
+        'Delete Workflow',
+        'Are you sure you want to delete this workflow and all associated files?'
+    );
+
     const fileSize = card?.dataset.file_size;
     const sizeLine = fileSize
         ? `<br>${translate('modals.deleteModel.freesSpace', { size: formatFileSize(parseInt(fileSize, 10)) })}`
         : '';
 
     modelInfo.innerHTML = `
-        <strong>Model:</strong> ${modelName}
+        <strong>${getItemTypeLabel()}:</strong> ${modelName}
         <br>
         <strong>File:</strong> ${filePath}
         <br>
@@ -59,7 +103,9 @@ export async function confirmDelete() {
         }
     } catch (error) {
         console.error('Error deleting model:', error);
-        alert(`Error deleting model: ${error}`);
+        alert(isWorkflowPage()
+            ? translate('workflows.modals.delete.failed', { message: String(error) }, `Failed to delete workflow: ${error}`)
+            : `Error deleting model: ${error}`);
     }
 }
 
@@ -80,7 +126,7 @@ export function showExcludeModal(filePath) {
     const modelName = card ? card.dataset.name : filePath.split('/').pop();
     const modal = modalManager.getModal('excludeModal').element;
     const modelInfo = modal.querySelector('.exclude-model-info');
-    
+
     modelInfo.innerHTML = `
         <strong>Model:</strong> ${modelName}
         <br>

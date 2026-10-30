@@ -1,5 +1,6 @@
 <div class="controls">
-    {% if page_id != 'recipes' %}
+    {# Recipes and workflows have no exclusion concept, so they get no excluded-view banner. #}
+    {% if page_id not in ['recipes', 'workflows'] %}
     <div id="excludedViewBanner" class="excluded-view-banner hidden">
         <div class="excluded-view-banner__content">
             <div class="excluded-view-banner__title">

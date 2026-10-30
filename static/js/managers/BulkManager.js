@@ -706,7 +706,10 @@ export class BulkManager {
 
         const count = state.selectedModels.size;
         const isRecipes = state.currentPageType === 'recipes';
-        const keyPrefix = isRecipes ? 'modals.bulkDeleteRecipes' : 'modals.bulkDelete';
+        const isWorkflows = state.currentPageType === MODEL_TYPES.WORKFLOW;
+        const keyPrefix = isRecipes
+            ? 'modals.bulkDeleteRecipes'
+            : (isWorkflows ? 'workflows.modals.bulkDelete' : 'modals.bulkDelete');
 
         const titleEl = document.querySelector('#bulkDeleteModal h2');
         if (titleEl) {

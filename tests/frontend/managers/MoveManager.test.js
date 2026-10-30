@@ -42,7 +42,7 @@ vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
 }));
 
 vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
-    translate: vi.fn(key => key)
+    translate: vi.fn((key, params = {}, fallback = null) => fallback || key)
 }));
 
 describe('MoveManager', () => {
@@ -97,6 +97,23 @@ describe('MoveManager', () => {
         await moveManager.initializeFolderTree();
 
         expect(mockApiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith({ includeEmpty: true });
+    });
+
+    it('should name workflows in the move dialog on the workflows page', async () => {
+        mockApiClient.modelType = 'workflows';
+        mockApiClient.apiConfig.config.displayName = 'Workflow';
+
+        await moveManager.showMoveModal('/library/workflows/flow.json');
+
+        expect(document.getElementById('moveModalTitle').textContent).toBe('Move Workflow');
+        expect(document.getElementById('moveRootLabel').textContent).toBe('Select Workflow Root:');
+    });
+
+    it('should keep the model wording in the move dialog on model pages', async () => {
+        await moveManager.showMoveModal('/models/loras/a.safetensors');
+
+        expect(document.getElementById('moveModalTitle').textContent).toBe('Move LoRA');
+        expect(document.getElementById('moveRootLabel').textContent).toBe('Select LoRA Root:');
     });
 
     it('should ignore manual folder selection when useDefaultPath is true', async () => {

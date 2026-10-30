@@ -2,8 +2,9 @@ import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
-import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
+import { showDeleteModal } from '../../utils/modalUtils.js';
 import { copyWorkflowToClipboard, restoreWorkflow, sendWorkflowToComfy, updateWorkflowFromComfy } from '../../utils/workflowActions.js';
+import { copyToClipboard } from '../../utils/uiHelpers.js';
 import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
@@ -23,7 +24,6 @@ export class WorkflowContextMenu extends BaseContextMenu {
 
     showMenu(x, y, card) {
         super.showMenu(x, y, card);
-        this.updateExcludeMenuItem();
         // Standalone has no running ComfyUI to push a workflow into; the
         // copy-to-clipboard action covers that mode instead.
         const sendItem = this.menu?.querySelector('[data-action="send-to-comfy"]');
@@ -118,9 +118,10 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 showDeleteModal(this.currentCard.dataset.filepath);
                 break;
             case 'copyname':
-                // Copy workflow name
-                if (this.currentCard.querySelector('.fa-copy')) {
-                    this.currentCard.querySelector('.fa-copy').click();
+                // Copy the file name itself. The card's copy icon copies the
+                // workflow document, which "Copy Workflow" already covers.
+                if (this.currentCard.dataset.file_name) {
+                    copyToClipboard(this.currentCard.dataset.file_name);
                 }
                 break;
             case 'refresh-metadata':
@@ -129,12 +130,6 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 break;
             case 'move':
                 moveManager.showMoveModal(this.currentCard.dataset.filepath);
-                break;
-            case 'exclude':
-                showExcludeModal(this.currentCard.dataset.filepath);
-                break;
-            case 'restore':
-                this.restoreExcludedModel(this.currentCard.dataset.filepath);
                 break;
         }
     }

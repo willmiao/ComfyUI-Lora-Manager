@@ -52,7 +52,6 @@ vi.mock('../../../../static/js/managers/MoveManager.js', () => ({
 
 vi.mock('../../../../static/js/utils/modalUtils.js', () => ({
   showDeleteModal: vi.fn(),
-  showExcludeModal: vi.fn(),
   showConfirmationModal: showConfirmationModalMock,
 }));
 
@@ -110,6 +109,16 @@ describe('WorkflowContextMenu', () => {
       expect.anything(),
       'error'
     );
+  });
+
+  it('copies the workflow file name from the copy-filename entry', () => {
+    card.dataset.file_name = 'flow.json';
+
+    menu.handleMenuAction('copyname');
+
+    expect(copyToClipboardMock).toHaveBeenCalledWith('flow.json');
+    // The document copy belongs to the dedicated "Copy Workflow" entry.
+    expect(fetchWorkflowContentMock).not.toHaveBeenCalled();
   });
 
   it('shows an error toast when the workflow content cannot be loaded', async () => {

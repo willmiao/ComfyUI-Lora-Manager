@@ -2,7 +2,7 @@ import { BaseContextMenu } from './BaseContextMenu.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
-import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
+import { getCompleteApiConfig, getCurrentModelType, MODEL_TYPES } from '../../api/apiConfig.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { rematchModalManager } from '../../managers/RematchModalManager.js';
 import { showRematchSummary } from '../RematchSummaryModal.js';
@@ -20,6 +20,9 @@ export class GlobalContextMenu extends BaseContextMenu {
 
         // Conditional visibility for recipes page
         const isRecipesPage = state.currentPageType === 'recipes';
+        // Workflows (like recipes) have no exclusion concept: hide the entry so
+        // a workflow can never be excluded with no way back.
+        const isWorkflowsPage = state.currentPageType === MODEL_TYPES.WORKFLOW;
         const modelUpdateItem = this.menu.querySelector('[data-action="check-model-updates"]');
         const licenseRefreshItem = this.menu.querySelector('[data-action="fetch-missing-licenses"]');
         const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
@@ -51,6 +54,10 @@ export class GlobalContextMenu extends BaseContextMenu {
             excludedModelsItem?.classList.remove('hidden');
             groupByModelItem?.classList.remove('hidden');
             rematchRecipesItem?.classList.add('hidden');
+        }
+
+        if (isWorkflowsPage) {
+            excludedModelsItem?.classList.add('hidden');
         }
 
         this._updateSeparatorVisibility();
