@@ -1,5 +1,7 @@
+import hashlib
 import json
 import os
+from types import SimpleNamespace
 
 import pytest
 from aiohttp import web
@@ -24,9 +26,16 @@ class DummyRequest:
 class StubScanner:
     def __init__(self, roots=None):
         self._roots = roots or []
+        self.registered = []
 
     def get_model_roots(self):
         return list(self._roots)
+
+    async def register_local_artifact(self, file_path):
+        self.registered.append(file_path)
+        return SimpleNamespace(
+            file_path=file_path.replace(os.sep, "/"), preview_url=""
+        )
 
 
 class StubWorkflowService:
@@ -84,6 +93,9 @@ def test_common_and_specific_routes_registered():
     assert ("POST", "/api/lm/workflows/send-to-comfy") in registered
     assert ("GET", "/api/lm/workflows/send-to-comfy") in registered
     assert ("GET", "/api/lm/workflows/content") in registered
+    # "Create LM-managed workflow" from the ComfyUI Graph menu.
+    assert ("POST", "/api/lm/workflows/create") in registered
+    assert ("GET", "/api/lm/workflows/link-status") in registered
     # Write-back from the ComfyUI-side "Update LM-managed workflow" entry.
     assert ("PUT", "/api/lm/workflows/content") in registered
     # Link-state reporting + LM-page-triggered write-back ("Update from ComfyUI").
@@ -125,20 +137,21 @@ def test_validate_rejects_everything_when_feature_disabled():
 
 
 def test_page_context_reports_feature_state(monkeypatch):
-    from py.config import config
     from py.services.settings_manager import get_settings_manager
 
     manager = get_settings_manager()
     handler = WorkflowRoutes()
     provider = handler._get_page_context_provider()
 
-    monkeypatch.setattr(config, "workflows_roots", ["/library/workflows"], raising=False)
+    monkeypatch.setattr(
+        manager, "get_workflow_path", lambda: "/library/workflows"
+    )
     context = provider(None)
     assert context["workflows_disabled"] is False
     assert context["workflows_no_paths"] is False
 
     # Enabled but nothing configured: the page must explain how to fix it.
-    monkeypatch.setattr(config, "workflows_roots", [], raising=False)
+    monkeypatch.setattr(manager, "get_workflow_path", lambda: "")
     context = provider(None)
     assert context["workflows_disabled"] is False
     assert context["workflows_no_paths"] is True
@@ -147,23 +160,22 @@ def test_page_context_reports_feature_state(monkeypatch):
     assert provider(None) == {"workflows_disabled": True, "workflows_no_paths": False}
 
 
-def test_page_context_exposes_settings_file_in_standalone(monkeypatch):
-    """Standalone users must edit settings.json by hand; the empty state
-    needs the real file path to point them at."""
-    from py.config import config
+def test_page_context_reports_standalone_mode(monkeypatch):
     from py.services.settings_manager import get_settings_manager
 
     manager = get_settings_manager()
     handler = WorkflowRoutes()
     provider = handler._get_page_context_provider()
 
-    monkeypatch.setattr(config, "workflows_roots", [], raising=False)
+    monkeypatch.setattr(manager, "get_workflow_path", lambda: "")
     monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
 
     context = provider(None)
     assert context["workflows_no_paths"] is True
     assert context["standalone_mode"] is True
-    assert context["settings_file"] == manager.settings_file
+    # The empty state points at Settings > Library in both modes; no
+    # settings.json editing hint/fallback is exposed.
+    assert "settings_file" not in context
 
 
 def test_get_expected_model_types_mentions_workflows():
@@ -1069,3 +1081,367 @@ async def test_restore_rejects_path_outside_library(routes, tmp_path):
 
     assert response.status == 400
     assert payload["success"] is False
+
+
+# ---------------------------------------------------------------------------
+# Create LM-managed workflow
+# ---------------------------------------------------------------------------
+
+UI_GRAPH = {
+    "nodes": [{"id": 1, "type": "KSampler"}],
+    "links": [],
+    "extra": {"ds": {"scale": 1}},
+}
+
+
+def _pin_workflow_path(monkeypatch, path):
+    from py.services.settings_manager import get_settings_manager
+
+    monkeypatch.setattr(
+        get_settings_manager(), "get_workflow_path", lambda: str(path)
+    )
+
+
+def _patch_broadcast(monkeypatch):
+    from py.routes.handlers import model_handlers
+
+    calls = []
+    monkeypatch.setattr(
+        model_handlers, "_broadcast_models_changed", lambda: calls.append(True)
+    )
+    return calls
+
+
+async def test_create_workflow_writes_document_and_returns_marker(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    broadcast_calls = _patch_broadcast(monkeypatch)
+
+    graph = json.loads(json.dumps(UI_GRAPH))
+    graph["extra"]["lm_source"] = {
+        "file_path": "/old/flow.json",
+        "sha256": "old",
+    }
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"name": "My Flow", "workflow": graph})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["name"] == "My Flow"
+    assert payload["preview"] is False
+
+    target = root / "My Flow.json"
+    assert target.exists()
+    assert payload["file_path"] == str(target).replace(os.sep, "/")
+    assert payload["sha256"] == hashlib.sha256(target.read_bytes()).hexdigest()
+
+    stored = json.loads(target.read_text(encoding="utf-8"))
+    # The client-side provenance marker never lands in the library document.
+    assert "lm_source" not in stored["extra"]
+    assert stored["extra"]["ds"] == {"scale": 1}
+
+    # The file is registered in the scanner cache before the response.
+    assert routes.service.scanner.registered == [  # pyright: ignore[reportAttributeAccessIssue]
+        str(target).replace(os.sep, "/")
+    ]
+    assert broadcast_calls == [True]
+
+
+async def test_create_workflow_sanitizes_name_and_avoids_collision(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    (root / "My Flow.json").write_text("{}", encoding="utf-8")
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"name": "My Flow", "workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["name"].startswith("My Flow-")
+    assert (root / f"{payload['name']}.json").exists()
+    # The existing entry is untouched.
+    assert (root / "My Flow.json").read_text(encoding="utf-8") == "{}"
+
+    hostile = await routes.create_workflow(
+        DummyRequest(body={"name": "../escape/name", "workflow": UI_GRAPH})
+    )
+    hostile_payload = json.loads(hostile.text)
+
+    assert hostile.status == 200
+    created = (root / f"{hostile_payload['name']}.json").resolve()
+    # Path separators are sanitized: the file cannot escape the library root.
+    assert created.parent == root.resolve()
+    assert ".." not in created.name
+
+
+async def test_create_workflow_rejected_in_standalone(routes, monkeypatch):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_create_workflow_rejected_when_feature_disabled(routes, plugin_mode):
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_workflows", False)
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_create_workflow_requires_workflow(routes, plugin_mode):
+    response = await routes.create_workflow(DummyRequest(body={}))
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload == {"success": False, "error": "workflow is required"}
+
+
+async def test_create_workflow_rejects_non_graph_document(routes, plugin_mode):
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": {"some": "config"}})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+async def test_create_workflow_requires_configured_folder(
+    routes, plugin_mode, monkeypatch
+):
+    _pin_workflow_path(monkeypatch, "")
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert "workflow library folder" in payload["error"].lower()
+
+
+async def test_create_workflow_enforces_size_limit(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    import py.routes.workflow_routes as workflow_routes_module
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    monkeypatch.setattr(workflow_routes_module, "MAX_WORKFLOW_JSON_BYTES", 10)
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["error"] == "workflow exceeds the size limit"
+    assert list(root.iterdir()) == []
+
+
+async def test_create_workflow_rolls_back_when_registration_fails(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    class FailingScanner(StubScanner):
+        async def register_local_artifact(self, file_path):
+            return None
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = FailingScanner()  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+
+    response = await routes.create_workflow(
+        DummyRequest(body={"workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 500
+    assert payload["success"] is False
+    # The half-written document is rolled back.
+    assert list(root.iterdir()) == []
+
+
+async def test_create_workflow_sanitizes_reserved_and_blank_names(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    reserved = await routes.create_workflow(
+        DummyRequest(body={"name": "CON", "workflow": UI_GRAPH})
+    )
+    assert json.loads(reserved.text)["name"] == "_CON"
+
+    blank = await routes.create_workflow(
+        DummyRequest(body={"name": "   ", "workflow": UI_GRAPH})
+    )
+    assert json.loads(blank.text)["name"] == "Untitled"
+
+
+async def test_update_workflow_content_404s_for_deleted_library_entry(
+    routes, plugin_mode, tmp_path
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    target = root / "gone.json"
+
+    response = await routes.update_workflow_content(
+        DummyRequest(body={"file_path": str(target), "workflow": UI_GRAPH})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 404
+    assert payload["error"] == "not_found"
+    # A stale marker must never resurrect a deleted library entry.
+    assert not target.exists()
+
+
+async def test_link_status_reports_existing_and_missing(
+    routes, plugin_mode, tmp_path
+):
+    root = tmp_path / "workflows"
+    root.mkdir()
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    target = root / "flow.json"
+    target.write_text(json.dumps(UI_GRAPH), encoding="utf-8")
+
+    response = await routes.get_workflow_link_status(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    assert json.loads(response.text) == {"success": True, "exists": True}
+
+    target.unlink()
+    response = await routes.get_workflow_link_status(
+        DummyRequest(method="GET", query={"file_path": str(target)})
+    )
+    assert json.loads(response.text) == {"success": True, "exists": False}
+
+    # A path outside the live library roots is gone as far as the client cares.
+    response = await routes.get_workflow_link_status(
+        DummyRequest(method="GET", query={"file_path": str(tmp_path / "outside.json")})
+    )
+    assert json.loads(response.text) == {"success": True, "exists": False}
+
+
+async def test_create_workflow_attaches_preview_for_matching_prompt(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    import io
+
+    from PIL import Image
+
+    import py.routes.workflow_routes as workflow_routes_module
+    import py.utils.sidecar_paths as sidecar_paths
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (64, 64), (128, 128, 128)).save(buffer, format="PNG")
+    monkeypatch.setattr(
+        workflow_routes_module,
+        "_resolve_workflow_preview",
+        lambda _prompt_id: buffer.getvalue(),
+    )
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    # Pin preview storage to the workflow folder even if another test left the
+    # global sidecar mode centralized.
+    monkeypatch.setattr(sidecar_paths, "get_preview_dir", lambda _path: str(root))
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    response = await routes.create_workflow(
+        DummyRequest(
+            body={
+                "name": "With Preview",
+                "workflow": UI_GRAPH,
+                "preview_prompt_id": "p-preview",
+            }
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["preview"] is True
+    assert (root / "With Preview.preview.webp").exists()
+
+
+async def test_create_workflow_skips_preview_for_other_prompt(
+    routes, plugin_mode, tmp_path, monkeypatch
+):
+    import py.routes.workflow_routes as workflow_routes_module
+    import py.utils.sidecar_paths as sidecar_paths
+
+    monkeypatch.setattr(
+        workflow_routes_module, "_resolve_workflow_preview", lambda _prompt_id: None
+    )
+
+    root = tmp_path / "workflows"
+    root.mkdir()
+    # Pin preview storage to the workflow folder even if another test left the
+    # global sidecar mode centralized.
+    monkeypatch.setattr(sidecar_paths, "get_preview_dir", lambda _path: str(root))
+    routes.service.scanner = StubScanner([str(root)])  # pyright: ignore[reportAttributeAccessIssue]
+    _pin_workflow_path(monkeypatch, root)
+    _patch_broadcast(monkeypatch)
+
+    response = await routes.create_workflow(
+        DummyRequest(
+            body={
+                "name": "No Preview",
+                "workflow": UI_GRAPH,
+                "preview_prompt_id": "p-preview",
+            }
+        )
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["preview"] is False
+    assert list(root.glob("*.preview.webp")) == []
+
+
+def test_resolve_workflow_preview_requires_matching_prompt():
+    import numpy as np
+
+    from py.routes.workflow_routes import _resolve_workflow_preview
+
+    class FakeRegistry:
+        def __init__(self):
+            self.current_prompt_id = "p-1"
+
+        def get_first_decoded_image(self, prompt_id=None):
+            return np.full((4, 4, 3), 0.5, dtype=np.float32)
+
+    assert _resolve_workflow_preview("p-1", registry_cls=FakeRegistry) is not None
+    assert _resolve_workflow_preview("p-2", registry_cls=FakeRegistry) is None

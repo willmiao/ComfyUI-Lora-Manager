@@ -93,23 +93,8 @@
 
         {{ sm.setting_toggle('enableWorkflows', 'enable_workflows', 'settings.folderSettings.enableWorkflows', 'settings.folderSettings.enableWorkflowsHelp') }}
 
-        <div class="setting-item" id="workflowFolderPathsSetting">
-            <div class="setting-row">
-                <div class="setting-info">
-                    <label>
-                        {{ t('settings.folderSettings.workflowFolders') }}
-                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.workflowFoldersHelp') }}"></i>
-                    </label>
-                </div>
-                <div class="setting-control">
-                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addWorkflowFolderPathRow()">
-                        <i class="fas fa-plus"></i>
-                        <span>{{ t('common.actions.add') }}</span>
-                    </button>
-                </div>
-            </div>
-            <div class="extra-folder-paths-container" id="workflowFolderPaths">
-            </div>
+        <div id="workflowPathSetting">
+            {{ sm.setting_input('workflowPath', 'workflow_path', 'settings.folderSettings.workflowFolder', 'settings.folderSettings.workflowFolderPlaceholder', 'settings.folderSettings.workflowFolderHelp') }}
         </div>
     </div>
 

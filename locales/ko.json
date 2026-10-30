@@ -637,9 +637,10 @@
             "enableOtherModels": "기타 모델 관리",
             "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
             "enableWorkflows": "워크플로 관리",
-            "enableWorkflowsHelp": "끄면 워크플로 폴더(folder_paths.workflows)를 스캔하지 않으며, 워크플로 페이지가 비활성화된 상태로 유지되고 CivitAI의 Workflow 리소스를 연결하거나 다운로드할 수 없습니다.",
-            "workflowFolders": "워크플로 폴더",
-            "workflowFoldersHelp": "ComfyUI 워크플로 JSON 파일을 스캔할 폴더입니다. LoRA Manager에서만 관리하며(ComfyUI와 공유되지 않음), 변경 사항은 즉시 적용됩니다.",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "관리할 모델 유형",
             "otherSubTypesHelp": "기타 모델 페이지에서 스캔하고 표시할 카테고리를 선택합니다.",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "Text Encoder 경로",
                 "clip": "CLIP 경로 (레거시)",
                 "clip_vision": "CLIP Vision 경로",
-                "controlnet": "ControlNet 경로",
-                "workflows": "워크플로 경로"
+                "controlnet": "ControlNet 경로"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "워크플로 활성화 실패"
         },
         "noPaths": {
-            "title": "워크플로 폴더를 찾을 수 없습니다",
-            "descriptionStandalone": "워크플로 관리가 켜져 있지만, 워크플로 폴더를 찾을 수 없습니다. 설정 → 모델 경로에서 워크플로 폴더를 추가한 뒤 LoRA Manager를 재시작하세요.",
-            "hintStandalone": "워크플로는 folder_paths.workflows 항목에서 읽어옵니다.",
-            "descriptionComfyUI": "워크플로 관리가 켜져 있지만, 설정된 워크플로 폴더가 없습니다. 설정 → 라이브러리에서 워크플로 폴더를 추가한 뒤 이 페이지를 새로 고침하세요.",
-            "hintComfyUI": "워크플로는 자체 라이브러리 폴더(folder_paths.workflows)에 있으며, ComfyUI에 내장된 워크플로 목록은 변경되지 않습니다.",
-            "openSettings": "설정 열기",
-            "openModelPaths": "모델 폴더 구성",
-            "openSettingsFolder": "설정 폴더 열기"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "설정 열기"
         }
     },
     "sidebar": {

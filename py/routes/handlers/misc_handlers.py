@@ -1859,15 +1859,15 @@ class SettingsHandler:
                 response_data["other_models_paths_available"] = None
             standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
             response_data["standalone_mode"] = standalone_mode
-            # Workflow roots are LoRA-Manager-only in BOTH modes (the ComfyUI
-            # host has no such folder category), so expose them to the
-            # settings UI regardless of standalone_mode.
-            get_workflow_paths = getattr(
-                self._settings, "get_workflow_folder_paths", None
-            )
-            response_data["workflow_folder_paths"] = (
-                get_workflow_paths() if get_workflow_paths else []
-            )
+            # The workflow library path is LoRA-Manager-only in BOTH modes
+            # (the ComfyUI host has no such folder category), so expose it to
+            # the settings UI regardless of standalone_mode. Prefer the
+            # accessor so the value is normalized consistently.
+            get_workflow_path = getattr(self._settings, "get_workflow_path", None)
+            if get_workflow_path is not None:
+                response_data["workflow_path"] = get_workflow_path()
+            elif "workflow_path" not in response_data:
+                response_data["workflow_path"] = ""
             if standalone_mode:
                 # Standalone reads its model roots exclusively from
                 # settings.json, so the Model Paths settings UI needs the
@@ -1974,14 +1974,6 @@ class SettingsHandler:
             proxy_changed = False
 
             for key, value in data.items():
-                if key == "workflow_folder_paths":
-                    # Pseudo-key: replaces only the workflows entry of the
-                    # active library's folder_paths (core keys are host-owned
-                    # in plugin mode and must not be clobbered), then applies
-                    # the new roots live without a restart.
-                    self._settings.set_workflow_folder_paths(value)
-                    continue
-
                 if value == self._settings.get(key):
                     continue
 

@@ -637,9 +637,10 @@
             "enableOtherModels": "Verwaltung weiterer Modelle",
             "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
             "enableWorkflows": "Workflow-Verwaltung",
-            "enableWorkflowsHelp": "Wenn deaktiviert, werden Workflow-Ordner (folder_paths.workflows) nicht gescannt, die Workflows-Seite bleibt deaktiviert und CivitAI-Workflow-Ressourcen können weder verknüpft noch heruntergeladen werden.",
-            "workflowFolders": "Workflow-Ordner",
-            "workflowFoldersHelp": "Ordner, die nach ComfyUI-Workflow-JSON-Dateien gescannt werden. Werden nur von LoRA Manager verwaltet (nicht mit ComfyUI geteilt); Änderungen gelten sofort.",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "Verwaltete Modelltypen",
             "otherSubTypesHelp": "Wählen Sie, welche Kategorien weiterer Modelle gescannt und auf der Seite für weitere Modelle angezeigt werden.",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "Text-Encoder-Pfade",
                 "clip": "CLIP-Pfade (Legacy)",
                 "clip_vision": "CLIP-Vision-Pfade",
-                "controlnet": "ControlNet-Pfade",
-                "workflows": "Workflow-Pfade"
+                "controlnet": "ControlNet-Pfade"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "Aktivierung der Workflows fehlgeschlagen"
         },
         "noPaths": {
-            "title": "Keine Workflow-Ordner gefunden",
-            "descriptionStandalone": "Die Workflow-Verwaltung ist aktiviert, aber es wurden keine Workflow-Ordner gefunden. Fügen Sie Ihre Workflow-Ordner unter Einstellungen → Modellpfade hinzu und starten Sie LoRA Manager anschließend neu.",
-            "hintStandalone": "Workflows werden aus den folder_paths.workflows-Einträgen gelesen.",
-            "descriptionComfyUI": "Die Workflow-Verwaltung ist aktiviert, aber es sind keine Workflow-Ordner konfiguriert. Fügen Sie Workflow-Ordner unter Einstellungen → Bibliothek hinzu und laden Sie diese Seite neu.",
-            "hintComfyUI": "Workflows liegen in eigenen Bibliotheksordnern (folder_paths.workflows); die integrierte Workflow-Liste von ComfyUI wird nicht verändert.",
-            "openSettings": "Einstellungen öffnen",
-            "openModelPaths": "Modellordner konfigurieren",
-            "openSettingsFolder": "Einstellungsordner öffnen"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "Einstellungen öffnen"
         }
     },
     "sidebar": {

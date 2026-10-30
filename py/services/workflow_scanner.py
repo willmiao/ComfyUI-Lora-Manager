@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from ..config import config
+from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.file_utils import (
     calculate_sha256,
     find_preview_file,
@@ -30,6 +31,14 @@ logger = logging.getLogger(__name__)
 
 # Sidecar files share the .json extension; they must never enter the library.
 _SIDECAR_SUFFIXES = (".metadata.json", WORKFLOW_DOCUMENT_SUFFIX)
+
+# LM-generated preview sidecars (``<workflow>.preview.webp``) share the image
+# artifact extensions, so they must be filtered by name before the workflow
+# extraction step. Without this, a preview that embeds a workflow (e.g. one
+# written with preserve_metadata) would land in the library as a second entry.
+_PREVIEW_SUFFIXES = tuple(
+    ext for ext in PREVIEW_EXTENSIONS if ext.startswith(".preview.")
+)
 
 
 class WorkflowScanner(ModelScanner):
@@ -55,10 +64,17 @@ class WorkflowScanner(ModelScanner):
 
     def _is_indexable_filename(self, filename: str) -> bool:
         lowered = filename.lower()
-        return not lowered.endswith(_SIDECAR_SUFFIXES)
+        if lowered.endswith(_SIDECAR_SUFFIXES):
+            return False
+        # Preview assets share the artifact image extensions (.webp/.png), so
+        # a preview sidecar named "<workflow>.preview.webp" must never be
+        # indexed as an image artifact of its own.
+        if lowered.endswith(_PREVIEW_SUFFIXES):
+            return False
+        return True
 
     def get_model_roots(self) -> List[str]:
-        """Workflow roots (primary + extra), empty while the feature is off."""
+        """Return the configured workflow library root (empty while disabled)."""
         try:
             from .settings_manager import get_settings_manager
 
@@ -66,16 +82,7 @@ class WorkflowScanner(ModelScanner):
                 return []
         except Exception:  # pragma: no cover - defensive; settings unavailable
             return []
-        roots: List[str] = []
-        roots.extend(config.workflows_roots or [])
-        roots.extend(config.extra_workflows_roots or [])
-        seen: set[str] = set()
-        unique_roots: List[str] = []
-        for root in roots:
-            if root and root not in seen:
-                seen.add(root)
-                unique_roots.append(root)
-        return unique_roots
+        return [root for root in (config.workflows_roots or []) if root]
 
     @staticmethod
     def _is_image_artifact(file_path: str) -> bool:
@@ -175,3 +182,19 @@ class WorkflowScanner(ModelScanner):
                 f"Error creating default workflow metadata for {file_path}: {e}"
             )
             return None
+
+    async def register_local_artifact(
+        self, file_path: str
+    ) -> Optional[WorkflowMetadata]:
+        """Create metadata and cache entry for a workflow written by LM.
+
+        Used by the "Create LM-managed workflow" flow: the file is already on
+        disk, so this reuses the scanner's metadata builder (analysis fields,
+        preview lookup, sidecar write) and then inserts/updates the cache entry
+        without forcing a full rescan.
+        """
+        metadata = await self._create_default_metadata(file_path)
+        if metadata is None:
+            return None
+        await self.sync_cache_from_metadata(file_path, metadata.to_dict())
+        return metadata

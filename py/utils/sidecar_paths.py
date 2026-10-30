@@ -210,7 +210,6 @@ def _iter_model_roots() -> List[str]:
         "extra_checkpoints_roots",
         "extra_unet_roots",
         "extra_embeddings_roots",
-        "extra_workflows_roots",
     ):
         value = getattr(config, attr, None)
         if value:

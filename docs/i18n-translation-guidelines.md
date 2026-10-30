@@ -250,6 +250,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > byte-identical to `other.noPaths.open*` (same actions), and the nav-path hints reuse
 > `other.disabled.hint`'s "Settings > Library" / `other.noPaths.descriptionStandalone`'s
 > "Settings → Model Paths" renderings. No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-10, single workflow folder):** the library is now a single folder
+> (`settings.folderSettings.workflowFolder*`, backed by `workflow_path`). The renamed label/help
+> and placeholder keys plus `enableWorkflowsHelp` and the `workflows.noPaths.*` copy were
+> re-queued as `[TODO: Translate]` in all 9 locales; no translations were redone. The
+> `workflows.noPaths` split (`descriptionStandalone` / `descriptionComfyUI` /
+> `hintStandalone` / `hintComfyUI`) was collapsed into `description` + `hint`: the folder is
+> edited in Settings → Library in both modes, so the manual settings.json guidance and the
+> standalone `openSettingsFolder` fallback were dropped.
 
 ---
 
@@ -959,13 +968,16 @@ word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהו
 
 - "CivitAI Workflow resources" keeps `Workflow` in Latin even in the CJK locales: it names
   CivitAI's resource type (the §2 "Other Models" rule for model-type names), not this page.
-- `folder_paths.workflows` is a JSON key and stays byte-identical in every locale.
-- `noPaths.descriptionStandalone` keeps the standalone split — **Settings → Model Paths** plus
-  a restart — while `.descriptionComfyUI` points at **Settings → Library** and a page reload;
-  both reuse the nav-path renderings of `other.noPaths.*` / `other.disabled.hint`.
+- `workflow_path` is a JSON key and stays byte-identical in every locale.
+- The workflow library is a single folder (`workflow_path`), so `noPaths.*` copy is
+  singular — "no workflow folder is configured", not "folders".
+- `noPaths.description` points at the **Settings → Library** workflow folder input; the same
+  input exists in plugin and standalone mode, so there is no mode-specific description.
+  `noPaths.hint` notes that the folder is separate from ComfyUI's built-in workflow list.
+  Neither mode shows a settings.json path or asks users to edit the file by hand.
 - `disabled.*` mirrors `other.disabled.*` sentence by sentence ("management is off", "Enable it
-  to …", "Failed to enable …"), and `noPaths.*` mirrors `other.noPaths.*` — including the three
-  `open*` buttons, which are byte-identical to their `other.noPaths.open*` twins.
+  to …", "Failed to enable …"). `workflows.noPaths` keeps its own `openSettings` action and does
+  not mirror the `other.noPaths.*` standalone/model-path buttons.
 - Failure toasts carry `{message}` verbatim. CJK uses the full-width colon (`：`); ko and the
   Latin/Cyrillic/Hebrew locales use ASCII (fr with its space, ` : `). The `restoring` loading
   line follows each locale's existing "… in progress" shape (`recipesPathMigrating`).

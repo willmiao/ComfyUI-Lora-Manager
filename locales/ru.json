@@ -637,9 +637,10 @@
             "enableOtherModels": "Управление другими моделями",
             "enableOtherModelsHelp": "Если выключено, папки VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet не сканируются, страница «Другие модели» остаётся отключённой, а эти типы моделей нельзя загрузить.",
             "enableWorkflows": "Управление workflow",
-            "enableWorkflowsHelp": "Если выключено, папки workflow (folder_paths.workflows) не сканируются, страница Workflows остаётся отключённой, а ресурсы Workflow с CivitAI нельзя связать или скачать.",
-            "workflowFolders": "Папки workflow",
-            "workflowFoldersHelp": "Папки, в которых сканируются JSON-файлы workflow ComfyUI. Управляются только LoRA Manager (не используются совместно с ComfyUI); изменения применяются сразу.",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "Управляемые типы моделей",
             "otherSubTypesHelp": "Выберите, какие категории других моделей сканируются и отображаются на странице «Другие модели».",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "Пути Text Encoder",
                 "clip": "Пути CLIP (устаревшие)",
                 "clip_vision": "Пути CLIP Vision",
-                "controlnet": "Пути ControlNet",
-                "workflows": "Пути workflow"
+                "controlnet": "Пути ControlNet"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "Не удалось включить Workflows"
         },
         "noPaths": {
-            "title": "Папки workflow не найдены",
-            "descriptionStandalone": "Управление workflow включено, но папки workflow не найдены. Добавьте свои папки workflow в разделе «Настройки → Пути к моделям», затем перезапустите LoRA Manager.",
-            "hintStandalone": "Workflow читаются из записей folder_paths.workflows.",
-            "descriptionComfyUI": "Управление workflow включено, но папки workflow не настроены. Добавьте папки workflow в разделе «Настройки → Библиотека» и перезагрузите эту страницу.",
-            "hintComfyUI": "Workflow хранятся в собственных папках библиотеки (folder_paths.workflows); встроенный список workflow в ComfyUI не затрагивается.",
-            "openSettings": "Открыть настройки",
-            "openModelPaths": "Настроить папки моделей",
-            "openSettingsFolder": "Открыть папку настроек"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "Открыть настройки"
         }
     },
     "sidebar": {

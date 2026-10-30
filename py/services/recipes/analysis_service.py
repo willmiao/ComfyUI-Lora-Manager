@@ -4,14 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import io
 import os
 import tempfile
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
-
-import numpy as np
-from PIL import Image
 
 from ...utils.utils import calculate_recipe_fingerprint
 from ...utils.civitai_utils import extract_civitai_image_id, rewrite_preview_url
@@ -613,41 +609,6 @@ class RecipeAnalysisService:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     def _convert_tensor_to_png_bytes(self, latest_image: Any) -> Optional[bytes]:
-        try:
-            if isinstance(latest_image, tuple):
-                tensor_image = latest_image[0] if latest_image else None
-                if tensor_image is None:
-                    return None
-            else:
-                tensor_image = latest_image
+        from ...utils.image_tensor import tensor_to_png_bytes
 
-            if hasattr(tensor_image, "shape"):
-                self._logger.debug(
-                    "Tensor shape: %s, dtype: %s",
-                    tensor_image.shape,
-                    getattr(tensor_image, "dtype", None),
-                )
-
-            import torch  # pyright: ignore[reportMissingImports]
-
-            if isinstance(tensor_image, torch.Tensor):
-                image_np = tensor_image.cpu().numpy()
-            else:
-                image_np = np.array(tensor_image)
-
-            while len(image_np.shape) > 3:
-                image_np = image_np[0]
-
-            if image_np.dtype in (np.float32, np.float64) and image_np.max() <= 1.0:
-                image_np = (image_np * 255).astype(np.uint8)
-
-            if len(image_np.shape) == 3 and image_np.shape[2] == 3:
-                pil_image = Image.fromarray(image_np)
-                img_byte_arr = io.BytesIO()
-                pil_image.save(img_byte_arr, format="PNG")
-                return img_byte_arr.getvalue()
-        except Exception as exc:  # pragma: no cover - defensive logging path
-            self._logger.error("Error processing image data: %s", exc, exc_info=True)
-            return None
-
-        return None
+        return tensor_to_png_bytes(latest_image)

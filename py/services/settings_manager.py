@@ -131,7 +131,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "enable_other_models": False,
     "enabled_other_sub_types": list(DEFAULT_ENABLED_OTHER_SUB_TYPES),
     # Workflow management is likewise opt-in (ComfyUI workflow JSON library).
+    # The library lives in a single configured folder, like recipes_path.
     "enable_workflows": False,
+    "workflow_path": "",
     "recipes_path": "",
     "sidecar_storage_mode": "alongside",
     "sidecar_storage_path": "",
@@ -222,6 +224,7 @@ class SettingsManager:
         self._migrate_setting_keys()
         self._ensure_default_settings()
         self._migrate_to_library_registry()
+        self._migrate_legacy_workflow_paths()
         self._migrate_download_path_template()
         self._auto_set_default_roots()
         self._check_environment_variables()
@@ -408,6 +411,7 @@ class SettingsManager:
                 default_unet_root=merged.get("default_unet_root"),
                 default_embedding_root=merged.get("default_embedding_root"),
                 default_other_roots=merged.get("default_other_roots"),
+                workflow_path=merged.get("workflow_path"),
                 recipes_path=merged.get("recipes_path"),
             )
         }
@@ -556,6 +560,7 @@ class SettingsManager:
                 default_unet_root=self.settings.get("default_unet_root", ""),
                 default_embedding_root=self.settings.get("default_embedding_root", ""),
                 default_other_roots=self.settings.get("default_other_roots"),
+                workflow_path=self.settings.get("workflow_path", ""),
                 recipes_path=self.settings.get("recipes_path", ""),
             )
             libraries = {library_name: library_payload}
@@ -608,6 +613,7 @@ class SettingsManager:
                 default_unet_root=data.get("default_unet_root"),
                 default_embedding_root=data.get("default_embedding_root"),
                 default_other_roots=data.get("default_other_roots"),
+                workflow_path=data.get("workflow_path"),
                 recipes_path=data.get("recipes_path"),
                 metadata=data.get("metadata"),
                 base=data,
@@ -663,6 +669,98 @@ class SettingsManager:
             dismissible=True,
         )
 
+    def _migrate_legacy_workflow_paths(self) -> None:
+        """Move the pre-release ``folder_paths.workflows`` lists to workflow_path.
+
+        Workflow management briefly stored workflow folders as a
+        ``folder_paths`` list (plus a never-exposed
+        ``extra_folder_paths.workflows``). The setting is now a single
+        ``workflow_path`` string; migrate each library payload and the active
+        top-level snapshot so an upgrade keeps the configured folder.
+        """
+        changed = False
+
+        def migrate_container(container: Any) -> Optional[str]:
+            nonlocal changed
+            if not isinstance(container, dict):
+                return None
+
+            candidates: List[str] = []
+            for key in ("folder_paths", "extra_folder_paths"):
+                mapping = container.get(key)
+                if not isinstance(mapping, Mapping):
+                    continue
+                raw = mapping.get("workflows")
+                if isinstance(raw, (list, tuple)):
+                    candidates.extend(
+                        path
+                        for path in raw
+                        if isinstance(path, str) and path.strip()
+                    )
+                if "workflows" in mapping:
+                    cleaned = dict(mapping)
+                    cleaned.pop("workflows", None)
+                    container[key] = cleaned
+                    changed = True
+
+            current = self._normalize_workflow_path(
+                container.get("workflow_path", "")
+            )
+            if candidates and not current:
+                # Prefer a folder that still exists; otherwise keep the first
+                # configured one so an offline drive is not forgotten.
+                preferred = next(
+                    (path for path in candidates if os.path.isdir(path)),
+                    candidates[0],
+                )
+                current = self._normalize_workflow_path(preferred)
+                container["workflow_path"] = current
+                changed = True
+                if len(candidates) > 1:
+                    ignored = [path for path in candidates if path != preferred]
+                    logger.warning(
+                        "Workflow management uses a single library folder; "
+                        "migrated '%s' and ignored: %s",
+                        current,
+                        ", ".join(ignored),
+                    )
+            return current or None
+
+        libraries = self.settings.get("libraries")
+        if isinstance(libraries, Mapping):
+            for library in libraries.values():
+                if isinstance(library, dict):
+                    migrate_container(library)
+
+        top_level_path = migrate_container(self.settings)
+        active_path = self._normalize_workflow_path(
+            self.get_active_library().get("workflow_path", "")
+        )
+        resolved = active_path or top_level_path or ""
+        if resolved and self.settings.get("workflow_path") != resolved:
+            self.settings["workflow_path"] = resolved
+            changed = True
+
+        # Keep the active library payload in sync so a later
+        # _sync_active_library_to_root() does not wipe a top-level-only
+        # migration on the next start.
+        if resolved:
+            libraries = self.settings.get("libraries")
+            if isinstance(libraries, dict):
+                active_library = libraries.get(self.get_active_library_name())
+                if isinstance(active_library, dict) and not self._normalize_workflow_path(
+                    active_library.get("workflow_path", "")
+                ):
+                    active_library["workflow_path"] = resolved
+                    changed = True
+
+        if changed:
+            logger.info(
+                "Migrated legacy workflow folder configuration to workflow_path: %s",
+                resolved or "(none)",
+            )
+            self._save_settings()
+
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
         libraries = self.settings.get("libraries", {})
@@ -691,6 +789,9 @@ class SettingsManager:
         self.settings["default_other_roots"] = self._normalize_default_other_roots(
             active_library.get("default_other_roots", {})
         )
+        self.settings["workflow_path"] = self._normalize_workflow_path(
+            active_library.get("workflow_path", "")
+        )
         self.settings["recipes_path"] = active_library.get("recipes_path", "")
 
         if save:
@@ -709,6 +810,7 @@ class SettingsManager:
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
         default_other_roots: Optional[Mapping[str, str]] = None,
+        workflow_path: Optional[str] = None,
         recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         base: Optional[Mapping[str, Any]] = None,
@@ -755,6 +857,13 @@ class SettingsManager:
         else:
             payload["default_other_roots"] = self._normalize_default_other_roots(
                 payload.get("default_other_roots", {})
+            )
+
+        if workflow_path is not None:
+            payload["workflow_path"] = self._normalize_workflow_path(workflow_path)
+        else:
+            payload["workflow_path"] = self._normalize_workflow_path(
+                payload.get("workflow_path", "")
             )
 
         if recipes_path is not None:
@@ -829,35 +938,16 @@ class SettingsManager:
         """Return True when the opt-in Workflow management is enabled."""
         return bool(self.settings.get("enable_workflows", False))
 
-    def get_workflow_folder_paths(self) -> List[str]:
-        """Workflow roots configured for the active library (normalized)."""
-        folder_paths = self.settings.get("folder_paths", {})
-        if not isinstance(folder_paths, Mapping):
-            return []
-        normalized = self._normalize_folder_paths(
-            {"workflows": folder_paths.get("workflows", [])}
-        )
-        return normalized.get("workflows", [])
+    def get_workflow_path(self) -> str:
+        """Return the configured workflow library folder (empty when unset).
 
-    def set_workflow_folder_paths(self, paths: Any) -> List[str]:
-        """Replace the active library's workflow roots and apply them live.
-
-        Unlike the core folder_paths keys (host-owned in plugin mode, applied
-        on restart in standalone), workflow roots are LoRA-Manager-only in
-        both modes, so they merge into the stored folder_paths map and take
-        effect immediately via ``_apply_workflow_settings_change``.
+        Workflow management keeps a single library folder, mirroring
+        ``recipes_path``. Unlike the core folder_paths keys, the value is
+        LoRA-Manager-only in both plugin and standalone mode.
         """
-        normalized = self._normalize_folder_paths({"workflows": paths}).get(
-            "workflows", []
+        return self._normalize_workflow_path(
+            self.settings.get("workflow_path", "")
         )
-        folder_paths = dict(self.settings.get("folder_paths") or {})
-        if normalized:
-            folder_paths["workflows"] = normalized
-        else:
-            folder_paths.pop("workflows", None)
-        self.set("folder_paths", folder_paths)
-        self._apply_workflow_settings_change()
-        return normalized
 
     def get_enabled_other_sub_types(self) -> List[str]:
         """Return the enabled other-model sub_types (empty when the feature is off)."""
@@ -1026,6 +1116,7 @@ class SettingsManager:
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
         default_other_roots: Optional[Mapping[str, str]] = None,
+        workflow_path: Optional[str] = None,
         recipes_path: Optional[str] = None,
     ) -> bool:
         libraries = self.settings.get("libraries", {})
@@ -1082,6 +1173,12 @@ class SettingsManager:
             )
             if library.get("default_other_roots") != normalized_other_roots:
                 library["default_other_roots"] = normalized_other_roots
+                changed = True
+
+        if workflow_path is not None:
+            normalized_workflow_path = self._normalize_workflow_path(workflow_path)
+            if library.get("workflow_path") != normalized_workflow_path:
+                library["workflow_path"] = normalized_workflow_path
                 changed = True
 
         if recipes_path is not None and library.get("recipes_path") != recipes_path:
@@ -1873,6 +1970,19 @@ class SettingsManager:
         return os.path.abspath(os.path.normpath(os.path.expanduser(stripped)))
 
     @staticmethod
+    def _normalize_workflow_path(value: Any) -> str:
+        """Return a normalized absolute workflow library path or ``""``."""
+
+        if not isinstance(value, str):
+            return ""
+
+        stripped = value.strip()
+        if not stripped:
+            return ""
+
+        return os.path.abspath(os.path.normpath(os.path.expanduser(stripped)))
+
+    @staticmethod
     def _normalize_sidecar_storage_mode(value: Any) -> str:
         """Return a valid sidecar storage mode, falling back to ``alongside``."""
 
@@ -2100,6 +2210,8 @@ class SettingsManager:
             value = bool(value)
         elif key == "enable_workflows":
             value = bool(value)
+        elif key == "workflow_path":
+            value = self._normalize_workflow_path(value)
         elif key == "recipes_path":
             current_recipes_dir = self._get_effective_recipes_dir()
             value = self._normalize_recipes_path_value(value)
@@ -2135,6 +2247,8 @@ class SettingsManager:
             self._update_active_library_entry(default_embedding_root=str(value))
         elif key == "default_other_roots":
             self._update_active_library_entry(default_other_roots=value)
+        elif key == "workflow_path":
+            self._update_active_library_entry(workflow_path=str(value))
         elif key == "recipes_path":
             self._update_active_library_entry(recipes_path=str(value))
         elif key == "model_name_display":
@@ -2146,7 +2260,7 @@ class SettingsManager:
             self._refresh_sidecar_storage_config()
         if key in ("enable_other_models", "enabled_other_sub_types"):
             self._apply_other_model_settings_change()
-        if key == "enable_workflows":
+        if key in ("enable_workflows", "workflow_path"):
             self._apply_workflow_settings_change()
         if portable_switch_pending:
             self._finalize_portable_switch()
@@ -2477,6 +2591,7 @@ class SettingsManager:
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
         default_other_roots: Optional[Mapping[str, str]] = None,
+        workflow_path: Optional[str] = None,
         recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -2526,6 +2641,11 @@ class SettingsManager:
                 if default_other_roots is not None
                 else existing.get("default_other_roots")
             ),
+            workflow_path=(
+                workflow_path
+                if workflow_path is not None
+                else existing.get("workflow_path")
+            ),
             recipes_path=(
                 recipes_path
                 if recipes_path is not None
@@ -2559,6 +2679,7 @@ class SettingsManager:
         default_unet_root: str = "",
         default_embedding_root: str = "",
         default_other_roots: Optional[Mapping[str, str]] = None,
+        workflow_path: str = "",
         recipes_path: str = "",
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -2578,6 +2699,7 @@ class SettingsManager:
             default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
             default_other_roots=default_other_roots,
+            workflow_path=workflow_path,
             recipes_path=recipes_path,
             metadata=metadata,
             activate=activate,

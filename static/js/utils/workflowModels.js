@@ -23,8 +23,9 @@ export async function enableWorkflows() {
 }
 
 /**
- * Open the settings modal on the Library section and scroll the Workflows
- * toggle into view.
+ * Open the settings modal on the Library section and scroll to the workflow
+ * folder input (the empty state only appears when the feature is on), falling
+ * back to the enable toggle while the input is hidden.
  */
 export function openWorkflowsSettings() {
     const modalManager = window.modalManager;
@@ -43,25 +44,14 @@ export function openWorkflowsSettings() {
         });
         document.querySelector('.settings-nav-item[data-section="library"]')?.classList.add('active');
 
-        document.getElementById('enableWorkflows')?.scrollIntoView({
+        const pathInput = document.getElementById('workflowPath');
+        const target =
+            pathInput && pathInput.offsetParent !== null
+                ? pathInput
+                : document.getElementById('enableWorkflows');
+        target?.scrollIntoView({
             behavior: 'smooth',
             block: 'center',
         });
-    }, 100);
-}
-
-/**
- * Open the settings modal on the standalone-only Model Paths section, where
- * primary folder_paths are edited. The section only exists in standalone mode,
- * so the nav item lookup simply no-ops elsewhere.
- */
-export function openModelPathsSettings() {
-    const modalManager = window.modalManager;
-    if (modalManager && typeof modalManager.showModal === 'function') {
-        modalManager.showModal('settingsModal');
-    }
-
-    window.setTimeout(() => {
-        document.querySelector('.settings-nav-item[data-section="modelPaths"]')?.click();
     }, 100);
 }

@@ -637,9 +637,10 @@
             "enableOtherModels": "其他模型管理",
             "enableOtherModelsHelp": "关闭后，不会扫描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 文件夹，其他模型页面保持禁用，且无法下载这些模型类型。",
             "enableWorkflows": "工作流管理",
-            "enableWorkflowsHelp": "关闭后，不会扫描工作流文件夹（folder_paths.workflows），工作流页面保持禁用，且无法关联或下载 CivitAI 的 Workflow 资源。",
-            "workflowFolders": "工作流文件夹",
-            "workflowFoldersHelp": "扫描 ComfyUI 工作流 JSON 文件的文件夹。仅由 LoRA Manager 管理（不与 ComfyUI 共享）；更改立即生效。",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "管理的模型类型",
             "otherSubTypesHelp": "选择要在其他模型页面中扫描和显示的其他模型类别。",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "Text Encoder 路径",
                 "clip": "CLIP 路径（旧版）",
                 "clip_vision": "CLIP Vision 路径",
-                "controlnet": "ControlNet 路径",
-                "workflows": "工作流路径"
+                "controlnet": "ControlNet 路径"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "启用工作流失败"
         },
         "noPaths": {
-            "title": "未找到工作流文件夹",
-            "descriptionStandalone": "工作流管理已开启，但未找到工作流文件夹。请在“设置 → 模型路径”中添加工作流文件夹，然后重启 LoRA Manager。",
-            "hintStandalone": "工作流从 folder_paths.workflows 条目中读取。",
-            "descriptionComfyUI": "工作流管理已开启，但未配置工作流文件夹。请在“设置 → 库”中添加工作流文件夹，然后重新加载此页面。",
-            "hintComfyUI": "工作流存放在独立的库文件夹中（folder_paths.workflows）；不会影响 ComfyUI 内置的工作流列表。",
-            "openSettings": "打开设置",
-            "openModelPaths": "配置模型文件夹",
-            "openSettingsFolder": "打开设置文件夹"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "打开设置"
         }
     },
     "sidebar": {

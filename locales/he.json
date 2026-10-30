@@ -637,9 +637,10 @@
             "enableOtherModels": "ניהול מודלים אחרים",
             "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
             "enableWorkflows": "ניהול workflow",
-            "enableWorkflowsHelp": "כשהאפשרות כבויה, תיקיות workflow (folder_paths.workflows) אינן נסרקות, עמוד Workflows נשאר מושבת ולא ניתן לקשר או להוריד משאבי Workflow מ-CivitAI.",
-            "workflowFolders": "תיקיות workflow",
-            "workflowFoldersHelp": "תיקיות שנסרקות עבור קובצי JSON של workflow של ComfyUI. מנוהלות על ידי LoRA Manager בלבד (אינן משותפות עם ComfyUI); השינויים חלים מיד.",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "סוגי מודלים מנוהלים",
             "otherSubTypesHelp": "בחר אילו קטגוריות של מודלים אחרים ייסרקו ויוצגו בעמוד המודלים האחרים.",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "נתיבי Text Encoder",
                 "clip": "נתיבי CLIP (ישן)",
                 "clip_vision": "נתיבי CLIP Vision",
-                "controlnet": "נתיבי ControlNet",
-                "workflows": "נתיבי workflow"
+                "controlnet": "נתיבי ControlNet"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "הפעלת Workflows נכשלה"
         },
         "noPaths": {
-            "title": "לא נמצאו תיקיות workflow",
-            "descriptionStandalone": "ניהול ה-workflow פועל, אך לא נמצאו תיקיות workflow. הוסף את תיקיות ה-workflow שלך תחת הגדרות > נתיבי מודלים, ולאחר מכן הפעל מחדש את LoRA Manager.",
-            "hintStandalone": "קבצי workflow נקראים מהערכים של folder_paths.workflows.",
-            "descriptionComfyUI": "ניהול ה-workflow פועל, אך לא הוגדרו תיקיות workflow. הוסף תיקיות workflow תחת הגדרות > ספרייה, ולאחר מכן טען מחדש עמוד זה.",
-            "hintComfyUI": "קבצי workflow נמצאים בתיקיות ספרייה נפרדות (folder_paths.workflows); רשימת ה-workflow המובנית של ComfyUI אינה מושפעת.",
-            "openSettings": "פתח הגדרות",
-            "openModelPaths": "הגדר תיקיות מודלים",
-            "openSettingsFolder": "פתח תיקיית הגדרות"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "פתח הגדרות"
         }
     },
     "sidebar": {

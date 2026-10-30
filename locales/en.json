@@ -637,9 +637,10 @@
       "enableOtherModels": "Other Models Management",
       "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP vision / ControlNet folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
       "enableWorkflows": "Workflow Management",
-      "enableWorkflowsHelp": "When off, workflow folders (folder_paths.workflows) are not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-      "workflowFolders": "Workflow Folders",
-      "workflowFoldersHelp": "Folders scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+      "enableWorkflowsHelp": "When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+      "workflowFolder": "Workflow Library Folder",
+      "workflowFolderHelp": "The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+      "workflowFolderPlaceholder": "/path/to/workflows",
       "otherSubTypes": "Managed Types",
       "otherSubTypesHelp": "Choose which other-model categories are scanned and shown on the Other Models page.",
       "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
         "text_encoders": "Text Encoder Paths",
         "clip": "CLIP Paths (legacy)",
         "clip_vision": "CLIP Vision Paths",
-        "controlnet": "ControlNet Paths",
-        "workflows": "Workflow Paths"
+        "controlnet": "ControlNet Paths"
       }
     },
     "directoryPicker": {
@@ -1492,14 +1492,10 @@
       "enableFailed": "Failed to enable Workflows"
     },
     "noPaths": {
-      "title": "No workflow folders found",
-      "descriptionStandalone": "Workflow management is on, but no workflow folders were found. Add your workflow folders under Settings → Model Paths, then restart LoRA Manager.",
-      "hintStandalone": "Workflows are read from the folder_paths.workflows entries.",
-      "descriptionComfyUI": "Workflow management is on, but no workflow folders are configured. Add workflow folders in Settings → Library, then reload this page.",
-      "hintComfyUI": "Workflows live in their own library folders (folder_paths.workflows); ComfyUI's built-in workflow list is not touched.",
-      "openSettings": "Open Settings",
-      "openModelPaths": "Configure Model Folders",
-      "openSettingsFolder": "Open Settings Folder"
+      "title": "No workflow folder configured",
+      "description": "Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+      "hint": "The workflow library folder is separate from ComfyUI's built-in workflow list.",
+      "openSettings": "Open Settings"
     }
   },
   "sidebar": {

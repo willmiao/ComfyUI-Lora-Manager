@@ -1890,42 +1890,135 @@ def test_download_root_rules_accept_remote_only_base_models(manager, monkeypatch
     ]
 
 
-def test_get_workflow_folder_paths_defaults_to_empty(manager):
-    assert manager.get_workflow_folder_paths() == []
+def test_get_workflow_path_defaults_to_empty(manager):
+    assert manager.get_workflow_path() == ""
 
 
-def test_set_workflow_folder_paths_merges_into_active_library(manager):
+def test_set_workflow_path_stores_single_path_and_syncs_library(manager):
     _configure_lora_roots(manager, "/loras-main")
 
-    result = manager.set_workflow_folder_paths(["/workflows", " /workflows ", ""])
+    manager.set("workflow_path", " /workflows ")
 
-    assert result == ["/workflows"]
-    # Core keys are preserved; workflows rides the same folder_paths map.
-    assert manager.settings["folder_paths"] == {
-        "loras": ["/loras-main"],
-        "workflows": ["/workflows"],
-    }
-    assert manager.get_workflow_folder_paths() == ["/workflows"]
+    assert manager.get_workflow_path() == "/workflows"
+    # Core folder_paths stay untouched: workflow_path is its own setting.
+    assert manager.settings["folder_paths"] == {"loras": ["/loras-main"]}
     active = manager.get_active_library()
-    assert active.get("folder_paths", {}).get("workflows") == ["/workflows"]
+    assert active.get("workflow_path") == "/workflows"
+    assert "workflows" not in active.get("folder_paths", {})
 
 
-def test_set_workflow_folder_paths_empty_removes_key(manager):
-    manager.set_workflow_folder_paths(["/workflows"])
+def test_set_workflow_path_empty_clears_setting(manager):
+    manager.set("workflow_path", "/workflows")
 
-    result = manager.set_workflow_folder_paths([])
+    manager.set("workflow_path", "")
 
-    assert result == []
-    assert "workflows" not in manager.settings["folder_paths"]
-    assert manager.get_workflow_folder_paths() == []
+    assert manager.get_workflow_path() == ""
+    assert manager.get_active_library().get("workflow_path") == ""
 
 
-def test_set_workflow_folder_paths_rejects_overlap_with_other_library(manager):
-    manager.settings["libraries"] = {
-        "default": manager.get_active_library(),
-        "other": {"folder_paths": {"workflows": ["/shared-workflows"]}},
+def test_workflow_path_syncs_on_library_switch(manager):
+    manager.set("workflow_path", "/workflows")
+    manager.settings["libraries"]["other"] = {
+        **manager.get_active_library(),
+        "workflow_path": "/other-workflows",
     }
-    manager.settings["active_library"] = "default"
+    manager.settings["active_library"] = "other"
 
-    with pytest.raises(ValueError):
-        manager.set_workflow_folder_paths(["/shared-workflows"])
+    manager._sync_active_library_to_root(save=False)
+
+    assert manager.get_workflow_path() == "/other-workflows"
+
+
+def test_legacy_workflow_paths_migrate_to_scalar_setting(manager, tmp_path):
+    existing = tmp_path / "workflows"
+    existing.mkdir()
+    missing = tmp_path / "missing-workflows"
+
+    active_name = manager.get_active_library_name()
+    library = manager.settings["libraries"][active_name]
+    library["folder_paths"] = {
+        "loras": ["/loras-main"],
+        "workflows": [str(missing), str(existing)],
+    }
+    manager.settings["folder_paths"] = dict(library["folder_paths"])
+    manager.settings["workflow_path"] = ""
+
+    manager._migrate_legacy_workflow_paths()
+
+    # The first existing folder wins; the legacy key is cleaned up.
+    assert manager.get_workflow_path() == str(existing)
+    assert manager.settings["workflow_path"] == str(existing)
+    assert "workflows" not in manager.settings["folder_paths"]
+    assert "workflows" not in manager.get_active_library()["folder_paths"]
+    assert "loras" in manager.settings["folder_paths"]
+
+
+def test_legacy_extra_workflow_paths_migrate_to_scalar_setting(manager):
+    active_name = manager.get_active_library_name()
+    library = manager.settings["libraries"][active_name]
+    library["extra_folder_paths"] = {"workflows": ["/extra-workflows"]}
+    library["folder_paths"] = {"loras": ["/loras-main"]}
+    manager.settings["workflow_path"] = ""
+
+    manager._migrate_legacy_workflow_paths()
+
+    assert manager.get_workflow_path() == "/extra-workflows"
+    assert "workflows" not in manager.get_active_library()["extra_folder_paths"]
+
+
+def test_existing_workflow_path_wins_over_legacy_lists(manager):
+    active_name = manager.get_active_library_name()
+    library = manager.settings["libraries"][active_name]
+    library["workflow_path"] = "/new-workflows"
+    library["folder_paths"] = {"workflows": ["/old-workflows"]}
+    manager.settings["workflow_path"] = "/new-workflows"
+
+    manager._migrate_legacy_workflow_paths()
+
+    assert manager.get_workflow_path() == "/new-workflows"
+    assert "workflows" not in manager.get_active_library()["folder_paths"]
+
+
+def test_top_level_legacy_workflow_path_migrates_into_active_library(manager):
+    active_name = manager.get_active_library_name()
+    manager.settings["libraries"][active_name]["folder_paths"] = {
+        "loras": ["/loras-main"]
+    }
+    manager.settings["libraries"][active_name]["workflow_path"] = ""
+    manager.settings["folder_paths"] = {
+        "loras": ["/loras-main"],
+        "workflows": ["/top-level-workflows"],
+    }
+    manager.settings["workflow_path"] = ""
+
+    manager._migrate_legacy_workflow_paths()
+
+    assert manager.get_workflow_path() == "/top-level-workflows"
+    # Mirrored into the library so the next startup's sync keeps it.
+    assert manager.get_active_library()["workflow_path"] == "/top-level-workflows"
+
+
+def test_settings_load_migrates_legacy_workflow_folder(tmp_path, monkeypatch):
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text(
+        json.dumps(
+            {
+                "enable_workflows": True,
+                "folder_paths": {
+                    "loras": ["/loras-main"],
+                    "workflows": ["/legacy-workflows"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(settings_path),
+    )
+    monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
+
+    manager = SettingsManager()
+
+    assert manager.get_workflow_path() == "/legacy-workflows"
+    assert "workflows" not in manager.settings["folder_paths"]

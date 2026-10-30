@@ -113,25 +113,11 @@
     <div class="workflows-disabled">
         <i class="fas fa-folder-open"></i>
         <h2>{{ t('workflows.noPaths.title') }}</h2>
-        {% if standalone_mode %}
-        <p>{{ t('workflows.noPaths.descriptionStandalone') }}</p>
-        <p class="workflows-disabled-hint">{{ t('workflows.noPaths.hintStandalone') }}</p>
-        <button id="openModelPathsSettingsBtn" type="button">
-            <i class="fas fa-cog"></i> {{ t('workflows.noPaths.openModelPaths') }}
-        </button>
-        {% if settings_file %}
-        <p class="workflows-settings-file"><i class="fas fa-file-alt"></i> <code>{{ settings_file }}</code></p>
-        {% endif %}
-        <button id="openSettingsFolderBtn" type="button">
-            <i class="fas fa-folder-open"></i> {{ t('workflows.noPaths.openSettingsFolder') }}
-        </button>
-        {% else %}
-        <p>{{ t('workflows.noPaths.descriptionComfyUI') }}</p>
-        <p class="workflows-disabled-hint">{{ t('workflows.noPaths.hintComfyUI') }}</p>
+        <p>{{ t('workflows.noPaths.description') }}</p>
+        <p class="workflows-disabled-hint">{{ t('workflows.noPaths.hint') }}</p>
         <button id="openWorkflowsSettingsBtn" type="button">
             <i class="fas fa-cog"></i> {{ t('workflows.noPaths.openSettings') }}
         </button>
-        {% endif %}
     </div>
     {% else %}
     <div class="sticky-topbar">

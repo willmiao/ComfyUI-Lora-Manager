@@ -20,6 +20,7 @@ const {
     clientId: "client-1",
     initialClientId: null,
     listeners: {},
+    queuePrompt: async () => ({ prompt_id: "p-1" }),
     addEventListener: (event, handler) => {
       (apiMock.listeners[event] ??= []).push(handler);
     },
@@ -53,8 +54,14 @@ function fetchCalls(fetchMock, url) {
   return fetchMock.mock.calls.filter(([callUrl]) => callUrl === url);
 }
 
+function fetchCallsStartingWith(fetchMock, prefix) {
+  return fetchMock.mock.calls.filter(
+    ([callUrl]) => typeof callUrl === "string" && callUrl.startsWith(prefix)
+  );
+}
+
 function okResponse(body = { success: true, sha256: "new-hash" }) {
-  return { status: 200, json: async () => body };
+  return { ok: true, status: 200, json: async () => body };
 }
 
 describe("LoraManager.WorkflowWriteback", () => {
@@ -66,8 +73,14 @@ describe("LoraManager.WorkflowWriteback", () => {
     vi.resetModules();
     registeredExtensions.length = 0;
     apiMock.listeners = {};
+    delete apiMock.__lmQueuePromptHooked;
+    apiMock.queuePrompt = async () => ({ prompt_id: "p-1" });
+    document.body.innerHTML = "";
     appMock.rootGraph = null;
     appMock.graph = null;
+    appMock.extensionManager = {
+      workflow: { activeWorkflow: { filename: "My Flow" } },
+    };
     toastMock.mockClear();
     fetchMock = vi.fn().mockResolvedValue(okResponse());
     global.fetch = fetchMock;
@@ -78,12 +91,65 @@ describe("LoraManager.WorkflowWriteback", () => {
     expect(extension).toBeDefined();
   });
 
-  it("registers the write-back command in the File menu group", () => {
-    expect(extension.commands).toHaveLength(1);
-    expect(extension.commands[0].id).toBe("LoraManager.UpdateManagedWorkflow");
-    expect(extension.menuCommands).toEqual([
-      { path: ["File"], commands: ["LoraManager.UpdateManagedWorkflow"] },
+  it("registers the create and write-back commands in the File menu group", () => {
+    expect(extension.commands.map((command) => command.id)).toEqual([
+      "LoraManager.CreateManagedWorkflow",
+      "LoraManager.UpdateManagedWorkflow",
     ]);
+    expect(extension.menuCommands).toEqual([
+      {
+        path: ["File"],
+        commands: [
+          "LoraManager.CreateManagedWorkflow",
+          "LoraManager.UpdateManagedWorkflow",
+        ],
+      },
+    ]);
+  });
+
+  describe("workflow actions menu injection", () => {
+    function mountMenu() {
+      document.body.innerHTML = `
+        <div data-testid="view-mode-toggle"></div>
+        <div role="menu">
+          <i class="pi pi-pencil"></i>
+          <i class="pi pi-save"></i>
+          <i class="pi pi-download"></i>
+        </div>
+      `;
+    }
+
+    it("appends both items without throwing on multi-class state", async () => {
+      mountMenu();
+      extension.setup();
+      document.querySelector('[data-testid="view-mode-toggle"]').click();
+
+      await vi.waitFor(() => {
+        expect(
+          document.querySelector('[data-lm-action="create-workflow"]')
+        ).not.toBeNull();
+      });
+
+      const createItem = document.querySelector(
+        '[data-lm-action="create-workflow"]'
+      );
+      const updateItem = document.querySelector(
+        '[data-lm-action="update-workflow"]'
+      );
+      expect(createItem.textContent).toContain("Create LM-managed workflow");
+      expect(updateItem.textContent).toContain("Update LM-managed workflow");
+      // Not linked: create is enabled (optimistic), update is disabled.
+      expect(createItem.className).toContain("cursor-pointer");
+      expect(updateItem.className).toContain("opacity-50");
+      // Both entries keep the shared menu-item layout (padding/alignment);
+      // missing base classes make the item look shifted left.
+      for (const item of [createItem, updateItem]) {
+        expect(item.className).toContain("flex");
+        expect(item.className).toContain("min-h-6");
+        expect(item.className).toContain("gap-2");
+        expect(item.className).toContain("p-2");
+      }
+    });
   });
 
   describe("getActiveLmSource", () => {
@@ -128,6 +194,23 @@ describe("LoraManager.WorkflowWriteback", () => {
       const reports = fetchCalls(fetchMock, "/api/lm/workflows/comfyui-state");
       const body = JSON.parse(reports[0][1].body);
       expect(body.state).toBeNull();
+    });
+
+    it("drops a marker whose library entry is gone and reports null", async () => {
+      const marker = { file_path: "/lib/deleted.json", sha256: "abc" };
+      appMock.rootGraph = createRootGraph({ marker });
+      fetchMock.mockImplementation(async (url) =>
+        url.startsWith("/api/lm/workflows/link-status")
+          ? okResponse({ success: true, exists: false })
+          : okResponse()
+      );
+
+      await extension.afterConfigureGraph();
+
+      expect(appMock.rootGraph.extra.lm_source).toBeUndefined();
+      const reports = fetchCalls(fetchMock, "/api/lm/workflows/comfyui-state");
+      expect(reports.length).toBeGreaterThan(0);
+      expect(JSON.parse(reports.at(-1)[1].body).state).toBeNull();
     });
 
     it("marks the graph dirty and reports on the first graphChanged", async () => {
@@ -253,6 +336,156 @@ describe("LoraManager.WorkflowWriteback", () => {
 
       expect(toastMock).toHaveBeenCalledWith(
         expect.objectContaining({ severity: "error" })
+      );
+    });
+    it("clears the marker when the library copy is gone", async () => {
+      const marker = { file_path: "/lib/deleted.json", sha256: "abc", dirty: true };
+      appMock.rootGraph = createRootGraph({ marker });
+      fetchMock.mockResolvedValue({
+        status: 404,
+        json: async () => ({ success: false, error: "not_found" }),
+      });
+
+      await moduleExports.updateManagedWorkflow();
+
+      expect(appMock.rootGraph.extra.lm_source).toBeUndefined();
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: "warn" })
+      );
+    });
+  });
+
+  describe("createManagedWorkflow", () => {
+    it("warns and does not call the backend without an open graph", async () => {
+      await moduleExports.createManagedWorkflow();
+
+      expect(fetchCalls(fetchMock, "/api/lm/workflows/create")).toHaveLength(0);
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: "warn" })
+      );
+    });
+
+    it("POSTs the graph without the marker and stamps the new link", async () => {
+      const marker = { file_path: "/lib/old.json", sha256: "old-hash" };
+      appMock.rootGraph = createRootGraph({ marker });
+      vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
+      fetchMock.mockImplementation(async (url) => {
+        if (url === "/api/lm/workflows/create") {
+          return okResponse({
+            success: true,
+            file_path: "/lib/new.json",
+            sha256: "new-hash",
+            name: "My Flow",
+            preview: false,
+          });
+        }
+        return okResponse();
+      });
+
+      await moduleExports.createManagedWorkflow();
+
+      const posts = fetchCalls(fetchMock, "/api/lm/workflows/create");
+      expect(posts).toHaveLength(1);
+      const body = JSON.parse(posts[0][1].body);
+      expect(body.name).toBe("My Flow");
+      expect(body.workflow.extra.lm_source).toBeUndefined();
+      expect(body.workflow.extra.ds).toEqual({ scale: 1 });
+
+      // The created entry is linked immediately: marker replaced, state reported.
+      expect(appMock.rootGraph.extra.lm_source).toEqual({
+        file_path: "/lib/new.json",
+        sha256: "new-hash",
+      });
+      expect(
+        fetchCalls(fetchMock, "/api/lm/workflows/comfyui-state")
+      ).toHaveLength(1);
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: "success" })
+      );
+    });
+
+    it("replaces a stale marker without prompting", async () => {
+      appMock.rootGraph = createRootGraph({
+        marker: { file_path: "/lib/deleted.json", sha256: "old" },
+      });
+      const confirmMock = vi.fn().mockReturnValue(true);
+      vi.stubGlobal("confirm", confirmMock);
+      fetchMock.mockImplementation(async (url) => {
+        if (url.startsWith("/api/lm/workflows/link-status")) {
+          return okResponse({ success: true, exists: false });
+        }
+        if (url === "/api/lm/workflows/create") {
+          return okResponse({
+            success: true,
+            file_path: "/lib/new.json",
+            sha256: "new-hash",
+            name: "My Flow",
+          });
+        }
+        return okResponse();
+      });
+
+      await moduleExports.createManagedWorkflow();
+
+      expect(confirmMock).not.toHaveBeenCalled();
+      expect(fetchCalls(fetchMock, "/api/lm/workflows/create")).toHaveLength(1);
+      expect(appMock.rootGraph.extra.lm_source).toEqual({
+        file_path: "/lib/new.json",
+        sha256: "new-hash",
+      });
+      vi.unstubAllGlobals();
+    });
+
+    it("sends the prompt id of the last run queued from this tab", async () => {
+      apiMock.queuePrompt = vi.fn(async () => ({ prompt_id: "p-preview" }));
+      extension.setup();
+      await apiMock.queuePrompt(0, {});
+      apiMock.listeners["execution_success"][0]({ detail: { prompt_id: "p-preview" } });
+
+      appMock.rootGraph = createRootGraph();
+      await moduleExports.createManagedWorkflow();
+
+      const posts = fetchCalls(fetchMock, "/api/lm/workflows/create");
+      expect(posts).toHaveLength(1);
+      expect(JSON.parse(posts[0][1].body).preview_prompt_id).toBe("p-preview");
+    });
+
+    it("confirms before copying an already linked graph", async () => {
+      const marker = { file_path: "/lib/old.json", sha256: "old-hash" };
+      appMock.rootGraph = createRootGraph({ marker });
+
+      const confirmMock = vi.fn().mockReturnValue(false);
+      vi.stubGlobal("confirm", confirmMock);
+
+      await moduleExports.createManagedWorkflow();
+
+      expect(confirmMock).toHaveBeenCalledTimes(1);
+      expect(fetchCalls(fetchMock, "/api/lm/workflows/create")).toHaveLength(0);
+
+      confirmMock.mockReturnValue(true);
+      await moduleExports.createManagedWorkflow();
+
+      expect(fetchCalls(fetchMock, "/api/lm/workflows/create")).toHaveLength(1);
+      vi.unstubAllGlobals();
+    });
+
+    it("reports backend errors via toast", async () => {
+      appMock.rootGraph = createRootGraph();
+      fetchMock.mockResolvedValue({
+        status: 400,
+        json: async () => ({
+          success: false,
+          error: "The workflow library folder is not configured in LoRA Manager settings",
+        }),
+      });
+
+      await moduleExports.createManagedWorkflow();
+
+      expect(toastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: "error",
+          detail: expect.stringContaining("workflow library folder"),
+        })
       );
     });
   });

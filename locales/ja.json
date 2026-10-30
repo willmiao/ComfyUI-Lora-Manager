@@ -637,9 +637,10 @@
             "enableOtherModels": "その他のモデル管理",
             "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
             "enableWorkflows": "ワークフロー管理",
-            "enableWorkflowsHelp": "オフにすると、ワークフローフォルダー（folder_paths.workflows）はスキャンされず、ワークフローページは無効のままになり、CivitAIのWorkflowリソースをリンクしたりダウンロードしたりできなくなります。",
-            "workflowFolders": "ワークフローフォルダー",
-            "workflowFoldersHelp": "ComfyUIのワークフローJSONファイルをスキャンするフォルダーです。LoRA Managerのみが管理し（ComfyUIとは共有されません）、変更はすぐに反映されます。",
+            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
+            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "管理するモデルタイプ",
             "otherSubTypesHelp": "その他のモデルページでスキャンおよび表示するカテゴリを選択します。",
             "subTypeVae": "VAE",
@@ -693,8 +694,7 @@
                 "text_encoders": "Text Encoderパス",
                 "clip": "CLIPパス（レガシー）",
                 "clip_vision": "CLIP Visionパス",
-                "controlnet": "ControlNetパス",
-                "workflows": "ワークフローパス"
+                "controlnet": "ControlNetパス"
             }
         },
         "directoryPicker": {
@@ -1492,14 +1492,10 @@
             "enableFailed": "ワークフローの有効化に失敗しました"
         },
         "noPaths": {
-            "title": "ワークフローフォルダーが見つかりません",
-            "descriptionStandalone": "ワークフロー管理はオンですが、ワークフローフォルダーが見つかりませんでした。「設定 > モデルパス」でワークフローフォルダーを追加し、LoRA Managerを再起動してください。",
-            "hintStandalone": "ワークフローはfolder_paths.workflowsのエントリから読み込まれます。",
-            "descriptionComfyUI": "ワークフロー管理はオンですが、ワークフローフォルダーが設定されていません。「設定 > ライブラリ」でワークフローフォルダーを追加し、このページを再読み込みしてください。",
-            "hintComfyUI": "ワークフローは専用のライブラリフォルダー（folder_paths.workflows）に保存されます。ComfyUI標準のワークフローリストには影響しません。",
-            "openSettings": "設定を開く",
-            "openModelPaths": "モデルフォルダーを設定",
-            "openSettingsFolder": "設定フォルダーを開く"
+            "title": "[TODO: Translate] No workflow folder configured",
+            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
+            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "openSettings": "設定を開く"
         }
     },
     "sidebar": {

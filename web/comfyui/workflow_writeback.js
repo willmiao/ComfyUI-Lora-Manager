@@ -40,9 +40,23 @@ const MARKER_KEY = "lm_source";
 const COMMAND_ID = "LoraManager.UpdateManagedWorkflow";
 const MENU_LABEL = "Update LM-managed workflow";
 const MENU_ICON = "pi pi-upload";
+const CREATE_COMMAND_ID = "LoraManager.CreateManagedWorkflow";
+const CREATE_MENU_LABEL = "Create LM-managed workflow";
+const CREATE_MENU_ICON = "pi pi-plus";
 // data-testid of the workflow actions dropdown trigger in ComfyUI_frontend
 // (WorkflowActionsDropdown.vue).
 const DROPDOWN_TRIGGER_TESTID = "view-mode-toggle";
+
+// { enabled: boolean, path: string } once fetched; null while unknown (the
+// menu entry stays optimistically enabled and the backend reports the error).
+let workflowLibraryState = null;
+let workflowLibraryFetch = null;
+
+// Prompt ids this tab queued and that finished executing. The backend only
+// attaches a preview image when the id is still the metadata registry's
+// current prompt, so another tab's run can never be borrowed.
+let lastExecutedPromptId = null;
+const queuedPromptIds = new Set();
 
 function getRootGraph() {
     return app.rootGraph ?? app.graph ?? null;
@@ -58,6 +72,164 @@ export function getActiveLmSource() {
         return null;
     }
     return marker;
+}
+
+/**
+ * Fetch (once, then cached) whether the workflow library can accept a new
+ * entry: the opt-in feature must be on and a library folder configured.
+ * Never throws: an unreachable/older backend leaves the state unknown and the
+ * create entry optimistically enabled (the POST reports the real error).
+ */
+function refreshWorkflowLibraryState() {
+    if (workflowLibraryFetch) {
+        return workflowLibraryFetch;
+    }
+    workflowLibraryFetch = fetch(lmUrl("/api/lm/settings"))
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload) => {
+            const settings = payload?.settings;
+            if (!settings || typeof settings !== "object") {
+                return null;
+            }
+            workflowLibraryState = {
+                enabled: settings.enable_workflows !== false,
+                path:
+                    typeof settings.workflow_path === "string"
+                        ? settings.workflow_path.trim()
+                        : "",
+            };
+            return workflowLibraryState;
+        })
+        .catch(() => null)
+        .finally(() => {
+            workflowLibraryFetch = null;
+        });
+    return workflowLibraryFetch;
+}
+
+function canCreateWorkflow() {
+    if (workflowLibraryState == null) {
+        return true;
+    }
+    return workflowLibraryState.enabled && !!workflowLibraryState.path;
+}
+
+function createUnavailableTitle() {
+    if (workflowLibraryState?.enabled === false) {
+        return "Workflow management is disabled in LoRA Manager";
+    }
+    return "Configure the workflow library folder in LoRA Manager first";
+}
+
+/**
+ * Derive a library file name from the active ComfyUI workflow. Falls back to
+ * "Untitled" for temporary/unsaved workflows (the backend sanitizes it).
+ */
+function getActiveWorkflowName() {
+    const workflow = app.extensionManager?.workflow?.activeWorkflow;
+    const name = workflow?.filename || workflow?.name || "";
+    return typeof name === "string" && name.trim() ? name.trim() : "Untitled";
+}
+
+/**
+ * Stamp the provenance marker of a freshly created library workflow onto the
+ * live graph so "Update LM-managed workflow" becomes available immediately.
+ */
+function stampLmSource(filePath, sha256) {
+    const graph = getRootGraph();
+    if (!graph || typeof filePath !== "string" || !filePath) {
+        return;
+    }
+    graph.extra = {
+        ...(graph.extra || {}),
+        [MARKER_KEY]: { file_path: filePath, sha256: sha256 || null },
+    };
+}
+
+function clearLmSource() {
+    const graph = getRootGraph();
+    if (graph && graph.extra && typeof graph.extra === "object") {
+        delete graph.extra[MARKER_KEY];
+    }
+}
+
+/**
+ * True when the linked library document still exists; true on any failure so
+ * a transient backend error never unlinks a perfectly valid workflow.
+ */
+async function isLinkedDocumentAlive(marker) {
+    if (!marker || typeof marker.file_path !== "string") {
+        return false;
+    }
+    try {
+        const response = await fetch(
+            lmUrl(
+                `/api/lm/workflows/link-status?file_path=${encodeURIComponent(
+                    marker.file_path
+                )}`
+            )
+        );
+        if (!response.ok) {
+            return true;
+        }
+        const payload = await response.json();
+        if (payload?.success && payload.exists === false) {
+            return false;
+        }
+        return true;
+    } catch (_error) {
+        return true;
+    }
+}
+
+/**
+ * Drop a provenance marker whose library entry was deleted/renamed from the
+ * LM page, and report the resulting unlinked state.
+ */
+async function validateActiveLink() {
+    const marker = getActiveLmSource();
+    if (!marker) {
+        return false;
+    }
+    if (await isLinkedDocumentAlive(marker)) {
+        return true;
+    }
+    clearLmSource();
+    reportLinkState();
+    return false;
+}
+
+/**
+ * Track which prompt ids this tab queued and which of them finished. Used to
+ * ask the backend for a preview image without borrowing another tab's run.
+ */
+function installPromptTracking() {
+    if (typeof api.queuePrompt === "function" && !api.__lmQueuePromptHooked) {
+        api.__lmQueuePromptHooked = true;
+        const originalQueuePrompt = api.queuePrompt.bind(api);
+        api.queuePrompt = async function (...args) {
+            const response = await originalQueuePrompt(...args);
+            const promptId = response?.prompt_id;
+            if (typeof promptId === "string" && promptId) {
+                queuedPromptIds.add(promptId);
+                if (queuedPromptIds.size > 32) {
+                    queuedPromptIds.delete(queuedPromptIds.values().next().value);
+                }
+            }
+            return response;
+        };
+    }
+
+    api.addEventListener("execution_success", (event) => {
+        const promptId = event?.detail?.prompt_id;
+        if (typeof promptId !== "string" || !promptId) {
+            return;
+        }
+        if (queuedPromptIds.has(promptId)) {
+            queuedPromptIds.delete(promptId);
+            lastExecutedPromptId = promptId;
+        }
+    });
 }
 
 /**
@@ -153,6 +325,14 @@ async function performWriteback(marker, { askOnConflict = true } = {}) {
         }
     }
 
+    if (result.status === 404) {
+        // The library entry was deleted/renamed while this tab held the
+        // marker; unlink so "Update" reverts to "Create".
+        clearLmSource();
+        reportLinkState();
+        return { success: false, error: "not_found" };
+    }
+
     if (result.payload?.success) {
         if (result.payload.sha256) {
             marker.sha256 = result.payload.sha256;
@@ -183,6 +363,18 @@ export async function updateManagedWorkflow() {
         return;
     }
 
+    if (!(await isLinkedDocumentAlive(marker))) {
+        clearLmSource();
+        reportLinkState();
+        showToast({
+            severity: "warn",
+            summary: "LoRA Manager",
+            detail: "The library copy was deleted or moved. Create it again to keep editing.",
+            life: 5000,
+        });
+        return;
+    }
+
     const result = await performWriteback(marker);
     if (result.success) {
         showToast({
@@ -190,6 +382,13 @@ export async function updateManagedWorkflow() {
             summary: "LoRA Manager",
             detail: "Workflow updated in the LoRA Manager library.",
             life: 3000,
+        });
+    } else if (result.error === "not_found") {
+        showToast({
+            severity: "warn",
+            summary: "LoRA Manager",
+            detail: "The library copy was deleted or moved. Create it again to keep editing.",
+            life: 5000,
         });
     } else if (result.error !== "cancelled") {
         showToast({
@@ -199,6 +398,94 @@ export async function updateManagedWorkflow() {
             life: 5000,
         });
     }
+}
+
+/**
+ * Create a new LoRA Manager library workflow from the active graph.
+ *
+ * The backend writes the document into the single configured
+ * ``workflow_path`` folder and returns its path/hash; the marker is then
+ * stamped onto the live graph so updates work without reopening it. When the
+ * graph is already linked, confirm first: the new entry is a separate copy
+ * and the existing library document is left untouched.
+ */
+export async function createManagedWorkflow() {
+    const graph = getRootGraph();
+    if (!graph || typeof graph.serialize !== "function") {
+        showToast({
+            severity: "warn",
+            summary: "LoRA Manager",
+            detail: "No workflow is open to create.",
+            life: 5000,
+        });
+        return;
+    }
+
+    const existingMarker = getActiveLmSource();
+    if (existingMarker) {
+        // The LM entry may have been deleted/renamed since this tab loaded;
+        // only ask about a copy when the link is still real.
+        if (await isLinkedDocumentAlive(existingMarker)) {
+            const createCopy = window.confirm(
+                "This graph is already linked to a LoRA Manager workflow.\n" +
+                "Create a new library workflow from the current graph?"
+            );
+            if (!createCopy) {
+                return;
+            }
+        } else {
+            clearLmSource();
+            reportLinkState();
+        }
+    }
+
+    let response;
+    try {
+        response = await fetch(lmUrl("/api/lm/workflows/create"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: getActiveWorkflowName(),
+                workflow: serializeWorkflowForWriteback(),
+                preview_prompt_id: lastExecutedPromptId || undefined,
+            }),
+        });
+    } catch (error) {
+        showToast({
+            severity: "error",
+            summary: "LoRA Manager",
+            detail: `Failed to create the library workflow: ${error.message}`,
+            life: 5000,
+        });
+        return;
+    }
+
+    let payload = null;
+    try {
+        payload = await response.json();
+    } catch (_error) {
+        payload = null;
+    }
+
+    if (response.ok && payload?.success) {
+        stampLmSource(payload.file_path, payload.sha256);
+        reportLinkState();
+        const displayName = payload.name || getActiveWorkflowName();
+        showToast({
+            severity: "success",
+            summary: "LoRA Manager",
+            detail: `Created "${displayName}" in the LoRA Manager library.`,
+            life: 3000,
+        });
+        return;
+    }
+
+    showToast({
+        severity: "error",
+        summary: "LoRA Manager",
+        detail: `Failed to create the library workflow: ${payload?.error || `HTTP ${response.status}`}`,
+        life: 5000,
+    });
 }
 
 /**
@@ -242,20 +529,95 @@ const ITEM_ACTIVE_CLASSES = "cursor-pointer hover:bg-secondary-background-hover"
 const ITEM_DISABLED_CLASSES = "cursor-default opacity-50";
 const SEPARATOR_CLASSES = "my-1 w-full border-b border-border-subtle";
 
-function buildMenuItem() {
-    const linked = getActiveLmSource() !== null;
+// classList.add/remove accept multiple tokens, while classList.toggle expects
+// a single token — keep the class strings and split them at the call site.
+const ITEM_ACTIVE_TOKENS = ITEM_ACTIVE_CLASSES.split(/\s+/);
+const ITEM_DISABLED_TOKENS = ITEM_DISABLED_CLASSES.split(/\s+/);
 
-    const separator = document.createElement("div");
-    separator.className = SEPARATOR_CLASSES;
-    separator.setAttribute("role", "separator");
+function applyItemState(item, active) {
+    const add = active ? ITEM_ACTIVE_TOKENS : ITEM_DISABLED_TOKENS;
+    const remove = active ? ITEM_DISABLED_TOKENS : ITEM_ACTIVE_TOKENS;
+    item.classList.remove(...remove);
+    item.classList.add(...add);
+}
 
+function closeMenu(item) {
+    // Our node is not a reka-ui DropdownMenuItem, so the menu does not close
+    // on its own — close it the way Escape would.
+    const menu = item.closest('[role="menu"]');
+    (menu ?? document).dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+    );
+}
+
+function buildCreateItem() {
+    const canCreate = canCreateWorkflow();
     const item = document.createElement("div");
     item.setAttribute("role", "menuitem");
-    item.className = `${ITEM_CLASSES} ${linked ? ITEM_ACTIVE_CLASSES : ITEM_DISABLED_CLASSES}`;
-    if (!linked) {
+    item.dataset.lmAction = "create-workflow";
+    item.className = `${ITEM_CLASSES} ${canCreate ? ITEM_ACTIVE_CLASSES : ITEM_DISABLED_CLASSES}`;
+    if (!canCreate) {
         item.setAttribute("aria-disabled", "true");
-        item.title = "Only available for workflows opened from LoRA Manager";
+        item.title = createUnavailableTitle();
     }
+
+    const icon = document.createElement("i");
+    icon.className = CREATE_MENU_ICON;
+    const label = document.createElement("span");
+    label.className = "flex-1";
+    label.textContent = CREATE_MENU_LABEL;
+    item.append(icon, label);
+
+    item.addEventListener("click", () => {
+        if (!canCreateWorkflow()) {
+            return;
+        }
+        closeMenu(item);
+        createManagedWorkflow();
+    });
+
+    return item;
+}
+
+/**
+ * Re-evaluate the create entry after the library state fetch resolves while
+ * the menu is still open (the item is built before the fetch completes).
+ */
+function applyCreateAvailability(item) {
+    if (!item) {
+        return;
+    }
+    const canCreate = canCreateWorkflow();
+    applyItemState(item, canCreate);
+    if (canCreate) {
+        item.removeAttribute("aria-disabled");
+        item.removeAttribute("title");
+    } else {
+        item.setAttribute("aria-disabled", "true");
+        item.title = createUnavailableTitle();
+    }
+}
+
+function applyUpdateLinkState(item) {
+    if (!item) {
+        return;
+    }
+    const linked = getActiveLmSource() !== null;
+    applyItemState(item, linked);
+    if (linked) {
+        item.removeAttribute("aria-disabled");
+        item.removeAttribute("title");
+    } else {
+        item.setAttribute("aria-disabled", "true");
+        item.title = "Open a workflow from LoRA Manager, or create one first";
+    }
+}
+
+function buildUpdateItem() {
+    const item = document.createElement("div");
+    item.setAttribute("role", "menuitem");
+    item.dataset.lmAction = "update-workflow";
+    item.className = ITEM_CLASSES;
 
     const icon = document.createElement("i");
     icon.className = MENU_ICON;
@@ -264,32 +626,53 @@ function buildMenuItem() {
     label.textContent = MENU_LABEL;
     item.append(icon, label);
 
-    if (linked) {
-        item.addEventListener("click", () => {
-            // Our node is not a reka-ui DropdownMenuItem, so the menu does not
-            // close on its own — close it the way Escape would.
-            const menu = item.closest('[role="menu"]');
-            (menu ?? document).dispatchEvent(
-                new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
-            );
-            updateManagedWorkflow();
-        });
-    }
+    item.addEventListener("click", () => {
+        if (getActiveLmSource() === null) {
+            return;
+        }
+        closeMenu(item);
+        updateManagedWorkflow();
+    });
 
-    return [separator, item];
+    applyUpdateLinkState(item);
+    return item;
+}
+
+function buildMenuItems() {
+    const separator = document.createElement("div");
+    separator.className = SEPARATOR_CLASSES;
+    separator.setAttribute("role", "separator");
+
+    return [separator, buildCreateItem(), buildUpdateItem()];
 }
 
 /**
- * Append the write-back item to an open workflow actions menu, once per
- * menu instance (the portal remounts on every open).
+ * Append the LM entries to an open workflow actions menu, once per menu
+ * instance (the portal remounts on every open).
  */
 function injectIntoMenu(menuElement) {
     if (menuElement.dataset.lmWritebackInjected) {
         return;
     }
     menuElement.dataset.lmWritebackInjected = "1";
-    for (const node of buildMenuItem()) {
+    for (const node of buildMenuItems()) {
         menuElement.appendChild(node);
+    }
+
+    if (workflowLibraryState === null || !canCreateWorkflow()) {
+        const createItem = menuElement.querySelector(
+            '[data-lm-action="create-workflow"]'
+        );
+        refreshWorkflowLibraryState().then(() =>
+            applyCreateAvailability(createItem)
+        );
+    }
+
+    if (getActiveLmSource()) {
+        const updateItem = menuElement.querySelector(
+            '[data-lm-action="update-workflow"]'
+        );
+        validateActiveLink().then(() => applyUpdateLinkState(updateItem));
     }
 }
 
@@ -353,6 +736,13 @@ app.registerExtension({
 
     commands: [
         {
+            id: CREATE_COMMAND_ID,
+            label: CREATE_MENU_LABEL,
+            menubarLabel: CREATE_MENU_LABEL,
+            icon: CREATE_MENU_ICON,
+            function: () => createManagedWorkflow(),
+        },
+        {
             id: COMMAND_ID,
             label: MENU_LABEL,
             menubarLabel: MENU_LABEL,
@@ -361,7 +751,9 @@ app.registerExtension({
         },
     ],
 
-    menuCommands: [{ path: ["File"], commands: [COMMAND_ID] }],
+    menuCommands: [
+        { path: ["File"], commands: [CREATE_COMMAND_ID, COMMAND_ID] },
+    ],
 
     setup() {
         try {
@@ -369,6 +761,15 @@ app.registerExtension({
         } catch (error) {
             console.warn("LoRA Manager: workflow dropdown injection unavailable", error);
         }
+
+        // Resolve whether the library can accept a new entry before the user
+        // opens the menu; failures leave the entry optimistically enabled and
+        // the create request itself reports the real error.
+        refreshWorkflowLibraryState();
+
+        // Track this tab's executed prompt so Create can attach its decode
+        // image as the workflow preview.
+        installPromptTracking();
 
         // graphChanged is dispatched by ComfyUI's ChangeTracker only when the
         // serialized state actually changed: the first one after a load or
@@ -386,9 +787,14 @@ app.registerExtension({
         );
     },
 
-    // Fires on initial load, workflow open, and tab switch: report which
-    // LM-managed workflow (if any) is active now.
-    afterConfigureGraph() {
-        reportLinkState();
+    // Fires on initial load, workflow open, and tab switch: drop a stale
+    // marker (library entry deleted/renamed) before reporting which managed
+    // workflow is active now.
+    async afterConfigureGraph() {
+        // A different workflow is active now: never borrow its predecessor's
+        // executed prompt for the next Create preview.
+        lastExecutedPromptId = null;
+        await validateActiveLink();
+        await reportLinkState();
     },
 });

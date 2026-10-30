@@ -30,7 +30,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_other_roots: {},
     enable_other_models: false,
     enable_workflows: false,
-    workflow_folder_paths: [],
+    workflow_path: '',
     enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},

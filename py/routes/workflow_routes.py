@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import tempfile
 from typing import Any, Dict, Optional
 
@@ -17,7 +18,7 @@ from ..services.service_registry import ServiceRegistry
 from ..services.workflow_link_registry import WorkflowLinkRegistry
 from ..services.workflow_service import WorkflowService
 from ..utils.constants import WORKFLOW_CIVITAI_TYPES
-from ..utils.file_utils import calculate_sha256
+from ..utils.file_utils import calculate_sha256, normalize_path
 from ..utils.metadata_manager import MetadataManager
 from ..utils.models import WorkflowMetadata
 from ..utils.workflow_analysis import (
@@ -31,6 +32,128 @@ from ..utils.workflow_extraction import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Windows refuses these file names regardless of extension.
+_RESERVED_WORKFLOW_NAMES = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    *(f"COM{index}" for index in range(1, 10)),
+    *(f"LPT{index}" for index in range(1, 10)),
+}
+
+
+def _sanitize_workflow_name(raw: Any) -> str:
+    """Turn a ComfyUI workflow title into a safe library file name.
+
+    Keeps unicode (non-Latin workflow names are common) but strips path
+    separators and characters Windows rejects. The caller never supplies a
+    directory: the file always lands in the configured workflow library root.
+    """
+
+    name = raw.strip() if isinstance(raw, str) else ""
+    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", name)
+    name = name.strip().strip(".").strip()
+    if not name:
+        return "Untitled"
+    if name.upper() in _RESERVED_WORKFLOW_NAMES or (
+        name.split(".")[0].upper() in _RESERVED_WORKFLOW_NAMES
+    ):
+        name = f"_{name}"
+    return name[:120]
+
+
+def _write_text_atomic(path: str, text: str) -> None:
+    """Write ``text`` to ``path`` through a sibling temp file."""
+
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    fd, temp_path = tempfile.mkstemp(dir=directory, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.replace(temp_path, path)
+    except BaseException:
+        try:
+            os.unlink(temp_path)
+        except OSError:
+            pass
+        raise
+
+
+def _remove_file_quietly(path: str) -> None:
+    """Best-effort unlink used to roll back a failed create."""
+
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _resolve_workflow_preview(
+    prompt_id: str, *, registry_cls: Any = None
+) -> Optional[bytes]:
+    """Return PNG bytes for the decode image of ``prompt_id``, or None.
+
+    The metadata registry is server-global, so the prompt id is the ownership
+    token: only the client that queued that exact prompt can attach its image.
+    This keeps a create in one tab from borrowing another tab's output.
+
+    ``registry_cls`` is an injection point for unit tests; production callers
+    use the ComfyUI metadata registry singleton.
+    """
+
+    try:
+        if registry_cls is None:
+            from ..metadata_collector.metadata_registry import MetadataRegistry
+
+            registry_cls = MetadataRegistry
+
+        registry = registry_cls()
+        if registry.current_prompt_id != prompt_id:
+            return None
+        image = registry.get_first_decoded_image(prompt_id)
+        if image is None:
+            return None
+        from ..utils.image_tensor import tensor_to_png_bytes
+
+        return tensor_to_png_bytes(image)
+    except Exception:
+        logger.warning("Failed to resolve workflow preview image", exc_info=True)
+        return None
+
+
+def _write_workflow_preview(file_path: str, image_bytes: bytes) -> Optional[str]:
+    """Optimize and store the preview sidecar next to a workflow document."""
+
+    try:
+        from ..utils.constants import CARD_PREVIEW_WIDTH
+        from ..utils.exif_utils import ExifUtils
+        from ..utils.sidecar_paths import get_preview_dir
+
+        optimized, _extension = ExifUtils.optimize_image(
+            image_data=image_bytes,
+            target_width=CARD_PREVIEW_WIDTH,
+            format="webp",
+            quality=85,
+            preserve_metadata=False,
+        )
+        if not optimized:
+            return None
+
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        preview_dir = get_preview_dir(file_path)
+        os.makedirs(preview_dir, exist_ok=True)
+        preview_path = normalize_path(
+            os.path.join(preview_dir, f"{base_name}.preview.webp")
+        )
+        with open(preview_path, "wb") as handle:
+            handle.write(optimized)
+        return preview_path
+    except Exception:
+        logger.warning("Failed to write workflow preview", exc_info=True)
+        return None
 
 
 class WorkflowRestoreDownloadError(RuntimeError):
@@ -86,6 +209,16 @@ class WorkflowRoutes(BaseModelRoutes):
         # standalone mode too since no ComfyUI connection is involved.
         registrar.add_prefixed_route(
             'GET', '/api/lm/{prefix}/content', prefix, self.get_workflow_content
+        )
+        # Create a new library workflow from the current ComfyUI graph
+        # ("Create LM-managed workflow" entry point).
+        registrar.add_prefixed_route(
+            'POST', '/api/lm/{prefix}/create', prefix, self.create_workflow
+        )
+        # Validate that a graph's provenance marker still points at a library
+        # document (the entry may have been deleted/renamed from the LM page).
+        registrar.add_prefixed_route(
+            'GET', '/api/lm/{prefix}/link-status', prefix, self.get_workflow_link_status
         )
         # Write the current ComfyUI graph back into the managed workflow
         # document (ComfyUI-side "Update LM-managed workflow" entry point).
@@ -155,11 +288,11 @@ class WorkflowRoutes(BaseModelRoutes):
         standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
         context = {
             "workflows_disabled": False,
-            "workflows_no_paths": not bool(config.workflows_roots),
+            # A configured-but-unavailable folder is a scanning problem, not a
+            # configuration problem: report "no paths" only when unset.
+            "workflows_no_paths": not bool(self._settings.get_workflow_path()),
             "standalone_mode": standalone_mode,
         }
-        if standalone_mode:
-            context["settings_file"] = getattr(self._settings, "settings_file", "") or ""
         return context
 
     async def get_workflow_info(self, request: web.Request) -> web.Response:
@@ -286,6 +419,52 @@ class WorkflowRoutes(BaseModelRoutes):
             logger.error("Error reading workflow content: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def get_workflow_link_status(self, request: web.Request) -> web.Response:
+        """Report whether a ComfyUI graph's linked library document exists.
+
+        The ComfyUI extension calls this when a graph carries a provenance
+        marker. Deleting or renaming the entry from the LM page leaves a stale
+        marker client-side; the extension clears it so "Update" reverts to
+        "Create" instead of writing to a path that is no longer managed.
+        """
+        try:
+            if not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+
+            file_path = (request.query.get("file_path") or "").strip()
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "file_path is required"}, status=400
+                )
+
+            scanner = getattr(self.service, "scanner", None)
+            if scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Workflow scanner unavailable"},
+                    status=500,
+                )
+
+            # A path outside the current library roots can no longer be
+            # managed by definition; report it as gone rather than an error so
+            # the client can clear the marker.
+            try:
+                _require_path_in_library_roots(
+                    file_path, scanner, label="File path"
+                )
+            except ValueError:
+                return web.json_response({"success": True, "exists": False})
+
+            exists = await asyncio.to_thread(os.path.exists, file_path)
+            return web.json_response({"success": True, "exists": bool(exists)})
+        except Exception as exc:
+            logger.error(
+                "Error checking workflow link status: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def _read_json_body(self, request: web.Request) -> Dict[str, Any]:
         try:
             payload = await request.json()
@@ -320,6 +499,159 @@ class WorkflowRoutes(BaseModelRoutes):
             return await calculate_sha256(document_path) or None
         except OSError:
             return None
+
+    async def create_workflow(self, request: web.Request) -> web.Response:
+        """Create a new library workflow from the current ComfyUI graph.
+
+        The ComfyUI-side extension calls this for "Create LM-managed
+        workflow". Unlike ``update_workflow_content`` the target document does
+        not exist yet: the file is written into the single configured
+        ``workflow_path`` folder, registered in the scanner cache, and returned
+        together with its SHA256 so the client can stamp the provenance marker
+        and keep the graph linked for subsequent write-backs.
+        """
+        try:
+            if self._settings is None or not self._settings.is_workflows_enabled():
+                return web.json_response(
+                    {"success": False, "error": "Workflow management is disabled"},
+                    status=400,
+                )
+            if self._is_standalone():
+                return web.json_response(
+                    {"success": False, "error": "Standalone Mode Active"}, status=400
+                )
+
+            payload = await self._read_json_body(request)
+            workflow = payload.get("workflow")
+            if not isinstance(workflow, dict):
+                return web.json_response(
+                    {"success": False, "error": "workflow is required"}, status=400
+                )
+
+            # Client-side bookkeeping must never land in the library document.
+            extra = workflow.get("extra")
+            if isinstance(extra, dict):
+                extra.pop("lm_source", None)
+
+            if analyze_workflow(workflow) is None:
+                return web.json_response(
+                    {"success": False, "error": "workflow is not a ComfyUI graph document"},
+                    status=400,
+                )
+
+            text = json.dumps(workflow, ensure_ascii=False)
+            encoded = text.encode("utf-8")
+            if len(encoded) > MAX_WORKFLOW_JSON_BYTES:
+                return web.json_response(
+                    {"success": False, "error": "workflow exceeds the size limit"},
+                    status=400,
+                )
+
+            # The ComfyUI extension sends the prompt id it last executed; the
+            # backend only honors it while it is still the registry's current
+            # prompt, so the image belongs to this client's run.
+            preview_bytes: Optional[bytes] = None
+            preview_prompt_id = payload.get("preview_prompt_id")
+            if isinstance(preview_prompt_id, str) and preview_prompt_id.strip():
+                preview_bytes = await asyncio.to_thread(
+                    _resolve_workflow_preview, preview_prompt_id.strip()
+                )
+
+            library_dir = self._settings.get_workflow_path()
+            if not library_dir:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": (
+                            "The workflow library folder is not configured in "
+                            "LoRA Manager settings"
+                        ),
+                    },
+                    status=400,
+                )
+
+            try:
+                await asyncio.to_thread(os.makedirs, library_dir, exist_ok=True)
+            except OSError as exc:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f"Workflow library folder is unavailable: {exc}",
+                    },
+                    status=400,
+                )
+
+            # The folder may have been created just now (or re-mounted since
+            # startup): refresh the live roots so send-to-comfy/update can
+            # resolve the new file (and its previews) immediately.
+            try:
+                config.refresh_workflow_roots()
+            except Exception:
+                logger.debug("Failed to refresh workflow roots", exc_info=True)
+
+            sha256 = hashlib.sha256(encoded).hexdigest()
+            name = _sanitize_workflow_name(payload.get("name"))
+            file_name = WorkflowMetadata.generate_unique_filename(
+                library_dir, name, ".json", lambda: sha256
+            )
+            file_path = normalize_path(os.path.join(library_dir, file_name))
+
+            await asyncio.to_thread(_write_text_atomic, file_path, text)
+
+            preview_path: Optional[str] = None
+            if preview_bytes:
+                preview_path = await asyncio.to_thread(
+                    _write_workflow_preview, file_path, preview_bytes
+                )
+            preview_written = preview_path is not None
+
+            scanner = getattr(self.service, "scanner", None)
+            if scanner is None:
+                await asyncio.to_thread(_remove_file_quietly, file_path)
+                if preview_path:
+                    await asyncio.to_thread(_remove_file_quietly, preview_path)
+                return web.json_response(
+                    {"success": False, "error": "Workflow scanner unavailable"},
+                    status=500,
+                )
+
+            metadata = await scanner.register_local_artifact(file_path)
+            if metadata is None:
+                await asyncio.to_thread(_remove_file_quietly, file_path)
+                if preview_path:
+                    await asyncio.to_thread(_remove_file_quietly, preview_path)
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Workflow could not be registered in the library",
+                    },
+                    status=500,
+                )
+
+            # Let other clients refresh their cached library views; failures
+            # are non-fatal for the create itself.
+            try:
+                from .handlers.model_handlers import _broadcast_models_changed
+
+                _broadcast_models_changed()
+            except Exception:
+                logger.debug("Failed to broadcast models_changed", exc_info=True)
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "file_path": metadata.file_path or file_path,
+                    "name": os.path.splitext(file_name)[0],
+                    "sha256": sha256,
+                    "preview": preview_written
+                    or bool(getattr(metadata, "preview_url", "")),
+                }
+            )
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            logger.error("Error creating workflow: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def update_workflow_content(self, request: web.Request) -> web.Response:
         """Write the current ComfyUI graph back into a managed workflow.
@@ -358,6 +690,18 @@ class WorkflowRoutes(BaseModelRoutes):
             _require_path_in_library_roots(
                 file_path, self.service.scanner, label="File path"
             )
+
+            # A deleted library entry must not be resurrected by a stale
+            # ComfyUI provenance marker; the client clears the marker on 404.
+            if not await asyncio.to_thread(os.path.exists, file_path):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "not_found",
+                        "message": "Workflow no longer exists in the library",
+                    },
+                    status=404,
+                )
 
             # The provenance marker the client stamped for bookkeeping must
             # never land in the library document.

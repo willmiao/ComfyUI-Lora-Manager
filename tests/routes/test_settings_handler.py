@@ -294,14 +294,14 @@ async def test_get_settings_standalone_filters_template_placeholders(
 
 
 @pytest.mark.asyncio
-async def test_get_settings_exposes_workflow_folder_paths_in_plugin_mode(
+async def test_get_settings_exposes_workflow_path_in_plugin_mode(
     monkeypatch, patch_other_models_availability
 ):
-    """Workflow roots are LoRA-Manager-owned in both modes, so they sync to
-    the frontend even where the host-owned folder_paths stay hidden."""
+    """The workflow library folder is LoRA-Manager-owned in both modes, so it
+    syncs to the frontend even where host-owned folder_paths stay hidden."""
     monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
     handler = make_get_handler({"language": "en"})
-    handler._settings.get_workflow_folder_paths = lambda: ["/library/workflows"]
+    handler._settings.get_workflow_path = lambda: "/library/workflows"
 
     response = await handler.get_settings(FakeRequest())
     payload = json_payload(response)
@@ -310,11 +310,11 @@ async def test_get_settings_exposes_workflow_folder_paths_in_plugin_mode(
     settings = payload["settings"]
     assert settings["standalone_mode"] is False
     assert "folder_paths" not in settings
-    assert settings["workflow_folder_paths"] == ["/library/workflows"]
+    assert settings["workflow_path"] == "/library/workflows"
 
 
 @pytest.mark.asyncio
-async def test_get_settings_workflow_folder_paths_fallback_when_stub_lacks_method(
+async def test_get_settings_workflow_path_fallback_when_stub_lacks_method(
     monkeypatch, patch_other_models_availability
 ):
     monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
@@ -324,28 +324,24 @@ async def test_get_settings_workflow_folder_paths_fallback_when_stub_lacks_metho
     payload = json_payload(response)
 
     assert response.status == 200
-    assert payload["settings"]["workflow_folder_paths"] == []
+    assert payload["settings"]["workflow_path"] == ""
 
 
 @pytest.mark.asyncio
-async def test_update_settings_routes_workflow_folder_paths_to_dedicated_merge(
+async def test_update_settings_saves_workflow_path_via_generic_set(
     monkeypatch, patch_other_models_availability
 ):
-    """The pseudo-key must merge into folder_paths server-side instead of
-    replacing the whole (partially host-owned) map via a generic set()."""
+    """workflow_path is a normal setting; SettingsManager.set() applies the new
+    root live, so the handler must not need a dedicated merge branch."""
     monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
     handler = make_get_handler({"language": "en"})
-    recorded = []
-    handler._settings.set_workflow_folder_paths = lambda value: recorded.append(value) or value
 
     response = await handler.update_settings(
-        FakeRequest(json_data={"workflow_folder_paths": ["/library/workflows"]})
+        FakeRequest(json_data={"workflow_path": "/library/workflows"})
     )
     payload = json_payload(response)
 
     assert response.status == 200
     assert payload["success"] is True
-    assert recorded == [["/library/workflows"]]
-    # The pseudo-key never lands in the generic set() path.
-    assert handler._settings.set_calls == []
-    assert "workflow_folder_paths" not in handler._settings._values
+    assert handler._settings.set_calls == [("workflow_path", "/library/workflows")]
+    assert handler._settings._values["workflow_path"] == "/library/workflows"

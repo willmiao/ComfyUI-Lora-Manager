@@ -22,7 +22,6 @@ def _make_config(**overrides) -> config_module.Config:
     config.base_models_roots = []
     config.embeddings_roots = []
     config.workflows_roots = []
-    config.extra_workflows_roots = []
     for key, value in overrides.items():
         setattr(config, key, value)
     return config

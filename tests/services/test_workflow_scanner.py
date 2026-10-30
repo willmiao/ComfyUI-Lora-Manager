@@ -29,7 +29,6 @@ def workflow_root(tmp_path, monkeypatch):
     root = tmp_path / "workflows"
     root.mkdir()
     monkeypatch.setattr(config_module.config, "workflows_roots", [_normalize(root)])
-    monkeypatch.setattr(config_module.config, "extra_workflows_roots", [])
     return root
 
 
@@ -75,6 +74,18 @@ def test_filename_filter_rejects_sidecars(enable_workflows):
     # The derived workflow document of a container artifact is also a sidecar.
     assert scanner._is_indexable_filename("flow.workflow.json") is False
     assert scanner._is_indexable_filename("FLOW.WORKFLOW.JSON") is False
+
+
+def test_filename_filter_rejects_preview_sidecars(enable_workflows):
+    """LM preview assets share image-artifact extensions and must not be
+    indexed as workflows of their own."""
+    scanner = _make_scanner()
+    assert scanner._is_indexable_filename("flow.preview.webp") is False
+    assert scanner._is_indexable_filename("FLOW.PREVIEW.PNG") is False
+    assert scanner._is_indexable_filename("flow.preview.mp4") is False
+    # A plain image artifact is still indexable.
+    assert scanner._is_indexable_filename("flow.webp") is True
+    assert scanner._is_indexable_filename("flow.png") is True
 
 
 async def test_create_default_metadata_parses_workflow(workflow_root, enable_workflows, tmp_path):
@@ -236,3 +247,48 @@ def test_adjust_metadata_keeps_populated_analysis(workflow_root, enable_workflow
     adjusted = scanner.adjust_metadata(metadata, str(workflow_root / "flow.json"), None)
 
     assert adjusted.node_count == 7  # untouched: no re-extraction
+
+
+async def test_register_local_artifact_builds_metadata_and_syncs_cache(
+    workflow_root, enable_workflows, monkeypatch
+):
+    """The create flow reuses the scanner's metadata builder and cache sync."""
+    workflow = {"1": {"class_type": "KSampler", "inputs": {}}}
+    file_path = workflow_root / "created_flow.json"
+    file_path.write_text(json.dumps(workflow), encoding="utf-8")
+
+    scanner = _make_scanner()
+    synced = []
+
+    async def fake_sync(path, metadata_dict):
+        synced.append((path, metadata_dict))
+        return True
+
+    monkeypatch.setattr(scanner, "sync_cache_from_metadata", fake_sync)
+
+    metadata = await scanner.register_local_artifact(str(file_path))
+
+    assert metadata is not None
+    assert metadata.file_name == "created_flow"
+    assert len(synced) == 1
+    assert synced[0][0] == str(file_path)
+    assert synced[0][1]["file_path"] == metadata.file_path
+    assert synced[0][1]["sha256"] == metadata.sha256
+
+
+async def test_register_local_artifact_returns_none_for_non_workflow(
+    workflow_root, enable_workflows, monkeypatch
+):
+    file_path = workflow_root / "not_a_flow.json"
+    file_path.write_text(json.dumps({"some": "config"}), encoding="utf-8")
+
+    scanner = _make_scanner()
+    synced = []
+    monkeypatch.setattr(
+        scanner,
+        "sync_cache_from_metadata",
+        lambda *args: synced.append(args),
+    )
+
+    assert await scanner.register_local_artifact(str(file_path)) is None
+    assert synced == []

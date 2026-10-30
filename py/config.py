@@ -213,7 +213,6 @@ class Config:
         # empty while ``enable_workflows`` is off. Not a ComfyUI folder_paths
         # category — sourced from LoRA Manager's own settings in both modes.
         self.workflows_roots: List[str] = []
-        self.extra_workflows_roots: List[str] = []
         self.workflows_roots = self._init_workflow_paths()
         # Extra paths (only for LoRA Manager, not shared with ComfyUI)
         self.extra_loras_roots: List[str] = []
@@ -271,9 +270,8 @@ class Config:
             extra_checkpoint = extra_folder_paths.get("checkpoints", []) or []
             extra_unet = extra_folder_paths.get("unet", []) or []
             extra_embedding = extra_folder_paths.get("embeddings", []) or []
-            extra_workflows = extra_folder_paths.get("workflows", []) or []
 
-            if not any([extra_lora, extra_checkpoint, extra_unet, extra_embedding, extra_workflows]):
+            if not any([extra_lora, extra_checkpoint, extra_unet, extra_embedding]):
                 return
 
             filtered_extra_lora = self._filter_overlapping_extra_lora_paths(
@@ -288,8 +286,6 @@ class Config:
             self.extra_embeddings_roots = self._prepare_embedding_paths(
                 extra_embedding
             )
-            if settings_manager.is_workflows_enabled():
-                self.extra_workflows_roots = self._prepare_lora_paths(extra_workflows)
 
             if self.extra_loras_roots:
                 logger.info(
@@ -469,15 +465,10 @@ class Config:
                     self.embeddings_roots or [],
                 ),
             }
-            # Workflow roots live only in our settings (the host has no such
-            # category); persist them so the whitelist rebuild above does not
-            # erase the key. Empty lists are still written when the key was
-            # configured before, so a deliberate removal round-trips.
-            workflow_configured = self.configured_roots_for("workflow")
-            if workflow_configured or self.workflows_roots:
-                target_folder_paths["workflows"] = _append_new_paths(
-                    workflow_configured, self.workflows_roots or []
-                )
+            # The workflow library folder is a top-level LM setting
+            # (workflow_path), not a folder_paths entry, so it is persisted by
+            # SettingsManager and never written into the library's
+            # folder_paths map here.
             # Persist the other-model roots under their original folder_paths
             # keys so library switching round-trips them.
             for key, roots in (self.other_folder_roots or {}).items():
@@ -1153,8 +1144,6 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.extra_embeddings_roots or []:
             preview_roots.update(self._expand_preview_root(root))
-        for root in self.extra_workflows_roots or []:
-            preview_roots.update(self._expand_preview_root(root))
         if self.recipes_path:
             preview_roots.update(self._expand_preview_root(self.recipes_path))
 
@@ -1578,6 +1567,7 @@ class Config:
         folder_paths: Mapping[str, Any],
         extra_folder_paths: Optional[Mapping[str, Any]] = None,
         recipes_path: str = "",
+        workflow_path: str = "",
     ) -> None:
         self._path_mappings.clear()
         self._preview_root_paths = set()
@@ -1618,11 +1608,15 @@ class Config:
             self.other_folder_roots,
         ) = self._prepare_other_paths(other_path_map)
 
-        # Workflow roots ride the same library folder_paths structure but are
-        # not a ComfyUI category; the live list stays empty while the opt-in
-        # feature is off.
-        workflow_paths = folder_paths.get("workflows", []) or []
-        self._remember_configured_paths("workflow", workflow_paths)
+        # The workflow library is a single LM-owned folder (workflow_path),
+        # not a ComfyUI folder_paths category; the live root stays empty while
+        # the opt-in feature is off.
+        normalized_workflow_path = (
+            workflow_path.strip() if isinstance(workflow_path, str) else ""
+        )
+        self._remember_configured_paths(
+            "workflow", [normalized_workflow_path] if normalized_workflow_path else []
+        )
         try:
             from .services.settings_manager import get_settings_manager
 
@@ -1630,7 +1624,9 @@ class Config:
         except Exception:  # pragma: no cover - defensive fallback
             workflows_enabled = False
         self.workflows_roots = (
-            self._prepare_lora_paths(workflow_paths) if workflows_enabled else []
+            self._prepare_lora_paths([normalized_workflow_path])
+            if workflows_enabled and normalized_workflow_path
+            else []
         )
 
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
@@ -1639,7 +1635,6 @@ class Config:
         extra_checkpoint_paths = extra_paths.get("checkpoints", []) or []
         extra_unet_paths = extra_paths.get("unet", []) or []
         extra_embedding_paths = extra_paths.get("embeddings", []) or []
-        extra_workflow_paths = extra_paths.get("workflows", []) or []
 
         filtered_extra_lora_paths = self._filter_overlapping_extra_lora_paths(
             self.loras_roots,
@@ -1653,9 +1648,6 @@ class Config:
         ) = self._prepare_checkpoint_paths(extra_checkpoint_paths, extra_unet_paths)
         self.extra_embeddings_roots = self._prepare_embedding_paths(
             extra_embedding_paths
-        )
-        self.extra_workflows_roots = (
-            self._prepare_lora_paths(extra_workflow_paths) if workflows_enabled else []
         )
 
         # Log extra folder paths
@@ -1851,34 +1843,26 @@ class Config:
             return []
 
     def _get_configured_workflow_paths(self) -> List[str]:
-        """Read the workflows folder_paths entry from the active library.
+        """Return the configured workflow library folder as a root list.
 
-        "workflows" is not a ComfyUI folder_paths category (the host raises
-        KeyError for unknown keys), so both modes source workflow roots from
-        LoRA Manager's own settings.
+        Workflow management keeps a single LM-owned folder (``workflow_path``)
+        rather than a ComfyUI ``folder_paths`` category, so both modes source
+        it from LoRA Manager's own settings. The scanner API stays list-based.
         """
         try:
             from .services.settings_manager import get_settings_manager
 
-            library_config = get_settings_manager().get_active_library()
+            path = get_settings_manager().get_workflow_path()
         except Exception:
             return []
-        if not isinstance(library_config, Mapping):
-            return []
-        folder_paths_config = library_config.get("folder_paths")
-        if not isinstance(folder_paths_config, Mapping):
-            return []
-        raw_paths = folder_paths_config.get("workflows", [])
-        if not isinstance(raw_paths, list):
-            return []
-        return [path for path in raw_paths if isinstance(path, str) and path.strip()]
+        return [path] if path else []
 
     def _init_workflow_paths(self) -> List[str]:
-        """Initialize and validate workflow roots.
+        """Initialize and validate the workflow library root.
 
         Opt-in feature: the live root list stays empty while
-        ``enable_workflows`` is off, but the configured paths are still
-        remembered so ``save_folder_paths_to_settings()`` round-trips them.
+        ``enable_workflows`` is off. The configured folder is remembered so
+        diagnostics can report an unavailable/offline root.
         """
         try:
             raw_paths = self._get_configured_workflow_paths()
@@ -1891,8 +1875,8 @@ class Config:
 
             unique_paths = self._prepare_lora_paths(raw_paths)
             logger.info(
-                "Found workflow roots:"
-                + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]")
+                "Found workflow root: %s"
+                % (unique_paths[0] if unique_paths else "[]")
             )
             return unique_paths
         except Exception as e:
@@ -1900,33 +1884,12 @@ class Config:
             return []
 
     def refresh_workflow_roots(self) -> None:
-        """Rebuild workflow roots after the opt-in toggle or paths change.
+        """Rebuild the workflow root after the opt-in toggle or path change.
 
-        Called when ``enable_workflows`` or the workflows folder_paths are
-        updated so the scanner immediately reflects the new folder set
-        without a full application restart.
+        Called when ``enable_workflows`` or ``workflow_path`` is updated so the
+        scanner immediately reflects the new folder without a restart.
         """
         self.workflows_roots = self._init_workflow_paths()
-        try:
-            from .services.settings_manager import get_settings_manager
-
-            settings_manager = get_settings_manager()
-            extra_workflows: List[str] = []
-            if settings_manager.is_workflows_enabled():
-                library_config = settings_manager.get_active_library()
-                if isinstance(library_config, Mapping):
-                    extra_config = library_config.get("extra_folder_paths")
-                    if isinstance(extra_config, Mapping):
-                        raw_extra = extra_config.get("workflows", [])
-                        if isinstance(raw_extra, list):
-                            extra_workflows = [
-                                path
-                                for path in raw_extra
-                                if isinstance(path, str) and path.strip()
-                            ]
-            self.extra_workflows_roots = self._prepare_lora_paths(extra_workflows)
-        except Exception:  # pragma: no cover - defensive fallback
-            self.extra_workflows_roots = []
         self._rebuild_preview_roots()
 
     def _remember_configured_paths(
@@ -2294,7 +2257,14 @@ class Config:
             if isinstance(library_config, Mapping)
             else ""
         )
-        self._apply_library_paths(folder_paths, extra_folder_paths, recipes_path)
+        workflow_path = (
+            str(library_config.get("workflow_path", "") or "")
+            if isinstance(library_config, Mapping)
+            else ""
+        )
+        self._apply_library_paths(
+            folder_paths, extra_folder_paths, recipes_path, workflow_path
+        )
 
         logger.info(
             "Applied library settings with %d lora roots (%d extra), %d checkpoint roots (%d extra), and %d embedding roots (%d extra)",

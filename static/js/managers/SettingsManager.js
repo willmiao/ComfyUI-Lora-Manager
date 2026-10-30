@@ -1442,6 +1442,9 @@ export class SettingsManager {
         this.attachPathField('recipesPath', {
             onAfterSelect: () => this.saveInputSetting('recipesPath', 'recipes_path'),
         });
+        this.attachPathField('workflowPath', {
+            onAfterSelect: () => this.saveInputSetting('workflowPath', 'workflow_path'),
+        });
         this.attachPathField('exampleImagesPath', {
             onAfterSelect: (pickedPath) => {
                 // Mirror ExampleImagesManager's blur-save flow.
@@ -2442,12 +2445,6 @@ export class SettingsManager {
         schema.forEach((entry) => {
             if (entry.category === 'core') {
                 this._buildModelPathTypeGroup(coreHost, entry);
-            } else if (entry.category === 'workflow') {
-                // Opt-in like Other Models, but gated on its own master toggle
-                // (no sub-types) and rendered with the core groups.
-                if (state.global.settings.enable_workflows === true) {
-                    this._buildModelPathTypeGroup(coreHost, entry);
-                }
             } else if (otherModelsEnabled && entry.sub_type && enabledSubTypes.has(entry.sub_type)) {
                 otherCount++;
                 this._buildModelPathTypeGroup(otherHost, entry);
@@ -3411,16 +3408,10 @@ export class SettingsManager {
     }
 
     /**
-     * Reflect the opt-in Other Models state in the settings UI: the master
-     * toggle gates every sub_type checkbox, and a switched-off sub_type has
-     * its default-root select disabled. Never force-enables a select (the
-     * no-roots placeholder owns that state).
-     */
-    /**
      * Reflect the opt-in Workflow management state in the settings UI: the
-     * master toggle gates the workflow folder editor, which edits the active
-     * library's folder_paths.workflows entry (LoRA-Manager-owned in both
-     * plugin and standalone mode, applied live without a restart).
+     * master toggle gates the single workflow library folder input
+     * (workflow_path, LoRA-Manager-owned in both plugin and standalone mode,
+     * applied live without a restart).
      */
     updateWorkflowsControls() {
         const enabled = !!state.global.settings.enable_workflows;
@@ -3430,124 +3421,23 @@ export class SettingsManager {
             toggle.checked = enabled;
         }
 
-        const group = document.getElementById('workflowFolderPathsSetting');
+        const group = document.getElementById('workflowPathSetting');
         if (group) {
             group.style.display = enabled ? '' : 'none';
         }
-        if (enabled) {
-            this.loadWorkflowFolderPaths();
+
+        const input = document.getElementById('workflowPath');
+        if (input) {
+            input.value = state.global.settings.workflow_path || '';
         }
     }
 
-    loadWorkflowFolderPaths() {
-        const container = document.getElementById('workflowFolderPaths');
-        if (!container) return;
-
-        container.innerHTML = '';
-        const paths = state.global.settings.workflow_folder_paths || [];
-        paths.forEach((path) => {
-            this.addWorkflowFolderPathRow(path, false);
-        });
-        // No trailing empty row on load: an unconfigured library shows just
-        // its Add button, and removing a row never resurrects an empty one.
-    }
-
-    addWorkflowFolderPathRow(path = '', shouldFocus = true) {
-        const container = document.getElementById('workflowFolderPaths');
-        if (!container) return;
-
-        const row = document.createElement('div');
-        row.className = 'extra-folder-path-row mapping-row';
-
-        row.innerHTML = `
-            <div class="path-controls">
-                <input type="text" class="extra-folder-path-input"
-                       placeholder="${translate('settings.extraFolderPaths.pathPlaceholder', {}, '/path/to/models')}" value="${path}"
-                       onblur="settingsManager.updateWorkflowFolderPaths()"
-                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                <button type="button" class="browse-path-btn"
-                        onclick="settingsManager.browseForWorkflowPathRow(this)"
-                        title="${translate('settings.directoryPicker.title', {}, 'Browse Folders')}">
-                    <i class="fas fa-folder-open"></i>
-                </button>
-                <button type="button" class="remove-path-btn"
-                        onclick="settingsManager.removeWorkflowFolderPathRow(this)"
-                        title="${translate('common.actions.delete', {}, 'Delete')}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-
-        container.appendChild(row);
-
-        if (!path && shouldFocus) {
-            const input = row.querySelector('.extra-folder-path-input');
-            if (input) {
-                setTimeout(() => input.focus(), 0);
-            }
-        }
-    }
-
-    browseForWorkflowPathRow(btn) {
-        const row = btn.closest('.extra-folder-path-row');
-        const input = row ? row.querySelector('.extra-folder-path-input') : null;
-        if (!input) return;
-
-        directoryPickerModal.open({
-            initialPath: input.value.trim(),
-            onSelect: (pickedPath) => {
-                input.value = pickedPath;
-                this.updateWorkflowFolderPaths();
-            },
-        });
-    }
-
-    removeWorkflowFolderPathRow(btn) {
-        const row = btn.closest('.extra-folder-path-row');
-        if (row) {
-            row.remove();
-            this.updateWorkflowFolderPaths({ fromRemoval: true });
-        }
-    }
-
-    async updateWorkflowFolderPaths({ fromRemoval = false } = {}) {
-        const container = document.getElementById('workflowFolderPaths');
-        if (!container) return;
-
-        const paths = [];
-        container.querySelectorAll('.extra-folder-path-input').forEach((input) => {
-            const value = input.value.trim();
-            if (value) {
-                paths.push(value);
-            }
-        });
-
-        const currentPaths = state.global.settings.workflow_folder_paths || [];
-        if (JSON.stringify(currentPaths) === JSON.stringify(paths)) {
-            return;
-        }
-
-        try {
-            await this.saveSetting('workflow_folder_paths', paths);
-            state.global.settings.workflow_folder_paths = paths;
-            showToast('toast.settings.settingsUpdated', { setting: 'workflow folders' }, 'success');
-
-            // Keep the continuous-add flow: after the user fills the trailing
-            // empty row, append a fresh one — but never after a removal.
-            if (!fromRemoval) {
-                const inputs = container.querySelectorAll('.extra-folder-path-input');
-                const hasEmptyRow = Array.from(inputs).some((input) => !input.value.trim());
-                if (!hasEmptyRow) {
-                    this.addWorkflowFolderPathRow('');
-                }
-            }
-        } catch (error) {
-            console.error('Failed to save workflow folder paths:', error);
-            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
-            this.loadWorkflowFolderPaths();
-        }
-    }
-
+    /**
+     * Reflect the opt-in Other Models state in the settings UI: the master
+     * toggle gates every sub_type checkbox, and a switched-off sub_type has
+     * its default-root select disabled. Never force-enables a select (the
+     * no-roots placeholder owns that state).
+     */
     updateOtherModelsControls() {
         const enableOtherModels = !!state.global.settings.enable_other_models;
         const enabledSubTypes = new Set(
