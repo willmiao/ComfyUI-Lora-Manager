@@ -637,9 +637,9 @@
             "enableOtherModels": "その他のモデル管理",
             "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
             "enableWorkflows": "ワークフロー管理",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
-            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflowsHelp": "オフにすると、ワークフローライブラリフォルダーはスキャンされず、ワークフローページは無効のままになり、CivitAIのWorkflowリソースをリンクしたりダウンロードしたりできなくなります。",
+            "workflowFolder": "ワークフローライブラリフォルダー",
+            "workflowFolderHelp": "ComfyUIのワークフローJSONファイルをスキャンする単一のフォルダーです。LoRA Managerのみが管理し（ComfyUIとは共有されません）、変更はすぐに反映されます。",
             "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "管理するモデルタイプ",
             "otherSubTypesHelp": "その他のモデルページでスキャンおよび表示するカテゴリを選択します。",
@@ -1492,9 +1492,9 @@
             "enableFailed": "ワークフローの有効化に失敗しました"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folder configured",
-            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
-            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "title": "ワークフローフォルダーが設定されていません",
+            "description": "ワークフロー管理はオンですが、ワークフローフォルダーが設定されていません。「設定 > ライブラリ」でワークフローフォルダーを設定し、このページを再読み込みしてください。",
+            "hint": "ワークフローライブラリフォルダーは、ComfyUI標準のワークフローリストとは別です。",
             "openSettings": "設定を開く"
         }
     },

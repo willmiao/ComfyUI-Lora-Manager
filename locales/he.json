@@ -637,9 +637,9 @@
             "enableOtherModels": "ניהול מודלים אחרים",
             "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
             "enableWorkflows": "ניהול workflow",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
-            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflowsHelp": "כשהאפשרות כבויה, תיקיית ספריית ה-workflow אינה נסרקת, עמוד Workflows נשאר מושבת ולא ניתן לקשר או להוריד משאבי Workflow מ-CivitAI.",
+            "workflowFolder": "תיקיית ספריית ה-workflow",
+            "workflowFolderHelp": "התיקייה היחידה שנסרקת עבור קובצי JSON של workflow של ComfyUI. מנוהלת על ידי LoRA Manager בלבד (אינה משותפת עם ComfyUI); השינויים חלים מיד.",
             "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "סוגי מודלים מנוהלים",
             "otherSubTypesHelp": "בחר אילו קטגוריות של מודלים אחרים ייסרקו ויוצגו בעמוד המודלים האחרים.",
@@ -1492,9 +1492,9 @@
             "enableFailed": "הפעלת Workflows נכשלה"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folder configured",
-            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
-            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "title": "לא הוגדרה תיקיית workflow",
+            "description": "ניהול ה-workflow פועל, אך לא הוגדרה תיקיית workflow. הגדר את תיקיית ה-workflow תחת הגדרות > ספרייה, ולאחר מכן טען מחדש עמוד זה.",
+            "hint": "תיקיית ספריית ה-workflow נפרדת מרשימת ה-workflow המובנית של ComfyUI.",
             "openSettings": "פתח הגדרות"
         }
     },

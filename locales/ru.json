@@ -637,9 +637,9 @@
             "enableOtherModels": "Управление другими моделями",
             "enableOtherModelsHelp": "Если выключено, папки VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet не сканируются, страница «Другие модели» остаётся отключённой, а эти типы моделей нельзя загрузить.",
             "enableWorkflows": "Управление workflow",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
-            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflowsHelp": "Если выключено, папка библиотеки workflow не сканируется, страница Workflows остаётся отключённой, а ресурсы Workflow с CivitAI нельзя связать или скачать.",
+            "workflowFolder": "Папка библиотеки workflow",
+            "workflowFolderHelp": "Единственная папка, в которой сканируются JSON-файлы workflow ComfyUI. Управляется только LoRA Manager (не используется совместно с ComfyUI); изменения применяются сразу.",
             "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "Управляемые типы моделей",
             "otherSubTypesHelp": "Выберите, какие категории других моделей сканируются и отображаются на странице «Другие модели».",
@@ -1492,9 +1492,9 @@
             "enableFailed": "Не удалось включить Workflows"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folder configured",
-            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
-            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "title": "Папка workflow не настроена",
+            "description": "Управление workflow включено, но папка workflow не настроена. Укажите папку workflow в разделе «Настройки → Библиотека» и перезагрузите эту страницу.",
+            "hint": "Папка библиотеки workflow отделена от встроенного списка workflow ComfyUI.",
             "openSettings": "Открыть настройки"
         }
     },

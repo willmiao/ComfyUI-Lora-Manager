@@ -637,9 +637,9 @@
             "enableOtherModels": "Gestion des autres modèles",
             "enableOtherModelsHelp": "Lorsque cette option est désactivée, les dossiers VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet ne sont pas analysés, la page Autres modèles reste désactivée et ces types de modèles ne peuvent pas être téléchargés.",
             "enableWorkflows": "Gestion des workflows",
-            "enableWorkflowsHelp": "[TODO: Translate] When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
-            "workflowFolder": "[TODO: Translate] Workflow Library Folder",
-            "workflowFolderHelp": "[TODO: Translate] The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
+            "enableWorkflowsHelp": "Lorsque cette option est désactivée, le dossier de la bibliothèque des workflows n'est pas analysé, la page Workflows reste désactivée et les ressources Workflow de CivitAI ne peuvent pas être liées ni téléchargées.",
+            "workflowFolder": "Dossier de la bibliothèque des workflows",
+            "workflowFolderHelp": "Dossier unique analysé pour les fichiers JSON de workflow ComfyUI. Géré uniquement par LoRA Manager (non partagé avec ComfyUI) ; les modifications s'appliquent immédiatement.",
             "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "Types de modèles gérés",
             "otherSubTypesHelp": "Choisissez les catégories d’autres modèles analysées et affichées sur la page Autres modèles.",
@@ -1492,9 +1492,9 @@
             "enableFailed": "Échec de l'activation des workflows"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No workflow folder configured",
-            "description": "[TODO: Translate] Workflow management is on, but no workflow folder is configured. Set the workflow folder in Settings → Library, then reload this page.",
-            "hint": "[TODO: Translate] The workflow library folder is separate from ComfyUI's built-in workflow list.",
+            "title": "Aucun dossier de workflows configuré",
+            "description": "La gestion des workflows est activée, mais aucun dossier de workflows n'est configuré. Indiquez le dossier de workflows dans Paramètres → Bibliothèque, puis rechargez cette page.",
+            "hint": "Le dossier de la bibliothèque des workflows est distinct de la liste de workflows intégrée à ComfyUI.",
             "openSettings": "Ouvrir les paramètres"
         }
     },

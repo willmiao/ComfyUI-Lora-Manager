@@ -254,11 +254,12 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > **Status (2026-10, single workflow folder):** the library is now a single folder
 > (`settings.folderSettings.workflowFolder*`, backed by `workflow_path`). The renamed label/help
 > and placeholder keys plus `enableWorkflowsHelp` and the `workflows.noPaths.*` copy were
-> re-queued as `[TODO: Translate]` in all 9 locales; no translations were redone. The
-> `workflows.noPaths` split (`descriptionStandalone` / `descriptionComfyUI` /
-> `hintStandalone` / `hintComfyUI`) was collapsed into `description` + `hint`: the folder is
-> edited in Settings → Library in both modes, so the manual settings.json guidance and the
-> standalone `openSettingsFolder` fallback were dropped.
+> re-queued as `[TODO: Translate]` in all 9 locales and are now translated, so no
+> `[TODO: Translate]` placeholder remains. The `workflows.noPaths` split
+> (`descriptionStandalone` / `descriptionComfyUI` / `hintStandalone` / `hintComfyUI`) was
+> collapsed into `description` + `hint`: the folder is edited in Settings → Library in both
+> modes, so the manual settings.json guidance and the standalone `openSettingsFolder` fallback
+> were dropped.
 
 ---
 
