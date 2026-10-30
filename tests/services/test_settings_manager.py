@@ -1890,6 +1890,12 @@ def test_download_root_rules_accept_remote_only_base_models(manager, monkeypatch
     ]
 
 
+def _normalized_workflow_path(path: str) -> str:
+    """Apply the production normalization so POSIX-style inputs also work on Windows."""
+
+    return os.path.abspath(os.path.normpath(os.path.expanduser(path)))
+
+
 def test_get_workflow_path_defaults_to_empty(manager):
     assert manager.get_workflow_path() == ""
 
@@ -1899,11 +1905,11 @@ def test_set_workflow_path_stores_single_path_and_syncs_library(manager):
 
     manager.set("workflow_path", " /workflows ")
 
-    assert manager.get_workflow_path() == "/workflows"
+    assert manager.get_workflow_path() == _normalized_workflow_path("/workflows")
     # Core folder_paths stay untouched: workflow_path is its own setting.
     assert manager.settings["folder_paths"] == {"loras": ["/loras-main"]}
     active = manager.get_active_library()
-    assert active.get("workflow_path") == "/workflows"
+    assert active.get("workflow_path") == _normalized_workflow_path("/workflows")
     assert "workflows" not in active.get("folder_paths", {})
 
 
@@ -1926,7 +1932,7 @@ def test_workflow_path_syncs_on_library_switch(manager):
 
     manager._sync_active_library_to_root(save=False)
 
-    assert manager.get_workflow_path() == "/other-workflows"
+    assert manager.get_workflow_path() == _normalized_workflow_path("/other-workflows")
 
 
 def test_legacy_workflow_paths_migrate_to_scalar_setting(manager, tmp_path):
@@ -1962,7 +1968,7 @@ def test_legacy_extra_workflow_paths_migrate_to_scalar_setting(manager):
 
     manager._migrate_legacy_workflow_paths()
 
-    assert manager.get_workflow_path() == "/extra-workflows"
+    assert manager.get_workflow_path() == _normalized_workflow_path("/extra-workflows")
     assert "workflows" not in manager.get_active_library()["extra_folder_paths"]
 
 
@@ -1975,7 +1981,7 @@ def test_existing_workflow_path_wins_over_legacy_lists(manager):
 
     manager._migrate_legacy_workflow_paths()
 
-    assert manager.get_workflow_path() == "/new-workflows"
+    assert manager.get_workflow_path() == _normalized_workflow_path("/new-workflows")
     assert "workflows" not in manager.get_active_library()["folder_paths"]
 
 
@@ -1993,9 +1999,10 @@ def test_top_level_legacy_workflow_path_migrates_into_active_library(manager):
 
     manager._migrate_legacy_workflow_paths()
 
-    assert manager.get_workflow_path() == "/top-level-workflows"
+    expected = _normalized_workflow_path("/top-level-workflows")
+    assert manager.get_workflow_path() == expected
     # Mirrored into the library so the next startup's sync keeps it.
-    assert manager.get_active_library()["workflow_path"] == "/top-level-workflows"
+    assert manager.get_active_library()["workflow_path"] == expected
 
 
 def test_settings_load_migrates_legacy_workflow_folder(tmp_path, monkeypatch):
@@ -2020,5 +2027,5 @@ def test_settings_load_migrates_legacy_workflow_folder(tmp_path, monkeypatch):
 
     manager = SettingsManager()
 
-    assert manager.get_workflow_path() == "/legacy-workflows"
+    assert manager.get_workflow_path() == _normalized_workflow_path("/legacy-workflows")
     assert "workflows" not in manager.settings["folder_paths"]
