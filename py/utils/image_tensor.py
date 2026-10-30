@@ -17,6 +17,22 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 
+def _is_torch_tensor(value: Any) -> bool:
+    """Return ``True`` when ``value`` is a torch tensor.
+
+    torch ships with ComfyUI but is absent from the standalone/test runtime,
+    where the caller passes numpy arrays instead. The import therefore has to
+    stay optional: a missing torch must not turn a valid array into ``None``.
+    """
+
+    try:
+        import torch  # pyright: ignore[reportMissingImports]
+    except ImportError:
+        return False
+
+    return isinstance(value, torch.Tensor)
+
+
 def tensor_to_png_bytes(image_data: Any) -> Optional[bytes]:
     """Serialize a ComfyUI IMAGE value to PNG bytes.
 
@@ -40,9 +56,7 @@ def tensor_to_png_bytes(image_data: Any) -> Optional[bytes]:
                 getattr(tensor_image, "dtype", None),
             )
 
-        import torch  # pyright: ignore[reportMissingImports]
-
-        if isinstance(tensor_image, torch.Tensor):
+        if _is_torch_tensor(tensor_image):
             image_np = tensor_image.cpu().numpy()
         else:
             image_np = np.array(tensor_image)
