@@ -1107,11 +1107,25 @@
   "recipes": {
     "title": "LoRA Recipes",
     "filter": {
+      "title": "Filter Recipes",
       "countTitle": "{name} — {count} recipes"
+    },
+    "bulk": {
+      "noSelection": "No recipes selected"
+    },
+    "move": {
+      "failed": "Failed to move recipe(s): {message}"
+    },
+    "deleteModal": {
+      "message": "Are you sure you want to delete this recipe?",
+      "note": "Deleting this recipe will not affect the LoRA files used in it.",
+      "deleting": "Deleting..."
     },
     "actions": {
       "sendCheckpoint": "Send to ComfyUI",
       "sendRecipe": "Send to ComfyUI",
+      "sendRecipeModes": "Send Recipe to Workflow (Click: Append, Shift+Click: Replace)",
+      "shareRecipe": "Share Recipe",
       "copyRecipeSyntax": "Copy Recipe Syntax",
       "deleteRecipeWithShortcut": "Delete recipe (Del)"
     },
@@ -1458,6 +1472,12 @@
   "workflows": {
     "title": "Workflows",
     "itemLabel": "Workflow",
+    "filter": {
+      "title": "Filter Workflows"
+    },
+    "bulk": {
+      "noSelection": "No workflows selected"
+    },
     "contextMenu": {
       "sendToComfy": "Open in ComfyUI",
       "updateFromComfy": "Update from ComfyUI",
@@ -1479,7 +1499,6 @@
         "selectRoot": "Select Workflow Root:",
         "targetHint": "Select a workflow root directory",
         "noRoots": "No workflow roots found",
-        "noSelection": "No workflows selected",
         "failed": "Failed to move workflow(s): {message}"
       },
       "bulkDelete": {

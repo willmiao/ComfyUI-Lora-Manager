@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "Recetas de LoRA",
         "filter": {
+            "title": "Filtrar recetas",
             "countTitle": "{name} — {count} recetas"
+        },
+        "bulk": {
+            "noSelection": "No hay recetas seleccionadas"
+        },
+        "move": {
+            "failed": "Error al mover receta(s): {message}"
+        },
+        "deleteModal": {
+            "message": "¿Estás seguro de que quieres eliminar esta receta?",
+            "note": "Eliminar esta receta no afectará a los archivos LoRA utilizados en ella.",
+            "deleting": "Eliminando..."
         },
         "actions": {
             "sendCheckpoint": "Enviar a ComfyUI",
             "sendRecipe": "Enviar a ComfyUI",
+            "sendRecipeModes": "Enviar receta al workflow (clic: añadir, Mayús+clic: reemplazar)",
+            "shareRecipe": "Compartir receta",
             "copyRecipeSyntax": "Copiar sintaxis de receta",
             "deleteRecipeWithShortcut": "Eliminar receta (Del)"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "Workflows",
         "itemLabel": "Workflow",
+        "filter": {
+            "title": "Filtrar workflows"
+        },
+        "bulk": {
+            "noSelection": "No hay workflows seleccionados"
+        },
         "contextMenu": {
             "sendToComfy": "Abrir en ComfyUI",
             "updateFromComfy": "Actualizar desde ComfyUI",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "Seleccionar raíz del workflow:",
                 "targetHint": "Selecciona un directorio raíz de workflows",
                 "noRoots": "No se encontró ninguna raíz de workflows",
-                "noSelection": "No hay workflows seleccionados",
                 "failed": "Error al mover workflow(s): {message}"
             },
             "bulkDelete": {

@@ -18,6 +18,9 @@
    writing t('header.navigation.' ~ current_page) makes the i18n scanner treat
    the literal prefix as a key of its own. #}
 {% set page_title_key = 'header.navigation.' ~ current_page %}
+{# The filter panel lists the page's own items: recipes and workflows are not
+   models, so their titles name the page's collection instead. #}
+{% set filter_title_key = {'recipes': 'recipes.filter.title', 'workflows': 'workflows.filter.title'}.get(current_page, 'header.filter.title') %}
 <header class="app-header">
   <div class="header-container">
     <!-- Left section: Logo + page name + Navigation -->
@@ -75,7 +78,7 @@
           search_disabled %} disabled aria-disabled="true" {% endif %}>
           <i class="fas fa-sliders-h"></i>
         </button>
-        <button class="search-filter-toggle" id="filterButton" title="{{ t('header.filter.title') }}" {% if
+        <button class="search-filter-toggle" id="filterButton" title="{{ t(filter_title_key) }}" {% if
           search_disabled %} disabled aria-disabled="true" {% endif %}>
           <i class="fas fa-filter"></i>
           <span class="filter-badge" id="activeFiltersCount" style="display: none">0</span>
@@ -272,7 +275,7 @@
 <!-- Add filter panel -->
 <div id="filterPanel" class="filter-panel hidden">
   <div class="filter-header">
-    <h3>{{ t('header.filter.title') }}</h3>
+    <h3>{{ t(filter_title_key) }}</h3>
     <button class="close-filter-btn" onclick="filterManager.closeFilterPanel()">
       <i class="fas fa-times"></i>
     </button>

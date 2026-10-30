@@ -111,14 +111,14 @@ class RecipeCard {
             card.classList.add('nsfw-content');
         }
 
-        // Determine NSFW warning text based on level
-        let nsfwText = "Mature Content";
+        // Determine NSFW warning text based on level (shared with model cards)
+        let nsfwText = translate('modelCard.nsfw.matureContent', {}, 'Mature Content');
         if (nsfwLevel >= NSFW_LEVELS.XXX) {
-            nsfwText = "XXX-rated Content";
+            nsfwText = translate('modelCard.nsfw.xxxRated', {}, 'XXX-rated Content');
         } else if (nsfwLevel >= NSFW_LEVELS.X) {
-            nsfwText = "X-rated Content";
+            nsfwText = translate('modelCard.nsfw.xRated', {}, 'X-rated Content');
         } else if (nsfwLevel >= NSFW_LEVELS.R) {
-            nsfwText = "R-rated Content";
+            nsfwText = translate('modelCard.nsfw.rRated', {}, 'R-rated Content');
         }
 
         card.innerHTML = `
@@ -130,7 +130,7 @@ class RecipeCard {
                 ${!isDuplicatesMode ? `
                 <div class="card-header">
                     ${shouldBlur ?
-                    `<button class="toggle-blur-btn" title="Toggle blur">
+                    `<button class="toggle-blur-btn" title="${translate('modelCard.actions.toggleBlur', {}, 'Toggle blur')}">
                           <i class="fas fa-eye"></i>
                       </button>` : ''}
                     <div class="card-header-info">
@@ -141,10 +141,10 @@ class RecipeCard {
                         </span>` : ''}
                     </div>
                     <div class="card-actions">
-                        <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"></i>
-                        <i class="fas fa-share-alt" title="Share Recipe"></i>
-                        <i class="fas fa-paper-plane" title="Send Recipe to Workflow (Click: Append, Shift+Click: Replace)"></i>
-                        <i class="fas fa-trash" title="Delete Recipe"></i>
+                        <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" title="${isFavorite ? translate('modelCard.actions.removeFromFavorites', {}, 'Remove from favorites') : translate('modelCard.actions.addToFavorites', {}, 'Add to favorites')}"></i>
+                        <i class="fas fa-share-alt" title="${translate('recipes.actions.shareRecipe', {}, 'Share Recipe')}"></i>
+                        <i class="fas fa-paper-plane" title="${translate('recipes.actions.sendRecipeModes', {}, 'Send Recipe to Workflow (Click: Append, Shift+Click: Replace)')}"></i>
+                        <i class="fas fa-trash" title="${translate('loras.contextMenu.deleteRecipe', {}, 'Delete Recipe')}"></i>
                     </div>
                 </div>
                 ` : ''}
@@ -152,7 +152,7 @@ class RecipeCard {
                     <div class="nsfw-overlay">
                         <div class="nsfw-warning">
                             <p>${nsfwText}</p>
-                            <button class="show-content-btn">Show</button>
+                            <button class="show-content-btn">${translate('modelCard.actions.show', {}, 'Show')}</button>
                         </div>
                     </div>
                 ` : ''}
@@ -479,8 +479,8 @@ export function showRecipeDeleteConfirmation(recipe) {
 
         const deleteModalContent = `
             <div class="modal-content delete-modal-content">
-                <h2>Delete Recipe</h2>
-                <p class="delete-message">Are you sure you want to delete this recipe?</p>
+                <h2>${translate('loras.contextMenu.deleteRecipe', {}, 'Delete Recipe')}</h2>
+                <p class="delete-message">${translate('recipes.deleteModal.message', {}, 'Are you sure you want to delete this recipe?')}</p>
                 <div class="delete-model-info">
                     <div class="delete-preview">
                         ${isVideo ?
@@ -493,10 +493,10 @@ export function showRecipeDeleteConfirmation(recipe) {
                         <p>${translate('modals.deleteRecipe.recoverableWarning')}</p>
                     </div>
                 </div>
-                <p class="delete-note">Note: Deleting this recipe will not affect the LoRA files used in it.</p>
+                <p class="delete-note">${translate('recipes.deleteModal.note', {}, 'Deleting this recipe will not affect the LoRA files used in it.')}</p>
                 <div class="modal-actions">
-                    <button class="cancel-btn" onclick="closeDeleteModal()">Cancel</button>
-                    <button class="delete-btn" onclick="confirmDelete()">Delete</button>
+                    <button class="cancel-btn" onclick="closeDeleteModal()">${translate('common.actions.cancel', {}, 'Cancel')}</button>
+                    <button class="delete-btn" onclick="confirmDelete()">${translate('common.actions.delete', {}, 'Delete')}</button>
                 </div>
             </div>
         `;
@@ -506,7 +506,7 @@ export function showRecipeDeleteConfirmation(recipe) {
             // This is the onClose callback
             const deleteModal = document.getElementById('deleteModal');
             const deleteBtn = deleteModal.querySelector('.delete-btn');
-            deleteBtn.textContent = 'Delete';
+            deleteBtn.textContent = translate('common.actions.delete', {}, 'Delete');
             deleteBtn.disabled = false;
         });
 
@@ -546,7 +546,7 @@ function confirmRecipeDelete(recipe) {
     // Show loading state
     const deleteBtn = deleteModal.querySelector('.delete-btn');
     const originalText = deleteBtn.textContent;
-    deleteBtn.textContent = 'Deleting...';
+    deleteBtn.textContent = translate('recipes.deleteModal.deleting', {}, 'Deleting...');
     deleteBtn.disabled = true;
 
     // Call API to delete the recipe

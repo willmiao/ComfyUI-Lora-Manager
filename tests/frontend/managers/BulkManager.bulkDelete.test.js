@@ -324,6 +324,45 @@ describe('BulkManager.confirmBulkDelete undo flows', () => {
     );
   });
 
+  it('configures the workflow bulk menu for workflow items', async () => {
+    const bulk = await createBulkManager();
+    const config = bulk.actionConfig.workflows;
+
+    // Model-only actions stay hidden; workflow-capable actions are enabled.
+    expect(config).toEqual(expect.objectContaining({
+      addTags: true,
+      sendToWorkflow: false,
+      copyAll: false,
+      refreshAll: true,
+      checkUpdates: true,
+      moveAll: true,
+      autoOrganize: false,
+      deleteAll: true,
+      setContentRating: true,
+      skipMetadataRefresh: true,
+      setFavorite: true,
+      reimportMetadata: false,
+      rematchMetadata: false,
+    }));
+  });
+
+  it('names the page items in the nothing-selected warning', async () => {
+    stateStub.selectedModels.clear();
+    const bulk = await createBulkManager();
+
+    stateStub.currentPageType = 'workflows';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('workflows.bulk.noSelection', {}, 'warning');
+
+    stateStub.currentPageType = 'recipes';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('recipes.bulk.noSelection', {}, 'warning');
+
+    stateStub.currentPageType = 'loras';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('toast.models.noModelsSelected', {}, 'warning');
+  });
+
   it('refreshes recipes through window.recipeManager when undoing a recipe bulk delete', async () => {
     stateStub.currentPageType = 'recipes';
     stateStub.selectedModels.clear();

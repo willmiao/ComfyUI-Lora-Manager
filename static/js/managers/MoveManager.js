@@ -55,6 +55,25 @@ class MoveManager {
         this.initialized = true;
     }
 
+    /**
+     * Toast key for a failed move, named for whatever the current page holds
+     * (models / recipes / workflows).
+     */
+    _moveFailedKey() {
+        if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.modals.move.failed';
+        if (state.currentPageType === 'recipes') return 'recipes.move.failed';
+        return 'toast.models.moveFailed';
+    }
+
+    /**
+     * Toast key for "nothing selected" while starting a bulk move.
+     */
+    _noSelectionKey() {
+        if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.bulk.noSelection';
+        if (state.currentPageType === 'recipes') return 'recipes.bulk.noSelection';
+        return 'toast.models.noModelsSelected';
+    }
+
     async showMoveModal(filePath, modelType = null) {
         // Reset state
         this.currentFilePath = null;
@@ -63,14 +82,15 @@ class MoveManager {
         const apiClient = this._getApiClient(modelType);
         const modelConfig = apiClient.apiConfig.config;
         // Workflows are a separate library, so their copy must say "workflow"
-        // rather than reusing the model wording.
-        const isWorkflow = apiClient.modelType === MODEL_TYPES.WORKFLOW;
+        // rather than reusing the model wording. The recipe client has no
+        // modelType, so the page type is the authority here.
+        const isWorkflow = state.currentPageType === MODEL_TYPES.WORKFLOW;
 
         // Handle bulk mode
         if (filePath === 'bulk') {
             const selectedPaths = Array.from(state.selectedModels);
             if (selectedPaths.length === 0) {
-                showToast(isWorkflow ? 'workflows.modals.move.noSelection' : 'toast.models.noModelsSelected', {}, 'warning');
+                showToast(this._noSelectionKey(), {}, 'warning');
                 return;
             }
             this.bulkFilePaths = selectedPaths;
@@ -154,7 +174,7 @@ class MoveManager {
             await this.initializeFolderTree();
 
             // Load default path setting
-            this.loadDefaultPathSetting(apiClient.modelType);
+            this.loadDefaultPathSetting(apiClient.modelType || state.currentPageType);
 
             this.updateTargetPath();
             modalManager.showModal('moveModal', null, () => {
@@ -166,7 +186,7 @@ class MoveManager {
 
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
-            showToast(isWorkflow ? 'workflows.modals.move.failed' : 'toast.models.moveFailed', { message: error.message }, 'error');
+            showToast(this._moveFailedKey(), { message: error.message }, 'error');
         }
     }
 
@@ -184,10 +204,9 @@ class MoveManager {
     handleToggleDefaultPath(event) {
         this.useDefaultPath = event.target.checked;
 
-        // Save to localStorage per model type
+        // Save to localStorage per page type (the recipe client has no modelType)
         const apiClient = this._getApiClient();
-        const modelType = apiClient.modelType;
-        const storageKey = `use_default_path_${modelType}`;
+        const storageKey = `use_default_path_${apiClient.modelType || state.currentPageType}`;
         setStorageItem(storageKey, this.useDefaultPath);
 
         this.updatePathSelectionUI();
@@ -246,7 +265,11 @@ class MoveManager {
             if (this.useDefaultPath) {
                 // Show actual template path; an empty/absent template means a
                 // flat layout, so keep the root as-is.
-                const singularType = config.singularName || apiClient.modelType.replace(/s$/, '');
+                // The recipe client exposes no modelType; fall back to the page
+                // type so the template lookup stays a miss instead of throwing.
+                const singularType = config.singularName
+                    || (apiClient.modelType || '').replace(/s$/, '')
+                    || state.currentPageType;
                 const templates = state.global?.settings?.download_path_templates;
                 const template = templates?.[singularType];
                 if (template) {
@@ -444,11 +467,7 @@ class MoveManager {
 
         } catch (error) {
             console.error('Error moving model(s):', error);
-            showToast(
-                apiClient.modelType === MODEL_TYPES.WORKFLOW ? 'workflows.modals.move.failed' : 'toast.models.moveFailed',
-                { message: error.message },
-                'error'
-            );
+            showToast(this._moveFailedKey(), { message: error.message }, 'error');
         }
     }
 }

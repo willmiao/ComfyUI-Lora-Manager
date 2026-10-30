@@ -705,7 +705,7 @@ export class SidebarManager {
 
         if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
             console.log('[SidebarManager] performDragMove returning false - supportsMove is false');
-            showToast('toast.models.moveFailed', { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
+            showToast(this._moveFailedKey(), { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
             return false;
         }
 
@@ -714,7 +714,7 @@ export class SidebarManager {
         if (!rootPath) {
             console.log('[SidebarManager] performDragMove returning false - no rootPath');
             showToast(
-                'toast.models.moveFailed',
+                this._moveFailedKey(),
                 { message: translate('sidebar.dragDrop.unableToResolveRoot', {}, 'Unable to determine destination path for move.') },
                 'error'
             );
@@ -797,7 +797,7 @@ export class SidebarManager {
             return true;
         } catch (error) {
             console.error('[SidebarManager] Error moving model(s) via drag-and-drop:', error);
-            showToast('toast.models.moveFailed', { message: error.message || 'Unknown error' }, 'error');
+            showToast(this._moveFailedKey(), { message: error.message || 'Unknown error' }, 'error');
             console.log('[SidebarManager] performDragMove returning false due to error');
             return false;
         }
@@ -2647,6 +2647,16 @@ export class SidebarManager {
 
     _supportsFolderManagement() {
         return Boolean(this.apiClient?.apiConfig?.config?.supportsFolderManagement);
+    }
+
+    /**
+     * Toast key for a failed drag-and-drop move, named for whatever the
+     * current page holds (models / recipes / workflows).
+     */
+    _moveFailedKey() {
+        if (this.pageType === 'workflows') return 'workflows.modals.move.failed';
+        if (this.pageType === 'recipes') return 'recipes.move.failed';
+        return 'toast.models.moveFailed';
     }
 
     // The models-only folder list only contains directories that directly

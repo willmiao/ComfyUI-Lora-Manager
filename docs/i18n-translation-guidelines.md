@@ -272,6 +272,17 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `workflows.*.exclude*` copy to translate. All 9 locales are translated (renderings in §2,
 > "Workflows feature"), so no `[TODO: Translate]` placeholder remains.
 
+> **Status (2026-10, page-aware nouns and recipes-page copy):** the pages stopped sharing the
+> model library's plural nouns. The header filter panel is now titled per page
+> (`recipes.filter.title`, `workflows.filter.title`), bulk "nothing selected" guards use
+> `recipes.bulk.noSelection` / `workflows.bulk.noSelection`, and failed moves are reported with
+> `recipes.move.failed` / `workflows.modals.move.failed`. The Recipes page also gained the
+> workflow pass's treatment: the card tooltips and the delete dialog now go through i18n
+> (`recipes.actions.sendRecipeModes`, `.shareRecipe`, `recipes.deleteModal.message` / `.note` /
+> `.deleting`, reusing `loras.contextMenu.deleteRecipe`, `modelCard.nsfw.*` and the
+> `common.actions.*` buttons), and the Workflows page got a bulk-action config so the model-only
+> bulk entries stay hidden. All 9 locales are translated, so no `[TODO: Translate]` remains.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -1017,6 +1028,13 @@ word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהו
 - Workflows have no exclusion concept, so there is no `workflows.*` exclude/restore copy: the
   card menu, the global context menu entry and the excluded-view banner are all absent on that
   page (recipes are handled the same way).
+- Page chrome names the collection, not models: the header filter panel title is
+  `workflows.filter.title` ("Filter Workflows": zh-CN 筛选工作流 · zh-TW 篩選工作流 ·
+  ja ワークフローをフィルタ · ko 워크플로 필터 · fr Filtrer les workflows · de Workflows filtern ·
+  es Filtrar workflows · ru Фильтр workflow · he סינון workflows) and the bulk guard is
+  `workflows.bulk.noSelection` ("No workflows selected"). The Recipes page mirrors this with
+  `recipes.filter.title` ("Filter Recipes") and `recipes.bulk.noSelection`, following the §4
+  Recipe noun per locale (配方 / 配方 / レシピ / 레시피 / Recipe / Rezept / receta / рецепт / מתכון).
 
 ---
 

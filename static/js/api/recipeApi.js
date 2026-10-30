@@ -582,7 +582,7 @@ export class RecipeSidebarApiClient {
             .filter((id) => !!id);
 
         if (recipeIds.length === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast('recipes.bulk.noSelection', {}, 'warning');
             return [];
         }
 

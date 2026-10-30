@@ -2201,24 +2201,34 @@ describe('Interaction-level regression coverage', () => {
     expect(window.pageControls.enterExcludedView).toHaveBeenCalledTimes(1);
   });
 
-  it('hides the excluded-models entry on the workflows page', async () => {
+  it('hides the model-only entries on the workflows page', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="manage-excluded-models"></div>
+        <div class="context-menu-item" data-action="download-example-images"></div>
+        <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
+        <div class="context-menu-item" data-action="check-model-updates"></div>
       </div>
     `;
 
     const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
     const menu = new GlobalContextMenu();
-    const excludedItem = document.querySelector('[data-action="manage-excluded-models"]');
+    const byAction = (action) => document.querySelector(`[data-action="${action}"]`);
+    const modelOnly = ['manage-excluded-models', 'download-example-images', 'cleanup-example-images-folders'];
 
     stateStub.currentPageType = 'workflows';
     menu.showMenu(100, 200);
-    expect(excludedItem.classList.contains('hidden')).toBe(true);
+    for (const action of modelOnly) {
+      expect(byAction(action).classList.contains('hidden')).toBe(true);
+    }
+    // Workflow metadata is tracked from CivitAI, so the update check stays.
+    expect(byAction('check-model-updates').classList.contains('hidden')).toBe(false);
 
     stateStub.currentPageType = 'loras';
     menu.showMenu(100, 200);
-    expect(excludedItem.classList.contains('hidden')).toBe(false);
+    for (const action of modelOnly) {
+      expect(byAction(action).classList.contains('hidden')).toBe(false);
+    }
 
     delete stateStub.currentPageType;
   });

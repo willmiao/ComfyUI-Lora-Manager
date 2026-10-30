@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "Рецепты LoRA",
         "filter": {
+            "title": "Фильтр рецептов",
             "countTitle": "{name} — {count} рецепт(ов)"
+        },
+        "bulk": {
+            "noSelection": "Рецепты не выбраны"
+        },
+        "move": {
+            "failed": "Не удалось переместить рецепт(ы): {message}"
+        },
+        "deleteModal": {
+            "message": "Вы уверены, что хотите удалить этот рецепт?",
+            "note": "Удаление этого рецепта не затронет используемые в нём файлы LoRA.",
+            "deleting": "Удаление..."
         },
         "actions": {
             "sendCheckpoint": "Отправить в ComfyUI",
             "sendRecipe": "Отправить в ComfyUI",
+            "sendRecipeModes": "Отправить рецепт в workflow (клик: добавить, Shift+клик: заменить)",
+            "shareRecipe": "Поделиться рецептом",
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
             "deleteRecipeWithShortcut": "Удалить рецепт (Del)"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "Workflows",
         "itemLabel": "Workflow",
+        "filter": {
+            "title": "Фильтр workflow"
+        },
+        "bulk": {
+            "noSelection": "Workflow не выбраны"
+        },
         "contextMenu": {
             "sendToComfy": "Открыть в ComfyUI",
             "updateFromComfy": "Обновить из ComfyUI",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "Выберите корень workflow:",
                 "targetHint": "Выберите корневую папку workflow",
                 "noRoots": "Корень workflow не найден",
-                "noSelection": "Workflow не выбраны",
                 "failed": "Не удалось переместить workflow: {message}"
             },
             "bulkDelete": {

@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "LoRA 레시피",
         "filter": {
+            "title": "레시피 필터",
             "countTitle": "{name} —— 레시피 {count}개"
+        },
+        "bulk": {
+            "noSelection": "선택된 레시피가 없습니다"
+        },
+        "move": {
+            "failed": "레시피 이동 실패: {message}"
+        },
+        "deleteModal": {
+            "message": "이 레시피를 삭제하시겠습니까?",
+            "note": "이 레시피를 삭제해도 사용된 LoRA 파일에는 영향을 주지 않습니다.",
+            "deleting": "삭제 중..."
         },
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기",
+            "sendRecipeModes": "워크플로로 레시피 보내기 (클릭: 추가, Shift+클릭: 교체)",
+            "shareRecipe": "레시피 공유",
             "copyRecipeSyntax": "레시피 문법 복사",
             "deleteRecipeWithShortcut": "레시피 삭제(Del)"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "워크플로",
         "itemLabel": "워크플로",
+        "filter": {
+            "title": "워크플로 필터"
+        },
+        "bulk": {
+            "noSelection": "선택된 워크플로가 없습니다"
+        },
         "contextMenu": {
             "sendToComfy": "ComfyUI에서 열기",
             "updateFromComfy": "ComfyUI에서 업데이트",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "워크플로 루트 선택:",
                 "targetHint": "워크플로 루트 디렉토리를 선택하세요",
                 "noRoots": "워크플로 루트를 찾을 수 없습니다",
-                "noSelection": "선택된 워크플로가 없습니다",
                 "failed": "워크플로 이동 실패: {message}"
             },
             "bulkDelete": {

@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "LoRA 配方",
         "filter": {
+            "title": "筛选配方",
             "countTitle": "{name} —— {count} 个配方"
+        },
+        "bulk": {
+            "noSelection": "未选择配方"
+        },
+        "move": {
+            "failed": "移动配方失败：{message}"
+        },
+        "deleteModal": {
+            "message": "你确定要删除此配方吗？",
+            "note": "删除此配方不会影响其中使用的 LoRA 文件。",
+            "deleting": "正在删除..."
         },
         "actions": {
             "sendCheckpoint": "发送到 ComfyUI",
             "sendRecipe": "发送到 ComfyUI",
+            "sendRecipeModes": "发送配方到工作流（单击：追加，Shift+单击：替换）",
+            "shareRecipe": "分享配方",
             "copyRecipeSyntax": "复制配方语法",
             "deleteRecipeWithShortcut": "删除配方（Del）"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "工作流",
         "itemLabel": "工作流",
+        "filter": {
+            "title": "筛选工作流"
+        },
+        "bulk": {
+            "noSelection": "未选中工作流"
+        },
         "contextMenu": {
             "sendToComfy": "在 ComfyUI 中打开",
             "updateFromComfy": "从 ComfyUI 更新",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "选择工作流根目录：",
                 "targetHint": "选择工作流根目录",
                 "noRoots": "未找到工作流根目录",
-                "noSelection": "未选中工作流",
                 "failed": "移动工作流失败：{message}"
             },
             "bulkDelete": {

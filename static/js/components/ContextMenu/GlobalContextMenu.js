@@ -57,7 +57,11 @@ export class GlobalContextMenu extends BaseContextMenu {
         }
 
         if (isWorkflowsPage) {
+            // Workflows carry their own preview and have no example-image
+            // library, so the model example-image actions do not apply.
             excludedModelsItem?.classList.add('hidden');
+            downloadExamplesItem?.classList.add('hidden');
+            cleanupExamplesItem?.classList.add('hidden');
         }
 
         this._updateSeparatorVisibility();

@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "LoRAレシピ",
         "filter": {
+            "title": "レシピをフィルタ",
             "countTitle": "{name} —— {count} 件のレシピ"
+        },
+        "bulk": {
+            "noSelection": "レシピが選択されていません"
+        },
+        "move": {
+            "failed": "レシピの移動に失敗しました：{message}"
+        },
+        "deleteModal": {
+            "message": "このレシピを削除してもよろしいですか？",
+            "note": "このレシピを削除しても、使用されているLoRAファイルには影響しません。",
+            "deleting": "削除中..."
         },
         "actions": {
             "sendCheckpoint": "ComfyUIへ送信",
             "sendRecipe": "ComfyUIへ送信",
+            "sendRecipeModes": "レシピをワークフローへ送信（クリック：追加、Shift+クリック：置き換え）",
+            "shareRecipe": "レシピを共有",
             "copyRecipeSyntax": "レシピ構文をコピー",
             "deleteRecipeWithShortcut": "レシピを削除（Del）"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "ワークフロー",
         "itemLabel": "ワークフロー",
+        "filter": {
+            "title": "ワークフローをフィルタ"
+        },
+        "bulk": {
+            "noSelection": "ワークフローが選択されていません"
+        },
         "contextMenu": {
             "sendToComfy": "ComfyUIで開く",
             "updateFromComfy": "ComfyUIから更新",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "ワークフロールートを選択：",
                 "targetHint": "ワークフローのルートディレクトリを選択",
                 "noRoots": "ワークフロールートが見つかりません",
-                "noSelection": "ワークフローが選択されていません",
                 "failed": "ワークフローの移動に失敗しました：{message}"
             },
             "bulkDelete": {

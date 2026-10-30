@@ -1107,11 +1107,25 @@
     "recipes": {
         "title": "מתכוני LoRA",
         "filter": {
+            "title": "סינון מתכונים",
             "countTitle": "{name} — {count} מתכונים"
+        },
+        "bulk": {
+            "noSelection": "לא נבחרו מתכונים"
+        },
+        "move": {
+            "failed": "העברת המתכון/ים נכשלה: {message}"
+        },
+        "deleteModal": {
+            "message": "האם אתה בטוח שברצונך למחוק מתכון זה?",
+            "note": "מחיקת המתכון לא תשפיע על קבצי ה-LoRA שבהם הוא משתמש.",
+            "deleting": "מוחק..."
         },
         "actions": {
             "sendCheckpoint": "שלח ל-ComfyUI",
             "sendRecipe": "שלח ל-ComfyUI",
+            "sendRecipeModes": "שלח מתכון ל-workflow (לחיצה: הוספה, Shift+לחיצה: החלפה)",
+            "shareRecipe": "שתף מתכון",
             "copyRecipeSyntax": "העתק תחביר מתכון",
             "deleteRecipeWithShortcut": "מחק מתכון (Del)"
         },
@@ -1458,6 +1472,12 @@
     "workflows": {
         "title": "Workflows",
         "itemLabel": "workflow",
+        "filter": {
+            "title": "סינון workflows"
+        },
+        "bulk": {
+            "noSelection": "לא נבחרו workflows"
+        },
         "contextMenu": {
             "sendToComfy": "פתח ב-ComfyUI",
             "updateFromComfy": "עדכן מ-ComfyUI",
@@ -1479,7 +1499,6 @@
                 "selectRoot": "בחר שורש workflow:",
                 "targetHint": "בחר ספריית שורש של workflow",
                 "noRoots": "לא נמצא שורש workflow",
-                "noSelection": "לא נבחרו workflows",
                 "failed": "העברת ה-workflow נכשלה: {message}"
             },
             "bulkDelete": {
