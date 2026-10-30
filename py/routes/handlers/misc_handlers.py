@@ -1868,6 +1868,15 @@ class SettingsHandler:
                 response_data["workflow_path"] = get_workflow_path()
             elif "workflow_path" not in response_data:
                 response_data["workflow_path"] = ""
+            # Compatibility for the companion browser extension, which probes a
+            # list field to decide whether a workflow root is configured.
+            # Workflow management stores one folder; expose it as a one-item
+            # list so older extension builds can keep pre-flighting downloads.
+            response_data["workflow_folder_paths"] = (
+                [response_data["workflow_path"]]
+                if response_data["workflow_path"]
+                else []
+            )
             if standalone_mode:
                 # Standalone reads its model roots exclusively from
                 # settings.json, so the Model Paths settings UI needs the
@@ -2576,11 +2585,15 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
-            # Opt-in: probe the other scanner only while Other Models is enabled,
-            # so the disabled behaviour stays byte-identical to the legacy one.
+            # Opt-in: probe the other / workflow scanners only while their
+            # features are enabled, so disabled behaviour stays byte-identical
+            # to the legacy one.
             other_scanner = None
             if get_settings_manager().is_other_models_enabled():
                 other_scanner = await self._service_registry.get_other_scanner()
+            workflow_scanner = None
+            if get_settings_manager().is_workflows_enabled():
+                workflow_scanner = await self._service_registry.get_workflow_scanner()
 
             if model_version_id_str:
                 try:
@@ -2626,6 +2639,15 @@ class ModelLibraryHandler:
                     exists = True
                     model_type = "other"
                     matched_scanner = other_scanner
+                elif (
+                    workflow_scanner
+                    and await workflow_scanner.check_model_version_exists(
+                        model_version_id
+                    )
+                ):
+                    exists = True
+                    model_type = "workflow"
+                    matched_scanner = workflow_scanner
 
                 if exists:
                     return web.json_response(
@@ -2643,7 +2665,13 @@ class ModelLibraryHandler:
                 history_service = await self._get_download_history_service()
                 has_been_downloaded = False
                 history_type = None
-                for candidate_type in ("lora", "checkpoint", "embedding", "other"):
+                for candidate_type in (
+                    "lora",
+                    "checkpoint",
+                    "embedding",
+                    "other",
+                    "workflow",
+                ):
                     if await history_service.has_been_downloaded(
                         candidate_type,
                         model_version_id,
@@ -2666,6 +2694,7 @@ class ModelLibraryHandler:
             checkpoint_versions = []
             embedding_versions = []
             other_versions = []
+            workflow_versions = []
             if not lora_versions and checkpoint_scanner:
                 checkpoint_versions = await checkpoint_scanner.get_model_versions_by_id(
                     model_id
@@ -2681,6 +2710,16 @@ class ModelLibraryHandler:
                 and other_scanner
             ):
                 other_versions = await other_scanner.get_model_versions_by_id(model_id)
+            if (
+                not lora_versions
+                and not checkpoint_versions
+                and not embedding_versions
+                and not other_versions
+                and workflow_scanner
+            ):
+                workflow_versions = await workflow_scanner.get_model_versions_by_id(
+                    model_id
+                )
 
             model_type = None
             versions = []
@@ -2721,9 +2760,24 @@ class ModelLibraryHandler:
                         "downloadedVersionIds": [],
                     }
                 )
+            if workflow_versions:
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "workflow",
+                        "versions": self._with_downloaded_flag(workflow_versions),
+                        "downloadedVersionIds": [],
+                    }
+                )
 
             history_service = await self._get_download_history_service()
-            for candidate_type in ("lora", "checkpoint", "embedding", "other"):
+            for candidate_type in (
+                "lora",
+                "checkpoint",
+                "embedding",
+                "other",
+                "workflow",
+            ):
                 candidate_downloaded_version_ids = (
                     await history_service.get_downloaded_version_ids(
                         candidate_type,
@@ -2778,11 +2832,15 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
-            # Opt-in: keep the other probe last so model cards for lora /
-            # checkpoint / embedding ids are unaffected by the extra scanner.
+            # Opt-in: keep the other / workflow probes last so model cards for
+            # lora / checkpoint / embedding ids are unaffected by the extra
+            # scanners.
             other_scanner = None
             if get_settings_manager().is_other_models_enabled():
                 other_scanner = await self._service_registry.get_other_scanner()
+            workflow_scanner = None
+            if get_settings_manager().is_workflows_enabled():
+                workflow_scanner = await self._service_registry.get_workflow_scanner()
 
             results: list[dict[str, Any]] = []
             for model_id in model_ids:
@@ -2825,6 +2883,17 @@ class ModelLibraryHandler:
                             "modelId": model_id,
                             "modelType": "other",
                             "versions": self._with_downloaded_flag(other_versions),
+                            "downloadedVersionIds": [],
+                        })
+                        continue
+
+                if workflow_scanner:
+                    workflow_versions = await workflow_scanner.get_model_versions_by_id(model_id)
+                    if workflow_versions:
+                        results.append({
+                            "modelId": model_id,
+                            "modelType": "workflow",
+                            "versions": self._with_downloaded_flag(workflow_versions),
                             "downloadedVersionIds": [],
                         })
                         continue
@@ -3097,19 +3166,22 @@ class ModelLibraryHandler:
 
             normalized_type, scanner = await self._get_scanner_for_type(model_type)
             if not normalized_type:
-                # The lookup cannot be served as a fully interactive list. Two
+                # The lookup cannot be served as a fully interactive list. Three
                 # cases share this branch: a CivitAI type with no scanner at all
-                # (Wildcards, Workflows, Hypernetwork, Poses, AestheticGradient)
-                # and an Other-model type while the opt-in master switch is off.
-                # Answer 200 with the CivitAI list marked read-only plus a
-                # machine-readable reason, so clients can still show the
-                # versions and explain why the actions are missing. Legacy
-                # clients keep working: they only read `success`/`versions`.
-                reason = (
-                    "other_models_disabled"
-                    if self._normalize_model_type(model_type) == "other"
-                    else "model_type_unsupported"
-                )
+                # (Wildcards, Hypernetwork, Poses, AestheticGradient), an
+                # Other-model type while its opt-in master switch is off, and a
+                # Workflow type while Workflow management is off. Answer 200 with
+                # the CivitAI list marked read-only plus a machine-readable
+                # reason, so clients can still show the versions and explain why
+                # the actions are missing. Legacy clients keep working: they only
+                # read `success`/`versions`.
+                normalized_opt_in_type = self._normalize_model_type(model_type)
+                if normalized_opt_in_type == "other":
+                    reason = "other_models_disabled"
+                elif normalized_opt_in_type == "workflow":
+                    reason = "workflows_disabled"
+                else:
+                    reason = "model_type_unsupported"
                 return web.json_response(
                     {
                         "success": True,

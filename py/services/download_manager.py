@@ -2186,6 +2186,7 @@ class DownloadManager:
                                     "No workflow folder configured. Add one in "
                                     "Settings > Library before downloading workflows."
                                 ),
+                                "reason": "workflows_no_paths",
                             }
                         save_dir = workflow_roots[0]
 
