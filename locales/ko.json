@@ -1483,7 +1483,6 @@
             "updateFromComfy": "ComfyUI에서 업데이트",
             "copyWorkflow": "워크플로 복사",
             "restoreDownloaded": "다운로드한 버전 복원",
-            "copyFilename": "워크플로 파일명 복사",
             "moveWorkflow": "워크플로를 폴더로 이동",
             "deleteWorkflow": "워크플로 삭제"
         },

@@ -1483,7 +1483,6 @@
             "updateFromComfy": "עדכן מ-ComfyUI",
             "copyWorkflow": "העתק workflow",
             "restoreDownloaded": "שחזר את הגרסה שהורדה",
-            "copyFilename": "העתק שם קובץ workflow",
             "moveWorkflow": "העבר workflow לתיקייה",
             "deleteWorkflow": "מחק workflow"
         },

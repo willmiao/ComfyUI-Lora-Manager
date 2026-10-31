@@ -1483,7 +1483,6 @@
             "updateFromComfy": "Mettre à jour depuis ComfyUI",
             "copyWorkflow": "Copier le workflow",
             "restoreDownloaded": "Restaurer la version téléchargée",
-            "copyFilename": "Copier le nom de fichier du workflow",
             "moveWorkflow": "Déplacer le workflow vers un dossier",
             "deleteWorkflow": "Supprimer le workflow"
         },

@@ -1483,7 +1483,6 @@
             "updateFromComfy": "ComfyUIから更新",
             "copyWorkflow": "ワークフローをコピー",
             "restoreDownloaded": "ダウンロード済みバージョンを復元",
-            "copyFilename": "ワークフローファイル名をコピー",
             "moveWorkflow": "ワークフローをフォルダに移動",
             "deleteWorkflow": "ワークフローを削除"
         },

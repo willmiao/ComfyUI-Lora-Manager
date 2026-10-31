@@ -1005,9 +1005,6 @@ word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהו
   Latin/Cyrillic/Hebrew locales use ASCII (fr with its space, ` : `). The `restoring` loading
   line follows each locale's existing "… in progress" shape (`recipesPathMigrating`).
 - Card actions name the workflow explicitly.
-  "Copy Workflow Filename": zh-CN 复制工作流文件名 · zh-TW 複製工作流檔名 · ja ワークフローファイル名をコピー ·
-  ko 워크플로 파일명 복사 · fr Copier le nom de fichier du workflow · de Workflow-Dateinamen kopieren ·
-  es Copiar nombre de archivo del workflow · ru Копировать имя файла workflow · he העתק שם קובץ workflow.
   "Move Workflow to Folder": zh-CN 将工作流移动到文件夹 · zh-TW 將工作流移動到資料夾 · ja ワークフローをフォルダに移動 ·
   ko 워크플로를 폴더로 이동 · fr Déplacer le workflow vers un dossier · de Workflow in Ordner verschieben ·
   es Mover workflow a carpeta · ru Переместить workflow в папку · he העבר workflow לתיקייה.

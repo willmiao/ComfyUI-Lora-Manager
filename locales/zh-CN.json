@@ -1483,7 +1483,6 @@
             "updateFromComfy": "从 ComfyUI 更新",
             "copyWorkflow": "复制工作流",
             "restoreDownloaded": "恢复已下载版本",
-            "copyFilename": "复制工作流文件名",
             "moveWorkflow": "将工作流移动到文件夹",
             "deleteWorkflow": "删除工作流"
         },

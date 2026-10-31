@@ -111,16 +111,6 @@ describe('WorkflowContextMenu', () => {
     );
   });
 
-  it('copies the workflow file name from the copy-filename entry', () => {
-    card.dataset.file_name = 'flow.json';
-
-    menu.handleMenuAction('copyname');
-
-    expect(copyToClipboardMock).toHaveBeenCalledWith('flow.json');
-    // The document copy belongs to the dedicated "Copy Workflow" entry.
-    expect(fetchWorkflowContentMock).not.toHaveBeenCalled();
-  });
-
   it('shows an error toast when the workflow content cannot be loaded', async () => {
     fetchWorkflowContentMock.mockRejectedValue(new Error('not_a_workflow'));
 

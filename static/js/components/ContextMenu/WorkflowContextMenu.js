@@ -4,7 +4,6 @@ import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js'
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
 import { copyWorkflowToClipboard, restoreWorkflow, sendWorkflowToComfy, updateWorkflowFromComfy } from '../../utils/workflowActions.js';
-import { copyToClipboard } from '../../utils/uiHelpers.js';
 import { state } from '../../state/index.js';
 
 export class WorkflowContextMenu extends BaseContextMenu {
@@ -116,13 +115,6 @@ export class WorkflowContextMenu extends BaseContextMenu {
                 break;
             case 'delete':
                 showDeleteModal(this.currentCard.dataset.filepath);
-                break;
-            case 'copyname':
-                // Copy the file name itself. The card's copy icon copies the
-                // workflow document, which "Copy Workflow" already covers.
-                if (this.currentCard.dataset.file_name) {
-                    copyToClipboard(this.currentCard.dataset.file_name);
-                }
                 break;
             case 'refresh-metadata':
                 // Refresh metadata from CivitAI

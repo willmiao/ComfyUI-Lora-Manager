@@ -1483,7 +1483,6 @@
             "updateFromComfy": "Обновить из ComfyUI",
             "copyWorkflow": "Копировать workflow",
             "restoreDownloaded": "Восстановить загруженную версию",
-            "copyFilename": "Копировать имя файла workflow",
             "moveWorkflow": "Переместить workflow в папку",
             "deleteWorkflow": "Удалить workflow"
         },
