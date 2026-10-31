@@ -82,8 +82,10 @@ describe('ModelVersionsTab media rendering', () => {
     document.body.innerHTML = '';
   });
 
-  it('renders video preview when preview URL references a video file in a query parameter', async () => {
-    const previewUrl = '/api/lm/previews?path=%2Fhome%2Fexample%2Fvideo-preview.mp4';
+  it.each([
+    ['plain', '/api/lm/previews?path=%2Fhome%2Fexample%2Fvideo-preview.mp4'],
+    ['versioned', '/api/lm/previews?path=%2Fhome%2Fexample%2Fvideo-preview.mp4&v=1781613851611650515'],
+  ])('renders video preview when preview URL references a video file in a query parameter (%s)', async (_label, previewUrl) => {
     fetchModelUpdateVersions.mockResolvedValue({
       success: true,
       record: {

@@ -9,6 +9,7 @@ import { bulkManager } from '../managers/BulkManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getMatureBlurThreshold } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { handleUndoDelete } from '../utils/undoHelpers.js';
+import { isVideoPreviewUrl } from '../utils/mediaTypes.js';
 
 class RecipeCard {
     constructor(recipe, clickHandler) {
@@ -88,7 +89,7 @@ class RecipeCard {
         const isFavorite = this.recipe.favorite === true;
 
         // Video preview logic
-        const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+        const isVideo = isVideoPreviewUrl(previewUrl);
         const videoAttrs = [
             'controls',
             'muted',
@@ -475,7 +476,7 @@ export function showRecipeDeleteConfirmation(recipe) {
 
         // Create delete modal content
         const previewUrl = recipe.file_url || '/loras_static/images/no-preview.png';
-        const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+        const isVideo = isVideoPreviewUrl(previewUrl);
 
         const deleteModalContent = `
             <div class="modal-content delete-modal-content">

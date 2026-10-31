@@ -1,6 +1,7 @@
 // Recipe Modal Component
 import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow, isUnresolvableDownloadError } from '../utils/uiHelpers.js';
 import { isModelWeightFile } from '../utils/modelFileTypes.js';
+import { isVideoPreviewUrl, getPreviewMediaExtension } from '../utils/mediaTypes.js';
 import { buildCivitaiUrl } from '../utils/civitaiUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
@@ -768,7 +769,7 @@ class RecipeModal {
         }
 
         const previewUrl = this.getPreviewMediaUrl(recipe);
-        const isVideo = previewUrl.toLowerCase().endsWith('.mp4');
+        const isVideo = isVideoPreviewUrl(previewUrl);
         const expectedElementId = isVideo ? 'recipeModalVideo' : 'recipeModalImage';
         let previewElement = mediaContainer.querySelector(`#${expectedElementId}`);
         const existingPreviewElement = mediaContainer.querySelector('.recipe-preview-media');
@@ -1153,10 +1154,11 @@ class RecipeModal {
                     ? ''
                     : this.renderCivitaiLink(this.getResourceCivitaiUrl(lora));
 
-                const isPreviewVideo = lora.preview_url && lora.preview_url.toLowerCase().endsWith('.mp4');
+                const isPreviewVideo = isVideoPreviewUrl(lora.preview_url);
+                const previewVideoType = getPreviewMediaExtension(lora.preview_url) === '.webm' ? 'video/webm' : 'video/mp4';
                 const previewMedia = isPreviewVideo ?
                     `<video class="thumbnail-video" autoplay loop muted playsinline>
-                        <source src="${lora.preview_url}" type="video/mp4">
+                        <source src="${lora.preview_url}" type="${previewVideoType}">
                      </video>` :
                     `<img src="${lora.preview_url || '/loras_static/images/no-preview.png'}" alt="LoRA preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 
@@ -2556,7 +2558,8 @@ class RecipeModal {
             || (!existsLocally && !this.canDownloadCheckpoint(checkpoint));
         const localPath = checkpoint.localPath || '';
         const previewUrl = checkpoint.preview_url || checkpoint.thumbnailUrl || '/loras_static/images/no-preview.png';
-        const isPreviewVideo = typeof previewUrl === 'string' && previewUrl.toLowerCase().endsWith('.mp4');
+        const isPreviewVideo = isVideoPreviewUrl(previewUrl);
+        const previewVideoType = getPreviewMediaExtension(previewUrl) === '.webm' ? 'video/webm' : 'video/mp4';
         const checkpointName = checkpoint.name || checkpoint.modelName || checkpoint.file_name || 'Checkpoint';
         const versionLabel = checkpoint.version || checkpoint.modelVersionName || '';
         const baseModel = checkpoint.baseModel || checkpoint.base_model || '';
@@ -2565,7 +2568,7 @@ class RecipeModal {
 
         const previewMedia = isPreviewVideo ? `
             <video class="thumbnail-video" autoplay loop muted playsinline>
-                <source src="${previewUrl}" type="video/mp4">
+                <source src="${previewUrl}" type="${previewVideoType}">
             </video>
         ` : `<img src="${previewUrl}" alt="Checkpoint preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 

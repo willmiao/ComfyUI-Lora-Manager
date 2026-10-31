@@ -3,6 +3,7 @@ import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, op
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { hasCivitaiSource } from './utils.js';
+import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
@@ -602,7 +603,9 @@ export function createModelCard(model, modelType) {
 
     // Check if autoplayOnHover is enabled for video previews
     const autoplayOnHover = state.global?.settings?.autoplay_on_hover || false;
-    const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+    // Preview URLs are versioned (`&v=<mtime>`), so the extension has to come
+    // from the decoded `path` parameter rather than the end of the URL.
+    const isVideo = isVideoPreviewUrl(previewUrl);
     const videoAttrs = [
         'controls',
         'muted',

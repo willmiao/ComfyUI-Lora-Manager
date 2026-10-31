@@ -11,6 +11,7 @@
  * VerticalListView.js). A segmented toggle in the toolbar switches layouts.
  */
 import { showToast } from '../../../utils/uiHelpers.js';
+import { isVideoPreviewUrl } from '../../../utils/mediaTypes.js';
 import { state } from '../../../state/index.js';
 import { modalManager } from '../../../managers/ModalManager.js';
 import { translate } from '../../../utils/i18nHelpers.js';
@@ -112,7 +113,7 @@ export async function loadExampleImages(images, modelHash, previewUrl = '') {
  */
 function renderPreviewThumb(previewUrl) {
     if (!previewUrl) return '';
-    const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+    const isVideo = isVideoPreviewUrl(previewUrl);
     const media = isVideo
         ? `<video src="${escapeAttribute(previewUrl)}" muted playsinline preload="metadata"></video>`
         : `<img src="${escapeAttribute(previewUrl)}" alt="" loading="lazy">`;

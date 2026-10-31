@@ -8,8 +8,8 @@ import { buildCivitaiModelUrl } from '../../utils/civitaiUtils.js';
 import { parseModelSourceGroupKey } from '../../utils/modelSourceHelpers.js';
 import { formatFileSize } from './utils.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
+import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 
-const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 const PREVIEW_PLACEHOLDER_URL = '/loras_static/images/no-preview.png';
 
 function buildCivitaiVersionUrl(modelId, versionId) {
@@ -30,79 +30,6 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-}
-
-function extractExtension(value) {
-    if (value == null) {
-        return '';
-    }
-    const targets = [];
-    const stringValue = String(value);
-    if (stringValue) {
-        targets.push(stringValue);
-        stringValue.split(/[?&=]/).forEach(fragment => {
-            if (fragment) {
-                targets.push(fragment);
-            }
-        });
-    }
-
-    for (const target of targets) {
-        let candidate = target;
-        try {
-            candidate = decodeURIComponent(candidate);
-        } catch (error) {
-            // ignoring malformed sequences, fallback to raw value
-        }
-        const lastDot = candidate.lastIndexOf('.');
-        if (lastDot === -1) {
-            continue;
-        }
-        const extension = candidate.slice(lastDot).toLowerCase();
-        if (extension.includes('/') || extension.includes('\\')) {
-            continue;
-        }
-        return extension;
-    }
-
-    return '';
-}
-
-function isVideoUrl(url) {
-    if (!url || typeof url !== 'string') {
-        return false;
-    }
-
-    const candidates = new Set();
-    const addCandidate = value => {
-        if (value == null) {
-            return;
-        }
-        const stringValue = String(value);
-        if (!stringValue) {
-            return;
-        }
-        candidates.add(stringValue);
-    };
-
-    addCandidate(url);
-
-    try {
-        const parsed = new URL(url, window.location.origin);
-        addCandidate(parsed.pathname);
-        parsed.searchParams.forEach(value => addCandidate(value));
-    } catch (error) {
-        // ignore parse errors and rely on fallbacks below
-    }
-
-    for (const candidate of candidates) {
-        const extension = extractExtension(candidate);
-        if (extension && VIDEO_EXTENSIONS.includes(extension)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 function formatDateLabel(value) {
@@ -469,7 +396,7 @@ function renderMediaMarkup(version) {
         return `<div class="version-media version-media-placeholder">${escapeHtml(placeholderText)}</div>`;
     }
 
-    if (isVideoUrl(version.previewUrl)) {
+    if (isVideoPreviewUrl(version.previewUrl)) {
         const autoplayOnHover = getAutoplaySetting();
         return `
             <div class="version-media">
@@ -495,7 +422,7 @@ function renderMediaMarkup(version) {
 
 function renderDeletePreview(version, versionName) {
     const previewUrl = version?.previewUrl;
-    if (previewUrl && isVideoUrl(previewUrl)) {
+    if (previewUrl && isVideoPreviewUrl(previewUrl)) {
         return `
             <video
                 src="${escapeHtml(previewUrl)}"

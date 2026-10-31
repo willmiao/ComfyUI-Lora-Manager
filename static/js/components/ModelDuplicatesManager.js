@@ -4,6 +4,7 @@ import { handleUndoDelete } from '../utils/undoHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { formatDate } from '../utils/formatters.js';
+import { getPreviewMediaExtension, isVideoPreviewUrl } from '../utils/mediaTypes.js';
 import { resetAndReload} from '../api/modelApiFactory.js';
 import { getShowDuplicatesNotification, setShowDuplicatesNotification } from '../utils/storageHelpers.js';
 
@@ -463,12 +464,13 @@ export class ModelDuplicatesManager {
         const previewContainer = document.createElement('div');
         previewContainer.className = 'card-preview';
         
-        // Determine if preview is a video
-        const isVideo = model.preview_url && model.preview_url.endsWith('.mp4');
+        // Determine if preview is a video (the URL may be versioned, so the
+        // extension lives in the decoded `path` query parameter)
+        const isVideo = isVideoPreviewUrl(model.preview_url);
         let preview;
         
         if (isVideo) {
-            // Create video element for MP4 previews
+            // Create video element for video previews
             preview = document.createElement('video');
             preview.loading = 'lazy';
             preview.controls = true;
@@ -477,7 +479,7 @@ export class ModelDuplicatesManager {
             
             const source = document.createElement('source');
             source.src = model.preview_url;
-            source.type = 'video/mp4';
+            source.type = getPreviewMediaExtension(model.preview_url) === '.webm' ? 'video/webm' : 'video/mp4';
             preview.appendChild(source);
         } else {
             // Create image element for standard previews
