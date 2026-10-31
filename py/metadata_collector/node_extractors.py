@@ -727,7 +727,7 @@ class BaseSamplerExtractor(NodeMetadataExtractor):
             if isinstance(latent, dict) and "samples" in latent:
                 # Extract dimensions from latent tensor
                 samples = latent["samples"]
-                if hasattr(samples, "shape") and len(samples.shape) >= 3:
+                if hasattr(samples, "shape") and len(samples.shape) >= 4:
                     # Correct shape interpretation: [batch_size, channels, height/8, width/8]
                     # Multiply by 8 to get actual pixel dimensions
                     height = int(samples.shape[2] * 8)
