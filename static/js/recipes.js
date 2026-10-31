@@ -11,12 +11,27 @@ import { refreshVirtualScroll, recreateVirtualScroll } from './utils/infiniteScr
 import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
 import { initSortDropdown, applySortToSelect, randomizeSortValue } from './components/controls/SortDropdown.js';
+import { registerActionShortcuts } from './components/controls/ActionShortcuts.js';
 
 class RecipePageControls {
     constructor() {
         this.pageType = 'recipes';
         this.pageState = getCurrentPageState();
         this.sidebarApiClient = new RecipeSidebarApiClient();
+
+        // The recipes page renders the shared controls partial (with its R
+        // keycap) but does not extend PageControls, so the actions toolbar
+        // shortcuts have to be registered explicitly here.
+        this.registerKeyboardShortcuts();
+    }
+
+    /**
+     * Register keyboard shortcuts for the actions toolbar.
+     * Only R (refresh) is wired on recipes: the page has no fetch/download
+     * buttons, and the shared handler skips missing buttons on its own.
+     */
+    registerKeyboardShortcuts() {
+        registerActionShortcuts();
     }
 
     async resetAndReload() {

@@ -1,14 +1,14 @@
 // PageControls.js - Manages controls for both LoRAs and Checkpoints pages
 import { state, getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, removeStorageItem, getSessionItem, setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
-import { showToast, openCivitaiByMetadata, isTypingContext } from '../../utils/uiHelpers.js';
-import { eventManager } from '../../utils/EventManager.js';
+import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { initSortDropdown, applySortToSelect, randomizeSortValue } from './SortDropdown.js';
 import { initModelTypeDropdown } from './ModelTypeDropdown.js';
 import { renderScanScopeMenu, resolveScanScopeTarget } from './ScanScopeMenu.js';
+import { handleActionShortcut as runActionShortcut, registerActionShortcuts } from './ActionShortcuts.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -175,12 +175,7 @@ export class PageControls {
      * (R = refresh, F = fetch metadata, D = download)
      */
     registerKeyboardShortcuts() {
-        eventManager.addHandler('keydown', 'pageControls-actions', (e) => {
-            return this.handleActionShortcut(e);
-        }, {
-            priority: 90,
-            skipWhenModalOpen: true
-        });
+        registerActionShortcuts();
     }
 
     /**
@@ -189,38 +184,7 @@ export class PageControls {
      * @returns {boolean} True when the event was handled and propagation should stop
      */
     handleActionShortcut(e) {
-        // Plain letters only — leave modified combos (Ctrl/Cmd/Alt) alone
-        if (e.ctrlKey || e.metaKey || e.altKey) {
-            return false;
-        }
-
-        // Don't hijack keys while typing in a text entry context
-        if (isTypingContext(e.target)) {
-            return false;
-        }
-
-        const actionByKey = {
-            r: 'refresh',
-            f: 'fetch',
-            d: 'download'
-        };
-        const action = actionByKey[e.key.toLowerCase()];
-        if (!action) {
-            return false;
-        }
-
-        // The button may not exist on this page (e.g. recipes has no
-        // fetch/download) — let other handlers run in that case
-        const button = document.querySelector(`[data-action="${action}"]`);
-        if (!button) {
-            return false;
-        }
-
-        e.preventDefault();
-        // Native disabled buttons ignore .click(), so an in-progress
-        // refresh is safe
-        button.click();
-        return true;
+        return runActionShortcut(e);
     }
 
     initExcludedViewControls() {

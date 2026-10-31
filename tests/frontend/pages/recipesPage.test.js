@@ -341,4 +341,39 @@ describe('RecipeManager', () => {
     expect(filterText.innerHTML).toContain('Flux Base');
     expect(filterText.getAttribute('title')).toBe('Flux Base');
   });
+
+  it('registers the R toolbar shortcut so the recipes page can refresh', async () => {
+    const refreshBtn = document.createElement('button');
+    refreshBtn.dataset.action = 'refresh';
+    document.body.appendChild(refreshBtn);
+
+    const manager = new RecipeManager();
+    await manager.initialize();
+
+    const { eventManager } = await import('../../../static/js/utils/EventManager.js');
+    const entry = (eventManager.handlers.get('keydown') || [])
+      .find((handler) => handler.source === 'pageControls-actions');
+    expect(entry).toBeDefined();
+
+    const keydownEvent = (key, target) => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: target });
+      return event;
+    };
+
+    // R clicks the refresh button, reusing its click handler
+    const refreshEvent = keydownEvent('r', document.body);
+    expect(entry.handler(refreshEvent)).toBe(true);
+    expect(refreshEvent.defaultPrevented).toBe(true);
+    expect(refreshRecipesMock).toHaveBeenCalledWith(false);
+
+    // Not while typing
+    refreshRecipesMock.mockClear();
+    expect(entry.handler(keydownEvent('r', document.createElement('input')))).toBe(false);
+    expect(refreshRecipesMock).not.toHaveBeenCalled();
+
+    // Recipes has no fetch/download buttons, so F / D pass through
+    expect(entry.handler(keydownEvent('f', document.body))).toBe(false);
+    expect(entry.handler(keydownEvent('d', document.body))).toBe(false);
+  });
 });
