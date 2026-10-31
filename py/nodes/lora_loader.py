@@ -103,7 +103,39 @@ def _prepare_lora(lora, model, name):
     return remapped
 
 
+def _warn_duplicate_entries(lora_entries: list[dict]) -> None:
+    """Warn when the same LoRA file appears more than once in one load call.
+
+    Entries are still loaded exactly as provided; this only surfaces accidental
+    double loads such as a stack plus its own derived text syntax.
+    """
+    entries_by_path: dict[str, list[dict]] = {}
+    for entry in lora_entries:
+        path = entry.get("absolute_path") or entry.get("input_path")
+        if not path:
+            continue
+        key = os.path.normcase(os.path.abspath(path))
+        entries_by_path.setdefault(key, []).append(entry)
+
+    for entries in entries_by_path.values():
+        if len(entries) < 2:
+            continue
+        strengths = ", ".join(
+            f"{entry['model_strength']}/{entry['clip_strength']}" for entry in entries
+        )
+        logger.warning(
+            "LoRA '%s' (%s) appears %d times in the same loader input "
+            "(model/clip strengths: %s). All entries will be loaded as provided; "
+            "if this is intentional, ignore this warning.",
+            entries[0]["name"],
+            entries[0].get("absolute_path") or entries[0].get("input_path"),
+            len(entries),
+            strengths,
+        )
+
+
 def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
+    _warn_duplicate_entries(lora_entries)
     loaded_loras = []
     all_trigger_words = []
 

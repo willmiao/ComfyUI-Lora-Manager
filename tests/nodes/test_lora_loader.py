@@ -1,3 +1,5 @@
+import logging
+import os
 import types
 
 import pytest
@@ -176,6 +178,71 @@ def test_lora_text_loader_qwen_batches_text_and_stack(monkeypatch):
     assert batched_calls == [[("/abs/stack_qwen.safetensors", 0.6), ("/abs/text_qwen.safetensors", 1.2)]]
     assert trigger_words == "stack_qwen_trigger,, text_qwen_trigger"
     assert loaded_loras == "<lora:stack_qwen:0.6> <lora:text_qwen:1.2>"
+
+
+def test_lora_text_loader_warns_on_duplicate_path_but_loads_both(monkeypatch, caplog):
+    loader = LoraTextLoaderLM()
+    model = _Model(object())
+    clip = object()
+
+    monkeypatch.setattr(
+        "py.nodes.lora_loader.get_lora_info_absolute",
+        lambda name: ("/abs/same.safetensors", ["same_trigger"]),
+    )
+
+    load_calls = []
+
+    def mock_load_torch_file(path, safe_load=True):
+        load_calls.append(path)
+        return {"path": path}
+
+    monkeypatch.setattr("comfy.utils.load_torch_file", mock_load_torch_file)
+    monkeypatch.setattr(
+        "comfy.sd.load_lora_for_models",
+        lambda model_arg, clip_arg, lora_arg, model_strength, clip_strength: (model_arg, clip_arg),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="py.nodes.lora_loader"):
+        _, _, trigger_words, loaded_loras = loader.load_loras_from_text(
+            model,
+            "<lora:same:1.0>",
+            clip=clip,
+            lora_stack=[("same.safetensors", 1.0, 1.0)],
+        )
+
+    assert load_calls == ["/abs/same.safetensors", "/abs/same.safetensors"]
+    assert trigger_words == "same_trigger,, same_trigger"
+    assert loaded_loras == "<lora:same:1.0> <lora:same:1.0>"
+    assert "appears 2 times" in caplog.text
+    assert "/abs/same.safetensors" in caplog.text
+
+
+def test_lora_loader_does_not_warn_for_same_basename_in_different_folders(monkeypatch, caplog):
+    loader = LoraLoaderLM()
+    model = _Model(object())
+
+    def resolve(name):
+        if os.path.isabs(name):
+            return name, []
+        return f"/abs/b/{name}.safetensors", []
+
+    monkeypatch.setattr("py.nodes.lora_loader.get_lora_info_absolute", resolve)
+    monkeypatch.setattr("comfy.utils.load_torch_file", lambda path, safe_load=True: {"path": path})
+    monkeypatch.setattr(
+        "comfy.sd.load_lora_for_models",
+        lambda model_arg, clip_arg, lora_arg, model_strength, clip_strength: (model_arg, clip_arg),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="py.nodes.lora_loader"):
+        _, _, _, loaded_loras = loader.load_loras(
+            model,
+            "",
+            lora_stack=[("/abs/a/same.safetensors", 1.0, 1.0)],
+            loras={"__value__": [{"active": True, "name": "same", "strength": 1.0}]},
+        )
+
+    assert loaded_loras == "<lora:same:1.0> <lora:same:1.0>"
+    assert "appears 2 times" not in caplog.text
 
 
 def test_lora_loader_qwen_model_raises_clear_error_when_helper_import_fails(monkeypatch):
