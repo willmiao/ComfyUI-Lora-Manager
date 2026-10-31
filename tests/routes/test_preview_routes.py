@@ -111,8 +111,10 @@ async def test_config_updates_preview_roots_after_switch(tmp_path):
 
     preview_url = config.get_preview_static_url(str(second_preview))
     assert preview_url.startswith("/api/lm/previews?path=")
-    decoded = urllib.parse.unquote(preview_url.split("path=", 1)[1])
+    decoded = urllib.parse.unquote(preview_url.split("path=", 1)[1].split("&", 1)[0])
     assert decoded.replace("\\", "/").endswith("model.webp")
+    # Rewritten previews must get a fresh URL so browsers drop their cached copy
+    assert f"&v={os.stat(str(second_preview)).st_mtime_ns}" in preview_url
 
 
 async def test_preview_handler_allows_custom_recipes_path(tmp_path):

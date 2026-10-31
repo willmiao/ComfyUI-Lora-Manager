@@ -2133,7 +2133,18 @@ class Config:
 
         normalized = os.path.normpath(preview_path).replace(os.sep, "/")
         encoded_path = urllib.parse.quote(normalized, safe="")
-        return f"/api/lm/previews?path={encoded_path}"
+        url = f"/api/lm/previews?path={encoded_path}"
+        # Previews are served with Cache-Control max-age=86400, so a rewritten
+        # file (e.g. delete + recreate an LM-managed workflow) would keep
+        # showing the stale cached image under the identical URL. Bust the
+        # cache by versioning the URL with the file's modification time.
+        try:
+            version = os.stat(preview_path).st_mtime_ns
+        except OSError:
+            version = 0
+        if version:
+            url += f"&v={version}"
+        return url
 
     def is_preview_path_allowed(self, preview_path: str) -> bool:
         """Return ``True`` if ``preview_path`` is within an allowed directory.
