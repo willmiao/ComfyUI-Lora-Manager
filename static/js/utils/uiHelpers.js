@@ -1304,7 +1304,7 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
 }
 
 /**
- * Send generation parameters (seed, steps, cfg, sampler, scheduler) to
+ * Send generation parameters (seed, steps, cfg, sampler, scheduler, clip skip) to
  * workflow nodes that have been marked with "Send Gen Params Target".
  *
  * @param {Object} genParams - Raw gen_params from recipe or showcase metadata
@@ -1316,12 +1316,30 @@ export async function sendGenParamsToWorkflow(genParams) {
     return false;
   }
 
-  // 1. Extract relevant params (skip prompt, negative_prompt, clip_skip, denoising_strength)
+  // 1. Extract relevant params (skip prompt, negative_prompt, denoising_strength)
   const raw = {
     seed: genParams.seed,
     steps: genParams.steps,
     cfg: genParams.cfg_scale,
   };
+
+  // CLIP skip values from showcase metadata are usually positive counts (1 = last layer,
+  // 2 = skip one), while ComfyUI's CLIPSetLastLayer uses negative layers (-1, -2).
+  // Accept either convention and keep the value inside ComfyUI's valid range.
+  const clipSkipValue = genParams.clip_skip ?? genParams.clipSkip;
+  const clipSkipNumber = Number(clipSkipValue);
+  if (
+    clipSkipValue !== undefined &&
+    clipSkipValue !== null &&
+    clipSkipValue !== '' &&
+    Number.isFinite(clipSkipNumber)
+  ) {
+    const clipSkipLayer = Math.round(clipSkipNumber);
+    raw.clip_skip = Math.max(
+      -24,
+      Math.min(-1, clipSkipLayer === 0 ? -1 : (clipSkipLayer < 0 ? clipSkipLayer : -clipSkipLayer))
+    );
+  }
 
   // 2. Resolve sampler/scheduler
   const resolved = resolveSamplerScheduler(genParams.sampler);
