@@ -78,6 +78,10 @@ def test_prompt_lm_input_types_resolve_dynamic_trigger_words_slots():
     # Dynamic slots resolve on demand without becoming real entries.
     assert "trigger_words4" not in dict(optional)
 
+    # The bare name is what workflows saved before ``trigger_words1`` used.
+    assert "trigger_words" in optional
+    assert optional["trigger_words"][0] == "STRING"
+
 
 def test_prompt_lm_input_types_serialize_only_static_slots():
     """ComfyUI's /object_info route json.dumps INPUT_TYPES() directly."""

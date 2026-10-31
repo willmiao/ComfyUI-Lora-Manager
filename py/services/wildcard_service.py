@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 _WILDCARD_PATTERN = re.compile(r"__([\w\s.\-+/*\\]+?)__")
 _OPTION_PATTERN = re.compile(r"{([^{}]*?)}")
-_TRIGGER_WORD_PATTERN = re.compile(r"^trigger_words\d+$")
+# Dynamic trigger slots are named ``trigger_words1..n``. The bare
+# ``trigger_words`` name is the original (pre-``trigger_words1``) slot name and
+# still shows up in workflows saved by older versions, so accept it as well.
+_TRIGGER_WORD_PATTERN = re.compile(r"^trigger_words\d*$")
 _WEIGHTED_OPTION_PATTERN = re.compile(r"^\s*-?\d+(\.\d+)?::")
 _NUMERIC_PATTERN = re.compile(r"^-?\d+(\.\d+)?$")
 
