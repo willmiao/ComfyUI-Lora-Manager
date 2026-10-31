@@ -113,6 +113,179 @@ def test_civitai_engine_can_be_overridden_by_additional_data(monkeypatch, tmp_pa
     assert parameters.index("engine: ComfyUI") < parameters.index("engine: A1111")
 
 
+def _install_embedding_scanner(monkeypatch, entries, hash_lookup=None):
+    """Register a fake embedding scanner so format_metadata can resolve locally."""
+
+    class _Cache:
+        def __init__(self, raw_data):
+            self.raw_data = raw_data
+
+    class _EmbeddingScanner:
+        def __init__(self, raw_data, hashes):
+            self._cache = _Cache(raw_data)
+            self._hashes = hashes
+
+        def get_hash_by_filename(self, filename):
+            return self._hashes.get(filename)
+
+    scanner = _EmbeddingScanner(entries, hash_lookup or {})
+    monkeypatch.setitem(ServiceRegistry._services, "embedding_scanner", scanner)
+    return scanner
+
+
+def _embedding_entry(file_name, sha256, base_model="SD 1.5", **civitai):
+    return {
+        "file_name": file_name,
+        "sha256": sha256,
+        "base_model": base_model,
+        "civitai": civitai,
+    }
+
+
+def _metadata_node(monkeypatch):
+    """Build the node for metadata-only tests; output_dir is unused by them."""
+    monkeypatch.setattr(
+        "folder_paths.get_output_directory", lambda: "", raising=False
+    )
+    return SaveImageLM()
+
+
+def test_metadata_records_embedding_by_version_id_without_hash(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch,
+        [
+            _embedding_entry(
+                "EasyNegative",
+                "ABCDEF0123456789",
+                id=456,
+                modelId=123,
+                name="EasyNegative v2",
+                model={"type": "TextualInversion"},
+            )
+        ],
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata(
+        {
+            "prompt": "masterpiece, embedding:EasyNegative, 1girl",
+            "negative_prompt": "embedding:badhandv4",
+        }
+    )
+
+    # A known version id pins the exact resource, so no `embed:` hash is
+    # emitted: Civitai would match the hash against every byte-identical
+    # version and add a second row for the same model. The negative prompt's
+    # embedding is not in the library, so it must not be recorded at all.
+    assert "urn:air:sd1:embedding:civitai:123@456" in parameters
+    assert '"embed:EasyNegative"' not in parameters
+    assert '"embed:badhandv4"' not in parameters
+
+
+def test_metadata_skips_embedding_missing_from_local_library(monkeypatch):
+    _install_embedding_scanner(monkeypatch, [])
+
+    parameters = _metadata_node(monkeypatch).format_metadata({"prompt": "embedding:NotLocal"})
+
+    assert "embed:" not in parameters
+    assert "Civitai resources" not in parameters
+
+
+def test_metadata_writes_embedding_hash_without_civitai_metadata(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch,
+        [_embedding_entry("LocalOnly", "0123456789abcdef", base_model="SDXL 1.0")],
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata({"prompt": "embedding:LocalOnly"})
+
+    assert '"embed:LocalOnly":"0123456789"' in parameters
+    assert "Civitai resources" not in parameters
+
+
+def test_metadata_falls_back_to_version_id_without_base_model(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch,
+        [
+            _embedding_entry(
+                "NoBaseModel",
+                "FEDCBA9876543210",
+                base_model="",
+                id=789,
+                modelId=42,
+                name="NoBaseModel v1",
+            )
+        ],
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata({"prompt": "embedding:NoBaseModel"})
+
+    assert '"type":"embedding"' in parameters
+    assert '"modelVersionId":789' in parameters
+    assert "urn:air:" not in parameters
+    assert '"embed:NoBaseModel"' not in parameters
+
+
+def test_metadata_does_not_build_air_for_unknown_base_model(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch,
+        [
+            _embedding_entry(
+                "UnknownBase",
+                "FEDCBA9876543210",
+                base_model="Unknown",
+                id=790,
+                modelId=42,
+            )
+        ],
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata(
+        {"prompt": "embedding:UnknownBase"}
+    )
+
+    assert '"modelVersionId":790' in parameters
+    assert "urn:air:" not in parameters
+    assert '"embed:UnknownBase"' not in parameters
+
+
+def test_metadata_dedupes_embedding_across_prompts(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch, [_embedding_entry("Dup", "ABCDEF0123456789")]
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata(
+        {"prompt": "embedding:Dup", "negative_prompt": "embedding:Dup"}
+    )
+
+    assert parameters.count('"embed:Dup"') == 1
+
+
+def test_metadata_ignores_embedding_token_glued_to_a_word(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch, [_embedding_entry("foo", "ABCDEF0123456789")]
+    )
+
+    # ComfyUI splits on `embedding:` only after whitespace, so neither of these
+    # tokens is loaded by the tokenizer and neither may be recorded.
+    parameters = _metadata_node(monkeypatch).format_metadata(
+        {"prompt": "myembedding:foo, a,embedding:foo"}
+    )
+
+    assert "embed:foo" not in parameters
+
+
+def test_metadata_strips_embedding_extension_and_folder(monkeypatch):
+    _install_embedding_scanner(
+        monkeypatch, [_embedding_entry("foo", "ABCDEF0123456789")]
+    )
+
+    parameters = _metadata_node(monkeypatch).format_metadata(
+        {"prompt": "embedding:styles/foo.safetensors"}
+    )
+
+    assert '"embed:foo":"ABCDEF0123"' in parameters
+
+
 def test_save_image_skips_png_parameters_when_metadata_disabled_and_keeps_workflow(
     monkeypatch, tmp_path
 ):

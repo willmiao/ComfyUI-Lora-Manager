@@ -174,6 +174,23 @@ BASE_MODEL_AIR_SLUG = {
     "Other": "other",
 }
 
+# Embeddings referenced in a prompt as `embedding:<name>` (ComfyUI's SDTokenizer
+# syntax). ComfyUI splits on `embedding:` only after whitespace and tokenizes
+# parenthesized segments separately, so a token glued to a word or a comma is
+# not an embedding; the lookbehind mirrors that. The name ends at whitespace or
+# a token delimiter, and weight syntax (`embedding:name:1.2`) stops at the colon.
+EMBEDDING_REF_PATTERN = re.compile(r"(?<![^\s(\[{])embedding:([^\s:<>\[\]{}()]+)")
+
+# Extensions ComfyUI's load_embed tries. Stripped from a prompt reference so the
+# Hashes key is the embedding's file stem, which is what A1111 writes.
+EMBEDDING_FILE_EXTENSIONS = frozenset(
+    {".ckpt", ".pt", ".pt2", ".bin", ".pth", ".safetensors", ".pkl", ".sft"}
+)
+
+# AIR type for embeddings. The Civitai model type is "TextualInversion", but the
+# AIR vocabulary uses "embedding" (civitai src/shared/utils/air.ts).
+EMBEDDING_AIR_TYPE = "embedding"
+
 logger = logging.getLogger(__name__)
 
 
@@ -350,6 +367,29 @@ class SaveImageLM:
         return hash_val, civitai, base_model
 
     @staticmethod
+    def _extract_embedding_names(*texts: str) -> list[str]:
+        """Return the embedding names referenced as `embedding:<name>` in prompts.
+
+        Mirrors ComfyUI's SDTokenizer (``comfy/sd1_clip.py::_try_get_embedding``):
+        the token must not be glued to a preceding word, and the name ends at
+        whitespace or a token delimiter. Names are reduced to the file stem so
+        the Hashes key is the A1111 embedding name.
+        """
+        names: list[str] = []
+        for text in texts:
+            if not text:
+                continue
+            for match in EMBEDDING_REF_PATTERN.finditer(text):
+                raw = match.group(1).replace("\\", "/").strip(",;")
+                name = os.path.basename(raw)
+                stem, extension = os.path.splitext(name)
+                if extension.lower() in EMBEDDING_FILE_EXTENSIONS:
+                    name = stem
+                if name and name not in names:
+                    names.append(name)
+        return names
+
+    @staticmethod
     def _get_civitai_sampler_name(sampler_name: str, scheduler: str) -> str:
         if sampler_name in CIVITAI_SAMPLER_MAP:
             civitai_name = CIVITAI_SAMPLER_MAP[sampler_name]
@@ -423,6 +463,25 @@ class SaveImageLM:
                 "base_model": lora_base_model,
             })
 
+        # Resolve embeddings referenced by the final prompts. Only names present
+        # in the local library are recorded: ComfyUI can only load an embedding
+        # that exists on disk, so an unresolved name is not a resource this image
+        # used. Resolution reads the scanner cache only -- no Civitai API call.
+        embedding_entries: list[dict[str, Any]] = []
+        for embedding_name in self._extract_embedding_names(prompt, negative_prompt):
+            embedding_hash, embedding_civitai, embedding_base_model = (
+                self._resolve_model_cache_entry("embedding_scanner", embedding_name)
+            )
+            if not embedding_hash and not embedding_civitai:
+                continue
+            embedding_entries.append({
+                "name": embedding_name,
+                "hash": embedding_hash,
+                "civitai": embedding_civitai,
+                "base_model": embedding_base_model,
+                "version_id": int(embedding_civitai.get("id", 0) or 0),
+            })
+
         # Build Hashes JSON (A1111 / Civitai standard format)
         hashes: dict[str, str] = {}
         if ckpt_hash:
@@ -430,6 +489,17 @@ class SaveImageLM:
         for lora in loras_data:
             if lora["hash"]:
                 hashes[f"LORA:{lora['name']}"] = lora["hash"][:10].upper()
+        for embedding in embedding_entries:
+            # A known version id is the exact resource, so it is emitted alone
+            # below. The hash is only the fallback: Civitai matches it against
+            # every version whose file shares those bytes and dedupes the group
+            # to the OLDEST published one, which can be a different version of
+            # the same model and shows up as a second row next to the AIR.
+            if embedding["hash"] and embedding["version_id"] <= 0:
+                # Lowercase `embed:`: Civitai's client-side metadata parser
+                # matches `lora:`/`lycoris:`/`embed:` case-sensitively; the
+                # server lowercases the key before reading the role.
+                hashes[f"embed:{embedding['name']}"] = embedding["hash"][:10].upper()
 
         # Build Civitai resources JSON array
         civitai_resources: list[dict[str, Any]] = []
@@ -466,6 +536,30 @@ class SaveImageLM:
             if lora_civitai.get("name"):
                 lora_resource["versionName"] = lora_civitai["name"]
             civitai_resources.append(lora_resource)
+
+        for embedding in embedding_entries:
+            embedding_civitai = embedding["civitai"]
+            version_id = embedding["version_id"]
+            if version_id <= 0:
+                continue
+            embedding_resource: dict[str, Any] = {"type": EMBEDDING_AIR_TYPE}
+            model_id = int(embedding_civitai.get("modelId", 0) or 0)
+            if model_id > 0 and embedding["base_model"] in BASE_MODEL_AIR_SLUG:
+                # The AIR vocabulary names this type "embedding"; the Civitai
+                # model type is "TextualInversion".
+                embedding_resource["air"] = self._build_air_string(
+                    embedding["base_model"],
+                    EMBEDDING_AIR_TYPE,
+                    model_id,
+                    version_id,
+                )
+            else:
+                # No known ecosystem to put in an AIR; the version id alone is
+                # what Civitai's detection actually consumes.
+                embedding_resource["modelVersionId"] = version_id
+            if embedding_civitai.get("name"):
+                embedding_resource["versionName"] = embedding_civitai["name"]
+            civitai_resources.append(embedding_resource)
 
         sampler_name = CIVITAI_SAMPLER_MAP.get(sampler, sampler) if sampler else None
 
