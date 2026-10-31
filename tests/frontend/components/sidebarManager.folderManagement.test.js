@@ -1,4 +1,5 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { BaseContextMenu } from '../../../static/js/components/ContextMenu/BaseContextMenu.js';
 
 const {
   SIDEBAR_MANAGER_MODULE,
@@ -1756,6 +1757,77 @@ describe('SidebarManager folder rename', () => {
     expect(item.style.display).toBe('none');
 
     manager._closeFolderContextMenu();
+  });
+});
+
+describe('SidebarManager context menu coordination', () => {
+  const FOLDER_MENU_HTML = `
+    <div id="sidebarFolderContextMenu" class="context-menu">
+      <div class="context-menu-item" data-action="check-folder-updates"></div>
+    </div>`;
+
+  function createPageMenu() {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="pageContextMenuTest" class="context-menu">
+        <div class="context-menu-item" data-action="detail"></div>
+      </div>`);
+    const element = document.getElementById('pageContextMenuTest');
+    return { element, menu: new BaseContextMenu('pageContextMenuTest', '.model-card') };
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = FOLDER_MENU_HTML;
+    state.global.settings = {};
+    vi.clearAllMocks();
+  });
+
+  it('closes an open page menu when the folder menu opens', () => {
+    const { element: pageMenuElement, menu: pageMenu } = createPageMenu();
+    pageMenu.showMenu(10, 10, document.createElement('div'));
+    expect(pageMenuElement.style.display).toBe('block');
+
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+
+    expect(pageMenuElement.style.display).toBe('none');
+    expect(document.getElementById('sidebarFolderContextMenu').style.display).toBe('block');
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('closes the folder menu when a page menu opens', () => {
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+    const folderMenu = document.getElementById('sidebarFolderContextMenu');
+    expect(folderMenu.style.display).toBe('block');
+
+    const { menu: pageMenu } = createPageMenu();
+    pageMenu.showMenu(10, 10, document.createElement('div'));
+
+    expect(folderMenu.style.display).toBe('none');
+  });
+
+  it('closes the folder menu when the view options dropdown opens', () => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="sidebarViewOptionsMenu" class="context-menu">
+        <div class="context-menu-item" data-action="view-mode-tree"></div>
+      </div>`);
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+    const folderMenu = document.getElementById('sidebarFolderContextMenu');
+
+    const anchor = document.createElement('button');
+    anchor.getBoundingClientRect = () => ({
+      width: 24, height: 24, left: 10, right: 34, top: 10, bottom: 34, x: 10, y: 10,
+      toJSON: () => ({}),
+    });
+    manager.handleViewOptionsButton({ stopPropagation() {}, currentTarget: anchor });
+
+    expect(folderMenu.style.display).toBe('none');
+    expect(document.getElementById('sidebarViewOptionsMenu').style.display).toBe('block');
+
+    manager._closeViewOptionsMenu();
   });
 });
 

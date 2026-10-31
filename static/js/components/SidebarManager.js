@@ -11,7 +11,13 @@ import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
 import { positionFixedMenu } from '../utils/menuPosition.js';
+import { closeContextMenus, registerContextMenuCloser } from '../utils/contextMenuCoordinator.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
+
+// Sidebar menu elements. They are also the ids used to keep these menus
+// mutually exclusive with the page-side context menus.
+const SIDEBAR_FOLDER_MENU_ID = 'sidebarFolderContextMenu';
+const SIDEBAR_VIEW_OPTIONS_MENU_ID = 'sidebarViewOptionsMenu';
 
 // Pages whose folder sidebar starts hidden. "other" downloads default to a flat
 // layout (no subfolders are created), so on a fresh library the tree is empty
@@ -2400,7 +2406,7 @@ export class SidebarManager {
         }
 
         // View options menu items
-        const viewOptionsMenu = document.getElementById('sidebarViewOptionsMenu');
+        const viewOptionsMenu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (viewOptionsMenu) {
             viewOptionsMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
@@ -2459,7 +2465,7 @@ export class SidebarManager {
         window.addEventListener('resize', this.updateContainerMargin);
 
         // Sidebar folder context menu click handler
-        const sidebarFolderMenu = document.getElementById('sidebarFolderContextMenu');
+        const sidebarFolderMenu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (sidebarFolderMenu) {
             sidebarFolderMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
@@ -2917,9 +2923,12 @@ export class SidebarManager {
 
     _showFolderContextMenu(x, y, path) {
         this._closeFolderContextMenu();
-        this._closeViewOptionsMenu();
+        // A folder menu never shares the screen with another context menu, so
+        // any menu opened from the card area (or the view options dropdown) is
+        // dismissed first.
+        closeContextMenus(SIDEBAR_FOLDER_MENU_ID);
 
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (!menu) return;
 
         // The folder operations are only available on pages backed by model
@@ -2989,7 +2998,7 @@ export class SidebarManager {
     }
 
     _closeFolderContextMenu() {
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (menu) {
             menu.style.display = 'none';
             delete menu.dataset.folderPath;
@@ -3002,7 +3011,7 @@ export class SidebarManager {
     }
 
     handleFolderContextMenuAction(action) {
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (!menu) return;
 
         const path = menu.dataset.folderPath;
@@ -3194,7 +3203,7 @@ export class SidebarManager {
     handleViewOptionsButton(event) {
         event.stopPropagation();
 
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (!menu) return;
 
         if (menu.style.display === 'block') {
@@ -3202,7 +3211,8 @@ export class SidebarManager {
             return;
         }
 
-        this._closeFolderContextMenu();
+        // Opening the dropdown dismisses any open context menu.
+        closeContextMenus(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         this.updateViewOptionsMenu();
 
         const anchor = event.currentTarget;
@@ -3222,7 +3232,7 @@ export class SidebarManager {
     }
 
     _closeViewOptionsMenu() {
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (menu) {
             menu.style.display = 'none';
         }
@@ -3270,7 +3280,7 @@ export class SidebarManager {
     }
 
     updateViewOptionsMenu() {
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (!menu) return;
 
         const setCheck = (action, checked) => {
@@ -3658,3 +3668,9 @@ export class SidebarManager {
 
 // Create and export global instance
 export const sidebarManager = new SidebarManager();
+
+// The sidebar menus share the screen with the page-side context menus, so they
+// join the same coordination: opening a card/bulk/global menu closes these, and
+// opening one of these closes those.
+registerContextMenuCloser(SIDEBAR_FOLDER_MENU_ID, () => sidebarManager._closeFolderContextMenu());
+registerContextMenuCloser(SIDEBAR_VIEW_OPTIONS_MENU_ID, () => sidebarManager._closeViewOptionsMenu());

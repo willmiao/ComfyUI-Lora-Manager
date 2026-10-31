@@ -8,6 +8,7 @@
 import { eventManager } from './EventManager.js';
 import { modalManager } from '../managers/ModalManager.js';
 import { state } from '../state/index.js';
+import { closeContextMenus } from './contextMenuCoordinator.js';
 
 /**
  * Initialize the centralized event management system
@@ -90,17 +91,19 @@ function registerContextMenuEvents() {
         const pageContent = e.target.closest('.page-content');
 
         if (!pageContent) {
-            window.globalContextMenuInstance?.hideMenu();
+            // Right-click outside the content area opens no menu, but it must
+            // not leave one open from another region either.
+            closeContextMenus();
             return false;
         }
 
         if (card) {
             e.preventDefault();
 
-            // Hide all menus first
-            window.pageContextMenu?.hideMenu();
-            window.bulkManager?.bulkContextMenu?.hideMenu();
-            window.globalContextMenuInstance?.hideMenu();
+            // Context menus are mutually exclusive, including the sidebar ones.
+            // The menu shown below closes the rest through the same coordinator;
+            // this call covers the foreground case where nothing opens.
+            closeContextMenus();
 
             // Determine which menu to show based on bulk mode and selection state
             if (state.bulkMode && card.classList.contains('selected')) {
@@ -113,10 +116,7 @@ function registerContextMenuEvents() {
         } else {
             e.preventDefault();
 
-            window.pageContextMenu?.hideMenu();
-            window.bulkManager?.bulkContextMenu?.hideMenu();
-            window.globalContextMenuInstance?.hideMenu();
-
+            closeContextMenus();
             window.globalContextMenuInstance?.showMenu(e.clientX, e.clientY, null);
         }
 

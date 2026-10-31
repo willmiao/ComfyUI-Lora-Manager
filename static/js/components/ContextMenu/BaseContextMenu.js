@@ -1,8 +1,10 @@
 import { positionFixedMenu, positionSubmenu } from '../../utils/menuPosition.js';
+import { closeContextMenus, registerContextMenuCloser } from '../../utils/contextMenuCoordinator.js';
 
 export class BaseContextMenu {
     constructor(menuId, cardSelector) {
         this.menu = document.getElementById(menuId);
+        this.menuId = menuId;
         this.cardSelector = cardSelector;
         this.currentCard = null;
         this.submenuTimeout = null;
@@ -12,6 +14,10 @@ export class BaseContextMenu {
             console.error(`Context menu element with ID ${menuId} not found`);
             return;
         }
+
+        // Nothing else may stay open while this menu is visible (another page
+        // menu or a sidebar menu).
+        registerContextMenuCloser(menuId, () => this.hideMenu());
 
         this.init();
     }
@@ -126,6 +132,10 @@ export class BaseContextMenu {
     prepareMenu(card) { }
 
     showMenu(x, y, card) {
+        // Context menus are mutually exclusive: drop whatever is open (another
+        // page menu or a sidebar menu) before showing this one.
+        closeContextMenus(this.menuId);
+
         this.currentCard = card;
         this.menu.style.display = 'block';
         this.prepareMenu(card);
