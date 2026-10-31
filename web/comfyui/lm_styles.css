@@ -973,13 +973,31 @@ body.lm-lora-reordering * {
   color: var(--lm-on-accent);
 }
 
+/* Trigger words that belong to the LoRA currently selected in the loader.
+   The chip fill is accent (active) or surface (inactive), so the ring sits
+   outside a 1px surface-coloured gap and takes its colour from the theme
+   (accent blended towards the foreground). The gap uses the same token as the
+   container background, so it reads as a punched-out ring in every palette
+   and renderer, and the contrast flips with the theme automatically. */
 .comfy-tag[data-highlighted="true"] {
-  border-color: var(--lm-warning-border);
-  box-shadow: 0 0 0 2px var(--lm-warning-border), var(--lm-shadow);
+  border-color: transparent;
+  box-shadow:
+    0 0 0 1px var(--lm-surface),
+    0 0 0 3px color-mix(in oklab, var(--lm-accent) 35%, var(--lm-fg)),
+    var(--lm-shadow);
 }
 
 .comfy-tag:hover {
   box-shadow: var(--lm-shadow-lg);
+}
+
+/* Keep the ring on hover: the generic :hover rule above has the same
+   specificity and would otherwise replace the whole box-shadow. */
+.comfy-tag[data-highlighted="true"]:hover {
+  box-shadow:
+    0 0 0 1px var(--lm-surface),
+    0 0 0 3px color-mix(in oklab, var(--lm-accent) 35%, var(--lm-fg)),
+    var(--lm-shadow-lg);
 }
 
 .comfy-tag-strength {
