@@ -548,6 +548,7 @@ export function mergeLoras(lorasText, lorasArr) {
         expanded: lora.expanded !== undefined ? lora.expanded : false,
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
         selected: !!lora.selected,
+        locked: lora.locked !== undefined ? lora.locked : false,
       });
       usedNames.add(lora.name);
     }

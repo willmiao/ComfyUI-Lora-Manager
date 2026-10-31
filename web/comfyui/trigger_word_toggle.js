@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { CONVERTED_TYPE, getNodeFromGraph } from "./utils.js";
+import { CONVERTED_TYPE, getNodeFromGraph, getWidgetSerializedValue } from "./utils.js";
 import { addTagsWidget } from "./tags_widget.js";
 import { getWheelSensitivity } from "./settings.js";
 
@@ -267,20 +267,17 @@ app.registerExtension({
       hiddenWidget.computeSize = () => [0, -4];
       node.originalMessageWidget = hiddenWidget;
 
-      const tagWidgetIndex = node.widgets.indexOf(result.widget);
-      const originalMessageWidgetIndex = node.widgets.indexOf(hiddenWidget);
+      // Restore saved values by widget name rather than position: positional
+      // lookups break (and corrupt unrelated widget values) whenever the
+      // widget layout of a saved workflow drifts from the current one.
       if (node.widgets_values && node.widgets_values.length > 0) {
-        if (tagWidgetIndex >= 0) {
-          const savedValue = node.widgets_values[tagWidgetIndex];
-          if (savedValue) {
-            result.widget.value = Array.isArray(savedValue) ? savedValue : [];
-          }
+        const savedValue = getWidgetSerializedValue(node, "toggle_trigger_words");
+        if (savedValue) {
+          result.widget.value = Array.isArray(savedValue) ? savedValue : [];
         }
-        if (originalMessageWidgetIndex >= 0) {
-          const originalMessage = node.widgets_values[originalMessageWidgetIndex];
-          if (originalMessage) {
-            hiddenWidget.value = originalMessage;
-          }
+        const originalMessage = getWidgetSerializedValue(node, "orinalMessage");
+        if (originalMessage) {
+          hiddenWidget.value = originalMessage;
         }
       }
 
@@ -354,25 +351,29 @@ app.registerExtension({
       result.widget.serializeValue = function() {
         const value = this.value || [];
         return value.map((tag) => {
+          // `highlighted` is transient UI state recomputed after load from the
+          // current selection; persisting it makes an untouched workflow
+          // compare dirty against the saved JSON. Strip it on serialize.
+          const { highlighted, ...serializableTag } = tag;
           if (Array.isArray(tag.items)) {
             return {
-              ...tag,
+              ...serializableTag,
               text:
                 tag.strength !== undefined && tag.strength !== null
                   ? `(${tag.text}:${tag.strength.toFixed(2)})`
                   : tag.text,
-              items: tag.items.map((item) => ({ ...item })),
+              items: tag.items.map(({ highlighted: _itemHighlighted, ...item }) => item),
             };
           }
 
           if (tag.strength !== undefined && tag.strength !== null) {
             return {
-              ...tag,
+              ...serializableTag,
               text: `(${tag.text}:${tag.strength.toFixed(2)})`,
             };
           }
 
-          return tag;
+          return serializableTag;
         });
       };
     });
