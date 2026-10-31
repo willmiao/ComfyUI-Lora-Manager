@@ -1366,21 +1366,6 @@ class RecipeManagementHandler:
             _original_image_url,
         ) = await self._download_remote_media(image_url)
 
-        # CivitAI's optimized rendition is re-encoded and metadata-free, so an
-        # embedded ComfyUI workflow only exists in the original. Fetch it
-        # lazily: unlike the URL import path (which needs the original for
-        # metadata parsing anyway), this path would download it purely for the
-        # workflow, so it is skipped unless the API reports one.
-        original_workflow = None
-        if _original_image_url and self._meta_indicates_comfy_workflow(
-            civitai_meta_raw
-        ):
-            _raw_original, original_workflow = await self._fetch_original_media(
-                _original_image_url
-            )
-        if original_workflow:
-            metadata["workflow"] = original_workflow
-
         # Build a version-cached map of local model hashes to cache items so
         # CivitaiApiMetadataParser can skip CivitAI API calls for models that
         # exist on disk. Built once and shared by every parse pass below.
@@ -1429,6 +1414,23 @@ class RecipeManagementHandler:
             self._logger.warning(
                 "Failed to extract embedded metadata during import: %s", exc
             )
+
+        # CivitAI's optimized rendition is re-encoded and metadata-free, so an
+        # embedded ComfyUI workflow only exists in the original. The API's
+        # meta.comfy is not a reliable signal (it can be absent even when the
+        # original embeds a workflow), so mirror the URL import path: fetch the
+        # original whenever the optimized rendition yielded no parsed metadata.
+        # meta.comfy remains an extra trigger for previews that do parse.
+        original_workflow = None
+        if _original_image_url and (
+            not parsed_embedded
+            or self._meta_indicates_comfy_workflow(civitai_meta_raw)
+        ):
+            _raw_original, original_workflow = await self._fetch_original_media(
+                _original_image_url
+            )
+        if original_workflow:
+            metadata["workflow"] = original_workflow
 
         # Parse CivitAI API meta to discover all resources from modelVersionIds
         # (modelVersionIds is injected at root level by _download_remote_media).

@@ -193,9 +193,68 @@ async def test_remote_import_transports_workflow_to_save(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_remote_import_skips_original_without_comfy_meta(monkeypatch):
+async def test_remote_import_fetches_original_without_comfy_meta(monkeypatch):
+    """CivitAI may omit meta.comfy even when the original embeds a workflow.
+
+    The optimized rendition is metadata-free here, so the payload-based remote
+    import must fall back to the original like the URL import path does.
+    """
+    workflow = json.dumps({"nodes": [{"id": 7}]})
     persistence = CapturingPersistence()
     handler = _make_handler(persistence)
+
+    async def fake_download_remote_media(image_url):
+        return (
+            b"optimized-preview",
+            ".jpg",
+            {"id": 146726313, "meta": {"prompt": "p", "Version": "ComfyUI"}},
+            None,
+            "https://image.civitai.com/x/original=true/x.png",
+        )
+
+    fetched: list[str] = []
+
+    async def fake_fetch_original_media(original_url):
+        fetched.append(original_url)
+        return None, workflow
+
+    handler._download_remote_media = fake_download_remote_media  # type: ignore[method-assign]
+    handler._fetch_original_media = fake_fetch_original_media  # type: ignore[method-assign]
+    monkeypatch.setattr(
+        ExifUtils, "extract_image_metadata", staticmethod(lambda path: None)
+    )
+
+    response = await handler._do_import_remote_recipe(
+        image_url="https://civitai.red/images/146726313",
+        name="Recipe",
+        lora_entries=[],
+        checkpoint_entry=None,
+        gen_params_request={},
+        tags=[],
+        base_model="Krea 2 Turbo",
+        source_path="https://civitai.red/images/146726313",
+    )
+
+    assert response.status == 200
+    assert fetched == ["https://image.civitai.com/x/original=true/x.png"]
+    assert persistence.calls[0]["metadata"]["workflow"] == workflow
+
+
+@pytest.mark.asyncio
+async def test_remote_import_skips_original_when_optimized_metadata_parses(
+    monkeypatch,
+):
+    """Keep the lazy download when the optimized preview parses and has no comfy."""
+    persistence = CapturingPersistence()
+    handler = _make_handler(persistence)
+
+    class Parser:
+        async def parse_metadata(self, raw, **kwargs):
+            return {"gen_params": {"prompt": "p"}}
+
+    handler._analysis_service._recipe_parser_factory = SimpleNamespace(
+        create_parser=lambda metadata: Parser()
+    )
 
     async def fake_download_remote_media(image_url):
         return (
@@ -212,7 +271,7 @@ async def test_remote_import_skips_original_without_comfy_meta(monkeypatch):
     handler._download_remote_media = fake_download_remote_media  # type: ignore[method-assign]
     handler._fetch_original_media = fail_fetch  # type: ignore[method-assign]
     monkeypatch.setattr(
-        ExifUtils, "extract_image_metadata", staticmethod(lambda path: None)
+        ExifUtils, "extract_image_metadata", staticmethod(lambda path: "parameters")
     )
 
     response = await handler._do_import_remote_recipe(
@@ -228,6 +287,60 @@ async def test_remote_import_skips_original_without_comfy_meta(monkeypatch):
 
     assert response.status == 200
     assert "workflow" not in persistence.calls[0]["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_remote_import_honours_comfy_meta_when_optimized_metadata_parses(
+    monkeypatch,
+):
+    """meta.comfy remains an extra trigger even when the embedded parse succeeded."""
+    workflow = json.dumps({"nodes": [{"id": 8}]})
+    persistence = CapturingPersistence()
+    handler = _make_handler(persistence)
+
+    class Parser:
+        async def parse_metadata(self, raw, **kwargs):
+            return {"gen_params": {"prompt": "p"}}
+
+    handler._analysis_service._recipe_parser_factory = SimpleNamespace(
+        create_parser=lambda metadata: Parser()
+    )
+
+    async def fake_download_remote_media(image_url):
+        return (
+            b"optimized-preview",
+            ".jpg",
+            {"id": 3, "meta": {"prompt": "p", "comfy": "{}"}},
+            None,
+            "https://image.civitai.com/x/original=true/x.png",
+        )
+
+    fetched: list[str] = []
+
+    async def fake_fetch_original_media(original_url):
+        fetched.append(original_url)
+        return None, workflow
+
+    handler._download_remote_media = fake_download_remote_media  # type: ignore[method-assign]
+    handler._fetch_original_media = fake_fetch_original_media  # type: ignore[method-assign]
+    monkeypatch.setattr(
+        ExifUtils, "extract_image_metadata", staticmethod(lambda path: "parameters")
+    )
+
+    response = await handler._do_import_remote_recipe(
+        image_url="https://civitai.red/images/3",
+        name="Recipe",
+        lora_entries=[],
+        checkpoint_entry=None,
+        gen_params_request={},
+        tags=[],
+        base_model="SDXL 1.0",
+        source_path="https://civitai.red/images/3",
+    )
+
+    assert response.status == 200
+    assert fetched == ["https://image.civitai.com/x/original=true/x.png"]
+    assert persistence.calls[0]["metadata"]["workflow"] == workflow
 
 
 @pytest.mark.asyncio
