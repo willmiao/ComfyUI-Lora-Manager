@@ -31,10 +31,7 @@ export class RecipeContextMenu extends BaseContextMenu {
         return resetAndReload(false, { preserveScroll: true });
     }
 
-    showMenu(x, y, card) {
-        // Call the parent method first to handle basic positioning
-        super.showMenu(x, y, card);
-
+    prepareMenu(card) {
         // Get recipe data to check for missing LoRAs
         const recipeId = card.dataset.id;
         const missingLorasItem = this.menu.querySelector('.download-missing-item');

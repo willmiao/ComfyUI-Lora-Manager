@@ -20,8 +20,7 @@ export class EmbeddingContextMenu extends BaseContextMenu {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
 
-    showMenu(x, y, card) {
-        super.showMenu(x, y, card);
+    prepareMenu() {
         this.updateExcludeMenuItem();
     }
     

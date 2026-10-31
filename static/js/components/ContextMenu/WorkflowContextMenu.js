@@ -21,8 +21,7 @@ export class WorkflowContextMenu extends BaseContextMenu {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
 
-    showMenu(x, y, card) {
-        super.showMenu(x, y, card);
+    prepareMenu(card) {
         // Standalone has no running ComfyUI to push a workflow into; the
         // copy-to-clipboard action covers that mode instead.
         const sendItem = this.menu?.querySelector('[data-action="send-to-comfy"]');

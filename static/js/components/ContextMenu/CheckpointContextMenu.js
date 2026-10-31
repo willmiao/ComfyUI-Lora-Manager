@@ -22,8 +22,7 @@ export class CheckpointContextMenu extends BaseContextMenu {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
 
-    showMenu(x, y, card) {
-        super.showMenu(x, y, card);
+    prepareMenu(card) {
         this.updateExcludeMenuItem();
         this.updateEnrichMenuItem(card);
 

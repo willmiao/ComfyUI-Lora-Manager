@@ -266,6 +266,30 @@ describe('SidebarManager view options menu', () => {
     document.body.innerHTML = MENU_HTML;
   });
 
+  it('keeps the menu inside the viewport when the button sits near the bottom', () => {
+    const menu = document.getElementById('sidebarViewOptionsMenu');
+    menu.getBoundingClientRect = () => ({
+      width: 160, height: 300, top: 0, left: 0, right: 160, bottom: 300, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+    const button = document.createElement('button');
+    button.getBoundingClientRect = () => ({
+      width: 24, height: 24, left: 900, right: 924,
+      top: window.innerHeight - 30, bottom: window.innerHeight - 6,
+      x: 900, y: window.innerHeight - 30, toJSON: () => ({}),
+    });
+    const manager = createManager(createApiClient());
+
+    manager.handleViewOptionsButton({ stopPropagation() {}, currentTarget: button });
+
+    const top = parseFloat(menu.style.top);
+    expect(top).toBeGreaterThanOrEqual(8);
+    expect(top + 300).toBeLessThanOrEqual(window.innerHeight - 8);
+    expect(menu.style.display).toBe('block');
+
+    manager._closeViewOptionsMenu();
+  });
+
   it('reflects the current view state with check indicators', () => {
     const manager = createManager(createApiClient());
     manager.displayMode = 'tree';
@@ -1785,6 +1809,27 @@ describe('SidebarManager folder context menu layout', () => {
     expect(visible(item('delete-folder'))).toBe(false);
     // Nothing left to divide: the update check stands alone
     expect(separators().map(visible)).toEqual([false, false]);
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('keeps the menu inside the viewport when a folder near the bottom is clicked', () => {
+    const menu = document.getElementById('sidebarFolderContextMenu');
+    menu.getBoundingClientRect = () => ({
+      width: 180, height: 140, top: 0, left: 0, right: 180, bottom: 140, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+    const manager = createManager(createApiClient());
+
+    // The tree runs to the bottom edge, so a click in the last rows used to
+    // open the menu below the window with no way to scroll it into view.
+    const clickY = window.innerHeight - 30;
+    manager._showFolderContextMenu(40, clickY, 'empty');
+
+    const top = parseFloat(menu.style.top);
+    expect(top).toBeLessThan(clickY);
+    expect(top + 140).toBeLessThanOrEqual(window.innerHeight - 8);
+    expect(parseFloat(menu.style.left)).toBeGreaterThanOrEqual(8);
 
     manager._closeFolderContextMenu();
   });

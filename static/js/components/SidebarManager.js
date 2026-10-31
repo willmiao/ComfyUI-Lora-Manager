@@ -10,6 +10,7 @@ import { modalManager } from '../managers/ModalManager.js';
 import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
+import { positionFixedMenu } from '../utils/menuPosition.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
 
 // Pages whose folder sidebar starts hidden. "other" downloads default to a flat
@@ -2934,9 +2935,10 @@ export class SidebarManager {
         }
         this._updateContextMenuSeparators(menu);
 
-        menu.style.left = `${x}px`;
-        menu.style.top = `${y}px`;
-        menu.style.display = 'block';
+        // Place against the viewport: the tree continues to the bottom edge, so
+        // a raw cursor position leaves the menu below the window with no way to
+        // scroll it into view.
+        positionFixedMenu(menu, x, y);
         menu.dataset.folderPath = path;
 
         this._folderContextOpen = true;
@@ -3205,10 +3207,9 @@ export class SidebarManager {
 
         const anchor = event.currentTarget;
         const rect = anchor.getBoundingClientRect();
-        menu.style.display = 'block';
-        // Right-align the menu under the button so it stays within the sidebar
-        menu.style.left = `${Math.max(8, rect.right - menu.offsetWidth)}px`;
-        menu.style.top = `${rect.bottom + 4}px`;
+        // Right-align the menu under the button, keeping it inside the viewport
+        // when the button sits near the bottom of a short window.
+        positionFixedMenu(menu, rect.right, rect.bottom + 4, { alignX: 'right' });
 
         this._viewOptionsCloseHandler = (e) => {
             if (!menu.contains(e.target)) {
