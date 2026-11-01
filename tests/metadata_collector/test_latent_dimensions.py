@@ -19,3 +19,9 @@ def test_image_latent_records_pixel_size():
 def test_audio_latent_has_no_pixel_size():
     # Audio latents such as YuE2 are [batch, channels, frames]: three dimensions, no width.
     assert SIZE not in _extract((1, 64, 1500))
+
+
+def test_video_latent_uses_trailing_spatial_dims():
+    # Video latents such as Wan are [batch, channels, frames, height/8, width/8].
+    size = _extract((1, 16, 21, 60, 104))[SIZE]["1"]
+    assert (size["height"], size["width"]) == (480, 832)

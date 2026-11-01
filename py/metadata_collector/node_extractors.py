@@ -728,10 +728,12 @@ class BaseSamplerExtractor(NodeMetadataExtractor):
                 # Extract dimensions from latent tensor
                 samples = latent["samples"]
                 if hasattr(samples, "shape") and len(samples.shape) >= 4:
-                    # Correct shape interpretation: [batch_size, channels, height/8, width/8]
-                    # Multiply by 8 to get actual pixel dimensions
-                    height = int(samples.shape[2] * 8)
-                    width = int(samples.shape[3] * 8)
+                    # Image latents are [batch, channels, height/8, width/8]; video
+                    # latents insert a frame axis but keep the spatial pair last, so
+                    # read the trailing dims. 3D audio latents have no pixel size.
+                    # Multiply by 8 to get actual pixel dimensions.
+                    height = int(samples.shape[-2] * 8)
+                    width = int(samples.shape[-1] * 8)
                     
                     if SIZE not in metadata:
                         metadata[SIZE] = {}
