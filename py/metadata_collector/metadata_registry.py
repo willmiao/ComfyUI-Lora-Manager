@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import time
@@ -9,6 +10,9 @@ from .node_extractors import (
     GenericNodeExtractor,
 )
 from .constants import METADATA_CATEGORIES, IMAGES, MODELS, OVERWRITE
+
+
+logger = logging.getLogger(__name__)
 
 
 # Input fields that carry a model filename in loader-style nodes. Mirrors
@@ -270,18 +274,32 @@ class MetadataRegistry:
             else:
                 processed_inputs[input_name] = input_values
 
-        # Extract node-specific metadata
-        extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
-        if extractor is GenericNodeExtractor:
-            extractor.extract(node_id, processed_inputs, outputs,
-                              self.prompt_metadata[self.current_prompt_id],
-                              return_types=return_types)
-        else:
-            extractor.extract(node_id, processed_inputs, outputs,
-                              self.prompt_metadata[self.current_prompt_id])
+        # Extract node-specific metadata. A failing extractor must not skip the
+        # cache update below: metadata written before the failure is still
+        # useful, and the hook would otherwise log a generic error without the
+        # node context.
+        extraction_failed = False
+        try:
+            extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
+            if extractor is GenericNodeExtractor:
+                extractor.extract(node_id, processed_inputs, outputs,
+                                  self.prompt_metadata[self.current_prompt_id],
+                                  return_types=return_types)
+            else:
+                extractor.extract(node_id, processed_inputs, outputs,
+                                  self.prompt_metadata[self.current_prompt_id])
+        except Exception:
+            extraction_failed = True
+            logger.exception(
+                "Metadata extraction failed for node %s (%s)",
+                node_id,
+                class_type,
+            )
 
-        # Cache this node's metadata
-        self._cache_node_metadata(node_id, class_type)
+        # Cache this node's metadata, keeping the previous entry when a failed
+        # extraction collected nothing at all.
+        if not extraction_failed or self._has_node_metadata(node_id):
+            self._cache_node_metadata(node_id, class_type)
 
     def update_node_execution(self, node_id, class_type, outputs, return_types=None):
         """Update node metadata with output information"""
@@ -291,23 +309,44 @@ class MetadataRegistry:
         # Process outputs to make them more usable
         processed_outputs = outputs
 
-        # Use the same extractor to update with outputs
-        extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
-        if hasattr(extractor, "update"):
-            if extractor is GenericNodeExtractor:
-                extractor.update(
-                    node_id, processed_outputs,
-                    self.prompt_metadata[self.current_prompt_id],
-                    return_types=return_types,
-                )
-            else:
-                extractor.update(
-                    node_id, processed_outputs,
-                    self.prompt_metadata[self.current_prompt_id],
-                )
+        # Use the same extractor to update with outputs. See the failure note in
+        # record_node_execution: the cache update below must still run.
+        extraction_failed = False
+        try:
+            extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
+            if hasattr(extractor, "update"):
+                if extractor is GenericNodeExtractor:
+                    extractor.update(
+                        node_id, processed_outputs,
+                        self.prompt_metadata[self.current_prompt_id],
+                        return_types=return_types,
+                    )
+                else:
+                    extractor.update(
+                        node_id, processed_outputs,
+                        self.prompt_metadata[self.current_prompt_id],
+                    )
+        except Exception:
+            extraction_failed = True
+            logger.exception(
+                "Metadata update failed for node %s (%s)",
+                node_id,
+                class_type,
+            )
 
-        # Update the cached metadata for this node
-        self._cache_node_metadata(node_id, class_type)
+        # Update the cached metadata for this node, keeping the previous entry
+        # when a failed update collected nothing at all.
+        if not extraction_failed or self._has_node_metadata(node_id):
+            self._cache_node_metadata(node_id, class_type)
+
+    def _has_node_metadata(self, node_id):
+        """Whether the current prompt already recorded metadata for a node"""
+        current_metadata = self.prompt_metadata[self.current_prompt_id]
+        return any(
+            node_id in current_metadata[category]
+            for category in self.metadata_categories
+            if category in current_metadata
+        )
 
     def _cache_node_metadata(self, node_id, class_type):
         """Cache the metadata for a specific node"""
