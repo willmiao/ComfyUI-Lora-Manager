@@ -1579,7 +1579,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-a93241f8] {
+.lora-randomizer-widget[data-v-54f2f3a9] {
   padding: 6px;
   /* Let the node surface show through; only inner controls are painted. */
   background: transparent;
@@ -13490,6 +13490,10 @@ function useLoraRandomizerState(widget) {
       nextSeed.value = Math.floor(Math.random() * 2147483647);
     }
   };
+  const resetSeeds = () => {
+    executionSeed.value = null;
+    nextSeed.value = null;
+  };
   const restoreFromConfig = (config) => {
     isRestoring = true;
     try {
@@ -13620,7 +13624,8 @@ function useLoraRandomizerState(widget) {
     rollLoras,
     useLastUsed,
     generateNewSeed,
-    initializeNextSeed
+    initializeNextSeed,
+    resetSeeds
   };
 }
 const _sfc_main$6 = /* @__PURE__ */ defineComponent({
@@ -13650,6 +13655,11 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
         (lora, i2) => lora.name === sortedB[i2].name && lora.strength === sortedB[i2].strength && lora.clipStrength === sortedB[i2].clipStrength
       );
     };
+    const resetSeedChain = () => {
+      state.resetSeeds();
+      delete props.widget[HAS_EXECUTED];
+      props.widget.value = state.buildConfig();
+    };
     const handleGenerateFixed = async () => {
       var _a2, _b, _c;
       try {
@@ -13662,6 +13672,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
           currentLoras.value = randomLoras;
         }
         state.rollMode.value = "fixed";
+        resetSeedChain();
       } catch (error) {
         console.error("[LoraRandomizerWidget] Error generating fixed LoRAs:", error);
         alert("Failed to generate LoRAs: " + error.message);
@@ -13679,6 +13690,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
           currentLoras.value = randomLoras;
         }
         state.rollMode.value = "always";
+        resetSeedChain();
       } catch (error) {
         console.error("[LoraRandomizerWidget] Error generating random LoRAs:", error);
         alert("Failed to generate LoRAs: " + error.message);
@@ -13694,6 +13706,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
           currentLoras.value = lastUsedLoras;
         }
         state.rollMode.value = "fixed";
+        resetSeedChain();
       }
     };
     const onWheel = (event) => {
@@ -13861,7 +13874,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-a93241f8"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-54f2f3a9"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$4 = { class: "setting-section progress-section" };
 const _hoisted_3$3 = { class: "progress-label" };
