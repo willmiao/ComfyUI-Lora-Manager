@@ -607,7 +607,7 @@
                 "modelName": "Nombre del modelo",
                 "fileName": "Nombre del archivo"
             },
-            "modelNameDisplayHelp": "Elige qué mostrar en el pie de la tarjeta del modelo",
+            "modelNameDisplayHelp": "[TODO: Translate] Choose whether model cards and node LoRA labels show the model name or the file name",
             "cardBlurAmount": "Desenfoque de superposición de tarjetas",
             "cardBlurAmountHelp": "Ajuste la intensidad de desenfoque de las superposiciones del encabezado y pie de página en las tarjetas de modelos y recetas (0 = sin desenfoque, 20 = desenfoque máximo)."
         },
