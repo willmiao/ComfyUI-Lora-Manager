@@ -46,6 +46,16 @@ const STRENGTH_STEP_DEFAULT = 0.05;
 const LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID = "loramanager.lora_active_filters_autocomplete";
 const LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT = false;
 
+// Node widget rows keep their own label preference. It is a ComfyUI setting
+// because it changes how a node renders, and it is deliberately independent of
+// the LoRA Manager browser's `model_name_display`: one governs cards you read
+// while browsing, the other names what a graph will load. Default is the file
+// name, so existing behavior does not change.
+const NODE_LORA_NAME_DISPLAY_SETTING_ID = "loramanager.node_lora_name_display";
+const NODE_LORA_NAME_DISPLAY_OPTION_FILE_NAME = "File Name";
+const NODE_LORA_NAME_DISPLAY_OPTION_MODEL_NAME = "Model Name";
+const NODE_LORA_NAME_DISPLAY_DEFAULT = "file_name";
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -453,6 +463,57 @@ const getLoraActiveFiltersAutocompletePreference = (() => {
     };
 })();
 
+// Listeners fired when the node label preference changes, so open graphs can
+// relabel their rows without waiting for a reload.
+const nodeLoraNameDisplayListeners = new Set();
+
+/**
+ * Register a callback fired when the node LoRA label preference changes.
+ * Returns an unsubscribe function.
+ */
+export function onNodeLoraNameDisplayChanged(callback) {
+    nodeLoraNameDisplayListeners.add(callback);
+    return () => {
+        nodeLoraNameDisplayListeners.delete(callback);
+    };
+}
+
+const notifyNodeLoraNameDisplayChanged = () => {
+    for (const listener of nodeLoraNameDisplayListeners) {
+        try {
+            listener();
+        } catch (error) {
+            console.warn("LoRA Manager: node LoRA label listener failed", error);
+        }
+    }
+};
+
+const getNodeLoraNameDisplayPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, labelling node LoRA rows with file names.");
+                settingsUnavailableLogged = true;
+            }
+            return NODE_LORA_NAME_DISPLAY_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(NODE_LORA_NAME_DISPLAY_SETTING_ID);
+            return value === NODE_LORA_NAME_DISPLAY_OPTION_MODEL_NAME ? "model_name" : NODE_LORA_NAME_DISPLAY_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read node LoRA label setting, labelling rows with file names.", error);
+                settingsUnavailableLogged = true;
+            }
+            return NODE_LORA_NAME_DISPLAY_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -578,6 +639,21 @@ app.registerExtension({
             tooltip: "Step size for adjusting LoRA strength via arrow buttons or keyboard (default: 0.05)",
             category: ["LoRA Manager", "LoRA Widget", "Strength Step"],
         },
+        {
+            id: NODE_LORA_NAME_DISPLAY_SETTING_ID,
+            name: "Node LoRA label",
+            type: "combo",
+            options: [
+                NODE_LORA_NAME_DISPLAY_OPTION_FILE_NAME,
+                NODE_LORA_NAME_DISPLAY_OPTION_MODEL_NAME,
+            ],
+            defaultValue: NODE_LORA_NAME_DISPLAY_OPTION_FILE_NAME,
+            tooltip: "Label LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes with the on-disk file name or with the library model name. Model names shared by several files gain a distinguishing suffix.",
+            category: ["LoRA Manager", "LoRA Widget", "Node LoRA Label"],
+            onChange: () => {
+                notifyNodeLoraNameDisplayChanged();
+            },
+        },
     ],
     async setup() {
         await loadWorkflowOptions();
@@ -668,5 +744,6 @@ export {
     getNewTabTemplatePreference,
     getStrengthStepPreference,
     getLoraActiveFiltersAutocompletePreference,
+    getNodeLoraNameDisplayPreference,
     setLoraManagerSettingValue,
 };

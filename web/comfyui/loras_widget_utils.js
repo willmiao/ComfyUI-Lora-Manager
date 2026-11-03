@@ -241,6 +241,231 @@ export function buildStrengthRangeMap(loras) {
   return map;
 }
 
+/**
+ * Build the lookup map of row labels from cycler-list entries. Keyed like the
+ * availability set (normalized path and basename), so a row that stores either
+ * form resolves to its label.
+ *
+ * The label is the model name (Civitai / sidecar title). Titles are not unique
+ * in practice -- a LoRA's versions often share one title, and the same title may
+ * cover several files -- so for every title used by more than one file the label
+ * gains a disambiguating prefix: "[v2] Title". Unique titles are left untouched.
+ * The prefix goes first because node rows truncate with an ellipsis, and a
+ * suffix at the end is exactly what a narrow row clips first.
+ */
+export function buildModelNameMap(loras) {
+  const entries = [];
+  for (const lora of loras || []) {
+    const modelName = typeof lora?.model_name === "string" ? lora.model_name.trim() : "";
+    if (!modelName) {
+      continue;
+    }
+    const normalized = normalizeLoraNameKey(lora?.file_name);
+    if (!normalized) {
+      continue;
+    }
+    entries.push({
+      normalized,
+      title: modelName,
+      versionName: typeof lora?.version_name === "string" ? lora.version_name.trim() : "",
+      folder: typeof lora?.folder === "string" ? lora.folder.trim() : "",
+    });
+  }
+
+  const suffixByEntry = new Map();
+  for (const group of groupEntriesByTitle(entries)) {
+    if (group.length < 2) {
+      continue;
+    }
+    const suffixes = resolveTitleSuffixes(group);
+    group.forEach((entry, index) => {
+      const suffix = suffixes[index];
+      if (suffix) {
+        suffixByEntry.set(entry.normalized, suffix);
+      }
+    });
+  }
+
+  const map = new Map();
+  for (const entry of entries) {
+    const suffix = suffixByEntry.get(entry.normalized);
+    const label = suffix ? `[${suffix}] ${entry.title}` : entry.title;
+    map.set(entry.normalized, label);
+    const slash = entry.normalized.lastIndexOf("/");
+    if (slash >= 0) {
+      map.set(entry.normalized.slice(slash + 1), label);
+    }
+  }
+  return map;
+}
+
+const TITLE_SUFFIX_MAX_LEN = 32;
+const TITLE_SUFFIX_MIN_LEN = 2;
+const TITLE_SUFFIX_TOKEN_SPLIT = /[\s_]+/;
+const TITLE_SUFFIX_EDGE_TRIM = /^[\s_:,]+|[\s_:,]+$/g;
+
+/**
+ * Group entries by their title, preserving the order they arrived in.
+ */
+function groupEntriesByTitle(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const group = groups.get(entry.title);
+    if (group) {
+      group.push(entry);
+    } else {
+      groups.set(entry.title, [entry]);
+    }
+  }
+  return groups.values();
+}
+
+/**
+ * Produce one distinguishing suffix per entry of a duplicate-title group.
+ *
+ * Tiers, each used only when it actually separates every member:
+ *   1. Civitai version names, trimmed of the text every member shares
+ *      ("Example_v1" / "Example_v2 (variant)" -> "v1" / "v2 (variant)").
+ *   2. The library folder (e.g. "set" vs "archive/bulk").
+ *   3. The file name, which is always unique.
+ */
+function resolveTitleSuffixes(group) {
+  const versionNames = group.map((entry) => entry.versionName);
+  if (versionNames.every(Boolean)) {
+    const trimmed = trimSharedVersionTokens(versionNames);
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  const folders = group.map((entry) => entry.folder);
+  if (
+    folders.every(Boolean) &&
+    new Set(folders).size === folders.length
+  ) {
+    return folders;
+  }
+
+  return group.map((entry) => {
+    const slash = entry.normalized.lastIndexOf("/");
+    return slash >= 0 ? entry.normalized.slice(slash + 1) : entry.normalized;
+  });
+}
+
+/**
+ * Strip the tokens every version name shares, keeping the most that can be
+ * removed without collapsing a member to something short or ambiguous.
+ *
+ * Removing the shared tail matters as much as the shared head: Civitai often
+ * repeats the release line on each version ("2.2 HIGH v0.08a (nightly)"), so
+ * trimming both leaves the word that actually differs ("HIGH"). Returns null
+ * when no trim leaves every result distinct and at least two characters long --
+ * identical version names cannot be separated this way.
+ */
+function trimSharedVersionTokens(names) {
+  const tokenLists = names.map((name) =>
+    String(name).split(TITLE_SUFFIX_TOKEN_SPLIT).filter(Boolean)
+  );
+  const prefixMax = commonPrefixLength(tokenLists);
+  const suffixMax = commonSuffixLength(tokenLists, prefixMax);
+
+  const candidates = [];
+  for (let prefix = 0; prefix <= prefixMax; prefix += 1) {
+    for (let suffix = 0; suffix <= suffixMax; suffix += 1) {
+      candidates.push([prefix, suffix]);
+    }
+  }
+  candidates.sort(
+    (a, b) => b[0] + b[1] - (a[0] + a[1]) || b[0] - a[0]
+  );
+
+  for (const [prefix, suffix] of candidates) {
+    const labels = tokenLists.map((tokens) =>
+      cleanSuffixLabel(tokens.slice(prefix, suffix ? tokens.length - suffix : tokens.length))
+    );
+    if (
+      labels.every((label) => label.length >= TITLE_SUFFIX_MIN_LEN) &&
+      new Set(labels).size === labels.length
+    ) {
+      return labels;
+    }
+  }
+  return null;
+}
+
+/**
+ * Count the leading tokens shared by every list.
+ */
+function commonPrefixLength(tokenLists) {
+  if (tokenLists.length === 0) {
+    return 0;
+  }
+  let shared = 0;
+  const [first] = tokenLists;
+  for (let i = 0; i < first.length; i += 1) {
+    const token = first[i];
+    if (!tokenLists.every((tokens) => tokens[i] === token)) {
+      break;
+    }
+    shared += 1;
+  }
+  return shared;
+}
+
+/**
+ * Count the trailing tokens shared by every list, ignoring `drop` leading ones.
+ */
+function commonSuffixLength(tokenLists, drop) {
+  if (tokenLists.length === 0) {
+    return 0;
+  }
+  const tails = tokenLists.map((tokens) => tokens.slice(drop).reverse());
+  return commonPrefixLength(tails);
+}
+
+/**
+ * Join suffix tokens into a label, trimming separators and capping the length.
+ */
+function cleanSuffixLabel(tokens) {
+  const joined = tokens
+    .filter(Boolean)
+    .join(" ")
+    .replace(TITLE_SUFFIX_EDGE_TRIM, "")
+    .trim();
+  if (joined.length <= TITLE_SUFFIX_MAX_LEN) {
+    return joined;
+  }
+  return `${joined.slice(0, TITLE_SUFFIX_MAX_LEN - 1).trimEnd()}\u2026`;
+}
+
+/**
+ * Resolve a widget entry name against a normalized-name map built from the
+ * cycler list. Mirrors isLoraNameAvailable's matching: basename fallback for
+ * folder-qualified names, and null for absolute paths (outside the library).
+ */
+function lookupByLoraName(map, name) {
+  if (!map || map.size === 0) {
+    return null;
+  }
+  const normalized = String(name || "").replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return null;
+  }
+  const key = normalizeLoraNameKey(name);
+  if (map.has(key)) {
+    return map.get(key);
+  }
+  const slash = key.lastIndexOf("/");
+  if (slash >= 0) {
+    return map.get(key.slice(slash + 1)) || null;
+  }
+  return null;
+}
+
+/**
+ * Refresh the availability cache from the cycler list: the set of known names,
+ * their recommended strength ranges, and their row labels.
+ */
 async function refreshAvailableLoras() {
   const generation = availabilityGeneration;
   try {
@@ -259,12 +484,13 @@ async function refreshAvailableLoras() {
       .filter(Boolean);
     const set = buildAvailableLoraSet(paths);
     const ranges = buildStrengthRangeMap(loras);
+    const names = buildModelNameMap(loras);
     if (generation !== availabilityGeneration) {
       // Stale response: the cache was invalidated while this fetch was in
       // flight, do not repopulate it with pre-change data.
       return null;
     }
-    availableLorasCache = { set, ranges, at: Date.now() };
+    availableLorasCache = { set, ranges, names, at: Date.now() };
     return set;
   } catch (error) {
     console.warn("Failed to fetch available LoRAs:", error);
@@ -319,23 +545,27 @@ export function getLoraStrengthRange(name) {
   ) {
     return null;
   }
-  const ranges = availableLorasCache.ranges;
-  if (!ranges || ranges.size === 0) {
-    return null;
+  return lookupByLoraName(availableLorasCache.ranges, name);
+}
+
+/**
+ * Synchronous label for a LoRA row on a node widget.
+ *
+ * Returns the library model name (Civitai / sidecar title) when `displayMode`
+ * asks for model names and the library knows this file, otherwise the stored
+ * entry name unchanged. The widget passes the mode it read from ComfyUI's
+ * settings at render time, so no cached preference is kept here. The stored name
+ * is what the widget value must keep — only the label changes — so callers must
+ * leave the LoRA name they persist untouched.
+ */
+export function getLoraDisplayName(name, displayMode = "file_name") {
+  if (displayMode !== "model_name" || !availableLorasCache) {
+    return name;
   }
-  const normalized = String(name || "").replace(/\\/g, "/");
-  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
-    return null;
+  if (Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS) {
+    return name;
   }
-  const key = normalizeLoraNameKey(name);
-  if (ranges.has(key)) {
-    return ranges.get(key);
-  }
-  const slash = key.lastIndexOf("/");
-  if (slash >= 0) {
-    return ranges.get(key.slice(slash + 1)) || null;
-  }
-  return null;
+  return lookupByLoraName(availableLorasCache.names, name) || name;
 }
 
 /**
