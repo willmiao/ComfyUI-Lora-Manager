@@ -5,12 +5,27 @@ const { APP_MODULE, API_MODULE } = vi.hoisted(() => ({
   API_MODULE: new URL('../../../scripts/api.js', import.meta.url).pathname,
 }));
 
+// The node label preference is a ComfyUI setting, so the widget reads it through
+// app.extensionManager.setting. `settingState` is the live value the getter sees.
+const { registerExtensionMock, settingState } = vi.hoisted(() => ({
+  registerExtensionMock: vi.fn(),
+  settingState: { nodeLoraNameDisplay: undefined },
+}));
+
 vi.mock(APP_MODULE, () => ({
   app: {
-    registerExtension: vi.fn(),
+    registerExtension: registerExtensionMock,
     graph: {},
     ui: { settings: { settingsById: {} } },
-    extensionManager: { setting: { get: () => undefined, set: vi.fn() } },
+    extensionManager: {
+      setting: {
+        get: (id) =>
+          id === 'loramanager.node_lora_name_display'
+            ? settingState.nodeLoraNameDisplay
+            : undefined,
+        set: vi.fn(),
+      },
+    },
   },
 }));
 
@@ -26,21 +41,34 @@ vi.mock('../../../web/comfyui/lm_styles_loader.js', () => ({
 }));
 
 import { addLorasWidget } from '../../../web/comfyui/loras_widget.js';
-import { getAvailableLoras, resetAvailableLorasCache } from '../../../web/comfyui/loras_widget_utils.js';
+import {
+  getAvailableLoras,
+  resetAvailableLorasCache,
+} from '../../../web/comfyui/loras_widget_utils.js';
 
-const respondWith = ({ loras = [], settings = {} } = {}) => {
+// The cycler list is the only request made: the label preference is read from
+// ComfyUI's settings, not fetched from LoRA Manager.
+const respondWith = ({ loras = [] } = {}) => {
   fetchApiMock.mockImplementation(async (url) => {
     if (url === '/lm/loras/cycler-list') {
       return { ok: true, json: async () => ({ success: true, loras }) };
     }
-    if (url === '/lm/settings') {
-      return { ok: true, json: async () => ({ success: true, settings }) };
-    }
-    return { ok: false, status: 404, json: async () => ({}) };
+    throw new Error(`unexpected fetch: ${url}`);
   });
 };
 
-const mountWidget = async (options, entryName) => {
+// The setting descriptor registered with ComfyUI, which is how a user change
+// reaches open graphs.
+const nodeLabelSetting = () => {
+  const extension = registerExtensionMock.mock.calls
+    .map(([registered]) => registered)
+    .find((registered) => registered?.name === 'LoraManager.Settings');
+  return extension?.settings.find(
+    (setting) => setting.id === 'loramanager.node_lora_name_display'
+  );
+};
+
+const mountWidget = async (entries) => {
   const node = {
     id: 1,
     comfyClass: 'Lora Stacker (LoraManager)',
@@ -52,8 +80,7 @@ const mountWidget = async (options, entryName) => {
     },
   };
   addLorasWidget(node, 'loras', {
-    ...options,
-    defaultVal: [{ name: entryName, strength: '1.00', active: true }],
+    defaultVal: entries.map((name) => ({ name, strength: '1.00', active: true })),
   });
   document.body.appendChild(node.container);
   await getAvailableLoras();
@@ -61,105 +88,95 @@ const mountWidget = async (options, entryName) => {
   return node;
 };
 
+const labels = (node) => [...node.container.querySelectorAll('.lm-lora-name')];
+
 describe('addLorasWidget row labels', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+    settingState.nodeLoraNameDisplay = undefined;
     fetchApiMock.mockReset();
     resetAvailableLorasCache();
   });
 
-  it('labels rows with the model name', async () => {
-    respondWith({
-      loras: [{ file_name: 'krea2/abc123def', model_name: 'Example title' }],
-      settings: { node_lora_name_display: 'model_name' },
-    });
-    const node = await mountWidget({}, 'abc123def');
-    const label = node.container.querySelector('.lm-lora-name');
-    expect(label.textContent).toBe('Example title');
+  it('labels rows with the file name by default', async () => {
+    respondWith({ loras: [{ file_name: 'set/abc123def', model_name: 'Example model title' }] });
+    const node = await mountWidget(['abc123def']);
+    const label = labels(node)[0];
+    expect(label.textContent).toBe('abc123def');
+    expect(label.dataset.loraFileName).toBeUndefined();
+    expect(node.widget.value).toEqual([{ name: 'abc123def', strength: '1.00', active: true }]);
+  });
+
+  it('labels rows with the model name when the setting asks for it', async () => {
+    settingState.nodeLoraNameDisplay = 'Model Name';
+    respondWith({ loras: [{ file_name: 'set/abc123def', model_name: 'Example model title' }] });
+    const node = await mountWidget(['abc123def']);
+    const label = labels(node)[0];
+    expect(label.textContent).toBe('Example model title');
+    // The resolved file name stays reachable; the widget value keeps it too.
     expect(label.dataset.loraFileName).toBe('abc123def');
     expect(node.widget.value).toEqual([{ name: 'abc123def', strength: '1.00', active: true }]);
   });
 
-  it('keeps the file name when the preference asks for it', async () => {
-    respondWith({
-      loras: [{ file_name: 'krea2/abc123def', model_name: 'Example title' }],
-      settings: { node_lora_name_display: 'file_name' },
-    });
-    const node = await mountWidget({}, 'abc123def');
-    expect(node.container.querySelector('.lm-lora-name').textContent).toBe('abc123def');
+  it('falls back to the file name when the library does not know the entry', async () => {
+    settingState.nodeLoraNameDisplay = 'Model Name';
+    respondWith({ loras: [{ file_name: 'set/abc123def', model_name: 'Example model title' }] });
+    const node = await mountWidget(['unknown']);
+    expect(labels(node)[0].textContent).toBe('unknown');
   });
 
-  it('ignores the model card preference', async () => {
-    respondWith({
-      loras: [{ file_name: 'krea2/abc123def', model_name: 'Example title' }],
-      settings: { model_name_display: 'file_name', node_lora_name_display: 'model_name' },
-    });
-    const node = await mountWidget({}, 'abc123def');
-    expect(node.container.querySelector('.lm-lora-name').textContent).toBe('Example title');
-  });
+  it('relabels open rows when the setting changes', async () => {
+    respondWith({ loras: [{ file_name: 'set/abc123def', model_name: 'Example model title' }] });
+    const node = await mountWidget(['abc123def']);
+    expect(labels(node)[0].textContent).toBe('abc123def');
 
-  it('honours the node preference even when the cards show model names', async () => {
-    respondWith({
-      loras: [{ file_name: 'krea2/abc123def', model_name: 'Example title' }],
-      settings: { model_name_display: 'model_name', node_lora_name_display: 'file_name' },
-    });
-    const node = await mountWidget({}, 'abc123def');
-    expect(node.container.querySelector('.lm-lora-name').textContent).toBe('abc123def');
+    settingState.nodeLoraNameDisplay = 'Model Name';
+    nodeLabelSetting().onChange('Model Name');
+
+    expect(labels(node)[0].textContent).toBe('Example model title');
   });
 });
 
 describe('addLorasWidget duplicate titles', () => {
-  const title = 'Ass and Thighs Slider - (Krea-2 + ZIT)';
+  const title = 'Example model title';
 
   beforeEach(() => {
     document.body.innerHTML = '';
+    settingState.nodeLoraNameDisplay = 'Model Name';
     fetchApiMock.mockReset();
     resetAvailableLorasCache();
   });
 
-  it('disambiguates two versions that share a title, keeping both file names as values', async () => {
+  it('prefixes a distinguishing suffix, keeping both file names as values', async () => {
     respondWith({
       loras: [
-        { file_name: 'krea2/ass_v1', model_name: title, version_name: 'Krea-2_v1', folder: 'krea2' },
+        { file_name: 'set/abc_v1', model_name: title, version_name: 'Example_v1', folder: 'set' },
         {
-          file_name: 'krea2/ass_v2',
+          file_name: 'set/abc_v2',
           model_name: title,
-          version_name: 'Krea-2_v2 (ass only)',
-          folder: 'krea2',
+          version_name: 'Example_v2 (variant)',
+          folder: 'set',
         },
       ],
-      settings: { node_lora_name_display: 'model_name' },
     });
 
-    const node = {
-      id: 1,
-      comfyClass: 'Lora Stacker (LoraManager)',
-      addDOMWidget(name, type, container) {
-        const widget = { value: undefined };
-        node.container = container;
-        node.widget = widget;
-        return widget;
-      },
-    };
-    addLorasWidget(node, 'loras', {
-      defaultVal: [
-        { name: 'krea2/ass_v1', strength: '1.00', active: true },
-        { name: 'krea2/ass_v2', strength: '1.00', active: true },
-      ],
-    });
-    document.body.appendChild(node.container);
-    await getAvailableLoras();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const node = await mountWidget(['set/abc_v1', 'set/abc_v2']);
 
-    const all = [...node.container.querySelectorAll('.lm-lora-name')].map((el) => el.textContent);
-    const labels = all.filter((text) => !text.startsWith('[clip] '));
-    expect(labels).toEqual([`${title} (v1)`, `${title} (v2 (ass only))`]);
+    const all = labels(node).map((el) => el.textContent);
+    const rows = all.filter((text) => !text.startsWith('[clip] '));
+    expect(rows).toEqual([`[v1] ${title}`, `[v2 (variant)] ${title}`]);
     // The [clip] sub-row mirrors the same disambiguated label.
     expect(all.filter((text) => text.startsWith('[clip] '))).toEqual([
-      `[clip] ${title} (v1)`,
-      `[clip] ${title} (v2 (ass only))`,
+      `[clip] [v1] ${title}`,
+      `[clip] [v2 (variant)] ${title}`,
     ]);
     // The widget still stores the file names, so both rows load their own file.
-    expect(node.widget.value.map((entry) => entry.name)).toEqual(['krea2/ass_v1', 'krea2/ass_v2']);
+    expect(node.widget.value.map((entry) => entry.name)).toEqual(['set/abc_v1', 'set/abc_v2']);
+  });
+
+  it('leaves a unique title unprefixed', async () => {
+    respondWith({ loras: [{ file_name: 'set/only', model_name: 'Example sole title' }] });
+    const node = await mountWidget(['set/only']);
+    expect(labels(node)[0].textContent).toBe('Example sole title');
   });
 });

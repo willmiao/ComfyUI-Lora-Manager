@@ -89,19 +89,6 @@ let availableLorasCache = null;
 let availableLorasPromise = null;
 let availabilityGeneration = 0;
 
-// Node widgets label a row with the library's model name (the Civitai / sidecar
-// title) when the node preference asks for model names, and with the on-disk
-// file name otherwise.
-//
-// This is deliberately its OWN setting (`node_lora_name_display`) and not the
-// browser's `model_name_display`: that one governs the model cards inside the
-// LoRA Manager UI, where the label is something you read while browsing. A node
-// row is a different surface -- it is the name of what a graph will load -- so
-// preferring file names on the cards (to match your own folder layout) does not
-// imply preferring them in a graph, and vice versa. Both default to model names.
-const NODE_NAME_DISPLAY_SETTING = "node_lora_name_display";
-const NODE_NAME_DISPLAY_DEFAULT = "model_name";
-
 /**
  * Parse a numeric usage-tips value (accepts numbers and numeric strings).
  */
@@ -262,7 +249,9 @@ export function buildStrengthRangeMap(loras) {
  * The label is the model name (Civitai / sidecar title). Titles are not unique
  * in practice -- a LoRA's versions often share one title, and the same title may
  * cover several files -- so for every title used by more than one file the label
- * gains a disambiguating suffix: "Title (v2)". Unique titles are left untouched.
+ * gains a disambiguating prefix: "[v2] Title". Unique titles are left untouched.
+ * The prefix goes first because node rows truncate with an ellipsis, and a
+ * suffix at the end is exactly what a narrow row clips first.
  */
 export function buildModelNameMap(loras) {
   const entries = [];
@@ -300,7 +289,7 @@ export function buildModelNameMap(loras) {
   const map = new Map();
   for (const entry of entries) {
     const suffix = suffixByEntry.get(entry.normalized);
-    const label = suffix ? `${entry.title} (${suffix})` : entry.title;
+    const label = suffix ? `[${suffix}] ${entry.title}` : entry.title;
     map.set(entry.normalized, label);
     const slash = entry.normalized.lastIndexOf("/");
     if (slash >= 0) {
@@ -336,9 +325,9 @@ function groupEntriesByTitle(entries) {
  *
  * Tiers, each used only when it actually separates every member:
  *   1. Civitai version names, trimmed of the text every member shares
- *      ("Krea-2_v1" / "Krea-2_v2 (ass only)" -> "v1" / "v2 (ass only)").
- *   2. The library folder ("krea2" vs "FLUX2/bulk").
- *   3. The file name, which is always unique ("pancakes v3").
+ *      ("Example_v1" / "Example_v2 (variant)" -> "v1" / "v2 (variant)").
+ *   2. The library folder (e.g. "set" vs "archive/bulk").
+ *   3. The file name, which is always unique.
  */
 function resolveTitleSuffixes(group) {
   const versionNames = group.map((entry) => entry.versionName);
@@ -474,46 +463,17 @@ function lookupByLoraName(map, name) {
 }
 
 /**
- * Parse the node row display preference out of a LoRA Manager settings
- * payload. Only `node_lora_name_display` is read: the cards' own
- * `model_name_display` is intentionally ignored so the two surfaces stay
- * independent. Anything other than an explicit "file_name" keeps the default
- * (model name), which is also the backend default.
+ * Refresh the availability cache from the cycler list: the set of known names,
+ * their recommended strength ranges, and their row labels.
  */
-export function parseNodeNameDisplayMode(payload) {
-  const settings = payload?.settings;
-  const mode = settings?.[NODE_NAME_DISPLAY_SETTING];
-  return mode === "file_name" ? "file_name" : NODE_NAME_DISPLAY_DEFAULT;
-}
-
-/**
- * Fetch the node row display preference. Failure is non-fatal: the default
- * (model name) is used so node labels keep working when the settings endpoint
- * is unreachable.
- */
-async function fetchNodeNameDisplayMode() {
-  try {
-    const response = await api.fetchApi("/lm/settings", { method: "GET" });
-    if (!response || !response.ok) {
-      return NODE_NAME_DISPLAY_DEFAULT;
-    }
-    return parseNodeNameDisplayMode(await response.json());
-  } catch (error) {
-    return NODE_NAME_DISPLAY_DEFAULT;
-  }
-}
-
 async function refreshAvailableLoras() {
   const generation = availabilityGeneration;
   try {
-    const [response, settings] = await Promise.all([
-      api.fetchApi("/lm/loras/cycler-list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      }),
-      fetchNodeNameDisplayMode(),
-    ]);
+    const response = await api.fetchApi("/lm/loras/cycler-list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
     if (!response || !response.ok) {
       return null;
     }
@@ -530,7 +490,7 @@ async function refreshAvailableLoras() {
       // flight, do not repopulate it with pre-change data.
       return null;
     }
-    availableLorasCache = { set, ranges, names, displayMode: settings, at: Date.now() };
+    availableLorasCache = { set, ranges, names, at: Date.now() };
     return set;
   } catch (error) {
     console.warn("Failed to fetch available LoRAs:", error);
@@ -591,18 +551,18 @@ export function getLoraStrengthRange(name) {
 /**
  * Synchronous label for a LoRA row on a node widget.
  *
- * Returns the library model name (Civitai / sidecar title) when the node
- * preference asks for model names and the library knows this file, otherwise
- * the stored entry name unchanged. The stored name is what the widget value must
- * keep — only the label changes — so callers must leave the LoRA name they
- * persist untouched.
+ * Returns the library model name (Civitai / sidecar title) when `displayMode`
+ * asks for model names and the library knows this file, otherwise the stored
+ * entry name unchanged. The widget passes the mode it read from ComfyUI's
+ * settings at render time, so no cached preference is kept here. The stored name
+ * is what the widget value must keep — only the label changes — so callers must
+ * leave the LoRA name they persist untouched.
  */
-export function getLoraDisplayName(name) {
-  if (
-    !availableLorasCache ||
-    Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS ||
-    availableLorasCache.displayMode !== NODE_NAME_DISPLAY_DEFAULT
-  ) {
+export function getLoraDisplayName(name, displayMode = "file_name") {
+  if (displayMode !== "model_name" || !availableLorasCache) {
+    return name;
+  }
+  if (Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS) {
     return name;
   }
   return lookupByLoraName(availableLorasCache.names, name) || name;

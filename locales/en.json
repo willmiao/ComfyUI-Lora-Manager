@@ -608,8 +608,6 @@
         "fileName": "File Name"
       },
       "modelNameDisplayHelp": "Choose what to display in the model card footer",
-      "nodeLoraNameDisplay": "Node LoRA Label",
-      "nodeLoraNameDisplayHelp": "Choose whether LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes show the model name or the file name",
       "cardBlurAmount": "Card Overlay Blur",
       "cardBlurAmountHelp": "Adjust the blur intensity of the header and footer overlays on model and recipe cards (0 = no blur, 20 = maximum blur)."
     },

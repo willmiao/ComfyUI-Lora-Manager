@@ -608,8 +608,6 @@
                 "fileName": "Nom du fichier"
             },
             "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle",
-            "nodeLoraNameDisplay": "[TODO: Translate] Node LoRA Label",
-            "nodeLoraNameDisplayHelp": "[TODO: Translate] Choose whether LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes show the model name or the file name",
             "cardBlurAmount": "Flou de superposition des cartes",
             "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de Recipes (0 = aucun flou, 20 = flou maximal)."
         },

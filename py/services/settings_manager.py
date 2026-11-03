@@ -159,11 +159,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
-    # Node widgets (LoRA Loader / Stacker / Pool / Randomizer) keep their own
-    # label preference: a graph row names what the workflow will load, which is
-    # a different question from how a model card reads in the browser UI, so
-    # `model_name_display` does not apply to them.
-    "node_lora_name_display": "model_name",
     "lora_syntax_format": "legacy",
     # Remap legacy 28-block Anima LoRA keys onto the block layout of the
     # connected Anima 2.9B (40) or 3.8B (52) model. Enabled by default because

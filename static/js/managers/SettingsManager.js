@@ -1290,12 +1290,6 @@ export class SettingsManager {
             modelNameDisplaySelect.value = state.global.settings.model_name_display || 'model_name';
         }
 
-        // Set node LoRA label display setting (independent of the cards one)
-        const nodeLoraNameDisplaySelect = document.getElementById('nodeLoraNameDisplay');
-        if (nodeLoraNameDisplaySelect) {
-            nodeLoraNameDisplaySelect.value = state.global.settings.node_lora_name_display || 'model_name';
-        }
-
         const versionGroupingSelect = document.getElementById('versionGrouping');
         if (versionGroupingSelect) {
             versionGroupingSelect.value = state.global.settings.version_grouping || 'same_base';

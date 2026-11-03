@@ -608,8 +608,6 @@
                 "fileName": "檔案名稱"
             },
             "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容",
-            "nodeLoraNameDisplay": "[TODO: Translate] Node LoRA Label",
-            "nodeLoraNameDisplayHelp": "[TODO: Translate] Choose whether LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes show the model name or the file name",
             "cardBlurAmount": "卡片疊加模糊強度",
             "cardBlurAmountHelp": "調整模型和配方卡片上頁首和頁尾疊加層的模糊強度（0 = 無模糊，20 = 最大模糊）。"
         },

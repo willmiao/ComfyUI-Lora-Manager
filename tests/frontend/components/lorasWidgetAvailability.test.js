@@ -105,11 +105,6 @@ describe('isLoraNameAvailable', () => {
 });
 
 describe('getAvailableLoras caching', () => {
-  // The availability refresh also asks for the model name display preference,
-  // so counting every fetchApi call would double-count a single refresh.
-  const cyclerListCalls = () =>
-    fetchApiMock.mock.calls.filter(([url]) => url === '/lm/loras/cycler-list');
-
   beforeEach(() => {
     fetchApiMock.mockReset();
     resetAvailableLorasCache();
@@ -142,7 +137,7 @@ describe('getAvailableLoras caching', () => {
     });
 
     await Promise.all([getAvailableLoras(), getAvailableLoras()]);
-    expect(cyclerListCalls()).toHaveLength(1);
+    expect(fetchApiMock).toHaveBeenCalledTimes(1);
   });
 
   it('does not refetch while the cache is fresh', async () => {
@@ -153,7 +148,7 @@ describe('getAvailableLoras caching', () => {
 
     await getAvailableLoras();
     await getAvailableLoras();
-    expect(cyclerListCalls()).toHaveLength(1);
+    expect(fetchApiMock).toHaveBeenCalledTimes(1);
   });
 
   it('resolves to null and does not cache on fetch failure', async () => {

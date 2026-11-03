@@ -608,8 +608,6 @@
                 "fileName": "Dateiname"
             },
             "modelNameDisplayHelp": "Wählen Sie aus, was in der Fußzeile der Modellkarte angezeigt werden soll",
-            "nodeLoraNameDisplay": "[TODO: Translate] Node LoRA Label",
-            "nodeLoraNameDisplayHelp": "[TODO: Translate] Choose whether LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes show the model name or the file name",
             "cardBlurAmount": "Karten-Overlay-Unschärfe",
             "cardBlurAmountHelp": "Passen Sie die Unschärfeintensität der Kopf- und Fußzeilen-Overlays auf Modell- und Rezeptkarten an (0 = keine Unschärfe, 20 = maximale Unschärfe)."
         },

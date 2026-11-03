@@ -19,26 +19,19 @@ vi.mock(API_MODULE, () => ({
 
 import {
   buildModelNameMap,
-  parseNodeNameDisplayMode,
   getLoraDisplayName,
   getAvailableLoras,
   resetAvailableLorasCache,
   handleLibraryChangeMessage,
 } from '../../../web/comfyui/loras_widget_utils.js';
 
-// Route the mocked ComfyUI API per endpoint: the availability refresh asks for
-// the cycler list AND the LoRA Manager settings, and the two carry different
-// payload shapes.
-const respondWith = ({ loras = [], settings = {}, settingsOk = true } = {}) => {
+// The availability refresh is the only request left: the node label preference
+// lives in ComfyUI's settings, so the cycler list must not be paired with a
+// /lm/settings fetch. Throwing on any other URL proves that.
+const respondWith = ({ loras = [] } = {}) => {
   fetchApiMock.mockImplementation(async (url) => {
     if (url === '/lm/loras/cycler-list') {
       return { ok: true, json: async () => ({ success: true, loras }) };
-    }
-    if (url === '/lm/settings') {
-      if (!settingsOk) {
-        return { ok: false, status: 500, json: async () => ({}) };
-      }
-      return { ok: true, json: async () => ({ success: true, settings }) };
     }
     throw new Error(`unexpected fetch: ${url}`);
   });
@@ -47,9 +40,9 @@ const respondWith = ({ loras = [], settings = {}, settingsOk = true } = {}) => {
 describe('buildModelNameMap', () => {
   it('keys titles by normalized path and basename', () => {
     const map = buildModelNameMap([
-      { file_name: 'krea2/abc123def', model_name: 'Example model title' },
+      { file_name: 'set/abc123def', model_name: 'Example model title' },
     ]);
-    expect(map.get('krea2/abc123def')).toBe('Example model title');
+    expect(map.get('set/abc123def')).toBe('Example model title');
     expect(map.get('abc123def')).toBe('Example model title');
   });
 
@@ -83,45 +76,9 @@ describe('buildModelNameMap', () => {
   });
 });
 
-describe('parseNodeNameDisplayMode', () => {
-  it('reads the file_name preference', () => {
-    expect(parseNodeNameDisplayMode({ settings: { node_lora_name_display: 'file_name' } })).toBe(
-      'file_name'
-    );
-  });
-
-  it('reads the model_name preference', () => {
-    expect(parseNodeNameDisplayMode({ settings: { node_lora_name_display: 'model_name' } })).toBe(
-      'model_name'
-    );
-  });
-
-  it('defaults to model_name for missing or unknown values', () => {
-    expect(parseNodeNameDisplayMode({ settings: {} })).toBe('model_name');
-    expect(parseNodeNameDisplayMode({ settings: { node_lora_name_display: 'nonsense' } })).toBe(
-      'model_name'
-    );
-    expect(parseNodeNameDisplayMode(undefined)).toBe('model_name');
-    expect(parseNodeNameDisplayMode({})).toBe('model_name');
-  });
-
-  it('ignores the model card preference', () => {
-    // The cards' own setting must not leak into node rows: they answer
-    // different questions (what you browse vs what a graph will load).
-    expect(
-      parseNodeNameDisplayMode({ settings: { model_name_display: 'file_name' } })
-    ).toBe('model_name');
-    expect(
-      parseNodeNameDisplayMode({
-        settings: { model_name_display: 'model_name', node_lora_name_display: 'file_name' },
-      })
-    ).toBe('file_name');
-  });
-});
-
 describe('getLoraDisplayName', () => {
   const loras = [
-    { file_name: 'krea2/abc123def', model_name: 'Example title' },
+    { file_name: 'set/abc123def', model_name: 'Example model title' },
     { file_name: 'sub/plain.safetensors' },
   ];
 
@@ -131,17 +88,23 @@ describe('getLoraDisplayName', () => {
   });
 
   it('returns the stored name while the cache is not loaded', () => {
-    expect(getLoraDisplayName('abc123def')).toBe('abc123def');
+    expect(getLoraDisplayName('abc123def', 'model_name')).toBe('abc123def');
   });
 
-  it('returns the model name for the default display preference', async () => {
-    respondWith({ loras, settings: { node_lora_name_display: 'model_name' } });
+  it('returns the model name when the node preference asks for model names', async () => {
+    respondWith({ loras });
     await getAvailableLoras();
-    expect(getLoraDisplayName('abc123def')).toBe('Example title');
+    expect(getLoraDisplayName('abc123def', 'model_name')).toBe('Example model title');
   });
 
-  it('returns the stored name when the preference is the file name', async () => {
-    respondWith({ loras, settings: { node_lora_name_display: 'file_name' } });
+  it('returns the stored name when the node preference asks for file names', async () => {
+    respondWith({ loras });
+    await getAvailableLoras();
+    expect(getLoraDisplayName('abc123def', 'file_name')).toBe('abc123def');
+  });
+
+  it('defaults to the stored name when no preference is passed', async () => {
+    respondWith({ loras });
     await getAvailableLoras();
     expect(getLoraDisplayName('abc123def')).toBe('abc123def');
   });
@@ -149,120 +112,122 @@ describe('getLoraDisplayName', () => {
   it('resolves folder-qualified and extension-carrying entry names', async () => {
     respondWith({ loras });
     await getAvailableLoras();
-    expect(getLoraDisplayName('krea2/abc123def')).toBe('Example title');
-    expect(getLoraDisplayName('krea2/abc123def.safetensors')).toBe('Example title');
-    expect(getLoraDisplayName('sub/plain')).toBe('sub/plain');
+    expect(getLoraDisplayName('set/abc123def', 'model_name')).toBe('Example model title');
+    expect(getLoraDisplayName('set/abc123def.safetensors', 'model_name')).toBe(
+      'Example model title'
+    );
+    expect(getLoraDisplayName('sub/plain', 'model_name')).toBe('sub/plain');
   });
 
   it('falls back to the stored name for unknown and absolute paths', async () => {
     respondWith({ loras });
     await getAvailableLoras();
-    expect(getLoraDisplayName('unknown')).toBe('unknown');
-    expect(getLoraDisplayName('/abs/path/abc123def')).toBe('/abs/path/abc123def');
-    expect(getLoraDisplayName('C:/abs/abc123def')).toBe('C:/abs/abc123def');
+    expect(getLoraDisplayName('unknown', 'model_name')).toBe('unknown');
+    expect(getLoraDisplayName('/abs/path/abc123def', 'model_name')).toBe('/abs/path/abc123def');
+    expect(getLoraDisplayName('C:/abs/abc123def', 'model_name')).toBe('C:/abs/abc123def');
   });
 
-  it('keeps model names when the settings request fails', async () => {
-    respondWith({ loras, settingsOk: false });
+  it('fetches the cycler list only, never the LoRA Manager settings', async () => {
+    respondWith({ loras });
     await getAvailableLoras();
-    expect(getLoraDisplayName('abc123def')).toBe('Example title');
+    expect(fetchApiMock.mock.calls.map(([url]) => url)).toEqual(['/lm/loras/cycler-list']);
   });
 
   it('falls back to the stored name once the cache is invalidated', async () => {
     respondWith({ loras });
     await getAvailableLoras();
-    expect(getLoraDisplayName('abc123def')).toBe('Example title');
+    expect(getLoraDisplayName('abc123def', 'model_name')).toBe('Example model title');
 
     handleLibraryChangeMessage({ type: 'models_changed' });
-    expect(getLoraDisplayName('abc123def')).toBe('abc123def');
+    expect(getLoraDisplayName('abc123def', 'model_name')).toBe('abc123def');
   });
 });
 
 describe('buildModelNameMap duplicate titles', () => {
-  const title = 'Ass and Thighs Slider - (Krea-2 + ZIT)';
+  const title = 'Example model title';
 
   it('leaves a unique title alone', () => {
     const map = buildModelNameMap([
-      { file_name: 'krea2/only', model_name: 'Only One', version_name: 'Krea-2_v1', folder: 'krea2' },
+      { file_name: 'set/only', model_name: 'Example sole title', version_name: 'Example_v1', folder: 'set' },
     ]);
-    expect(map.get('krea2/only')).toBe('Only One');
-    expect(map.get('only')).toBe('Only One');
+    expect(map.get('set/only')).toBe('Example sole title');
+    expect(map.get('only')).toBe('Example sole title');
   });
 
-  it('trims the version prefix every member shares', () => {
+  it('puts the trimmed version suffix first so a narrow row cannot clip it', () => {
     const map = buildModelNameMap([
-      { file_name: 'krea2/ass_v1', model_name: title, version_name: 'Krea-2_v1', folder: 'krea2' },
+      { file_name: 'set/abc_v1', model_name: title, version_name: 'Example_v1', folder: 'set' },
       {
-        file_name: 'krea2/ass_v2',
+        file_name: 'set/abc_v2',
         model_name: title,
-        version_name: 'Krea-2_v2 (ass only)',
-        folder: 'krea2',
+        version_name: 'Example_v2 (variant)',
+        folder: 'set',
       },
     ]);
-    expect(map.get('krea2/ass_v1')).toBe(`${title} (v1)`);
-    expect(map.get('krea2/ass_v2')).toBe(`${title} (v2 (ass only))`);
+    expect(map.get('set/abc_v1')).toBe(`[v1] ${title}`);
+    expect(map.get('set/abc_v2')).toBe(`[v2 (variant)] ${title}`);
     // basename alias carries the same label
-    expect(map.get('ass_v2')).toBe(`${title} (v2 (ass only))`);
+    expect(map.get('abc_v2')).toBe(`[v2 (variant)] ${title}`);
   });
 
   it('trims a shared tail as well as a shared head', () => {
     const map = buildModelNameMap([
       {
         file_name: 'wan/high',
-        model_name: 'WAN General NSFW model',
-        version_name: '2.2 HIGH v0.08a (nightly)',
+        model_name: title,
+        version_name: '2.2 HIGH r12 (nightly)',
         folder: 'wan',
       },
       {
         file_name: 'wan/low',
-        model_name: 'WAN General NSFW model',
-        version_name: '2.2 LOW v0.08a (nightly)',
+        model_name: title,
+        version_name: '2.2 LOW r12 (nightly)',
         folder: 'wan',
       },
     ]);
-    expect(map.get('wan/high')).toBe('WAN General NSFW model (HIGH)');
-    expect(map.get('wan/low')).toBe('WAN General NSFW model (LOW)');
+    expect(map.get('wan/high')).toBe(`[HIGH] ${title}`);
+    expect(map.get('wan/low')).toBe(`[LOW] ${title}`);
   });
 
   it('keeps the whole version name when trimming would empty one of them', () => {
     const map = buildModelNameMap([
-      { file_name: 'krea2/oops', model_name: 'Oops', version_name: 'Krea 2', folder: 'krea2' },
-      { file_name: 'krea2/oops2', model_name: 'Oops', version_name: 'Krea 2 Stripped', folder: 'krea2' },
+      { file_name: 'set/oops', model_name: 'Oops', version_name: 'Example', folder: 'set' },
+      { file_name: 'set/oops2', model_name: 'Oops', version_name: 'Example Stripped', folder: 'set' },
     ]);
-    expect(map.get('krea2/oops')).toBe('Oops (Krea 2)');
-    expect(map.get('krea2/oops2')).toBe('Oops (Krea 2 Stripped)');
+    expect(map.get('set/oops')).toBe('[Example] Oops');
+    expect(map.get('set/oops2')).toBe('[Example Stripped] Oops');
   });
 
   it('falls back to the folder when the version names are identical', () => {
     const map = buildModelNameMap([
-      { file_name: 'FLUX/a', model_name: 'Areola Flux', version_name: 'v3.0 - Saggys Pancakes', folder: 'FLUX' },
+      { file_name: 'set/a', model_name: 'Shared title', version_name: 'v3.0 - release', folder: 'set' },
       {
-        file_name: 'FLUX2/bulk/b',
-        model_name: 'Areola Flux',
-        version_name: 'v3.0 - Saggys Pancakes',
-        folder: 'FLUX2/bulk',
+        file_name: 'archive/bulk/b',
+        model_name: 'Shared title',
+        version_name: 'v3.0 - release',
+        folder: 'archive/bulk',
       },
     ]);
-    expect(map.get('FLUX/a')).toBe('Areola Flux (FLUX)');
-    expect(map.get('FLUX2/bulk/b')).toBe('Areola Flux (FLUX2/bulk)');
+    expect(map.get('set/a')).toBe('[set] Shared title');
+    expect(map.get('archive/bulk/b')).toBe('[archive/bulk] Shared title');
   });
 
   it('falls back to the file name when version names and folders both collide', () => {
     const map = buildModelNameMap([
-      { file_name: 'FLUX/pancakes v3', model_name: 'Areola Flux', version_name: 'v3.0 - Saggys', folder: 'FLUX' },
-      { file_name: 'FLUX/areola_v3', model_name: 'Areola Flux', version_name: 'v3.0 - Saggys', folder: 'FLUX' },
+      { file_name: 'set/altname v3', model_name: 'Shared title', version_name: 'v3.0 - release', folder: 'set' },
+      { file_name: 'set/abc_v3', model_name: 'Shared title', version_name: 'v3.0 - release', folder: 'set' },
     ]);
-    expect(map.get('FLUX/pancakes v3')).toBe('Areola Flux (pancakes v3)');
-    expect(map.get('FLUX/areola_v3')).toBe('Areola Flux (areola_v3)');
+    expect(map.get('set/altname v3')).toBe('[altname v3] Shared title');
+    expect(map.get('set/abc_v3')).toBe('[abc_v3] Shared title');
   });
 
   it('ignores a missing version name and still disambiguates', () => {
     const map = buildModelNameMap([
-      { file_name: 'krea2/x', model_name: 'No Metadata', folder: 'krea2' },
-      { file_name: 'FLUX/y', model_name: 'No Metadata', folder: 'FLUX' },
+      { file_name: 'set/x', model_name: 'No Metadata', folder: 'set' },
+      { file_name: 'archive/y', model_name: 'No Metadata', folder: 'archive' },
     ]);
-    expect(map.get('krea2/x')).toBe('No Metadata (krea2)');
-    expect(map.get('FLUX/y')).toBe('No Metadata (FLUX)');
+    expect(map.get('set/x')).toBe('[set] No Metadata');
+    expect(map.get('archive/y')).toBe('[archive] No Metadata');
   });
 
   it('caps a long suffix when the difference survives the cut', () => {
@@ -272,7 +237,7 @@ describe('buildModelNameMap duplicate titles', () => {
       { file_name: 'k/b', model_name: 'T', version_name: `B${pad}`, folder: 'k' },
     ]);
     const label = map.get('k/a');
-    const suffix = label.slice(label.indexOf('(') + 1, label.lastIndexOf(')'));
+    const suffix = label.slice(label.indexOf('[') + 1, label.indexOf(']'));
     expect(suffix.startsWith('A')).toBe(true);
     expect(suffix.endsWith('\u2026')).toBe(true);
     expect(suffix.length).toBe(32);
@@ -286,7 +251,7 @@ describe('buildModelNameMap duplicate titles', () => {
       { file_name: 'k/first', model_name: 'T', version_name: `${pad}A`, folder: 'k' },
       { file_name: 'k/second', model_name: 'T', version_name: `${pad}B`, folder: 'k' },
     ]);
-    expect(map.get('k/first')).toBe('T (first)');
-    expect(map.get('k/second')).toBe('T (second)');
+    expect(map.get('k/first')).toBe('[first] T');
+    expect(map.get('k/second')).toBe('[second] T');
   });
 });
