@@ -727,6 +727,13 @@ class LoraService(BaseModelService):
                 "model_name": lora.get("model_name", lora["file_name"]),
                 "folder": lora.get("folder", ""),
             }
+            # Civitai version name ("Krea-2_v2 (ass only)"). Node widgets use it
+            # to tell apart different versions of a LoRA that share one title, so
+            # a row reads "Title (v2)" instead of two identical rows. Only
+            # included when the file has Civitai metadata, like usage_tips.
+            version_name = (lora.get("civitai") or {}).get("name") or ""
+            if version_name:
+                entry["version_name"] = version_name
             usage_tips = lora.get("usage_tips")
             if usage_tips:
                 entry["usage_tips"] = usage_tips

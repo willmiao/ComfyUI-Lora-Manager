@@ -76,6 +76,14 @@
             ('file_name', 'settings.layoutSettings.modelNameDisplayOptions.fileName'),
         ], 'settings.layoutSettings.modelNameDisplayHelp') }}
 
+        <!-- Node widget labels: deliberately a separate preference from the
+             model card setting above -- a graph row names what the workflow
+             will load, a card names what you are browsing. -->
+        {{ sm.setting_select('nodeLoraNameDisplay', 'node_lora_name_display', 'settings.layoutSettings.nodeLoraNameDisplay', [
+            ('model_name', 'settings.layoutSettings.modelNameDisplayOptions.modelName'),
+            ('file_name', 'settings.layoutSettings.modelNameDisplayOptions.fileName'),
+        ], 'settings.layoutSettings.nodeLoraNameDisplayHelp') }}
+
         <!-- Group by model toggle -->
         {{ sm.setting_toggle('groupByModel', 'group_by_model', 'settings.layoutSettings.groupByModel', 'settings.layoutSettings.groupByModelHelp') }}
 

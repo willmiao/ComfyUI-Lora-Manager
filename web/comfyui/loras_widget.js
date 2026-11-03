@@ -8,6 +8,7 @@ import {
   getAvailableLoras,
   getAvailableLorasSync,
   getLoraStrengthRange,
+  getLoraDisplayName,
   applyStrengthRangeCue,
   isLoraNameAvailable,
   onLibraryChanged
@@ -443,10 +444,17 @@ export function addLorasWidget(node, name, opts, callback) {
         }
       });
 
-      // Create name display
+      // Create name display. The row is labelled with the library model name
+      // when the browser's name display preference asks for it; the stored LoRA
+      // name (the file name) stays in the dataset and the value, and the hover
+      // preview tooltip keeps showing it.
+      const displayName = getLoraDisplayName(name);
       const nameEl = document.createElement("div");
-      nameEl.textContent = name;
+      nameEl.textContent = displayName;
       nameEl.className = "lm-lora-name";
+      if (displayName !== name) {
+        nameEl.dataset.loraFileName = name;
+      }
       if (missing) {
         nameEl.title = "LoRA not found in local library";
       }
@@ -628,7 +636,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Create clip name display
         const clipNameEl = document.createElement("div");
-        clipNameEl.textContent = "[clip] " + name;
+        clipNameEl.textContent = "[clip] " + displayName;
         clipNameEl.className = "lm-lora-name";
         if (missing) {
           clipNameEl.title = "LoRA not found in local library";
