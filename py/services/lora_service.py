@@ -717,11 +717,22 @@ class LoraService(BaseModelService):
                 ),
             )
 
+        # A model name shared by several files is the only case where the node
+        # widget needs a per-file label. Count the titles once so version names
+        # are not attached to the thousands of entries that never need them.
+        title_counts: Dict[str, int] = {}
+        for lora in available_loras:
+            title = lora.get("model_name")
+            if isinstance(title, str) and title.strip():
+                key = title.strip()
+                title_counts[key] = title_counts.get(key, 0) + 1
+
         # Return minimal data needed for cycling. usage_tips is only included
         # when non-empty so widget consumers (recommended strength range cues)
         # can build their lookup without inflating the payload.
         result = []
         for lora in available_loras:
+            title = lora.get("model_name")
             entry = {
                 "file_name": f"{lora['folder']}/{lora['file_name']}" if lora.get("folder") else lora["file_name"],
                 "model_name": lora.get("model_name", lora["file_name"]),
@@ -730,10 +741,16 @@ class LoraService(BaseModelService):
             # Civitai version name ("Example_v2 (variant)"). Node widgets use it
             # to tell apart different versions of a LoRA that share one title, so
             # a row reads "[v2] Title" instead of two identical rows. Only
-            # included when the file has Civitai metadata, like usage_tips.
-            version_name = (lora.get("civitai") or {}).get("name") or ""
-            if version_name:
-                entry["version_name"] = version_name
+            # included for shared titles with Civitai metadata, like usage_tips.
+            civitai = lora.get("civitai")
+            version_name = civitai.get("name") if isinstance(civitai, dict) else ""
+            if (
+                isinstance(version_name, str)
+                and version_name.strip()
+                and isinstance(title, str)
+                and title_counts.get(title.strip(), 0) > 1
+            ):
+                entry["version_name"] = version_name.strip()
             usage_tips = lora.get("usage_tips")
             if usage_tips:
                 entry["usage_tips"] = usage_tips

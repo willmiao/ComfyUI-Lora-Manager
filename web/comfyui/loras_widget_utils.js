@@ -557,12 +557,13 @@ export function getLoraStrengthRange(name) {
  * settings at render time, so no cached preference is kept here. The stored name
  * is what the widget value must keep — only the label changes — so callers must
  * leave the LoRA name they persist untouched.
+ *
+ * The cached map is used even after its TTL expires: labels are display-only,
+ * and falling back to file names while a refresh is in flight would flash the
+ * old value under the user. A library change drops the cache entirely.
  */
 export function getLoraDisplayName(name, displayMode = "file_name") {
   if (displayMode !== "model_name" || !availableLorasCache) {
-    return name;
-  }
-  if (Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS) {
     return name;
   }
   return lookupByLoraName(availableLorasCache.names, name) || name;

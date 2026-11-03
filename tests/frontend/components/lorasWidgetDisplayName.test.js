@@ -133,6 +133,22 @@ describe('getLoraDisplayName', () => {
     expect(fetchApiMock.mock.calls.map(([url]) => url)).toEqual(['/lm/loras/cycler-list']);
   });
 
+  it('keeps cached labels after the availability cache TTL expires', async () => {
+    respondWith({ loras });
+    await getAvailableLoras();
+    expect(getLoraDisplayName('abc123def', 'model_name')).toBe('Example model title');
+
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(Date.now() + 61_000);
+      // Labels are display-only, so a stale map beats flashing file names
+      // while the availability refresh is in flight.
+      expect(getLoraDisplayName('abc123def', 'model_name')).toBe('Example model title');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('falls back to the stored name once the cache is invalidated', async () => {
     respondWith({ loras });
     await getAvailableLoras();

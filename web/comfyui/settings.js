@@ -648,7 +648,7 @@ app.registerExtension({
                 NODE_LORA_NAME_DISPLAY_OPTION_MODEL_NAME,
             ],
             defaultValue: NODE_LORA_NAME_DISPLAY_OPTION_FILE_NAME,
-            tooltip: "Label LoRA rows on the LoRA Loader, Stacker, Pool and Randomizer nodes with the on-disk file name or with the library model name. Model names shared by several files gain a distinguishing suffix.",
+            tooltip: "Label LoRA rows on the LoRA Loader, Stacker, Create Hook LoRA, Pool, Randomizer and WanVideo Lora Select nodes with the on-disk file name or with the library model name. Model names shared by several files gain a distinguishing prefix.",
             category: ["LoRA Manager", "LoRA Widget", "Node LoRA Label"],
             onChange: () => {
                 notifyNodeLoraNameDisplayChanged();
