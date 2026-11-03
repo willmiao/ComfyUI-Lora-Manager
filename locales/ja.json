@@ -607,7 +607,7 @@
                 "modelName": "モデル名",
                 "fileName": "ファイル名"
             },
-            "modelNameDisplayHelp": "モデルカードのフッターに表示する内容を選択",
+            "modelNameDisplayHelp": "[TODO: Translate] Choose whether model cards and node LoRA labels show the model name or the file name",
             "cardBlurAmount": "カードオーバーレイのぼかし",
             "cardBlurAmountHelp": "モデルカードとレシピカードのヘッダー・フッターオーバーレイのぼかし強度を調整します（0 = ぼかしなし、20 = 最大ぼかし）。"
         },

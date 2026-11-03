@@ -607,7 +607,7 @@
                 "modelName": "Название модели",
                 "fileName": "Имя файла"
             },
-            "modelNameDisplayHelp": "Выберите, что отображать в нижней части карточки модели",
+            "modelNameDisplayHelp": "[TODO: Translate] Choose whether model cards and node LoRA labels show the model name or the file name",
             "cardBlurAmount": "Размытие наложения карточек",
             "cardBlurAmountHelp": "Настройте интенсивность размытия наложений верхнего и нижнего колонтитулов на карточках моделей и рецептов (0 = без размытия, 20 = максимальное размытие)."
         },

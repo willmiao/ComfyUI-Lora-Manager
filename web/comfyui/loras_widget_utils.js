@@ -89,6 +89,14 @@ let availableLorasCache = null;
 let availableLorasPromise = null;
 let availabilityGeneration = 0;
 
+// Node widgets label a row with the library's model name (the Civitai / sidecar
+// title) when the LoRA Manager browser is set to display model names, and with
+// the on-disk file name otherwise. The preference is the `model_name_display`
+// setting the browser already owns, so nodes follow whatever the user picked
+// there instead of introducing a second switch for the same choice.
+const MODEL_NAME_DISPLAY_SETTING = "model_name_display";
+const MODEL_NAME_DISPLAY_DEFAULT = "model_name";
+
 /**
  * Parse a numeric usage-tips value (accepts numbers and numeric strings).
  */
@@ -241,14 +249,94 @@ export function buildStrengthRangeMap(loras) {
   return map;
 }
 
+/**
+ * Build the lookup map of model names (Civitai / sidecar titles) from
+ * cycler-list entries. Keyed like the availability set (normalized path and
+ * basename), so a row that stores either form resolves to its title.
+ */
+export function buildModelNameMap(loras) {
+  const map = new Map();
+  for (const lora of loras || []) {
+    const modelName = typeof lora?.model_name === "string" ? lora.model_name.trim() : "";
+    if (!modelName) {
+      continue;
+    }
+    const normalized = normalizeLoraNameKey(lora?.file_name);
+    if (!normalized) {
+      continue;
+    }
+    map.set(normalized, modelName);
+    const slash = normalized.lastIndexOf("/");
+    if (slash >= 0) {
+      map.set(normalized.slice(slash + 1), modelName);
+    }
+  }
+  return map;
+}
+
+/**
+ * Resolve a widget entry name against a normalized-name map built from the
+ * cycler list. Mirrors isLoraNameAvailable's matching: basename fallback for
+ * folder-qualified names, and null for absolute paths (outside the library).
+ */
+function lookupByLoraName(map, name) {
+  if (!map || map.size === 0) {
+    return null;
+  }
+  const normalized = String(name || "").replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return null;
+  }
+  const key = normalizeLoraNameKey(name);
+  if (map.has(key)) {
+    return map.get(key);
+  }
+  const slash = key.lastIndexOf("/");
+  if (slash >= 0) {
+    return map.get(key.slice(slash + 1)) || null;
+  }
+  return null;
+}
+
+/**
+ * Parse the model name display preference out of a LoRA Manager settings
+ * payload. Anything other than an explicit "file_name" keeps the library
+ * default (model name), which is also the backend default.
+ */
+export function parseModelNameDisplayMode(payload) {
+  const settings = payload?.settings;
+  const mode = settings?.[MODEL_NAME_DISPLAY_SETTING];
+  return mode === "file_name" ? "file_name" : MODEL_NAME_DISPLAY_DEFAULT;
+}
+
+/**
+ * Fetch the LoRA Manager model name display preference. Failure is non-fatal:
+ * the library default (model name) is used so node labels keep working when
+ * the settings endpoint is unreachable.
+ */
+async function fetchModelNameDisplayMode() {
+  try {
+    const response = await api.fetchApi("/lm/settings", { method: "GET" });
+    if (!response || !response.ok) {
+      return MODEL_NAME_DISPLAY_DEFAULT;
+    }
+    return parseModelNameDisplayMode(await response.json());
+  } catch (error) {
+    return MODEL_NAME_DISPLAY_DEFAULT;
+  }
+}
+
 async function refreshAvailableLoras() {
   const generation = availabilityGeneration;
   try {
-    const response = await api.fetchApi("/lm/loras/cycler-list", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}",
-    });
+    const [response, settings] = await Promise.all([
+      api.fetchApi("/lm/loras/cycler-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      }),
+      fetchModelNameDisplayMode(),
+    ]);
     if (!response || !response.ok) {
       return null;
     }
@@ -259,12 +347,13 @@ async function refreshAvailableLoras() {
       .filter(Boolean);
     const set = buildAvailableLoraSet(paths);
     const ranges = buildStrengthRangeMap(loras);
+    const names = buildModelNameMap(loras);
     if (generation !== availabilityGeneration) {
       // Stale response: the cache was invalidated while this fetch was in
       // flight, do not repopulate it with pre-change data.
       return null;
     }
-    availableLorasCache = { set, ranges, at: Date.now() };
+    availableLorasCache = { set, ranges, names, displayMode: settings, at: Date.now() };
     return set;
   } catch (error) {
     console.warn("Failed to fetch available LoRAs:", error);
@@ -319,23 +408,27 @@ export function getLoraStrengthRange(name) {
   ) {
     return null;
   }
-  const ranges = availableLorasCache.ranges;
-  if (!ranges || ranges.size === 0) {
-    return null;
+  return lookupByLoraName(availableLorasCache.ranges, name);
+}
+
+/**
+ * Synchronous label for a LoRA row on a node widget.
+ *
+ * Returns the library model name (Civitai / sidecar title) when the LoRA
+ * Manager browser is set to display model names and the library knows this
+ * file, otherwise the stored entry name unchanged. The stored name is what the
+ * widget value must keep — only the label changes — so callers must leave the
+ * LoRA name they persist untouched.
+ */
+export function getLoraDisplayName(name) {
+  if (
+    !availableLorasCache ||
+    Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS ||
+    availableLorasCache.displayMode !== MODEL_NAME_DISPLAY_DEFAULT
+  ) {
+    return name;
   }
-  const normalized = String(name || "").replace(/\\/g, "/");
-  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
-    return null;
-  }
-  const key = normalizeLoraNameKey(name);
-  if (ranges.has(key)) {
-    return ranges.get(key);
-  }
-  const slash = key.lastIndexOf("/");
-  if (slash >= 0) {
-    return ranges.get(key.slice(slash + 1)) || null;
-  }
-  return null;
+  return lookupByLoraName(availableLorasCache.names, name) || name;
 }
 
 /**
