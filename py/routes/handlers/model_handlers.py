@@ -642,10 +642,17 @@ class ModelManagementHandler:
                 model_data=model_data,
                 update_cache_func=self._service.scanner.update_single_model_cache,
             )
-            if not success:
-                return web.json_response({"success": False, "error": error})
-
             formatted = await self._service.format_response(model_data)
+            if not success:
+                # The lookup failed (e.g. the model is not on CivitAI), but the
+                # on-demand hash calculation above may just have stored a hash
+                # and the failed lookup may have flagged the entry. Hand the
+                # refreshed entry back so the card shows it without a reload.
+                payload: Dict[str, Any] = {"success": False, "error": error}
+                if formatted is not None:
+                    payload["metadata"] = formatted
+                return web.json_response(payload)
+
             if formatted is None:
                 return web.json_response(
                     {"success": False, "error": "Model entry is corrupted (missing file_path)"},

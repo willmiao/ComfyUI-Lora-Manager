@@ -758,11 +758,15 @@ export class BaseModelApiClient {
 
             const data = await response.json();
 
-            if (data.success) {
-                if (data.metadata && state.virtualScroller) {
-                    state.virtualScroller.updateSingleItem(filePath, data.metadata);
-                }
+            // Apply the refreshed entry even when the lookup failed: the
+            // on-demand hash calculation may just have stored the SHA256 (and
+            // the failed lookup may have flagged the model), so the card must
+            // show it without waiting for a page reload.
+            if (data.metadata && state.virtualScroller) {
+                state.virtualScroller.updateSingleItem(filePath, data.metadata);
+            }
 
+            if (data.success) {
                 showToast('toast.api.metadataRefreshed', {}, 'success');
                 return true;
             } else {

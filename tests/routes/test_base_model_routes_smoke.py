@@ -549,6 +549,66 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
     assert updated_metadata["civitai"]["customImages"][0]["id"] == "old-id"
 
 
+def test_fetch_civitai_failure_returns_refreshed_entry(
+    mock_service,
+    mock_scanner,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    """A failed CivitAI lookup must still hand the refreshed entry back.
+
+    Fetching computes a pending checkpoint hash before looking it up, so when
+    the model is not on CivitAI the error response has to carry the entry with
+    the new sha256 — otherwise the card keeps showing "not calculated" until a
+    page reload.
+    """
+    model_path = tmp_path / "not-on-civitai.safetensors"
+    model_path.write_bytes(b"model")
+
+    mock_scanner._cache.raw_data = [
+        {
+            "file_path": str(model_path),
+            "sha256": "a" * 64,
+            "hash_status": "completed",
+            "folder": "checkpoints",
+        }
+    ]
+
+    async def fake_hydrate(model_data):
+        return model_data
+
+    async def fake_fetch_and_update_model(
+        self, *, sha256, file_path, model_data, update_cache_func
+    ):
+        return False, "Model not found on CivitAI"
+
+    monkeypatch.setattr(
+        MetadataManager, "hydrate_model_data", staticmethod(fake_hydrate)
+    )
+    monkeypatch.setattr(
+        MetadataSyncService, "fetch_and_update_model", fake_fetch_and_update_model
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/fetch-civitai",
+                json={"file_path": str(model_path)},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is False
+            assert payload["error"] == "Model not found on CivitAI"
+            assert payload["metadata"]["sha256"] == "a" * 64
+            assert payload["metadata"]["hash_status"] == "completed"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_download_model_invokes_download_manager(
     mock_service,
     download_manager_stub,
