@@ -337,6 +337,149 @@ function renderNewLicenseIcons(modelData) {
 }
 
 /**
+ * Hash statuses that mean "there is no sha256 yet, but one can be computed".
+ * Checkpoints and other large models are hashed lazily on demand, so the modal
+ * must offer a manual trigger instead of rendering an empty hash field.
+ */
+const SHA256_ACTION_STATUSES = new Set(['pending', 'calculating', 'failed']);
+
+function truncateSha256(sha256) {
+    return sha256.length > 16
+        ? `${sha256.slice(0, 10)}\u2026${sha256.slice(-6)}`
+        : sha256;
+}
+
+function hashStatusLabel(status) {
+    switch (status) {
+        case 'calculating':
+            return translate('modals.model.metadata.hashCalculating', {}, 'Calculating...');
+        case 'failed':
+            return translate('modals.model.metadata.hashFailed', {}, 'Calculation failed');
+        default:
+            return translate('modals.model.metadata.hashPending', {}, 'Not calculated yet');
+    }
+}
+
+function hashPendingHint() {
+    return translate(
+        'modals.model.metadata.hashPendingHint',
+        {},
+        'This SHA256 hash has not been calculated yet. Large models are hashed on demand to keep scanning fast.'
+    );
+}
+
+function renderSha256Entry(sha256) {
+    const copyHashTitle = translate('modals.model.actions.copyHash', {}, 'Copy hash');
+    return `
+            <span class="hash-entry hash-entry--sha256">
+                <span class="hash-kind">SHA256</span>
+                <span class="model-hash-value" title="${escapeAttribute(sha256)}">${escapeHtml(truncateSha256(sha256))}</span>
+                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(sha256)}" title="${copyHashTitle}">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </span>`;
+}
+
+function renderPendingSha256Entry(hashStatus, filePath) {
+    const hint = hashPendingHint();
+    const actionLabel = hashStatus === 'failed'
+        ? translate('modals.model.actions.retryHash', {}, 'Retry')
+        : translate('modals.model.actions.calculateHash', {}, 'Calculate hash');
+    const escapedPath = escapeAttribute(filePath || '');
+    return `
+            <span class="hash-entry hash-entry--sha256 hash-entry--pending" data-hash-status="${escapeAttribute(hashStatus)}" data-filepath="${escapedPath}">
+                <span class="hash-kind">SHA256</span>
+                <span class="model-hash-value hash-status-text" title="${escapeAttribute(hint)}">${escapeHtml(hashStatusLabel(hashStatus))}</span>
+                <button class="hash-calc-btn" data-action="calculate-hash" data-filepath="${escapedPath}" title="${escapeAttribute(hint)}">
+                    <i class="fas fa-calculator"></i><span>${escapeHtml(actionLabel)}</span>
+                </button>
+            </span>`;
+}
+
+function setPendingHashState(entry, status) {
+    entry.dataset.hashStatus = status;
+    const statusText = entry.querySelector('.hash-status-text');
+    const button = entry.querySelector('[data-action="calculate-hash"]');
+    const label = button ? button.querySelector('span') : null;
+    const icon = button ? button.querySelector('i') : null;
+    if (statusText) {
+        statusText.textContent = hashStatusLabel(status);
+    }
+    if (!button) {
+        return;
+    }
+    button.disabled = status === 'calculating';
+    if (icon) {
+        icon.className = status === 'calculating' ? 'fas fa-spinner fa-spin' : 'fas fa-calculator';
+    }
+    if (label) {
+        label.textContent = status === 'failed'
+            ? translate('modals.model.actions.retryHash', {}, 'Retry')
+            : translate('modals.model.actions.calculateHash', {}, 'Calculate hash');
+    }
+}
+
+/**
+ * Keep the underlying card/list entry in sync once a hash is computed, so the
+ * next modal open (or a re-render) does not show the stale pending state.
+ */
+function updateCardHash(filePath, sha256) {
+    if (!filePath || !sha256) return;
+    const updatedViaScroller = state.virtualScroller?.updateSingleItem
+        ? state.virtualScroller.updateSingleItem(filePath, { sha256, hash_status: 'completed' })
+        : false;
+    if (updatedViaScroller) {
+        return;
+    }
+    const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+        ? window.CSS.escape(filePath)
+        : filePath.replace(/["\\]/g, '\\$&');
+    const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+    if (!card) {
+        return;
+    }
+    card.dataset.sha256 = sha256;
+    card.dataset.hash_status = 'completed';
+}
+
+async function handleCalculateHash(entry) {
+    const filePath = entry?.dataset.filepath || getModalFilePath();
+    if (!entry || !filePath || entry.dataset.busy === 'true') {
+        return;
+    }
+
+    entry.dataset.busy = 'true';
+    setPendingHashState(entry, 'calculating');
+
+    try {
+        const result = await getModelApiClient().calculateModelHash(filePath);
+        const sha256 = result?.sha256;
+        if (!sha256) {
+            throw new Error('No hash returned');
+        }
+        const replacement = document.createElement('template');
+        replacement.innerHTML = renderSha256Entry(sha256).trim();
+        entry.replaceWith(replacement.content.firstElementChild);
+        const showcase = document.getElementById('modelModal')?.querySelector('.showcase-section');
+        if (showcase) {
+            showcase.dataset.modelHash = sha256;
+        }
+        updateCardHash(filePath, sha256);
+        showToast('toast.api.hashCalculated', {}, 'success');
+    } catch (error) {
+        console.error('Error calculating model hash:', error);
+        setPendingHashState(entry, 'failed');
+        showToast(
+            'toast.api.hashCalculationFailed',
+            { message: error.message },
+            'error'
+        );
+    } finally {
+        entry.dataset.busy = 'false';
+    }
+}
+
+/**
  * Display the model modal with the given model data
  * @param {Object} model - Model data object
  * @param {string} modelType - Type of model ('lora' or 'checkpoint')
@@ -383,20 +526,18 @@ export async function showModelModal(model, modelType) {
     // the Civitai ecosystem (a model card corresponds to one Civitai version).
     const modelSha256 = modelWithFullData.sha256 || '';
     const modelAutov3 = modelWithFullData.autov3 || '';
-    const truncatedSha256 = modelSha256.length > 16
-        ? `${modelSha256.slice(0, 10)}\u2026${modelSha256.slice(-6)}`
-        : modelSha256;
+    const rawHashStatus = typeof modelWithFullData.hash_status === 'string'
+        ? modelWithFullData.hash_status.trim().toLowerCase()
+        : '';
     const copyHashTitle = translate('modals.model.actions.copyHash', {}, 'Copy hash');
     const hashEntries = [];
     if (modelSha256) {
-        hashEntries.push(`
-            <span class="hash-entry">
-                <span class="hash-kind">SHA256</span>
-                <span class="model-hash-value" title="${escapeAttribute(modelSha256)}">${escapeHtml(truncatedSha256)}</span>
-                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(modelSha256)}" title="${copyHashTitle}">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </span>`);
+        hashEntries.push(renderSha256Entry(modelSha256));
+    } else if (SHA256_ACTION_STATUSES.has(rawHashStatus)) {
+        // Lazy-hash models (checkpoints, VAEs, text encoders) have no hash
+        // until it is computed on demand — show the pending state and a
+        // trigger instead of leaving the field blank.
+        hashEntries.push(renderPendingSha256Entry(rawHashStatus, modelWithFullData.file_path));
     }
     if (modelAutov3) {
         hashEntries.push(`
@@ -1062,6 +1203,9 @@ function setupEventHandlers(filePath, modelType) {
                 if (target.dataset.hash) {
                     copyToClipboard(target.dataset.hash, target.dataset.toast || 'Hash copied to clipboard');
                 }
+                break;
+            case 'calculate-hash':
+                handleCalculateHash(target.closest('.hash-entry--pending'));
                 break;
         }
     }

@@ -38,6 +38,9 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/{prefix}/rename", "rename_model"),
     RouteDefinition("POST", "/api/lm/{prefix}/bulk-delete", "bulk_delete_models"),
     RouteDefinition("POST", "/api/lm/{prefix}/verify-duplicates", "verify_duplicates"),
+    # Checkpoint / other-model hashes are computed lazily, so the model modal
+    # offers a manual trigger instead of showing an empty hash field.
+    RouteDefinition("POST", "/api/lm/{prefix}/calculate-hash", "calculate_model_hash"),
     RouteDefinition("POST", "/api/lm/{prefix}/move_model", "move_model"),
     RouteDefinition("POST", "/api/lm/{prefix}/move_models_bulk", "move_models_bulk"),
     RouteDefinition("POST", "/api/lm/{prefix}/create-folder", "create_folder"),

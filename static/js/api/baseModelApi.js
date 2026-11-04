@@ -778,6 +778,31 @@ export class BaseModelApiClient {
         }
     }
 
+    /**
+     * Calculate the SHA256 hash of a lazily hashed model.
+     *
+     * Checkpoint / VAE / text-encoder scans store hash_status="pending" to keep
+     * startup fast; the model modal calls this to compute the hash on demand so
+     * the model can be searched on other sites.
+     *
+     * @param {string} filePath - The model file path.
+     * @returns {Promise<{sha256: string, hash_status: string, metadata?: Object}>}
+     */
+    async calculateModelHash(filePath) {
+        const response = await fetch(this.apiConfig.endpoints.calculateHash, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_path: filePath })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to calculate model hash');
+        }
+
+        return data;
+    }
+
     async fetchCivitaiMetadata() {
         let ws = null;
 

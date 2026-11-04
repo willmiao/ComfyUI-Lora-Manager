@@ -116,6 +116,7 @@ function makeModel(overrides = {}) {
 describe('Model modal hash rendering', () => {
   let getModelApiClient;
   let copyToClipboard;
+  let calculateModelHash;
 
   beforeEach(async () => {
     document.body.innerHTML = '';
@@ -123,9 +124,11 @@ describe('Model modal hash rendering', () => {
     ({ copyToClipboard } = await import(UI_HELPERS_MODULE));
     getModelApiClient.mockReset();
     copyToClipboard.mockReset();
+    calculateModelHash = vi.fn();
     getModelApiClient.mockReturnValue({
       fetchModelMetadata: vi.fn().mockResolvedValue(null),
       saveModelMetadata: vi.fn(),
+      calculateModelHash,
     });
   });
 
@@ -242,5 +245,93 @@ describe('Model modal hash rendering', () => {
     copyBtn.click();
 
     expect(copyToClipboard).toHaveBeenCalledWith(SHA256, expect.any(String));
+  });
+
+  it('renders a pending sha256 entry with a calculate trigger', async () => {
+    await renderModal(makeModel({ sha256: '', autov3: '', hash_status: 'pending' }));
+
+    const footnote = document.querySelector('.hash-footnote');
+    expect(footnote).not.toBeNull();
+
+    const entry = footnote.querySelector('.hash-entry--sha256');
+    expect(entry).not.toBeNull();
+    expect(entry.dataset.hashStatus).toBe('pending');
+    expect(entry.querySelector('.hash-status-text').textContent).toBe('Not calculated yet');
+
+    const trigger = entry.querySelector('[data-action="calculate-hash"]');
+    expect(trigger).not.toBeNull();
+    expect(trigger.textContent).toContain('Calculate hash');
+  });
+
+  it('offers a retry when the previous calculation failed', async () => {
+    await renderModal(makeModel({ sha256: '', autov3: '', hash_status: 'failed' }));
+
+    const entry = document.querySelector('.hash-entry--pending');
+    expect(entry.dataset.hashStatus).toBe('failed');
+    expect(entry.querySelector('.hash-status-text').textContent).toBe('Calculation failed');
+    expect(entry.querySelector('[data-action="calculate-hash"]').textContent).toContain('Retry');
+  });
+
+  it('shows the calculating state while a calculation is in flight', async () => {
+    let resolveCalculation;
+    calculateModelHash.mockReturnValue(new Promise((resolve) => {
+      resolveCalculation = resolve;
+    }));
+
+    await renderModal(makeModel({ sha256: '', autov3: '', hash_status: 'pending' }));
+    document.querySelector('[data-action="calculate-hash"]').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('.hash-entry--pending').dataset.hashStatus).toBe('calculating');
+    });
+    expect(document.querySelector('.hash-status-text').textContent).toBe('Calculating...');
+    expect(document.querySelector('[data-action="calculate-hash"]').disabled).toBe(true);
+
+    resolveCalculation({ sha256: SHA256 });
+    await vi.waitFor(() => {
+      expect(document.querySelector('.hash-entry--pending')).toBeNull();
+    });
+  });
+
+  it('replaces the pending entry with the calculated hash', async () => {
+    calculateModelHash.mockResolvedValue({ sha256: SHA256 });
+
+    await renderModal(makeModel({ sha256: '', autov3: '', hash_status: 'pending' }));
+    document.querySelector('[data-action="calculate-hash"]').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('.hash-entry--pending')).toBeNull();
+    });
+
+    expect(calculateModelHash).toHaveBeenCalledWith('models/hash.safetensors');
+    const value = document.querySelector('.hash-entry--sha256 .model-hash-value');
+    expect(value.textContent).toBe(`${SHA256.slice(0, 10)}\u2026${SHA256.slice(-6)}`);
+    expect(value.getAttribute('title')).toBe(SHA256);
+    expect(
+      document.querySelector('.hash-entry--sha256 [data-action="copy-hash"]').dataset.hash
+    ).toBe(SHA256);
+    expect(
+      document.querySelector('#modelModal .showcase-section').dataset.modelHash
+    ).toBe(SHA256);
+  });
+
+  it('restores the retry state when the calculation fails', async () => {
+    calculateModelHash.mockRejectedValue(new Error('read error'));
+
+    await renderModal(makeModel({ sha256: '', autov3: '', hash_status: 'pending' }));
+    document.querySelector('[data-action="calculate-hash"]').click();
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('.hash-entry--pending').dataset.hashStatus).toBe('failed');
+    });
+    expect(document.querySelector('.hash-status-text').textContent).toBe('Calculation failed');
+    expect(document.querySelector('[data-action="calculate-hash"]').disabled).toBe(false);
+  });
+
+  it('hides the pending entry when the sha256 is already known', async () => {
+    await renderModal(makeModel({ hash_status: 'pending' }));
+
+    expect(document.querySelector('.hash-entry--pending')).toBeNull();
+    expect(document.querySelectorAll('.hash-footnote .hash-entry')).toHaveLength(2);
   });
 });

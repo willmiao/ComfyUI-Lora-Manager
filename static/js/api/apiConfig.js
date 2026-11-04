@@ -140,6 +140,9 @@ export function getApiEndpoints(modelType) {
         verify: `/api/lm/${modelType}/verify-duplicates`,
         metadata: `/api/lm/${modelType}/metadata`,
         modelDescription: `/api/lm/${modelType}/model-description`,
+        // Lazy-hash models (checkpoints, VAEs, text encoders) compute SHA256
+        // on demand; the model modal triggers it from this endpoint.
+        calculateHash: `/api/lm/${modelType}/calculate-hash`,
 
         // Auto-organize operations
         autoOrganize: `/api/lm/${modelType}/auto-organize`,

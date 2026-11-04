@@ -319,6 +319,42 @@
     opacity: 0.9;
 }
 
+/* Pending hash state — lazily hashed models (checkpoints, VAEs, text
+   encoders) have no SHA256 until it is computed on demand, so the footnote
+   shows the status plus a manual trigger instead of an empty field. */
+.hash-footnote .hash-entry--pending .model-hash-value {
+    font-family: inherit;
+    font-style: italic;
+    opacity: 0.55;
+}
+
+.hash-footnote .hash-calc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 3px;
+    border: none;
+    background: none;
+    color: var(--lora-accent);
+    font-size: 0.7em;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: var(--border-radius-xs);
+}
+
+.hash-footnote .hash-calc-btn:hover:not(:disabled) {
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.hash-footnote .hash-calc-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.hash-footnote .hash-calc-btn i {
+    font-size: 0.9em;
+}
+
 /* Toggle button — icon only, inline with the label */
 .notes-toggle-btn {
     display: none;  /* shown by JS when content exceeds threshold */

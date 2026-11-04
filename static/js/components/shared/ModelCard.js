@@ -339,6 +339,7 @@ async function showModelModalFromCard(card, modelType) {
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
+        hash_status: card.dataset.hash_status || '',
         autov3: card.dataset.autov3 || '',
         preview_url: getCardPreviewUrl(card),
         file_path: card.dataset.filepath,
@@ -432,6 +433,7 @@ function showExampleAccessModal(card, modelType) {
             // Get the model data from card dataset (works for both lora and checkpoint)
             const modelMeta = {
                 sha256: card.dataset.sha256,
+                hash_status: card.dataset.hash_status || '',
                 autov3: card.dataset.autov3 || '',
                 preview_url: getCardPreviewUrl(card),
                 file_path: card.dataset.filepath,
@@ -489,6 +491,8 @@ export function createModelCard(model, modelType) {
     // below, which ignore internal card drags via MODEL_CARD_DRAG_MIME_TYPE.
     card.draggable = true;
     card.dataset.sha256 = model.sha256;
+    // "pending" marks a lazy-hash model whose SHA256 has not been computed yet.
+    card.dataset.hash_status = model.hash_status || 'completed';
     card.dataset.autov3 = model.autov3 || '';
     card.dataset.filepath = model.file_path;
     card.dataset.name = model.model_name;

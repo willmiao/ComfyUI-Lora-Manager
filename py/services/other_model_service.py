@@ -52,6 +52,8 @@ class OtherModelService(BaseModelService):
             "base_model": model_data.get("base_model", ""),
             "folder": folder,
             "sha256": model_data.get("sha256", ""),
+            # Lazy-hash state: "pending" means the file has not been hashed yet.
+            "hash_status": model_data.get("hash_status", "completed"),
             "autov3": model_data.get("autov3"),
             "quantization": model_data.get("quantization"),
             "file_path": file_path.replace(os.sep, "/"),

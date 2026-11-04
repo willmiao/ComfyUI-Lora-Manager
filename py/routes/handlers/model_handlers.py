@@ -1085,6 +1085,87 @@ class ModelManagementHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def calculate_model_hash(self, request: web.Request) -> web.Response:
+        """Calculate the SHA256 hash of a single model on demand.
+
+        Checkpoint and other-model scans deliberately leave ``sha256`` empty
+        and store ``hash_status="pending"`` (hashing a 10 GB file during
+        startup is not acceptable).  The model modal exposes the pending state
+        and calls this endpoint so the user can obtain the hash to search for
+        the file on other sites.
+        """
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+        file_path = data.get("file_path") if isinstance(data, dict) else None
+        if not file_path:
+            return web.json_response(
+                {"success": False, "error": "File path is required"}, status=400
+            )
+
+        cache = await self._service.scanner.get_cached_data()
+        model_data = next(
+            (item for item in cache.raw_data if item.get("file_path") == file_path),
+            None,
+        )
+        if not model_data:
+            return web.json_response(
+                {"success": False, "error": "Model not found in cache"}, status=404
+            )
+
+        existing_hash = (model_data.get("sha256") or "").strip()
+        if existing_hash and model_data.get("hash_status", "completed") == "completed":
+            return web.json_response(
+                {
+                    "success": True,
+                    "sha256": existing_hash,
+                    "hash_status": "completed",
+                }
+            )
+
+        scanner = self._service.scanner
+        calculate_hash = getattr(scanner, "calculate_hash_for_model", None)
+        if calculate_hash is None:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "On-demand hash calculation is not supported for this model type",
+                },
+                status=400,
+            )
+
+        self._logger.info("On-demand hash calculation triggered for %s", file_path)
+        sha256 = await calculate_hash(file_path)
+        if not sha256:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Failed to calculate SHA256 hash",
+                    "hash_status": "failed",
+                },
+                status=500,
+            )
+
+        # calculate_hash_for_model already rewrote .metadata.json and updated
+        # the in-memory cache entry; persist the cache so the hash survives a
+        # restart without waiting for the next full scan.
+        model_data["sha256"] = sha256.lower()
+        model_data["hash_status"] = "completed"
+        persist_cache = getattr(scanner, "_persist_current_cache", None)
+        if persist_cache is not None:
+            await persist_cache()
+
+        formatted = await self._service.format_response(model_data)
+        return web.json_response(
+            {
+                "success": True,
+                "sha256": sha256,
+                "hash_status": "completed",
+                "metadata": formatted,
+            }
+        )
+
 
 class ModelQueryHandler:
     """Serve read-only model queries."""
@@ -3709,6 +3790,7 @@ class ModelHandlerSet:
             "rename_model": self.management.rename_model,
             "bulk_delete_models": self.management.bulk_delete_models,
             "verify_duplicates": self.management.verify_duplicates,
+            "calculate_model_hash": self.management.calculate_model_hash,
             "get_top_tags": self.query.get_top_tags,
             "search_tags": self.query.search_tags,
             "get_base_models": self.query.get_base_models,
