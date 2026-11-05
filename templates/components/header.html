@@ -261,8 +261,15 @@
       <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
       <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
       <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
+      {% elif request.path == '/loras' %}
+      <!-- LoRAs page: trigger-word search is opt-in (see SearchStrategy) -->
+      <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
+      <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
+      <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
+      <div class="search-option-tag" data-option="triggerWords">{{ t('header.search.filters.triggerWords') }}</div>
       {% else %}
-      <!-- Default options for LoRAs page -->
+      <!-- Default options for the remaining model pages (e.g. workflows) -->
       <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
       <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
       <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>

@@ -135,6 +135,7 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
+                triggerWords: false,
                 recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
             },
             filters: {
