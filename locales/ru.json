@@ -749,10 +749,12 @@
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "Сопоставления путей базовых моделей",
             "baseModelPathMappingsHelp": "Настройте имена папок для конкретных базовых моделей (например, \"Flux.1 D\" → \"flux\")",

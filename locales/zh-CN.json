@@ -749,10 +749,12 @@
                 "customTemplate": "自定义模板"
             },
             "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "基础模型路径映射",
             "baseModelPathMappingsHelp": "为特定基础模型自定义文件夹名称（如“Flux.1 D”→“flux”）",

@@ -93,6 +93,29 @@
             <div class="template-preview" id="embeddingPreview"></div>
         </div>
 
+        <!-- Workflow routing exists only while Workflow management is enabled;
+             SettingsManager.updateWorkflowsControls() gates this row. -->
+        <div class="setting-item" id="workflowPathTemplateSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="workflowTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.workflow') }}</label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="workflowTemplatePreset" onchange="settingsManager.updateTemplatePreset('workflow', this.value)">
+                        {% for value, option_label in template_preset_options %}
+                        <option value="{{ value }}">{{ t(option_label) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="template-custom-row" id="workflowCustomRow" style="display: none;">
+                <input type="text" id="workflowCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                <div class="template-validation" id="workflowValidation"></div>
+            </div>
+            <div class="template-preview" id="workflowPreview"></div>
+            <div class="input-help">{{ t('settings.downloadPathTemplates.workflowHint') }}</div>
+        </div>
+
         <div class="setting-item">
             <div class="setting-row">
                 <div class="setting-info">

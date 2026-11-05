@@ -130,8 +130,9 @@ export class BulkManager {
                 refreshAll: true,
                 checkUpdates: true,
                 moveAll: true,
-                // Workflows have no base-model/tag folder routing.
-                autoOrganize: false,
+                // Workflow routing is the workflow download path template
+                // (Settings > Organization), the same one downloads use.
+                autoOrganize: true,
                 deleteAll: true,
                 setContentRating: true,
                 skipMetadataRefresh: true,

@@ -309,10 +309,17 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
 # "other" entry, so {first_tag} would resolve to an arbitrary CivitAI tag and
 # scatter files into unstable folders. Users can still opt in to a template by
 # writing "other" into download_path_templates in settings.json.
+#
+# Workflows get a single level on purpose: workflow management is opt-in and
+# existing libraries are flat, so the first enabled download organizes by the
+# resolved base model without scattering files over CivitAI tags, which local
+# (non-CivitAI) workflows usually do not have. The same template drives
+# Auto-Organize on the Workflows page.
 DEFAULT_DOWNLOAD_PATH_TEMPLATES: Dict[str, str] = {
     "lora": "{base_model}/{first_tag}",
     "checkpoint": "{base_model}/{first_tag}",
     "embedding": "{base_model}/{first_tag}",
+    "workflow": "{base_model}",
     "other": "",
 }
 

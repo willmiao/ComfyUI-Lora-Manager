@@ -749,10 +749,12 @@
                 "customTemplate": "Plantilla personalizada"
             },
             "customTemplatePlaceholder": "Introduce plantilla personalizada (ej., {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "Mapeos de rutas de modelo base",
             "baseModelPathMappingsHelp": "Personalizar nombres de carpetas para modelos base específicos (ej., \"Flux.1 D\" → \"flux\")",

@@ -749,10 +749,12 @@
                 "customTemplate": "Modèle personnalisé"
             },
             "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "Mappages de chemin de modèle de base",
             "baseModelPathMappingsHelp": "Personnaliser les noms de dossiers pour des modèles de base spécifiques (ex: \"Flux.1 D\" → \"flux\")",

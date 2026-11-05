@@ -749,10 +749,12 @@
                 "customTemplate": "カスタムテンプレート"
             },
             "customTemplatePlaceholder": "カスタムテンプレートを入力（例：{base_model}/{author}/{first_tag}）",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "ベースモデルパスマッピング",
             "baseModelPathMappingsHelp": "特定のベースモデルのフォルダ名をカスタマイズ（例：\"Flux.1 D\" → \"flux\"）",

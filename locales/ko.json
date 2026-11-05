@@ -749,10 +749,12 @@
                 "customTemplate": "사용자 정의 템플릿"
             },
             "customTemplatePlaceholder": "사용자 정의 템플릿 입력 (예: {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "베이스 모델 경로 매핑",
             "baseModelPathMappingsHelp": "특정 베이스 모델의 폴더 이름을 사용자 정의합니다 (예: \"Flux.1 D\" → \"flux\")",

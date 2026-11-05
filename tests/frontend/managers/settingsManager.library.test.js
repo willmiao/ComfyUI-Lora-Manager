@@ -833,6 +833,63 @@ describe('SettingsManager Other Models nav and banner sync', () => {
     });
 });
 
+describe('SettingsManager workflow template visibility', () => {
+    const appendWorkflowControls = () => {
+        const toggle = document.createElement('input');
+        toggle.id = 'enableWorkflows';
+        toggle.type = 'checkbox';
+
+        const pathGroup = document.createElement('div');
+        pathGroup.id = 'workflowPathSetting';
+
+        // Settings > Organization row for the workflow download path template.
+        const templateGroup = document.createElement('div');
+        templateGroup.id = 'workflowPathTemplateSetting';
+
+        const input = document.createElement('input');
+        input.id = 'workflowPath';
+
+        document.body.append(toggle, pathGroup, templateGroup, input);
+    };
+
+    it('keeps the workflow download template hidden while workflow management is off', () => {
+        const manager = createManager();
+        appendWorkflowControls();
+        state.global.settings.enable_workflows = false;
+
+        manager.updateWorkflowsControls();
+
+        expect(document.getElementById('workflowPathTemplateSetting').style.display).toBe('none');
+        expect(document.getElementById('workflowPathSetting').style.display).toBe('none');
+        expect(document.getElementById('enableWorkflows').checked).toBe(false);
+    });
+
+    it('shows the workflow download template once workflow management is enabled', () => {
+        const manager = createManager();
+        appendWorkflowControls();
+        state.global.settings.enable_workflows = true;
+        state.global.settings.workflow_path = '/library/workflows';
+
+        manager.updateWorkflowsControls();
+
+        expect(document.getElementById('workflowPathTemplateSetting').style.display).toBe('');
+        expect(document.getElementById('workflowPathSetting').style.display).toBe('');
+        expect(document.getElementById('enableWorkflows').checked).toBe(true);
+        expect(document.getElementById('workflowPath').value).toBe('/library/workflows');
+    });
+
+    it('previews workflow templates with a workflow artifact name', () => {
+        const manager = createManager();
+        const preview = document.createElement('div');
+        preview.id = 'workflowPreview';
+        document.body.appendChild(preview);
+
+        manager.updateTemplatePreview('workflow', '{base_model}');
+
+        expect(preview.textContent).toBe('Flux.1 D/workflow-name.json');
+    });
+});
+
 describe('SettingsManager recipes layout switch', () => {
     it('dispatches lm:recipes-layout-changed without recalculating the old scroller', async () => {
         const manager = createManager();
