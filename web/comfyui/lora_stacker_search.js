@@ -47,8 +47,8 @@ const DEFAULT_STRENGTH = 1;
 const STRENGTH_DECIMALS = 2;
 
 /**
- * The text a candidate is matched, ranked and displayed by in the given label
- * mode: the library title in model-name mode, the stored file name otherwise.
+ * The primary text for a candidate in the given label mode: the library title in
+ * model-name mode, the stored file name otherwise. This is what the row shows.
  */
 export function getLoraSearchField(entry, displayMode = DEFAULT_DISPLAY_MODE) {
   const title = entry?.label || entry?.name || "";
@@ -56,12 +56,50 @@ export function getLoraSearchField(entry, displayMode = DEFAULT_DISPLAY_MODE) {
 }
 
 /**
+ * Every text a candidate can be matched by, lowercased and de-duplicated, with
+ * the mode's primary field first.
+ *
+ * Search deliberately looks at both the title and the file name: a library title
+ * frequently shares no substring with its file name, and the user may type
+ * either one, so a hit on either must surface the entry.
+ */
+function getLoraMatchFields(entry, displayMode) {
+  const fields = [];
+  for (const value of [
+    getLoraSearchField(entry, displayMode),
+    entry?.label || entry?.name || "",
+    entry?.name || "",
+  ]) {
+    const field = String(value || "").toLowerCase();
+    if (field && !fields.includes(field)) {
+      fields.push(field);
+    }
+  }
+  return fields;
+}
+
+/** Earliest position of `token` across `fields`, or -1 when it matches none. */
+function indexOfFirstMatch(fields, token) {
+  let best = -1;
+  for (const field of fields) {
+    const index = field.indexOf(token);
+    if (index >= 0 && (best < 0 || index < best)) {
+      best = index;
+    }
+  }
+  return best;
+}
+
+/**
  * Filter the catalogue by a search query.
  *
- * Matching is case-insensitive and substring-based, and every whitespace
- * separated token must match (the same AND semantics as the LoRA Manager
- * backend). Prefix matches are ranked first, then the earliest match, then the
- * shorter label, so typing "port" surfaces "Port..." above "...port...".
+ * Candidates match on **either** their library title or their file name,
+ * whichever the node rows are currently showing, so typing a title fragment
+ * finds the LoRA in "File Name" mode and vice versa. Matching is
+ * case-insensitive and substring-based, and every whitespace separated token
+ * must match somewhere (tokens may hit different fields). Ranking follows the
+ * field the row displays: prefix matches first, then the earliest match, then
+ * the shorter label, so typing "port" surfaces "Port..." above "...port...".
  */
 export function filterLoraCandidates(entries, query, displayMode = DEFAULT_DISPLAY_MODE) {
   const normalizedQuery = String(query ?? "").trim().toLowerCase();
@@ -74,15 +112,24 @@ export function filterLoraCandidates(entries, query, displayMode = DEFAULT_DISPL
     if (!entry || !entry.name) {
       continue;
     }
-    const field = getLoraSearchField(entry, displayMode).toLowerCase();
-    if (!tokens.every((token) => field.includes(token))) {
+    const fields = getLoraMatchFields(entry, displayMode);
+    if (!tokens.every((token) => fields.some((field) => field.includes(token)))) {
       continue;
     }
+    const primary = fields[0];
+    const primaryIndex = primary.includes(tokens[0])
+      ? primary.indexOf(tokens[0])
+      : -1;
     ranked.push({
       entry,
-      field,
-      prefix: field.startsWith(normalizedQuery),
-      index: field.indexOf(tokens[0]),
+      field: primary,
+      // Rank on the displayed field so a file name's folder prefix does not
+      // outrank a real title match; the other field only decides inclusion.
+      prefix: primary.startsWith(normalizedQuery),
+      index:
+        primaryIndex >= 0
+          ? primaryIndex
+          : indexOfFirstMatch(fields, tokens[0]),
     });
   }
   ranked.sort((a, b) => {

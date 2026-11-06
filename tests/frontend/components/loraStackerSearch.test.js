@@ -143,13 +143,41 @@ describe('filterLoraCandidates', () => {
     );
   });
 
-  it('does not match a title in file-name mode', () => {
-    expect(filterLoraCandidates(candidates, 'golden', 'file_name')).toEqual([]);
+  it('matches a title while the rows show file names', () => {
+    expect(filterLoraCandidates(candidates, 'golden', 'file_name')).toHaveLength(1);
+    expect(filterLoraCandidates(candidates, 'golden', 'file_name')[0].name).toBe(
+      'portraits/8f3c1a9d2b7e4f60'
+    );
   });
 
-  it('matches file names in file-name mode and not in model-name mode', () => {
+  it('matches a file name while the rows show titles', () => {
     expect(filterLoraCandidates(candidates, '8f3c1a9d', 'file_name')).toHaveLength(1);
-    expect(filterLoraCandidates(candidates, '8f3c1a9d', 'model_name')).toEqual([]);
+    expect(filterLoraCandidates(candidates, '8f3c1a9d', 'model_name')).toHaveLength(1);
+    expect(filterLoraCandidates(candidates, '8f3c1a9d', 'model_name')[0].label).toBe(
+      'Golden Hour Portrait'
+    );
+  });
+
+  it('matches when the tokens hit different fields of the same entry', () => {
+    // "golden" only exists in the title, "8f3c1a9d" only in the file name.
+    expect(filterLoraCandidates(candidates, 'golden 8f3c1a9d', 'model_name')).toHaveLength(1);
+    expect(filterLoraCandidates(candidates, 'golden 8f3c1a9d', 'file_name')).toHaveLength(1);
+  });
+
+  it('ranks on the displayed field, not on the field that happened to match', () => {
+    const pair = [
+      // Matches the query in its title only.
+      entry('styles/warm_tone_helper', 'Golden Hour Portrait'),
+      // Matches the query at the start of its file name.
+      entry('golden_hour_pack', 'Warm Tone Helper'),
+    ];
+    expect(filterLoraCandidates(pair, 'golden', 'file_name').map((item) => item.name)).toEqual([
+      'golden_hour_pack',
+      'styles/warm_tone_helper',
+    ]);
+    expect(
+      filterLoraCandidates(pair, 'golden', 'model_name').map((item) => item.label)
+    ).toEqual(['Golden Hour Portrait', 'Warm Tone Helper']);
   });
 
   it('is case-insensitive and substring-based', () => {
@@ -279,24 +307,30 @@ describe('addLoraSearchWidget', () => {
     ]);
   });
 
-  it('matches titles in model-name mode', async () => {
+  it('matches titles and file names regardless of the row label', async () => {
     const { input } = await mountSearch({ displayMode: 'model_name' });
 
     await typeQuery(input, 'wash');
     expect(resultLabels()).toEqual(['Watercolour Wash']);
 
+    // The same entry, found by its file name while the row shows the title.
     await typeQuery(input, 'watercolour_wash');
-    expect(resultLabels()).toEqual([]);
+    expect(resultLabels()).toEqual(['Watercolour Wash']);
   });
 
-  it('follows a display mode change without rebuilding the widget', async () => {
+  it('finds a title match while showing file names, and vice versa', async () => {
     const { input, state } = await mountSearch({ displayMode: 'file_name' });
 
+    // "golden" is only in the title, so this used to return nothing.
     await typeQuery(input, 'golden');
-    expect(resultLabels()).toEqual([]);
+    expect(resultLabels()).toEqual(['portraits/8f3c1a9d2b7e4f60']);
 
     state.displayMode = 'model_name';
     await typeQuery(input, 'golden');
+    expect(resultLabels()).toEqual(['Golden Hour Portrait']);
+
+    // And the other direction: a file-name fragment while showing titles.
+    await typeQuery(input, '8f3c1a9d');
     expect(resultLabels()).toEqual(['Golden Hour Portrait']);
   });
 

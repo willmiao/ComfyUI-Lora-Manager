@@ -232,7 +232,7 @@ describe('Lora Stacker search-and-add wiring', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
-  it('searches titles when the node label setting shows model names', async () => {
+  it('searches titles and file names when the node label setting shows model names', async () => {
     settingState.nodeLoraNameDisplay = 'Model Name';
     const { node, lorasWidget } = await createStackerNode();
     lorasWidget.callback = vi.fn();
@@ -246,10 +246,16 @@ describe('Lora Stacker search-and-add wiring', () => {
     const rows = Array.from(document.querySelectorAll('.lm-lora-search-result'));
     expect(rows.map((row) => row.dataset.name)).toEqual(['styles/watercolour_wash']);
 
+    // The same entry by its file name: matching covers both fields, so the row
+    // stays reachable whichever name the user happens to remember.
     input.value = 'watercolour_wash';
     input.dispatchEvent(new Event('input'));
     await flush();
-    expect(document.querySelectorAll('.lm-lora-search-result')).toHaveLength(0);
+    expect(
+      Array.from(document.querySelectorAll('.lm-lora-search-result')).map(
+        (row) => row.dataset.name
+      )
+    ).toEqual(['styles/watercolour_wash']);
   });
 
   it('keeps the textarea path intact after adding from the search field', async () => {
