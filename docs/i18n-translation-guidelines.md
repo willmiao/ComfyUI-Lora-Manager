@@ -283,6 +283,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `common.actions.*` buttons), and the Workflows page got a bulk-action config so the model-only
 > bulk entries stay hidden. All 9 locales are translated, so no `[TODO: Translate]` remains.
 
+> **Status (2026-11, directory picker folder creation):** the settings folder picker gained a
+> "New Folder" action (a footer button plus an inline name row) backed by
+> `POST /api/lm/create-directory`, adding the 9 `settings.directoryPicker.*` creation keys.
+> All 9 locales are translated in the same pass, reusing the sidebar's folder vocabulary
+> (renderings in §2, "Settings directory picker (folder creation)"), so the
+> "no remaining placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -647,6 +654,25 @@ a period (`de` keeps its lowercase start, `fr` too). `folderRoot.rootsHint` ends
 locale's colon (`：` for CJK, ASCII elsewhere). `partial` reuses the locale's "N of M" shape and
 keeps the `—` before the failed count; `successMulti` keeps the locale's plain
 `deleteFolderResult.success` verb and appends the root count.
+
+### Settings directory picker (folder creation)
+
+The settings folder picker can create one subfolder of the directory being browsed
+(`POST /api/lm/create-directory`); the new folder is entered immediately so it can be
+selected with one click. The renderings reuse the sidebar's folder vocabulary so the two
+folder-creation surfaces stay consistent:
+
+| Term | Rendering |
+|---|---|
+| new folder (button) | zh-CN 新建文件夹 · zh-TW 新增資料夾 · ja 新規フォルダ · ko 새 폴더 · fr Nouveau dossier · de Neuer Ordner · es Nueva carpeta · ru Новая папка · he תיקייה חדשה — identical to `sidebar.createFolder` |
+| create (button) | zh-CN 创建 · zh-TW 建立 · ja 作成 · ko 만들기 · fr Créer · de Erstellen · es Crear · ru Создать · he צור |
+| permission denied | zh-CN 权限不足 · zh-TW 權限不足 · ja 権限がありません · ko 권한이 없습니다 · fr Permission refusée · de Zugriff verweigert · es Permiso denegado · ru Доступ запрещён · he אין הרשאה |
+
+`nameInvalid` is byte-identical to `sidebar.dragDrop.invalidFolderName`; `alreadyExists` is
+`sidebar.renameFolderResult.targetExists` without its "here"; `createError` is
+`sidebar.createFolderResult.failed` without the `{message}` suffix; `nameRequired` and
+`newFolderPlaceholder` follow `sidebar.dragDrop.emptyFolderName` / `.newFolderName`.
+The German rendering keeps the formal register ("Geben Sie ... ein"), Spanish the `tú` form.
 
 ### Settings Organization tab
 
