@@ -759,10 +759,12 @@
         "customTemplate": "Custom Template"
       },
       "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
+      "workflowHint": "Applies to workflow downloads and to Auto-Organize on the Workflows page.",
       "modelTypes": {
         "lora": "LoRA",
         "checkpoint": "Checkpoint",
-        "embedding": "Embedding"
+        "embedding": "Embedding",
+        "workflow": "Workflow"
       },
       "baseModelPathMappings": "Base Model Path Mappings",
       "baseModelPathMappingsHelp": "Customize folder names for specific base models (e.g., \"Flux.1 D\" → \"flux\")",

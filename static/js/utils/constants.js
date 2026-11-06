@@ -357,6 +357,10 @@ export const DEFAULT_PATH_TEMPLATES = {
     checkpoint: '{base_model}',
     unet: '{base_model}',
     embedding: '{first_tag}',
+    // Workflows group by the base model resolved from their referenced
+    // models. Local workflows rarely carry CivitAI tags, so {first_tag}
+    // would mostly resolve to the "no tags" fallback folder.
+    workflow: '{base_model}',
     // Other models (VAE/upscaler/...) default to a flat layout: their root is
     // already split per sub_type, and priority_tags has no "other" entry, so
     // {first_tag} would resolve to an arbitrary CivitAI tag.

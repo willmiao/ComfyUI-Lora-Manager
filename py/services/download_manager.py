@@ -2177,6 +2177,8 @@ class DownloadManager:
                     elif model_type == "workflow":
                         # Workflows have no default-root setting: the first
                         # configured workflow root is the download target.
+                        # The workflow path template (Settings > Organization)
+                        # is applied below, like every other model type.
                         workflow_scanner = await ServiceRegistry.get_workflow_scanner()
                         workflow_roots = workflow_scanner.get_model_roots()
                         if not workflow_roots:

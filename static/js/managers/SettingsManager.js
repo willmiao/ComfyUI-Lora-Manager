@@ -3010,15 +3010,20 @@ export class SettingsManager {
         const previewElement = document.getElementById(`${modelType}Preview`);
         if (!previewElement) return;
 
+        // Workflow artifacts are JSON/zip documents, not weight files.
+        const exampleFile = modelType === 'workflow'
+            ? 'workflow-name.json'
+            : 'model-name.safetensors';
+
         if (!template) {
-            previewElement.textContent = 'model-name.safetensors';
+            previewElement.textContent = exampleFile;
         } else {
             // Generate example preview
             const exampleTemplate = template
                 .replace('{base_model}', 'Flux.1 D')
                 .replace('{author}', 'authorname')
                 .replace('{first_tag}', 'style');
-            previewElement.textContent = `${exampleTemplate}/model-name.safetensors`;
+            previewElement.textContent = `${exampleTemplate}/${exampleFile}`;
         }
         previewElement.style.display = 'block';
     }
@@ -3411,7 +3416,9 @@ export class SettingsManager {
      * Reflect the opt-in Workflow management state in the settings UI: the
      * master toggle gates the single workflow library folder input
      * (workflow_path, LoRA-Manager-owned in both plugin and standalone mode,
-     * applied live without a restart).
+     * applied live without a restart) and the workflow download path template
+     * in Settings > Organization. The template row stays hidden while the
+     * feature is off because no workflow download or organization can use it.
      */
     updateWorkflowsControls() {
         const enabled = !!state.global.settings.enable_workflows;
@@ -3424,6 +3431,11 @@ export class SettingsManager {
         const group = document.getElementById('workflowPathSetting');
         if (group) {
             group.style.display = enabled ? '' : 'none';
+        }
+
+        const templateSetting = document.getElementById('workflowPathTemplateSetting');
+        if (templateSetting) {
+            templateSetting.style.display = enabled ? '' : 'none';
         }
 
         const input = document.getElementById('workflowPath');

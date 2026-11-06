@@ -2795,7 +2795,7 @@ class SettingsManager:
 
         Args:
             model_type: The type of model ('lora', 'checkpoint', 'embedding',
-                'other')
+                'workflow', 'other')
 
         Returns:
             Template string for the model type. Falls back to the per-type

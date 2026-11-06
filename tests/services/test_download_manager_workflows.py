@@ -269,7 +269,57 @@ async def test_default_paths_use_first_workflow_root(
     )
 
     assert result["success"] is True
+    # The default workflow template ({base_model}) is applied below the root,
+    # exactly like the other model types.
+    assert captured["save_dir"] == str(workflow_root / "SDXL 1.0")
+
+
+@pytest.mark.asyncio
+async def test_default_paths_keep_flat_workflow_root_when_template_is_empty(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """An explicitly flat workflow template preserves the old layout."""
+    get_settings_manager().settings["download_path_templates"] = {"workflow": ""}
+
+    workflow_root = tmp_path / "workflows"
+    workflow_root.mkdir()
+    scanners.workflow._roots = [str(workflow_root)]
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+
+    assert result["success"] is True
     assert captured["save_dir"] == str(workflow_root)
+
+
+@pytest.mark.asyncio
+async def test_default_paths_apply_workflow_first_tag_template(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """CivitAI workflow tags feed {first_tag} like they do for models."""
+    get_settings_manager().settings["download_path_templates"] = {
+        "workflow": "{base_model}/{first_tag}"
+    }
+
+    workflow_root = tmp_path / "workflows"
+    workflow_root.mkdir()
+    scanners.workflow._roots = [str(workflow_root)]
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+
+    assert result["success"] is True
+    assert captured["save_dir"] == str(workflow_root / "SDXL 1.0" / "utility")
 
 
 @pytest.mark.asyncio

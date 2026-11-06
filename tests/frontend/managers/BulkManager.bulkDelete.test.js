@@ -329,6 +329,8 @@ describe('BulkManager.confirmBulkDelete undo flows', () => {
     const config = bulk.actionConfig.workflows;
 
     // Model-only actions stay hidden; workflow-capable actions are enabled.
+    // Auto-Organize is enabled: workflows use the workflow download path
+    // template from Settings > Organization for folder routing.
     expect(config).toEqual(expect.objectContaining({
       addTags: true,
       sendToWorkflow: false,
@@ -336,7 +338,7 @@ describe('BulkManager.confirmBulkDelete undo flows', () => {
       refreshAll: true,
       checkUpdates: true,
       moveAll: true,
-      autoOrganize: false,
+      autoOrganize: true,
       deleteAll: true,
       setContentRating: true,
       skipMetadataRefresh: true,

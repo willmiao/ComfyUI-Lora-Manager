@@ -905,3 +905,80 @@ async def test_auto_organize_skips_model_when_target_path_exceeds_budget(
     assert result.skipped_count == 1
     assert scanner.moves == []
     assert "path length limit" in result.results[0]["message"]
+
+
+def _workflow_organize_setup(
+    tmp_path: Path, *, template: str | None = None
+) -> tuple:
+    """Build a workflow ModelFileService over a fake scanner.
+
+    ``template=None`` leaves the workflow entry out of the settings so the
+    default in DEFAULT_DOWNLOAD_PATH_TEMPLATES applies; pass a string to pin
+    the template.
+    """
+    from py.services.model_file_service import ModelFileService
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_path_templates") or {})
+    if template is None:
+        templates.pop("workflow", None)
+    else:
+        templates["workflow"] = template
+    manager.settings["download_path_templates"] = templates
+
+    nested_dir = tmp_path / "old"
+    nested_dir.mkdir()
+    workflow_path = nested_dir / "portrait.workflow.json"
+    workflow_path.write_text("{}", encoding="utf-8")
+    models = [
+        {
+            "file_path": workflow_path.as_posix(),
+            "model_name": "portrait",
+            "file_name": "portrait",
+            "base_model": "SDXL 1.0",
+            "tags": [],
+            "civitai": {},
+        }
+    ]
+    scanner = AutoOrganizeScanner(tmp_path, models)
+    return ModelFileService(scanner, "workflow"), scanner, workflow_path
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_workflows_uses_the_workflow_template(tmp_path: Path):
+    """Auto-Organize on the Workflows page routes by the workflow template."""
+    service, scanner, workflow_path = _workflow_organize_setup(tmp_path)
+
+    result = await service.auto_organize_models(
+        file_paths=[workflow_path.as_posix()]
+    )
+
+    assert result.operation_type == "bulk"
+    assert result.success_count == 1
+    assert scanner.moves == [
+        (
+            workflow_path.as_posix(),
+            str(tmp_path / "SDXL 1.0").replace(os.sep, "/"),
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_workflows_flattens_when_template_is_empty(
+    tmp_path: Path,
+):
+    """An empty workflow template keeps the historical flat layout: selected
+    files are moved back to the workflow root, not into a tag folder."""
+    service, scanner, workflow_path = _workflow_organize_setup(
+        tmp_path, template=""
+    )
+
+    result = await service.auto_organize_models(
+        file_paths=[workflow_path.as_posix()]
+    )
+
+    assert result.success_count == 1
+    assert scanner.moves == [
+        (workflow_path.as_posix(), str(tmp_path).replace(os.sep, "/"))
+    ]

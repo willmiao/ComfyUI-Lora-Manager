@@ -412,6 +412,19 @@ def test_download_path_template_defaults_flat_for_other(manager):
     assert manager.get_download_path_template("other") == "{base_model}"
 
 
+def test_download_path_template_defaults_to_base_model_for_workflow(manager):
+    """Workflow downloads and Auto-Organize share this template. Local
+    workflows rarely carry CivitAI tags, so the default stops at the base
+    model instead of adding a "no tags" folder."""
+    manager.settings["download_path_templates"] = {}
+
+    assert manager.get_download_path_template("workflow") == "{base_model}"
+
+    # An explicit user configuration still wins.
+    manager.settings["download_path_templates"] = {"workflow": "{first_tag}"}
+    assert manager.get_download_path_template("workflow") == "{first_tag}"
+
+
 def test_download_path_template_unknown_type_is_flat(manager):
     manager.settings["download_path_templates"] = {}
 
