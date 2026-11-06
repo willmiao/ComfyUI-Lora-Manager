@@ -704,7 +704,16 @@
             "pathPlaceholder": "輸入路徑...",
             "go": "前往",
             "emptyFolder": "沒有子資料夾",
-            "loadError": "目錄載入失敗"
+            "loadError": "目錄載入失敗",
+            "newFolder": "[TODO: Translate] New Folder",
+            "newFolderPlaceholder": "[TODO: Translate] Folder name",
+            "create": "[TODO: Translate] Create",
+            "cancel": "[TODO: Translate] Cancel",
+            "createError": "[TODO: Translate] Failed to create folder",
+            "nameRequired": "[TODO: Translate] Enter a folder name",
+            "nameInvalid": "[TODO: Translate] Folder name contains invalid characters",
+            "alreadyExists": "[TODO: Translate] A folder with this name already exists",
+            "permissionDenied": "[TODO: Translate] Permission denied"
         },
         "pathValidation": {
             "valid": "路徑有效",

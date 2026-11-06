@@ -704,7 +704,16 @@
       "pathPlaceholder": "Enter path...",
       "go": "Go",
       "emptyFolder": "No subfolders",
-      "loadError": "Failed to load directory"
+      "loadError": "Failed to load directory",
+      "newFolder": "New Folder",
+      "newFolderPlaceholder": "Folder name",
+      "create": "Create",
+      "cancel": "Cancel",
+      "createError": "Failed to create folder",
+      "nameRequired": "Enter a folder name",
+      "nameInvalid": "Folder name contains invalid characters",
+      "alreadyExists": "A folder with this name already exists",
+      "permissionDenied": "Permission denied"
     },
     "pathValidation": {
       "valid": "Path is valid",

@@ -704,7 +704,16 @@
             "pathPlaceholder": "경로 입력...",
             "go": "이동",
             "emptyFolder": "하위 폴더 없음",
-            "loadError": "디렉터리를 불러오지 못했습니다"
+            "loadError": "디렉터리를 불러오지 못했습니다",
+            "newFolder": "[TODO: Translate] New Folder",
+            "newFolderPlaceholder": "[TODO: Translate] Folder name",
+            "create": "[TODO: Translate] Create",
+            "cancel": "[TODO: Translate] Cancel",
+            "createError": "[TODO: Translate] Failed to create folder",
+            "nameRequired": "[TODO: Translate] Enter a folder name",
+            "nameInvalid": "[TODO: Translate] Folder name contains invalid characters",
+            "alreadyExists": "[TODO: Translate] A folder with this name already exists",
+            "permissionDenied": "[TODO: Translate] Permission denied"
         },
         "pathValidation": {
             "valid": "유효한 경로입니다",

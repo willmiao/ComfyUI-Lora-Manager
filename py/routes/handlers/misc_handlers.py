@@ -70,7 +70,7 @@ from .agent_handlers import AgentHandler
 from .download_routing_handlers import DownloadRoutingHandler
 from .model_handlers import ModelCivitaiHandler
 from ...utils.civitai_utils import rewrite_preview_url
-from ...utils.directory_browser import browse_directory
+from ...utils.directory_browser import browse_directory, create_directory
 from ...utils.example_images_paths import (
     find_non_compliant_items_in_example_images_root,
     is_valid_example_images_root,
@@ -3978,6 +3978,22 @@ class FileSystemHandler:
             logger.error("Failed to browse directory: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def create_directory(self, request: web.Request) -> web.Response:
+        """Create a new subfolder from the settings-UI directory picker."""
+        try:
+            data = await request.json()
+            payload, status = create_directory(
+                data.get("path", ""), data.get("name", "")
+            )
+            return web.json_response(payload, status=status)
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to create directory: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def validate_path(self, request: web.Request) -> web.Response:
         """Validate a filesystem path for the settings UI.
 
@@ -4744,6 +4760,7 @@ class MiscHandlerSet:
             "open_sidecar_location": self.filesystem.open_sidecar_location,
             "open_model_sidecar_location": self.filesystem.open_model_sidecar_location,
             "browse_directory": self.filesystem.browse_directory,
+            "create_directory": self.filesystem.create_directory,
             "validate_path": self.filesystem.validate_path,
             "search_custom_words": self.custom_words.search_custom_words,
             "search_wildcards": self.wildcards.search_wildcards,

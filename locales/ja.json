@@ -704,7 +704,16 @@
             "pathPlaceholder": "パスを入力...",
             "go": "移動",
             "emptyFolder": "サブフォルダがありません",
-            "loadError": "ディレクトリの読み込みに失敗しました"
+            "loadError": "ディレクトリの読み込みに失敗しました",
+            "newFolder": "[TODO: Translate] New Folder",
+            "newFolderPlaceholder": "[TODO: Translate] Folder name",
+            "create": "[TODO: Translate] Create",
+            "cancel": "[TODO: Translate] Cancel",
+            "createError": "[TODO: Translate] Failed to create folder",
+            "nameRequired": "[TODO: Translate] Enter a folder name",
+            "nameInvalid": "[TODO: Translate] Folder name contains invalid characters",
+            "alreadyExists": "[TODO: Translate] A folder with this name already exists",
+            "permissionDenied": "[TODO: Translate] Permission denied"
         },
         "pathValidation": {
             "valid": "パスは有効です",

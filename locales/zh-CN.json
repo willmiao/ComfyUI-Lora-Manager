@@ -704,7 +704,16 @@
             "pathPlaceholder": "输入路径...",
             "go": "跳转",
             "emptyFolder": "没有子文件夹",
-            "loadError": "目录加载失败"
+            "loadError": "目录加载失败",
+            "newFolder": "[TODO: Translate] New Folder",
+            "newFolderPlaceholder": "[TODO: Translate] Folder name",
+            "create": "[TODO: Translate] Create",
+            "cancel": "[TODO: Translate] Cancel",
+            "createError": "[TODO: Translate] Failed to create folder",
+            "nameRequired": "[TODO: Translate] Enter a folder name",
+            "nameInvalid": "[TODO: Translate] Folder name contains invalid characters",
+            "alreadyExists": "[TODO: Translate] A folder with this name already exists",
+            "permissionDenied": "[TODO: Translate] Permission denied"
         },
         "pathValidation": {
             "valid": "路径有效",

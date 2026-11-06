@@ -9,7 +9,8 @@ from py.routes.handlers.misc_handlers import FileSystemHandler
 
 
 def _make_handler() -> FileSystemHandler:
-    # browse_directory/validate_path never touch the settings service
+    # browse_directory/create_directory/validate_path never touch the settings
+    # service
     return FileSystemHandler(settings_service=SimpleNamespace())
 
 
@@ -204,3 +205,142 @@ async def test_validate_path_expands_user(tmp_path, monkeypatch):
     assert response.status == 200
     assert payload["error_code"] is None
     assert payload["path"] == os.path.abspath(str(subdir))
+
+
+async def _create(handler: FileSystemHandler, path: str, name: str):
+    response = await handler.create_directory(
+        _Request({"path": path, "name": name})
+    )
+    return response, json.loads(response.text)
+
+
+@pytest.mark.asyncio
+async def test_create_directory_creates_folder_and_returns_path(tmp_path):
+    response, payload = await _create(_make_handler(), str(tmp_path), "  new-folder  ")
+
+    assert response.status == 200
+    assert payload == {
+        "success": True,
+        "path": str(tmp_path / "new-folder"),
+        "name": "new-folder",
+    }
+    assert (tmp_path / "new-folder").is_dir()
+
+
+@pytest.mark.asyncio
+async def test_create_directory_existing_name_returns_409(tmp_path):
+    (tmp_path / "existing").mkdir()
+
+    response, payload = await _create(_make_handler(), str(tmp_path), "existing")
+
+    assert response.status == 409
+    assert payload["success"] is False
+    assert payload["error_code"] == "already_exists"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["a/b", "a\\b", "..", "."])
+async def test_create_directory_rejects_path_separators_and_dot_names(tmp_path, name):
+    response, payload = await _create(_make_handler(), str(tmp_path), name)
+
+    assert response.status == 400
+    assert payload["error_code"] == "name_invalid"
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["bad:name", "bad|name", "trailing.", "bad*name"])
+async def test_create_directory_rejects_invalid_characters(tmp_path, name):
+    response, payload = await _create(_make_handler(), str(tmp_path), name)
+
+    assert response.status == 400
+    assert payload["error_code"] == "name_invalid"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["CON", "nul", "com1", "LPT9.txt"])
+async def test_create_directory_rejects_windows_reserved_names(tmp_path, name):
+    response, payload = await _create(_make_handler(), str(tmp_path), name)
+
+    assert response.status == 400
+    assert payload["error_code"] == "name_invalid"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["", "   "])
+async def test_create_directory_requires_a_name(tmp_path, name):
+    response, payload = await _create(_make_handler(), str(tmp_path), name)
+
+    assert response.status == 400
+    assert payload["error_code"] == "name_required"
+
+
+@pytest.mark.asyncio
+async def test_create_directory_missing_parent_returns_404(tmp_path):
+    response, payload = await _create(
+        _make_handler(), str(tmp_path / "nope"), "child"
+    )
+
+    assert response.status == 404
+    assert payload["error_code"] == "parent_not_found"
+
+
+@pytest.mark.asyncio
+async def test_create_directory_parent_is_file_returns_400(tmp_path):
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("x")
+
+    response, payload = await _create(_make_handler(), str(file_path), "child")
+
+    assert response.status == 400
+    assert payload["error_code"] == "parent_not_a_directory"
+
+
+@pytest.mark.asyncio
+async def test_create_directory_relative_parent_returns_403(monkeypatch):
+    # abspath() normally absolutizes relative paths against the cwd; bypass it
+    # to exercise the access-denied branch directly.
+    monkeypatch.setattr(os.path, "abspath", lambda p: p)
+
+    response, payload = await _create(_make_handler(), "relative/path", "child")
+
+    assert response.status == 403
+    assert payload["error_code"] == "access_denied"
+
+
+@pytest.mark.asyncio
+async def test_create_directory_permission_denied_returns_403(tmp_path, monkeypatch):
+    target = tmp_path / "locked"
+    original_mkdir = os.mkdir
+
+    def fake_mkdir(path, *args, **kwargs):
+        if os.fspath(path) == str(target):
+            raise PermissionError("denied")
+        return original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "mkdir", fake_mkdir)
+
+    response, payload = await _create(_make_handler(), str(tmp_path), "locked")
+
+    assert response.status == 403
+    assert payload["error_code"] == "permission_denied"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlink creation needs privileges")
+@pytest.mark.asyncio
+async def test_create_directory_rejects_dangling_symlink(tmp_path):
+    (tmp_path / "dangling").symlink_to(tmp_path / "missing-target")
+
+    response, payload = await _create(_make_handler(), str(tmp_path), "dangling")
+
+    assert response.status == 409
+    assert payload["error_code"] == "already_exists"
+
+
+@pytest.mark.asyncio
+async def test_create_directory_result_is_browsable(tmp_path):
+    handler = _make_handler()
+    _, created = await _create(handler, str(tmp_path), "child")
+    _, listing = await _browse(handler, str(tmp_path))
+
+    assert created["path"] == listing["directories"][0]["path"]

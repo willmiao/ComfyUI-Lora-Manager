@@ -46,6 +46,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/wildcards/open-location", "open_wildcards_location"),
     RouteDefinition("POST", "/api/lm/open-file-location", "open_file_location"),
     RouteDefinition("POST", "/api/lm/browse-directory", "browse_directory"),
+    RouteDefinition("POST", "/api/lm/create-directory", "create_directory"),
     RouteDefinition("POST", "/api/lm/validate-path", "validate_path"),
     RouteDefinition("POST", "/api/lm/update-usage-stats", "update_usage_stats"),
     RouteDefinition("GET", "/api/lm/get-usage-stats", "get_usage_stats"),

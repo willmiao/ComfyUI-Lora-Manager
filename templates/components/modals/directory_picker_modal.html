@@ -11,6 +11,16 @@
             </button>
         </div>
 
+        <div class="directory-picker-new-folder" id="directoryPickerNewFolderRow" style="display: none;">
+            <input type="text" id="directoryPickerNewFolderInput" placeholder="{{ t('settings.directoryPicker.newFolderPlaceholder') }}" autocomplete="off" maxlength="255">
+            <button class="primary-btn" id="directoryPickerNewFolderConfirmBtn">
+                <i class="fas fa-plus"></i> {{ t('settings.directoryPicker.create') }}
+            </button>
+            <button class="secondary-btn" id="directoryPickerNewFolderCancelBtn">
+                {{ t('settings.directoryPicker.cancel') }}
+            </button>
+        </div>
+
         <div class="directory-browser" id="directoryPickerBrowser">
             <div class="browser-header">
                 <button class="back-btn" id="directoryPickerUpBtn" title="{{ t('settings.directoryPicker.goUp') }}" disabled>
@@ -23,6 +33,9 @@
                 <div class="directory-picker-error" id="directoryPickerError" style="display: none;"></div>
             </div>
             <div class="browser-footer">
+                <button class="secondary-btn" id="directoryPickerNewFolderBtn">
+                    <i class="fas fa-folder-plus"></i> {{ t('settings.directoryPicker.newFolder') }}
+                </button>
                 <button class="primary-btn" id="directoryPickerSelectBtn">
                     <i class="fas fa-check"></i> {{ t('settings.directoryPicker.selectFolder') }}
                 </button>

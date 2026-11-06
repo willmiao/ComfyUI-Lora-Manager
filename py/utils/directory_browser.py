@@ -1,4 +1,4 @@
-"""Shared directory-browsing logic for HTTP directory pickers."""
+"""Shared directory browsing/creation logic for HTTP directory pickers."""
 
 from __future__ import annotations
 
@@ -22,6 +22,27 @@ _IMAGE_EXTENSIONS = {
     ".tiff",
     ".tif",
 }
+
+# A new folder name must be a single path segment on every supported platform:
+# reject both separators regardless of the host OS so the request can never
+# escape the browsed directory ("../foo" and "a/b" are both rejected).
+_NAME_SEPARATORS = ("/", "\\")
+
+# Windows refuses these characters in a file name. POSIX allows them, but a
+# folder created here is meant to become a configured library path, so stay
+# portable and reject them everywhere.
+_INVALID_NAME_CHARS = frozenset('<>:"|?*') | frozenset(
+    chr(code) for code in range(32)
+)
+
+# Windows device names are unusable as directory names ("CON", "COM1", ...).
+_WINDOWS_RESERVED_NAMES = frozenset(
+    ["CON", "PRN", "AUX", "NUL"]
+    + [f"COM{index}" for index in range(1, 10)]
+    + [f"LPT{index}" for index in range(1, 10)]
+)
+
+_MAX_NAME_LENGTH = 255
 
 
 def browse_directory(directory_path: str) -> Tuple[Dict[str, Any], int]:
@@ -154,3 +175,117 @@ def _windows_drives_payload() -> Dict[str, Any]:
         "image_count": 0,
         "directory_count": len(directories),
     }
+
+
+def _validate_new_directory_name(name: str) -> str | None:
+    """Return an error code when ``name`` is not a safe single path segment."""
+    if not name:
+        return "name_required"
+    if len(name) > _MAX_NAME_LENGTH:
+        return "name_invalid"
+    if name in (".", "..") or any(sep in name for sep in _NAME_SEPARATORS):
+        return "name_invalid"
+    if any(char in _INVALID_NAME_CHARS for char in name):
+        return "name_invalid"
+    # Windows silently strips trailing dots/spaces from paths, so a folder
+    # named "foo." would be stored under a different name than the user sees.
+    if name.endswith("."):
+        return "name_invalid"
+    if name.upper().split(".")[0] in _WINDOWS_RESERVED_NAMES:
+        return "name_invalid"
+    return None
+
+
+def create_directory(directory_path: str, name: str) -> Tuple[Dict[str, Any], int]:
+    """Create a single new subdirectory inside ``directory_path``.
+
+    Returns ``(payload, http_status)``. Failures carry a stable ``error_code``
+    so the picker UI can localize them, with ``error`` as the English
+    fallback; success returns the created folder's absolute path.
+    """
+    parent = directory_path.strip() if isinstance(directory_path, str) else ""
+    new_name = name.strip() if isinstance(name, str) else ""
+
+    if not parent:
+        return {
+            "success": False,
+            "error": "Missing parent directory",
+            "error_code": "parent_required",
+        }, 400
+
+    # Business-path convention: abspath only, never realpath (see
+    # browse_directory) so the created path matches what the user sees.
+    parent_path = Path(os.path.abspath(os.path.expanduser(parent)))
+
+    if os.name == "nt":
+        is_allowed = bool(parent_path.drive)
+    else:
+        is_allowed = parent_path.is_absolute()
+
+    if not is_allowed:
+        return {
+            "success": False,
+            "error": "Access denied to this directory",
+            "error_code": "access_denied",
+        }, 403
+
+    if not parent_path.exists():
+        return {
+            "success": False,
+            "error": "Directory does not exist",
+            "error_code": "parent_not_found",
+        }, 404
+
+    if not parent_path.is_dir():
+        return {
+            "success": False,
+            "error": "Path is not a directory",
+            "error_code": "parent_not_a_directory",
+        }, 400
+
+    name_error = _validate_new_directory_name(new_name)
+    if name_error == "name_required":
+        return {
+            "success": False,
+            "error": "Folder name is required",
+            "error_code": name_error,
+        }, 400
+    if name_error:
+        return {
+            "success": False,
+            "error": "Folder name contains invalid characters",
+            "error_code": name_error,
+        }, 400
+
+    target = parent_path / new_name
+    # lexists() also catches a dangling symlink squatting on the name.
+    if os.path.lexists(target):
+        return {
+            "success": False,
+            "error": "A folder with this name already exists",
+            "error_code": "already_exists",
+        }, 409
+
+    try:
+        os.mkdir(target)
+    except FileExistsError:
+        # Lost a race with another creator between lexists() and mkdir().
+        return {
+            "success": False,
+            "error": "A folder with this name already exists",
+            "error_code": "already_exists",
+        }, 409
+    except PermissionError:
+        return {
+            "success": False,
+            "error": "Permission denied",
+            "error_code": "permission_denied",
+        }, 403
+    except OSError as exc:
+        return {
+            "success": False,
+            "error": f"Failed to create folder: {exc}",
+            "error_code": "create_failed",
+        }, 500
+
+    return {"success": True, "path": str(target), "name": new_name}, 200

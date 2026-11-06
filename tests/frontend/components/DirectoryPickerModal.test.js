@@ -16,6 +16,11 @@ function buildModalDom() {
           <input type="text" id="directoryPickerPathInput">
           <button id="directoryPickerGoBtn">Go</button>
         </div>
+        <div class="directory-picker-new-folder" id="directoryPickerNewFolderRow" style="display: none;">
+          <input type="text" id="directoryPickerNewFolderInput">
+          <button id="directoryPickerNewFolderConfirmBtn">Create</button>
+          <button id="directoryPickerNewFolderCancelBtn">Cancel</button>
+        </div>
         <div class="directory-browser" id="directoryPickerBrowser">
           <div class="browser-header">
             <button class="back-btn" id="directoryPickerUpBtn"></button>
@@ -26,6 +31,7 @@ function buildModalDom() {
             <div class="directory-picker-error" id="directoryPickerError" style="display: none;"></div>
           </div>
           <div class="browser-footer">
+            <button class="secondary-btn" id="directoryPickerNewFolderBtn">New Folder</button>
             <button class="primary-btn" id="directoryPickerSelectBtn">Select</button>
           </div>
         </div>
@@ -253,5 +259,158 @@ describe('DirectoryPickerModal', () => {
 
     modalEl().click();
     expect(modalEl().style.display).toBe('none');
+  });
+
+  function newFolderRow() {
+    return document.getElementById('directoryPickerNewFolderRow');
+  }
+
+  function mockCreateThenBrowse() {
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/api/lm/create-directory') {
+        return okResponse({ path: '/home/user/anime', name: 'anime' });
+      }
+      return okResponse({
+        current_path: '/home/user/anime',
+        parent_path: '/home/user',
+        directories: [],
+      });
+    });
+  }
+
+  it('shows the inline new-folder row when New Folder is clicked', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+
+    expect(newFolderRow().style.display).toBe('flex');
+    expect(document.activeElement).toBe(document.getElementById('directoryPickerNewFolderInput'));
+  });
+
+  it('creates a folder and navigates into it', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+    mockCreateThenBrowse();
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    document.getElementById('directoryPickerNewFolderInput').value = '  anime  ';
+    document.getElementById('directoryPickerNewFolderConfirmBtn').click();
+
+    await vi.waitFor(() => {
+      expect(document.getElementById('directoryPickerCurrentPath').textContent).toBe('/home/user/anime');
+    });
+
+    const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/lm/create-directory');
+    expect(createCall[1].method).toBe('POST');
+    expect(JSON.parse(createCall[1].body)).toEqual({ path: '/home/user', name: 'anime' });
+    expect(newFolderRow().style.display).toBe('none');
+  });
+
+  it('creates the folder on Enter in the name field', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+    mockCreateThenBrowse();
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    const input = document.getElementById('directoryPickerNewFolderInput');
+    input.value = 'anime';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+
+    await vi.waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => url === '/api/lm/create-directory')).toBe(true);
+    });
+  });
+
+  it('requires a non-empty name without path separators before calling the API', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+    fetchMock.mockClear();
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    document.getElementById('directoryPickerNewFolderConfirmBtn').click();
+    expect(document.getElementById('directoryPickerError').textContent).toBe('Enter a folder name');
+
+    document.getElementById('directoryPickerNewFolderInput').value = 'a/b';
+    document.getElementById('directoryPickerNewFolderConfirmBtn').click();
+    expect(document.getElementById('directoryPickerError').textContent).toBe(
+      'Folder name contains invalid characters'
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the server error and keeps the row open when creation fails', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+    fetchMock.mockImplementation(async (url) => {
+      if (url === '/api/lm/create-directory') {
+        return {
+          ok: false,
+          status: 409,
+          json: async () => ({
+            success: false,
+            error: 'A folder with this name already exists',
+            error_code: 'already_exists',
+          }),
+        };
+      }
+      return okResponse({ current_path: '/home/user', parent_path: '/home', directories: [] });
+    });
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    document.getElementById('directoryPickerNewFolderInput').value = 'photos';
+    document.getElementById('directoryPickerNewFolderConfirmBtn').click();
+
+    await vi.waitFor(() => {
+      expect(document.getElementById('directoryPickerError').textContent).toBe(
+        'A folder with this name already exists'
+      );
+    });
+    expect(newFolderRow().style.display).toBe('flex');
+    expect(document.getElementById('directoryPickerCurrentPath').textContent).toBe('/home/user');
+  });
+
+  it('dismisses the new-folder row on ESC without closing the modal', async () => {
+    directoryPickerModal.open({ initialPath: '/home/user', onSelect: vi.fn() });
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(2);
+    });
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    expect(newFolderRow().style.display).toBe('flex');
+
+    document.getElementById('directoryPickerNewFolderInput').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    );
+
+    expect(newFolderRow().style.display).toBe('none');
+    expect(modalEl().style.display).toBe('block');
+  });
+
+  it('disables New Folder on the virtual drive list level', async () => {
+    fetchMock.mockImplementation(async () => okResponse({
+      current_path: '',
+      parent_path: null,
+      directories: [{ name: 'C:\\', path: 'C:\\', is_parent: false }],
+    }));
+    directoryPickerModal.open({ initialPath: '', onSelect: vi.fn() });
+
+    await vi.waitFor(() => {
+      expect(document.querySelectorAll('#directoryPickerFolderList .folder-item')).toHaveLength(1);
+    });
+    expect(document.getElementById('directoryPickerNewFolderBtn').disabled).toBe(true);
+
+    document.getElementById('directoryPickerNewFolderBtn').click();
+    expect(newFolderRow().style.display).toBe('none');
   });
 });

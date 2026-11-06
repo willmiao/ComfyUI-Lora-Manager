@@ -16,14 +16,16 @@
     margin-bottom: var(--space-2);
 }
 
-/* Manual path row */
-#directoryPickerModal .directory-picker-path-row {
+/* Manual path row and inline new-folder row share the same field styling */
+#directoryPickerModal .directory-picker-path-row,
+#directoryPickerModal .directory-picker-new-folder {
     display: flex;
     gap: 8px;
     margin-bottom: var(--space-2);
 }
 
-#directoryPickerModal .directory-picker-path-row input {
+#directoryPickerModal .directory-picker-path-row input,
+#directoryPickerModal .directory-picker-new-folder input {
     flex: 1;
     min-width: 0;
     padding: 8px 12px;
@@ -35,7 +37,8 @@
     font-size: 0.9em;
 }
 
-#directoryPickerModal .directory-picker-path-row input:focus {
+#directoryPickerModal .directory-picker-path-row input:focus,
+#directoryPickerModal .directory-picker-new-folder input:focus {
     outline: none;
     border-color: var(--lora-accent);
     box-shadow: 0 0 0 2px oklch(from var(--lora-accent) l c h / 0.2);
@@ -139,8 +142,9 @@
 
 #directoryPickerModal .browser-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 10px 12px;
     background: var(--bg-color);
     border-top: 1px solid var(--border-color);

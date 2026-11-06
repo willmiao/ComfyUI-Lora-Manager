@@ -704,7 +704,16 @@
             "pathPlaceholder": "Pfad eingeben...",
             "go": "Los",
             "emptyFolder": "Keine Unterordner",
-            "loadError": "Verzeichnis konnte nicht geladen werden"
+            "loadError": "Verzeichnis konnte nicht geladen werden",
+            "newFolder": "[TODO: Translate] New Folder",
+            "newFolderPlaceholder": "[TODO: Translate] Folder name",
+            "create": "[TODO: Translate] Create",
+            "cancel": "[TODO: Translate] Cancel",
+            "createError": "[TODO: Translate] Failed to create folder",
+            "nameRequired": "[TODO: Translate] Enter a folder name",
+            "nameInvalid": "[TODO: Translate] Folder name contains invalid characters",
+            "alreadyExists": "[TODO: Translate] A folder with this name already exists",
+            "permissionDenied": "[TODO: Translate] Permission denied"
         },
         "pathValidation": {
             "valid": "Pfad ist gültig",
