@@ -89,6 +89,18 @@ let availableLorasCache = null;
 let availableLorasPromise = null;
 let availabilityGeneration = 0;
 
+// The search fields can restrict themselves to the LoRA Manager page's active
+// filters. Those filters live server-side, so the only way to know the subset
+// is to ask for it; the endpoint clamps `limit` to 100, hence the paging (and
+// the page cap, which keeps a pathological library from looping forever).
+const ACTIVE_FILTERED_PAGE_SIZE = 100;
+const ACTIVE_FILTERED_MAX_PAGES = 50;
+// The manager page never announces a filter change, so a short TTL is the
+// invalidation path; a library change clears it outright.
+const ACTIVE_FILTERED_TTL_MS = 15000;
+let activeFilteredNamesCache = null;
+let activeFilteredNamesPromise = null;
+
 /**
  * Parse a numeric usage-tips value (accepts numbers and numeric strings).
  */
@@ -615,6 +627,95 @@ export function getLoraDisplayName(name, displayMode = "file_name") {
 }
 
 /**
+ * Drop the cached active-filtered name set. The manager page's filters change
+ * without any websocket message, so this is also reached through the TTL.
+ */
+export function resetActiveFilteredLorasCache() {
+  activeFilteredNamesCache = null;
+  activeFilteredNamesPromise = null;
+}
+
+async function fetchActiveFilteredLoraNames() {
+  const names = new Set();
+  for (let page = 0; page < ACTIVE_FILTERED_MAX_PAGES; page += 1) {
+    const offset = page * ACTIVE_FILTERED_PAGE_SIZE;
+    const response = await api.fetchApi(
+      `/lm/loras/relative-paths?search=&limit=${ACTIVE_FILTERED_PAGE_SIZE}` +
+        `&offset=${offset}&use_active_filters=true`
+    );
+    if (!response || !response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    const paths = data?.relative_paths;
+    if (!Array.isArray(paths)) {
+      return null;
+    }
+    for (const path of paths) {
+      const key = normalizeLoraNameKey(path);
+      if (key) {
+        names.add(key);
+      }
+    }
+    // The endpoint clamps `limit` to 100, so a short page is the last one.
+    if (paths.length < ACTIVE_FILTERED_PAGE_SIZE) {
+      break;
+    }
+  }
+  return names;
+}
+
+/**
+ * Synchronous snapshot of the active-filtered name set, or null when it is not
+ * loaded (or expired).
+ */
+export function getActiveFilteredLoraNamesSync() {
+  if (
+    activeFilteredNamesCache &&
+    Date.now() - activeFilteredNamesCache.at < ACTIVE_FILTERED_TTL_MS
+  ) {
+    return activeFilteredNamesCache.names;
+  }
+  return null;
+}
+
+/**
+ * The library catalogue restricted to the LoRA Manager page's active filters.
+ *
+ * The page keeps its browse filters server-side and the textarea autocomplete
+ * opts into them with `use_active_filters=true`; this gives the node search
+ * fields the same subset, so a filtered browse view and the node agree about
+ * what is "in the library right now". Resolves to null on any failure — callers
+ * fall back to the full catalogue rather than showing an empty list.
+ */
+export async function getActiveFilteredLoraEntries() {
+  let names = getActiveFilteredLoraNamesSync();
+  if (!names) {
+    if (!activeFilteredNamesPromise) {
+      activeFilteredNamesPromise = fetchActiveFilteredLoraNames()
+        .then((fetched) => {
+          if (fetched) {
+            activeFilteredNamesCache = { names: fetched, at: Date.now() };
+          }
+          return fetched;
+        })
+        .finally(() => {
+          activeFilteredNamesPromise = null;
+        });
+    }
+    names = await activeFilteredNamesPromise;
+  }
+  if (!names) {
+    return null;
+  }
+  const entries = getAvailableLoraEntries();
+  if (!entries) {
+    return null;
+  }
+  return entries.filter((entry) => names.has(entry.name));
+}
+
+/**
  * Drop the cached availability data (used by tests and by callers that need
  * a forced refresh of the local library state). In-flight fetches started
  * before the reset are invalidated via the generation counter.
@@ -623,6 +724,7 @@ export function resetAvailableLorasCache() {
   availabilityGeneration += 1;
   availableLorasCache = null;
   availableLorasPromise = null;
+  resetActiveFilteredLorasCache();
 }
 
 // The Lora Manager UI and the ComfyUI graph page are separate pages; the

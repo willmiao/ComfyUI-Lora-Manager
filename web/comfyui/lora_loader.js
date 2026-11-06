@@ -18,6 +18,7 @@ import {
   getWidgetSerializedValue,
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
+import { enableListedLorasFromCode } from "./lora_selection.js";
 
 // Node classes whose "text" widget uses the loras autocomplete. Kept in sync
 // with the broadcast-compatible classes in handleLoraCodeUpdate below.
@@ -149,6 +150,15 @@ app.registerExtension({
     const inputWidget = node.inputWidget;
     if (!inputWidget) return;
 
+    // Append mode: a LoRA the node already lists must be switched ON, not
+    // appended again. Appending its tag leaves an existing (possibly disabled)
+    // entry exactly as it was, which is why "Send to ComfyUI" appeared to
+    // ignore LoRAs that were already in the list. Only LoRAs the list does not
+    // know fall through to the textarea path, which is what adds new entries.
+    if (mode !== "replace" && this.enableListedLoras(node, loraCode)) {
+      return;
+    }
+
     // Get the current lora code
     const currentValue = inputWidget.value || "";
 
@@ -166,6 +176,31 @@ app.registerExtension({
     if (typeof inputWidget.callback === "function") {
       inputWidget.callback(inputWidget.value);
     }
+  },
+
+  /**
+   * Switch on every LoRA from `loraCode` that the node already lists.
+   *
+   * Returns true when nothing is left for the textarea path, i.e. every LoRA in
+   * the code was already present. The loras widget value is plain data, so the
+   * callback is what propagates the new active set to trigger words,
+   * downstream loaders and the textarea syntax (assigning the value only
+   * re-renders the rows).
+   */
+  enableListedLoras(node, loraCode) {
+    const lorasWidget = node?.lorasWidget;
+    if (!lorasWidget || !Array.isArray(lorasWidget.value)) {
+      return false;
+    }
+    const { loras, changed, unlistedTags } = enableListedLorasFromCode(
+      lorasWidget.value,
+      loraCode
+    );
+    if (changed) {
+      lorasWidget.value = loras;
+      lorasWidget.callback?.(loras);
+    }
+    return unlistedTags.length === 0;
   },
 
   async beforeRegisterNodeDef(nodeType, nodeData, app) {

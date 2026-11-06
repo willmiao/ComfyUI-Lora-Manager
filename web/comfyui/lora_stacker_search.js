@@ -1,9 +1,10 @@
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import {
+  getActiveFilteredLoraEntries,
   getAvailableLoraEntries,
   getAvailableLoras,
-  normalizeLoraNameKey,
 } from "./loras_widget_utils.js";
+import { getLoraActiveFiltersAutocompletePreference } from "./settings.js";
 
 /**
  * Type-to-add search field for the Lora Stacker node.
@@ -15,9 +16,13 @@ import {
  * searches file names.
  *
  * The candidate list comes from the library catalogue the LoRA widgets already
- * cache (`getAvailableLoraEntries`), so titles need no extra request and no
- * backend change.
+ * cache (`getAvailableLoraEntries`), so titles need no extra request. When the
+ * "active filters" setting is on — the same one the textarea autocomplete
+ * honours — the catalogue is first narrowed to the LoRA Manager page's browse
+ * filters, so the field cannot offer a LoRA the filtered page is hiding.
  */
+
+export { applyLoraSelection } from "./lora_selection.js";
 
 export const LORA_SEARCH_WIDGET_HEIGHT = 30;
 
@@ -95,86 +100,6 @@ export function filterLoraCandidates(entries, query, displayMode = DEFAULT_DISPL
   return ranked.map((candidate) => candidate.entry);
 }
 
-/**
- * Find the list entry that refers to the same file as `targetName`.
- *
- * Entries are compared the way the backend resolves names: exact match on the
- * extension-free, forward-slash name, falling back to the bare file name for
- * legacy entries stored without their folder. Two folder-qualified names in
- * different folders are different files and never match.
- */
-function findLoraIndex(loras, targetName) {
-  const targetBase = targetName.slice(targetName.lastIndexOf("/") + 1);
-  let bareIndex = -1;
-  for (let index = 0; index < loras.length; index += 1) {
-    const key = normalizeLoraNameKey(loras[index]?.name);
-    if (!key) {
-      continue;
-    }
-    if (key === targetName) {
-      return index;
-    }
-    if (bareIndex === -1 && key === targetBase) {
-      bareIndex = index;
-    }
-  }
-  return bareIndex;
-}
-
-function formatStrength(value) {
-  if (value === null || value === undefined || value === "") {
-    return DEFAULT_STRENGTH.toFixed(STRENGTH_DECIMALS);
-  }
-  const numeric = Number(value);
-  return (Number.isFinite(numeric) ? numeric : DEFAULT_STRENGTH).toFixed(
-    STRENGTH_DECIMALS
-  );
-}
-
-/**
- * Apply a search selection to the node's LoRA list.
- *
- * A LoRA that is already in the list is enabled in place (its strengths are
- * kept) instead of being added twice; a new one is appended active, using the
- * library's recommended strength when one is configured. Returns the list to
- * write back and whether it actually changed.
- */
-export function applyLoraSelection(currentLoras, selection) {
-  const loras = Array.isArray(currentLoras) ? currentLoras : [];
-  const name = normalizeLoraNameKey(selection?.name);
-  if (!name) {
-    return { loras, changed: false };
-  }
-
-  const existingIndex = findLoraIndex(loras, name);
-  if (existingIndex >= 0) {
-    const existing = loras[existingIndex];
-    if (existing?.active) {
-      return { loras, changed: false };
-    }
-    const next = loras.slice();
-    next[existingIndex] = { ...existing, active: true };
-    return { loras: next, changed: true };
-  }
-
-  const strength = formatStrength(selection?.strength);
-  return {
-    loras: [
-      ...loras,
-      {
-        name,
-        strength,
-        clipStrength: strength,
-        active: true,
-        expanded: false,
-        selected: false,
-        locked: false,
-      },
-    ],
-    changed: true,
-  };
-}
-
 function defaultGetEntries() {
   return getAvailableLoraEntries();
 }
@@ -187,6 +112,10 @@ function defaultGetEntries() {
  *   getDisplayMode() returns "model_name" or "file_name" at search time; read
  *                    it from the node label setting on every call.
  *   getEntries()     returns the current catalogue snapshot (tests).
+ *   useActiveFilters() returns true when candidates must be restricted to the
+ *                    LoRA Manager page's active filters; read per search, the
+ *                    same way the display mode is.
+ *   getFilteredEntries() returns that restricted catalogue (tests).
  *
  * Returns the created widget. It is never serialized (`serialize = false`), so
  * `widgets_values` keeps its existing slots and old workflows keep loading.
@@ -194,14 +123,25 @@ function defaultGetEntries() {
 export function addLoraSearchWidget(node, options = {}) {
   ensureLmStyles();
 
-  const { onSelect, getDisplayMode, getEntries = defaultGetEntries } = options;
+  const {
+    onSelect,
+    getDisplayMode,
+    getEntries = defaultGetEntries,
+    useActiveFilters = getLoraActiveFiltersAutocompletePreference,
+    getFilteredEntries = getActiveFilteredLoraEntries,
+  } = options;
   const readDisplayMode = () =>
     typeof getDisplayMode === "function"
       ? getDisplayMode()
       : DEFAULT_DISPLAY_MODE;
+  const wantsActiveFilters = () =>
+    typeof useActiveFilters === "function" ? Boolean(useActiveFilters()) : false;
 
   let entries = null;
   let entriesPromise = null;
+  // Which catalogue `entries` was built from, so flipping the setting throws
+  // away a list built under the other one instead of searching stale scope.
+  let entriesFiltered = null;
   let results = [];
   let activeIndex = -1;
 
@@ -359,7 +299,12 @@ export function addLoraSearchWidget(node, options = {}) {
 
   function render() {
     renderResults();
-    if (results.length > 0 && document.activeElement === input) {
+    // Keep the popover up while the field is focused and holds a query, even
+    // with no rows: that is the only way "Loading LoRAs…" and "No matches"
+    // reach the user instead of the list silently closing.
+    const focused = document.activeElement === input;
+    const typed = input.value.trim().length > 0;
+    if (focused && (results.length > 0 || typed)) {
       open();
     } else {
       close();
@@ -375,16 +320,32 @@ export function addLoraSearchWidget(node, options = {}) {
   }
 
   const ensureEntries = () => {
-    const cached = getEntries();
-    if (cached) {
-      entries = cached;
+    const filtered = wantsActiveFilters();
+    if (entriesFiltered !== null && entriesFiltered !== filtered) {
+      // The setting flipped since this list was built: drop it and re-resolve.
+      entries = null;
     }
+    entriesFiltered = filtered;
+
     if (entriesPromise) {
       return entriesPromise;
     }
+    if (!filtered) {
+      const cached = getEntries();
+      if (cached) {
+        entries = cached;
+        return Promise.resolve(entries);
+      }
+    }
     entriesPromise = Promise.resolve(getAvailableLoras())
-      .then(() => {
-        entries = getEntries() || entries || [];
+      .then(async () => {
+        if (filtered) {
+          // Null means the filtered lookup failed: fall back to the whole
+          // catalogue rather than pretending the library is empty.
+          entries = (await getFilteredEntries()) || getEntries() || entries || [];
+        } else {
+          entries = getEntries() || entries || [];
+        }
         return entries;
       })
       .finally(() => {
