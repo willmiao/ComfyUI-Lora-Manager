@@ -54,6 +54,10 @@ class WorkflowScanner(ModelScanner):
     JSON and plain preview images out.
     """
 
+    # Workflows are graph documents, not weights: quantization has no meaning
+    # for them, so the inherited scan-time pass and backfill are skipped.
+    supports_quantization = False
+
     def __init__(self):
         super().__init__(
             model_type="workflow",

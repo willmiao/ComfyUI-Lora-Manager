@@ -647,6 +647,63 @@ async def test_load_persisted_cache_rebuilds_off_event_loop(tmp_path: Path, monk
 
 
 @pytest.mark.asyncio
+async def test_load_persisted_cache_skips_quantization_backfill_without_support(tmp_path: Path, monkeypatch):
+    """Non-weight libraries (workflows) must not schedule the quantization pass."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    store = PersistentModelCache(db_path=str(tmp_path / 'cache.sqlite'))
+
+    file_path = tmp_path / 'flow.json'
+    file_path.write_text('{}', encoding='utf-8')
+    normalized = _normalize_path(file_path)
+
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'flow',
+        'model_name': 'flow',
+        'folder': '',
+        'size': 2,
+        'modified': 123.0,
+        'sha256': 'hash-flow',
+        'base_model': 'test',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': False,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': [],
+        'civitai': None,
+    }
+    store.save_cache('dummy', [raw_model], {'hash-flow': [normalized]}, [])
+
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+    monkeypatch.setattr(model_scanner, 'ws_manager', RecordingWebSocketManager())
+
+    scanner = DummyScanner(tmp_path)
+    scanner.supports_quantization = False
+
+    started: List[str] = []
+
+    async def _record_autov3() -> None:
+        started.append('autov3')
+
+    async def _record_quantization() -> None:
+        started.append('quantization')
+
+    monkeypatch.setattr(scanner, '_run_autov3_backfill', _record_autov3)
+    monkeypatch.setattr(scanner, '_run_quantization_backfill', _record_quantization)
+
+    assert await scanner._load_persisted_cache('dummy') is True
+    await asyncio.sleep(0)
+
+    # Only the autov3 pass is scheduled: workflows still carry a CivitAI hash.
+    assert started == ['autov3']
+
+
+@pytest.mark.asyncio
 async def test_update_single_model_cache_persists_changes(tmp_path: Path, monkeypatch):
     monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
     db_path = tmp_path / 'cache.sqlite'

@@ -102,8 +102,13 @@ class QuantizationBackfillService:
             failure a warning is logged and ``0`` is returned. A duplicate
             trigger for a model type that is already being backfilled returns
             ``0`` immediately; different model types run concurrently.
+            Scanners whose library holds no weights (``supports_quantization``
+            is ``False``, e.g. workflows) return ``0`` without touching a row.
         """
         model_type = scanner.model_type
+        if not getattr(scanner, "supports_quantization", True):
+            # Non-weight libraries (workflows) have no quantization state.
+            return 0
         if model_type in self._running_types:
             return 0
         self._running_types.add(model_type)

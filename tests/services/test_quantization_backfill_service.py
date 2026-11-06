@@ -272,6 +272,26 @@ async def test_backfill_returns_zero_when_same_type_already_running(tmp_path: Pa
     assert scanner.update_calls == []
 
 
+async def test_backfill_skips_scanner_without_quantization_support(tmp_path: Path, monkeypatch) -> None:
+    """Workflows are graph documents: their rows must never be marked checked."""
+    store = _make_store(tmp_path, monkeypatch)
+    existing = _write_file(tmp_path, 'flow.json')
+
+    entries = [_entry(existing, 'hash-flow')]
+    store.save_cache('workflow', entries, {'hash-flow': [existing]}, [])
+
+    class WorkflowLikeScanner(RecordingScanner):
+        supports_quantization = False
+
+    scanner = WorkflowLikeScanner('workflow', store, entries)
+    updated = await QuantizationBackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
+
+    assert updated == 0
+    assert scanner.update_calls == []
+    # The row keeps its "not checked" (NULL) state instead of a bogus ''.
+    assert store.get_models_missing_quantization('workflow') == [existing]
+
+
 async def test_backfill_never_raises_on_failure(tmp_path: Path, monkeypatch) -> None:
     store = _make_store(tmp_path, monkeypatch)
     existing = _write_file(tmp_path, 'boom.txt')

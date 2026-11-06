@@ -834,7 +834,13 @@ class CollectedScan:
 
 class ModelScanner:
     """Base service for scanning and managing model files"""
-    
+
+    # Quantization describes weight precision, so only scanners whose library
+    # holds weight files can compute it. Non-weight libraries (workflows)
+    # override this so neither the scan-time pass nor the one-time backfill
+    # writes a meaningless state into their entries.
+    supports_quantization: bool = True
+
     _instances = {}  # Dictionary to store instances by class
     _locks = {}  # Dictionary to store locks by class
     
@@ -1491,8 +1497,9 @@ class ModelScanner:
                 loop.create_task(self._run_autov3_backfill())
 
         # Same one-time scheduling for the quantization backfill (snapshots
-        # that predate the quantization column).
-        if not self._quantization_backfill_scheduled:
+        # that predate the quantization column). Only weight libraries have a
+        # quantization state to compute; workflows are graph documents.
+        if self.supports_quantization and not self._quantization_backfill_scheduled:
             self._quantization_backfill_scheduled = True
             try:
                 loop = asyncio.get_running_loop()
@@ -3672,9 +3679,11 @@ class ModelScanner:
         # checked before (quantization is None). The Civitai fp8 flag is only
         # a fallback — it may upgrade a checked-unavailable state ('') to
         # "FP8", but never overrides a content-detected value, and the header
-        # is never re-read for an already-checked model.
+        # is never re-read for an already-checked model. Non-weight libraries
+        # (workflows) skip this entirely: the field stays unset instead of
+        # being marked "checked, none".
         current_quantization = model_data.get('quantization')
-        if current_quantization in (None, ''):
+        if self.supports_quantization and current_quantization in (None, ''):
             try:
                 quantization = None
                 if current_quantization is None:
