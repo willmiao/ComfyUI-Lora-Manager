@@ -146,6 +146,11 @@ describe("Node mode change handling", () => {
         widgets: [metadataWidget, inputWidget, lorasWidget],
         lorasWidget,
         addInput: vi.fn(),
+        addDOMWidget: vi.fn((name, type, container, options) => {
+          const widget = { name, type, container, options, value: "" };
+          node.widgets.push(widget);
+          return widget;
+        }),
         mode: 0, // Initial mode
         graph: {},
         outputs: [], // Add outputs property for updateDownstreamLoaders

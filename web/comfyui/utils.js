@@ -150,12 +150,23 @@ export function getWidgetSerializedValue(node, widgetName) {
         return undefined;
     }
 
-    const widgetIndex = node.widgets.findIndex((widget) => widget?.name === widgetName);
-    if (widgetIndex === -1) {
-        return undefined;
+    // ComfyUI saves only the widgets whose serialize is not false, in widget
+    // order, so the index into widgets_values counts serializable widgets and
+    // is not the widget's index in node.widgets. A widget that opts out of
+    // serialization (the stacker's search field) would otherwise shift every
+    // value saved after it.
+    let serializedIndex = 0;
+    for (const widget of node.widgets) {
+        if (!widget || widget.serialize === false) {
+            continue;
+        }
+        if (widget.name === widgetName) {
+            return node.widgets_values[serializedIndex];
+        }
+        serializedIndex += 1;
     }
 
-    return node.widgets_values[widgetIndex];
+    return undefined;
 }
 
 export function getLinkFromGraph(graph, linkId) {

@@ -463,6 +463,35 @@ function lookupByLoraName(map, name) {
 }
 
 /**
+ * Build the searchable catalogue used by the node search fields.
+ *
+ * One entry per library file: `name` is what the node must persist (the
+ * extension-free, folder-qualified file name), `label` is what a node row shows
+ * for it in model-name mode (the disambiguated title built by
+ * buildModelNameMap, or the file name when the library has no title), and
+ * `strength` is the usage-tips recommended strength when one is configured.
+ */
+export function buildLoraSearchEntries(loras, names, ranges) {
+  const entries = [];
+  const seen = new Set();
+  for (const lora of loras || []) {
+    const name = normalizeLoraNameKey(lora?.file_name);
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    const recommended = lookupByLoraName(ranges, name)?.recommended;
+    entries.push({
+      name,
+      label: lookupByLoraName(names, name) || name,
+      folder: typeof lora?.folder === "string" ? lora.folder.trim() : "",
+      strength: Number.isFinite(recommended) ? recommended : null,
+    });
+  }
+  return entries;
+}
+
+/**
  * Refresh the availability cache from the cycler list: the set of known names,
  * their recommended strength ranges, and their row labels.
  */
@@ -490,7 +519,13 @@ async function refreshAvailableLoras() {
       // flight, do not repopulate it with pre-change data.
       return null;
     }
-    availableLorasCache = { set, ranges, names, at: Date.now() };
+    availableLorasCache = {
+      set,
+      ranges,
+      names,
+      entries: buildLoraSearchEntries(loras, names, ranges),
+      at: Date.now(),
+    };
     return set;
   } catch (error) {
     console.warn("Failed to fetch available LoRAs:", error);
@@ -530,6 +565,16 @@ export function getAvailableLorasSync() {
     return availableLorasCache.set;
   }
   return null;
+}
+
+/**
+ * Snapshot of the library catalogue used by the node search fields, or null
+ * while the cache has not loaded yet. The TTL is deliberately ignored here for
+ * the same reason getLoraDisplayName ignores it: a refresh in flight must not
+ * empty an open search list. A library change drops the cache outright.
+ */
+export function getAvailableLoraEntries() {
+  return availableLorasCache?.entries ?? null;
 }
 
 /**

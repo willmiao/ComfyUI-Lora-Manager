@@ -9,6 +9,8 @@ import {
   getWidgetSerializedValue,
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
+import { addLoraSearchWidget, applyLoraSelection } from "./lora_stacker_search.js";
+import { getNodeLoraNameDisplayPreference } from "./settings.js";
 
 app.registerExtension({
   name: "LoraManager.LoraStacker",
@@ -117,6 +119,46 @@ app.registerExtension({
             isUpdating = false;
           }
         };
+
+        // Dedicated type-to-add field above the LoRA list. It is always empty
+        // until typed into, so adding a LoRA never needs a caret hunt in the
+        // textarea, and it matches whatever the node rows show (title or file
+        // name), read at search time so a mode change applies immediately.
+        const searchWidget = addLoraSearchWidget(this, {
+          getDisplayMode: getNodeLoraNameDisplayPreference,
+          onSelect: (entry) => {
+            if (!this.lorasWidget) {
+              return;
+            }
+            const { loras, changed } = applyLoraSelection(
+              this.lorasWidget.value || [],
+              entry
+            );
+            if (!changed) {
+              return;
+            }
+            this.lorasWidget.value = loras;
+            // setValue only re-renders; the callback is what propagates the
+            // new active set to trigger words, downstream loaders and the
+            // textarea syntax.
+            this.lorasWidget.callback?.(loras);
+          },
+        });
+        this.loraSearchWidget = searchWidget;
+
+        // Place the field directly under the prompt textarea, above the list.
+        // addDOMWidget appended it last, so move it rather than adding it
+        // again; it is never serialized, so this does not touch
+        // widgets_values.
+        if (Array.isArray(this.widgets) && this.widgets.includes(searchWidget)) {
+          this.widgets.splice(this.widgets.indexOf(searchWidget), 1);
+          const lorasIndex = this.widgets.indexOf(lorasWidget);
+          if (lorasIndex >= 0) {
+            this.widgets.splice(lorasIndex, 0, searchWidget);
+          } else {
+            this.widgets.push(searchWidget);
+          }
+        }
       });
     }
   },
