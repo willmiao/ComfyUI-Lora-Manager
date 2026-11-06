@@ -1802,6 +1802,9 @@ export class BaseModelApiClient {
                 if (pageState.searchOptions.creator !== undefined) {
                     params.append('search_creator', pageState.searchOptions.creator.toString());
                 }
+                if (pageState.searchOptions.triggerWords !== undefined) {
+                    params.append('search_trigger_words', pageState.searchOptions.triggerWords.toString());
+                }
             }
         }
 

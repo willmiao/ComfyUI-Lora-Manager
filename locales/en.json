@@ -262,7 +262,8 @@
         "title": "Recipe Title",
         "loraName": "LoRA Filename",
         "loraModel": "LoRA Model Name",
-        "prompt": "Prompt"
+        "prompt": "Prompt",
+        "triggerWords": "Trigger Words"
       }
     },
     "filter": {

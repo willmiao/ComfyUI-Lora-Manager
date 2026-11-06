@@ -16,6 +16,7 @@ from typing import (
 )
 
 from ..utils.constants import NSFW_LEVELS
+from ..utils.trigger_words import iter_trigger_words
 from ..utils.utils import fuzzy_match as default_fuzzy_match
 import time
 import logging
@@ -432,6 +433,7 @@ class SearchStrategy:
         "tags": False,
         "recursive": True,
         "creator": False,
+        "trigger_words": False,
     }
 
     def __init__(
@@ -490,6 +492,23 @@ class SearchStrategy:
                         creator_username = creator.get("username", "")
                 if creator_username and self._matches(
                     creator_username, search_term, search_lower, fuzzy
+                ):
+                    results.append(item)
+                    continue
+
+            # Trigger words are deliberately substring-only (never fuzzy): one
+            # library entry can declare dozens of them, so fuzzy matching would
+            # run the sequence matcher over every word of every entry and take
+            # seconds on large libraries. Users paste trigger words from a
+            # prompt, so substring semantics also matches how they search.
+            # Provenance does not matter: CivitAI/CivArchive sync, a
+            # HuggingFace/ModelScope model card, AI enrichment and manual edits
+            # all land in the same ``civitai.trainedWords`` field.
+            if options.get("trigger_words", False):
+                civitai = item.get("civitai")
+                if isinstance(civitai, dict) and any(
+                    self._matches(word, search_term, search_lower, fuzzy=False)
+                    for word in iter_trigger_words(civitai)
                 ):
                     results.append(item)
                     continue

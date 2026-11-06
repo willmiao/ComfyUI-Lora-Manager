@@ -262,7 +262,8 @@
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
                 "loraModel": "LoRAモデル名",
-                "prompt": "プロンプト"
+                "prompt": "プロンプト",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

@@ -1,4 +1,4 @@
-"""Tests for tag_logic parameter parsing in model handlers."""
+"""Tests for search/filter parameter parsing in model handlers."""
 
 import pytest
 from unittest.mock import Mock
@@ -166,3 +166,25 @@ async def test_tag_logic_without_include_tags(handler):
 
     # tag_logic should still be set even without tag filters
     assert service.last_call_kwargs["tag_logic"] == "all"
+
+
+@pytest.mark.asyncio
+async def test_search_trigger_words_param_is_parsed(handler):
+    """search_trigger_words maps onto the trigger_words search option."""
+    h, service = handler
+
+    response = await make_request(h, "search=anime&search_trigger_words=true")
+    assert response.status == 200
+
+    assert service.last_call_kwargs["search_options"]["trigger_words"] is True
+
+
+@pytest.mark.asyncio
+async def test_search_trigger_words_defaults_to_false(handler):
+    """Trigger-word search stays off unless the client opts in."""
+    h, service = handler
+
+    response = await make_request(h, "search=anime")
+    assert response.status == 200
+
+    assert service.last_call_kwargs["search_options"]["trigger_words"] is False

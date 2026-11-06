@@ -262,7 +262,8 @@
                 "title": "כותרת מתכון",
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
-                "prompt": "פרומפט"
+                "prompt": "פרומפט",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

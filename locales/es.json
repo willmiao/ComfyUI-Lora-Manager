@@ -262,7 +262,8 @@
                 "title": "Título de la receta",
                 "loraName": "Nombre de archivo LoRA",
                 "loraModel": "Nombre del modelo LoRA",
-                "prompt": "Prompt"
+                "prompt": "Prompt",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

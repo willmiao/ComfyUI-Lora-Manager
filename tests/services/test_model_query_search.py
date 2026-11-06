@@ -141,6 +141,68 @@ class TestSearchStrategyCivitaiIds:
         assert strategy.apply([item], "12345", HASH_ONLY_OPTIONS) == []
 
 
+class TestSearchStrategyTriggerWords:
+    """Trigger-word search matches declared words, whatever their provenance."""
+
+    OPTIONS = {
+        "filename": False,
+        "modelname": False,
+        "tags": False,
+        "creator": False,
+        "trigger_words": True,
+    }
+
+    def test_disabled_by_default(self, strategy):
+        item = make_item(civitai={"trainedWords": ["anime style"]})
+        assert strategy.apply([item], "anime", {}) == []
+
+    def test_matches_substring_case_insensitively(self, strategy):
+        item = make_item(civitai={"trainedWords": ["Anime Style", "1girl"]})
+        assert strategy.apply([item], "ANIME", self.OPTIONS) == [item]
+        assert strategy.apply([item], "style", self.OPTIONS) == [item]
+
+    def test_matches_multi_word_phrase(self, strategy):
+        item = make_item(civitai={"trainedWords": ["masterpiece, best quality"]})
+        assert strategy.apply([item], "best quality", self.OPTIONS) == [item]
+        assert strategy.apply([item], "masterpiece", self.OPTIONS) == [item]
+
+    def test_non_matching_word_is_ignored(self, strategy):
+        item = make_item(civitai={"trainedWords": ["anime style"]})
+        assert strategy.apply([item], "cyberpunk", self.OPTIONS) == []
+
+    @pytest.mark.parametrize("civitai", [None, {}, {"trainedWords": None}])
+    def test_missing_trigger_words_do_not_match(self, strategy, civitai):
+        item = make_item(civitai=civitai)
+        assert strategy.apply([item], "anime", self.OPTIONS) == []
+
+    def test_string_trained_words_are_treated_as_one_word(self, strategy):
+        # Older sidecars may store a single string instead of a list; iterating
+        # it per character would make the multi-character query miss.
+        item = make_item(civitai={"trainedWords": "anime style"})
+        assert strategy.apply([item], "anime", self.OPTIONS) == [item]
+        assert strategy.apply([item], "nime st", self.OPTIONS) == [item]
+
+    def test_non_string_entries_are_skipped(self, strategy):
+        item = make_item(civitai={"trainedWords": [None, 42, "anime style"]})
+        assert strategy.apply([item], "anime", self.OPTIONS) == [item]
+        assert strategy.apply([item], "42", self.OPTIONS) == []
+
+    def test_ai_enriched_huggingface_model_matches(self, strategy):
+        # AI enrichment writes civitai.trainedWords for non-CivitAI sources too.
+        item = make_item(
+            from_civitai=False,
+            source_platform="huggingface",
+            civitai={"trainedWords": ["my style"]},
+        )
+        assert strategy.apply([item], "my style", self.OPTIONS) == [item]
+
+    def test_fuzzy_mode_stays_substring_only(self, strategy):
+        item = make_item(civitai={"trainedWords": ["anime style"]})
+        # A typo is not worth running the fuzzy matcher over every trigger word.
+        assert strategy.apply([item], "animee", self.OPTIONS, fuzzy=True) == []
+        assert strategy.apply([item], "anime", self.OPTIONS, fuzzy=True) == [item]
+
+
 class TestFormatResponseAutov3:
     """format_response should pass the autov3 field through unchanged."""
 

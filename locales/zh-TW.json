@@ -262,7 +262,8 @@
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
                 "loraModel": "LoRA 模型名稱",
-                "prompt": "提示詞"
+                "prompt": "提示詞",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

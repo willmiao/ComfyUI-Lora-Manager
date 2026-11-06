@@ -304,6 +304,10 @@ export class SearchManager {
             pageState.searchOptions.modelname = options.modelname || false;
             pageState.searchOptions.tags = options.tags || false;
             pageState.searchOptions.creator = options.creator || false;
+            // Only the LoRAs page exposes this option; leave other pages' state untouched.
+            if (options.triggerWords !== undefined) {
+                pageState.searchOptions.triggerWords = options.triggerWords;
+            }
         }
       }
       

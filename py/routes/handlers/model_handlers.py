@@ -403,6 +403,9 @@ class ModelListingHandler:
             == "true",
             "tags": request.query.get("search_tags", "false").lower() == "true",
             "creator": request.query.get("search_creator", "false").lower() == "true",
+            "trigger_words": (
+                request.query.get("search_trigger_words", "false").lower() == "true"
+            ),
             "recursive": request.query.get("recursive", "true").lower() == "true",
         }
 

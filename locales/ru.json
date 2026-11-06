@@ -262,7 +262,8 @@
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
-                "prompt": "Промпт"
+                "prompt": "Промпт",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

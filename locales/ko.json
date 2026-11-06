@@ -262,7 +262,8 @@
                 "title": "레시피 제목",
                 "loraName": "LoRA 파일명",
                 "loraModel": "LoRA 모델명",
-                "prompt": "프롬프트"
+                "prompt": "프롬프트",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {

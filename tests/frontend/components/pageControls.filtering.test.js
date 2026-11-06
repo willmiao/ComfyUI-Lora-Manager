@@ -97,6 +97,9 @@ afterEach(() => {
 
 function renderControlsDom(pageKey) {
   document.body.dataset.page = pageKey;
+  const triggerWordChip = pageKey === 'loras'
+    ? '<div class="search-option-tag" data-option="triggerWords"></div>'
+    : '';
   document.body.innerHTML = `
     <div class="header-search">
       <div class="search-container">
@@ -112,6 +115,10 @@ function renderControlsDom(pageKey) {
     <div id="searchOptionsPanel" class="search-options-panel hidden">
       <button id="closeSearchOptions"></button>
       <div class="search-option-tag active" data-option="filename"></div>
+      <div class="search-option-tag active" data-option="modelname"></div>
+      <div class="search-option-tag active" data-option="tags"></div>
+      <div class="search-option-tag" data-option="creator"></div>
+      ${triggerWordChip}
     </div>
     <div id="filterPanel" class="filter-panel hidden">
       <input id="baseModelSearchInput" />
@@ -230,6 +237,48 @@ describe('SearchManager filtering scenarios', () => {
     expect(getCurrentPageState().filters.search).toBe('flux');
     expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledWith(true, false);
     expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles the LoRA trigger-word search option into page state', async () => {
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { getCurrentPageState } = stateModule;
+    const { SearchManager } = await import('../../../static/js/managers/SearchManager.js');
+
+    new SearchManager({ page: 'loras', searchDelay: 0 });
+
+    const triggerChip = document.querySelector('.search-option-tag[data-option="triggerWords"]');
+    expect(triggerChip).not.toBeNull();
+    expect(getCurrentPageState().searchOptions.triggerWords).toBe(false);
+
+    triggerChip.click();
+    expect(getCurrentPageState().searchOptions.triggerWords).toBe(true);
+    expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledWith(true, false);
+
+    triggerChip.click();
+    expect(getCurrentPageState().searchOptions.triggerWords).toBe(false);
+  });
+
+  it('leaves trigger-word state untouched on pages without the option', async () => {
+    vi.useFakeTimers();
+
+    renderControlsDom('checkpoints');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('checkpoints');
+    const { getCurrentPageState } = stateModule;
+    const { SearchManager } = await import('../../../static/js/managers/SearchManager.js');
+
+    new SearchManager({ page: 'checkpoints', searchDelay: 0 });
+
+    expect(document.querySelector('.search-option-tag[data-option="triggerWords"]')).toBeNull();
+
+    const input = document.getElementById('searchInput');
+    input.value = 'flux';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+
+    expect(getCurrentPageState().searchOptions.triggerWords).toBeUndefined();
   });
 
   it.each([
