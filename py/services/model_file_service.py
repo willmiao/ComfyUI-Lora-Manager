@@ -494,8 +494,10 @@ class ModelFileService:
             # Check if already in root directory
             if os.path.normpath(current_dir) == os.path.normpath(current_root):
                 return None  # Signal to skip
-            
-            return current_root
+
+            # Match the templated branch (and the scanner's stored paths):
+            # one separator form regardless of the configured layout.
+            return current_root.replace(os.sep, '/')
         else:
             # Calculate new relative path based on settings
             new_relative_path = calculate_relative_path_for_model(model, self.model_type)
@@ -1153,7 +1155,7 @@ class ModelMoveService:
                     from ..utils.utils import calculate_relative_path_for_model
                     relative_path = calculate_relative_path_for_model(model_data, self.model_type)
                     if relative_path:
-                        target_path = os.path.join(target_path, relative_path).replace(os.sep, '/')
+                        target_path = os.path.join(target_path, relative_path)
                     elif not get_settings_manager().get_download_path_template(self.model_type):
                         # Flat structure, target_path remains the root
                         pass
@@ -1161,6 +1163,9 @@ class ModelMoveService:
                         # Could not calculate relative path (e.g. missing metadata)
                         # Fallback to manual target_path or skip?
                         pass
+                    # Expose one form for both the flat and templated layouts;
+                    # the scanner stores file paths posix-normalized.
+                    target_path = target_path.replace(os.sep, '/')
 
             source_dir = os.path.dirname(file_path)
             if os.path.normpath(source_dir) == os.path.normpath(target_path):
