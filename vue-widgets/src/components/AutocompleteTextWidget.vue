@@ -115,7 +115,7 @@ const showClearButton = computed(() => hasText.value)
 useAutocomplete(
   textareaRef,
   props.modelType ?? 'loras',
-  { showPreview: props.showPreview ?? true }
+  { showPreview: props.showPreview ?? true, node: props.node }
 )
 
 const updateHasTextState = () => {

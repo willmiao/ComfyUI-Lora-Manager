@@ -1348,6 +1348,23 @@ class BaseModelService(ABC):
         search_term: str,
         limit: int = 15,
         offset: int = 0,
+        **kwargs: Any,
+    ) -> List[str]:
+        """Search relative paths for autocomplete (paths only).
+
+        Thin wrapper over :meth:`search_relative_path_matches` that keeps the
+        historical response shape: a list of relative path strings.
+        """
+        matches = await self.search_relative_path_matches(
+            search_term, limit, offset, **kwargs
+        )
+        return [match["relative_path"] for match in matches]
+
+    async def search_relative_path_matches(
+        self,
+        search_term: str,
+        limit: int = 15,
+        offset: int = 0,
         *,
         folder: Optional[str] = None,
         folder_include: Optional[list[str]] = None,
@@ -1361,12 +1378,19 @@ class BaseModelService(ABC):
         allow_selling_generated_content: Optional[bool] = None,
         recursive: bool = True,
         apply_filters: bool = False,
-    ) -> List[str]:
-        """Search model relative file paths for autocomplete functionality.
+        match_model_name: bool = False,
+    ) -> List[Dict[str, str]]:
+        """Search model entries for autocomplete, returning path and title.
 
         Optional filter kwargs mirror the filters used by the list endpoint
         (/api/lm/{prefix}/list). When no filter kwargs are provided the
         behavior is identical to plain token-based path matching.
+
+        With ``match_model_name`` enabled, entries whose library title matches
+        the same tokens are also returned. Title-only matches are appended
+        after every path match, so the historical filename ordering (and the
+        ability to find a file by name) is unchanged. Tokens must all hit the
+        same field: a query is either a path query or a title query.
         """
         cache = await self.scanner.get_cached_data()
         include_terms, exclude_terms = self._parse_search_tokens(search_term)
@@ -1418,12 +1442,15 @@ class BaseModelService(ABC):
                     data, allow_selling_generated_content
                 )
 
-        matching_paths = []
+        path_matches: List[Dict[str, str]] = []
+        title_only_matches: List[Dict[str, str]] = []
 
         # Get model roots for path calculation
         model_roots = self.scanner.get_model_roots()
 
-        # Collect all matching paths first (needed for proper sorting and offset)
+        # Collect all matching entries first (needed for proper sorting and
+        # offset). Path matches keep the historical ordering; title-only
+        # matches are collected separately so they can never outrank them.
         for model in data:
             file_path = model.get("file_path", "")
             if not file_path:
@@ -1446,22 +1473,45 @@ class BaseModelService(ABC):
             if not relative_path:
                 continue
 
+            model_name = str(model.get("model_name") or "")
             relative_lower = relative_path.lower()
             if self._relative_path_matches_tokens(
                 relative_lower, include_terms, exclude_terms
             ):
-                matching_paths.append(relative_path)
+                path_matches.append(
+                    {"relative_path": relative_path, "model_name": model_name}
+                )
+                continue
 
-        # Group by folder (root first, then alphabetically) and sort by
-        # relevance (prefix and earliest hits, then length and alphabetically)
-        # within each folder group.
-        matching_paths.sort(
-            key=lambda relative: self._relative_path_folder_group_sort_key(
-                relative, include_terms
+            if not match_model_name or not model_name:
+                continue
+
+            if self._relative_path_matches_tokens(
+                model_name.lower(), include_terms, exclude_terms
+            ):
+                title_only_matches.append(
+                    {"relative_path": relative_path, "model_name": model_name}
+                )
+
+        # Group path matches by folder (root first, then alphabetically) and
+        # sort by relevance within each folder group. Title-only matches follow
+        # in title order, so a title search adds rows without reordering the
+        # filename results users already rely on.
+        path_matches.sort(
+            key=lambda match: self._relative_path_folder_group_sort_key(
+                match["relative_path"], include_terms
+            )
+        )
+        title_only_matches.sort(
+            key=lambda match: (
+                match["model_name"].lower(),
+                match["relative_path"].lower(),
             )
         )
 
+        matches = path_matches + title_only_matches
+
         # Apply offset and limit
-        start = min(offset, len(matching_paths))
-        end = min(start + limit, len(matching_paths))
-        return matching_paths[start:end]
+        start = min(offset, len(matches))
+        end = min(start + limit, len(matches))
+        return matches[start:end]

@@ -453,3 +453,105 @@ async def test_search_relative_paths_no_filters_regression():
         f"flux{os.sep}detail-model.safetensors",
     ]
 
+
+@pytest.mark.asyncio
+async def test_search_relative_path_matches_returns_library_titles():
+    scanner = FakeScanner(
+        [
+            {
+                "file_path": "/models/portraits/8f3c1a9d2b7e4f60.safetensors",
+                "model_name": "Golden Hour Portrait",
+            },
+            {
+                "file_path": "/models/styles/watercolour_wash.safetensors",
+                "model_name": "Watercolour Wash",
+            },
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    matches = await service.search_relative_path_matches(
+        "golden", match_model_name=True
+    )
+
+    assert matches == [
+        {
+            "relative_path": f"portraits{os.sep}8f3c1a9d2b7e4f60.safetensors",
+            "model_name": "Golden Hour Portrait",
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_title_matching_is_opt_in():
+    scanner = FakeScanner(
+        [
+            {
+                "file_path": "/models/portraits/8f3c1a9d2b7e4f60.safetensors",
+                "model_name": "Golden Hour Portrait",
+            }
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    assert await service.search_relative_path_matches("golden") == []
+    assert await service.search_relative_paths("golden") == []
+
+
+@pytest.mark.asyncio
+async def test_title_only_matches_rank_after_every_path_match():
+    """Title matches append; they never reorder or hide filename results."""
+    scanner = FakeScanner(
+        [
+            {
+                "file_path": "/models/zz-first/portrait-helper.safetensors",
+                "model_name": "Unrelated Helper",
+            },
+            {
+                "file_path": "/models/a-early/portrait-base.safetensors",
+                "model_name": "Base Model",
+            },
+            {
+                "file_path": "/models/styles/random-blend.safetensors",
+                "model_name": "Portrait Master",
+            },
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    matches = await service.search_relative_path_matches(
+        "portrait", match_model_name=True
+    )
+
+    # Path matches keep their folder-group order even though the title-only
+    # entry lives in a folder ("portraits") that sorts before "zz-first".
+    assert [match["relative_path"] for match in matches] == [
+        f"a-early{os.sep}portrait-base.safetensors",
+        f"zz-first{os.sep}portrait-helper.safetensors",
+        f"styles{os.sep}random-blend.safetensors",
+    ]
+    assert matches[2]["model_name"] == "Portrait Master"
+
+
+@pytest.mark.asyncio
+async def test_title_matching_honours_exclude_tokens():
+    scanner = FakeScanner(
+        [
+            {
+                "file_path": "/models/portraits/random-blend.safetensors",
+                "model_name": "Golden Hour Portrait",
+            }
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    assert (
+        await service.search_relative_path_matches(
+            "golden -hour", match_model_name=True
+        )
+        == []
+    )

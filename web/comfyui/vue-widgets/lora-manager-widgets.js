@@ -2123,14 +2123,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-a0c1830b] {
+.autocomplete-text-widget[data-v-ba49c841] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-a0c1830b] {
+.input-wrapper[data-v-ba49c841] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2140,7 +2140,7 @@ to { transform: rotate(360deg);
 /* Theme tokens (--lm-*) come from the widget container, which ComfyUI's
    renderer switches between the canvas widget palette and the Vue node
    widget palette. Text size matches ComfyUI's own textarea in both modes. */
-.text-input[data-v-a0c1830b] {
+.text-input[data-v-ba49c841] {
   flex: 1;
   width: 100%;
   background-color: var(--lm-surface);
@@ -2160,18 +2160,18 @@ to { transform: rotate(360deg);
 
 /* Vue DOM mode: same surface/foreground as the built-in WidgetTextarea,
    only the box metrics differ. */
-.text-input.vue-dom-mode[data-v-a0c1830b] {
+.text-input.vue-dom-mode[data-v-ba49c841] {
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
   border-radius: 6px;  /* matches ComfyUI's rounded-md textarea */
   font-family: inherit;
 }
-.text-input[data-v-a0c1830b]:focus {
+.text-input[data-v-ba49c841]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-a0c1830b] {
+.clear-button[data-v-ba49c841] {
   position: absolute;
   right: calc(6px + var(--lm-vscrollbar-width, 0px));
   bottom: 6px;  /* Changed from top to bottom */
@@ -2194,28 +2194,28 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-a0c1830b] {
+.input-wrapper:hover .clear-button[data-v-ba49c841] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-a0c1830b]:hover {
+.clear-button[data-v-ba49c841]:hover {
   opacity: 1;
   background: var(--lm-danger-soft);
   color: var(--lm-danger-text);
 }
-.clear-button svg[data-v-a0c1830b] {
+.clear-button svg[data-v-ba49c841] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-a0c1830b] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-ba49c841] {
   right: calc(8px + var(--lm-vscrollbar-width, 0px));
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-a0c1830b] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-ba49c841] {
   width: 14px;
   height: 14px;
 }
@@ -15233,7 +15233,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     useAutocomplete(
       textareaRef,
       props.modelType ?? "loras",
-      { showPreview: props.showPreview ?? true }
+      { showPreview: props.showPreview ?? true, node: props.node }
     );
     const updateHasTextState = () => {
       hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
@@ -15410,7 +15410,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-a0c1830b"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-ba49c841"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -15751,6 +15751,13 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
     onCleanup == null ? void 0 : onCleanup();
   };
 }
+function getComfyUIBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmUrl(path) {
+  return `${getComfyUIBasePath()}${path}`;
+}
 let _loraSyntaxFormatCache = null;
 let _loraSyntaxFormatRefreshPromise = null;
 async function _fetchLoraSyntaxFormat() {
@@ -15864,13 +15871,6 @@ function stripAutocompleteMetadataFromPromptResult(result) {
     }
   }
   return result;
-}
-function getComfyUIBasePath() {
-  const { pathname } = window.location;
-  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-}
-function lmUrl(path) {
-  return `${getComfyUIBasePath()}${path}`;
 }
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES$1 = [

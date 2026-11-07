@@ -15,10 +15,13 @@ import {
     getAutocompleteAutoFormatPreference,
     getAutocompleteAcceptKeyPreference,
     getLoraActiveFiltersAutocompletePreference,
+    getNodeLoraNameDisplayPreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
     setLoraManagerSettingValue,
 } from "./settings.js";
+import { normalizeLoraNameKey } from "./loras_widget_utils.js";
+import { parseLoraCodeTags } from "./lora_selection.js";
 import { showToast } from "./utils.js";
 
 // localStorage key for the one-time "how to disable" hint in the dropdown
@@ -588,6 +591,12 @@ class AutoComplete {
         this.selectedIndex = -1;
         this.hasManualSelection = false;
         this.items = [];
+        // Relative path -> library title, filled from `items` in the
+        // relative-paths response when the node rows show model names.
+        this.itemModelNames = new Map();
+        // Snapshot of the LoRA names already on the node, refreshed per render
+        // so the "already added" cue cannot go stale between keystrokes.
+        this.addedNamesForRender = null;
         this.debounceTimer = null;
         this.isVisible = false;
         this.currentSearchTerm = '';
@@ -1408,6 +1417,91 @@ class AutoComplete {
         return 'use_active_filters=true';
     }
 
+    /**
+     * Whether the node rows show library titles.
+     *
+     * Title matching follows the existing label setting instead of adding a new
+     * toggle: the default "File Name" mode keeps the historical filename-only
+     * search (and therefore the same request URL and payload). Only a user who
+     * chose to read the node by model name gets title matches.
+     */
+    _shouldUseLoraTitles() {
+        if (this.modelType !== 'loras') {
+            return false;
+        }
+        try {
+            return getNodeLoraNameDisplayPreference() === 'model_name';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * Extra query parameters for title-aware searches (null keeps the legacy
+     * request untouched).
+     */
+    _getLoraTitleQuery() {
+        return this._shouldUseLoraTitles()
+            ? 'match_model_name=true&include_model_name=true'
+            : null;
+    }
+
+    /**
+     * Snapshot of the LoRA names already on the node, normalized the same way
+     * the node stores them. Prefers the LoRA list when the node has one (the
+     * list is authoritative there); text-only nodes fall back to the tags in
+     * the textarea.
+     */
+    _collectAddedLoraNames() {
+        if (this.modelType !== 'loras') {
+            return null;
+        }
+        const node = this.options.node;
+        if (!node) {
+            return null;
+        }
+
+        const names = new Set();
+        const lorasWidget = node.lorasWidget;
+        if (lorasWidget && Array.isArray(lorasWidget.value)) {
+            for (const lora of lorasWidget.value) {
+                const key = normalizeLoraNameKey(lora?.name);
+                if (key) {
+                    names.add(key);
+                }
+            }
+            return names;
+        }
+
+        for (const tag of parseLoraCodeTags(this.inputElement?.value || '')) {
+            names.add(tag.name);
+        }
+        return names;
+    }
+
+    /** Library title for a result path, or '' when it is unknown. */
+    _getLoraTitle(relativePath) {
+        return this.itemModelNames.get(relativePath) || '';
+    }
+
+    /** Whether the current results include this path in the node's LoRA list. */
+    _isLoraAdded(relativePath) {
+        if (!this.addedNamesForRender || this.addedNamesForRender.size === 0) {
+            return false;
+        }
+        const key = normalizeLoraNameKey(relativePath);
+        if (!key) {
+            return false;
+        }
+        if (this.addedNamesForRender.has(key)) {
+            return true;
+        }
+        // Legacy workflows store entries without their folder; the backend
+        // resolves those by bare file name, so the cue must too.
+        const bareName = key.slice(key.lastIndexOf('/') + 1);
+        return bareName !== key && this.addedNamesForRender.has(bareName);
+    }
+
     async search(term = '', endpoint = null) {
         try {
             this.currentSearchTerm = term;
@@ -1428,6 +1522,10 @@ class AutoComplete {
             // Active-filter query params for loras (null when setting off or
             // model type is not loras, so appending is safe for all types)
             const activeFiltersQuery = this._getActiveLoraFilters();
+            // Title matching + titles are opt-in and follow the node label
+            // setting, so the default filename mode sends the legacy request.
+            const titleQuery = this._getLoraTitleQuery();
+            this.itemModelNames = new Map();
 
             // Generate multiple query variations for better matching, but avoid
             // sending duplicate-equivalent requests that normalize to the same
@@ -1448,14 +1546,24 @@ class AutoComplete {
                 const url = endpoint.includes('?')
                     ? `${endpoint}&search=${encodeURIComponent(query)}&limit=${this.options.maxItems}`
                     : `${endpoint}?search=${encodeURIComponent(query)}&limit=${this.options.maxItems}`;
-                const finalUrl = activeFiltersQuery ? `${url}&${activeFiltersQuery}` : url;
+                const baseUrl = activeFiltersQuery ? `${url}&${activeFiltersQuery}` : url;
+                const finalUrl = titleQuery ? `${baseUrl}&${titleQuery}` : baseUrl;
 
                 try {
                     const response = await api.fetchApi(finalUrl);
                     const data = await response.json();
+                    const names = new Map();
+                    if (Array.isArray(data.items)) {
+                        for (const entry of data.items) {
+                            if (entry && typeof entry === 'object' && entry.relative_path) {
+                                names.set(entry.relative_path, entry.model_name || '');
+                            }
+                        }
+                    }
                     return {
                         items: data.success ? (data.relative_paths || data.words || []) : [],
                         meta: data?.meta || null,
+                        names,
                     };
                 } catch (error) {
                     console.warn(`Search query failed for "${query}":`, error);
@@ -1484,6 +1592,12 @@ class AutoComplete {
             for (const result of resultsArrays) {
                 if (!this.wildcardMeta && result?.meta) {
                     this.wildcardMeta = result.meta;
+                }
+
+                if (result?.names instanceof Map) {
+                    for (const [relativePath, modelName] of result.names) {
+                        this.itemModelNames.set(relativePath, modelName);
+                    }
                 }
 
                 const resultArray = result?.items || [];
@@ -1895,6 +2009,8 @@ class AutoComplete {
     render() {
         this.selectedIndex = -1;
         this.hasManualSelection = false;
+        // Refresh the "already added" set once per render instead of per row.
+        this.addedNamesForRender = this._collectAddedLoraNames();
 
         // Command-list state hints do not belong to regular search results
         this._removeCommandListFooter();
@@ -2082,6 +2198,13 @@ class AutoComplete {
         itemEl.appendChild(actions);
     }
     
+    _escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
     highlightMatch(text, searchTerm) {
         const { include } = parseSearchTokens(searchTerm);
         const sanitizedTokens = include
@@ -2242,17 +2365,28 @@ class AutoComplete {
 
             // Active-filter query params for loras (null when setting off)
             const activeFiltersQuery = this._getActiveLoraFilters();
+            // Keep pagination consistent with the initial search: if titles
+            // were requested there, later pages must carry them too.
+            const titleQuery = this._getLoraTitleQuery();
 
             // Execute all queries in parallel with offset
             const searchPromises = queriesToExecute.map(async (query) => {
                 const url = endpoint.includes('?')
                     ? `${endpoint}&search=${encodeURIComponent(query)}&limit=${this.options.pageSize}&offset=${offset}`
                     : `${endpoint}?search=${encodeURIComponent(query)}&limit=${this.options.pageSize}&offset=${offset}`;
-                const finalUrl = activeFiltersQuery ? `${url}&${activeFiltersQuery}` : url;
+                const baseUrl = activeFiltersQuery ? `${url}&${activeFiltersQuery}` : url;
+                const finalUrl = titleQuery ? `${baseUrl}&${titleQuery}` : baseUrl;
 
                 try {
                     const response = await api.fetchApi(finalUrl);
                     const data = await response.json();
+                    if (Array.isArray(data.items)) {
+                        for (const entry of data.items) {
+                            if (entry && typeof entry === 'object' && entry.relative_path) {
+                                this.itemModelNames.set(entry.relative_path, entry.model_name || '');
+                            }
+                        }
+                    }
                     return data.success ? (data.relative_paths || data.words || []) : [];
                 } catch (error) {
                     console.warn(`Search query failed for "${query}":`, error);
@@ -2376,6 +2510,9 @@ class AutoComplete {
      */
     updateVisibleItems() {
         if (!this.scrollContainer || !this.contentContainer) return;
+        // Scrolling re-renders rows without going through render(), so refresh
+        // the snapshot here too (cheap: one pass over the node's LoRA list).
+        this.addedNamesForRender = this._collectAddedLoraNames();
 
         if (this._containsInformationalItems()) {
             this.contentContainer.innerHTML = '';
@@ -2480,11 +2617,21 @@ class AutoComplete {
         } else if (isEnriched) {
             this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
         } else {
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'lm-autocomplete-name';
             // Use display text without extension for cleaner UI
             const displayTextWithoutExt = this._getDisplayText(itemData);
-            nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
+            const title = this._getLoraTitle(itemData);
+            const useTitle = this._shouldUseLoraTitles() && Boolean(title);
+            const primaryText = useTitle ? title : displayTextWithoutExt;
+            const secondaryText = useTitle
+                ? displayTextWithoutExt
+                : (this.modelType === 'loras' ? title : '');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'lm-autocomplete-name';
+            nameSpan.innerHTML = this.highlightMatch(
+                this._escapeHtml(primaryText),
+                this.currentSearchTerm,
+            );
             nameSpan.style.cssText = `
                 flex: 1;
                 min-width: 0;
@@ -2492,6 +2639,41 @@ class AutoComplete {
                 text-overflow: ellipsis;
             `;
             item.appendChild(nameSpan);
+
+            // Show the other name (path when the title is shown, title when
+            // the path is) so a row never hides which file it refers to.
+            if (secondaryText && secondaryText !== primaryText) {
+                const subtitle = document.createElement('span');
+                subtitle.className = 'lm-autocomplete-subtitle';
+                subtitle.textContent = secondaryText;
+                subtitle.style.cssText = `
+                    flex: 0 1 45%;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    color: var(--lm-fg-subtle, #9aa0a6);
+                    font-size: 11px;
+                    text-align: right;
+                `;
+                item.appendChild(subtitle);
+            }
+
+            // "Already added" cue: the node's own list decides, so a LoRA that
+            // is only present in the textarea is still reported as added.
+            if (this._isLoraAdded(itemData)) {
+                const addedCue = document.createElement('span');
+                addedCue.className = 'lm-autocomplete-added';
+                addedCue.textContent = '✓';
+                addedCue.title = 'Already added';
+                addedCue.setAttribute('aria-label', 'Already added');
+                addedCue.style.cssText = `
+                    flex: none;
+                    font-weight: 600;
+                    color: var(--lm-accent, #6aa9ff);
+                `;
+                item.appendChild(addedCue);
+            }
         }
 
         // Prevent textarea from losing focus when clicking dropdown items.

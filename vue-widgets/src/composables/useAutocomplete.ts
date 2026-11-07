@@ -12,6 +12,9 @@ interface AutocompleteOptions {
   minChars?: number
   debounceDelay?: number
   showPreview?: boolean
+  // LiteGraph node owning the textarea; the autocomplete reads its LoRA list
+  // to mark results that are already added.
+  node?: unknown
 }
 
 interface AutoCompleteInstance {
@@ -25,6 +28,7 @@ export interface UseAutocompleteOptions {
   maxItems?: number
   minChars?: number
   debounceDelay?: number
+  node?: unknown
 }
 
 export function useAutocomplete(

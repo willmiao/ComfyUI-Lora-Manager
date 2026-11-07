@@ -14,10 +14,22 @@ class DummyService:
 
     def __init__(self):
         self.calls = []
+        self.match_calls = []
 
     async def search_relative_paths(self, search, limit, offset, **kwargs):
         self.calls.append((search, limit, offset, kwargs))
         return []
+
+    async def search_relative_path_matches(
+        self, search, limit, offset, *, match_model_name=False, **kwargs
+    ):
+        self.match_calls.append((search, limit, offset, match_model_name, kwargs))
+        return [
+            {
+                "relative_path": "portraits/example.safetensors",
+                "model_name": "Example Title",
+            }
+        ]
 
 
 def make_handler(service=None):
@@ -195,3 +207,58 @@ async def test_relative_paths_without_flag_ignores_store():
     _, _, _, kwargs = service.calls[0]
     assert kwargs["folder"] is None
     assert kwargs["apply_filters"] is False
+
+
+@pytest.mark.asyncio
+async def test_relative_paths_title_search_returns_items():
+    service = DummyService()
+    handler = make_handler(service)
+
+    response = await handler.get_relative_paths(
+        make_request(
+            {
+                "search": "example",
+                "match_model_name": "true",
+                "include_model_name": "true",
+            }
+        )
+    )
+
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["relative_paths"] == ["portraits/example.safetensors"]
+    assert payload["items"] == [
+        {
+            "relative_path": "portraits/example.safetensors",
+            "model_name": "Example Title",
+        }
+    ]
+    assert service.match_calls[0][3] is True
+    assert service.calls == []
+
+
+@pytest.mark.asyncio
+async def test_relative_paths_title_search_without_items_payload():
+    service = DummyService()
+    handler = make_handler(service)
+
+    response = await handler.get_relative_paths(
+        make_request({"search": "example", "match_model_name": "1"})
+    )
+
+    payload = json.loads(response.text)
+    assert payload["relative_paths"] == ["portraits/example.safetensors"]
+    assert "items" not in payload
+
+
+@pytest.mark.asyncio
+async def test_relative_paths_default_response_has_no_items():
+    service = DummyService()
+    handler = make_handler(service)
+
+    response = await handler.get_relative_paths(make_request({"search": "cartoon"}))
+
+    payload = json.loads(response.text)
+    assert payload["relative_paths"] == []
+    assert "items" not in payload
+    assert service.match_calls == []

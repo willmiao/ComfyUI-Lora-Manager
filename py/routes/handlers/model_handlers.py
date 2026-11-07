@@ -1841,10 +1841,16 @@ class ModelQueryHandler:
                 or allow_selling_generated_content is not None
             )
 
-            matching_paths = await self._service.search_relative_paths(
-                search,
-                limit,
-                offset,
+            match_model_name = request.query.get("match_model_name", "").lower() in (
+                "1",
+                "true",
+            )
+            include_model_name = request.query.get("include_model_name", "").lower() in (
+                "1",
+                "true",
+            )
+
+            search_kwargs = dict(
                 folder=folder,
                 recursive=recursive,
                 base_models=base_models,
@@ -1855,6 +1861,29 @@ class ModelQueryHandler:
                 credit_required=credit_required,
                 allow_selling_generated_content=allow_selling_generated_content,
                 apply_filters=apply_filters,
+            )
+
+            if match_model_name or include_model_name:
+                matches = await self._service.search_relative_path_matches(
+                    search,
+                    limit,
+                    offset,
+                    match_model_name=match_model_name,
+                    **search_kwargs,
+                )
+                payload = {
+                    "success": True,
+                    "relative_paths": [match["relative_path"] for match in matches],
+                }
+                if include_model_name:
+                    payload["items"] = matches
+                return web.json_response(payload)
+
+            matching_paths = await self._service.search_relative_paths(
+                search,
+                limit,
+                offset,
+                **search_kwargs,
             )
             return web.json_response(
                 {"success": True, "relative_paths": matching_paths}
