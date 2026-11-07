@@ -28,6 +28,10 @@ const LORA_INFO_WIDGET_MIN_WIDTH = 300
 const LORA_INFO_WIDGET_MIN_HEIGHT = 200
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100
+// Canvas mode: visible gap between the search box and the LoRA list. ComfyUI's
+// DOM widget overlay normally leaves 2 * margin (20px) between adjacent DOM
+// widgets, which is too loose for this composite pair.
+const AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP = 8
 // Per-modelType min size hints for node initial sizing.
 // These are returned from the factory so ComfyUI's _initialMinSize mechanism
 // gives the node a sensible default width (and height for prompt/embeddings).
@@ -624,19 +628,30 @@ function applyAutocompleteTextLayoutFix(
   _container: HTMLElement | undefined,
   isVueMode: boolean
 ): void {
-  // In Vue rendering mode the WidgetDOM wrapper handles sizing, so we
-  // only provide a computeSize hint and leave the container unconstrained.
-  // In canvas mode we clear all custom sizing so LiteGraph's default
-  // widget-area layout takes over.  Neither path sets a hard max-height;
-  // the textarea can grow freely (e.g. in app mode where
-  // [&_textarea]:resize-y applies).
+  // In Vue rendering mode the WidgetDOM wrapper handles sizing, so we only
+  // provide a fixed computeSize hint and leave the container unconstrained.
+  // In canvas mode LiteGraph lays DOM widgets out from
+  // computeLayoutSize()/computeSize(), and the DOM overlay renders the
+  // element at (computedHeight - 2 * margin).  Adjacent widgets therefore
+  // normally get a 2 * margin (20px) gap; the search box and the LoRA list
+  // are one composite, so reserve only the tighter canvas gap instead:
+  // allocate elementHeight + gap (68px).  The element keeps its 60px
+  // min-height, so it overflows the 48px wrapper into its bottom margin and
+  // leaves exactly the requested, constant gap to the LoRA list.  Neither
+  // path sets a hard max-height, so the textarea can still grow freely in
+  // app mode where [&_textarea]:resize-y applies.
   if (isVueMode) {
     ;(widget as any).computeLayoutSize = undefined
     widget.computeSize = (width?: number) =>
       [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4]
   } else {
-    delete (widget as any).computeLayoutSize
-    delete (widget as any).computeSize
+    // computeLayoutSize() lives on DOMWidgetImpl.prototype, so `delete`
+    // cannot remove it: shadow it with an own property instead.
+    const layoutHeight =
+      AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP
+    ;(widget as any).computeLayoutSize = undefined
+    // _arrangeWidgets() adds 4px to each computeSize() height.
+    widget.computeSize = (width?: number) => [width ?? 200, layoutHeight - 4]
   }
 }
 

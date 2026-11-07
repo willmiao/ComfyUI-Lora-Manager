@@ -17,6 +17,8 @@ Uses `computeLayoutSize()` + `distributeSpace()` to allocate widget height withi
 - `getMinHeight()` in `addDOMWidget` options → minimum widget height
 - `widget.computeLayoutSize()` → `{ minHeight, minWidth, maxHeight? }`
 - Avoid `getMaxHeight()` unless the widget genuinely needs a fixed cap (prevents user resize)
+- The DOM overlay renders each widget at `computedHeight - 2 * margin` (default margin 10px per side) and places widgets contiguously, so adjacent DOM widgets normally get a `2 * margin` (20px) gap. LiteGraph adds 4px to `computeSize` results, so a full-gap fixed widget uses `computeSize = [width, elementHeight + 2 * margin - 4]`. For a tighter constant gap between two related widgets (the autocomplete search box + LoRA list pair), allocate `elementHeight + desiredGap` instead; the element's CSS `min-height` covers the rest of its bottom margin.
+- `computeLayoutSize()` is defined on `DOMWidgetImpl.prototype`, so `delete widget.computeLayoutSize` does nothing. Assign `widget.computeLayoutSize = undefined` to shadow it with an own property.
 
 ## Vue Mode Layout
 

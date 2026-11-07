@@ -16308,6 +16308,7 @@ const LORA_INFO_WIDGET_MIN_WIDTH = 300;
 const LORA_INFO_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
+const AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP = 8;
 const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
 const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
@@ -16743,8 +16744,9 @@ function applyAutocompleteTextLayoutFix(widget, _container, isVueMode) {
     widget.computeLayoutSize = void 0;
     widget.computeSize = (width) => [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4];
   } else {
-    delete widget.computeLayoutSize;
-    delete widget.computeSize;
+    const layoutHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP;
+    widget.computeLayoutSize = void 0;
+    widget.computeSize = (width) => [width ?? 200, layoutHeight - 4];
   }
 }
 const initVueDomModeListener = () => {
