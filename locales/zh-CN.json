@@ -263,7 +263,7 @@
                 "loraName": "LoRA 文件名",
                 "loraModel": "LoRA 模型名称",
                 "prompt": "提示词",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "触发词"
             }
         },
         "filter": {
@@ -759,12 +759,12 @@
                 "customTemplate": "自定义模板"
             },
             "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "适用于工作流下载以及工作流页面上的自动整理。",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "工作流"
             },
             "baseModelPathMappings": "基础模型路径映射",
             "baseModelPathMappingsHelp": "为特定基础模型自定义文件夹名称（如“Flux.1 D”→“flux”）",

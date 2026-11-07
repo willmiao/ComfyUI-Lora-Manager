@@ -263,7 +263,7 @@
                 "loraName": "LoRA 파일명",
                 "loraModel": "LoRA 모델명",
                 "prompt": "프롬프트",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "트리거 단어"
             }
         },
         "filter": {
@@ -759,12 +759,12 @@
                 "customTemplate": "사용자 정의 템플릿"
             },
             "customTemplatePlaceholder": "사용자 정의 템플릿 입력 (예: {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "워크플로 다운로드와 워크플로 페이지의 자동 정리에 적용됩니다.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "워크플로"
             },
             "baseModelPathMappings": "베이스 모델 경로 매핑",
             "baseModelPathMappingsHelp": "특정 베이스 모델의 폴더 이름을 사용자 정의합니다 (예: \"Flux.1 D\" → \"flux\")",
