@@ -5048,7 +5048,9 @@ class ModelScanner:
                     'error': 'No file paths provided for deletion',
                     'results': []
                 }
-            
+
+            self.reset_cancellation()
+
             # Keep track of success and failures
             results = []
             total_deleted = 0

@@ -1646,6 +1646,27 @@ async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
 
 
 @pytest.mark.asyncio
+async def test_bulk_delete_resets_cancellation_from_an_earlier_operation(tmp_path: Path):
+    """A new delete must not inherit an earlier operation's cancellation flag."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+    scanner.cancel_task()
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["status"] == "success"
+    assert result["total_deleted"] == 2
+    assert not first.exists()
+    assert not second.exists()
+
+
+@pytest.mark.asyncio
 async def test_bulk_delete_cancelled_after_one_staged_batch_present(
     tmp_path: Path, monkeypatch
 ):
