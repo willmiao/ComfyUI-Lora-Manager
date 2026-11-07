@@ -28,6 +28,8 @@ PREVIEW_EXTENSIONS = [
     ".preview.jpeg",
     ".preview.jpg",
     ".preview.mp4",
+    ".preview.gif",
+    ".preview.webm",
     ".png",
     ".jpeg",
     ".jpg",

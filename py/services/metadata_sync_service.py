@@ -15,7 +15,7 @@ from ..utils.file_utils import calculate_sha256, find_preview_file, normalize_pa
 from ..utils.metadata_manager import MetadataManager
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
-from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_sidecar_base_name
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import MetadataPersistError, RateLimitError
 from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
@@ -738,7 +738,7 @@ class MetadataSyncService:
             payload["model_name"] = base_name
         if not payload.get("preview_url"):
             payload["preview_url"] = normalize_path(
-                find_preview_file(base_name, get_preview_dir(file_path))
+                find_preview_file(get_sidecar_base_name(file_path), get_preview_dir(file_path))
             )
 
         if not payload.get("sha256"):

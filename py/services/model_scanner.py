@@ -19,6 +19,8 @@ from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import (
     get_metadata_path,
     get_preview_dir,
+    get_preview_path,
+    get_sidecar_base_name,
     get_sidecar_dir,
     is_centralized,
     resolve_centralized_dir_for_dir,
@@ -840,6 +842,7 @@ class ModelScanner:
     # override this so neither the scan-time pass nor the one-time backfill
     # writes a meaningless state into their entries.
     supports_quantization: bool = True
+    verify_hashes_on_scan: bool = False
 
     _instances = {}  # Dictionary to store instances by class
     _locks = {}  # Dictionary to store locks by class
@@ -2454,15 +2457,26 @@ class ModelScanner:
                     total_folder_repaired,
                 )
 
-            # Find missing files (in cache but not in filesystem). Only paths
-            # inside this scan's scope are candidates, and paths the walk could
-            # not read are kept and reported instead of being removed.
+            # Find missing files (in cache but not in filesystem). Scoped scans
+            # only remove inside their scope. A full-library refresh also drops
+            # rows left under roots that were removed from the configuration,
+            # while configured-but-unreadable roots remain protected below.
             missing_files: Set[str] = set()
+            full_library_reconcile = scope is None or (
+                scope.roots is None and scope.folder is None
+            )
             for path in cached_paths - found_paths:
-                if not any(
+                in_scope = any(
                     _path_matches_prefix(path, prefix)
                     for _root, prefix in scope_prefixes
-                ):
+                )
+                if not in_scope:
+                    protected_by_configured_root = any(
+                        _path_matches_prefix(path, _scope_prefix(root, None))
+                        for root in configured_only
+                    )
+                    if full_library_reconcile and not protected_by_configured_root:
+                        missing_files.add(path)
                     continue
                 unreachable_prefix = unreachable.match(path)
                 if unreachable_prefix is not None:
@@ -3555,7 +3569,6 @@ class ModelScanner:
                     
                     file_info = next((f for f in version_info.get('files', []) if f.get('primary')), None)
                     if file_info:
-                        local_stem = os.path.splitext(os.path.basename(file_path))[0]
                         # from_civitai_info expects an API-shaped file entry and
                         # strips one extension itself, so hand it the real
                         # basename: passing the already extension-free stem made
@@ -3564,7 +3577,7 @@ class ModelScanner:
                         file_info['name'] = os.path.basename(file_path)
 
                         metadata = cast(Any, self.model_class).from_civitai_info(version_info, file_info, file_path)
-                        metadata.preview_url = find_preview_file(local_stem, get_preview_dir(file_path))
+                        metadata.preview_url = find_preview_file(get_sidecar_base_name(file_path), get_preview_dir(file_path))
                         await MetadataManager.save_metadata(file_path, metadata)
                         logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
                 except Exception as e:
@@ -3617,30 +3630,38 @@ class ModelScanner:
 
         model_data = self._build_cache_entry(metadata, folder=normalized_folder)
 
-        # Compute SHA256 hash when metadata provided none (e.g., CivitAI API response has empty hashes).
-        # Respect hash_status='pending' (set by CheckpointScanner for large models) to defer
-        # hash calculation until on-demand — avoids reading entire checkpoint files at startup.
+        # Most libraries trust a stored hash to avoid reading large weight files.
+        # Workflow artifacts opt into verification on every full scan because
+        # their older shared sidecars could assign one artifact's hash to another.
+        # Respect hash_status='pending' for scanners that defer large-file hashing.
         hash_status = model_data.get('hash_status', '')
         stored_sha = (model_data.get('sha256') or '').strip()
         # The empty-string placeholder is not an identity: models poisoned by a
         # hash of zero bytes (issue #1162) are re-hashed once the file has
         # content, so an existing library heals on its next full scan.
-        needs_sha = not stored_sha or is_empty_placeholder_hash(stored_sha)
+        needs_sha = (
+            self.verify_hashes_on_scan
+            or not stored_sha
+            or is_empty_placeholder_hash(stored_sha)
+        )
         if needs_sha and hash_status != 'pending' and file_path:
             try:
-                if stored_sha:
+                if stored_sha and is_empty_placeholder_hash(stored_sha):
                     logger.info(
                         "Recomputing SHA256 for %s (stored hash is the empty-file placeholder)",
                         file_path,
                     )
-                else:
+                elif not stored_sha:
                     logger.info(f"Computing SHA256 hash for {file_path} (was empty from metadata)")
                 sha256 = await calculate_sha256(file_path)
                 if sha256 and not is_empty_placeholder_hash(sha256):
-                    model_data['sha256'] = sha256.lower()
+                    normalized_sha = sha256.lower()
+                    hash_changed = stored_sha.lower() != normalized_sha
+                    model_data['sha256'] = normalized_sha
                     if isinstance(metadata, BaseModelMetadata):
-                        metadata.sha256 = sha256.lower()
-                    await MetadataManager.save_metadata(file_path, metadata)
+                        metadata.sha256 = normalized_sha
+                    if hash_changed:
+                        await MetadataManager.save_metadata(file_path, metadata)
             except Exception as e:
                 logger.error(f"Failed to compute SHA256 for {file_path}: {e}")
 
@@ -4035,7 +4056,6 @@ class ModelScanner:
             )
             
             target_file = os.path.join(target_path, final_filename).replace(os.sep, '/')
-            final_base_name = os.path.splitext(final_filename)[0]
             
             # Log if filename was changed due to conflict
             if final_filename != f"{base_name}{file_ext}":
@@ -4056,7 +4076,7 @@ class ModelScanner:
 
             shutil.move(move_source, move_target)
             
-            # Move all associated files with the same base name
+            # Move this artifact's associated files.
             source_metadata = None
             moved_metadata_path = None
 
@@ -4069,17 +4089,19 @@ class ModelScanner:
             if os.path.normpath(source_sidecar_dir) != os.path.normpath(source_dir):
                 associated_dirs.append((source_sidecar_dir, target_sidecar_dir))
 
-            # Find all files with the same base name in the source directories
+            # Match only this artifact's sidecars. Workflow artifacts include
+            # their original extension in the prefix so same-stem formats stay independent.
             files_to_move = []
             metadata_filename = os.path.basename(get_metadata_path(source_path))
+            source_sidecar_base = get_sidecar_base_name(source_path)
+            target_sidecar_base = get_sidecar_base_name(target_file)
             for assoc_source_dir, assoc_target_dir in associated_dirs:
                 try:
                     for file in os.listdir(assoc_source_dir):
-                        if file.startswith(base_name + ".") and file != os.path.basename(source_path):
+                        if file.startswith(source_sidecar_base + ".") and file != os.path.basename(source_path):
                             source_file_path = os.path.join(assoc_source_dir, file)
-                            # Generate new filename with the same base name as the model file
-                            file_suffix = file[len(base_name):]  # Get the part after base_name (e.g., ".metadata.json", ".preview.png")
-                            new_associated_filename = f"{final_base_name}{file_suffix}"
+                            file_suffix = file[len(source_sidecar_base):]
+                            new_associated_filename = f"{target_sidecar_base}{file_suffix}"
                             target_associated_path = os.path.join(assoc_target_dir, new_associated_filename)
 
                             # Store metadata file path for special handling
@@ -4208,11 +4230,8 @@ class ModelScanner:
             metadata['file_name'] = os.path.splitext(os.path.basename(model_path))[0]
             
             if 'preview_url' in metadata and metadata['preview_url']:
-                preview_dir = get_preview_dir(model_path)
-                # Update preview filename to match the new base name
-                new_base_name = os.path.splitext(os.path.basename(model_path))[0]
                 preview_ext = get_preview_extension(metadata['preview_url'])
-                new_preview_path = os.path.join(preview_dir, f"{new_base_name}{preview_ext}")
+                new_preview_path = get_preview_path(model_path, preview_ext)
                 metadata['preview_url'] = new_preview_path.replace(os.sep, '/')
             
             await MetadataManager.save_metadata(metadata_path, metadata)
@@ -4797,8 +4816,7 @@ class ModelScanner:
             return None
 
         dir_path = get_preview_dir(file_path)
-        base_name = os.path.splitext(os.path.basename(file_path))[0]
-        preview_path = find_preview_file(base_name, dir_path)
+        preview_path = find_preview_file(get_sidecar_base_name(file_path), dir_path)
         if preview_path:
             return config.get_preview_static_url(preview_path)
 

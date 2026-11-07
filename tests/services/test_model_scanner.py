@@ -865,6 +865,28 @@ async def test_reconcile_cache_adds_new_files_and_updates_hash_index(tmp_path: P
 
 
 @pytest.mark.asyncio
+async def test_reconcile_cache_removes_entries_under_removed_roots(tmp_path: Path):
+    root = tmp_path / "current"
+    root.mkdir()
+    (root / "one.txt").write_text("one", encoding="utf-8")
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    stale_path = _normalize_path(tmp_path / "removed" / "old.txt")
+    stale_entry = dict(scanner._cache.raw_data[0])
+    stale_entry["file_path"] = stale_path
+    stale_entry["sha256"] = "hash-stale"
+    scanner._cache.raw_data.append(stale_entry)
+    scanner._hash_index.add_entry("hash-stale", stale_path)
+
+    summary = await scanner._reconcile_cache()
+
+    assert stale_path not in {item["file_path"] for item in scanner._cache.raw_data}
+    assert scanner._hash_index.get_path("hash-stale") is None
+    assert summary["removed"] == 1
+
+
+@pytest.mark.asyncio
 async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
     existing = tmp_path / "one.txt"
     existing.write_text("one", encoding="utf-8")

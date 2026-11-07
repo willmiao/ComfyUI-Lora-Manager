@@ -1199,3 +1199,33 @@ async def test_rename_image_workflow_artifact_renames_main_file_once(tmp_path: P
     assert not model_path.exists()
     renamed = result["renamed_files"]
     assert len(renamed) == len(set(renamed))
+
+
+@pytest.mark.asyncio
+async def test_delete_workflow_artifact_preserves_same_stem_sibling(
+    tmp_path: Path, monkeypatch
+):
+    from py import config as config_module
+    from py.services.model_lifecycle_service import delete_model_artifacts
+
+    monkeypatch.setattr(config_module.config, "workflows_roots", [tmp_path.as_posix()])
+    zip_path = tmp_path / "same.zip"
+    webp_path = tmp_path / "same.webp"
+    zip_path.write_bytes(b"zip")
+    webp_path.write_bytes(b"webp")
+
+    for base in ("same.zip", "same.webp"):
+        (tmp_path / f"{base}.metadata.json").write_text("{}", encoding="utf-8")
+        (tmp_path / f"{base}.workflow.json").write_text("{}", encoding="utf-8")
+        (tmp_path / f"{base}.preview.webp").write_bytes(b"preview")
+
+    await delete_model_artifacts(str(tmp_path), "same", main_extension=".zip")
+
+    assert not zip_path.exists()
+    assert not (tmp_path / "same.zip.metadata.json").exists()
+    assert not (tmp_path / "same.zip.workflow.json").exists()
+    assert not (tmp_path / "same.zip.preview.webp").exists()
+    assert webp_path.read_bytes() == b"webp"
+    assert (tmp_path / "same.webp.metadata.json").is_file()
+    assert (tmp_path / "same.webp.workflow.json").is_file()
+    assert (tmp_path / "same.webp.preview.webp").is_file()

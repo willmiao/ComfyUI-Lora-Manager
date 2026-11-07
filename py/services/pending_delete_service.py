@@ -38,8 +38,8 @@ from typing import (
 )
 
 from ..utils.constants import PREVIEW_EXTENSIONS
-from ..utils.sidecar_paths import get_metadata_path, get_sidecar_dir
-from ..utils.workflow_extraction import WORKFLOW_DOCUMENT_SUFFIX
+from ..utils.sidecar_paths import get_metadata_path, get_preview_path, get_sidecar_dir
+from ..utils.workflow_extraction import get_workflow_document_path
 from ..utils import settings_paths
 
 logger = logging.getLogger(__name__)
@@ -707,16 +707,14 @@ class PendingDeleteService:
         # alongside mode, the centralized mirror otherwise).
         sidecar_dir = get_sidecar_dir(model_path)
         patterns = [os.path.basename(get_metadata_path(model_path))]
-        # Derived workflow document (workflow artifacts only; absent elsewhere).
-        patterns.append(f"{file_name}{WORKFLOW_DOCUMENT_SUFFIX}")
+        patterns.append(os.path.basename(get_workflow_document_path(model_path)))
         for ext in PREVIEW_EXTENSIONS:
-            patterns.append(f"{file_name}{ext}")
+            patterns.append(os.path.basename(get_preview_path(model_path, ext)))
 
         seen = {os.path.normcase(main_path)}
         for pattern in patterns:
             path = os.path.abspath(os.path.join(sidecar_dir, pattern))
-            # An image workflow artifact doubles as its own preview: it then
-            # matches both the main file and a preview pattern — stage it once.
+            # Companion patterns may overlap the main artifact; stage each path once.
             if os.path.normcase(path) in seen:
                 continue
             if os.path.exists(path):

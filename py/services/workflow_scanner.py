@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime
@@ -16,7 +17,12 @@ from ..utils.file_utils import (
 )
 from ..utils.metadata_manager import MetadataManager
 from ..utils.models import WorkflowMetadata
-from ..utils.sidecar_paths import get_preview_dir
+from ..utils.sidecar_paths import (
+    get_legacy_metadata_path,
+    get_metadata_path,
+    get_preview_dir,
+    get_sidecar_base_name,
+)
 from ..utils.workflow_analysis import analyze_workflow_file
 from ..utils.workflow_extraction import (
     IMAGE_CONTAINER_EXTENSIONS,
@@ -57,6 +63,7 @@ class WorkflowScanner(ModelScanner):
     # Workflows are graph documents, not weights: quantization has no meaning
     # for them, so the inherited scan-time pass and backfill are skipped.
     supports_quantization = False
+    verify_hashes_on_scan = True
 
     def __init__(self):
         super().__init__(
@@ -91,6 +98,74 @@ class WorkflowScanner(ModelScanner):
     @staticmethod
     def _is_image_artifact(file_path: str) -> bool:
         return os.path.splitext(file_path)[1].lower() in IMAGE_CONTAINER_EXTENSIONS
+
+    @staticmethod
+    def _path_key(file_path: str) -> str:
+        return os.path.normcase(os.path.abspath(os.path.normpath(file_path)))
+
+    def _sidecar_references_preview(
+        self, metadata_path: str, preview_path: str, owner_path: str
+    ) -> bool:
+        try:
+            with open(metadata_path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            return False
+        referenced = payload.get("preview_url") if isinstance(payload, dict) else None
+        return bool(
+            referenced
+            and self._path_key(str(referenced)) == self._path_key(preview_path)
+            and self._path_key(owner_path) != self._path_key(preview_path)
+        )
+
+    def _is_known_preview(self, file_path: str) -> bool:
+        if not self._is_image_artifact(file_path):
+            return False
+
+        cache = getattr(self, "_cache", None)
+        for item in getattr(cache, "raw_data", None) or []:
+            owner_path = item.get("file_path")
+            preview_url = item.get("preview_url")
+            if (
+                owner_path
+                and preview_url
+                and self._path_key(owner_path) != self._path_key(file_path)
+                and self._path_key(preview_url) == self._path_key(file_path)
+            ):
+                return True
+
+        stem = os.path.splitext(os.path.basename(file_path))[0]
+        artifact_dir = os.path.dirname(file_path)
+        for extension in WORKFLOW_ARTIFACT_EXTENSIONS:
+            owner_path = os.path.join(artifact_dir, stem + extension)
+            metadata_paths = {
+                get_metadata_path(owner_path),
+                get_legacy_metadata_path(owner_path),
+            }
+            for metadata_path in metadata_paths:
+                if os.path.isfile(metadata_path) and self._sidecar_references_preview(
+                    metadata_path, file_path, owner_path
+                ):
+                    return True
+        return False
+
+    async def _process_model_file(
+        self,
+        file_path: str,
+        root_path: str,
+        *,
+        hash_index: Optional[ModelHashIndex] = None,
+        excluded_models: Optional[List[str]] = None,
+    ):
+        if self._is_known_preview(file_path):
+            logger.debug("Skipping workflow preview artifact: %s", file_path)
+            return None
+        return await super()._process_model_file(
+            file_path,
+            root_path,
+            hash_index=hash_index,
+            excluded_models=excluded_models,
+        )
 
     def adjust_metadata(self, metadata, file_path, root_path):
         """Fill workflow analysis fields when they are missing.
@@ -156,7 +231,11 @@ class WorkflowScanner(ModelScanner):
                 return None
 
             base_name = os.path.splitext(os.path.basename(file_path))[0]
-            preview_url = find_preview_file(base_name, get_preview_dir(file_path))
+            preview_url = find_preview_file(
+                get_sidecar_base_name(file_path), get_preview_dir(file_path)
+            )
+            if not preview_url:
+                preview_url = find_preview_file(base_name, get_preview_dir(file_path))
             if not preview_url and self._is_image_artifact(file_path):
                 # An image artifact doubles as its own preview.
                 preview_url = file_path

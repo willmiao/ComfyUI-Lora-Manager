@@ -15,7 +15,11 @@ from ..utils.constants import (
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.file_utils import detect_media_extension, reconcile_media_extension
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
-from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
+from ..utils.sidecar_paths import (
+    get_metadata_path,
+    get_preview_dir,
+    get_preview_path,
+)
 from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
@@ -67,8 +71,16 @@ class PreviewAssetService:
         if not first_preview:
             return
 
+        model_path_value = local_metadata.get("file_path")
+        model_path = str(model_path_value) if model_path_value else ""
         base_name = os.path.splitext(os.path.splitext(os.path.basename(metadata_path))[0])[0]
-        preview_dir = os.path.dirname(metadata_path)
+        preview_dir = get_preview_dir(model_path) if model_path else os.path.dirname(metadata_path)
+
+        def build_preview_path(extension: str) -> str:
+            if model_path:
+                return get_preview_path(model_path, extension)
+            return os.path.join(preview_dir, base_name + extension)
+
         # Centralized mirrors may not exist yet (unlike the model's own
         # directory in alongside mode).
         os.makedirs(preview_dir, exist_ok=True)
@@ -92,7 +104,7 @@ class PreviewAssetService:
 
         if is_video:
             extension = extension_from_url(preview_url, ".mp4")
-            preview_path = os.path.join(preview_dir, base_name + extension)
+            preview_path = build_preview_path(extension)
             rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type="video")
 
             attempt_urls = []
@@ -126,7 +138,7 @@ class PreviewAssetService:
                         content, headers, fallback_url=preview_url
                     )
                     if extension in SUPPORTED_MEDIA_EXTENSIONS["images"]:
-                        preview_path = os.path.join(preview_dir, base_name + extension)
+                        preview_path = build_preview_path(extension)
                         try:
                             with open(preview_path, "wb") as handle:
                                 handle.write(content)
@@ -138,7 +150,7 @@ class PreviewAssetService:
                         return
 
             extension = ".webp"
-            preview_path = os.path.join(preview_dir, base_name + extension)
+            preview_path = build_preview_path(extension)
             success, content, _headers = await downloader.download_to_memory(
                 preview_url, use_auth=False
             )
@@ -180,7 +192,6 @@ class PreviewAssetService:
     ) -> Dict[str, object]:
         """Replace an existing preview asset for a model."""
 
-        base_name = os.path.splitext(os.path.basename(model_path))[0]
         folder = get_preview_dir(model_path)
         # Centralized mirrors may not exist yet (unlike the model's own
         # directory in alongside mode).
@@ -191,7 +202,7 @@ class PreviewAssetService:
         )
 
         for ext in PREVIEW_EXTENSIONS:
-            existing_preview = os.path.join(folder, base_name + ext)
+            existing_preview = get_preview_path(model_path, ext)
             if os.path.exists(existing_preview):
                 try:
                     os.remove(existing_preview)
@@ -200,7 +211,7 @@ class PreviewAssetService:
                         "Failed to delete existing preview %s: %s", existing_preview, exc
                     )
 
-        preview_path = os.path.join(folder, base_name + extension).replace(os.sep, "/")
+        preview_path = get_preview_path(model_path, extension).replace(os.sep, "/")
         with open(preview_path, "wb") as handle:
             handle.write(optimized_data)
 

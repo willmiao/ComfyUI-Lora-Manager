@@ -9,7 +9,13 @@ from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, Lo
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .gguf_utils import detect_quantization
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
-from .sidecar_paths import get_metadata_path, get_preview_dir, resolve_metadata_path
+from .sidecar_paths import (
+    get_legacy_metadata_path,
+    get_metadata_path,
+    get_preview_dir,
+    get_sidecar_base_name,
+    resolve_metadata_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +41,13 @@ class MetadataManager:
             - should_skip: True if corrupted metadata file exists and model should be skipped
         """
         metadata_path = get_metadata_path(file_path)
-        
-        # Check if metadata file exists
+
         if not os.path.exists(metadata_path):
-            return None, False
+            legacy_path = get_legacy_metadata_path(file_path)
+            if legacy_path != metadata_path and os.path.exists(legacy_path):
+                metadata_path = legacy_path
+            else:
+                return None, False
         
         try:
             with open(metadata_path, 'r', encoding='utf-8') as f:
@@ -404,7 +413,7 @@ class MetadataManager:
             
             # Update preview if it doesn't exist OR if model and preview are in different directories
             if not os.path.exists(preview_url) or file_dir != preview_dir:
-                base_name = os.path.splitext(os.path.basename(file_path))[0]
+                base_name = get_sidecar_base_name(file_path)
                 new_preview_url = find_preview_file(base_name, file_dir)
                 if new_preview_url:
                     metadata.preview_url = normalize_path(new_preview_url)

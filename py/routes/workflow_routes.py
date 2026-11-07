@@ -165,7 +165,7 @@ def _write_workflow_preview(file_path: str, image_bytes: bytes) -> Optional[str]
     try:
         from ..utils.constants import CARD_PREVIEW_WIDTH
         from ..utils.exif_utils import ExifUtils
-        from ..utils.sidecar_paths import get_preview_dir
+        from ..utils.sidecar_paths import get_preview_path
 
         optimized, _extension = ExifUtils.optimize_image(
             image_data=image_bytes,
@@ -177,12 +177,8 @@ def _write_workflow_preview(file_path: str, image_bytes: bytes) -> Optional[str]
         if not optimized:
             return None
 
-        base_name = os.path.splitext(os.path.basename(file_path))[0]
-        preview_dir = get_preview_dir(file_path)
-        os.makedirs(preview_dir, exist_ok=True)
-        preview_path = normalize_path(
-            os.path.join(preview_dir, f"{base_name}.preview.webp")
-        )
+        preview_path = normalize_path(get_preview_path(file_path, ".webp"))
+        os.makedirs(os.path.dirname(preview_path), exist_ok=True)
         with open(preview_path, "wb") as handle:
             handle.write(optimized)
         return preview_path

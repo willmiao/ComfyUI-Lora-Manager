@@ -13,8 +13,17 @@ from ..services.service_registry import ServiceRegistry
 from ..services.pending_delete_service import get_pending_delete_service
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.metadata_manager import MetadataManager
-from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_sidecar_dir
-from ..utils.workflow_extraction import WORKFLOW_DOCUMENT_SUFFIX
+from ..utils.sidecar_paths import (
+    get_metadata_path,
+    get_preview_dir,
+    get_preview_path,
+    get_sidecar_base_name,
+    get_sidecar_dir,
+)
+from ..utils.workflow_extraction import (
+    WORKFLOW_DOCUMENT_SUFFIX,
+    get_workflow_document_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +65,9 @@ async def delete_model_artifacts(
     model_path = os.path.join(target_dir, main_file)
     sidecar_dir = get_sidecar_dir(model_path)
     patterns = [os.path.basename(get_metadata_path(model_path))]
-    # Derived workflow document (workflow artifacts only; absent elsewhere).
-    patterns.append(f"{file_name}{WORKFLOW_DOCUMENT_SUFFIX}")
+    patterns.append(os.path.basename(get_workflow_document_path(model_path)))
     for ext in PREVIEW_EXTENSIONS:
-        patterns.append(f"{file_name}{ext}")
+        patterns.append(os.path.basename(get_preview_path(model_path, ext)))
 
     deleted: List[str] = []
     main_path = model_path.replace(os.sep, "/")
@@ -476,19 +484,21 @@ class ModelLifecycleService:
             (target_dir, f"{old_file_name}{old_extension}"),
             (sidecar_dir, metadata_filename),
             (sidecar_dir, f"{metadata_filename}.bak"),
-            # Derived workflow document (workflow artifacts only).
-            (sidecar_dir, f"{old_file_name}{WORKFLOW_DOCUMENT_SUFFIX}"),
+            (
+                sidecar_dir,
+                os.path.basename(get_workflow_document_path(file_path)),
+            ),
         ]
         for ext in PREVIEW_EXTENSIONS:
-            patterns.append((sidecar_dir, f"{old_file_name}{ext}"))
+            patterns.append(
+                (sidecar_dir, os.path.basename(get_preview_path(file_path, ext)))
+            )
 
         existing_files: List[tuple[str, str]] = []
         seen_paths: set[str] = set()
         for pattern_dir, pattern in patterns:
             path = os.path.join(pattern_dir, pattern)
-            # An image workflow artifact doubles as its own preview: the same
-            # path then appears under both the main-file and preview patterns
-            # and must only be renamed once.
+            # Companion patterns may overlap the main artifact; rename each path once.
             dedupe_key = os.path.normcase(os.path.abspath(path))
             if dedupe_key in seen_paths:
                 continue
@@ -508,7 +518,11 @@ class ModelLifecycleService:
         new_preview: Optional[str] = None
 
         renamed_files, new_metadata_path = await asyncio.to_thread(
-            self._rename_companion_files, existing_files, new_file_name
+            self._rename_companion_files,
+            existing_files,
+            new_file_name,
+            get_sidecar_base_name(file_path),
+            get_sidecar_base_name(new_file_path),
         )
 
         if metadata and new_metadata_path:
@@ -521,9 +535,13 @@ class ModelLifecycleService:
             if metadata.get("preview_url"):
                 old_preview = str(metadata["preview_url"])
                 ext = self._get_multipart_ext(old_preview)
-                new_preview = os.path.join(
-                    get_preview_dir(new_file_path), f"{new_file_name}{ext}"
-                ).replace(os.sep, "/")
+                renamed_preview = get_preview_path(new_file_path, ext).replace(
+                    os.sep, "/"
+                )
+                if os.path.exists(renamed_preview) or not os.path.exists(old_preview):
+                    new_preview = renamed_preview
+                else:
+                    new_preview = old_preview
                 metadata["preview_url"] = new_preview
 
             await self._metadata_manager.save_metadata(new_file_path, metadata)
@@ -573,6 +591,8 @@ class ModelLifecycleService:
         self,
         existing_files: List[tuple[str, str]],
         new_file_name: str,
+        old_sidecar_base: str,
+        new_sidecar_base: str,
     ) -> tuple[List[str], Optional[str]]:
         """Rename all companion files, off the event loop thread.
 
@@ -585,14 +605,19 @@ class ModelLifecycleService:
         new_metadata_path: Optional[str] = None
 
         for old_path, pattern in existing_files:
-            ext = self._get_multipart_ext(pattern)
+            if pattern.startswith(old_sidecar_base + "."):
+                ext = pattern[len(old_sidecar_base):]
+                new_pattern = new_sidecar_base + ext
+            else:
+                ext = self._get_multipart_ext(pattern)
+                new_pattern = new_file_name + ext
             new_path = os.path.join(
-                os.path.dirname(old_path), f"{new_file_name}{ext}"
+                os.path.dirname(old_path), new_pattern
             ).replace(os.sep, "/")
             os.rename(old_path, new_path)
             renamed_files.append(new_path)
 
-            if ext == ".metadata.json":
+            if ext.endswith(".metadata.json"):
                 new_metadata_path = new_path
 
         return renamed_files, new_metadata_path

@@ -7,7 +7,7 @@ extracted workflow document instead:
 
 - ``.json`` artifacts ARE the document; they are validated and read in place.
 - ``.zip`` / ``.png`` / ``.webp`` containers get the document materialized
-  once into an LM-owned derived sidecar ``<name>.workflow.json`` inside the
+  once into an LM-owned derived ``.workflow.json`` sidecar inside the
   artifact's sidecar directory. Scanners exclude the suffix from the library
   walk; lifecycle operations (move/rename/delete) carry it like any other
   sidecar.
@@ -21,7 +21,7 @@ import os
 import zipfile
 from typing import Any, Dict, List, Optional
 
-from .sidecar_paths import get_sidecar_dir
+from .sidecar_paths import get_sidecar_base_name, get_sidecar_dir
 from .workflow_analysis import (
     MAX_WORKFLOW_JSON_BYTES,
     load_workflow_file,
@@ -46,14 +46,16 @@ _MAX_ZIP_JSON_CANDIDATES = 64
 def get_workflow_document_path(artifact_path: str) -> str:
     """Return the path of the extracted workflow document for an artifact.
 
-    ``.json`` artifacts are their own document; containers map to the
-    derived ``<name>.workflow.json`` in the artifact's sidecar directory
-    (alongside the artifact or in the centralized mirror).
+    ``.json`` artifacts are their own document; containers map to a derived
+    ``.workflow.json`` sidecar in the artifact's sidecar directory (alongside
+    the artifact or in the centralized mirror). Workflow-library containers
+    include their original extension in the sidecar name to keep same-stem
+    artifacts independent.
     """
 
     if os.path.splitext(artifact_path)[1].lower() == ".json":
         return artifact_path
-    base_name = os.path.splitext(os.path.basename(artifact_path))[0]
+    base_name = get_sidecar_base_name(artifact_path)
     return os.path.join(
         get_sidecar_dir(artifact_path), base_name + WORKFLOW_DOCUMENT_SUFFIX
     )

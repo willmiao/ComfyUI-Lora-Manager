@@ -1464,7 +1464,7 @@ async def test_create_workflow_attaches_preview_for_matching_prompt(
 
     assert response.status == 200
     assert payload["preview"] is True
-    assert (root / "With Preview.preview.webp").exists()
+    assert (root / "With Preview.json.preview.webp").exists()
 
 
 async def test_create_workflow_skips_preview_for_other_prompt(

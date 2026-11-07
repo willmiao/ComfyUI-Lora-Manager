@@ -87,12 +87,12 @@ async def test_auto_organize_moves_workflow_with_its_sidecars(workflow_library: 
         json.dumps({"1": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}),
         encoding="utf-8",
     )
-    (old_dir / "portrait.workflow.json").write_text(
+    (old_dir / "portrait.json.workflow.json").write_text(
         json.dumps({"1": {"class_type": "CheckpointLoaderSimple"}}),
         encoding="utf-8",
     )
-    (old_dir / "portrait.preview.webp").write_bytes(b"preview")
-    (old_dir / "portrait.metadata.json").write_text(
+    (old_dir / "portrait.json.preview.webp").write_bytes(b"preview")
+    (old_dir / "portrait.json.metadata.json").write_text(
         json.dumps(
             {
                 "file_path": _normalize(workflow_path),
@@ -121,11 +121,11 @@ async def test_auto_organize_moves_workflow_with_its_sidecars(workflow_library: 
     assert result.operation_type == "bulk"
     assert result.success_count == 1
     assert (target_dir / "portrait.json").is_file()
-    assert (target_dir / "portrait.workflow.json").is_file()
-    assert (target_dir / "portrait.preview.webp").read_bytes() == b"preview"
+    assert (target_dir / "portrait.json.workflow.json").is_file()
+    assert (target_dir / "portrait.json.preview.webp").read_bytes() == b"preview"
     # The metadata sidecar follows the artifact and records the new path.
     moved_metadata = json.loads(
-        (target_dir / "portrait.metadata.json").read_text(encoding="utf-8")
+        (target_dir / "portrait.json.metadata.json").read_text(encoding="utf-8")
     )
     assert moved_metadata["file_path"] == _normalize(target_dir / "portrait.json")
 

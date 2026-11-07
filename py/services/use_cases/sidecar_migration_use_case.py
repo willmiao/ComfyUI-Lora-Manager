@@ -55,6 +55,7 @@ from ...utils.sidecar_paths import (
     ROOT_MAP_FILENAME,
     STORAGE_MODE_CENTRALIZED,
     get_configured_sidecar_root,
+    get_sidecar_base_name,
     get_sidecar_root,
     get_storage_mode,
     relocate_root_map,
@@ -573,7 +574,7 @@ class SidecarMigrationUseCase:
             result["skipped"] = 1
             return result
 
-        stem = os.path.splitext(os.path.basename(model_path))[0]
+        stem = get_sidecar_base_name(model_path)
         sidecar_name = stem + METADATA_SUFFIX
 
         moved_previews: List[str] = []

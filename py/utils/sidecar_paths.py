@@ -1029,10 +1029,68 @@ def get_sidecar_dir(model_path: str) -> str:
     return os.path.dirname(os.path.abspath(model_path))
 
 
+def is_workflow_artifact_path(model_path: str) -> bool:
+    """Return whether *model_path* belongs to the configured workflow library."""
+
+    if os.path.splitext(model_path)[1].lower() not in {
+        ".json",
+        ".zip",
+        ".png",
+        ".webp",
+    }:
+        return False
+    try:
+        from ..config import config
+
+        roots = config.workflows_roots or []
+    except Exception:
+        return False
+
+    normalized = os.path.normcase(os.path.abspath(os.path.normpath(model_path)))
+    for root in roots:
+        if not root:
+            continue
+        normalized_root = os.path.normcase(os.path.abspath(os.path.normpath(root)))
+        if normalized == normalized_root or normalized.startswith(
+            normalized_root + os.sep
+        ):
+            return True
+    return False
+
+
+def get_sidecar_base_name(model_path: str) -> str:
+    """Return the filename prefix that uniquely identifies an artifact's assets."""
+
+    if is_workflow_artifact_path(model_path):
+        return os.path.basename(model_path)
+    return os.path.splitext(os.path.basename(model_path))[0]
+
+
+def get_legacy_metadata_path(model_path: str) -> str:
+    """Return the pre-extension-qualified metadata path used by older versions."""
+
+    base_name = os.path.splitext(os.path.basename(model_path))[0] + METADATA_SUFFIX
+    return os.path.join(get_sidecar_dir(model_path), base_name)
+
+
 def get_metadata_path(model_path: str) -> str:
     """Return the ``.metadata.json`` sidecar path for a model file."""
 
-    base_name = os.path.splitext(os.path.basename(model_path))[0] + METADATA_SUFFIX
+    base_name = get_sidecar_base_name(model_path) + METADATA_SUFFIX
+    return os.path.join(get_sidecar_dir(model_path), base_name)
+
+
+def get_preview_path(model_path: str, extension: str) -> str:
+    """Return a preview path that cannot collide with a workflow artifact."""
+
+    if not extension.startswith("."):
+        extension = "." + extension
+    if is_workflow_artifact_path(model_path):
+        if not extension.startswith(".preview."):
+            extension = ".preview" + extension
+        base_name = os.path.basename(model_path) + extension
+    else:
+        base_name = os.path.splitext(os.path.basename(model_path))[0] + extension
     return os.path.join(get_sidecar_dir(model_path), base_name)
 
 

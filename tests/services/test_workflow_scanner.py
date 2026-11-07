@@ -8,6 +8,7 @@ import pytest
 from py import config as config_module
 from py.services.model_scanner import ModelScanner
 from py.services.workflow_scanner import WorkflowScanner
+from py.utils.metadata_manager import MetadataManager
 from py.utils.models import WorkflowMetadata
 
 
@@ -162,7 +163,7 @@ async def test_create_default_metadata_from_zip_artifact(workflow_root, enable_w
     assert metadata.sha256
 
     # The derived workflow document is materialized as a sidecar.
-    derived = workflow_root / "pack.workflow.json"
+    derived = workflow_root / "pack.zip.workflow.json"
     assert derived.exists()
     assert json.loads(derived.read_text(encoding="utf-8")) == workflow
 
@@ -239,7 +240,7 @@ def test_adjust_metadata_fills_missing_analysis(workflow_root, enable_workflows)
     assert adjusted.workflow_format == "api"
     assert adjusted.node_count == 1
     assert adjusted.model_refs == ["base.safetensors"]
-    assert (workflow_root / "downloaded.workflow.json").exists()
+    assert (workflow_root / "downloaded.zip.workflow.json").exists()
 
 
 def test_adjust_metadata_keeps_populated_analysis(workflow_root, enable_workflows):
@@ -449,3 +450,76 @@ async def test_register_local_artifact_allows_remote_resolution(
     assert metadata is not None
     assert metadata.base_model == "SD 1.5"
     assert captured["include_remote"] is True
+
+
+async def test_same_stem_artifacts_recover_independent_hashes_from_legacy_sidecar(
+    workflow_root, enable_workflows
+):
+    import hashlib
+    import zipfile
+
+    from py.utils.sidecar_paths import get_metadata_path
+
+    workflow = {"1": {"class_type": "KSampler", "inputs": {}}}
+    json_path = workflow_root / "same.json"
+    zip_path = workflow_root / "same.zip"
+    json_path.write_text(json.dumps(workflow), encoding="utf-8")
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+
+    (workflow_root / "same.metadata.json").write_text(
+        json.dumps(
+            {
+                "file_name": "same",
+                "model_name": "same",
+                "file_path": _normalize(json_path),
+                "size": 1,
+                "modified": 0,
+                "sha256": "polluted-shared-hash",
+                "base_model": "Unknown",
+                "preview_url": "",
+                "workflow_format": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from py.services.model_hash_index import ModelHashIndex
+
+    scanner = _make_scanner()
+    scanner._hash_index = ModelHashIndex()
+    scanner._excluded_models = []
+    json_entry = await scanner._process_model_file(str(json_path), str(workflow_root))
+    zip_entry = await scanner._process_model_file(str(zip_path), str(workflow_root))
+
+    assert json_entry["sha256"] == hashlib.sha256(json_path.read_bytes()).hexdigest()
+    assert zip_entry["sha256"] == hashlib.sha256(zip_path.read_bytes()).hexdigest()
+    assert json_entry["sha256"] != zip_entry["sha256"]
+    assert (workflow_root / "same.json.metadata.json").is_file()
+    assert (workflow_root / "same.zip.metadata.json").is_file()
+    assert get_metadata_path(str(json_path)) != get_metadata_path(str(zip_path))
+    assert (workflow_root / "same.zip.workflow.json").is_file()
+
+
+async def test_scan_skips_legacy_preview_referenced_by_sibling_metadata(
+    workflow_root, enable_workflows
+):
+    import zipfile
+
+    PIL = pytest.importorskip("PIL.Image")
+    from py.utils.exif_utils import ExifUtils
+
+    workflow = {"nodes": [{"id": 1, "type": "KSampler"}], "links": []}
+    zip_path = workflow_root / "same.zip"
+    preview_path = workflow_root / "same.webp"
+    with zipfile.ZipFile(zip_path, "w") as archive:
+        archive.writestr("workflow.json", json.dumps(workflow))
+    PIL.new("RGB", (8, 8)).save(preview_path, format="WEBP")
+    ExifUtils.embed_workflow(str(preview_path), json.dumps(workflow))
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(zip_path))
+    metadata.preview_url = _normalize(preview_path)
+    await MetadataManager.save_metadata(str(zip_path), metadata)
+
+    assert await scanner._process_model_file(str(preview_path), str(workflow_root)) is None
