@@ -748,6 +748,40 @@ body.lm-lora-reordering * {
 .lm-autocomplete-category--species { --lm-cat: var(--lm-cat-species); }
 .lm-autocomplete-category--lore { --lm-cat: var(--lm-cat-lore); }
 
+/* "Already added" cue. Green means the node has it enabled, amber means it is
+   listed but turned off (selecting it enables it). Both hues are mixed against
+   the popover surface so contrast follows the theme. */
+.lm-autocomplete-added {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.lm-autocomplete-added.is-active {
+  color: color-mix(in oklab, var(--lm-ok) 65%, var(--lm-fg));
+  background: color-mix(in oklab, var(--lm-ok) 18%, var(--lm-surface));
+  border-color: color-mix(in oklab, var(--lm-ok) 38%, transparent);
+}
+
+.lm-autocomplete-added.is-inactive {
+  color: color-mix(in oklab, var(--lm-warning) 65%, var(--lm-fg));
+  background: color-mix(in oklab, var(--lm-warning) 18%, var(--lm-surface));
+  border-color: color-mix(in oklab, var(--lm-warning) 40%, transparent);
+}
+
+.lm-autocomplete-added-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
 /* Command list styling */
 .comfy-autocomplete-command {
   display: flex;

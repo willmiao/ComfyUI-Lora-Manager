@@ -188,7 +188,25 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     expect(item.querySelector('.lm-autocomplete-subtitle')).toBeNull();
   });
 
-  it('marks a LoRA that is already on the node list', async () => {
+  it('marks an enabled LoRA as added', async () => {
+    fetchApiMock.mockResolvedValue(respondWith());
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const node = {
+      lorasWidget: {
+        value: [{ name: 'portraits/example_entry.safetensors', active: true }],
+      },
+    };
+    const { autoComplete } = await mountAutocomplete({ node });
+
+    const [item] = itemEls(autoComplete);
+    const cue = item.querySelector('.lm-autocomplete-added.is-active');
+    expect(cue).toBeTruthy();
+    expect(cue.textContent).toBe('✓Added');
+    expect(cue.title).toBe('Added to this node');
+  });
+
+  it('marks a disabled LoRA with the inactive cue', async () => {
     fetchApiMock.mockResolvedValue(respondWith());
     caretHelperInstance.getBeforeCursor.mockReturnValue('example');
 
@@ -200,10 +218,10 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    const cue = item.querySelector('.lm-autocomplete-added');
+    const cue = item.querySelector('.lm-autocomplete-added.is-inactive');
     expect(cue).toBeTruthy();
-    expect(cue.textContent).toBe('✓');
-    expect(cue.getAttribute('aria-label')).toBe('Already added');
+    expect(cue.textContent).toBe('○Off');
+    expect(cue.title).toBe('Added but turned off — select to enable');
   });
 
   it('matches legacy bare-name list entries by file name', async () => {
@@ -214,7 +232,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    expect(item.querySelector('.lm-autocomplete-added')).toBeTruthy();
+    expect(item.querySelector('.lm-autocomplete-added.is-active')).toBeTruthy();
   });
 
   it('does not mark a LoRA that is not on the node list', async () => {
@@ -241,7 +259,60 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     autoComplete.render();
 
     const [item] = itemEls(autoComplete);
-    expect(item.querySelector('.lm-autocomplete-added')).toBeTruthy();
+    expect(item.querySelector('.lm-autocomplete-added.is-active')).toBeTruthy();
+  });
+
+  it('enables a listed but disabled LoRA instead of inserting a tag', async () => {
+    fetchApiMock.mockResolvedValue(respondWith());
+    caretHelperInstance.getBeforeCursor.mockReturnValue('pi');
+
+    const callback = vi.fn();
+    const node = {
+      lorasWidget: {
+        value: [
+          { name: 'portraits/example_entry', strength: '0.8', active: false },
+        ],
+        callback,
+      },
+    };
+    const { autoComplete, input } = await mountAutocomplete({ node });
+    input.value = 'pi';
+    input.setSelectionRange(2, 2);
+
+    itemEls(autoComplete)[0].dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    await Promise.resolve();
+
+    expect(node.lorasWidget.value[0].active).toBe(true);
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback.mock.calls[0][0][0].active).toBe(true);
+    // The typed query is dropped, and no <lora:…> tag was inserted.
+    expect(input.value).toBe('');
+  });
+
+  it('leaves an already enabled LoRA alone instead of inserting a tag', async () => {
+    fetchApiMock.mockResolvedValue(respondWith());
+    caretHelperInstance.getBeforeCursor.mockReturnValue('pi');
+
+    const callback = vi.fn();
+    const node = {
+      lorasWidget: {
+        value: [{ name: 'portraits/example_entry', active: true }],
+        callback,
+      },
+    };
+    const { autoComplete, input } = await mountAutocomplete({ node });
+    input.value = 'pi';
+    input.setSelectionRange(2, 2);
+
+    itemEls(autoComplete)[0].dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    await Promise.resolve();
+
+    expect(callback).not.toHaveBeenCalled();
+    expect(input.value).toBe('');
   });
 
   it('does not request titles for non-LoRA autocompletes', async () => {

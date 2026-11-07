@@ -21,7 +21,7 @@ import {
     setLoraManagerSettingValue,
 } from "./settings.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
-import { parseLoraCodeTags } from "./lora_selection.js";
+import { applyLoraSelection, parseLoraCodeTags } from "./lora_selection.js";
 import { showToast } from "./utils.js";
 
 // localStorage key for the one-time "how to disable" hint in the dropdown
@@ -596,7 +596,7 @@ class AutoComplete {
         this.itemModelNames = new Map();
         // Snapshot of the LoRA names already on the node, refreshed per render
         // so the "already added" cue cannot go stale between keystrokes.
-        this.addedNamesForRender = null;
+        this.addedLoraStatesForRender = null;
         this.debounceTimer = null;
         this.isVisible = false;
         this.currentSearchTerm = '';
@@ -1447,12 +1447,12 @@ class AutoComplete {
     }
 
     /**
-     * Snapshot of the LoRA names already on the node, normalized the same way
-     * the node stores them. Prefers the LoRA list when the node has one (the
-     * list is authoritative there); text-only nodes fall back to the tags in
-     * the textarea.
+     * Snapshot of the LoRAs already on the node, mapping each normalized name
+     * to whether it is currently enabled. Prefers the LoRA list when the node
+     * has one (the list is authoritative there); text-only nodes fall back to
+     * the tags in the textarea, which are always active.
      */
-    _collectAddedLoraNames() {
+    _collectAddedLoraStates() {
         if (this.modelType !== 'loras') {
             return null;
         }
@@ -1461,22 +1461,22 @@ class AutoComplete {
             return null;
         }
 
-        const names = new Set();
+        const states = new Map();
         const lorasWidget = node.lorasWidget;
         if (lorasWidget && Array.isArray(lorasWidget.value)) {
             for (const lora of lorasWidget.value) {
                 const key = normalizeLoraNameKey(lora?.name);
                 if (key) {
-                    names.add(key);
+                    states.set(key, lora?.active !== false);
                 }
             }
-            return names;
+            return states;
         }
 
         for (const tag of parseLoraCodeTags(this.inputElement?.value || '')) {
-            names.add(tag.name);
+            states.set(tag.name, true);
         }
-        return names;
+        return states;
     }
 
     /** Library title for a result path, or '' when it is unknown. */
@@ -1484,22 +1484,72 @@ class AutoComplete {
         return this.itemModelNames.get(relativePath) || '';
     }
 
-    /** Whether the current results include this path in the node's LoRA list. */
-    _isLoraAdded(relativePath) {
-        if (!this.addedNamesForRender || this.addedNamesForRender.size === 0) {
-            return false;
+    /**
+     * Whether the current results include this path on the node.
+     * Returns "active", "inactive", or null. Legacy workflows store entries
+     * without their folder, so the bare name is accepted as a fallback.
+     */
+    _getAddedLoraState(relativePath) {
+        if (!this.addedLoraStatesForRender || this.addedLoraStatesForRender.size === 0) {
+            return null;
         }
         const key = normalizeLoraNameKey(relativePath);
         if (!key) {
+            return null;
+        }
+        const stateFor = (name) => {
+            if (!this.addedLoraStatesForRender.has(name)) {
+                return null;
+            }
+            return this.addedLoraStatesForRender.get(name) ? 'active' : 'inactive';
+        };
+        const direct = stateFor(key);
+        if (direct) {
+            return direct;
+        }
+        const bareName = key.slice(key.lastIndexOf('/') + 1);
+        return bareName !== key ? stateFor(bareName) : null;
+    }
+
+    /**
+     * Turn an already-listed LoRA on in place. Returns false when the node has
+     * no LoRA list to update (text-only node); the tag is already in the text
+     * there, so the selection is still handled.
+     */
+    _enableListedLora(relativePath) {
+        const lorasWidget = this.options.node?.lorasWidget;
+        if (!lorasWidget || !Array.isArray(lorasWidget.value)) {
             return false;
         }
-        if (this.addedNamesForRender.has(key)) {
-            return true;
+        const { loras, changed } = applyLoraSelection(lorasWidget.value, {
+            name: relativePath,
+        });
+        if (changed) {
+            lorasWidget.value = loras;
+            // The callback is what propagates the active set to trigger words,
+            // downstream loaders and the textarea syntax.
+            lorasWidget.callback?.(loras);
         }
-        // Legacy workflows store entries without their folder; the backend
-        // resolves those by bare file name, so the cue must too.
-        const bareName = key.slice(key.lastIndexOf('/') + 1);
-        return bareName !== key && this.addedNamesForRender.has(bareName);
+        return true;
+    }
+
+    /**
+     * Remove the fragment being typed from the textarea. Selecting an entry
+     * that is already on the node has nothing to insert, but the search term
+     * that triggered the dropdown must not be left behind as prompt text.
+     */
+    _clearActiveSearchTerm() {
+        const currentValue = this.inputElement.value;
+        const activeRange = this.getActiveSearchRange(currentValue);
+        const start = activeRange.trimmedStart;
+        const end = activeRange.end;
+        if (end <= start) {
+            return;
+        }
+        const newValue = currentValue.slice(0, start) + currentValue.slice(end);
+        this.inputElement.value = newValue;
+        this.inputElement.setSelectionRange(start, start);
+        this.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     async search(term = '', endpoint = null) {
@@ -2010,7 +2060,7 @@ class AutoComplete {
         this.selectedIndex = -1;
         this.hasManualSelection = false;
         // Refresh the "already added" set once per render instead of per row.
-        this.addedNamesForRender = this._collectAddedLoraNames();
+        this.addedLoraStatesForRender = this._collectAddedLoraStates();
 
         // Command-list state hints do not belong to regular search results
         this._removeCommandListFooter();
@@ -2512,7 +2562,7 @@ class AutoComplete {
         if (!this.scrollContainer || !this.contentContainer) return;
         // Scrolling re-renders rows without going through render(), so refresh
         // the snapshot here too (cheap: one pass over the node's LoRA list).
-        this.addedNamesForRender = this._collectAddedLoraNames();
+        this.addedLoraStatesForRender = this._collectAddedLoraStates();
 
         if (this._containsInformationalItems()) {
             this.contentContainer.innerHTML = '';
@@ -2660,18 +2710,28 @@ class AutoComplete {
             }
 
             // "Already added" cue: the node's own list decides, so a LoRA that
-            // is only present in the textarea is still reported as added.
-            if (this._isLoraAdded(itemData)) {
+            // is only present in the textarea is still reported as added. The
+            // two states differ because selecting a disabled entry turns it on.
+            const addedState = this._getAddedLoraState(itemData);
+            if (addedState) {
+                const isActive = addedState === 'active';
                 const addedCue = document.createElement('span');
-                addedCue.className = 'lm-autocomplete-added';
-                addedCue.textContent = '✓';
-                addedCue.title = 'Already added';
-                addedCue.setAttribute('aria-label', 'Already added');
-                addedCue.style.cssText = `
-                    flex: none;
-                    font-weight: 600;
-                    color: var(--lm-accent, #6aa9ff);
-                `;
+                addedCue.className = `lm-autocomplete-added ${isActive ? 'is-active' : 'is-inactive'}`;
+                addedCue.title = isActive
+                    ? 'Added to this node'
+                    : 'Added but turned off — select to enable';
+                addedCue.setAttribute('aria-label', addedCue.title);
+
+                const icon = document.createElement('span');
+                icon.className = 'lm-autocomplete-added-icon';
+                icon.textContent = isActive ? '✓' : '○';
+                icon.setAttribute('aria-hidden', 'true');
+                addedCue.appendChild(icon);
+
+                const label = document.createElement('span');
+                label.textContent = isActive ? 'Added' : 'Off';
+                addedCue.appendChild(label);
+
                 item.appendChild(addedCue);
             }
         }
@@ -3005,6 +3065,16 @@ class AutoComplete {
     }
     
     async insertSelection(relativePath) {
+        // A LoRA that is already on the node needs no tag: turn it on when it
+        // is disabled, otherwise leave it alone, and drop the typed query.
+        if (this.modelType === 'loras' && this._getAddedLoraState(relativePath)) {
+            this._enableListedLora(relativePath);
+            this._clearActiveSearchTerm();
+            this.hide();
+            this.inputElement.focus();
+            return;
+        }
+
         const insertText = await this.getInsertText(relativePath);
         if (!insertText) {
             this.hide();
