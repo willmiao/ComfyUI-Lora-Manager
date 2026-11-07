@@ -1,6 +1,7 @@
 """Tests for WorkflowScanner: opt-in roots, sidecar exclusion, metadata creation."""
 
 import json
+import logging
 import os
 
 import pytest
@@ -178,6 +179,37 @@ async def test_create_default_metadata_skips_zip_without_workflow(workflow_root,
     scanner = _make_scanner()
     assert await scanner._create_default_metadata(str(file_path)) is None
     assert not (workflow_root / "images.workflow.json").exists()
+
+
+async def test_non_workflow_zip_is_reported_as_expected_skip(
+    workflow_root, enable_workflows, caplog
+):
+    import zipfile
+
+    from py.services.model_hash_index import ModelHashIndex
+
+    file_path = workflow_root / "wildcards.zip"
+    with zipfile.ZipFile(file_path, "w") as archive:
+        archive.writestr("wildcards.json", json.dumps({"characters": []}))
+
+    scanner = _make_scanner()
+    scanner._hash_index = ModelHashIndex()
+    scanner._excluded_models = []
+
+    caplog.set_level(logging.INFO)
+    result = await scanner._process_model_file(str(file_path), str(workflow_root))
+
+    assert result is None
+    assert any(
+        record.name == "py.services.workflow_scanner"
+        and record.levelno == logging.INFO
+        and "Skipping non-workflow artifact" in record.message
+        for record in caplog.records
+    )
+    assert not any(
+        "metadata could not be created" in record.message
+        for record in caplog.records
+    )
 
 
 async def test_create_default_metadata_image_artifact_self_preview(workflow_root, enable_workflows):

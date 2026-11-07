@@ -3462,6 +3462,13 @@ class ModelScanner:
         """Hook for subclasses: adjust metadata during scanning"""
         return metadata
 
+    def _log_metadata_creation_failure(self, file_path: str) -> None:
+        """Log a model that could not be converted into a cache entry."""
+
+        logger.warning(
+            "Skipping model %s: metadata could not be created", file_path
+        )
+
     def _is_indexable_filename(self, filename: str) -> bool:
         """Hook for subclasses: whether a matching-extension file is indexable.
 
@@ -3616,9 +3623,7 @@ class ModelScanner:
         if metadata is None:
             # create_default_metadata returns None for empty/vanished files and
             # for failures; one bad file must never abort the whole scan.
-            logger.warning(
-                "Skipping model %s: metadata could not be created", file_path
-            )
+            self._log_metadata_creation_failure(file_path)
             return None
 
         # Hook: allow subclasses to adjust metadata

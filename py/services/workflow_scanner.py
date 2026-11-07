@@ -73,6 +73,12 @@ class WorkflowScanner(ModelScanner):
             hash_index=ModelHashIndex(),
         )
 
+    def _log_metadata_creation_failure(self, file_path: str) -> None:
+        logger.info(
+            "Skipping non-workflow artifact %s: no usable ComfyUI workflow document found",
+            file_path,
+        )
+
     def _is_indexable_filename(self, filename: str) -> bool:
         lowered = filename.lower()
         if lowered.endswith(_SIDECAR_SUFFIXES):
