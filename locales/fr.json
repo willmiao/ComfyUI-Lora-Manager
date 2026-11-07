@@ -263,7 +263,7 @@
                 "loraName": "Nom de fichier LoRA",
                 "loraModel": "Nom du modèle LoRA",
                 "prompt": "Prompt",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "Mots-clés"
             }
         },
         "filter": {
@@ -772,12 +772,12 @@
                 "customTemplate": "Modèle personnalisé"
             },
             "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "S’applique aux téléchargements de workflows et à l’organisation automatique sur la page Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "Mappages de chemin de modèle de base",
             "baseModelPathMappingsHelp": "Personnaliser les noms de dossiers pour des modèles de base spécifiques (ex: \"Flux.1 D\" → \"flux\")",

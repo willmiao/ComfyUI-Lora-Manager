@@ -263,7 +263,7 @@
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
                 "prompt": "פרומפט",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "מילות טריגר"
             }
         },
         "filter": {
@@ -772,12 +772,12 @@
                 "customTemplate": "תבנית מותאמת אישית"
             },
             "customTemplatePlaceholder": "הזן תבנית מותאמת אישית (למשל, {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "חל על הורדות workflow ועל ארגון אוטומטי בדף Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "מיפוי נתיבי מודל בסיס",
             "baseModelPathMappingsHelp": "התאם אישית שמות תיקיות עבור מודלי בסיס ספציפיים (למשל, \"Flux.1 D\" → \"flux\")",

@@ -263,7 +263,7 @@
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
                 "prompt": "Промпт",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "Триггерные слова"
             }
         },
         "filter": {
@@ -772,12 +772,12 @@
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "Применяется к загрузкам workflow и автоматической организации на странице Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "Сопоставления путей базовых моделей",
             "baseModelPathMappingsHelp": "Настройте имена папок для конкретных базовых моделей (например, \"Flux.1 D\" → \"flux\")",
