@@ -389,7 +389,7 @@
             "contentFiltering": "콘텐츠 필터링",
             "downloads": "다운로드",
             "videoSettings": "비디오 설정",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "카드 미리보기",
             "layoutSettings": "레이아웃 설정",
             "licenseIcons": "라이선스 아이콘",
             "misc": "기타",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "마우스를 올렸을 때만 비디오 미리보기를 재생합니다"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "호버 시 예시 이미지 전환",
+            "cycleOnHoverHelp": "이미지 미리보기가 있는 카드에 마우스를 올리면 예시 이미지가 차례로 전환됩니다. 선택한 미리보기 이미지 자체는 바뀌지 않습니다. 비디오 미리보기는 영향을 받지 않습니다.",
+            "cycleInterval": "전환 간격",
+            "cycleIntervalHelp": "카드에 마우스를 올려 둔 동안 예시 이미지가 전환되는 간격입니다.",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "빠름 (2초)",
+                "normal": "보통 (3초)",
+                "relaxed": "느긋함 (5초)",
+                "slow": "느림 (8초)"
             }
         },
         "autoOrganizeExclusions": {

@@ -389,7 +389,7 @@
             "contentFiltering": "内容过滤",
             "downloads": "下载",
             "videoSettings": "视频设置",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "卡片预览",
             "layoutSettings": "布局设置",
             "licenseIcons": "许可协议图标",
             "misc": "其他",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "仅在悬停时播放视频预览"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "悬停时轮播示例图片",
+            "cycleOnHoverHelp": "悬停在带有图片预览的卡片上时，会轮播其示例图片。所选预览图片本身不会改变。视频预览不受影响。",
+            "cycleInterval": "轮播间隔",
+            "cycleIntervalHelp": "悬停卡片时，示例图片切换的时间间隔。",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "快（2 秒）",
+                "normal": "正常（3 秒）",
+                "relaxed": "舒缓（5 秒）",
+                "slow": "慢（8 秒）"
             }
         },
         "autoOrganizeExclusions": {

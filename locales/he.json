@@ -389,7 +389,7 @@
             "contentFiltering": "סינון תוכן",
             "downloads": "הורדות",
             "videoSettings": "הגדרות וידאו",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "תצוגה מקדימה של כרטיסים",
             "layoutSettings": "הגדרות פריסה",
             "licenseIcons": "סמלי רישיון",
             "misc": "שונות",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "נגן תצוגות מקדימות של וידאו רק בעת ריחוף מעליהן"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "עבור בין תמונות דוגמה בריחוף",
+            "cycleOnHoverHelp": "בריחוף מעל כרטיס עם תמונת תצוגה מקדימה, תמונות הדוגמה שלו מוצגות בזו אחר זו. תמונת התצוגה המקדימה שנבחרה נשארת ללא שינוי. תצוגות מקדימות של וידאו אינן מושפעות.",
+            "cycleInterval": "מרווח החלפה",
+            "cycleIntervalHelp": "הזמן בין החלפת תמונות דוגמה בעת ריחוף מעל כרטיס.",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "מהיר (2 שניות)",
+                "normal": "רגיל (3 שניות)",
+                "relaxed": "נינוח (5 שניות)",
+                "slow": "איטי (8 שניות)"
             }
         },
         "autoOrganizeExclusions": {

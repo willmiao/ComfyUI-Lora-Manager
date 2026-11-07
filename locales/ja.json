@@ -389,7 +389,7 @@
             "contentFiltering": "コンテンツフィルタリング",
             "downloads": "ダウンロード",
             "videoSettings": "動画設定",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "カードプレビュー",
             "layoutSettings": "レイアウト設定",
             "licenseIcons": "ライセンスアイコン",
             "misc": "その他",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "動画プレビューはホバー時にのみ再生されます"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "ホバー時に例画像を切り替え",
+            "cycleOnHoverHelp": "画像プレビューのあるカードにホバーすると、その例画像が順に切り替わります。選択中のプレビュー画像自体は変わりません。動画プレビューは対象外です。",
+            "cycleInterval": "切り替え間隔",
+            "cycleIntervalHelp": "カードにホバーしている間、例画像を切り替える間隔です。",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "速い（2秒）",
+                "normal": "標準（3秒）",
+                "relaxed": "のんびり（5秒）",
+                "slow": "遅い（8秒）"
             }
         },
         "autoOrganizeExclusions": {

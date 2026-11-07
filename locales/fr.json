@@ -389,7 +389,7 @@
             "contentFiltering": "Filtrage du contenu",
             "downloads": "Téléchargements",
             "videoSettings": "Paramètres vidéo",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "Aperçu des cartes",
             "layoutSettings": "Paramètres d'affichage",
             "licenseIcons": "Icônes de licence",
             "misc": "Divers",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "Lire les aperçus vidéo uniquement lors du survol"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "Faire défiler les images d'exemple au survol",
+            "cycleOnHoverHelp": "Lors du survol d'une carte avec une image d'aperçu, ses images d'exemple défilent. L'image d'aperçu sélectionnée reste inchangée. Les aperçus vidéo ne sont pas affectés.",
+            "cycleInterval": "Intervalle de défilement",
+            "cycleIntervalHelp": "Temps entre chaque changement d'image d'exemple lors du survol d'une carte.",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "Rapide (2 s)",
+                "normal": "Normal (3 s)",
+                "relaxed": "Posé (5 s)",
+                "slow": "Lent (8 s)"
             }
         },
         "autoOrganizeExclusions": {

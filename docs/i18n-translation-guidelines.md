@@ -290,6 +290,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (renderings in §2, "Settings directory picker (folder creation)"), so the
 > "no remaining placeholders" claim holds again.
 
+> **Status (2026-11, card preview cycling):** cards with a static preview now crossfade
+> through the model's example images after a hover dwell, adding the
+> `settings.sections.cardPreview` / `settings.cardPreview.*` keys (toggle, interval select and
+> four interval options) — 9 keys `[TODO: Translate]` in all 9 locales, now translated
+> (renderings in §2, "Card preview feature"). "Cycle" here is the automatic image rotation
+> (轮播 / 輪播 in zh), distinct from the manual media switch; the options keep each locale's
+> unit notation ("2 s" in the Latin locales, 2 секунды ru, 2 שניות he, 2秒 ja, 2초 ko,
+> 2 秒 zh). No `[TODO: Translate]` placeholder remains.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -886,6 +895,24 @@ that form fits a tooltip (ru shortens both toggle labels to bare «Галере�
 | example images | zh-CN 示例图片 · zh-TW 範例圖片 · ja 例画像 · ko 예시 이미지 · fr images d'exemple · de Beispielbilder · es imágenes de ejemplo · ru примеры изображений · he תמונות דוגמה |
 | gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
 | gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
+
+### Card preview feature (hover cycling)
+
+Cards with a static preview crossfade through the model's example images after a hover dwell,
+configured by the Settings → Interface section `settings.sections.cardPreview` /
+`settings.cardPreview.*` (a toggle plus an interval select). The copy reuses each locale's fixed
+"card" noun and "example images" noun; "cycle" here is the automatic image rotation, so
+zh-CN/zh-TW use 轮播 / 輪播 rather than the manual `help.shortcuts.entries.cycleMedia` "switch".
+The interval options keep the locale's unit notation ("2 s" in the Latin locales, 2 секунды ru,
+2 שניות he, 2秒 ja, 2초 ko, 2 秒 zh) and put "Relaxed" between Normal and Slow as a pace word
+(Gemächlich, Pausado, Posé, Неспешный, נינוח, のんびり, 느긋함, 舒缓/舒緩).
+
+| Term | Rendering |
+|---|---|
+| Card Preview (section title) | zh-CN 卡片预览 · zh-TW 卡片預覽 · ja カードプレビュー · ko 카드 미리보기 · fr Aperçu des cartes · de Kartenvorschau · es Vista previa de tarjeta · ru Превью карточек · he תצוגה מקדימה של כרטיסים |
+| Cycle Example Images on Hover | zh-CN 悬停时轮播示例图片 · zh-TW 滑鼠懸停時輪播範例圖片 · ja ホバー時に例画像を切り替え · ko 호버 시 예시 이미지 전환 · fr Faire défiler les images d'exemple au survol · de Beispielbilder bei Hover durchblättern · es Cambiar imágenes de ejemplo al pasar el ratón · ru Переключать примеры изображений при наведении · he עבור בין תמונות דוגמה בריחוף |
+| Cycle Interval | zh-CN 轮播间隔 · zh-TW 輪播間隔 · ja 切り替え間隔 · ko 전환 간격 · fr Intervalle de défilement · de Wechselintervall · es Intervalo de cambio · ru Интервал переключения · he מרווח החלפה |
+| interval options (fast / normal / relaxed / slow) | zh-CN 快 / 正常 / 舒缓 / 慢 · zh-TW 快 / 正常 / 舒緩 / 慢 · ja 速い / 標準 / のんびり / 遅い · ko 빠름 / 보통 / 느긋함 / 느림 · fr Rapide / Normal / Posé / Lent · de Schnell / Normal / Gemächlich / Langsam · es Rápido / Normal / Pausado / Lento · ru Быстрый / Обычный / Неспешный / Медленный · he מהיר / רגיל / נינוח / איטי |
 
 ### Scoped scan and root availability
 

@@ -389,7 +389,7 @@
             "contentFiltering": "Фильтрация контента",
             "downloads": "Загрузки",
             "videoSettings": "Настройки видео",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "Превью карточек",
             "layoutSettings": "Настройки макета",
             "licenseIcons": "Значки лицензии",
             "misc": "Разное",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "Переключать примеры изображений при наведении",
+            "cycleOnHoverHelp": "При наведении на карточку с превью изображения по очереди показываются примеры изображений. Выбранное изображение превью остаётся неизменным. На превью видео это не влияет.",
+            "cycleInterval": "Интервал переключения",
+            "cycleIntervalHelp": "Время между сменой примеров изображений при наведении на карточку.",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "Быстрый (2 секунды)",
+                "normal": "Обычный (3 секунды)",
+                "relaxed": "Неспешный (5 секунд)",
+                "slow": "Медленный (8 секунд)"
             }
         },
         "autoOrganizeExclusions": {

@@ -389,7 +389,7 @@
             "contentFiltering": "Filtrado de contenido",
             "downloads": "Descargas",
             "videoSettings": "Configuración de video",
-            "cardPreview": "[TODO: Translate] Card Preview",
+            "cardPreview": "Vista previa de tarjeta",
             "layoutSettings": "Configuración de diseño",
             "licenseIcons": "Iconos de licencia",
             "misc": "Varios",
@@ -443,15 +443,15 @@
             "autoplayOnHoverHelp": "Solo reproducir vistas previas de video al pasar el ratón sobre ellas"
         },
         "cardPreview": {
-            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
-            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
-            "cycleInterval": "[TODO: Translate] Cycle Interval",
-            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleOnHover": "Cambiar imágenes de ejemplo al pasar el ratón",
+            "cycleOnHoverHelp": "Al pasar el ratón sobre una tarjeta con una imagen de vista previa, sus imágenes de ejemplo se muestran una tras otra. La imagen de vista previa seleccionada no cambia. Las vistas previas de video no se ven afectadas.",
+            "cycleInterval": "Intervalo de cambio",
+            "cycleIntervalHelp": "Tiempo entre cada cambio de imagen de ejemplo mientras se pasa el ratón sobre una tarjeta.",
             "cycleIntervalOptions": {
-                "fast": "[TODO: Translate] Fast (2s)",
-                "normal": "[TODO: Translate] Normal (3s)",
-                "relaxed": "[TODO: Translate] Relaxed (5s)",
-                "slow": "[TODO: Translate] Slow (8s)"
+                "fast": "Rápido (2 s)",
+                "normal": "Normal (3 s)",
+                "relaxed": "Pausado (5 s)",
+                "slow": "Lento (8 s)"
             }
         },
         "autoOrganizeExclusions": {
