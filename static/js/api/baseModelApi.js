@@ -1769,11 +1769,25 @@ export class BaseModelApiClient {
         });
     }
 
+    /**
+     * Whether the View Local Versions filter is active for this model type.
+     */
+    _isVlmActiveForPage() {
+        const vlmModelId = getSessionItem('vlm_model_id');
+        const vlmPageType = getSessionItem('vlm_page_type');
+        return Boolean(vlmModelId) && vlmPageType === this.modelType;
+    }
+
     _buildQueryParams(baseParams, pageState) {
         const params = new URLSearchParams(baseParams);
         const isExcludedView = pageState.viewMode === 'excluded';
+        // View Local Versions is library-wide: a version moved to another folder
+        // is still a local version, so the browsing folder must not narrow it.
+        // PageControls clears the selection when the filter starts; this guard
+        // also covers state restored from storage.
+        const isVlmActive = this._isVlmActiveForPage();
 
-        if (!isExcludedView && pageState.activeFolder !== null) {
+        if (!isExcludedView && !isVlmActive && pageState.activeFolder !== null) {
             params.append('folder', pageState.activeFolder);
         }
 
@@ -1811,8 +1825,7 @@ export class BaseModelApiClient {
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
 
         // Pass group-by-model mode to backend (skip when showing all versions of a specific model)
-        const vlmModelId = getSessionItem('vlm_model_id');
-        if (state.global.settings.group_by_model && !vlmModelId) {
+        if (state.global.settings.group_by_model && !isVlmActive) {
             params.append('group_by_model', 'true');
         }
 
@@ -1898,16 +1911,17 @@ export class BaseModelApiClient {
 
     _addModelSpecificParams(params, pageState) {
         // Check for View Local Versions filter (takes priority over recipe filters)
-        const vlmModelId = getSessionItem('vlm_model_id');
-        const vlmPageType = getSessionItem('vlm_page_type');
-        if (vlmModelId && vlmPageType === this.modelType) {
-            params.append('civitai_model_id', vlmModelId);
+        if (this._isVlmActiveForPage()) {
+            params.append('civitai_model_id', getSessionItem('vlm_model_id'));
             const vlmBaseModel = getSessionItem('vlm_base_model');
             if (vlmBaseModel) {
                 params.append('base_model', vlmBaseModel);
             }
             return;
-        } else if (vlmModelId && vlmPageType !== this.modelType) {
+        }
+        const vlmModelId = getSessionItem('vlm_model_id');
+        const vlmPageType = getSessionItem('vlm_page_type');
+        if (vlmModelId && vlmPageType !== this.modelType) {
             // Stale VLM data from a different page type — clean up
             removeSessionItem('vlm_model_id');
             removeSessionItem('vlm_model_name');

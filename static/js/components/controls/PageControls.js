@@ -657,6 +657,134 @@ export class PageControls {
     }
 
     /**
+     * Session key holding the folder filter that View Local Versions suspended.
+     * Page-scoped: a filter suspended on one model page has to come back on that
+     * page, even when the user leaves it mid-view.
+     */
+    _vlmPrevFolderKey() {
+        return `vlm_prev_folder_${this.pageType}`;
+    }
+
+    /**
+     * Whether the View Local Versions filter belongs to this page.
+     */
+    isVlmActive() {
+        const vlmModelId = getSessionItem('vlm_model_id');
+        const vlmPageType = getSessionItem('vlm_page_type');
+        return Boolean(vlmModelId) && vlmPageType === this.pageType;
+    }
+
+    /**
+     * Suspend the folder filter for View Local Versions.
+     *
+     * VLM lists every local version of one model, and versions commonly live in
+     * different folders (auto-organize and manual moves both split them). Keeping
+     * the browsing folder would silently hide the others, so remember it and show
+     * the root selection while the filter is active. Clearing the filter puts the
+     * user back where they were.
+     */
+    _suspendVlmFolderFilter() {
+        const key = this._vlmPrevFolderKey();
+        if (getSessionItem(key)) {
+            // Already suspended (page refresh, or VLM triggered twice): keep the
+            // folder the user actually came from instead of overwriting it.
+            return;
+        }
+        const previousFolder = this.pageState.activeFolder;
+        setSessionItem(key, {
+            folder: previousFolder === undefined ? null : previousFolder,
+        });
+        this._applyFolderFilter(null);
+    }
+
+    /**
+     * Restore the folder filter that View Local Versions suspended.
+     */
+    _restoreVlmFolderFilter() {
+        const key = this._vlmPrevFolderKey();
+        const saved = getSessionItem(key);
+        removeSessionItem(key);
+        if (!saved || typeof saved !== 'object') {
+            return;
+        }
+        this._applyFolderFilter(typeof saved.folder === 'string' ? saved.folder : null);
+    }
+
+    /**
+     * Hand a suspended folder back to the page that owns it.
+     *
+     * VLM state lives in sessionStorage and survives a full page load: when the
+     * user opens another model page while the filter is active, that page clears
+     * the stale filter and the folder filter must come back for the page it was
+     * suspended on.
+     */
+    _restoreForeignVlmFolder(pageType) {
+        if (!pageType) {
+            return;
+        }
+        const key = `vlm_prev_folder_${pageType}`;
+        const saved = getSessionItem(key);
+        removeSessionItem(key);
+        if (!saved || typeof saved !== 'object') {
+            return;
+        }
+        setStorageItem(
+            `${pageType}_activeFolder`,
+            typeof saved.folder === 'string' ? saved.folder : null
+        );
+    }
+
+    /**
+     * Apply a folder filter to page state, storage and the sidebar selection.
+     * `null` means no folder filter at all; `''` means the library root.
+     */
+    _applyFolderFilter(folder) {
+        this.pageState.activeFolder = folder;
+        setStorageItem(`${this.pageType}_activeFolder`, folder);
+        if (typeof this.sidebarManager?.applyFolderSelection === 'function') {
+            this.sidebarManager.applyFolderSelection(folder);
+        }
+    }
+
+    /**
+     * Drop the View Local Versions filter and restore what it suspended
+     * (folder filter and sort order). The caller reloads the listing.
+     */
+    clearVlmFilterState() {
+        removeSessionItem('vlm_model_id');
+        removeSessionItem('vlm_model_name');
+        removeSessionItem('vlm_base_model');
+        removeSessionItem('vlm_page_type');
+        this._restoreVlmFolderFilter();
+        this._restoreSortAfterVlm();
+        const indicator = document.getElementById('customFilterIndicator');
+        if (indicator) {
+            indicator.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Leave View Local Versions because the user navigated elsewhere (e.g. picked
+     * a folder in the sidebar). The suspended folder is dropped instead of
+     * restored: the navigation decides which folder applies next.
+     */
+    exitVlmForNavigation() {
+        if (!this.isVlmActive()) {
+            return;
+        }
+        removeSessionItem('vlm_model_id');
+        removeSessionItem('vlm_model_name');
+        removeSessionItem('vlm_base_model');
+        removeSessionItem('vlm_page_type');
+        removeSessionItem(this._vlmPrevFolderKey());
+        this._restoreSortAfterVlm();
+        const indicator = document.getElementById('customFilterIndicator');
+        if (indicator) {
+            indicator.classList.add('hidden');
+        }
+    }
+
+    /**
      * Trigger View Local Versions without page reload
      * Sets sessionStorage and reloads data via the API.
      */
@@ -669,6 +797,11 @@ export class PageControls {
             setSessionItem('vlm_base_model', baseModel);
         } else {
             removeSessionItem('vlm_base_model');
+        }
+        // VLM is library-wide: drop the browsing folder before reloading so the
+        // listing, the sidebar selection and the stored filter agree.
+        if (targetPageType === this.pageType) {
+            this._suspendVlmFolderFilter();
         }
         // Save current sort preference so it can be restored when VLM is cleared
         setSessionItem('vlm_prev_sort', this.pageState.sortBy);
@@ -724,7 +857,9 @@ export class PageControls {
 
         // Only show VLM indicator when it belongs to the current page type
         if (vlmModelId && vlmPageType !== this.pageType) {
-            // Stale VLM data from a different page — clean up
+            // Stale VLM data from a different page — clean up, and hand the
+            // suspended folder back to the page that owns it.
+            this._restoreForeignVlmFolder(vlmPageType);
             removeSessionItem('vlm_model_id');
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
@@ -739,7 +874,9 @@ export class PageControls {
         const vlmBaseModel = getSessionItem('vlm_base_model');
 
         if (vlmModelId && vlmModelName) {
-            // VLM is active — inject sort option, disable dropdown, show indicator
+            // VLM is active — inject sort option, disable dropdown, show indicator.
+            // The folder filter stays suspended (also across a page refresh).
+            this._suspendVlmFolderFilter();
             this._addVlmSortOption();
             if (sortSelect) {
                 sortSelect.value = 'version_id:desc';
@@ -772,20 +909,9 @@ export class PageControls {
      */
     async clearCustomFilter() {
         // Check for View Local Versions filter first
-        const vlmModelId = getSessionItem('vlm_model_id');
-        if (vlmModelId) {
-            removeSessionItem('vlm_model_id');
-            removeSessionItem('vlm_model_name');
-            removeSessionItem('vlm_base_model');
-            removeSessionItem('vlm_page_type');
-
-            this._restoreSortAfterVlm();
-
-            // Hide the indicator
-            const indicator = document.getElementById('customFilterIndicator');
-            if (indicator) {
-                indicator.classList.add('hidden');
-            }
+        if (this.isVlmActive()) {
+            // Drop the filter and restore the folder/sort it suspended
+            this.clearVlmFilterState();
 
             // Reload data via API (no page reload)
             await this.resetAndReload(true);

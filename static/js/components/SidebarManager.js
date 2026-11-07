@@ -2379,6 +2379,27 @@ export class SidebarManager {
         setStorageItem(`${this.pageType}_activeFolder`, this.selectedPath);
     }
 
+    /**
+     * Reflect a folder selection made outside the sidebar (null/'' = root),
+     * without reloading the listing.
+     *
+     * View Local Versions suspends the folder filter and later restores it; the
+     * grid reload belongs to PageControls, so the tree, breadcrumbs and header
+     * only have to follow the selection.
+     */
+    applyFolderSelection(folder) {
+        this.selectedPath = (folder === null || folder === undefined) ? '' : folder;
+        if (!this.isInitialized) {
+            // initialize() restores the persisted selection itself; painting the
+            // tree now would touch DOM that does not have its data or API client
+            // yet.
+            return;
+        }
+        this.updateTreeSelection();
+        this.updateBreadcrumbs();
+        this.updateSidebarHeader();
+    }
+
     clearAllDropHighlights() {
         const highlighted = document.querySelectorAll('.sidebar-tree-node-content.drop-target, .sidebar-node-content.drop-target');
         highlighted.forEach((element) => element.classList.remove('drop-target'));
@@ -3116,6 +3137,12 @@ export class SidebarManager {
     }
 
     async selectFolder(path) {
+        // Picking a folder is explicit navigation away from View Local Versions,
+        // which is library-wide and would otherwise ignore the new folder.
+        if (typeof this.pageControls?.isVlmActive === 'function' && this.pageControls.isVlmActive()) {
+            this.pageControls.exitVlmForNavigation();
+        }
+
         // Normalize path: null or undefined means root
         const normalizedPath = (path === null || path === undefined) ? '' : path;
 

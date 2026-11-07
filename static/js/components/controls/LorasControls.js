@@ -110,17 +110,8 @@ export class LorasControls extends PageControls {
      */
     async clearCustomFilter() {
         // Check for View Local Versions filter first (handles VLM and reloads)
-        const vlmModelId = getSessionItem('vlm_model_id');
-        if (vlmModelId) {
-            removeSessionItem('vlm_model_id');
-            removeSessionItem('vlm_model_name');
-            removeSessionItem('vlm_base_model');
-            removeSessionItem('vlm_page_type');
-            this._restoreSortAfterVlm();
-            const indicator = document.getElementById('customFilterIndicator');
-            if (indicator) {
-                indicator.classList.add('hidden');
-            }
+        if (this.isVlmActive()) {
+            this.clearVlmFilterState();
             await resetAndReload();
             return;
         }
