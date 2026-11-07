@@ -1,3 +1,4 @@
+from collections import Counter
 from difflib import SequenceMatcher
 import functools
 import logging
@@ -409,6 +410,12 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
     """
     Check if text matches pattern using fuzzy matching.
     Returns True if similarity ratio is above threshold.
+
+    Two cheap necessary conditions gate ``SequenceMatcher``: its ratio
+    ``2*M/(len_a+len_b)`` is bounded both by the length ratio and by the number
+    of characters the two strings have in common. Skipping pairs that cannot
+    reach ``threshold`` keeps per-keystroke searches responsive on large
+    libraries without changing a single result (see #1179).
     """
     if not pattern or not text:
         return False
@@ -428,8 +435,28 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
 
         # If not found as substring, try fuzzy matching
         # Check if any part of the text matches this word
+        word_len = len(word)
+        word_char_counts = list(Counter(word).items())
         found_match = False
         for text_part in text.split():
+            part_len = len(text_part)
+            total_len = word_len + part_len
+            min_len = part_len if part_len < word_len else word_len
+
+            # No pairing can beat 2*min_len/total_len, so a text part whose
+            # length is far off the query word is discarded outright.
+            if 2 * min_len < threshold * total_len:
+                continue
+
+            # Matching blocks can only use characters present in both strings,
+            # so the character-multiset intersection bounds the matched chars.
+            common = 0
+            for char, count in word_char_counts:
+                part_count = text_part.count(char)
+                common += count if count < part_count else part_count
+            if 2 * common < threshold * total_len:
+                continue
+
             ratio = SequenceMatcher(None, text_part, word).ratio()
             if ratio >= threshold:
                 found_match = True

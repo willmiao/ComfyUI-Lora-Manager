@@ -150,6 +150,51 @@ class TestFuzzyMatchPerformance:
         benchmark(match)
 
 
+class TestFuzzyMatchLibraryScale:
+    """Benchmark one search query over a large library (issue #1179).
+
+    Before the prefilters, a non-matching query at this size spent well over
+    100ms in ``SequenceMatcher`` because every token of every non-matching
+    entry reached the matcher.
+    """
+
+    LIBRARY_SIZE = 20_000
+
+    @staticmethod
+    def _build_library(size: int) -> list[str]:
+        vocabulary = (
+            "anime style character realistic portrait detail lineart chinese dark "
+            "magic girl pixel art photo cinematic illustration concept fantasy armor "
+            "cyberpunk watercolor sketch vintage retro neon glow soft light shadow "
+            "chibi cute mecha samurai landscape nature city night flower dragon knight"
+        ).split()
+        folders = ("", "anime/", "realistic/", "styles/", "characters/")
+        rng = random.Random(1179)
+        library = []
+        for _ in range(size):
+            words = rng.sample(vocabulary, k=rng.randint(2, 4))
+            library.append(f"{rng.choice(folders)}{'_'.join(words)}.safetensors")
+        return library
+
+    def test_non_matching_query(self, benchmark):
+        """Worst case: nothing matches, so every entry is fully scanned."""
+        library = self._build_library(self.LIBRARY_SIZE)
+
+        def search():
+            return sum(1 for name in library if fuzzy_match(name, "zzzqq"))
+
+        assert benchmark(search) == 0
+
+    def test_typo_query(self, benchmark):
+        """A typo shares characters with many tokens, so it does the most work."""
+        library = self._build_library(self.LIBRARY_SIZE)
+
+        def search():
+            return sum(1 for name in library if fuzzy_match(name, "anmei"))
+
+        benchmark(search)
+
+
 class TestRecipeFingerprintPerformance:
     """Performance benchmarks for recipe fingerprint calculation."""
 
