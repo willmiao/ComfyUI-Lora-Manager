@@ -389,6 +389,7 @@
             "contentFiltering": "Фильтрация контента",
             "downloads": "Загрузки",
             "videoSettings": "Настройки видео",
+            "cardPreview": "[TODO: Translate] Card Preview",
             "layoutSettings": "Настройки макета",
             "licenseIcons": "Значки лицензии",
             "misc": "Разное",
@@ -440,6 +441,18 @@
         "videoSettings": {
             "autoplayOnHover": "Автовоспроизведение видео при наведении",
             "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
+        },
+        "cardPreview": {
+            "cycleOnHover": "[TODO: Translate] Cycle Example Images on Hover",
+            "cycleOnHoverHelp": "[TODO: Translate] When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
+            "cycleInterval": "[TODO: Translate] Cycle Interval",
+            "cycleIntervalHelp": "[TODO: Translate] Time between example image switches while hovering a card.",
+            "cycleIntervalOptions": {
+                "fast": "[TODO: Translate] Fast (2s)",
+                "normal": "[TODO: Translate] Normal (3s)",
+                "relaxed": "[TODO: Translate] Relaxed (5s)",
+                "slow": "[TODO: Translate] Slow (8s)"
+            }
         },
         "autoOrganizeExclusions": {
             "label": "Исключения автосортировки",

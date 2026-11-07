@@ -153,6 +153,33 @@
     filter: blur(25px);
 }
 
+/* Hover example-image cycling: overlays fade above the anchor preview but
+   stay below the header gradient (z-index 1) and NSFW overlay (z-index 2). */
+.card-preview-cycle-img {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+    pointer-events: none;
+}
+
+.card-preview-cycle-img.visible {
+    opacity: 1;
+}
+
+/* Cycling mode hides the card chrome so the example images are unobstructed;
+   the chrome returns on mouse leave together with the anchor preview. */
+.model-card .card-header,
+.model-card .card-footer {
+    transition: opacity 0.25s ease;
+}
+
+.model-card.cycling .card-header,
+.model-card.cycling .card-footer {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .nsfw-overlay {
     position: absolute;
     top: 0;

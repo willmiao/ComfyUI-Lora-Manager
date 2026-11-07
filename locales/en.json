@@ -389,6 +389,7 @@
       "contentFiltering": "Content Filtering",
       "downloads": "Downloads",
       "videoSettings": "Video Settings",
+      "cardPreview": "Card Preview",
       "layoutSettings": "Layout Settings",
       "licenseIcons": "License Icons",
       "misc": "Miscellaneous",
@@ -440,6 +441,18 @@
     "videoSettings": {
       "autoplayOnHover": "Autoplay Videos on Hover",
       "autoplayOnHoverHelp": "Only play video previews when hovering over them"
+    },
+    "cardPreview": {
+      "cycleOnHover": "Cycle Example Images on Hover",
+      "cycleOnHoverHelp": "When hovering a card with an image preview, cycle through its example images. The selected preview image itself stays unchanged. Video previews are not affected.",
+      "cycleInterval": "Cycle Interval",
+      "cycleIntervalHelp": "Time between example image switches while hovering a card.",
+      "cycleIntervalOptions": {
+        "fast": "Fast (2s)",
+        "normal": "Normal (3s)",
+        "relaxed": "Relaxed (5s)",
+        "slow": "Slow (8s)"
+      }
     },
     "autoOrganizeExclusions": {
       "label": "Auto-organize exclusions",

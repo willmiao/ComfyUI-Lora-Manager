@@ -46,6 +46,8 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     mature_blur_level: 'R',
     card_blur_amount: 8,
     autoplay_on_hover: false,
+    card_preview_cycle: true,
+    card_preview_cycle_interval: 3,
     display_density: 'default',
     recipes_layout: 'grid',
     card_info_display: 'always',

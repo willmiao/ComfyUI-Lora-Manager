@@ -13,6 +13,7 @@ import { showDeleteModal } from '../../utils/modalUtils.js';
 import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workflowActions.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
+import { attachCardPreviewCycler } from './CardPreviewCycler.js';
 
 // Helper function to get display name based on settings
 function getDisplayName(model) {
@@ -799,6 +800,9 @@ export function createModelCard(model, modelType) {
     const videoElement = card.querySelector('video');
     if (videoElement) {
         configureModelCardVideo(videoElement, autoplayOnHover);
+    } else {
+        // Static image previews cycle through example images on hover.
+        attachCardPreviewCycler(card, model);
     }
 
     // Dropping an image/video onto the card replaces the model preview via the

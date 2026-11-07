@@ -1233,6 +1233,16 @@ export class SettingsManager {
             autoplayOnHoverCheckbox.checked = state.global.settings.autoplay_on_hover || false;
         }
 
+        // Set card preview cycling settings
+        const cardPreviewCycleCheckbox = document.getElementById('cardPreviewCycle');
+        if (cardPreviewCycleCheckbox) {
+            cardPreviewCycleCheckbox.checked = state.global.settings.card_preview_cycle ?? true;
+        }
+        const cardPreviewCycleIntervalSelect = document.getElementById('cardPreviewCycleInterval');
+        if (cardPreviewCycleIntervalSelect) {
+            cardPreviewCycleIntervalSelect.value = String(state.global.settings.card_preview_cycle_interval ?? 3);
+        }
+
         // Set display density setting
         const displayDensitySelect = document.getElementById('displayDensity');
         if (displayDensitySelect) {

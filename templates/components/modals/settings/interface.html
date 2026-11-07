@@ -20,6 +20,18 @@
         {{ sm.setting_toggle('autoplayOnHover', 'autoplay_on_hover', 'settings.videoSettings.autoplayOnHover', 'settings.videoSettings.autoplayOnHoverHelp') }}
     </div>
 
+    <!-- Card Preview -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.cardPreview') }}
+        {{ sm.setting_toggle('cardPreviewCycle', 'card_preview_cycle', 'settings.cardPreview.cycleOnHover', 'settings.cardPreview.cycleOnHoverHelp') }}
+        {{ sm.setting_select('cardPreviewCycleInterval', 'card_preview_cycle_interval', 'settings.cardPreview.cycleInterval', [
+            ('2', 'settings.cardPreview.cycleIntervalOptions.fast'),
+            ('3', 'settings.cardPreview.cycleIntervalOptions.normal'),
+            ('5', 'settings.cardPreview.cycleIntervalOptions.relaxed'),
+            ('8', 'settings.cardPreview.cycleIntervalOptions.slow'),
+        ], 'settings.cardPreview.cycleIntervalHelp') }}
+    </div>
+
     <!-- Layout Settings -->
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.layoutSettings') }}
