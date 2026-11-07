@@ -470,8 +470,12 @@ class TestRecipeFTSIndexSpecialCharacters:
         # Note: Result depends on FTS5 configuration
 
 
+# Wall-clock bounds are unreliable on shared CI runners: a ~1ms search flaked
+# at 0.12-0.14s against the 100ms threshold. Deselected by default; run with
+# `pytest -m performance`.
+@pytest.mark.performance
 class TestRecipeFTSIndexPerformance:
-    """Basic performance tests."""
+    """Basic performance tests (run with ``-m performance``)."""
 
     def test_build_large_index(self, fts_index):
         """Test building index with many recipes."""
