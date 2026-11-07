@@ -263,7 +263,7 @@
                 "loraName": "LoRAファイル名",
                 "loraModel": "LoRAモデル名",
                 "prompt": "プロンプト",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "トリガーワード"
             }
         },
         "filter": {
@@ -759,12 +759,12 @@
                 "customTemplate": "カスタムテンプレート"
             },
             "customTemplatePlaceholder": "カスタムテンプレートを入力（例：{base_model}/{author}/{first_tag}）",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "ワークフローのダウンロードと、ワークフローページの自動整理に適用されます。",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "ワークフロー"
             },
             "baseModelPathMappings": "ベースモデルパスマッピング",
             "baseModelPathMappingsHelp": "特定のベースモデルのフォルダ名をカスタマイズ（例：\"Flux.1 D\" → \"flux\"）",

@@ -263,7 +263,7 @@
                 "loraName": "LoRA 檔案名稱",
                 "loraModel": "LoRA 模型名稱",
                 "prompt": "提示詞",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "觸發詞"
             }
         },
         "filter": {
@@ -759,12 +759,12 @@
                 "customTemplate": "自訂範本"
             },
             "customTemplatePlaceholder": "輸入自訂範本（例如：{base_model}/{author}/{first_tag}）",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "適用於工作流下載及工作流頁面上的自動整理。",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "工作流"
             },
             "baseModelPathMappings": "基礎模型路徑對應",
             "baseModelPathMappingsHelp": "自訂特定基礎模型的資料夾名稱（例如：「Flux.1 D」→「flux」）",
