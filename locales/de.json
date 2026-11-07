@@ -772,7 +772,7 @@
                 "customTemplate": "Benutzerdefinierte Vorlage"
             },
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
-            "workflowHint": "Gilt für Workflow-Downloads und die automatische Organisation auf der Seite Workflows.",
+            "workflowHint": "Gilt für Workflow-Downloads und die automatische Organisation auf der Workflows-Seite.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",

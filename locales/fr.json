@@ -772,7 +772,7 @@
                 "customTemplate": "Modèle personnalisé"
             },
             "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",
-            "workflowHint": "S’applique aux téléchargements de workflows et à l’organisation automatique sur la page Workflows.",
+            "workflowHint": "S'applique aux téléchargements de workflows et à l'organisation automatique sur la page Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",

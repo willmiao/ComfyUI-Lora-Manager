@@ -2161,7 +2161,7 @@
                 "updated": "Parámetro preajustado actualizado"
             },
             "triggerWords": {
-                "label": "Palabras clave",
+                "label": "Palabras de activación",
                 "noTriggerWordsNeeded": "No se necesita palabra de activación",
                 "edit": "Editar palabras de activación",
                 "cancel": "Cancelar edición",
@@ -2974,7 +2974,7 @@
             "tooLong": "La palabra de activación no debe exceder 500 palabras",
             "tooMany": "Máximo 100 palabras de activación permitidas",
             "alreadyExists": "Esta palabra de activación ya existe",
-            "updateSuccess": "Palabras clave actualizadas exitosamente",
+            "updateSuccess": "Palabras de activación actualizadas exitosamente",
             "updateFailed": "Error al actualizar palabras de activación",
             "copyFailed": "Error al copiar"
         },
