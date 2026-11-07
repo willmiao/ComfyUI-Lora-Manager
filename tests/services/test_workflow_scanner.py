@@ -53,6 +53,34 @@ def _make_scanner() -> WorkflowScanner:
     return scanner
 
 
+def _write_zip_with_embedded_png(scratch_dir, artifact_path, workflow=None):
+    """Create an archive whose only workflow carrier is an embedded-metadata PNG."""
+
+    import zipfile
+
+    PIL = pytest.importorskip("PIL.Image")
+    from py.utils.exif_utils import ExifUtils
+
+    if workflow is None:
+        workflow = {
+            "nodes": [
+                {
+                    "id": 1,
+                    "type": "CheckpointLoaderSimple",
+                    "widgets_values": ["base.safetensors"],
+                }
+            ],
+            "links": [],
+        }
+    image_path = scratch_dir / "shot.png"
+    PIL.new("RGB", (8, 8)).save(image_path, format="PNG")
+    ExifUtils.embed_workflow(str(image_path), json.dumps(workflow))
+    with zipfile.ZipFile(artifact_path, "w") as archive:
+        archive.write(image_path, "images/shot.png")
+        archive.writestr("readme.txt", "hello")
+    return workflow
+
+
 @pytest.fixture(autouse=True)
 def stub_base_model_resolution(monkeypatch):
     """Keep scanner tests hermetic; resolution itself is covered in
@@ -167,6 +195,87 @@ async def test_create_default_metadata_from_zip_artifact(workflow_root, enable_w
     derived = workflow_root / "pack.zip.workflow.json"
     assert derived.exists()
     assert json.loads(derived.read_text(encoding="utf-8")) == workflow
+
+
+async def test_create_default_metadata_from_zip_with_embedded_png(
+    workflow_root, enable_workflows, tmp_path
+):
+    """A CivitAI archive may bundle only a PNG carrying the workflow."""
+
+    import hashlib
+
+    file_path = workflow_root / "pack.zip"
+    workflow = _write_zip_with_embedded_png(tmp_path, file_path)
+
+    scanner = _make_scanner()
+    metadata = await scanner._create_default_metadata(str(file_path))
+
+    assert metadata is not None
+    assert metadata.workflow_format == "ui"
+    assert metadata.node_count == 1
+    assert metadata.model_refs == ["base.safetensors"]
+    # CivitAI identity stays the zip's hash, never the embedded image's.
+    assert metadata.sha256 == hashlib.sha256(file_path.read_bytes()).hexdigest()
+
+    derived = workflow_root / "pack.zip.workflow.json"
+    assert derived.exists()
+    assert json.loads(derived.read_text(encoding="utf-8")) == workflow
+
+
+async def test_process_model_file_creates_entry_for_zip_with_embedded_png(
+    workflow_root, enable_workflows, tmp_path
+):
+    """A plain Refresh scan indexes the archive (the user-reported case)."""
+
+    import hashlib
+
+    from py.services.model_hash_index import ModelHashIndex
+
+    file_path = workflow_root / "pack.zip"
+    _write_zip_with_embedded_png(tmp_path, file_path)
+
+    scanner = _make_scanner()
+    scanner._hash_index = ModelHashIndex()
+    scanner._excluded_models = []
+
+    entry = await scanner._process_model_file(str(file_path), str(workflow_root))
+
+    assert entry is not None
+    assert entry["workflow_format"] == "ui"
+    assert entry["sha256"] == hashlib.sha256(file_path.read_bytes()).hexdigest()
+    assert (workflow_root / "pack.zip.workflow.json").exists()
+
+
+async def test_adjust_metadata_fills_analysis_from_zip_embedded_png(
+    workflow_root, enable_workflows, tmp_path
+):
+    """An entry downloaded before the fix heals on the next scan."""
+
+    file_path = workflow_root / "downloaded.zip"
+    _write_zip_with_embedded_png(
+        tmp_path,
+        file_path,
+        {"nodes": [{"id": 1, "type": "CheckpointLoaderSimple"}], "links": []},
+    )
+
+    metadata = WorkflowMetadata(
+        file_name="downloaded",
+        model_name="downloaded",
+        file_path=_normalize(file_path),
+        size=file_path.stat().st_size,
+        modified=0,
+        sha256="abc",
+        base_model="Unknown",
+        preview_url="",
+        from_civitai=True,
+    )
+
+    scanner = _make_scanner()
+    adjusted = scanner.adjust_metadata(metadata, str(file_path), None)
+
+    assert adjusted.workflow_format == "ui"
+    assert adjusted.node_count == 1
+    assert (workflow_root / "downloaded.zip.workflow.json").exists()
 
 
 async def test_create_default_metadata_skips_zip_without_workflow(workflow_root, enable_workflows):

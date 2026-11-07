@@ -53,6 +53,22 @@ def _write_webp_with_workflow(path, workflow):
     ExifUtils.embed_workflow(str(path), json.dumps(workflow))
 
 
+def _zip_with_image_member(tmp_path, workflow, extension=".png"):
+    """Build an image carrying *workflow* and bundle it into a zip."""
+
+    image_path = tmp_path / f"member{extension}"
+    if extension == ".png":
+        _write_png_with_workflow(image_path, workflow)
+    else:
+        _write_webp_with_workflow(image_path, workflow)
+    artifact = tmp_path / "pack.zip"
+    _write_zip(
+        artifact,
+        {"images/member" + extension: image_path.read_bytes()},
+    )
+    return artifact
+
+
 def test_document_path_identity_for_json(tmp_path):
     artifact = tmp_path / "flow.json"
     assert get_workflow_document_path(str(artifact)) == str(artifact)
@@ -127,6 +143,74 @@ def test_extract_from_zip_without_workflow_returns_none(tmp_path):
     artifact = tmp_path / "images.zip"
     _write_zip(artifact, {"note.txt": "no graphs here", "config.json": "{}"})
     assert extract_workflow_document(str(artifact)) is None
+
+
+def test_extract_from_zip_png_with_embedded_workflow(tmp_path):
+    artifact = _zip_with_image_member(tmp_path, UI_WORKFLOW)
+    assert extract_workflow_document(str(artifact)) == UI_WORKFLOW
+
+
+def test_extract_from_zip_webp_with_embedded_workflow(tmp_path):
+    artifact = _zip_with_image_member(tmp_path, UI_WORKFLOW, extension=".webp")
+    assert extract_workflow_document(str(artifact)) == UI_WORKFLOW
+
+
+def test_extract_from_zip_prefers_json_over_image(tmp_path):
+    image_path = tmp_path / "shot.png"
+    _write_png_with_workflow(image_path, UI_WORKFLOW)
+    artifact = tmp_path / "pack.zip"
+    _write_zip(
+        artifact,
+        {
+            "workflow.json": json.dumps(API_WORKFLOW),
+            "shot.png": image_path.read_bytes(),
+        },
+    )
+    assert extract_workflow_document(str(artifact)) == API_WORKFLOW
+
+
+def test_extract_from_zip_plain_image_returns_none(tmp_path):
+    PIL = pytest.importorskip("PIL.Image")
+    image_path = tmp_path / "plain.png"
+    PIL.new("RGB", (8, 8)).save(image_path, format="PNG")
+    artifact = tmp_path / "images.zip"
+    _write_zip(
+        artifact,
+        {"plain.png": image_path.read_bytes(), "note.txt": "no graphs here"},
+    )
+    assert extract_workflow_document(str(artifact)) is None
+
+
+def test_extract_from_zip_continues_after_bad_image_member(tmp_path):
+    image_path = tmp_path / "good.png"
+    _write_png_with_workflow(image_path, UI_WORKFLOW)
+    artifact = tmp_path / "pack.zip"
+    # The corrupt member is larger, so the "full-size first" ordering tries
+    # it before the valid screenshot; the loop must move on to the next one.
+    _write_zip(
+        artifact,
+        {
+            "a_broken.png": b"not an image" * 512,
+            "b_good.png": image_path.read_bytes(),
+        },
+    )
+    assert extract_workflow_document(str(artifact)) == UI_WORKFLOW
+
+
+def test_extract_from_zip_skips_oversized_image_member(tmp_path, monkeypatch):
+    from py.utils import workflow_extraction
+
+    artifact = _zip_with_image_member(tmp_path, UI_WORKFLOW)
+    monkeypatch.setattr(workflow_extraction, "_MAX_ZIP_IMAGE_BYTES", 1)
+    assert extract_workflow_document(str(artifact)) is None
+
+
+def test_materialize_from_zip_image_member(tmp_path):
+    artifact = _zip_with_image_member(tmp_path, UI_WORKFLOW)
+    derived = materialize_workflow_document(str(artifact))
+    assert derived == str(tmp_path / f"pack{WORKFLOW_DOCUMENT_SUFFIX}")
+    with open(derived, "r", encoding="utf-8") as handle:
+        assert json.load(handle) == UI_WORKFLOW
 
 
 def test_extract_from_corrupt_zip_returns_none(tmp_path):
