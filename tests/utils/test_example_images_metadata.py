@@ -8,7 +8,12 @@ from typing import Any, Dict, List, Tuple
 
 import pytest
 
+from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_metadata as metadata_module
+from py.utils.example_images_paths import (
+    COMPLETION_MARKER_FILENAME,
+    get_model_folder,
+)
 from tests.utils.test_video_dimension_probe import build_mp4, build_webm
 
 
@@ -194,6 +199,53 @@ async def test_refresh_model_metadata_records_failures(monkeypatch: pytest.Monke
     )
     assert result is True
     assert cache_item["hydrated"] is True
+
+
+async def test_refresh_model_metadata_clears_completion_marker(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    """Fresh provider metadata may add images; the folder must be re-checked."""
+
+    settings = get_settings_manager()
+    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings.settings, "active_library", "default")
+
+    model_hash = "c" * 64
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_text("content", encoding="utf-8")
+    scanner = StubScanner([{"sha256": model_hash, "file_path": str(model_file)}])
+
+    model_dir = get_model_folder(model_hash, "default")
+    Path(model_dir).mkdir(parents=True, exist_ok=True)
+    (Path(model_dir) / "image_0.png").write_text("data", encoding="utf-8")
+    marker = Path(model_dir) / COMPLETION_MARKER_FILENAME
+    marker.write_text('{"version": 1}', encoding="utf-8")
+
+    class StubMetadataSync:
+        async def fetch_and_update_model(self, **_kwargs):
+            return True, None
+
+    async def fake_hydrate(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        return model_data
+
+    monkeypatch.setattr(
+        metadata_module.MetadataManager,
+        "hydrate_model_data",
+        staticmethod(fake_hydrate),
+    )
+    monkeypatch.setattr(metadata_module, "_metadata_sync_service", StubMetadataSync())
+
+    result = await metadata_module.MetadataUpdater.refresh_model_metadata(
+        model_hash,
+        "Example",
+        "lora",
+        scanner,
+        {"refreshed_models": set(), "errors": [], "last_error": None},
+    )
+
+    assert result is True
+    assert marker.exists() is False
 
 
 async def test_update_metadata_from_local_examples_generates_entries(monkeypatch: pytest.MonkeyPatch, tmp_path):

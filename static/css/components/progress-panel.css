@@ -154,6 +154,14 @@
     margin-right: 4px;
 }
 
+.download-failure-summary {
+    margin-bottom: var(--space-2);
+    font-size: 0.85em;
+    line-height: 1.45;
+    color: var(--text-color);
+    opacity: 0.85;
+}
+
 .download-errors {
     background: oklch(var(--lora-warning) / 0.1);
     border: 1px solid var(--lora-warning);

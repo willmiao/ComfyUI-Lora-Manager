@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 import shutil
+import time
 from typing import Iterable, List, Optional, Tuple
 
 from ..services.settings_manager import get_settings_manager
 
 _HEX_PATTERN = re.compile(r"[a-fA-F0-9]{64}")
+
+# Marker written inside a model's example folder after a download pass has
+# accounted for every media entry (downloaded now, or permanently flagged).
+# A populated folder without it is treated as unverified and re-checked, which
+# repairs folders left behind by an interrupted run.
+COMPLETION_MARKER_FILENAME = ".lm-examples-complete"
 
 # Filesystem/metadata files that are never created by the example images system
 # and are safe to ignore during validation. The cleanup service only operates on
@@ -120,6 +128,85 @@ def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str
                 return legacy_folder
 
     return resolved_folder
+
+
+def get_completion_marker_path(model_dir: str) -> str:
+    """Return the completion marker path for a model's example folder."""
+
+    return os.path.join(model_dir, COMPLETION_MARKER_FILENAME) if model_dir else ""
+
+
+def has_completion_marker(model_dir: str) -> bool:
+    """Return True when a completed download marker exists."""
+
+    marker = get_completion_marker_path(model_dir)
+    return bool(marker) and os.path.isfile(marker)
+
+
+def mark_example_folder_complete(model_dir: str, media_count: int = 0) -> bool:
+    """Record that *model_dir* has no outstanding downloadable media.
+
+    The marker is only written once the folder actually contains a media file:
+    a model whose every asset returned 404 has nothing to skip and stays on the
+    failed list instead. The write is atomic so an interrupted run cannot leave
+    a half-written marker behind.
+    """
+
+    if not model_dir or not os.path.isdir(model_dir):
+        return False
+
+    try:
+        with os.scandir(model_dir) as entries:
+            has_media = any(
+                entry.is_file()
+                and not entry.name.startswith(COMPLETION_MARKER_FILENAME)
+                for entry in entries
+            )
+    except OSError:
+        return False
+    if not has_media:
+        return False
+
+    marker = get_completion_marker_path(model_dir)
+    temp_path = f"{marker}.tmp"
+    try:
+        with open(temp_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "version": 1,
+                    "media": int(media_count or 0),
+                    "completed_at": time.time(),
+                },
+                handle,
+            )
+        os.replace(temp_path, marker)
+        return True
+    except OSError as exc:
+        logger.warning(
+            "Failed to write example completion marker for %s: %s", model_dir, exc
+        )
+        try:
+            os.remove(temp_path)
+        except OSError:
+            pass
+        return False
+
+
+def clear_example_completion_marker(model_dir: str) -> None:
+    """Remove the completion marker so the next run re-checks the folder."""
+
+    marker = get_completion_marker_path(model_dir)
+    if not marker:
+        return
+    for path in (marker, f"{marker}.tmp"):
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            logger.debug(
+                "Failed to remove example completion marker %s: %s", path, exc
+            )
 
 
 class ExampleImagePathResolver:

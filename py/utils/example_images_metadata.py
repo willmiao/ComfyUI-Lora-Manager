@@ -12,6 +12,10 @@ from ..services.settings_manager import get_settings_manager
 from ..services.downloader import get_downloader
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..utils.exif_utils import ExifUtils
+from ..utils.example_images_paths import (
+    clear_example_completion_marker,
+    get_model_folder,
+)
 from ..utils.metadata_manager import MetadataManager
 from ..utils.video_metadata import get_video_dimensions
 
@@ -286,6 +290,16 @@ class MetadataUpdater:
             )
             
             if success:
+                # Fresh provider metadata can add or replace example images;
+                # make the next example-image pass verify this folder again.
+                try:
+                    clear_example_completion_marker(get_model_folder(model_hash))
+                except Exception as exc:  # pragma: no cover - best effort
+                    logger.debug(
+                        "Could not clear example completion marker for %s: %s",
+                        model_name,
+                        exc,
+                    )
                 logger.info(f"Successfully refreshed metadata for {model_name}")
                 return True
             else:

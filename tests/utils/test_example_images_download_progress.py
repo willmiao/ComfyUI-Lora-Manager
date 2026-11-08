@@ -91,3 +91,33 @@ async def test_stop_while_paused_folds_the_pause(monkeypatch):
     assert manager._progress["paused_at"] is None
     assert manager._progress["paused_total"] == 10.0
     assert manager._progress["status"] == "stopping"
+
+
+def test_failure_summary_counts_reasons():
+    progress = _DownloadProgress()
+    progress.mark_failed("a", "unavailable")
+    progress.mark_failed("b", "no_media")
+    # Idempotent: marking the same model twice must not double-count it.
+    progress.mark_failed("b", "no_media")
+    progress.mark_failed("c", "unknown")
+    progress.clear_failed("c")
+
+    assert progress.failure_summary() == {
+        "unavailable": 1,
+        "no_media": 1,
+        "total": 2,
+    }
+    assert progress.snapshot()["failure_summary"]["total"] == 2
+
+
+def test_failure_reasons_roundtrip_through_progress_file(tmp_path):
+    manager = DownloadManager(ws_manager=_RecordingWebSocket())
+    model_hash = "a" * 64
+    manager._progress["total"] = 1
+    manager._progress.mark_failed(model_hash, "unavailable")
+    manager._save_progress(str(tmp_path))
+
+    _, _, failed, _, reasons = manager._load_progress_file_sync(str(tmp_path))
+
+    assert failed == {model_hash}
+    assert reasons == {model_hash: "unavailable"}

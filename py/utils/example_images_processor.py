@@ -20,7 +20,11 @@ from ..services.connectivity_guard import (
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
 from ..utils.civitai_utils import build_civitai_media_url
-from ..utils.example_images_paths import get_model_folder, get_model_relative_path
+from ..utils.example_images_paths import (
+    get_model_folder,
+    get_model_relative_path,
+    mark_example_folder_complete,
+)
 from .example_images_metadata import MetadataUpdater, update_cache_from_metadata
 from .file_utils import detect_media_extension
 from ..utils.metadata_manager import MetadataManager
@@ -830,6 +834,11 @@ class ExampleImagesProcessor:
                 scanner,
                 newly_imported_paths
             )
+
+            if imported_files:
+                # Preserve the pre-marker behavior: a folder the user populated
+                # via import counts as complete until an explicit download.
+                mark_example_folder_complete(model_folder)
 
             return {
                 'success': len(imported_files) > 0,

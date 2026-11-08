@@ -453,6 +453,10 @@ export class ExampleImagesManager {
                 if (this.isDownloading) {
                     this.updateUI(data.status);
                 } else {
+                    // Render the final counters/summary before leaving the
+                    // panel visible; the last polling response is authoritative.
+                    this.updateUI(data.status);
+
                     // Download completed or failed
                     clearInterval(this.progressUpdateInterval);
                     this.progressUpdateInterval = null;
@@ -462,13 +466,21 @@ export class ExampleImagesManager {
 
                     if (currentStatus === 'completed' && !this.hasShownCompletionToast) {
                         const actionType = this.isMigrating ? 'migration' : 'download';
-                        showToast('toast.downloads.imagesCompleted', { action: actionType }, 'success');
+                        showToast(
+                            'toast.downloads.imagesCompleted',
+                            { action: actionType },
+                            this.hasReportedIssues(data.status) ? 'warning' : 'success'
+                        );
                         // Mark as shown to prevent duplicate toasts
                         this.hasShownCompletionToast = true;
                         // Reset migration flag
                         this.isMigrating = false;
-                        // Hide the panel after a delay
-                        setTimeout(() => this.hideProgressPanel(), 5000);
+                        // Hide the panel after a delay; leave it longer when
+                        // there is a failure/retry breakdown to read.
+                        setTimeout(
+                            () => this.hideProgressPanel(),
+                            this.hasReportedIssues(data.status) ? 10000 : 5000
+                        );
                     } else if (currentStatus === 'error') {
                         const actionType = this.isMigrating ? 'migration' : 'download';
                         showToast('toast.downloads.imagesFailed', { action: actionType }, 'error');
@@ -525,6 +537,9 @@ export class ExampleImagesManager {
 
         // Update time stats
         this.updateTimeStats(status);
+
+        // Update the failure/retry breakdown
+        this.updateFailureSummary(status);
 
         // Update errors
         this.updateErrors(status);
@@ -661,6 +676,56 @@ export class ExampleImagesManager {
         remainingTime.textContent = eta === null
             ? '--:--:--'
             : this.formatTime(eta);
+    }
+
+    updateFailureSummary(status) {
+        const summaryElement = document.getElementById('downloadFailureSummary');
+        if (!summaryElement) return false;
+
+        const summary = status.failure_summary || {};
+        const retryable = Number.isFinite(status.retryable_count)
+            ? status.retryable_count
+            : (Array.isArray(status.retryable_models) ? status.retryable_models.length : 0);
+
+        const parts = [];
+        const categories = [
+            ['no_media', 'without Civitai media'],
+            ['unavailable', 'unavailable at source'],
+            ['metadata_missing', 'metadata missing'],
+            ['unknown', 'unclassified'],
+        ];
+        for (const [key, label] of categories) {
+            const count = Number(summary[key] || 0);
+            if (count > 0) parts.push(`${count} ${label}`);
+        }
+        if (retryable > 0) parts.push(`${retryable} will retry`);
+
+        if (parts.length === 0) {
+            summaryElement.classList.add('hidden');
+            summaryElement.textContent = '';
+            summaryElement.removeAttribute('title');
+            return false;
+        }
+
+        summaryElement.textContent = `Not downloaded: ${parts.join(' · ')}`;
+        summaryElement.title =
+            'No Civitai media: the model has no example media. ' +
+            'Unavailable at source: the asset returns 404. ' +
+            'Metadata missing: no provider metadata yet. ' +
+            'Will retry: transient failures are retried on the next run.';
+        summaryElement.classList.remove('hidden');
+        return true;
+    }
+
+    hasReportedIssues(status) {
+        const summary = status.failure_summary || {};
+        if (Object.entries(summary).some(([key, value]) => key !== 'total' && value > 0)) {
+            return true;
+        }
+        const retryable = Number.isFinite(status.retryable_count)
+            ? status.retryable_count
+            : (Array.isArray(status.retryable_models) ? status.retryable_models.length : 0);
+        return retryable > 0;
     }
 
     updateErrors(status) {

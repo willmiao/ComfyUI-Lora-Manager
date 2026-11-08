@@ -97,6 +97,9 @@ async def test_check_pending_models_returns_zero_when_all_processed(
         model_dir = tmp_path / h
         model_dir.mkdir()
         (model_dir / "image_0.png").write_text("data")
+        (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+            '{"version": 1}', encoding="utf-8"
+        )
 
     _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
 
@@ -138,10 +141,13 @@ async def test_check_pending_models_finds_unprocessed_models(
         encoding="utf-8",
     )
 
-    # Create directory only for processed model
+    # Create directory only for processed model (verified with a marker)
     processed_dir = tmp_path / processed_hash
     processed_dir.mkdir()
     (processed_dir / "image_0.png").write_text("data")
+    (processed_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+        '{"version": 1}', encoding="utf-8"
+    )
 
     _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
 
@@ -390,6 +396,9 @@ async def test_check_pending_models_uses_bulk_folder_index_for_large_libraries(
         model_dir = tmp_path / f"{i:064x}"
         model_dir.mkdir()
         (model_dir / "image_0.png").write_text("data")
+        (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+            '{"version": 1}', encoding="utf-8"
+        )
 
     _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
 
@@ -440,6 +449,9 @@ async def test_check_pending_models_uses_per_folder_check_for_small_candidate_se
         model_dir = tmp_path / f"{i:064x}"
         model_dir.mkdir()
         (model_dir / "image_0.png").write_text("data")
+        (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+            '{"version": 1}', encoding="utf-8"
+        )
 
     _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
 
@@ -495,6 +507,9 @@ async def test_check_pending_models_bulk_index_includes_legacy_folders(
         model_dir = tmp_path / f"{i:064x}"
         model_dir.mkdir()
         (model_dir / "image_0.png").write_text("data")
+        (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+            '{"version": 1}', encoding="utf-8"
+        )
 
     _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
 
@@ -506,6 +521,123 @@ async def test_check_pending_models_bulk_index_includes_legacy_folders(
     assert result["needs_download"] is True
 
 
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_unmarked_populated_folder_is_pending_until_verified(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """A folder with files but no completion marker must be re-checked.
+
+    This is the pre-check side of partial-download repair: an interrupted run
+    leaves image_*.png behind without a marker, and the next auto-download must
+    still consider the model pending.
+    """
+
+    manager = download_module.DownloadManager(
+        ws_manager=RecordingWebSocketManager()
+    )
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    model_hash = "a" * 64
+    _patch_scanners(
+        monkeypatch,
+        lora_scanner=StubScanner([{"sha256": model_hash, "model_name": "Partial"}]),
+    )
+
+    model_dir = tmp_path / model_hash
+    model_dir.mkdir()
+    (model_dir / "image_0.png").write_text("data")
+
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 1
+    assert result["needs_download"] is True
+
+    (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+        '{"version": 1}', encoding="utf-8"
+    )
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 0
+    assert result["needs_download"] is False
+
+
 @pytest.fixture
 def settings_manager():
     return get_settings_manager()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_unverified_failed_folder_is_pending_for_repair(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """A failed model with files but no marker must be offered for repair."""
+
+    manager = download_module.DownloadManager(
+        ws_manager=RecordingWebSocketManager()
+    )
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    model_hash = "f" * 64
+    _patch_scanners(
+        monkeypatch,
+        lora_scanner=StubScanner([{"sha256": model_hash, "model_name": "Failed"}]),
+    )
+
+    (tmp_path / ".download_progress.json").write_text(
+        json.dumps({"failed_models": [model_hash], "processed_models": []}),
+        encoding="utf-8",
+    )
+    model_dir = tmp_path / model_hash
+    model_dir.mkdir()
+    (model_dir / "image_0.png").write_text("data")
+
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 1
+
+    (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+        '{"version": 1}', encoding="utf-8"
+    )
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_processed_but_unverified_folder_is_pending(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """A processed model without a verified folder must be re-checked."""
+
+    manager = download_module.DownloadManager(
+        ws_manager=RecordingWebSocketManager()
+    )
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    model_hash = "d" * 64
+    _patch_scanners(
+        monkeypatch,
+        lora_scanner=StubScanner([{"sha256": model_hash, "model_name": "Processed"}]),
+    )
+
+    (tmp_path / ".download_progress.json").write_text(
+        json.dumps({"processed_models": [model_hash], "failed_models": []}),
+        encoding="utf-8",
+    )
+    model_dir = tmp_path / model_hash
+    model_dir.mkdir()
+    (model_dir / "image_0.png").write_text("data")
+
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 1
+
+    (model_dir / download_module.COMPLETION_MARKER_FILENAME).write_text(
+        '{"version": 1}', encoding="utf-8"
+    )
+    result = await manager.check_pending_models(["lora"])
+    assert result["pending_count"] == 0

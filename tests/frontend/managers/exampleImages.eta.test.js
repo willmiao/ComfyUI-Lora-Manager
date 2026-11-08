@@ -23,6 +23,7 @@ describe('ExampleImagesManager ETA rendering', () => {
         document.body.innerHTML = `
             <span id="elapsedTime"></span>
             <span id="remainingTime"></span>
+            <div id="downloadFailureSummary" class="hidden"></div>
         `;
         vi.stubGlobal('fetch', vi.fn(async () => ({
             ok: true,
@@ -88,5 +89,55 @@ describe('ExampleImagesManager ETA rendering', () => {
         expect(elapsed).toBeGreaterThanOrEqual(29);
         expect(elapsed).toBeLessThanOrEqual(31);
         expect(document.getElementById('remainingTime').textContent).toBe('00:01:00');
+    });
+});
+
+describe('ExampleImagesManager failure summary', () => {
+    beforeEach(() => {
+        document.body.innerHTML = `
+            <div id="downloadFailureSummary" class="hidden"></div>
+        `;
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            json: async () => ({ success: false }),
+        })));
+    });
+
+    it('renders skipped reasons and retry count', () => {
+        const manager = new ExampleImagesManager();
+        const visible = manager.updateFailureSummary({
+            failure_summary: {
+                no_media: 2,
+                unavailable: 3,
+                metadata_missing: 1,
+                unknown: 1,
+                total: 7,
+            },
+            retryable_count: 2,
+        });
+
+        const element = document.getElementById('downloadFailureSummary');
+        expect(visible).toBe(true);
+        expect(element.classList.contains('hidden')).toBe(false);
+        expect(element.textContent).toBe(
+            'Not downloaded: 2 without Civitai media · 3 unavailable at source · ' +
+            '1 metadata missing · 1 unclassified · 2 will retry'
+        );
+        expect(element.title).toContain('Unavailable at source');
+        expect(manager.hasReportedIssues({ failure_summary: { total: 7, unavailable: 3 } })).toBe(true);
+    });
+
+    it('hides itself when there is nothing to report', () => {
+        const manager = new ExampleImagesManager();
+        const visible = manager.updateFailureSummary({
+            failure_summary: { total: 0 },
+            retryable_count: 0,
+        });
+
+        const element = document.getElementById('downloadFailureSummary');
+        expect(visible).toBe(false);
+        expect(element.classList.contains('hidden')).toBe(true);
+        expect(element.textContent).toBe('');
+        expect(manager.hasReportedIssues({ failure_summary: { total: 0 } })).toBe(false);
     });
 });

@@ -187,14 +187,45 @@ in the first two minutes of the resumed run it was 19% versus 89%.
 - The progress panel now ignores a poll response that overlaps a newer one,
   so a slow response cannot feed the tracker a stale `completed` count.
 
-### Known gap: partial folders
+### Completion markers and partial-folder repair
 
-A model left partially downloaded by a stop/crash is treated as complete on
-the next non-force run because its folder already contains files. Four such
-folders (28 missing media files) were observed after two interrupted runs;
-they are not in `failed_models`, so the UI does not surface them. A force
-download repairs them. A per-model completion marker (or always running the
-per-image existence check for folders without one) would close this gap.
+A model left partially downloaded by a stop/crash used to be treated as
+complete on the next non-force run because its folder already contained files.
+Four such folders (28 missing media files) were observed after two interrupted
+runs, and they were not in `failed_models`, so the UI did not surface them.
+
+Each model folder now gets `.lm-examples-complete`, written atomically only
+after a pass has accounted for every media entry (downloaded now, already on
+disk, or permanently flagged). The marker is cleared before a pass starts, so
+an interrupted or transient-failure pass leaves the folder unverified. The
+non-force skip guard requires **both** media and the marker; a populated folder
+without it is re-checked by the per-image existence path, which downloads only
+the gaps. The marker is also cleared when a provider metadata refresh succeeds,
+because new images may have appeared.
+
+`check_pending_models` uses the same rule, including for models already in
+`processed_models` or `failed_models`, so the auto-download pre-check sees an
+unmarked legacy/partial folder as pending. The first run after upgrading
+therefore re-checks every pre-existing populated folder once (metadata read +
+per-image stat, no downloads) and writes markers for them.
+
+User-imported custom images also write the marker, preserving the old behavior
+for a folder the user populated by hand; an explicit force download still
+re-checks it.
+
+### Bounded metadata refresh and failure summary
+
+- 404-triggered metadata refreshes are wrapped in a 90 s timeout. A hung
+  provider no longer parks the serial pipeline; the current metadata is used
+  and the model is retried on a later run.
+- `failed_models` now carries a reason (`no_media`, `unavailable`,
+  `unknown`); models whose provider metadata has not been fetched stay in the
+  retryable bucket. The status payload exposes `failure_summary` counts. The
+  progress panel renders
+  `Not downloaded: 25 without Civitai media · 10 unavailable at source · 2 will retry`
+  for ten seconds after completion instead of leaving the user with an opaque
+  failed count. The reasons are persisted in `.download_progress.json` so a
+  restarted run keeps its breakdown.
 
 ## Future work
 
