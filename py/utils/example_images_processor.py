@@ -28,6 +28,12 @@ from ..utils.metadata_manager import MetadataManager
 logger = logging.getLogger(__name__)
 
 MAX_DOWNLOAD_ATTEMPTS = 3
+# The shared aiohttp session allows a 300s socket read for large model files.
+# Gallery images are small; a CDN that accepts the connection and then stalls
+# must not park one model (and the serial run behind it) for five minutes.
+# Videos are larger and keep a longer bound.
+MEDIA_IMAGE_DOWNLOAD_TIMEOUT_SECONDS = 25.0
+MEDIA_VIDEO_DOWNLOAD_TIMEOUT_SECONDS = 180.0
 
 _GENUR_HOSTS = frozenset({"img.genur.art", "c.genur.art"})
 _TRANSIENT_ERROR_MARKERS = (
@@ -445,8 +451,12 @@ class ExampleImagesProcessor:
         """
 
         if not message:
-            return False
-        text = str(message)
+            return True
+        text = str(message).strip()
+        if not text:
+            # aiohttp connection errors often stringify to an empty message;
+            # an unexplained failure is not a statement that the asset is gone.
+            return True
         if text in {OFFLINE_FRIENDLY_MESSAGE, OFFLINE_COOLDOWN_ERROR}:
             return True
         lower = text.lower()
@@ -547,16 +557,36 @@ class ExampleImagesProcessor:
             )
 
             for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
+                timeout = (
+                    MEDIA_VIDEO_DOWNLOAD_TIMEOUT_SECONDS
+                    if ExampleImagesProcessor._is_video_media(
+                        original_url, image.get("type")
+                    )
+                    else MEDIA_IMAGE_DOWNLOAD_TIMEOUT_SECONDS
+                )
                 await limiter.acquire()
                 try:
-                    success, content, headers = await downloader.download_to_memory(
-                        target_url,
-                        use_auth=False,
-                        return_headers=True,
+                    success, content, headers = await asyncio.wait_for(
+                        downloader.download_to_memory(
+                            target_url,
+                            use_auth=False,
+                            return_headers=True,
+                        ),
+                        timeout=timeout,
                     )
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "Timed out downloading %s after %.0fs; will retry next run",
+                        target_url,
+                        timeout,
+                    )
+                    outcome.transient.append(original_url)
+                    return
                 except Exception as e:
                     logger.error("Error downloading file %s: %s", target_url, e)
-                    outcome.failed.append(original_url)
+                    # An exception is a transport/runtime failure, not a 404:
+                    # leave the image retryable instead of blacklisting it.
+                    outcome.transient.append(original_url)
                     return
                 finally:
                     await limiter.release()
@@ -583,7 +613,7 @@ class ExampleImagesProcessor:
                         await asyncio.to_thread(_write_media_file, save_path, content)
                     except Exception as e:
                         logger.error("Failed to save example image %s: %s", save_path, e)
-                        outcome.failed.append(original_url)
+                        outcome.transient.append(original_url)
                         return
 
                     outcome.downloaded.append(original_url)

@@ -1,6 +1,7 @@
 import { showToast } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { ThroughputEtaTracker } from '../utils/throughputEta.js';
 import { settingsManager } from './SettingsManager.js';
 
 // ExampleImagesManager.js
@@ -17,6 +18,8 @@ export class ExampleImagesManager {
         this.isMigrating = false; // Track migration state separately from downloading
         this.hasShownCompletionToast = false; // Flag to track if completion toast has been shown
         this.isStopping = false;
+        this.etaTracker = new ThroughputEtaTracker();
+        this.isUpdatingProgress = false;
 
         // Auto download properties
         this.autoDownloadInterval = null;
@@ -177,7 +180,7 @@ export class ExampleImagesManager {
 
     async checkDownloadStatus() {
         try {
-            const response = await fetch('/api/lm/example-images-status');
+            const response = await fetch('/api/lm/example-images-status?compact=1');
             const data = await response.json();
 
             if (data.success) {
@@ -257,6 +260,7 @@ export class ExampleImagesManager {
                 this.isStopping = false;
                 this.hasShownCompletionToast = false; // Reset toast flag when starting new download
                 this.startTime = new Date();
+                this.etaTracker.reset();
                 this.updateUI(data.status);
                 this.showProgressPanel();
                 this.startProgressUpdates();
@@ -416,8 +420,14 @@ export class ExampleImagesManager {
     }
 
     async updateProgress() {
+        // The poll interval does not await the previous request. Without this
+        // guard a slow status response can land after a newer one and feed the
+        // ETA tracker a stale (lower) completed count.
+        if (this.isUpdatingProgress) return;
+        this.isUpdatingProgress = true;
+
         try {
-            const response = await fetch('/api/lm/example-images-status');
+            const response = await fetch('/api/lm/example-images-status?compact=1');
             const data = await response.json();
 
             if (data.success) {
@@ -471,6 +481,8 @@ export class ExampleImagesManager {
             }
         } catch (error) {
             console.error('Failed to update progress:', error);
+        } finally {
+            this.isUpdatingProgress = false;
         }
     }
 
@@ -625,26 +637,30 @@ export class ExampleImagesManager {
 
         if (!elapsedTime || !remainingTime) return;
 
-        // Calculate elapsed time
+        // Prefer the backend's active elapsed time: it excludes paused
+        // intervals, while start_time alone keeps counting during a pause.
         let elapsed;
-        if (status.start_time) {
+        if (Number.isFinite(status.elapsed_seconds)) {
+            elapsed = Math.max(0, Math.floor(status.elapsed_seconds));
+        } else if (status.start_time) {
             const now = new Date();
             const startTime = new Date(status.start_time * 1000);
-            elapsed = Math.floor((now - startTime) / 1000);
+            elapsed = Math.max(0, Math.floor((now - startTime) / 1000));
         } else {
             elapsed = 0;
         }
 
         elapsedTime.textContent = this.formatTime(elapsed);
 
-        // Calculate remaining time
-        if (status.total > 0 && status.completed > 0 && status.status === 'running') {
-            const rate = status.completed / elapsed; // models per second
-            const remaining = Math.floor((status.total - status.completed) / rate);
-            remainingTime.textContent = this.formatTime(remaining);
-        } else {
-            remainingTime.textContent = '--:--:--';
-        }
+        // Feed the sliding-window tracker only while work is advancing. It
+        // discards its samples on pause, so a resumed run is not estimated
+        // against wall-clock time the download spent sleeping.
+        const eta = this.etaTracker.update(status.completed, status.total, {
+            running: status.status === 'running'
+        });
+        remainingTime.textContent = eta === null
+            ? '--:--:--'
+            : this.formatTime(eta);
     }
 
     updateErrors(status) {
@@ -667,9 +683,10 @@ export class ExampleImagesManager {
     }
 
     formatTime(seconds) {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
+        const totalSeconds = Math.max(0, Math.floor(seconds));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
 
         return [
             hours.toString().padStart(2, '0'),

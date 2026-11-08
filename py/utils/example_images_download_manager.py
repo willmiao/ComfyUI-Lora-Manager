@@ -80,7 +80,32 @@ class _DownloadProgress(dict[str, Any]):
             reprocessed_models=set(),
             rate_limited_models=set(),
             retryable_models=set(),
+            paused_at=None,
+            paused_total=0.0,
         )
+
+    def active_elapsed(self) -> float:
+        """Return seconds spent running, excluding paused intervals.
+
+        ``start_time``/``end_time`` describe the wall-clock span of the run;
+        a pause inside that span is not download time, so the UI must not use
+        the raw span for its elapsed counter or throughput estimate.
+        """
+
+        start = self.get("start_time")
+        if not start:
+            return 0.0
+
+        end = self.get("end_time")
+        if end is None:
+            end = time.time()
+
+        paused = float(self.get("paused_total") or 0.0)
+        paused_at = self.get("paused_at")
+        if paused_at is not None:
+            paused += max(0.0, float(end) - float(paused_at))
+
+        return max(0.0, float(end) - float(start) - paused)
 
     def snapshot(self) -> Dict[str, Any]:
         """Return a JSON-serialisable snapshot of the current progress."""
@@ -92,6 +117,11 @@ class _DownloadProgress(dict[str, Any]):
         snapshot["reprocessed_models"] = list(self.get("reprocessed_models", set()))
         snapshot["rate_limited_models"] = list(self.get("rate_limited_models", set()))
         snapshot["retryable_models"] = list(self.get("retryable_models", set()))
+        snapshot["elapsed_seconds"] = round(self.active_elapsed(), 3)
+        # Pause bookkeeping stays internal; ``elapsed_seconds`` is the public
+        # representation.
+        snapshot.pop("paused_at", None)
+        snapshot.pop("paused_total", None)
         return snapshot
 
 
@@ -318,12 +348,32 @@ class DownloadManager:
                 logger.error(f"Failed to save progress after task failure: {save_error}")
 
     async def get_status(self, request) -> Dict[str, Any]:
-        """Get the current status of example images download."""
+        """Get the current status of example images download.
+
+        ``?compact=1`` replaces the hash lists with their counts. The progress
+        panel polls this endpoint every two seconds and only needs the
+        counters; the full lists grow to one 64-char hash per model, which is
+        megabytes per poll for a 100k-model library.
+        """
+
+        status = self._progress.snapshot()
+        query = getattr(request, "query", None) or {}
+        if str(query.get("compact", "")).lower() in {"1", "true", "yes"}:
+            for key in (
+                "processed_models",
+                "refreshed_models",
+                "failed_models",
+                "reprocessed_models",
+                "rate_limited_models",
+                "retryable_models",
+            ):
+                values = status.pop(key, []) or []
+                status[f"{key.removesuffix('_models')}_count"] = len(values)
 
         return {
             "success": True,
             "is_downloading": self._is_downloading,
-            "status": self._progress.snapshot(),
+            "status": status,
         }
 
     async def _load_progress_file(self, output_dir: str) -> tuple[str, set[str], set[str], set[str]]:
@@ -561,6 +611,17 @@ class DownloadManager:
                 "needs_download": False,
             }
 
+    def _finalize_pause(self) -> None:
+        """Fold an open pause interval into ``paused_total``."""
+
+        paused_at = self._progress.get("paused_at")
+        if paused_at is None:
+            return
+        self._progress["paused_total"] = float(
+            self._progress.get("paused_total") or 0.0
+        ) + max(0.0, time.time() - float(paused_at))
+        self._progress["paused_at"] = None
+
     async def pause_download(self, request):
         """Pause the example images download."""
 
@@ -569,6 +630,8 @@ class DownloadManager:
                 raise DownloadNotRunningError()
 
             self._progress["status"] = "paused"
+            if self._progress.get("paused_at") is None:
+                self._progress["paused_at"] = time.time()
 
         await self._broadcast_progress(status="paused")
 
@@ -582,6 +645,7 @@ class DownloadManager:
                 raise DownloadNotRunningError()
 
             if self._progress["status"] == "paused":
+                self._finalize_pause()
                 self._progress["status"] = "running"
             else:
                 raise DownloadNotRunningError(
@@ -603,6 +667,7 @@ class DownloadManager:
                 raise DownloadNotRunningError()
 
             if self._progress["status"] != "stopping":
+                self._finalize_pause()
                 self._stop_requested = True
                 self._progress["status"] = "stopping"
 
@@ -694,6 +759,16 @@ class DownloadManager:
 
                 # Update progress
                 self._progress["completed"] += 1
+
+                # Persist periodically from the loop. The per-model path can
+                # return early (local images, skip, failure), so keeping the
+                # save inside _process_model missed the common download path
+                # and a crash lost the whole processed/failed state.
+                if (
+                    self._progress["completed"] % 10 == 0
+                    or self._progress["completed"] == self._progress["total"] - 1
+                ):
+                    self._save_progress(output_dir)
 
                 async with self._state_lock:
                     current_status = self._progress["status"]
@@ -1039,13 +1114,6 @@ class DownloadManager:
                         f"No civitai images available for model {model_name}, marking as failed"
                     )
 
-            # Save progress periodically
-            if (
-                self._progress["completed"] % 10 == 0
-                or self._progress["completed"] == self._progress["total"] - 1
-            ):
-                self._save_progress(output_dir)
-
             return False  # Default return if no conditions met
 
         except Exception as e:
@@ -1238,6 +1306,12 @@ class DownloadManager:
 
                 # Update progress
                 self._progress["completed"] += 1
+
+                if (
+                    self._progress["completed"] % 10 == 0
+                    or self._progress["completed"] == self._progress["total"] - 1
+                ):
+                    self._save_progress(output_dir)
 
                 async with self._state_lock:
                     current_status = self._progress["status"]

@@ -675,6 +675,91 @@ async def test_download_model_images_classifies_network_errors_as_transient(tmp_
 
 
 @pytest.mark.asyncio
+async def test_download_model_images_empty_error_is_transient(tmp_path) -> None:
+    """aiohttp connection errors can stringify to an empty message.
+
+    They used to fall through the 404/transient checks as a permanent
+    failure, which removed the image from the model's metadata.
+    """
+
+    image = {
+        "url": "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_small.webp",
+        "type": "image",
+    }
+
+    class EmptyErrorDownloader:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            return False, "", None
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, EmptyErrorDownloader()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.transient == [image["url"]]
+    assert outcome.failed == []
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_exception_is_transient(tmp_path) -> None:
+    image = {
+        "url": "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg",
+        "type": "image",
+    }
+
+    class RaisingDownloader:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            raise RuntimeError("")
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, RaisingDownloader()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.transient == [image["url"]]
+    assert outcome.failed == []
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_timeout_is_transient(tmp_path, monkeypatch) -> None:
+    """A CDN that accepts and then stalls must not block the model.
+
+    The shared session's 300s socket read is sized for multi-GB model files;
+    gallery images get a shorter wall-clock bound.
+    """
+
+    monkeypatch.setattr(processor_module, "MEDIA_IMAGE_DOWNLOAD_TIMEOUT_SECONDS", 0.05)
+    image = {
+        "url": "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_small.webp",
+        "type": "image",
+    }
+
+    class StalledDownloader:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            await asyncio.sleep(10)
+            return True, b"", {}
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, StalledDownloader()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.transient == [image["url"]]
+    assert outcome.failed == []
+
+
+def test_is_transient_treats_blank_message_as_transient() -> None:
+    assert processor_module.ExampleImagesProcessor._is_transient_failure("") is True
+    assert processor_module.ExampleImagesProcessor._is_transient_failure("   ") is True
+
+
+@pytest.mark.asyncio
 async def test_download_model_images_retries_flagged_genur_image(tmp_path) -> None:
     original = (
         "https://img.genur.art/sig/width:450/quality:85/"

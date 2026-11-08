@@ -129,6 +129,122 @@ async def test_start_download_rejects_parallel_runs(
 
 
 @pytest.mark.usefixtures("tmp_path")
+async def test_get_status_compact_replaces_hash_lists_with_counts():
+    manager = download_module.DownloadManager(
+        ws_manager=RecordingWebSocketManager()
+    )
+    manager._is_downloading = True
+    manager._progress.update(
+        total=3,
+        completed=2,
+        processed_models={"a", "b"},
+        failed_models={"c"},
+        rate_limited_models={"d"},
+    )
+
+    full = await manager.get_status(SimpleNamespace(query={}))
+    assert full["status"]["processed_models"] == ["a", "b"]
+    assert full["status"]["failed_models"] == ["c"]
+
+    compact = await manager.get_status(
+        SimpleNamespace(query={"compact": "1"})
+    )
+    assert "processed_models" not in compact["status"]
+    assert "failed_models" not in compact["status"]
+    assert compact["status"]["processed_count"] == 2
+    assert compact["status"]["failed_count"] == 1
+    assert compact["status"]["rate_limited_count"] == 1
+    assert compact["status"]["total"] == 3
+
+
+@pytest.mark.usefixtures("tmp_path")
+async def test_progress_is_persisted_for_downloaded_models(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """The periodic save must run on the normal download path.
+
+    It used to live inside ``_process_model`` after a branch that returned
+    early whenever a model had Civitai images, so a long run never refreshed
+    ``.download_progress.json`` and a crash lost every processed/failed entry.
+    """
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    models = [
+        {
+            "sha256": f"hash-{index}",
+            "model_name": f"Model {index}",
+            "file_path": str(tmp_path / f"model-{index}.safetensors"),
+            "file_name": f"model-{index}.safetensors",
+            "civitai": {"images": [{"url": f"https://example.com/{index}.png"}]},
+        }
+        for index in range(11)
+    ]
+    _patch_scanner(monkeypatch, StubScanner(models))
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    async def fake_update_metadata(*_args, **_kwargs):
+        return True
+
+    async def fake_get_updated_model(model_hash, _scanner):
+        return next(model for model in models if model["sha256"] == model_hash)
+
+    async def fake_download_model_images(*_args, **_kwargs):
+        return ImageDownloadOutcome()
+
+    async def fake_get_downloader():
+        return object()
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "update_metadata_from_local_examples",
+        staticmethod(fake_update_metadata),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(fake_get_updated_model),
+    )
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "download_model_images_with_tracking",
+        staticmethod(fake_download_model_images),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    saved_at: list[int] = []
+    original_save = manager._save_progress
+
+    def recording_save(output_dir):
+        saved_at.append(manager._progress["completed"])
+        original_save(output_dir)
+
+    monkeypatch.setattr(manager, "_save_progress", recording_save)
+
+    await manager.start_download({"model_types": ["lora"], "delay": 0})
+    await asyncio.wait_for(manager._download_task, timeout=2)
+
+    assert 10 in saved_at
+
+    progress_files = list(Path(tmp_path).rglob(".download_progress.json"))
+    assert len(progress_files) == 1
+    progress = json.loads(progress_files[0].read_text(encoding="utf-8"))
+    assert len(progress["processed_models"]) == 11
+
+
+@pytest.mark.usefixtures("tmp_path")
 async def test_pause_resume_blocks_processing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,

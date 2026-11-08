@@ -119,6 +119,83 @@ force download (global or per-model). The 398 Genur entries counted in the
 user's sidecars are eligible; Civitai 404 entries stay flagged because those
 assets are genuinely gone.
 
+## Full-library run (2026-11-08)
+
+The local library (932 LoRA, 51 checkpoint, 6 embedding entries with a
+SHA-256; 161 GB of model files) was downloaded into a temporary empty
+`example_images_path` with `optimize=true`, concurrency 6 and no inter-model
+delay. The clean run finished all 987 models in 1,164 s (19.4 min).
+
+| Metric | Value |
+| --- | ---: |
+| Models | 987 / 987 |
+| Media files | 7,990 |
+| Bytes | 1.045 GB |
+| Model folders | 985 |
+| Media per model | 8.1 |
+| Average media size | 131 KB |
+| Models/s | 0.85 |
+| Media/s | 6.9 |
+| Rate-limited responses | 0 |
+| New 404 responses | 0 |
+| Transient image failures | 9 |
+| Timeouts (25 s image bound) | 1 |
+| `failed_models` at the end | 46 |
+
+The 46 failed models are mostly permanent absences rather than errors: 25
+models have no Civitai media, 10 only carry already-flagged 404 assets and 6
+have no sidecar. Two models were left pending in `retryable_models` for the
+next run after transient network failures.
+
+### ETA findings
+
+The old formula was `(total - completed) / (completed / elapsed)`. Two
+concrete failures showed up:
+
+- **Resumed runs.** Marking 282 already-populated folders as processed took
+  about 3 s. The lifetime rate then showed an ETA of 1–5 minutes for a run
+  that still needed about 20 minutes (89% median error in the first two
+  minutes).
+- **Pauses.** `start_time` kept running while the download slept, so a pause
+  inflated the displayed elapsed time and the post-resume ETA.
+
+Throughput is also non-stationary: a separate run moved from 1.2 s/model in
+its first 100 models to 2.75 s/model in the next 100, then accelerated again
+near the end. A lifetime average cannot follow that; a short window follows
+it but turns one 25–45 s CDN stall into a wildly pessimistic estimate.
+
+`ThroughputEtaTracker` therefore blends a phase baseline (70%) with a 120 s
+window (30%). The baseline restarts after a pause or a large fast counter
+jump (the resumed-run skip burst). The tracker needs at least 20 s and four
+completed models before it shows an estimate. On the clean run the tracker
+had a 2.1% median / 6.0% mean absolute error (the old formula: 3.1% / 5.9%);
+in the first two minutes of the resumed run it was 19% versus 89%.
+
+### Reliability fixes from the run
+
+- `.download_progress.json` was only written from a branch that the normal
+  download path returned before. Periodic saves now run in both download
+  loops, so a crash loses at most ten models.
+- aiohttp connection errors often stringify to an empty message. They were
+  classified as permanent failures, which wrote `downloadFailed` and dropped
+  the image from future attempts. Empty/raised transport errors and local
+  write errors are now transient; images get a 25 s wall-clock bound (videos
+  180 s) instead of the shared 300 s socket read.
+- The status endpoint gained `?compact=1`, replacing six hash lists with
+  counts. At 334 models the poll payload dropped from 23.4 KB to 0.4 KB; the
+  progress panel polls it every two seconds.
+- The progress panel now ignores a poll response that overlaps a newer one,
+  so a slow response cannot feed the tracker a stale `completed` count.
+
+### Known gap: partial folders
+
+A model left partially downloaded by a stop/crash is treated as complete on
+the next non-force run because its folder already contains files. Four such
+folders (28 missing media files) were observed after two interrupted runs;
+they are not in `failed_models`, so the UI does not surface them. A force
+download repairs them. A per-model completion marker (or always running the
+per-image existence check for folders without one) would close this gap.
+
 ## Future work
 
 - Pipeline models, not just images within a model: start model N+1's image
