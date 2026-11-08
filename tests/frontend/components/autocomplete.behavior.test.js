@@ -126,6 +126,39 @@ describe('AutoComplete widget interactions', () => {
     expect(caretHelperInstance.getCursorOffset).toHaveBeenCalled();
   });
 
+  it('keeps the preview tooltip enabled for the anchored field binding', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('input');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    // Exactly the options the text widget's search field binds.
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      pickIntoNode: true,
+      anchorToElement: true,
+    });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    autoComplete._applyItemSelection(0);
+
+    // The field must show the same thumbnails the text-area search does.
+    expect(autoComplete.options.showPreview).toBe(true);
+    expect(previewTooltipMock.show).toHaveBeenCalled();
+  });
+
   it('deduplicates duplicate-equivalent query variations before issuing requests', async () => {
     vi.useFakeTimers();
 

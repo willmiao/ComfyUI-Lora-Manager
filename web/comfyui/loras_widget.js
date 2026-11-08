@@ -23,6 +23,19 @@ import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
 import { openLoraInfoCard, closeLoraInfoCardFor } from "./lora_info_card.js";
 
+// CSS-escape a LoRA name for use in a [data-lora-name="..."] selector.
+// Module scope: both the row lookups inside renderLoras and the widget-level
+// selectLoraByName need it.
+const escapeLoraName = (loraName) => {
+  const css =
+    (typeof window !== "undefined" && window.CSS) ||
+    (typeof globalThis !== "undefined" && globalThis.CSS);
+  if (css && typeof css.escape === "function") {
+    return css.escape(loraName);
+  }
+  return loraName.replace(/"|\\/g, "\\$&");
+};
+
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
 
@@ -260,16 +273,6 @@ export function addLorasWidget(node, name, opts, callback) {
     const queueFocusAdjacentFrom = (currentEntry, direction) => {
       const targetEntry = getAdjacentFocusEntry(currentEntry, direction);
       return queueFocusEntry(targetEntry);
-    };
-
-    const escapeLoraName = (loraName) => {
-      const css =
-        (typeof window !== "undefined" && window.CSS) ||
-        (typeof globalThis !== "undefined" && globalThis.CSS);
-      if (css && typeof css.escape === "function") {
-        return css.escape(loraName);
-      }
-      return loraName.replace(/"|\\/g, "\\$&");
     };
 
     // Create header
@@ -931,6 +934,18 @@ export function addLorasWidget(node, name, opts, callback) {
       renderLoras(widget.value, widget);
     }
   });
+
+  // Select a listed LoRA from outside the widget (a pick from the text widget's
+  // search field) and bring its row into view, the feedback a click gives.
+  widget.selectLoraByName = (loraName, options) => {
+    if (!loraName) {
+      return;
+    }
+    selectLora(loraName, options);
+    container
+      .querySelector(`.lm-lora-entry[data-lora-name="${escapeLoraName(loraName)}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  };
 
   widget.onRemove = () => {
     closeLoraInfoCardFor(widget);

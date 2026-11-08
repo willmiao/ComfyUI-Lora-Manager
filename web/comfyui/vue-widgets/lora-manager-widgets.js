@@ -2123,26 +2123,30 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-ba49c841] {
+.autocomplete-text-widget[data-v-c7b17484] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-ba49c841] {
+.input-wrapper[data-v-c7b17484] {
   position: relative;
   flex: 1;
   display: flex;
   width: 100%;
+  /* The widget slot is shorter than the textarea's min-content height; without
+     this the wrapper keeps its full height and pushes the search strip out. */
+  min-height: 0;
 }
 
 /* Theme tokens (--lm-*) come from the widget container, which ComfyUI's
    renderer switches between the canvas widget palette and the Vue node
    widget palette. Text size matches ComfyUI's own textarea in both modes. */
-.text-input[data-v-ba49c841] {
+.text-input[data-v-c7b17484] {
   flex: 1;
   width: 100%;
+  min-height: 0;
   background-color: var(--lm-surface);
   color: var(--lm-fg);
   overflow: hidden;
@@ -2160,18 +2164,18 @@ to { transform: rotate(360deg);
 
 /* Vue DOM mode: same surface/foreground as the built-in WidgetTextarea,
    only the box metrics differ. */
-.text-input.vue-dom-mode[data-v-ba49c841] {
+.text-input.vue-dom-mode[data-v-c7b17484] {
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
   border-radius: 6px;  /* matches ComfyUI's rounded-md textarea */
   font-family: inherit;
 }
-.text-input[data-v-ba49c841]:focus {
+.text-input[data-v-c7b17484]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-ba49c841] {
+.clear-button[data-v-c7b17484] {
   position: absolute;
   right: calc(6px + var(--lm-vscrollbar-width, 0px));
   bottom: 6px;  /* Changed from top to bottom */
@@ -2194,30 +2198,66 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-ba49c841] {
+.input-wrapper:hover .clear-button[data-v-c7b17484] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-ba49c841]:hover {
+.clear-button[data-v-c7b17484]:hover {
   opacity: 1;
   background: var(--lm-danger-soft);
   color: var(--lm-danger-text);
 }
-.clear-button svg[data-v-ba49c841] {
+.clear-button svg[data-v-c7b17484] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-ba49c841] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-c7b17484] {
   right: calc(8px + var(--lm-vscrollbar-width, 0px));
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-ba49c841] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-c7b17484] {
   width: 14px;
   height: 14px;
+}
+
+/* Search field: its own place to click and type, so adding a LoRA never
+   needs a caret placed inside the prompt. It sits as the widget's first row
+   and the layout reserves its height (see applyAutocompleteTextLayoutFix), so
+   the prompt keeps its full size instead of being squeezed. */
+.lora-search-row[data-v-c7b17484] {
+  flex: 0 0 18px;
+  height: 18px;
+  margin: 2px 2px 6px 2px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.lora-search-input[data-v-c7b17484] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  /* Same surface, border and radius as the prompt box and the LoRA list, so
+     the three blocks on the node read as one family. */
+  border: 1px solid var(--lm-border-soft);
+  border-radius: 6px;
+  background-color: var(--lm-surface);
+  color: var(--lm-fg);
+  font-family: inherit;
+  font-size: var(--comfy-textarea-font-size, 10px);
+  line-height: 16px;
+  outline: none;
+}
+.lora-search-input[data-v-c7b17484]::placeholder {
+  color: color-mix(in srgb, var(--lm-fg) 55%, transparent);
+}
+.lora-search-input[data-v-c7b17484]:focus {
+  border-color: color-mix(in srgb, var(--lm-fg) 45%, transparent);
 }
 
 
@@ -11056,7 +11096,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
 const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["__scopeId", "data-v-1cb95afc"]]);
 const _hoisted_1$k = { class: "section" };
 const _hoisted_2$j = { class: "section__header" };
-const _hoisted_3$g = { class: "section__content" };
+const _hoisted_3$h = { class: "section__content" };
 const _hoisted_4$f = {
   key: 0,
   class: "section__placeholder"
@@ -11086,7 +11126,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$g, [
+        createBaseVNode("div", _hoisted_3$h, [
           __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$f, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$d, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
@@ -11105,7 +11145,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
 const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["__scopeId", "data-v-41d2aa1b"]]);
 const _hoisted_1$j = { class: "section" };
 const _hoisted_2$i = { class: "section__columns" };
-const _hoisted_3$f = { class: "section__column" };
+const _hoisted_3$g = { class: "section__column" };
 const _hoisted_4$e = { class: "section__column-header" };
 const _hoisted_5$c = { class: "section__column-content" };
 const _hoisted_6$c = {
@@ -11141,7 +11181,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$i, [
-          createBaseVNode("div", _hoisted_3$f, [
+          createBaseVNode("div", _hoisted_3$g, [
             createBaseVNode("div", _hoisted_4$e, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
@@ -11187,7 +11227,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
 const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-3c494bd5"]]);
 const _hoisted_1$i = { class: "section" };
 const _hoisted_2$h = { class: "section__columns" };
-const _hoisted_3$e = { class: "section__column" };
+const _hoisted_3$f = { class: "section__column" };
 const _hoisted_4$d = { class: "section__column-header" };
 const _hoisted_5$b = { class: "section__content" };
 const _hoisted_6$b = {
@@ -11235,7 +11275,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$h, [
-          createBaseVNode("div", _hoisted_3$e, [
+          createBaseVNode("div", _hoisted_3$f, [
             createBaseVNode("div", _hoisted_4$d, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
@@ -11303,7 +11343,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
 const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-899728b5"]]);
 const _hoisted_1$h = { class: "section" };
 const _hoisted_2$g = { class: "section__header" };
-const _hoisted_3$d = { class: "section__toggle" };
+const _hoisted_3$e = { class: "section__toggle" };
 const _hoisted_4$c = ["checked"];
 const _hoisted_5$a = { class: "section__columns" };
 const _hoisted_6$a = { class: "section__column" };
@@ -11359,7 +11399,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("div", _hoisted_1$h, [
         createBaseVNode("div", _hoisted_2$g, [
           _cache[4] || (_cache[4] = createBaseVNode("span", { class: "section__title" }, "NAME PATTERNS", -1)),
-          createBaseVNode("label", _hoisted_3$d, [
+          createBaseVNode("label", _hoisted_3$e, [
             createBaseVNode("input", {
               type: "checkbox",
               checked: __props.useRegex,
@@ -11443,7 +11483,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
 const NamePatternsSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-54f65fc1"]]);
 const _hoisted_1$g = { class: "section" };
 const _hoisted_2$f = { class: "section__toggles" };
-const _hoisted_3$c = { class: "toggle-item" };
+const _hoisted_3$d = { class: "toggle-item" };
 const _hoisted_4$b = ["aria-checked"];
 const _hoisted_5$9 = { class: "toggle-item" };
 const _hoisted_6$9 = ["aria-checked"];
@@ -11461,7 +11501,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
         createBaseVNode("div", _hoisted_2$f, [
-          createBaseVNode("label", _hoisted_3$c, [
+          createBaseVNode("label", _hoisted_3$d, [
             _cache[3] || (_cache[3] = createBaseVNode("span", {
               class: "toggle-item__label",
               title: "Use the model without crediting the creator"
@@ -11501,7 +11541,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
 const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-c6ebd825"]]);
 const _hoisted_1$f = { class: "preview" };
 const _hoisted_2$e = { class: "preview__title" };
-const _hoisted_3$b = ["disabled"];
+const _hoisted_3$c = ["disabled"];
 const _hoisted_4$a = {
   key: 0,
   class: "preview__tooltip"
@@ -11560,7 +11600,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$b)
+          ])], 10, _hoisted_3$c)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
@@ -11672,7 +11712,7 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
 const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-83235a00"]]);
 const _hoisted_1$d = { class: "lora-pool-modal__header" };
 const _hoisted_2$c = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$a = { class: "lora-pool-modal__title" };
+const _hoisted_3$b = { class: "lora-pool-modal__title" };
 const _hoisted_4$9 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
@@ -11732,7 +11772,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
               }, [
                 createBaseVNode("div", _hoisted_1$d, [
                   createBaseVNode("div", _hoisted_2$c, [
-                    createBaseVNode("h3", _hoisted_3$a, toDisplayString(__props.title), 1),
+                    createBaseVNode("h3", _hoisted_3$b, toDisplayString(__props.title), 1),
                     __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$9, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
@@ -11760,7 +11800,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
 const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-d7a07432"]]);
 const _hoisted_1$c = { class: "search-container" };
 const _hoisted_2$b = { class: "model-list" };
-const _hoisted_3$9 = ["checked", "onChange"];
+const _hoisted_3$a = ["checked", "onChange"];
 const _hoisted_4$8 = { class: "model-checkbox-visual" };
 const _hoisted_5$6 = {
   key: 0,
@@ -11870,7 +11910,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$9),
+                }, null, 40, _hoisted_3$a),
                 createBaseVNode("span", _hoisted_4$8, [
                   isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$6, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
@@ -11891,7 +11931,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
 const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-1b5c130c"]]);
 const _hoisted_1$b = { class: "search-container" };
 const _hoisted_2$a = ["onClick"];
-const _hoisted_3$8 = {
+const _hoisted_3$9 = {
   key: 0,
   class: "no-results"
 };
@@ -12035,7 +12075,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                 onClick: ($event) => toggleTag(tag.tag)
               }, toDisplayString(tag.tag), 11, _hoisted_2$a);
             }), 128)),
-            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$8, " No tags found ")) : createCommentVNode("", true),
+            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$9, " No tags found ")) : createCommentVNode("", true),
             hasMoreTags.value ? (openBlock(), createElementBlock("div", _hoisted_4$7, " Scroll to load more... ")) : createCommentVNode("", true)
           ], 544)
         ]),
@@ -12050,7 +12090,7 @@ const _hoisted_2$9 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$7 = { class: "tree-node__checkbox-label" };
+const _hoisted_3$8 = { class: "tree-node__checkbox-label" };
 const _hoisted_4$6 = ["checked"];
 const _hoisted_5$5 = {
   key: 0,
@@ -12111,7 +12151,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
           ])) : (openBlock(), createElementBlock("span", _hoisted_2$9)),
-          createBaseVNode("label", _hoisted_3$7, [
+          createBaseVNode("label", _hoisted_3$8, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
@@ -12157,7 +12197,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
 const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-e6f673b4"]]);
 const _hoisted_1$9 = { class: "search-container" };
 const _hoisted_2$8 = { class: "folder-tree" };
-const _hoisted_3$6 = {
+const _hoisted_3$7 = {
   key: 1,
   class: "no-results"
 };
@@ -12256,7 +12296,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$6, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$7, " No folders found "))
           ])
         ]),
         _: 1
@@ -12675,7 +12715,7 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
 const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-271afb29"]]);
 const _hoisted_1$8 = { class: "last-used-preview" };
 const _hoisted_2$7 = { class: "last-used-preview__content" };
-const _hoisted_3$5 = ["src", "onError"];
+const _hoisted_3$6 = ["src", "onError"];
 const _hoisted_4$5 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
@@ -12727,7 +12767,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$5)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$6)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -13168,7 +13208,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
 const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-e2333f13"]]);
 const _hoisted_1$5 = { class: "randomizer-settings" };
 const _hoisted_2$5 = { class: "setting-section" };
-const _hoisted_3$4 = { class: "count-mode-tabs" };
+const _hoisted_3$5 = { class: "count-mode-tabs" };
 const _hoisted_4$4 = ["checked"];
 const _hoisted_5$3 = ["checked"];
 const _hoisted_6$3 = { class: "slider-container" };
@@ -13233,7 +13273,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$5, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3$4, [
+          createBaseVNode("div", _hoisted_3$5, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -13877,7 +13917,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
 const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-54f2f3a9"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$4 = { class: "setting-section progress-section" };
-const _hoisted_3$3 = { class: "progress-label" };
+const _hoisted_3$4 = { class: "progress-label" };
 const _hoisted_4$3 = ["title"];
 const _hoisted_5$2 = { class: "progress-counter" };
 const _hoisted_6$2 = { class: "progress-index" };
@@ -14002,7 +14042,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
               class: normalizeClass(["progress-info", { disabled: __props.isPauseDisabled }]),
               onClick: handleOpenSelector
             }, [
-              createBaseVNode("span", _hoisted_3$3, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
+              createBaseVNode("span", _hoisted_3$4, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
               createBaseVNode("span", {
                 class: normalizeClass(["progress-name clickable", { disabled: __props.isPauseDisabled, "no-lora": __props.isNoLora }]),
                 title: __props.currentLoraFilename
@@ -14202,7 +14242,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
 const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-a772e649"]]);
 const _hoisted_1$3 = { class: "search-container" };
 const _hoisted_2$3 = { class: "lora-list" };
-const _hoisted_3$2 = ["onMouseenter", "onClick"];
+const _hoisted_3$3 = ["onMouseenter", "onClick"];
 const _hoisted_4$2 = { class: "lora-index" };
 const _hoisted_5$1 = ["title"];
 const _hoisted_6$1 = {
@@ -14383,7 +14423,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   title: item.lora.file_name
                 }, toDisplayString(item.lora.file_name), 9, _hoisted_5$1),
                 __props.currentIndex === item.index ? (openBlock(), createElementBlock("span", _hoisted_6$1, "Current")) : createCommentVNode("", true)
-              ], 42, _hoisted_3$2);
+              ], 42, _hoisted_3$3);
             }), 128)),
             filteredList.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_7$1, " No LoRAs found ")) : createCommentVNode("", true)
           ])
@@ -15013,7 +15053,7 @@ const _hoisted_2$2 = {
   class: "json-content",
   ref: "contentRef"
 };
-const _hoisted_3$1 = ["innerHTML"];
+const _hoisted_3$2 = ["innerHTML"];
 const _hoisted_4$1 = {
   key: 1,
   class: "placeholder"
@@ -15108,7 +15148,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           hasMetadata.value ? (openBlock(), createElementBlock("pre", {
             key: 0,
             innerHTML: highlightedJson.value
-          }, null, 8, _hoisted_3$1)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
+          }, null, 8, _hoisted_3$2)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
         ], 512)
       ]);
     };
@@ -15178,577 +15218,6 @@ function useAutocomplete(textareaRef, modelType = "loras", options = {}) {
     initAutocomplete,
     destroyAutocomplete,
     refreshCaretHelper
-  };
-}
-const _hoisted_1$1 = { class: "autocomplete-text-widget" };
-const _hoisted_2$1 = ["placeholder", "spellcheck"];
-const _sfc_main$1 = /* @__PURE__ */ defineComponent({
-  __name: "AutocompleteTextWidget",
-  props: {
-    widget: {},
-    node: {},
-    modelType: {},
-    placeholder: {},
-    showPreview: { type: Boolean },
-    spellcheck: { type: Boolean },
-    maxHeight: {}
-  },
-  setup(__props) {
-    const props = __props;
-    const isVueDomMode = ref(typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode === true);
-    const onModeChange = (event) => {
-      const customEvent = event;
-      isVueDomMode.value = customEvent.detail.isVueDomMode;
-      updateVScrollbarWidth();
-    };
-    const textareaRef = ref(null);
-    const inputWrapperRef = ref(null);
-    const vScrollbarWidth = ref(0);
-    let scrollbarResizeObserver = null;
-    const updateVScrollbarWidth = () => {
-      const ta = textareaRef.value;
-      if (!ta) return;
-      const overflowsY = ta.scrollHeight > ta.clientHeight;
-      vScrollbarWidth.value = overflowsY ? ta.offsetWidth - ta.clientWidth : 0;
-    };
-    const observeScrollbarWidth = () => {
-      unobserveScrollbarWidth();
-      const ta = textareaRef.value;
-      if (!ta || typeof ResizeObserver === "undefined") {
-        return;
-      }
-      scrollbarResizeObserver = new ResizeObserver(() => {
-        updateVScrollbarWidth();
-      });
-      scrollbarResizeObserver.observe(ta);
-    };
-    const unobserveScrollbarWidth = () => {
-      if (scrollbarResizeObserver) {
-        scrollbarResizeObserver.disconnect();
-        scrollbarResizeObserver = null;
-      }
-    };
-    const hasText = ref(false);
-    const showClearButton = computed(() => hasText.value);
-    useAutocomplete(
-      textareaRef,
-      props.modelType ?? "loras",
-      { showPreview: props.showPreview ?? true, node: props.node }
-    );
-    const updateHasTextState = () => {
-      hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
-    };
-    const onInput = (event) => {
-      updateVScrollbarWidth();
-      if (event.inputType === "historyUndo") {
-        const ta = textareaRef.value;
-        if (ta && ta.selectionStart === 0 && ta.selectionEnd === ta.value.length) {
-          ta.setSelectionRange(ta.value.length, ta.value.length);
-        }
-      }
-      updateHasTextState();
-      if (textareaRef.value && typeof props.widget.callback === "function") {
-        props.widget.callback(textareaRef.value.value);
-      }
-    };
-    const onWheel = (event) => {
-      const textarea = textareaRef.value;
-      if (!textarea) return;
-      const canScrollY = textarea.scrollHeight > textarea.clientHeight;
-      const deltaX = event.deltaX;
-      const deltaY = event.deltaY;
-      const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
-      const app2 = window.app;
-      if (!app2 || !app2.canvas || typeof app2.canvas.processMouseWheel !== "function") {
-        return;
-      }
-      if (event.ctrlKey) {
-        event.preventDefault();
-        event.stopPropagation();
-        app2.canvas.processMouseWheel(event);
-        return;
-      }
-      if (isHorizontal) {
-        event.preventDefault();
-        event.stopPropagation();
-        app2.canvas.processMouseWheel(event);
-        return;
-      }
-      if (canScrollY) {
-        event.stopPropagation();
-      } else {
-        event.preventDefault();
-        app2.canvas.processMouseWheel(event);
-      }
-    };
-    const onExternalValueChange = () => {
-      updateVScrollbarWidth();
-      updateHasTextState();
-    };
-    const setupWidgetOnSetValue = () => {
-      if (props.widget) {
-        props.widget.onSetValue = (value) => {
-          hasText.value = value.length > 0;
-          updateVScrollbarWidth();
-        };
-      }
-    };
-    const clearText = () => {
-      const ta = textareaRef.value;
-      if (!ta || ta.value.length === 0) return;
-      ta.focus();
-      ta.setSelectionRange(0, ta.value.length);
-      let ok = false;
-      try {
-        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, "");
-      } catch {
-        ok = false;
-      }
-      if (ok) {
-        hasText.value = false;
-        return;
-      }
-      ta.value = "";
-      ta.dispatchEvent(new Event("input"));
-    };
-    onMounted(() => {
-      if (textareaRef.value) {
-        props.widget.inputEl = textareaRef.value;
-        textareaRef.value._autocompleteHostWidget = props.widget;
-        textareaRef.value._autocompleteMetadataWidget = props.widget.metadataWidget;
-        textareaRef.value._autocompleteTextWidgetName = props.widget.name ?? "text";
-        const container = textareaRef.value.closest('[id^="autocomplete-text-widget-"]');
-        if (container && container.__widgetInputEl) {
-          container.__widgetInputEl.inputEl = textareaRef.value;
-        }
-        const pendingValue = props.widget._pendingValue;
-        if (pendingValue !== void 0) {
-          textareaRef.value.value = pendingValue;
-          hasText.value = pendingValue.length > 0;
-          delete props.widget._pendingValue;
-          textareaRef.value.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
-            detail: { value: pendingValue }
-          }));
-        }
-        if (pendingValue === void 0) {
-          hasText.value = textareaRef.value.value.length > 0;
-        }
-        textareaRef.value.addEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
-      }
-      if (textareaRef.value && typeof props.widget.callback === "function") {
-        props.widget.callback(textareaRef.value.value);
-      }
-      setupWidgetOnSetValue();
-      updateVScrollbarWidth();
-      observeScrollbarWidth();
-      document.addEventListener("lora-manager:vue-mode-change", onModeChange);
-    });
-    onUnmounted(() => {
-      unobserveScrollbarWidth();
-      if (props.widget.inputEl === textareaRef.value) {
-        props.widget.inputEl = void 0;
-      }
-      if (textareaRef.value) {
-        delete textareaRef.value._autocompleteHostWidget;
-        delete textareaRef.value._autocompleteMetadataWidget;
-        delete textareaRef.value._autocompleteTextWidgetName;
-        textareaRef.value.removeEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
-      }
-      if (props.widget) {
-        props.widget.onSetValue = void 0;
-      }
-      document.removeEventListener("lora-manager:vue-mode-change", onModeChange);
-    });
-    return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$1, [
-        createBaseVNode("div", {
-          ref_key: "inputWrapperRef",
-          ref: inputWrapperRef,
-          class: "input-wrapper",
-          style: normalizeStyle({ "--lm-vscrollbar-width": vScrollbarWidth.value + "px" })
-        }, [
-          createBaseVNode("textarea", {
-            ref_key: "textareaRef",
-            ref: textareaRef,
-            placeholder: __props.placeholder,
-            spellcheck: __props.spellcheck ?? false,
-            class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value, "lm-wheel-scrollable": isVueDomMode.value }]),
-            style: normalizeStyle(__props.maxHeight && isVueDomMode.value ? { maxHeight: __props.maxHeight + "px" } : void 0),
-            "data-capture-wheel": "true",
-            onInput,
-            onWheel
-          }, null, 46, _hoisted_2$1),
-          showClearButton.value ? (openBlock(), createElementBlock("button", {
-            key: 0,
-            type: "button",
-            class: "clear-button",
-            title: "Clear text",
-            onClick: clearText
-          }, [..._cache[0] || (_cache[0] = [
-            createBaseVNode("svg", {
-              viewBox: "0 0 24 24",
-              fill: "none",
-              stroke: "currentColor",
-              "stroke-width": "2"
-            }, [
-              createBaseVNode("line", {
-                x1: "18",
-                y1: "6",
-                x2: "6",
-                y2: "18"
-              }),
-              createBaseVNode("line", {
-                x1: "6",
-                y1: "6",
-                x2: "18",
-                y2: "18"
-              })
-            ], -1)
-          ])])) : createCommentVNode("", true)
-        ], 4)
-      ]);
-    };
-  }
-});
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-ba49c841"]]);
-const _hoisted_1 = { class: "lora-info-tabs" };
-const _hoisted_2 = { class: "tab-content notes-tab" };
-const _hoisted_3 = { class: "info-field" };
-const _hoisted_4 = { class: "lora-filename" };
-const _hoisted_5 = { class: "info-field notes-field" };
-const _hoisted_6 = ["disabled"];
-const _hoisted_7 = ["disabled"];
-const _hoisted_8 = { class: "tab-content description-tab lm-wheel-scrollable" };
-const _hoisted_9 = {
-  key: 0,
-  class: "description-state"
-};
-const _hoisted_10 = {
-  key: 1,
-  class: "description-state error"
-};
-const _hoisted_11 = {
-  key: 2,
-  class: "description-state placeholder"
-};
-const _hoisted_12 = {
-  key: 3,
-  class: "description-content"
-};
-const _hoisted_13 = {
-  key: 0,
-  class: "description-section"
-};
-const _hoisted_14 = ["innerHTML"];
-const _hoisted_15 = {
-  key: 1,
-  class: "description-section"
-};
-const _hoisted_16 = ["innerHTML"];
-const _hoisted_17 = {
-  key: 1,
-  class: "placeholder"
-};
-const _sfc_main = /* @__PURE__ */ defineComponent({
-  __name: "LoraInfoWidget",
-  props: {
-    widget: {},
-    node: {},
-    api: {},
-    app: {},
-    isVueMode: { type: Boolean }
-  },
-  setup(__props) {
-    const props = __props;
-    const loraName = ref("");
-    const notes = ref("");
-    const originalNotes = ref("");
-    const filePath = ref("");
-    const saving = ref(false);
-    const activeTab = ref("notes");
-    const versionDescription = ref("");
-    const modelDescription = ref("");
-    const descriptionLoading = ref(false);
-    const descriptionError = ref(false);
-    const descriptionLoaded = ref(false);
-    const hasDescription = computed(
-      () => !!(versionDescription.value || modelDescription.value)
-    );
-    watch(filePath, (newPath) => {
-      descriptionLoaded.value = false;
-      descriptionError.value = false;
-      versionDescription.value = "";
-      modelDescription.value = "";
-      if (newPath && activeTab.value === "description") {
-        fetchDescription();
-      }
-    });
-    function onDescriptionTabActivated() {
-      if (!descriptionLoaded.value && filePath.value) {
-        fetchDescription();
-      }
-    }
-    async function fetchDescription() {
-      var _a2;
-      if (descriptionLoading.value || !filePath.value) return;
-      descriptionLoading.value = true;
-      descriptionError.value = false;
-      try {
-        const response = await props.api.fetchApi(
-          `/lm/loras/metadata?file_path=${encodeURIComponent(filePath.value)}`,
-          { method: "GET" }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch metadata: ${response.statusText}`);
-        }
-        const data = await response.json();
-        if (data.success && data.metadata) {
-          versionDescription.value = data.metadata.description || "";
-          modelDescription.value = ((_a2 = data.metadata.model) == null ? void 0 : _a2.description) || "";
-          descriptionLoaded.value = true;
-        } else {
-          descriptionLoaded.value = true;
-        }
-      } catch (e) {
-        console.error("[LoraInfoWidget] Failed to fetch description:", e);
-        descriptionError.value = true;
-      } finally {
-        descriptionLoading.value = false;
-      }
-    }
-    async function saveNotes() {
-      if (notes.value === originalNotes.value || saving.value) return;
-      if (!filePath.value) return;
-      saving.value = true;
-      try {
-        const response = await props.api.fetchApi("/lm/loras/save-metadata", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file_path: filePath.value, notes: notes.value })
-        });
-        const result = await response.json();
-        if (result.success) {
-          props.app.extensionManager.toast.add({
-            severity: "success",
-            summary: "Saved",
-            detail: "Notes updated successfully",
-            life: 2e3
-          });
-          originalNotes.value = notes.value;
-        } else {
-          props.app.extensionManager.toast.add({
-            severity: "error",
-            summary: "Error",
-            detail: result.message || result.error || "Failed to save notes",
-            life: 3e3
-          });
-        }
-      } catch (e) {
-        console.error("[LoraInfoWidget] Failed to save notes:", e);
-        props.app.extensionManager.toast.add({
-          severity: "error",
-          summary: "Error",
-          detail: e.message || "Failed to save notes",
-          life: 3e3
-        });
-      } finally {
-        saving.value = false;
-      }
-    }
-    function onWheel(event) {
-      var _a2;
-      const target = event.target;
-      if (!target) return;
-      const comfyApp = window.app;
-      if (!((_a2 = comfyApp == null ? void 0 : comfyApp.canvas) == null ? void 0 : _a2.processMouseWheel)) return;
-      if (event.ctrlKey) {
-        event.preventDefault();
-        event.stopPropagation();
-        comfyApp.canvas.processMouseWheel(event);
-        return;
-      }
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
-        event.preventDefault();
-        event.stopPropagation();
-        comfyApp.canvas.processMouseWheel(event);
-        return;
-      }
-      const scrollableEl = target.closest(".lora-notes, .description-tab");
-      if (scrollableEl) {
-        const canScrollY = scrollableEl.scrollHeight > scrollableEl.clientHeight;
-        if (canScrollY) {
-          event.stopPropagation();
-          return;
-        }
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      comfyApp.canvas.processMouseWheel(event);
-    }
-    onMounted(() => {
-      var _a2, _b, _c, _d;
-      const buildValue = () => ({
-        name: loraName.value,
-        notes: notes.value,
-        filePath: filePath.value,
-        activeTab: activeTab.value
-      });
-      const applyValue = (v2) => {
-        if (v2 && typeof v2 === "object") {
-          const data = v2;
-          if (data.activeTab !== void 0) activeTab.value = data.activeTab;
-          if (data.name !== void 0) loraName.value = data.name;
-          if (data.notes !== void 0) {
-            notes.value = data.notes;
-            originalNotes.value = data.notes;
-          }
-          if (data.filePath !== void 0) filePath.value = data.filePath;
-        }
-      };
-      if (props.widget.options) {
-        props.widget.options.getValue = buildValue;
-        props.widget.options.setValue = applyValue;
-      } else {
-        console.warn("[LoraInfoWidget] widget.options missing, value persistence disabled");
-      }
-      props.widget.serializeValue = async () => buildValue();
-      props.widget.onSetValue = applyValue;
-      const widgetIndex = (_b = (_a2 = props.widget.node) == null ? void 0 : _a2.widgets) == null ? void 0 : _b.findIndex(
-        (w2) => w2.id === props.widget.id
-      );
-      let restored = false;
-      if (widgetIndex !== void 0 && widgetIndex >= 0) {
-        const savedValue = (_d = (_c = props.widget.node) == null ? void 0 : _c.widgets_values) == null ? void 0 : _d[widgetIndex];
-        if (savedValue && typeof savedValue === "object") {
-          applyValue(savedValue);
-          restored = true;
-        }
-      }
-      if (!restored && props.widget.value && typeof props.widget.value === "object") {
-        applyValue(props.widget.value);
-      }
-      props.widget._setLoraInfo = (data) => {
-        if (data) {
-          loraName.value = data.name;
-          notes.value = data.notes;
-          originalNotes.value = data.notes;
-          filePath.value = data.filePath;
-          if (data.activeTab !== void 0) {
-            activeTab.value = data.activeTab;
-          }
-        } else {
-          loraName.value = "";
-          notes.value = "";
-          originalNotes.value = "";
-          filePath.value = "";
-        }
-      };
-      if (props.widget.__pendingLoraInfo) {
-        props.widget._setLoraInfo(props.widget.__pendingLoraInfo);
-        delete props.widget.__pendingLoraInfo;
-      }
-    });
-    return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", {
-        class: normalizeClass(["lora-info-widget", { "lm-vue-node": __props.isVueMode }]),
-        onWheel
-      }, [
-        loraName.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
-          createBaseVNode("div", _hoisted_1, [
-            createBaseVNode("label", {
-              class: normalizeClass(["lora-info-tab", { active: activeTab.value === "notes" }])
-            }, [
-              withDirectives(createBaseVNode("input", {
-                type: "radio",
-                "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => activeTab.value = $event),
-                value: "notes",
-                class: "lora-info-tab-input"
-              }, null, 512), [
-                [vModelRadio, activeTab.value]
-              ]),
-              _cache[3] || (_cache[3] = createBaseVNode("span", { class: "lora-info-tab-label" }, "Notes", -1))
-            ], 2),
-            createBaseVNode("label", {
-              class: normalizeClass(["lora-info-tab", { active: activeTab.value === "description" }])
-            }, [
-              withDirectives(createBaseVNode("input", {
-                type: "radio",
-                "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => activeTab.value = $event),
-                value: "description",
-                class: "lora-info-tab-input",
-                onChange: onDescriptionTabActivated
-              }, null, 544), [
-                [vModelRadio, activeTab.value]
-              ]),
-              _cache[4] || (_cache[4] = createBaseVNode("span", { class: "lora-info-tab-label" }, "Description", -1))
-            ], 2)
-          ]),
-          withDirectives(createBaseVNode("div", _hoisted_2, [
-            createBaseVNode("div", _hoisted_3, [
-              _cache[5] || (_cache[5] = createBaseVNode("label", { class: "info-label" }, "Filename", -1)),
-              createBaseVNode("div", _hoisted_4, toDisplayString(loraName.value), 1)
-            ]),
-            createBaseVNode("div", _hoisted_5, [
-              _cache[6] || (_cache[6] = createBaseVNode("label", { class: "info-label" }, "Notes", -1)),
-              withDirectives(createBaseVNode("textarea", {
-                "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => notes.value = $event),
-                class: "lora-notes lm-wheel-scrollable",
-                placeholder: "Add notes about this LoRA...",
-                disabled: saving.value
-              }, null, 8, _hoisted_6), [
-                [vModelText, notes.value]
-              ])
-            ]),
-            createBaseVNode("button", {
-              class: "save-btn",
-              disabled: notes.value === originalNotes.value || saving.value,
-              onClick: saveNotes
-            }, toDisplayString(saving.value ? "Saving..." : "Save"), 9, _hoisted_7)
-          ], 512), [
-            [vShow, activeTab.value === "notes"]
-          ]),
-          withDirectives(createBaseVNode("div", _hoisted_8, [
-            descriptionLoading.value ? (openBlock(), createElementBlock("div", _hoisted_9, [..._cache[7] || (_cache[7] = [
-              createBaseVNode("i", { class: "fas fa-spinner fa-spin" }, null, -1),
-              createBaseVNode("span", null, "Loading description...", -1)
-            ])])) : descriptionError.value ? (openBlock(), createElementBlock("div", _hoisted_10, [..._cache[8] || (_cache[8] = [
-              createBaseVNode("span", null, "Failed to load description", -1)
-            ])])) : !hasDescription.value ? (openBlock(), createElementBlock("div", _hoisted_11, [..._cache[9] || (_cache[9] = [
-              createBaseVNode("span", null, "No description available", -1)
-            ])])) : (openBlock(), createElementBlock("div", _hoisted_12, [
-              versionDescription.value ? (openBlock(), createElementBlock("div", _hoisted_13, [
-                _cache[10] || (_cache[10] = createBaseVNode("label", { class: "info-label" }, "About this version", -1)),
-                createBaseVNode("div", {
-                  class: "description-text",
-                  innerHTML: versionDescription.value
-                }, null, 8, _hoisted_14)
-              ])) : createCommentVNode("", true),
-              modelDescription.value ? (openBlock(), createElementBlock("div", _hoisted_15, [
-                _cache[11] || (_cache[11] = createBaseVNode("label", { class: "info-label" }, "Model Description", -1)),
-                createBaseVNode("div", {
-                  class: "description-text",
-                  innerHTML: modelDescription.value
-                }, null, 8, _hoisted_16)
-              ])) : createCommentVNode("", true)
-            ]))
-          ], 512), [
-            [vShow, activeTab.value === "description"]
-          ])
-        ], 64)) : (openBlock(), createElementBlock("div", _hoisted_17, "No LoRA selected"))
-      ], 34);
-    };
-  }
-});
-const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-50784163"]]);
-function createVueWidgetCleanup(vueApp, onCleanup) {
-  let didUnmount = false;
-  return () => {
-    if (didUnmount) {
-      return;
-    }
-    vueApp.unmount();
-    didUnmount = true;
-    onCleanup == null ? void 0 : onCleanup();
   };
 }
 function getComfyUIBasePath() {
@@ -16162,6 +15631,43 @@ function updateConnectedTriggerWords(node, loraNames) {
     }).catch((err) => console.error("Error fetching trigger words:", err));
   }, TRIGGER_WORD_SYNC_DELAY_MS);
 }
+function forwardWheelToCanvas(container, options = {}) {
+  if (!container) return;
+  const { captureWheel = false } = options;
+  container.addEventListener("wheel", (event) => {
+    if (captureWheel) {
+      event.stopPropagation();
+      return;
+    }
+    const comfyApp = window.app;
+    if (!comfyApp || !comfyApp.canvas || typeof comfyApp.canvas.processMouseWheel !== "function") {
+      return;
+    }
+    const deltaX = event.deltaX;
+    const deltaY = event.deltaY;
+    const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+    if (event.ctrlKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      comfyApp.canvas.processMouseWheel(event);
+      return;
+    }
+    if (isHorizontal) {
+      event.preventDefault();
+      event.stopPropagation();
+      comfyApp.canvas.processMouseWheel(event);
+      return;
+    }
+    const canScrollY = container.scrollHeight > container.clientHeight;
+    if (canScrollY) {
+      event.stopPropagation();
+    } else {
+      event.preventDefault();
+      event.stopPropagation();
+      comfyApp.canvas.processMouseWheel(event);
+    }
+  }, { passive: false });
+}
 function getConnectedPoolConfigNode(node) {
   var _a2, _b;
   if (!(node == null ? void 0 : node.inputs)) {
@@ -16218,6 +15724,584 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
       }
     }
   }
+}
+const _hoisted_1$1 = { class: "autocomplete-text-widget" };
+const _hoisted_2$1 = {
+  key: 0,
+  class: "lora-search-row"
+};
+const _hoisted_3$1 = ["placeholder", "spellcheck"];
+const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+  __name: "AutocompleteTextWidget",
+  props: {
+    widget: {},
+    node: {},
+    modelType: {},
+    placeholder: {},
+    showPreview: { type: Boolean },
+    spellcheck: { type: Boolean },
+    maxHeight: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const isVueDomMode = ref(typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode === true);
+    const onModeChange = (event) => {
+      const customEvent = event;
+      isVueDomMode.value = customEvent.detail.isVueDomMode;
+      updateVScrollbarWidth();
+    };
+    const textareaRef = ref(null);
+    const inputWrapperRef = ref(null);
+    const vScrollbarWidth = ref(0);
+    let scrollbarResizeObserver = null;
+    const updateVScrollbarWidth = () => {
+      const ta = textareaRef.value;
+      if (!ta) return;
+      const overflowsY = ta.scrollHeight > ta.clientHeight;
+      vScrollbarWidth.value = overflowsY ? ta.offsetWidth - ta.clientWidth : 0;
+    };
+    const observeScrollbarWidth = () => {
+      unobserveScrollbarWidth();
+      const ta = textareaRef.value;
+      if (!ta || typeof ResizeObserver === "undefined") {
+        return;
+      }
+      scrollbarResizeObserver = new ResizeObserver(() => {
+        updateVScrollbarWidth();
+      });
+      scrollbarResizeObserver.observe(ta);
+    };
+    const unobserveScrollbarWidth = () => {
+      if (scrollbarResizeObserver) {
+        scrollbarResizeObserver.disconnect();
+        scrollbarResizeObserver = null;
+      }
+    };
+    const hasText = ref(false);
+    const showClearButton = computed(() => hasText.value);
+    useAutocomplete(
+      textareaRef,
+      props.modelType ?? "loras",
+      { showPreview: props.showPreview ?? true, node: props.node }
+    );
+    const showSearchField = computed(() => (props.modelType ?? "loras") === "loras");
+    const searchInputRef = ref(null);
+    useAutocomplete(searchInputRef, "loras", {
+      node: props.node,
+      pickIntoNode: true,
+      anchorToElement: true
+    });
+    const clearSearchField = () => {
+      const field = searchInputRef.value;
+      if (!field) {
+        return;
+      }
+      field.value = "";
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    const updateHasTextState = () => {
+      hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
+    };
+    const onInput = (event) => {
+      updateVScrollbarWidth();
+      if (event.inputType === "historyUndo") {
+        const ta = textareaRef.value;
+        if (ta && ta.selectionStart === 0 && ta.selectionEnd === ta.value.length) {
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      }
+      updateHasTextState();
+      if (textareaRef.value && typeof props.widget.callback === "function") {
+        props.widget.callback(textareaRef.value.value);
+      }
+    };
+    const onExternalValueChange = () => {
+      updateVScrollbarWidth();
+      updateHasTextState();
+    };
+    const setupWidgetOnSetValue = () => {
+      if (props.widget) {
+        props.widget.onSetValue = (value) => {
+          hasText.value = value.length > 0;
+          updateVScrollbarWidth();
+        };
+      }
+    };
+    const clearText = () => {
+      const ta = textareaRef.value;
+      if (!ta || ta.value.length === 0) return;
+      ta.focus();
+      ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try {
+        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, "");
+      } catch {
+        ok = false;
+      }
+      if (ok) {
+        hasText.value = false;
+        return;
+      }
+      ta.value = "";
+      ta.dispatchEvent(new Event("input"));
+    };
+    onMounted(() => {
+      forwardWheelToCanvas(textareaRef.value);
+      if (searchInputRef.value) {
+        forwardWheelToCanvas(searchInputRef.value);
+      }
+      if (textareaRef.value) {
+        props.widget.inputEl = textareaRef.value;
+        textareaRef.value._autocompleteHostWidget = props.widget;
+        textareaRef.value._autocompleteMetadataWidget = props.widget.metadataWidget;
+        textareaRef.value._autocompleteTextWidgetName = props.widget.name ?? "text";
+        const container = textareaRef.value.closest('[id^="autocomplete-text-widget-"]');
+        if (container && container.__widgetInputEl) {
+          container.__widgetInputEl.inputEl = textareaRef.value;
+        }
+        const pendingValue = props.widget._pendingValue;
+        if (pendingValue !== void 0) {
+          textareaRef.value.value = pendingValue;
+          hasText.value = pendingValue.length > 0;
+          delete props.widget._pendingValue;
+          textareaRef.value.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
+            detail: { value: pendingValue }
+          }));
+        }
+        if (pendingValue === void 0) {
+          hasText.value = textareaRef.value.value.length > 0;
+        }
+        textareaRef.value.addEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
+      }
+      if (textareaRef.value && typeof props.widget.callback === "function") {
+        props.widget.callback(textareaRef.value.value);
+      }
+      setupWidgetOnSetValue();
+      updateVScrollbarWidth();
+      observeScrollbarWidth();
+      document.addEventListener("lora-manager:vue-mode-change", onModeChange);
+    });
+    onUnmounted(() => {
+      unobserveScrollbarWidth();
+      if (props.widget.inputEl === textareaRef.value) {
+        props.widget.inputEl = void 0;
+      }
+      if (textareaRef.value) {
+        delete textareaRef.value._autocompleteHostWidget;
+        delete textareaRef.value._autocompleteMetadataWidget;
+        delete textareaRef.value._autocompleteTextWidgetName;
+        textareaRef.value.removeEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
+      }
+      if (props.widget) {
+        props.widget.onSetValue = void 0;
+      }
+      document.removeEventListener("lora-manager:vue-mode-change", onModeChange);
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", _hoisted_1$1, [
+        showSearchField.value ? (openBlock(), createElementBlock("div", _hoisted_2$1, [
+          createBaseVNode("input", {
+            ref_key: "searchInputRef",
+            ref: searchInputRef,
+            class: "lora-search-input",
+            type: "text",
+            placeholder: "Search LoRAs",
+            "aria-label": "Search LoRAs",
+            spellcheck: "false",
+            autocomplete: "off",
+            onBlur: clearSearchField,
+            onKeydown: _cache[0] || (_cache[0] = withModifiers(() => {
+            }, ["stop"]))
+          }, null, 544)
+        ])) : createCommentVNode("", true),
+        createBaseVNode("div", {
+          ref_key: "inputWrapperRef",
+          ref: inputWrapperRef,
+          class: "input-wrapper",
+          style: normalizeStyle({ "--lm-vscrollbar-width": vScrollbarWidth.value + "px" })
+        }, [
+          createBaseVNode("textarea", {
+            ref_key: "textareaRef",
+            ref: textareaRef,
+            placeholder: showSearchField.value ? "" : __props.placeholder,
+            spellcheck: __props.spellcheck ?? false,
+            class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value, "lm-wheel-scrollable": isVueDomMode.value }]),
+            style: normalizeStyle(__props.maxHeight && isVueDomMode.value ? { maxHeight: __props.maxHeight + "px" } : void 0),
+            "data-capture-wheel": "true",
+            onInput
+          }, null, 46, _hoisted_3$1),
+          showClearButton.value ? (openBlock(), createElementBlock("button", {
+            key: 0,
+            type: "button",
+            class: "clear-button",
+            title: "Clear text",
+            onClick: clearText
+          }, [..._cache[1] || (_cache[1] = [
+            createBaseVNode("svg", {
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              "stroke-width": "2"
+            }, [
+              createBaseVNode("line", {
+                x1: "18",
+                y1: "6",
+                x2: "6",
+                y2: "18"
+              }),
+              createBaseVNode("line", {
+                x1: "6",
+                y1: "6",
+                x2: "18",
+                y2: "18"
+              })
+            ], -1)
+          ])])) : createCommentVNode("", true)
+        ], 4)
+      ]);
+    };
+  }
+});
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-c7b17484"]]);
+const _hoisted_1 = { class: "lora-info-tabs" };
+const _hoisted_2 = { class: "tab-content notes-tab" };
+const _hoisted_3 = { class: "info-field" };
+const _hoisted_4 = { class: "lora-filename" };
+const _hoisted_5 = { class: "info-field notes-field" };
+const _hoisted_6 = ["disabled"];
+const _hoisted_7 = ["disabled"];
+const _hoisted_8 = { class: "tab-content description-tab lm-wheel-scrollable" };
+const _hoisted_9 = {
+  key: 0,
+  class: "description-state"
+};
+const _hoisted_10 = {
+  key: 1,
+  class: "description-state error"
+};
+const _hoisted_11 = {
+  key: 2,
+  class: "description-state placeholder"
+};
+const _hoisted_12 = {
+  key: 3,
+  class: "description-content"
+};
+const _hoisted_13 = {
+  key: 0,
+  class: "description-section"
+};
+const _hoisted_14 = ["innerHTML"];
+const _hoisted_15 = {
+  key: 1,
+  class: "description-section"
+};
+const _hoisted_16 = ["innerHTML"];
+const _hoisted_17 = {
+  key: 1,
+  class: "placeholder"
+};
+const _sfc_main = /* @__PURE__ */ defineComponent({
+  __name: "LoraInfoWidget",
+  props: {
+    widget: {},
+    node: {},
+    api: {},
+    app: {},
+    isVueMode: { type: Boolean }
+  },
+  setup(__props) {
+    const props = __props;
+    const loraName = ref("");
+    const notes = ref("");
+    const originalNotes = ref("");
+    const filePath = ref("");
+    const saving = ref(false);
+    const activeTab = ref("notes");
+    const versionDescription = ref("");
+    const modelDescription = ref("");
+    const descriptionLoading = ref(false);
+    const descriptionError = ref(false);
+    const descriptionLoaded = ref(false);
+    const hasDescription = computed(
+      () => !!(versionDescription.value || modelDescription.value)
+    );
+    watch(filePath, (newPath) => {
+      descriptionLoaded.value = false;
+      descriptionError.value = false;
+      versionDescription.value = "";
+      modelDescription.value = "";
+      if (newPath && activeTab.value === "description") {
+        fetchDescription();
+      }
+    });
+    function onDescriptionTabActivated() {
+      if (!descriptionLoaded.value && filePath.value) {
+        fetchDescription();
+      }
+    }
+    async function fetchDescription() {
+      var _a2;
+      if (descriptionLoading.value || !filePath.value) return;
+      descriptionLoading.value = true;
+      descriptionError.value = false;
+      try {
+        const response = await props.api.fetchApi(
+          `/lm/loras/metadata?file_path=${encodeURIComponent(filePath.value)}`,
+          { method: "GET" }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (data.success && data.metadata) {
+          versionDescription.value = data.metadata.description || "";
+          modelDescription.value = ((_a2 = data.metadata.model) == null ? void 0 : _a2.description) || "";
+          descriptionLoaded.value = true;
+        } else {
+          descriptionLoaded.value = true;
+        }
+      } catch (e) {
+        console.error("[LoraInfoWidget] Failed to fetch description:", e);
+        descriptionError.value = true;
+      } finally {
+        descriptionLoading.value = false;
+      }
+    }
+    async function saveNotes() {
+      if (notes.value === originalNotes.value || saving.value) return;
+      if (!filePath.value) return;
+      saving.value = true;
+      try {
+        const response = await props.api.fetchApi("/lm/loras/save-metadata", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file_path: filePath.value, notes: notes.value })
+        });
+        const result = await response.json();
+        if (result.success) {
+          props.app.extensionManager.toast.add({
+            severity: "success",
+            summary: "Saved",
+            detail: "Notes updated successfully",
+            life: 2e3
+          });
+          originalNotes.value = notes.value;
+        } else {
+          props.app.extensionManager.toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: result.message || result.error || "Failed to save notes",
+            life: 3e3
+          });
+        }
+      } catch (e) {
+        console.error("[LoraInfoWidget] Failed to save notes:", e);
+        props.app.extensionManager.toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: e.message || "Failed to save notes",
+          life: 3e3
+        });
+      } finally {
+        saving.value = false;
+      }
+    }
+    function onWheel(event) {
+      var _a2;
+      const target = event.target;
+      if (!target) return;
+      const comfyApp = window.app;
+      if (!((_a2 = comfyApp == null ? void 0 : comfyApp.canvas) == null ? void 0 : _a2.processMouseWheel)) return;
+      if (event.ctrlKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        comfyApp.canvas.processMouseWheel(event);
+        return;
+      }
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        event.preventDefault();
+        event.stopPropagation();
+        comfyApp.canvas.processMouseWheel(event);
+        return;
+      }
+      const scrollableEl = target.closest(".lora-notes, .description-tab");
+      if (scrollableEl) {
+        const canScrollY = scrollableEl.scrollHeight > scrollableEl.clientHeight;
+        if (canScrollY) {
+          event.stopPropagation();
+          return;
+        }
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      comfyApp.canvas.processMouseWheel(event);
+    }
+    onMounted(() => {
+      var _a2, _b, _c, _d;
+      const buildValue = () => ({
+        name: loraName.value,
+        notes: notes.value,
+        filePath: filePath.value,
+        activeTab: activeTab.value
+      });
+      const applyValue = (v2) => {
+        if (v2 && typeof v2 === "object") {
+          const data = v2;
+          if (data.activeTab !== void 0) activeTab.value = data.activeTab;
+          if (data.name !== void 0) loraName.value = data.name;
+          if (data.notes !== void 0) {
+            notes.value = data.notes;
+            originalNotes.value = data.notes;
+          }
+          if (data.filePath !== void 0) filePath.value = data.filePath;
+        }
+      };
+      if (props.widget.options) {
+        props.widget.options.getValue = buildValue;
+        props.widget.options.setValue = applyValue;
+      } else {
+        console.warn("[LoraInfoWidget] widget.options missing, value persistence disabled");
+      }
+      props.widget.serializeValue = async () => buildValue();
+      props.widget.onSetValue = applyValue;
+      const widgetIndex = (_b = (_a2 = props.widget.node) == null ? void 0 : _a2.widgets) == null ? void 0 : _b.findIndex(
+        (w2) => w2.id === props.widget.id
+      );
+      let restored = false;
+      if (widgetIndex !== void 0 && widgetIndex >= 0) {
+        const savedValue = (_d = (_c = props.widget.node) == null ? void 0 : _c.widgets_values) == null ? void 0 : _d[widgetIndex];
+        if (savedValue && typeof savedValue === "object") {
+          applyValue(savedValue);
+          restored = true;
+        }
+      }
+      if (!restored && props.widget.value && typeof props.widget.value === "object") {
+        applyValue(props.widget.value);
+      }
+      props.widget._setLoraInfo = (data) => {
+        if (data) {
+          loraName.value = data.name;
+          notes.value = data.notes;
+          originalNotes.value = data.notes;
+          filePath.value = data.filePath;
+          if (data.activeTab !== void 0) {
+            activeTab.value = data.activeTab;
+          }
+        } else {
+          loraName.value = "";
+          notes.value = "";
+          originalNotes.value = "";
+          filePath.value = "";
+        }
+      };
+      if (props.widget.__pendingLoraInfo) {
+        props.widget._setLoraInfo(props.widget.__pendingLoraInfo);
+        delete props.widget.__pendingLoraInfo;
+      }
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        class: normalizeClass(["lora-info-widget", { "lm-vue-node": __props.isVueMode }]),
+        onWheel
+      }, [
+        loraName.value ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [
+          createBaseVNode("div", _hoisted_1, [
+            createBaseVNode("label", {
+              class: normalizeClass(["lora-info-tab", { active: activeTab.value === "notes" }])
+            }, [
+              withDirectives(createBaseVNode("input", {
+                type: "radio",
+                "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => activeTab.value = $event),
+                value: "notes",
+                class: "lora-info-tab-input"
+              }, null, 512), [
+                [vModelRadio, activeTab.value]
+              ]),
+              _cache[3] || (_cache[3] = createBaseVNode("span", { class: "lora-info-tab-label" }, "Notes", -1))
+            ], 2),
+            createBaseVNode("label", {
+              class: normalizeClass(["lora-info-tab", { active: activeTab.value === "description" }])
+            }, [
+              withDirectives(createBaseVNode("input", {
+                type: "radio",
+                "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => activeTab.value = $event),
+                value: "description",
+                class: "lora-info-tab-input",
+                onChange: onDescriptionTabActivated
+              }, null, 544), [
+                [vModelRadio, activeTab.value]
+              ]),
+              _cache[4] || (_cache[4] = createBaseVNode("span", { class: "lora-info-tab-label" }, "Description", -1))
+            ], 2)
+          ]),
+          withDirectives(createBaseVNode("div", _hoisted_2, [
+            createBaseVNode("div", _hoisted_3, [
+              _cache[5] || (_cache[5] = createBaseVNode("label", { class: "info-label" }, "Filename", -1)),
+              createBaseVNode("div", _hoisted_4, toDisplayString(loraName.value), 1)
+            ]),
+            createBaseVNode("div", _hoisted_5, [
+              _cache[6] || (_cache[6] = createBaseVNode("label", { class: "info-label" }, "Notes", -1)),
+              withDirectives(createBaseVNode("textarea", {
+                "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => notes.value = $event),
+                class: "lora-notes lm-wheel-scrollable",
+                placeholder: "Add notes about this LoRA...",
+                disabled: saving.value
+              }, null, 8, _hoisted_6), [
+                [vModelText, notes.value]
+              ])
+            ]),
+            createBaseVNode("button", {
+              class: "save-btn",
+              disabled: notes.value === originalNotes.value || saving.value,
+              onClick: saveNotes
+            }, toDisplayString(saving.value ? "Saving..." : "Save"), 9, _hoisted_7)
+          ], 512), [
+            [vShow, activeTab.value === "notes"]
+          ]),
+          withDirectives(createBaseVNode("div", _hoisted_8, [
+            descriptionLoading.value ? (openBlock(), createElementBlock("div", _hoisted_9, [..._cache[7] || (_cache[7] = [
+              createBaseVNode("i", { class: "fas fa-spinner fa-spin" }, null, -1),
+              createBaseVNode("span", null, "Loading description...", -1)
+            ])])) : descriptionError.value ? (openBlock(), createElementBlock("div", _hoisted_10, [..._cache[8] || (_cache[8] = [
+              createBaseVNode("span", null, "Failed to load description", -1)
+            ])])) : !hasDescription.value ? (openBlock(), createElementBlock("div", _hoisted_11, [..._cache[9] || (_cache[9] = [
+              createBaseVNode("span", null, "No description available", -1)
+            ])])) : (openBlock(), createElementBlock("div", _hoisted_12, [
+              versionDescription.value ? (openBlock(), createElementBlock("div", _hoisted_13, [
+                _cache[10] || (_cache[10] = createBaseVNode("label", { class: "info-label" }, "About this version", -1)),
+                createBaseVNode("div", {
+                  class: "description-text",
+                  innerHTML: versionDescription.value
+                }, null, 8, _hoisted_14)
+              ])) : createCommentVNode("", true),
+              modelDescription.value ? (openBlock(), createElementBlock("div", _hoisted_15, [
+                _cache[11] || (_cache[11] = createBaseVNode("label", { class: "info-label" }, "Model Description", -1)),
+                createBaseVNode("div", {
+                  class: "description-text",
+                  innerHTML: modelDescription.value
+                }, null, 8, _hoisted_16)
+              ])) : createCommentVNode("", true)
+            ]))
+          ], 512), [
+            [vShow, activeTab.value === "description"]
+          ])
+        ], 64)) : (openBlock(), createElementBlock("div", _hoisted_17, "No LoRA selected"))
+      ], 34);
+    };
+  }
+});
+const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-50784163"]]);
+function createVueWidgetCleanup(vueApp, onCleanup) {
+  let didUnmount = false;
+  return () => {
+    if (didUnmount) {
+      return;
+    }
+    vueApp.unmount();
+    didUnmount = true;
+    onCleanup == null ? void 0 : onCleanup();
+  };
 }
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -16348,7 +16432,9 @@ const LORA_INFO_WIDGET_MIN_WIDTH = 300;
 const LORA_INFO_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
-const AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP = 8;
+const AUTOCOMPLETE_TEXT_WIDGET_SEARCH_ROW_HEIGHT = 26;
+const AUTOCOMPLETE_TEXT_WIDGET_COMPOSITE_HEIGHT = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_SEARCH_ROW_HEIGHT;
+const DOM_WIDGET_MARGIN = 10;
 const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
 const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
@@ -16782,9 +16868,12 @@ function normalizeAutocompleteWidgetValues(node, info) {
 function applyAutocompleteTextLayoutFix(widget, _container, isVueMode) {
   if (isVueMode) {
     widget.computeLayoutSize = void 0;
-    widget.computeSize = (width) => [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4];
+    widget.computeSize = (width) => [
+      width ?? 200,
+      AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_SEARCH_ROW_HEIGHT - 4
+    ];
   } else {
-    const layoutHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP;
+    const layoutHeight = AUTOCOMPLETE_TEXT_WIDGET_COMPOSITE_HEIGHT + 2 * DOM_WIDGET_MARGIN;
     widget.computeLayoutSize = void 0;
     widget.computeSize = (width) => [width ?? 200, layoutHeight - 4];
   }
@@ -16975,7 +17064,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       serialize: true,
       hideInPanel: true,
       getMinHeight() {
-        return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT;
+        return modelType === "loras" ? AUTOCOMPLETE_TEXT_WIDGET_COMPOSITE_HEIGHT : AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT;
       },
       ...modelType === "loras" && {
         getMaxHeight() {
@@ -17004,7 +17093,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   const appKey = container.id;
   vueApps.set(appKey, vueApp);
   if (maxHeight) {
-    container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT}px`;
+    container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_COMPOSITE_HEIGHT}px`;
   }
   if (modelType === "loras") {
     applyAutocompleteTextLayoutFix(
