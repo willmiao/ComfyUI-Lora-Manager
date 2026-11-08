@@ -20,7 +20,7 @@ from ..utils.example_images_paths import (
     uses_library_scoped_folders,
 )
 from ..utils.metadata_manager import MetadataManager
-from .example_images_processor import ExampleImagesProcessor
+from .example_images_processor import ExampleImagesProcessor, MediaDownloadLimiter
 from .example_images_metadata import (
     MetadataUpdater,
     update_cache_from_metadata,
@@ -79,6 +79,7 @@ class _DownloadProgress(dict[str, Any]):
             failed_models=set(),
             reprocessed_models=set(),
             rate_limited_models=set(),
+            retryable_models=set(),
         )
 
     def snapshot(self) -> Dict[str, Any]:
@@ -90,6 +91,7 @@ class _DownloadProgress(dict[str, Any]):
         snapshot["failed_models"] = list(self["failed_models"])
         snapshot["reprocessed_models"] = list(self.get("reprocessed_models", set()))
         snapshot["rate_limited_models"] = list(self.get("rate_limited_models", set()))
+        snapshot["retryable_models"] = list(self.get("retryable_models", set()))
         return snapshot
 
 
@@ -163,6 +165,38 @@ class DownloadManager:
             return ""
         return ensure_library_root_exists(library_name)
 
+    def _create_media_download_limiter(
+        self, optimize: bool = True
+    ) -> MediaDownloadLimiter:
+        """Build the run-wide limiter from settings.
+
+        The limiter is shared by every model in a run so a 429 seen while
+        downloading one model also pauses the next one instead of being
+        forgotten at the model boundary.
+        """
+
+        settings = get_settings_manager()
+        try:
+            concurrency = int(
+                settings.get("example_images_download_concurrency", 6)
+            )
+        except (TypeError, ValueError):
+            concurrency = 6
+        try:
+            cooldown = float(
+                settings.get("example_images_rate_limit_cooldown", 30)
+            )
+        except (TypeError, ValueError):
+            cooldown = 30.0
+        if not optimize:
+            # Original renditions can be tens of megabytes per video; keep the
+            # memory/bandwidth spike bounded when optimization is disabled.
+            concurrency = min(concurrency, 2)
+        return MediaDownloadLimiter(
+            max_concurrency=max(1, concurrency),
+            default_cooldown=max(1.0, cooldown),
+        )
+
     async def start_download(self, options: Dict[str, Any]):
         """Start downloading example images for models."""
 
@@ -171,7 +205,7 @@ class DownloadManager:
         auto_mode = data.get("auto_mode", False)
         optimize = data.get("optimize", True)
         model_types = data.get("model_types", ["lora", "checkpoint"])
-        delay = float(data.get("delay", 0.2))
+        delay = float(data.get("delay", 0) or 0)
         force = data.get("force", False)
         model_hashes = data.get("model_hashes", [])
 
@@ -589,6 +623,7 @@ class DownloadManager:
         """Download example images for all models (or only the given hashes)."""
 
         downloader = await get_downloader()
+        limiter = self._create_media_download_limiter(optimize)
 
         try:
             # Get scanners
@@ -654,6 +689,7 @@ class DownloadManager:
                     library_name,
                     force,
                     explicit_targets,
+                    limiter=limiter,
                 )
 
                 # Update progress
@@ -671,9 +707,12 @@ class DownloadManager:
                 if should_stop:
                     break
 
-                # Only add delay after remote download of models, and not after processing the last model
+                # Pacing is handled by the shared media-download limiter.  The
+                # legacy ``delay`` option is kept for API callers that still
+                # send it, but defaults to 0.
                 if (
-                    was_remote_download
+                    delay > 0
+                    and was_remote_download
                     and i < len(all_models) - 1
                     and current_status == "running"
                 ):
@@ -751,6 +790,7 @@ class DownloadManager:
         library_name,
         force: bool = False,
         explicit_targets: bool = False,
+        limiter: MediaDownloadLimiter | None = None,
     ):
         """Process a single model download."""
 
@@ -784,10 +824,12 @@ class DownloadManager:
             )
             existing_files = _model_directory_has_files(model_dir)
 
-            # Model-level guard: a populated folder counts as done. Explicitly
-            # targeted models bypass it so the per-image existence pre-check can
-            # fill individual gaps without re-fetching existing files.
-            if not explicit_targets:
+            # Model-level guard: a populated folder counts as done. Force and
+            # explicitly targeted models bypass it so the per-image existence
+            # pre-check can fill individual gaps, retry flagged images, or
+            # clear a stale ``downloadFailed`` marker without re-fetching the
+            # files that are already present.
+            if not force and not explicit_targets:
                 # Skip if already processed AND directory exists with files
                 if model_hash in self._progress["processed_models"]:
                     if existing_files:
@@ -846,20 +888,30 @@ class DownloadManager:
             if civitai_payload.get("images"):
                 images = civitai_payload.get("images", [])
 
-                (
-                    success,
-                    is_stale,
-                    failed_images,
-                    rate_limited_images,
-                ) = await ExampleImagesProcessor.download_model_images_with_tracking(
-                    model_hash, model_name, images, model_dir, optimize, downloader
+                outcome = await ExampleImagesProcessor.download_model_images_with_tracking(
+                    model_hash,
+                    model_name,
+                    images,
+                    model_dir,
+                    optimize,
+                    downloader,
+                    limiter=limiter,
+                    retry_failed=bool(force or explicit_targets),
                 )
 
-                failed_urls: Set[str] = set(failed_images)
-                rate_limited_urls: Set[str] = set(rate_limited_images)
+                failed_urls: Set[str] = set(outcome.failed)
+                rate_limited_urls: Set[str] = set(outcome.rate_limited)
+                transient_urls: Set[str] = set(outcome.transient)
+                recovered_urls: Set[str] = set(outcome.recovered)
+                final_success = outcome.success
+
+                if recovered_urls:
+                    await self._clear_failed_images_from_metadata(
+                        model_hash, model_name, recovered_urls, scanner
+                    )
 
                 # If metadata is stale, try to refresh it
-                if is_stale and model_hash not in self._progress["refreshed_models"]:
+                if outcome.is_stale and model_hash not in self._progress["refreshed_models"]:
                     await MetadataUpdater.refresh_model_metadata(
                         model_hash, model_name, scanner_type, scanner, self._progress
                     )
@@ -876,26 +928,35 @@ class DownloadManager:
                     if updated_civitai.get("images"):
                         # Retry download with updated metadata
                         updated_images = updated_civitai.get("images", [])
-                        (
-                            success,
-                            _,
-                            additional_failed,
-                            additional_rate_limited,
-                        ) = await ExampleImagesProcessor.download_model_images_with_tracking(
-                            model_hash,
-                            model_name,
-                            updated_images,
-                            model_dir,
-                            optimize,
-                            downloader,
+                        retry_outcome = (
+                            await ExampleImagesProcessor.download_model_images_with_tracking(
+                                model_hash,
+                                model_name,
+                                updated_images,
+                                model_dir,
+                                optimize,
+                                downloader,
+                                limiter=limiter,
+                                retry_failed=bool(force or explicit_targets),
+                            )
                         )
 
-                        failed_urls.update(additional_failed)
-                        rate_limited_urls.update(additional_rate_limited)
+                        # The refreshed metadata is now the source of truth:
+                        # failures against the pre-refresh URLs are gone (or
+                        # will fail again on this pass).
+                        failed_urls = set(retry_outcome.failed)
+                        rate_limited_urls = set(retry_outcome.rate_limited)
+                        transient_urls = set(retry_outcome.transient)
+                        recovered_urls.update(retry_outcome.recovered)
+                        final_success = retry_outcome.success
+                        if retry_outcome.recovered:
+                            await self._clear_failed_images_from_metadata(
+                                model_hash, model_name, retry_outcome.recovered, scanner
+                            )
 
                     self._progress["refreshed_models"].add(model_hash)
 
-                # Separate permanent failures from rate-limited ones
+                # Separate permanent failures from retryable ones
                 permanent_failures = failed_urls - rate_limited_urls
 
                 if permanent_failures:
@@ -914,17 +975,25 @@ class DownloadManager:
                         len(rate_limited_urls),
                         model_name,
                     )
-                    # Clear failed_models so non-force runs can retry
+
+                if transient_urls:
+                    self._progress["retryable_models"].add(model_hash)
+                    logger.warning(
+                        "%d example images for %s hit a transient network error; will retry next run",
+                        len(transient_urls),
+                        model_name,
+                    )
+
+                if rate_limited_urls or transient_urls:
+                    # Leave the model pending: the next run retries the
+                    # rate-limited/transient URLs.  Permanent failures are
+                    # still flagged above; do not mark the model processed.
                     if (force or explicit_targets) and model_hash in self._progress["failed_models"]:
                         self._progress["failed_models"].discard(model_hash)
                         logger.info(
-                            f"Removed {model_name} from failed_models after force retry with rate-limited images"
+                            "Removed %s from failed_models for a retryable failure",
+                            model_name,
                         )
-
-                if rate_limited_urls:
-                    # Don't mark as failed or fully processed — rate-limited
-                    # images will be retried next time.
-                    pass
                 elif permanent_failures:
                     self._progress["failed_models"].add(model_hash)
                     self._progress["processed_models"].add(model_hash)
@@ -933,7 +1002,7 @@ class DownloadManager:
                         len(permanent_failures),
                         model_name,
                     )
-                elif success:
+                elif final_success:
                     self._progress["processed_models"].add(model_hash)
                     if (force or explicit_targets) and model_hash in self._progress["failed_models"]:
                         self._progress["failed_models"].discard(model_hash)
@@ -1035,7 +1104,7 @@ class DownloadManager:
             model_hashes = data.get("model_hashes", [])
             optimize = data.get("optimize", True)
             model_types = data.get("model_types", ["lora", "checkpoint"])
-            delay = float(data.get("delay", 0.2))
+            delay = float(data.get("delay", 0) or 0)
 
             if not model_hashes:
                 raise DownloadConfigurationError("Missing model_hashes parameter")
@@ -1106,6 +1175,7 @@ class DownloadManager:
         """Download example images for specific models only - synchronous version."""
 
         downloader = await get_downloader()
+        limiter = self._create_media_download_limiter(optimize)
 
         try:
             # Get scanners
@@ -1160,6 +1230,7 @@ class DownloadManager:
                     optimize,
                     downloader,
                     library_name,
+                    limiter=limiter,
                 )
 
                 if was_successful:
@@ -1181,9 +1252,12 @@ class DownloadManager:
                 if should_stop:
                     break
 
-                # Only add delay after remote download, and not after processing the last model
+                # Pacing is handled by the shared media-download limiter.  The
+                # legacy ``delay`` option is kept for API callers that still
+                # send it, but defaults to 0.
                 if (
-                    was_successful
+                    delay > 0
+                    and was_successful
                     and i < len(models_to_process) - 1
                     and current_status == "running"
                 ):
@@ -1255,6 +1329,7 @@ class DownloadManager:
         optimize,
         downloader,
         library_name,
+        limiter: MediaDownloadLimiter | None = None,
     ):
         """Process a specific model for forced download, ignoring previous download status."""
 
@@ -1313,20 +1388,30 @@ class DownloadManager:
             if civitai_payload.get("images"):
                 images = civitai_payload.get("images", [])
 
-                (
-                    success,
-                    is_stale,
-                    failed_images,
-                    rate_limited_images,
-                ) = await ExampleImagesProcessor.download_model_images_with_tracking(
-                    model_hash, model_name, images, model_dir, optimize, downloader
+                outcome = await ExampleImagesProcessor.download_model_images_with_tracking(
+                    model_hash,
+                    model_name,
+                    images,
+                    model_dir,
+                    optimize,
+                    downloader,
+                    limiter=limiter,
+                    retry_failed=True,
                 )
 
-                failed_urls: Set[str] = set(failed_images)
-                rate_limited_urls: Set[str] = set(rate_limited_images)
+                failed_urls: Set[str] = set(outcome.failed)
+                rate_limited_urls: Set[str] = set(outcome.rate_limited)
+                transient_urls: Set[str] = set(outcome.transient)
+                recovered_urls: Set[str] = set(outcome.recovered)
+                final_success = outcome.success
+
+                if recovered_urls:
+                    await self._clear_failed_images_from_metadata(
+                        model_hash, model_name, recovered_urls, scanner
+                    )
 
                 # If metadata is stale, try to refresh it
-                if is_stale and model_hash not in self._progress["refreshed_models"]:
+                if outcome.is_stale and model_hash not in self._progress["refreshed_models"]:
                     await MetadataUpdater.refresh_model_metadata(
                         model_hash, model_name, scanner_type, scanner, self._progress
                     )
@@ -1343,26 +1428,35 @@ class DownloadManager:
                     if updated_civitai.get("images"):
                         # Retry download with updated metadata
                         updated_images = updated_civitai.get("images", [])
-                        (
-                            success,
-                            _,
-                            additional_failed_images,
-                            additional_rate_limited,
-                        ) = await ExampleImagesProcessor.download_model_images_with_tracking(
-                            model_hash,
-                            model_name,
-                            updated_images,
-                            model_dir,
-                            optimize,
-                            downloader,
+                        retry_outcome = (
+                            await ExampleImagesProcessor.download_model_images_with_tracking(
+                                model_hash,
+                                model_name,
+                                updated_images,
+                                model_dir,
+                                optimize,
+                                downloader,
+                                limiter=limiter,
+                                retry_failed=True,
+                            )
                         )
 
-                        failed_urls.update(additional_failed_images)
-                        rate_limited_urls.update(additional_rate_limited)
+                        # The refreshed metadata is now the source of truth:
+                        # failures against the pre-refresh URLs are gone (or
+                        # will fail again on this pass).
+                        failed_urls = set(retry_outcome.failed)
+                        rate_limited_urls = set(retry_outcome.rate_limited)
+                        transient_urls = set(retry_outcome.transient)
+                        recovered_urls.update(retry_outcome.recovered)
+                        final_success = retry_outcome.success
+                        if retry_outcome.recovered:
+                            await self._clear_failed_images_from_metadata(
+                                model_hash, model_name, retry_outcome.recovered, scanner
+                            )
 
                     self._progress["refreshed_models"].add(model_hash)
 
-                # Separate permanent failures from rate-limited ones
+                # Separate permanent failures from retryable ones
                 permanent_failures = failed_urls - rate_limited_urls
 
                 # Only remove permanently failed images from metadata
@@ -1379,13 +1473,21 @@ class DownloadManager:
                         model_name,
                     )
 
-                # Mark as processed only when no rate-limited images remain
-                if rate_limited_urls:
-                    pass
+                if transient_urls:
+                    self._progress["retryable_models"].add(model_hash)
+                    logger.warning(
+                        "%d example images for %s hit a transient network error; will retry next run",
+                        len(transient_urls),
+                        model_name,
+                    )
+
+                # Mark as processed only when nothing is left to retry.
+                if rate_limited_urls or transient_urls:
+                    self._progress["failed_models"].discard(model_hash)
                 elif permanent_failures:
                     self._progress["processed_models"].add(model_hash)
                     self._progress["failed_models"].add(model_hash)
-                elif success:
+                elif final_success:
                     self._progress["processed_models"].add(model_hash)
 
                 return True  # Return True to indicate a remote download happened
@@ -1400,6 +1502,76 @@ class DownloadManager:
             self._progress["errors"].append(error_msg)
             self._progress["last_error"] = error_msg
             return False  # Return False on exception
+
+    async def _clear_failed_images_from_metadata(
+        self,
+        model_hash: str,
+        model_name: str,
+        recovered_images: Iterable[str],
+        scanner,
+    ) -> None:
+        """Clear stale ``downloadFailed`` flags for images that are now on disk.
+
+        Option B keeps the sidecar untouched until a retry actually succeeds;
+        this is the write half of that contract.  Only the two failure fields
+        are removed; the URL and every other image field stay as they are.
+        """
+
+        recovered_set: Set[str] = {url for url in recovered_images if url}
+        if not recovered_set:
+            return
+
+        try:
+            model_data = await MetadataUpdater.get_updated_model(model_hash, scanner)
+            if not model_data:
+                logger.warning(
+                    "Could not find model data for %s to clear recovered images",
+                    model_name,
+                )
+                return
+
+            civitai_payload = model_data.get("civitai") or {}
+            current_images = civitai_payload.get("images") or []
+            cleared = 0
+            for image in current_images:
+                if image.get("url") not in recovered_set:
+                    continue
+                if not image.get("downloadFailed"):
+                    continue
+                image.pop("downloadFailed", None)
+                image.pop("downloadError", None)
+                cleared += 1
+
+            if not cleared:
+                return
+
+            file_path = model_data.get("file_path")
+            if not file_path:
+                return
+
+            model_copy = model_data.copy()
+            model_copy.pop("folder", None)
+            await MetadataManager.save_metadata(file_path, model_copy)
+            try:
+                await update_cache_from_metadata(scanner, file_path, model_copy)
+            except Exception as cache_error:
+                logger.warning(
+                    "Failed to update cache after clearing recovered flags for %s: %s",
+                    model_name,
+                    cache_error,
+                )
+            logger.info(
+                "Recovered %s previously failed example images for %s",
+                cleared,
+                model_name,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to clear recovered example image flags for %s: %s",
+                model_name,
+                e,
+                exc_info=True,
+            )
 
     async def _remove_failed_images_from_metadata(
         self,
@@ -1439,13 +1611,7 @@ class DownloadManager:
 
             for image in current_images:
                 image_url = image.get("url")
-                optimized_url = (
-                    ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-                    if image_url and "civitai.com" in image_url
-                    else None
-                )
-
-                if image_url not in failed_set and optimized_url not in failed_set:
+                if image_url not in failed_set:
                     continue
 
                 if image.get("downloadFailed"):

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Generator, Tuple
@@ -134,14 +136,14 @@ async def test_download_model_images_with_tracking_skips_existing_files(tmp_path
             return True, b"\xff\xd8\xff" + b"data", {}
 
     downloader = RecordingDownloader()
-    success, is_stale, failed, rate_limited = await proc.download_model_images_with_tracking(
+    outcome = await proc.download_model_images_with_tracking(
         "hash", "model", images, str(tmp_path), False, downloader
     )
 
-    assert success is True
-    assert is_stale is False
-    assert failed == []
-    assert rate_limited == []
+    assert outcome.success is True
+    assert outcome.is_stale is False
+    assert outcome.failed == []
+    assert outcome.rate_limited == []
     # Only the missing image is requested; the existing one is skipped without a network call
     assert len(downloader.calls) == 1
     assert "c/d" in downloader.calls[0]
@@ -464,3 +466,276 @@ async def test_resolve_hash_for_file_path_unknown_file_returns_empty(
         )
         == ""
     )
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_uses_bounded_renditions(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """Images use the configured width and videos are transcoded at their cap."""
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_max_width"] = 800
+    settings_manager.settings["example_images_video_max_width"] = 450
+
+    images = [
+        {
+            "url": "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg",
+            "type": "image",
+        },
+        {
+            "url": "https://image.civitai.com/xG1nk/uuid/original=true/2.mp4",
+            "type": "video",
+        },
+    ]
+
+    class RecordingDownloader:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            self.calls.append(url)
+            if url.endswith(".mp4"):
+                return True, b"\x00\x00\x00\x18ftypmp42data", {"content-type": "video/mp4"}
+            return True, b"\xff\xd8\xff" + b"data", {"content-type": "image/jpeg"}
+
+    downloader = RecordingDownloader()
+    limiter = processor_module.MediaDownloadLimiter(max_concurrency=2)
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", images, str(tmp_path), True, downloader, limiter=limiter
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.is_stale is False
+    assert outcome.failed == []
+    assert outcome.rate_limited == []
+    assert any("width=800,optimized=true/1.jpeg" in url for url in downloader.calls)
+    assert any(
+        "transcode=true,width=450,optimized=true/2.mp4" in url
+        for url in downloader.calls
+    )
+    assert Path(tmp_path, "image_0.jpg").exists()
+    assert Path(tmp_path, "image_1.mp4").exists()
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_runs_requests_concurrently(tmp_path) -> None:
+    """The limiter's pool overlaps network waits instead of serializing them."""
+    images = [
+        {
+            "url": f"https://image.civitai.com/xG1nk/uuid/original=true/{i}.jpeg",
+            "type": "image",
+        }
+        for i in range(6)
+    ]
+
+    class TrackingDownloader:
+        def __init__(self) -> None:
+            self.active = 0
+            self.max_active = 0
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+            try:
+                await asyncio.sleep(0.02)
+                return True, b"\xff\xd8\xff" + b"data", {"content-type": "image/jpeg"}
+            finally:
+                self.active -= 1
+
+    downloader = TrackingDownloader()
+    limiter = processor_module.MediaDownloadLimiter(max_concurrency=3)
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", images, str(tmp_path), False, downloader, limiter=limiter
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.failed == []
+    assert outcome.rate_limited == []
+    assert 1 < downloader.max_active <= 3
+    assert len(list(Path(tmp_path).glob("image_*.jpg"))) == 6
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_shares_429_cooldown(tmp_path) -> None:
+    """A 429 retries after the shared cooldown, not a per-task 60s sleep."""
+    images = [
+        {
+            "url": f"https://image.civitai.com/xG1nk/uuid/original=true/{i}.jpeg",
+            "type": "image",
+        }
+        for i in range(2)
+    ]
+
+    class RateLimitedThenOk:
+        def __init__(self) -> None:
+            self.attempts: dict[str, int] = {}
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            attempt = self.attempts.get(url, 0) + 1
+            self.attempts[url] = attempt
+            if attempt == 1:
+                return False, "Rate limited (429), retry after 0.01s", None
+            return True, b"\xff\xd8\xff" + b"data", {"content-type": "image/jpeg"}
+
+    downloader = RateLimitedThenOk()
+    limiter = processor_module.MediaDownloadLimiter(
+        max_concurrency=2, min_cooldown=0.01, default_cooldown=0.01
+    )
+    started = time.monotonic()
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", images, str(tmp_path), False, downloader, limiter=limiter
+        )
+    )
+    elapsed = time.monotonic() - started
+
+    assert outcome.success is True
+    assert outcome.failed == []
+    assert outcome.rate_limited == []
+    assert all(attempts == 2 for attempts in downloader.attempts.values())
+    assert elapsed < 1.0
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_marks_404_stale_with_original_url(tmp_path) -> None:
+    image = {
+        "url": "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg",
+        "type": "image",
+    }
+
+    class NotFoundDownloader:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            return False, "File not found", None
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, NotFoundDownloader()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.is_stale is True
+    assert outcome.failed == [image["url"]]
+    assert outcome.rate_limited == []
+
+
+def test_resolve_genur_signed_url_uses_direct_small_rendition() -> None:
+    signed = (
+        "https://img.genur.art/sig/width:450/quality:85/"
+        "aHR0cHM6Ly9jLmdlbnVyLmFydC83MjIwZGMwYy05N2YyLTQ0YzEtYWNkZi00ZDBhMzkxY2ZjNmQ="
+    )
+    assert (
+        processor_module.resolve_genur_media_url(signed)
+        == "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_small.webp"
+    )
+
+
+def test_resolve_genur_direct_url_adds_small_suffix() -> None:
+    assert (
+        processor_module.resolve_genur_media_url(
+            "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d"
+        )
+        == "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_small.webp"
+    )
+    existing = "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_large.webp"
+    assert processor_module.resolve_genur_media_url(existing) == existing
+
+
+def test_resolve_genur_leaves_other_urls_alone() -> None:
+    url = "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg"
+    assert processor_module.resolve_genur_media_url(url) == url
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_classifies_network_errors_as_transient(tmp_path) -> None:
+    image = {
+        "url": "https://img.genur.art/sig/width:450/quality:85/"
+        "aHR0cHM6Ly9jLmdlbnVyLmFydC83MjIwZGMwYy05N2YyLTQ0YzEtYWNkZi00ZDBhMzkxY2ZjNmQ=",
+        "type": "image",
+    }
+
+    class OfflineDownloader:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            return False, "Network offline, will retry automatically later", None
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, OfflineDownloader()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.transient == [image["url"]]
+    assert outcome.failed == []
+    assert outcome.rate_limited == []
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_retries_flagged_genur_image(tmp_path) -> None:
+    original = (
+        "https://img.genur.art/sig/width:450/quality:85/"
+        "aHR0cHM6Ly9jLmdlbnVyLmFydC83MjIwZGMwYy05N2YyLTQ0YzEtYWNkZi00ZDBhMzkxY2ZjNmQ="
+    )
+    image = {
+        "url": original,
+        "type": "image",
+        "downloadFailed": True,
+        "downloadError": "not_found",
+    }
+
+    class GenurDownloader:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            self.calls.append(url)
+            return True, b"RIFF\x00\x00\x00\x00WEBPdata", {"content-type": "image/webp"}
+
+    downloader = GenurDownloader()
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash",
+            "model",
+            [image],
+            str(tmp_path),
+            True,
+            downloader,
+            retry_failed=True,
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.recovered == [original]
+    assert outcome.downloaded == [original]
+    assert downloader.calls == [
+        "https://c.genur.art/7220dc0c-97f2-44c1-acdf-4d0a391cfc6d_small.webp"
+    ]
+    assert Path(tmp_path, "image_0.webp").exists()
+
+
+@pytest.mark.asyncio
+async def test_download_model_images_does_not_retry_flag_without_retry_option(tmp_path) -> None:
+    image = {
+        "url": "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg",
+        "type": "image",
+        "downloadFailed": True,
+        "downloadError": "not_found",
+    }
+
+    class ShouldNotRun:
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            raise AssertionError("flagged image must not be requested")
+
+    outcome = await (
+        processor_module.ExampleImagesProcessor.download_model_images_with_tracking(
+            "hash", "model", [image], str(tmp_path), True, ShouldNotRun()
+        )
+    )
+
+    assert outcome.success is False
+    assert outcome.skipped_failed == 1
+    assert outcome.downloaded == []

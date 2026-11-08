@@ -2,7 +2,7 @@
 
 import pytest
 
-from py.utils.civitai_utils import rewrite_preview_url
+from py.utils.civitai_utils import build_civitai_media_url, rewrite_preview_url
 
 
 class TestRewritePreviewUrl:
@@ -148,3 +148,72 @@ class TestRewritePreviewUrl:
         for url in test_cases:
             result, was_rewritten = rewrite_preview_url(url, "image")
             assert was_rewritten is True, f"Failed for URL: {url}"
+
+    def test_width_parameter_overrides_default(self):
+        url = "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg"
+        result, was_rewritten = rewrite_preview_url(url, "image", width=800)
+        assert was_rewritten is True
+        assert result == "https://image.civitai.com/xG1nk/uuid/width=800,optimized=true/1.jpeg"
+
+    def test_width_parameter_applies_to_video_transcode(self):
+        url = "https://image.civitai.com/xG1nk/uuid/original=true/1.mp4"
+        result, was_rewritten = rewrite_preview_url(url, "video", width=450)
+        assert was_rewritten is True
+        assert (
+            result
+            == "https://image.civitai.com/xG1nk/uuid/transcode=true,width=450,optimized=true/1.mp4"
+        )
+
+
+class TestBuildCivitaiMediaUrl:
+    """Tests for the example-media download URL builder."""
+
+    def test_rewrites_original_true_and_keeps_filename(self):
+        url = "https://image.civitai.com/xG1nk/uuid/original=true/74821598.jpeg"
+        assert (
+            build_civitai_media_url(url, "image", width=800)
+            == "https://image.civitai.com/xG1nk/uuid/width=800,optimized=true/74821598.jpeg"
+        )
+
+    def test_rewrites_videos_with_transcode(self):
+        url = "https://image.civitai.com/xG1nk/uuid/original=true/75044257.mp4"
+        assert (
+            build_civitai_media_url(url, "video", width=450)
+            == "https://image.civitai.com/xG1nk/uuid/transcode=true,width=450,optimized=true/75044257.mp4"
+        )
+
+    def test_replaces_legacy_params_segment(self):
+        url = "https://image.civitai.com/xG1nk/uuid/optimized=true"
+        assert (
+            build_civitai_media_url(url, "image", width=800)
+            == "https://image.civitai.com/xG1nk/uuid/width=800,optimized=true"
+        )
+
+    def test_inserts_params_before_filename_without_params(self):
+        url = "https://image.civitai.com/xG1nk/uuid/74821598.jpeg"
+        assert (
+            build_civitai_media_url(url, "image", width=800)
+            == "https://image.civitai.com/xG1nk/uuid/width=800,optimized=true/74821598.jpeg"
+        )
+
+    def test_appends_params_when_there_is_no_filename(self):
+        url = "https://image.civitai.com/xG1nk/uuid"
+        assert (
+            build_civitai_media_url(url, "image", width=800)
+            == "https://image.civitai.com/xG1nk/uuid/width=800,optimized=true"
+        )
+
+    def test_handles_image_b2_subdomain(self):
+        url = "https://image-b2.civitai.com/file/cache/original=true/sample.png"
+        assert (
+            build_civitai_media_url(url, "image", width=800)
+            == "https://image-b2.civitai.com/file/cache/width=800,optimized=true/sample.png"
+        )
+
+    def test_leaves_non_civitai_urls_alone(self):
+        url = "https://example.com/original=true/sample.png"
+        assert build_civitai_media_url(url, "image", width=800) == url
+
+    def test_optimize_false_returns_source_url(self):
+        url = "https://image.civitai.com/xG1nk/uuid/original=true/1.jpeg"
+        assert build_civitai_media_url(url, "image", optimize=False) == url

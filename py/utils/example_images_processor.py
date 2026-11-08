@@ -1,20 +1,261 @@
 import asyncio
+import base64
 import logging
 import os
+import posixpath
 import re
 import random
 import string
+import time
+from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
+
 from aiohttp import web
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
+from ..services.connectivity_guard import (
+    OFFLINE_COOLDOWN_ERROR,
+    OFFLINE_FRIENDLY_MESSAGE,
+)
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
+from ..utils.civitai_utils import build_civitai_media_url
 from ..utils.example_images_paths import get_model_folder, get_model_relative_path
 from .example_images_metadata import MetadataUpdater, update_cache_from_metadata
 from .file_utils import detect_media_extension
 from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
+
+MAX_DOWNLOAD_ATTEMPTS = 3
+
+_GENUR_HOSTS = frozenset({"img.genur.art", "c.genur.art"})
+_TRANSIENT_ERROR_MARKERS = (
+    "network offline",
+    "offline_cooldown",
+    "cannot connect to host",
+    "server disconnected",
+    "connection reset",
+    "connection refused",
+    "temporary failure",
+    "name or service not known",
+    "timed out",
+    "timeout",
+)
+
+
+def _write_media_file(path: str, content: bytes) -> None:
+    with open(path, "wb") as handle:
+        handle.write(content)
+
+
+def is_genur_media_url(url: str) -> bool:
+    """Return True for Genur image URLs handled by the fallback resolver."""
+
+    try:
+        hostname = urlparse(url or "").hostname
+    except ValueError:
+        return False
+    return bool(hostname) and hostname.lower() in _GENUR_HOSTS
+
+
+def resolve_genur_media_url(
+    url: str,
+    media_type: str | None = None,
+    *,
+    size: str = "small",
+) -> str:
+    """Map Genur image URLs to a direct rendition that is currently reachable.
+
+    Genur's signed proxy (``img.genur.art/sig/.../<base64>``) embeds the direct
+    asset URL in the last path segment.  The proxy host is not reachable from
+    every network (fake-IP DNS / TLS resets), while the direct host serves the
+    same image as ``<uuid>_small.webp`` and ``<uuid>_large.webp``.  Returning
+    the direct rendition avoids a guaranteed failed request and the
+    ConnectivityGuard cooldown that follows it.
+
+    Non-Genur URLs, videos, and already-suffixed renditions are returned
+    unchanged.
+    """
+
+    if not url or (media_type or "").lower() == "video":
+        return url
+
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+
+    hostname = (parsed.hostname or "").lower()
+    if hostname == "img.genur.art":
+        payload = parsed.path.rsplit("/", 1)[-1]
+        try:
+            padded = payload + "=" * (-len(payload) % 4)
+            decoded = base64.b64decode(padded).decode("utf-8")
+        except (ValueError, UnicodeDecodeError):
+            return url
+        try:
+            decoded_parsed = urlparse(decoded)
+        except ValueError:
+            return url
+        if (decoded_parsed.hostname or "").lower() != "c.genur.art":
+            return url
+        base = f"https://c.genur.art{decoded_parsed.path}"
+    elif hostname == "c.genur.art":
+        base = f"https://c.genur.art{parsed.path}"
+    else:
+        return url
+
+    base = base.rstrip("/")
+    if base.endswith(("_small.webp", "_large.webp")):
+        return base
+    if posixpath.splitext(base)[1].lower() in SUPPORTED_MEDIA_EXTENSIONS["images"]:
+        # Already a direct image path; do not invent a suffix.
+        return base
+    suffix = "_large.webp" if size == "large" else "_small.webp"
+    return f"{base}{suffix}"
+
+
+@dataclass
+class ImageDownloadOutcome:
+    """Result of one model's example-media download pass.
+
+    ``downloaded`` and ``recovered`` contain the *original* metadata URLs so
+    callers can match them against ``civitai.images``.  ``success`` is false
+    when anything is still missing: a permanent failure, a rate-limit retry,
+    a transient network failure, or a previously flagged image that this pass
+    did not retry.
+    """
+
+    downloaded: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
+    rate_limited: list[str] = field(default_factory=list)
+    transient: list[str] = field(default_factory=list)
+    recovered: list[str] = field(default_factory=list)
+    skipped_failed: int = 0
+    is_stale: bool = False
+
+    @property
+    def success(self) -> bool:
+        return not (
+            self.failed
+            or self.rate_limited
+            or self.transient
+            or self.skipped_failed
+        )
+
+
+class MediaDownloadLimiter:
+    """Bound concurrent media requests and share 429 cooldowns across workers.
+
+    Civitai serves one binary per request and each request costs a CDN
+    round-trip, so serial downloads spend most of their wall clock waiting.
+    Concurrency is the useful lever, but it has to stay below the CDN's
+    threshold: a 429 is a signal for the whole destination, not for the one
+    task that happened to receive it.  A cooldown armed here therefore parks
+    every worker, and the limit is halved on a 429 and grows back one slot at
+    a time after a run of successes (AIMD) instead of oscillating around the
+    limit.
+
+    All waits are bounded by ``max_cooldown``.  The per-request retry budget
+    lives in the caller; this class only decides when a request may start.
+    """
+
+    def __init__(
+        self,
+        max_concurrency: int = 6,
+        *,
+        min_cooldown: float = 1.0,
+        default_cooldown: float = 30.0,
+        max_cooldown: float = 300.0,
+        recovery_successes: int | None = None,
+    ) -> None:
+        self.max_concurrency = max(1, int(max_concurrency))
+        self._limit = self.max_concurrency
+        self._in_flight = 0
+        self._cooldown_until = 0.0
+        self._min_cooldown = max(0.0, float(min_cooldown))
+        self._default_cooldown = max(self._min_cooldown, float(default_cooldown))
+        self._max_cooldown = max(self._default_cooldown, float(max_cooldown))
+        self._recovery_successes = max(
+            1, int(recovery_successes or max(8, self.max_concurrency * 2))
+        )
+        self._successes = 0
+        self._condition = asyncio.Condition()
+
+    @property
+    def limit(self) -> int:
+        """Current concurrency limit (may be below ``max_concurrency``)."""
+
+        return self._limit
+
+    async def acquire(self) -> None:
+        """Wait for the shared cooldown and a concurrency slot."""
+
+        async with self._condition:
+            while True:
+                remaining = self._cooldown_until - time.monotonic()
+                if remaining > 0:
+                    try:
+                        await asyncio.wait_for(
+                            self._condition.wait(), timeout=remaining
+                        )
+                    except asyncio.TimeoutError:
+                        pass
+                    continue
+                if self._in_flight < self._limit:
+                    self._in_flight += 1
+                    return
+                await self._condition.wait()
+
+    async def release(self) -> None:
+        async with self._condition:
+            self._in_flight = max(0, self._in_flight - 1)
+            self._condition.notify()
+
+    async def report_rate_limit(self, retry_after: float | None = None) -> float:
+        """Arm the shared cooldown and shrink the concurrency limit.
+
+        Returns the cooldown actually applied, after clamping.
+        """
+
+        async with self._condition:
+            requested = (
+                retry_after
+                if retry_after is not None and retry_after > 0
+                else self._default_cooldown
+            )
+            cooldown = min(
+                max(self._min_cooldown, float(requested)), self._max_cooldown
+            )
+            self._cooldown_until = max(
+                self._cooldown_until, time.monotonic() + cooldown
+            )
+            self._limit = max(1, self._limit // 2)
+            self._successes = 0
+            self._condition.notify_all()
+            return cooldown
+
+    async def report_success(self) -> None:
+        """Slowly restore concurrency after a run of successful requests."""
+
+        async with self._condition:
+            if self._limit >= self.max_concurrency:
+                return
+            self._successes += 1
+            if self._successes >= self._recovery_successes:
+                self._limit += 1
+                self._successes = 0
+                self._condition.notify()
+
+    def reset(self) -> None:
+        """Test seam: restore the initial state."""
+
+        self._limit = self.max_concurrency
+        self._in_flight = 0
+        self._cooldown_until = 0.0
+        self._successes = 0
+
 
 
 class ExampleImagesImportError(RuntimeError):
@@ -70,16 +311,64 @@ class ExampleImagesProcessor:
         return ''.join(random.choice(chars) for _ in range(length))
     
     @staticmethod
-    def get_civitai_optimized_url(media_url):
-        """Convert Civitai media URL (image or video) to its optimized version"""
-        base_pattern = r'(https://image\.civitai\.com/[^/]+/[^/]+)'
-        match = re.match(base_pattern, media_url)
-        
-        if match:
-            base_url = match.group(1)
-            return f"{base_url}/optimized=true"
-        
-        return media_url
+    def _is_video_media(media_url: str, media_type_hint: str | None = None) -> bool:
+        if (media_type_hint or "").lower() == "video":
+            return True
+        path = urlparse(media_url or "").path
+        extension = posixpath.splitext(path)[1].lower()
+        return extension in SUPPORTED_MEDIA_EXTENSIONS["videos"]
+
+    @staticmethod
+    def _media_width(media_type: str | None) -> int:
+        """Return the configured rendition width for example media."""
+
+        is_video = (media_type or "").lower() == "video"
+        key = "example_images_video_max_width" if is_video else "example_images_max_width"
+        default = 450 if is_video else 800
+        try:
+            width = int(get_settings_manager().get(key, default))
+        except (TypeError, ValueError):
+            return default
+        # The image cacher's ladder starts at 96px; a smaller value is a
+        # configuration mistake and would request an unusable thumbnail.
+        return width if width >= 96 else default
+
+    @staticmethod
+    def build_example_media_url(
+        media_url: str,
+        media_type_hint: str | None,
+        optimize: bool,
+    ) -> str:
+        """Return the URL to download for an example image or video.
+
+        Civitai URLs are rewritten to a resized rendition (images default to
+        800px, videos to 450px; both adjustable in settings).  Genur signed
+        proxy URLs are mapped to the direct ``c.genur.art`` rendition, which
+        the broken proxy host never reaches.  Other URLs are returned as-is.
+        """
+
+        media_url = (media_url or "").strip()
+        if not media_url:
+            return media_url
+
+        media_type = (
+            "video"
+            if ExampleImagesProcessor._is_video_media(media_url, media_type_hint)
+            else "image"
+        )
+
+        if is_genur_media_url(media_url):
+            return resolve_genur_media_url(
+                media_url, media_type, size="small" if optimize else "large"
+            )
+
+        if not optimize:
+            return media_url
+
+        width = ExampleImagesProcessor._media_width(media_type)
+        return build_civitai_media_url(
+            media_url, media_type, width=width, optimize=True
+        ) or media_url
     
     @staticmethod
     def _get_file_extension_from_content_or_headers(content, headers, fallback_url=None, media_type_hint=None):
@@ -120,234 +409,238 @@ class ExampleImagesProcessor:
 
     @staticmethod
     async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, downloader):
-        """Download images for a single model
-        
+        """Download example media for a single model.
+
         Returns:
-            tuple: (success, is_stale_metadata) - whether download was successful, whether metadata is stale
+            tuple: (success, is_stale_metadata) - whether download was successful,
+                whether metadata is stale.
         """
-        model_success = True
-        
-        for i, image in enumerate(model_images):
-            image_url = image.get('url')
-            if not image_url:
-                continue
 
-            if image.get('downloadFailed'):
-                logger.debug(
-                    "Skipping example image %s for %s because it previously failed to download",
-                    image_url,
-                    model_name,
-                )
-                continue
+        outcome = await ExampleImagesProcessor.download_model_images_with_tracking(
+            model_hash,
+            model_name,
+            model_images,
+            model_dir,
+            optimize,
+            downloader,
+        )
+        return outcome.success, outcome.is_stale
 
-            # Apply optimization for Civitai URLs if enabled
-            original_url = image_url
-            if optimize and 'civitai.com' in image_url:
-                image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-
-            # Skip the download when the file already exists on disk
-            if ExampleImagesProcessor._example_image_file_exists(model_dir, i, image.get("type")):
-                logger.debug("File already exists, skipping download for %s", image_url)
-                continue
-
-            # Download the file first to determine the actual file type
-            try:
-                logger.debug(f"Downloading media file {i} for {model_name}")
-                
-                # Download using the unified downloader with headers
-                success, content, headers = await downloader.download_to_memory(
-                    image_url,
-                    use_auth=False,  # Example images don't need auth
-                    return_headers=True
-                )
-                
-                if success:
-                    # Determine file extension from content or headers
-                    media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
-                        content, headers, original_url, image.get("type")
-                    )
-                    
-                    # Check if the detected file type is supported
-                    is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
-                    is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-                    
-                    if not (is_image or is_video):
-                        logger.debug(f"Skipping unsupported file type: {media_ext}")
-                        continue
-                    
-                    # Use 0-based indexing with the detected extension
-                    save_filename = f"image_{i}{media_ext}"
-                    save_path = os.path.join(model_dir, save_filename)
-                    
-                    # Check if already downloaded
-                    if os.path.exists(save_path):
-                        logger.debug(f"File already exists: {save_path}")
-                        continue
-                    
-                    # Save the file
-                    with open(save_path, 'wb') as f:
-                        f.write(content)
-                    
-                elif ExampleImagesProcessor._is_not_found_error(content):
-                    error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
-                    logger.warning(error_msg)
-                    model_success = False  # Mark the model as failed due to 404 error
-                    # Return early to trigger metadata refresh attempt
-                    return False, True  # (success, is_metadata_stale)
-                else:
-                    error_msg = f"Failed to download file: {image_url}, error: {content}"
-                    logger.warning(error_msg)
-                    model_success = False  # Mark the model as failed
-            except Exception as e:
-                error_msg = f"Error downloading file {image_url}: {str(e)}"
-                logger.error(error_msg)
-                model_success = False  # Mark the model as failed
-        
-        return model_success, False  # (success, is_metadata_stale)
-    
     @staticmethod
-    def _extract_retry_after(error_message: str) -> int:
+    def _extract_retry_after(error_message: str) -> float:
         if not error_message:
-            return 60
-        match = re.search(r"retry after (\d+)s", str(error_message))
+            return 30.0
+        match = re.search(r"retry after ([\d.]+)s", str(error_message))
         if match:
-            return max(1, int(match.group(1)))
-        return 60
+            return max(0.0, float(match.group(1)))
+        return 30.0
 
     @staticmethod
-    async def download_model_images_with_tracking(model_hash, model_name, model_images, model_dir, optimize, downloader):
-        model_success = True
-        failed_images = []
-        rate_limited_images = []
-        any_successful_download = False
+    def _is_transient_failure(message: str) -> bool:
+        """Return True for transport/offline/5xx errors that deserve a retry.
 
-        for i, image in enumerate(model_images):
-            image_url = image.get('url')
-            if not image_url:
+        A 404 is a statement about the asset and is handled separately; an
+        offline/shared-cooldown message describes the network path, so
+        blacklisting the image for it (the old behavior) is wrong.
+        """
+
+        if not message:
+            return False
+        text = str(message)
+        if text in {OFFLINE_FRIENDLY_MESSAGE, OFFLINE_COOLDOWN_ERROR}:
+            return True
+        lower = text.lower()
+        if any(marker in lower for marker in _TRANSIENT_ERROR_MARKERS):
+            return True
+        match = re.search(r"status (\d{3})", text, re.IGNORECASE)
+        if match:
+            status = int(match.group(1))
+            return status in {408, 425, 429} or 500 <= status < 600
+        return False
+
+    @staticmethod
+    async def download_model_images_with_tracking(
+        model_hash,
+        model_name,
+        model_images,
+        model_dir,
+        optimize,
+        downloader,
+        limiter: MediaDownloadLimiter | None = None,
+        retry_failed: bool = False,
+    ) -> ImageDownloadOutcome:
+        """Download all pending media for one model concurrently.
+
+        Each image is still one CDN request (Civitai has no batch-binary
+        endpoint), but the requests are pipelined through ``limiter`` instead
+        of being serialized.  A 429 arms the limiter's shared cooldown, so one
+        rate-limited response pauses every worker rather than letting each
+        URL sleep and retry on its own.
+
+        ``retry_failed`` re-attempts image-level ``downloadFailed`` entries
+        for Genur URLs.  Genur images are the ones affected by the old
+        network-error classification bug; retrying them lets the caller clear
+        the flag only after a real download succeeds.
+
+        Returns:
+            ImageDownloadOutcome: per-URL lists and a ``success`` property.
+                URL lists contain the *original* metadata URLs so callers can
+                match them against the model's ``civitai.images`` entries.
+        """
+
+        limiter = limiter or MediaDownloadLimiter()
+        outcome = ImageDownloadOutcome()
+        candidates: list[tuple[int, dict[str, Any], str, bool]] = []
+
+        for index, image in enumerate(model_images):
+            original_url = image.get("url")
+            if not original_url:
                 continue
 
-            if image.get('downloadFailed'):
+            # A file already on disk is authoritative; a stale failure flag
+            # must not force a redundant request.
+            if ExampleImagesProcessor._example_image_file_exists(
+                model_dir, index, image.get("type")
+            ):
+                logger.debug("File already exists, skipping download for %s", original_url)
+                if (
+                    image.get("downloadFailed")
+                    and retry_failed
+                    and is_genur_media_url(original_url)
+                ):
+                    outcome.recovered.append(original_url)
+                continue
+
+            if image.get("downloadFailed"):
+                if retry_failed and is_genur_media_url(original_url):
+                    logger.debug(
+                        "Retrying previously failed Genur image %s for %s",
+                        original_url,
+                        model_name,
+                    )
+                    candidates.append((index, image, original_url, True))
+                    continue
+                outcome.skipped_failed += 1
                 logger.debug(
                     "Skipping example image %s for %s because it previously failed to download",
-                    image_url,
+                    original_url,
                     model_name,
                 )
                 continue
 
-            # Apply optimization for Civitai URLs if enabled
-            original_url = image_url
-            if optimize and 'civitai.com' in image_url:
-                image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
+            candidates.append((index, image, original_url, False))
 
-            # Skip the download when the file already exists on disk
-            if ExampleImagesProcessor._example_image_file_exists(model_dir, i, image.get("type")):
-                logger.debug("File already exists, skipping download for %s", image_url)
-                continue
+        async def download_one(
+            index: int,
+            image: dict[str, Any],
+            original_url: str,
+            was_flagged: bool,
+        ) -> None:
+            target_url = ExampleImagesProcessor.build_example_media_url(
+                original_url, image.get("type"), optimize
+            )
+            logger.debug(
+                "Downloading media file %s for %s from %s",
+                index,
+                model_name,
+                target_url,
+            )
 
-            async def _attempt_download() -> tuple[bool, Any, Any]:
-                logger.debug("Downloading media file %s for %s", i, model_name)
-                return await downloader.download_to_memory(
-                    image_url,
-                    use_auth=False,
-                    return_headers=True,
-                )
-
-            try:
-                success, content, headers = await _attempt_download()
+            for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
+                await limiter.acquire()
+                try:
+                    success, content, headers = await downloader.download_to_memory(
+                        target_url,
+                        use_auth=False,
+                        return_headers=True,
+                    )
+                except Exception as e:
+                    logger.error("Error downloading file %s: %s", target_url, e)
+                    outcome.failed.append(original_url)
+                    return
+                finally:
+                    await limiter.release()
 
                 if success:
+                    await limiter.report_success()
+
                     media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
                         content, headers, original_url, image.get("type")
                     )
-                    is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
-                    is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+                    is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS["images"]
+                    is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS["videos"]
 
                     if not (is_image or is_video):
                         logger.debug("Skipping unsupported file type: %s", media_ext)
-                        continue
+                        return
 
-                    save_filename = f"image_{i}{media_ext}"
-                    save_path = os.path.join(model_dir, save_filename)
-
+                    save_path = os.path.join(model_dir, f"image_{index}{media_ext}")
                     if os.path.exists(save_path):
                         logger.debug("File already exists: %s", save_path)
-                        continue
+                        return
 
-                    with open(save_path, 'wb') as f:
-                        f.write(content)
-                    any_successful_download = True
+                    try:
+                        await asyncio.to_thread(_write_media_file, save_path, content)
+                    except Exception as e:
+                        logger.error("Failed to save example image %s: %s", save_path, e)
+                        outcome.failed.append(original_url)
+                        return
 
-                elif ExampleImagesProcessor._is_not_found_error(content):
-                    error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
-                    logger.warning(error_msg)
-                    model_success = False
-                    failed_images.append(image_url)
-                    return False, True, failed_images, rate_limited_images
+                    outcome.downloaded.append(original_url)
+                    if was_flagged:
+                        outcome.recovered.append(original_url)
+                    return
 
-                elif "Rate limited (429)" in str(content):
-                    max_attempts = 3
-                    for attempt in range(1, max_attempts + 1):
-                        wait = ExampleImagesProcessor._extract_retry_after(str(content)) * (2 ** (attempt - 1))
-                        logger.warning(
-                            "Rate limited (429) for %s, retry %d/%d after %ds",
-                            image_url, attempt, max_attempts, wait,
-                        )
-                        await asyncio.sleep(wait)
+                message = str(content)
+                if ExampleImagesProcessor._is_not_found_error(message):
+                    logger.warning(
+                        "Failed to download file: %s, status code: 404 - Model metadata might be stale",
+                        target_url,
+                    )
+                    outcome.failed.append(original_url)
+                    outcome.is_stale = True
+                    return
 
-                        success, content, headers = await _attempt_download()
-                        if success:
-                            media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
-                                content, headers, original_url, image.get("type")
-                            )
-                            is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
-                            is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+                if "Rate limited (429)" in message:
+                    retry_after = ExampleImagesProcessor._extract_retry_after(message)
+                    cooldown = await limiter.report_rate_limit(retry_after)
+                    logger.warning(
+                        "Rate limited (429) for %s, shared cooldown %.1fs (attempt %d/%d)",
+                        target_url,
+                        cooldown,
+                        attempt,
+                        MAX_DOWNLOAD_ATTEMPTS,
+                    )
+                    if attempt >= MAX_DOWNLOAD_ATTEMPTS:
+                        outcome.rate_limited.append(original_url)
+                        return
+                    # Loop back into acquire(): it parks until the shared
+                    # cooldown expires, so the retry is not a herd.
+                    continue
 
-                            if not (is_image or is_video):
-                                logger.debug("Skipping unsupported file type: %s", media_ext)
-                                break
+                if ExampleImagesProcessor._is_transient_failure(message):
+                    logger.warning(
+                        "Transient failure for %s: %s (will retry next run)",
+                        target_url,
+                        content,
+                    )
+                    outcome.transient.append(original_url)
+                    return
 
-                            save_filename = f"image_{i}{media_ext}"
-                            save_path = os.path.join(model_dir, save_filename)
-                            if os.path.exists(save_path):
-                                logger.debug("File already exists: %s", save_path)
-                                break
+                logger.warning("Failed to download file: %s, error: %s", target_url, content)
+                outcome.failed.append(original_url)
+                return
 
-                            with open(save_path, 'wb') as f:
-                                f.write(content)
-                            any_successful_download = True
-                            break
-                        elif "Rate limited (429)" in str(content):
-                            continue
-                        elif ExampleImagesProcessor._is_not_found_error(content):
-                            logger.warning("Failed to download file: %s, status code: 404", image_url)
-                            model_success = False
-                            failed_images.append(image_url)
-                            break
-                        else:
-                            logger.warning("Failed to download file: %s, error: %s", image_url, content)
-                            model_success = False
-                            failed_images.append(image_url)
-                            break
-                    else:
-                        logger.warning(
-                            "Giving up on %s after %d retries due to rate limiting",
-                            image_url, max_attempts,
-                        )
-                        rate_limited_images.append(image_url)
-                        model_success = False
-                else:
-                    error_msg = f"Failed to download file: {image_url}, error: {content}"
-                    logger.warning(error_msg)
-                    model_success = False
-                    failed_images.append(image_url)
-            except Exception as e:
-                error_msg = f"Error downloading file {image_url}: {str(e)}"
-                logger.error(error_msg)
-                model_success = False
-                failed_images.append(image_url)
+        if candidates:
+            await asyncio.gather(
+                *(
+                    download_one(index, image, url, was_flagged)
+                    for index, image, url, was_flagged in candidates
+                )
+            )
 
-        return any_successful_download or model_success, False, failed_images, rate_limited_images
-    
+        return outcome
+
     @staticmethod
     async def process_local_examples(model_file_path, model_file_name, model_name, model_dir, optimize):
         """Process local example images

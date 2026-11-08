@@ -147,6 +147,15 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "example_images_local_root": "",
     "example_images_open_uri_template": "",
     "optimize_example_images": True,
+    # Example-media downloads are one CDN request per image/video. Serial
+    # requests spend most of their wall time waiting on round-trips, so a
+    # small bounded pool plus a shared 429 cooldown is the throughput lever.
+    # Widths follow the Civitai image-cacher's common-size ladder; videos are
+    # capped lower because a video rendition is orders of magnitude larger.
+    "example_images_download_concurrency": 6,
+    "example_images_max_width": 800,
+    "example_images_video_max_width": 450,
+    "example_images_rate_limit_cooldown": 30,
     "auto_download_example_images": False,
     "blur_mature_content": True,
     "mature_blur_level": "R",

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_download_manager as download_module
+from py.utils.example_images_processor import ImageDownloadOutcome
 
 class RecordingWebSocketManager:
     def __init__(self) -> None:
@@ -73,12 +74,12 @@ async def test_reprocessing_triggered_when_folder_missing(monkeypatch, tmp_path)
         
     monkeypatch.setattr(download_module.ExampleImagesProcessor, "process_local_examples", fake_process_local_examples)
     
-    async def fake_download_model_images(*args):
+    async def fake_download_model_images(*args, **_kwargs):
         # Create the directory so it's "fixed"
         model_dir = args[3]
         Path(model_dir).mkdir(parents=True, exist_ok=True)
         (Path(model_dir) / "image_0.png").write_text("fixed")
-        return True, False, [], []
+        return ImageDownloadOutcome()
         
     monkeypatch.setattr(download_module.ExampleImagesProcessor, "download_model_images_with_tracking", fake_download_model_images)
     

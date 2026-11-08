@@ -10,6 +10,7 @@ import pytest
 
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils import example_images_download_manager as download_module
+from py.utils.example_images_processor import ImageDownloadOutcome
 
 
 class RecordingWebSocketManager:
@@ -174,7 +175,7 @@ async def test_pause_resume_blocks_processing(
             await first_release.wait()
         else:
             second_call_started.set()
-        return True, False, [], []
+        return ImageDownloadOutcome()
 
     async def fake_get_downloader():
         class _Downloader:
@@ -298,7 +299,7 @@ async def test_legacy_folder_migrated_and_skipped(
     async def fake_download_model_images(*_args, **_kwargs):
         nonlocal download_called
         download_called = True
-        return True, False, [], []
+        return ImageDownloadOutcome()
 
     async def fake_get_downloader():
         class _Downloader:
@@ -1017,3 +1018,274 @@ def test_unblock_failed_example_image_models_without_progress_file(
     monkeypatch.setitem(settings_manager.settings, "active_library", "default")
 
     assert download_module.unblock_failed_example_image_models(["a" * 64]) == 0
+
+
+async def _run_single_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+    outcome: ImageDownloadOutcome,
+    *,
+    force: bool = False,
+):
+    model_hash = "a" * 64
+    model_path = tmp_path / "model.safetensors"
+    model = {
+        "sha256": model_hash,
+        "model_name": "Outcome Model",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai": {"images": [{"url": "https://img.genur.art/sig/x/y"}]},
+    }
+    _patch_scanner(monkeypatch, StubScanner([model]))
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    captured: dict[str, Any] = {}
+
+    async def fake_download(*_args, **kwargs):
+        captured.update(kwargs)
+        return outcome
+
+    async def fake_get_downloader():
+        return object()
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "download_model_images_with_tracking",
+        staticmethod(fake_download),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    await manager.start_download(
+        {"model_types": ["lora"], "delay": 0, "force": force}
+    )
+    if manager._download_task is not None:
+        await asyncio.wait_for(manager._download_task, timeout=2)
+    return manager, model_hash, captured
+
+
+@pytest.mark.asyncio
+async def test_transient_failure_leaves_model_retryable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, settings_manager
+) -> None:
+    outcome = ImageDownloadOutcome(transient=["https://img.genur.art/sig/x/y"])
+    manager, model_hash, _ = await _run_single_outcome(
+        monkeypatch, tmp_path, settings_manager, outcome
+    )
+
+    assert model_hash in manager._progress["retryable_models"]
+    assert model_hash not in manager._progress["processed_models"]
+    assert model_hash not in manager._progress["failed_models"]
+
+
+@pytest.mark.asyncio
+async def test_skipped_flagged_image_is_not_reported_as_recovered(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, settings_manager
+) -> None:
+    outcome = ImageDownloadOutcome(skipped_failed=1)
+    manager, model_hash, _ = await _run_single_outcome(
+        monkeypatch, tmp_path, settings_manager, outcome
+    )
+
+    assert model_hash in manager._progress["failed_models"]
+    assert model_hash not in manager._progress["processed_models"]
+
+
+@pytest.mark.asyncio
+async def test_force_passes_retry_failed_to_processor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, settings_manager
+) -> None:
+    manager, model_hash, captured = await _run_single_outcome(
+        monkeypatch,
+        tmp_path,
+        settings_manager,
+        ImageDownloadOutcome(),
+        force=True,
+    )
+
+    assert captured["retry_failed"] is True
+    assert model_hash in manager._progress["processed_models"]
+
+
+@pytest.mark.asyncio
+async def test_clear_recovered_flags_only_touches_matching_images(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    recovered_url = "https://img.genur.art/sig/x/y"
+    other_url = "https://image.civitai.com/x/y/original=true/1.jpeg"
+    model_data = {
+        "file_path": str(tmp_path / "model.safetensors"),
+        "civitai": {
+            "images": [
+                {
+                    "url": recovered_url,
+                    "type": "image",
+                    "downloadFailed": True,
+                    "downloadError": "not_found",
+                },
+                {
+                    "url": other_url,
+                    "type": "image",
+                    "downloadFailed": True,
+                    "downloadError": "not_found",
+                },
+            ]
+        },
+    }
+
+    async def fake_get_updated_model(*_args, **_kwargs):
+        return model_data
+
+    saved: list[dict[str, Any]] = []
+    cached: list[dict[str, Any]] = []
+
+    async def fake_save(_path, payload):
+        saved.append(payload)
+        return True
+
+    async def fake_update_cache(_scanner, _path, payload):
+        cached.append(payload)
+        return True
+
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(fake_get_updated_model),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataManager, "save_metadata", staticmethod(fake_save)
+    )
+    monkeypatch.setattr(
+        download_module, "update_cache_from_metadata", fake_update_cache
+    )
+
+    await manager._clear_failed_images_from_metadata(
+        "hash", "Model", {recovered_url}, object()
+    )
+
+    assert "downloadFailed" not in model_data["civitai"]["images"][0]
+    assert "downloadError" not in model_data["civitai"]["images"][0]
+    assert model_data["civitai"]["images"][1]["downloadFailed"] is True
+    assert saved and "folder" not in saved[0]
+    assert cached
+
+
+@pytest.mark.asyncio
+async def test_force_bypasses_populated_folder_guard(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, settings_manager
+) -> None:
+    model_hash = "b" * 64
+    model = {
+        "sha256": model_hash,
+        "model_name": "Partial Model",
+        "file_path": str(tmp_path / "partial.safetensors"),
+        "file_name": "partial.safetensors",
+        "civitai": {"images": [{"url": "https://img.genur.art/sig/x/y"}]},
+    }
+    scanner = StubScanner([model])
+    _patch_scanner(monkeypatch, scanner)
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "active_library", "comfyui")
+
+    model_dir = download_module.ExampleImagePathResolver.get_model_folder(
+        model_hash, "comfyui"
+    )
+    Path(model_dir).mkdir(parents=True, exist_ok=True)
+    Path(model_dir, "image_0.webp").write_bytes(b"existing")
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    captured: dict[str, Any] = {}
+
+    async def fake_download(*_args, **kwargs):
+        captured.update(kwargs)
+        return ImageDownloadOutcome()
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "download_model_images_with_tracking",
+        staticmethod(fake_download),
+    )
+
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    manager._progress["status"] = "running"
+    manager._progress["processed_models"].add(model_hash)
+
+    await manager._process_model(
+        "lora",
+        model,
+        scanner,
+        str(tmp_path),
+        False,
+        object(),
+        "comfyui",
+        force=True,
+        explicit_targets=False,
+        limiter=None,
+    )
+
+    assert captured["retry_failed"] is True
+
+
+@pytest.mark.asyncio
+async def test_clear_recovered_flags_roundtrips_through_sidecar(
+    tmp_path, settings_manager
+) -> None:
+    model_path = tmp_path / "roundtrip.safetensors"
+    model_path.write_bytes(b"model")
+    model_hash = "c" * 64
+    recovered_url = "https://img.genur.art/sig/x/y"
+    model_data = {
+        "file_name": "roundtrip",
+        "model_name": "Roundtrip Model",
+        "file_path": str(model_path),
+        "sha256": model_hash,
+        "size": 1,
+        "modified": 0,
+        "base_model": "SDXL",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "civitai": {
+            "images": [
+                {
+                    "url": recovered_url,
+                    "type": "image",
+                    "downloadFailed": True,
+                    "downloadError": "not_found",
+                }
+            ]
+        },
+    }
+    assert await download_module.MetadataManager.save_metadata(
+        str(model_path), model_data
+    )
+
+    scanner = StubScanner([{**model_data, "folder": ""}])
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    await manager._clear_failed_images_from_metadata(
+        model_hash, "Roundtrip Model", {recovered_url}, scanner
+    )
+
+    loaded, _ = await download_module.MetadataManager.load_metadata(str(model_path))
+    assert loaded is not None
+    images = loaded.to_dict()["civitai"]["images"]
+    assert images[0]["url"] == recovered_url
+    assert "downloadFailed" not in images[0]
+    assert "downloadError" not in images[0]
