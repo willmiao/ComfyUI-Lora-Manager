@@ -1,8 +1,9 @@
 import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 
-// Dynamic import type for AutoComplete class
+// Dynamic import type for AutoComplete class. The element is the prompt
+// textarea for the text widget, or its search field input.
 type AutoCompleteClass = new (
-  inputElement: HTMLTextAreaElement,
+  inputElement: HTMLTextAreaElement | HTMLInputElement,
   modelType: 'loras' | 'prompt',
   options?: AutocompleteOptions
 ) => AutoCompleteInstance
@@ -15,6 +16,12 @@ interface AutocompleteOptions {
   // LiteGraph node owning the textarea; the autocomplete reads its LoRA list
   // to mark results that are already added.
   node?: unknown
+  // Route a pick to the node's LoRA list instead of inserting a tag into the
+  // element the autocomplete is bound to.
+  pickIntoNode?: boolean
+  // Anchor the dropdown to the input element (left edge, full width) instead
+  // of following the caret, so typing does not drag it to the right.
+  anchorToElement?: boolean
 }
 
 interface AutoCompleteInstance {
@@ -23,18 +30,10 @@ interface AutoCompleteInstance {
   refreshCaretHelper: () => void
 }
 
-export interface UseAutocompleteOptions {
-  showPreview?: boolean
-  maxItems?: number
-  minChars?: number
-  debounceDelay?: number
-  node?: unknown
-}
-
 export function useAutocomplete(
-  textareaRef: Ref<HTMLTextAreaElement | null>,
+  textareaRef: Ref<HTMLTextAreaElement | HTMLInputElement | null>,
   modelType: 'loras' | 'prompt' = 'loras',
-  options: UseAutocompleteOptions = {}
+  options: AutocompleteOptions = {}
 ) {
   const autocompleteInstance = ref<AutoCompleteInstance | null>(null)
   const isInitialized = ref(false)
