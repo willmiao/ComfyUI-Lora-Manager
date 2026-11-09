@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import urllib.parse
 from pathlib import Path
 
 from aiohttp import web
@@ -26,19 +25,18 @@ class PreviewHandler:
         self._config = config
 
     async def serve_preview(self, request: web.Request) -> web.StreamResponse:
-        """Return the preview file referenced by the encoded ``path`` query."""
+        """Return the preview file referenced by the ``path`` query.
 
-        raw_path = request.query.get("path", "")
-        if not raw_path:
+        aiohttp already percent-decodes query values, so the value must not be
+        decoded again: a literal ``%20`` in a filename would otherwise be
+        turned into a space and the preview would 404.
+        """
+
+        preview_path = request.query.get("path", "")
+        if not preview_path:
             raise web.HTTPBadRequest(text="Missing 'path' query parameter")
 
-        try:
-            decoded_path = urllib.parse.unquote(raw_path)
-        except Exception as exc:  # pragma: no cover - defensive guard
-            logger.debug("Failed to decode preview path %s: %s", raw_path, exc)
-            raise web.HTTPBadRequest(text="Invalid preview path encoding") from exc
-
-        normalized = decoded_path.replace("\\", "/")
+        normalized = preview_path.replace("\\", "/")
 
         if not self._config.is_preview_path_allowed(normalized):
             raise web.HTTPForbidden(text="Preview path is not within an allowed directory")

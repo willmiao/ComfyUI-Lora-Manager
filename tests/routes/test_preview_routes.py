@@ -41,6 +41,74 @@ async def test_preview_handler_serves_preview_from_active_library(tmp_path):
     assert response.status == 200
     assert Path(response._path) == preview_file
 
+async def test_preview_handler_preserves_literal_percent_encoding_in_filename(tmp_path):
+    """A filename may literally contain a percent-encoded sequence like ``%20``.
+
+    The query value is already decoded by aiohttp, so the handler must not
+    decode it a second time or ``%20`` becomes a space and the preview 404s.
+
+    See: https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1195
+    """
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    preview_file = library_root / "Female%20_nude.webp"
+    preview_file.write_bytes(b"preview")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_file), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file
+
+async def test_preview_handler_keeps_literal_encoded_separator_in_filename(tmp_path):
+    """A literal ``%2F`` in a filename must not be decoded into a path separator."""
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+    nested_dir = library_root / "nested"
+    nested_dir.mkdir()
+    other_file = nested_dir / "model.webp"
+    other_file.write_bytes(b"other")
+    preview_file = library_root / "nested%2Fmodel.webp"
+    preview_file.write_bytes(b"preview")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_file), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file
+
 async def test_preview_handler_forbids_paths_outside_active_library(tmp_path):
     allowed_root = tmp_path / "allowed"
     allowed_root.mkdir()
