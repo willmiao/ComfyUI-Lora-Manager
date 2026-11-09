@@ -2059,6 +2059,8 @@ class SettingsManager:
             lora_root = sorted(configured_lora_roots, key=str.casefold)[0]
             return os.path.abspath(os.path.join(lora_root, "recipes"))
 
+        from ..config import config  # Local import to avoid circular dependency
+
         config_lora_roots = [
             path
             for path in getattr(config, "loras_roots", []) or []

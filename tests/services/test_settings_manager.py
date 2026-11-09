@@ -900,6 +900,20 @@ def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
     assert str(lora_dir).replace(os.sep, "/") in normalized_stored_paths
 
 
+def test_effective_recipes_dir_falls_back_to_config_lora_roots(
+    manager, tmp_path, monkeypatch
+):
+    from py.config import config
+
+    lora_root = tmp_path / "config_loras"
+    monkeypatch.setattr(config, "loras_roots", [str(lora_root)])
+    manager.settings["folder_paths"] = {}
+
+    assert manager._get_effective_recipes_dir("") == os.path.abspath(
+        os.path.join(str(lora_root), "recipes")
+    )
+
+
 def test_set_recipes_path_updates_active_library_entry(manager, tmp_path):
     recipes_dir = tmp_path / "custom" / "recipes"
 
