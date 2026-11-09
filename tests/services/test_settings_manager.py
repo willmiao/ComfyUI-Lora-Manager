@@ -170,7 +170,7 @@ def test_multi_library_configuration_is_consolidated(tmp_path, monkeypatch):
         "loras": ["/extra-a", "/extra-b"]
     }
     assert manager.get("default_lora_root") == "/loras-a"
-    assert manager.get("workflow_path") == "/workflows-a"
+    assert manager.get("workflow_path") == _normalized_workflow_path("/workflows-a")
     assert manager.get("recipes_path") == "/recipes-a"
     migration = [
         message
