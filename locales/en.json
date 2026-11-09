@@ -413,7 +413,30 @@
       "interface": "Interface",
       "library": "Library",
       "organization": "Organization",
+      "about": "About",
       "modelPaths": "Model Paths"
+    },
+    "about": {
+      "environmentTitle": "Environment",
+      "environmentDescription": "Versions used by LoRA Manager and ComfyUI.",
+      "copy": "Copy",
+      "appVersion": "LoRA Manager",
+      "comfyuiVersion": "ComfyUI",
+      "frontendVersion": "ComfyUI Frontend",
+      "pythonVersion": "Python",
+      "os": "OS",
+      "browser": "Browser",
+      "hint": "Include this information when reporting an issue.",
+      "unavailable": "Unavailable",
+      "copySuccess": "Environment info copied",
+      "copyFailed": "Failed to copy environment info",
+      "linksTitle": "Support & Links",
+      "links": {
+        "reportIssue": "Report an Issue",
+        "wiki": "Documentation Wiki",
+        "github": "GitHub Repository",
+        "discord": "Join Discord"
+      }
     },
     "search": {
       "placeholder": "Search settings...",

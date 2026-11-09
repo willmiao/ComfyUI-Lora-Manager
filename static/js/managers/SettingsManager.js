@@ -19,6 +19,7 @@ import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePrio
 import { bannerService } from './BannerService.js';
 import { directoryPickerModal } from '../components/DirectoryPickerModal.js';
 import { showSidecarMigrationSummary } from '../components/SidecarMigrationSummaryModal.js';
+import { environmentPanel } from '../components/EnvironmentPanel.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
@@ -645,6 +646,7 @@ export class SettingsManager {
         this.setupPriorityTagInputs();
         this.initializeNavigation();
         this.initializeSearch();
+        environmentPanel.initialize();
 
         this.initialized = true;
     }
@@ -678,6 +680,10 @@ export class SettingsManager {
                 // Update active nav state
                 document.querySelectorAll('.settings-nav-item').forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
+
+                if (sectionId === 'about') {
+                    environmentPanel.ensureLoaded();
+                }
             });
         });
 
@@ -788,6 +794,10 @@ export class SettingsManager {
             
             // Show matching section
             firstMatchSection.classList.add('active');
+
+            if (sectionId === 'about') {
+                environmentPanel.ensureLoaded();
+            }
             
             // Update nav active state
             navItems.forEach(item => {
@@ -2338,8 +2348,21 @@ export class SettingsManager {
             navButton.classList.add('active');
         });
 
-        navGroup.appendChild(navButton);
-        settingsForm.appendChild(section);
+        // Keep About as the last section: Model Paths is inserted before it
+        // instead of simply being appended to the end of the nav.
+        const aboutNavButton = navGroup.querySelector('.settings-nav-item[data-section="about"]');
+        if (aboutNavButton) {
+            navGroup.insertBefore(navButton, aboutNavButton);
+        } else {
+            navGroup.appendChild(navButton);
+        }
+
+        const aboutSection = document.getElementById('section-about');
+        if (aboutSection) {
+            settingsForm.insertBefore(section, aboutSection);
+        } else {
+            settingsForm.appendChild(section);
+        }
         this.modelPathsSectionInitialized = true;
     }
 

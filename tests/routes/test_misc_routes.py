@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import platform
 import subprocess
 import zipfile
 from types import SimpleNamespace
@@ -327,6 +328,58 @@ async def test_doctor_handler_sidecar_check_skipped_alongside(
 
     assert item["status"] == "ok"
     assert "alongside" in item["summary"]
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_reports_environment_in_standalone_mode(monkeypatch):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+    handler = DoctorHandler(
+        settings_service=DummySettings(),
+        scanner_factories=(),
+        app_version_getter=lambda: "1.2.8-test",
+    )
+
+    response = await handler.get_environment(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    environment = payload["environment"]
+    assert environment["app_version"] == "1.2.8-test"
+    assert environment["standalone"] is True
+    assert environment["comfyui_version"] is None
+    assert environment["frontend_version"] is None
+    assert environment["python_version"] == platform.python_version()
+    assert environment["platform"] == platform.platform()
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_reports_comfyui_versions_in_plugin_mode(monkeypatch):
+    monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+    monkeypatch.setattr(misc_handlers, "_get_comfyui_version_string", lambda: "0.37.0")
+    monkeypatch.setattr(misc_handlers, "_get_frontend_version_string", lambda: "1.53.6")
+    handler = DoctorHandler(
+        settings_service=DummySettings(),
+        scanner_factories=(),
+        app_version_getter=lambda: "1.2.8-test",
+    )
+
+    response = await handler.get_environment(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    environment = payload["environment"]
+    assert environment["standalone"] is False
+    assert environment["comfyui_version"] == "0.37.0"
+    assert environment["frontend_version"] == "1.53.6"
+    assert environment["python_version"] == platform.python_version()
+
+
+def test_environment_route_is_registered():
+    assert any(
+        definition.path == "/api/lm/environment"
+        and definition.method == "GET"
+        and definition.handler_name == "get_environment"
+        for definition in MISC_ROUTE_DEFINITIONS
+    )
 
 
 @pytest.mark.asyncio

@@ -413,7 +413,30 @@
             "interface": "介面",
             "library": "模型庫",
             "organization": "整理",
+            "about": "[TODO: Translate] About",
             "modelPaths": "模型路徑"
+        },
+        "about": {
+            "environmentTitle": "[TODO: Translate] Environment",
+            "environmentDescription": "[TODO: Translate] Versions used by LoRA Manager and ComfyUI.",
+            "copy": "[TODO: Translate] Copy",
+            "appVersion": "[TODO: Translate] LoRA Manager",
+            "comfyuiVersion": "[TODO: Translate] ComfyUI",
+            "frontendVersion": "[TODO: Translate] ComfyUI Frontend",
+            "pythonVersion": "[TODO: Translate] Python",
+            "os": "[TODO: Translate] OS",
+            "browser": "[TODO: Translate] Browser",
+            "hint": "[TODO: Translate] Include this information when reporting an issue.",
+            "unavailable": "[TODO: Translate] Unavailable",
+            "copySuccess": "[TODO: Translate] Environment info copied",
+            "copyFailed": "[TODO: Translate] Failed to copy environment info",
+            "linksTitle": "[TODO: Translate] Support & Links",
+            "links": {
+                "reportIssue": "[TODO: Translate] Report an Issue",
+                "wiki": "[TODO: Translate] Documentation Wiki",
+                "github": "[TODO: Translate] GitHub Repository",
+                "discord": "[TODO: Translate] Join Discord"
+            }
         },
         "search": {
             "placeholder": "搜尋設定...",

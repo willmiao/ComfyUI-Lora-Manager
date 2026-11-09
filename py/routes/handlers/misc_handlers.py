@@ -130,6 +130,44 @@ def _get_app_version_string() -> str:
     return f"{version}-{short_hash}"
 
 
+def _get_comfyui_version_string() -> str | None:
+    """Return the running ComfyUI version when imported inside ComfyUI."""
+    try:
+        import comfyui_version  # pyright: ignore[reportMissingImports]
+
+        version = getattr(comfyui_version, "__version__", "")
+    except Exception:
+        return None
+    return str(version) if version else None
+
+
+def _get_frontend_version_string() -> str | None:
+    """Return the installed comfyui-frontend-package version, if present."""
+    try:
+        from importlib import metadata
+
+        return metadata.version("comfyui-frontend-package")
+    except Exception:
+        return None
+
+
+def _collect_environment_info(app_version: str) -> dict[str, Any]:
+    """Collect the version details shown in Settings -> About.
+
+    ComfyUI packages only exist in plugin mode, so they are skipped entirely in
+    standalone mode; Python and OS details are always available.
+    """
+    standalone = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+    return {
+        "app_version": app_version,
+        "comfyui_version": None if standalone else _get_comfyui_version_string(),
+        "frontend_version": None if standalone else _get_frontend_version_string(),
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "standalone": standalone,
+    }
+
+
 def _sanitize_sensitive_data(payload: Any) -> Any:
     sensitive_markers = (
         "api_key",
@@ -983,6 +1021,15 @@ class DoctorHandler:
         if not self._settings.is_workflows_enabled():
             factories = tuple(entry for entry in factories if entry[0] != "workflow")
         return factories
+
+    async def get_environment(self, request: web.Request) -> web.Response:
+        """Return read-only environment details for the Settings About panel."""
+        return web.json_response(
+            {
+                "success": True,
+                "environment": _collect_environment_info(self._app_version_getter()),
+            }
+        )
 
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
@@ -4722,6 +4769,7 @@ class MiscHandlerSet:
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
+            "get_environment": self.doctor.get_environment,
             "repair_doctor_cache": self.doctor.repair_doctor_cache,
             "resolve_doctor_filename_conflicts": self.doctor.resolve_filename_conflicts,
             "export_doctor_bundle": self.doctor.export_doctor_bundle,

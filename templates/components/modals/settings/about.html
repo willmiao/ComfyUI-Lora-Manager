@@ -1,0 +1,72 @@
+{% import 'components/modals/settings/_macros.html' as sm with context %}
+<!-- Section 5: About -->
+<div id="section-about" class="settings-section" data-section="about">
+    <!-- Environment -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.about.environmentTitle') }}
+
+        <div class="env-panel" id="settingsEnvironmentPanel">
+            <div class="env-panel-header">
+                <p class="env-panel-description">{{ t('settings.about.environmentDescription') }}</p>
+                <button type="button" id="copyEnvironmentBtn" class="env-copy-btn">
+                    <i class="fas fa-copy"></i>
+                    <span>{{ t('settings.about.copy') }}</span>
+                </button>
+            </div>
+            <dl class="env-grid">
+                <div class="env-item">
+                    <dt>{{ t('settings.about.appVersion') }}</dt>
+                    <dd data-env-field="app">&mdash;</dd>
+                </div>
+                <div class="env-item">
+                    <dt>{{ t('settings.about.comfyuiVersion') }}</dt>
+                    <dd data-env-field="comfyui">&mdash;</dd>
+                </div>
+                <div class="env-item">
+                    <dt>{{ t('settings.about.frontendVersion') }}</dt>
+                    <dd data-env-field="frontend">&mdash;</dd>
+                </div>
+                <div class="env-item">
+                    <dt>{{ t('settings.about.pythonVersion') }}</dt>
+                    <dd data-env-field="python">&mdash;</dd>
+                </div>
+                <div class="env-item">
+                    <dt>{{ t('settings.about.os') }}</dt>
+                    <dd data-env-field="os">&mdash;</dd>
+                </div>
+                <div class="env-item">
+                    <dt>{{ t('settings.about.browser') }}</dt>
+                    <dd data-env-field="browser">&mdash;</dd>
+                </div>
+            </dl>
+            <p class="env-hint">{{ t('settings.about.hint') }}</p>
+        </div>
+    </div>
+
+    <!-- Support links -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.about.linksTitle') }}
+        <div class="about-links">
+            <a class="about-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/issues/new" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-bug"></i>
+                <span>{{ t('settings.about.links.reportIssue') }}</span>
+                <i class="fas fa-external-link-alt about-link-external"></i>
+            </a>
+            <a class="about-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki" target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-book"></i>
+                <span>{{ t('settings.about.links.wiki') }}</span>
+                <i class="fas fa-external-link-alt about-link-external"></i>
+            </a>
+            <a class="about-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-github"></i>
+                <span>{{ t('settings.about.links.github') }}</span>
+                <i class="fas fa-external-link-alt about-link-external"></i>
+            </a>
+            <a class="about-link" href="https://discord.gg/vcqNrWVFvM" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-discord"></i>
+                <span>{{ t('settings.about.links.discord') }}</span>
+                <i class="fas fa-external-link-alt about-link-external"></i>
+            </a>
+        </div>
+    </div>
+</div>
