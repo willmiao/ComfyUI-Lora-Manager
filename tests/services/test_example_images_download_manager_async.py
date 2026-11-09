@@ -61,6 +61,28 @@ def _patch_scanner(monkeypatch: pytest.MonkeyPatch, scanner: StubScanner) -> Non
     )
 
 
+def test_limiter_factory_uses_probe_ceiling(
+    monkeypatch: pytest.MonkeyPatch, settings_manager
+):
+    manager = download_module.DownloadManager(
+        ws_manager=RecordingWebSocketManager()
+    )
+    monkeypatch.setitem(
+        settings_manager.settings, "example_images_download_concurrency", 6
+    )
+    monkeypatch.setitem(
+        settings_manager.settings, "example_images_download_max_concurrency", 8
+    )
+
+    limiter = manager._create_media_download_limiter(True)
+    assert limiter.max_concurrency == 6
+    assert limiter.probe_max_concurrency == 8
+
+    original_limiter = manager._create_media_download_limiter(False)
+    assert original_limiter.max_concurrency == 2
+    assert original_limiter.probe_max_concurrency == 2
+
+
 @pytest.mark.usefixtures("tmp_path")
 async def test_start_download_rejects_parallel_runs(
     monkeypatch: pytest.MonkeyPatch,
@@ -255,6 +277,7 @@ async def test_pause_resume_blocks_processing(
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
     monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "example_images_model_concurrency", 1)
 
     models = [
         {
@@ -372,6 +395,83 @@ async def test_pause_resume_blocks_processing(
         if manager._download_task is not None:
             await asyncio.wait_for(manager._download_task, timeout=1)
         monkeypatch.setattr(download_module.asyncio, "sleep", original_sleep)
+
+
+@pytest.mark.usefixtures("tmp_path")
+async def test_model_pipeline_overlaps_across_models(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """Two models may have media jobs in flight at the same time."""
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "example_images_model_concurrency", 2)
+
+    models = [
+        {
+            "sha256": "a" * 64,
+            "model_name": "Pipeline One",
+            "file_path": str(tmp_path / "one.safetensors"),
+            "file_name": "one.safetensors",
+            "civitai": {"images": [{"url": "https://example.com/one.png"}]},
+        },
+        {
+            "sha256": "b" * 64,
+            "model_name": "Pipeline Two",
+            "file_path": str(tmp_path / "two.safetensors"),
+            "file_name": "two.safetensors",
+            "civitai": {"images": [{"url": "https://example.com/two.png"}]},
+        },
+    ]
+    _patch_scanner(monkeypatch, StubScanner(models))
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    started: set[str] = set()
+    both_started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def fake_download_model_images(model_hash, *_args, **_kwargs):
+        started.add(model_hash)
+        if len(started) == 2:
+            both_started.set()
+        await release.wait()
+        return ImageDownloadOutcome()
+
+    async def fake_get_downloader():
+        class _Downloader:
+            async def download_to_memory(self, *_a, **_kw):
+                return True, b"", {}
+
+        return _Downloader()
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "download_model_images_with_tracking",
+        staticmethod(fake_download_model_images),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    await manager.start_download({"model_types": ["lora"], "delay": 0})
+    try:
+        await asyncio.wait_for(both_started.wait(), timeout=1)
+    finally:
+        release.set()
+    if manager._download_task is not None:
+        await asyncio.wait_for(manager._download_task, timeout=1)
+
+    assert manager._progress["completed"] == 2
+    assert started == {"a" * 64, "b" * 64}
+    assert manager._progress["status"] == "completed"
 
 
 @pytest.mark.usefixtures("tmp_path")

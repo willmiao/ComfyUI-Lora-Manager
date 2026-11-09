@@ -153,6 +153,13 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     # Widths follow the Civitai image-cacher's common-size ladder; videos are
     # capped lower because a video rendition is orders of magnitude larger.
     "example_images_download_concurrency": 6,
+    # AIMD may probe one slot at a time above the base limit when the CDN
+    # keeps accepting requests; a 429 halves back below the base.
+    "example_images_download_max_concurrency": 8,
+    # Number of models whose preparation/collection may overlap. Media
+    # requests are still bounded by the shared download limiter above; this
+    # only prevents the slots from draining at every model boundary.
+    "example_images_model_concurrency": 2,
     "example_images_max_width": 800,
     "example_images_video_max_width": 450,
     "example_images_rate_limit_cooldown": 30,

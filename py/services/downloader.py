@@ -18,6 +18,7 @@ import os
 import logging
 import asyncio
 import ssl
+import time
 import aiohttp
 from collections import deque
 from dataclasses import dataclass
@@ -202,6 +203,14 @@ class Downloader:
         self._session_created_at = None
         self._proxy_url = None  # Store proxy URL for current session
         self._session_lock = asyncio.Lock()
+
+        # Civitai image renditions answer with a 301 to a random blob host.
+        # Remember the final blob per rendition so retries and repeated views
+        # skip the extra CDN hop. Blob URLs are public and stable for hours;
+        # the TTL is deliberately below the observed 2-day cache-control.
+        self._memory_redirect_cache: Dict[str, Tuple[str, float]] = {}
+        self._memory_redirect_ttl = 3600.0
+        self._memory_redirect_max_entries = 2048
 
         # Configuration
         self.chunk_size = (
@@ -942,6 +951,48 @@ class Downloader:
         elif hasattr(result, "__await__"):
             await result
 
+    @staticmethod
+    def _is_civitai_image_host(url: str) -> bool:
+        """Return True for the CDN host that fronts image renditions."""
+
+        try:
+            host = (urlparse(url).hostname or "").lower()
+        except ValueError:
+            return False
+        return host in {"image.civitai.com", "imagecache.civitai.com"}
+
+    def _cached_memory_redirect(self, url: str) -> Optional[str]:
+        """Return a still-valid final blob URL for a rendition, if known."""
+
+        entry = self._memory_redirect_cache.get(url)
+        if not entry:
+            return None
+        target, expires_at = entry
+        if time.monotonic() >= expires_at:
+            self._memory_redirect_cache.pop(url, None)
+            return None
+        return target
+
+    def _remember_memory_redirect(self, url: str, final_url: str) -> None:
+        """Cache the final URL of a Civitai image redirect."""
+
+        if not final_url or final_url == url:
+            return
+        if len(self._memory_redirect_cache) >= self._memory_redirect_max_entries:
+            # Dict preserves insertion order; drop the oldest entry.
+            oldest = next(iter(self._memory_redirect_cache), None)
+            if oldest is not None:
+                self._memory_redirect_cache.pop(oldest, None)
+        self._memory_redirect_cache[url] = (
+            final_url,
+            time.monotonic() + self._memory_redirect_ttl,
+        )
+
+    def clear_memory_redirect_cache(self) -> None:
+        """Test/configuration seam: drop all cached rendition redirects."""
+
+        self._memory_redirect_cache.clear()
+
     async def download_to_memory(
         self,
         url: str,
@@ -988,12 +1039,25 @@ class Downloader:
             if custom_headers:
                 headers.update(custom_headers)
 
+            request_url = url
+            if not use_auth and self._is_civitai_image_host(url):
+                cached_redirect = self._cached_memory_redirect(url)
+                if cached_redirect:
+                    request_url = cached_redirect
+
             async with session.get(
-                url, headers=headers, proxy=self.proxy_url
+                request_url, headers=headers, proxy=self.proxy_url
             ) as response:
                 if response.status == 200:
                     content = await response.read()
                     guard.register_success(destination)
+                    if (
+                        not use_auth
+                        and request_url == url
+                        and self._is_civitai_image_host(url)
+                        and response.history
+                    ):
+                        self._remember_memory_redirect(url, str(response.url))
                     if return_headers:
                         return True, content, dict(response.headers)
                     else:
@@ -1005,6 +1069,10 @@ class Downloader:
                     error_msg = "Access forbidden"
                     return False, error_msg, None
                 elif response.status == 404:
+                    if request_url != url:
+                        # A cached blob may have expired; let the caller's
+                        # next attempt follow the rendition redirect again.
+                        self._memory_redirect_cache.pop(url, None)
                     error_msg = "File not found"
                     return False, error_msg, None
                 elif response.status == 429:

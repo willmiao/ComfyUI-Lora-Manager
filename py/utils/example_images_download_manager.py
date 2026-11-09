@@ -238,6 +238,7 @@ class DownloadManager:
         self._progress = _DownloadProgress()
         self._ws_manager = ws_manager
         self._state_lock = state_lock or asyncio.Lock()
+        self._metadata_refresh_lock = asyncio.Lock()
         self._stop_requested = False
 
     def _resolve_output_dir(self, library_name: str | None = None) -> str:
@@ -264,6 +265,12 @@ class DownloadManager:
         except (TypeError, ValueError):
             concurrency = 6
         try:
+            probe_concurrency = int(
+                settings.get("example_images_download_max_concurrency", 8)
+            )
+        except (TypeError, ValueError):
+            probe_concurrency = 8
+        try:
             cooldown = float(
                 settings.get("example_images_rate_limit_cooldown", 30)
             )
@@ -273,10 +280,33 @@ class DownloadManager:
             # Original renditions can be tens of megabytes per video; keep the
             # memory/bandwidth spike bounded when optimization is disabled.
             concurrency = min(concurrency, 2)
+            probe_concurrency = concurrency
+        else:
+            probe_concurrency = max(concurrency, probe_concurrency)
         return MediaDownloadLimiter(
             max_concurrency=max(1, concurrency),
+            probe_max_concurrency=max(1, probe_concurrency),
             default_cooldown=max(1.0, cooldown),
         )
+
+    def _create_model_concurrency(self, optimize: bool = True) -> int:
+        """Return how many models may prepare/collect media at once.
+
+        The media limiter still caps image requests globally; this only lets a
+        second model keep those slots busy while the first one writes metadata,
+        handles failures, or waits on its last image.
+        """
+
+        settings = get_settings_manager()
+        try:
+            concurrency = int(settings.get("example_images_model_concurrency", 2))
+        except (TypeError, ValueError):
+            concurrency = 2
+        if not optimize:
+            # Original renditions are much larger; avoid multiplying the
+            # in-flight byte budget.
+            concurrency = min(concurrency, 1)
+        return max(1, min(concurrency, 4))
 
     async def start_download(self, options: Dict[str, Any]):
         """Start downloading example images for models."""
@@ -845,15 +875,27 @@ class DownloadManager:
             logger.debug(f"Found {self._progress['total']} models to process")
             await self._broadcast_progress(status="running")
 
-            # Process each model
-            for i, (scanner_type, model, scanner) in enumerate(all_models):
+            # Process models through a bounded pipeline. Each worker owns one
+            # model's metadata/failure bookkeeping, while all media requests
+            # share ``limiter``. This overlaps the drain of model N with the
+            # start of model N+1 instead of leaving the media slots idle at
+            # every model boundary. ``example_images_model_concurrency=1``
+            # keeps the historical serial behavior.
+            model_concurrency = self._create_model_concurrency(optimize)
+
+            async def process_one(index: int, item) -> bool:
+                scanner_type, model, scanner = item
+
                 async with self._state_lock:
                     current_status = self._progress["status"]
-
+                    stop_requested = self._stop_requested
                 if current_status not in {"running", "paused", "stopping"}:
-                    break
+                    return False
+                if stop_requested and current_status == "stopping":
+                    # Do not start a queued model after a stop request; the
+                    # worker already processing one is allowed to finish.
+                    return False
 
-                # Main logic for processing model is here, but actual operations are delegated to other classes
                 was_remote_download = await self._process_model(
                     scanner_type,
                     model,
@@ -867,7 +909,6 @@ class DownloadManager:
                     limiter=limiter,
                 )
 
-                # Update progress
                 self._progress["completed"] += 1
 
                 # Persist periodically from the loop. The per-model path can
@@ -890,7 +931,7 @@ class DownloadManager:
                 await self._broadcast_progress(status=broadcast_status)
 
                 if should_stop:
-                    break
+                    return False
 
                 # Pacing is handled by the shared media-download limiter.  The
                 # legacy ``delay`` option is kept for API callers that still
@@ -898,10 +939,33 @@ class DownloadManager:
                 if (
                     delay > 0
                     and was_remote_download
-                    and i < len(all_models) - 1
+                    and index < len(all_models) - 1
                     and current_status == "running"
                 ):
                     await asyncio.sleep(delay)
+                return True
+
+            if model_concurrency <= 1:
+                for index, item in enumerate(all_models):
+                    if not await process_one(index, item):
+                        break
+            else:
+                model_queue: asyncio.Queue = asyncio.Queue()
+                for index, item in enumerate(all_models):
+                    model_queue.put_nowait((index, item))
+
+                async def worker() -> None:
+                    while True:
+                        try:
+                            index, item = model_queue.get_nowait()
+                        except asyncio.QueueEmpty:
+                            return
+                        if not await process_one(index, item):
+                            return
+
+                await asyncio.gather(
+                    *(worker() for _ in range(model_concurrency))
+                )
 
             async with self._state_lock:
                 if self._stop_requested and self._progress["status"] == "stopping":
@@ -979,16 +1043,19 @@ class DownloadManager:
         """
 
         try:
-            await asyncio.wait_for(
-                MetadataUpdater.refresh_model_metadata(
-                    model_hash,
-                    model_name,
-                    scanner_type,
-                    scanner,
-                    self._progress,
-                ),
-                timeout=METADATA_REFRESH_TIMEOUT_SECONDS,
-            )
+            # Serialize provider refreshes: a metadata burst must not turn into
+            # several concurrent provider calls while model downloads continue.
+            async with self._metadata_refresh_lock:
+                await asyncio.wait_for(
+                    MetadataUpdater.refresh_model_metadata(
+                        model_hash,
+                        model_name,
+                        scanner_type,
+                        scanner,
+                        self._progress,
+                    ),
+                    timeout=METADATA_REFRESH_TIMEOUT_SECONDS,
+                )
             return True
         except asyncio.TimeoutError:
             logger.warning(

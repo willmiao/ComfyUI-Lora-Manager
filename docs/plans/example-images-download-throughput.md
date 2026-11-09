@@ -74,7 +74,9 @@ video.
 
 | Key | Default | Meaning |
 | --- | ---: | --- |
-| `example_images_download_concurrency` | 6 | Simultaneous CDN requests per run |
+| `example_images_download_concurrency` | 6 | Base simultaneous CDN requests per run |
+| `example_images_download_max_concurrency` | 8 | AIMD probe ceiling above the base |
+| `example_images_model_concurrency` | 2 | Models whose media may overlap (1 = serial) |
 | `example_images_max_width` | 800 | Image rendition width |
 | `example_images_video_max_width` | 450 | Video transcode width |
 | `example_images_rate_limit_cooldown` | 30 | Fallback cooldown when `Retry-After` is absent |
@@ -227,15 +229,83 @@ re-checks it.
   failed count. The reasons are persisted in `.download_progress.json` so a
   restarted run keeps its breakdown.
 
+### Model pipeline, concurrency probing and redirect reuse
+
+- A bounded model pipeline (`example_images_model_concurrency`, default 2,
+  clamped to 1–4) overlaps model preparation/bookkeeping with the previous
+  model's last media jobs. Every image still goes through the one shared
+  `MediaDownloadLimiter`, so this does not raise the request concurrency; it
+  only stops the slots from draining at model boundaries. Setting it to 1
+  restores the old serial behavior.
+- The limiter keeps its configured base (`example_images_download_concurrency`,
+  default 6) and may probe one slot above it after a long success streak, up
+  to `example_images_download_max_concurrency` (default 8). A 429 halves the
+  limit below the base and the existing AIMD recovery takes over, so 8 is a
+  ceiling rather than a new default.
+- `Downloader.download_to_memory` caches the final `blobs-*.civitai.com` URL
+  for Civitai image renditions for one hour. This only helps retries or
+  repeated views of the same rendition (the redirect target is a random blob
+  id, not derivable from the rendition path); a 404 invalidates the cache.
+  A manual curl on one real rendition measured about 1.9–2.5 s for the
+  followed 301 versus 1.2–1.4 s for the cached blob URL (roughly 0.6–0.8 s
+  saved per repeat). The 185-image A/B has no repeated rendition URLs, so this
+  is not part of its wall-time delta.
+
+### A/B benchmark
+
+`scripts/benchmark_example_images.py` builds a reproducible subset from the
+user's cache/sidecars and runs four modes against the same temporary examples
+path and fresh per-run cache/sidecar copies:
+
+| Mode | Tree | Model concurrency | Probe ceiling |
+| --- | --- | ---: | ---: |
+| `serial` | old `9ed75e8f` | 1 | 6 |
+| `new-serial` | current | 1 | 6 |
+| `pipeline` | current | 2 | 6 |
+| `aimd` | current | 2 | 8 |
+
+`serial` vs `new-serial` includes the earlier per-model media pool and
+optimized-rendition changes; `new-serial` vs `pipeline` isolates the model
+pipeline; `pipeline` vs `aimd` isolates upward probing. Each run starts from an
+empty examples directory and its own cache/sidecar copy, so progress/markers
+from a previous mode cannot leak in.
+
+Measured on 19 models / 185 selected images, three alternating repeats:
+
+| Mode | Median wall | Speedup vs new-serial | Files | Bytes | 429 | Probe steps |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `serial` (old) | 100.7 s | 0.234× | 177 | 52.3 MB | 0 | 0 |
+| `new-serial` | 23.6 s | 1.000× | 177 | 18.0 MB | 0 | 0 |
+| `pipeline` | 18.0 s | 1.305× | 177 | 18.0 MB | 0 | 0 |
+| `aimd` | 14.0 s | 1.678× | 177 | 18.0 MB | 0 | 6 |
+
+- Model pipeline: **23.4% less wall time** than `new-serial` (1.305×).
+- AIMD probing: **22.2% less wall time** than `pipeline`, **40.4% less** than
+  `new-serial` (1.678×); each AIMD run probed from 6 to 8 with no 429.
+- `serial` → `new-serial` is the earlier per-model media pool plus the
+  optimized 800 px rendition change, not the pipeline. The old serial tree
+  fetched 52.3 MB versus 18.0 MB for the new tree, so its wall-time delta is
+  dominated by those earlier changes.
+- New runs classified one model as permanently failed while the old tree
+  cleared explicit-target failures; both produced the same 177 files. This is
+  the post-P1 failure-classification behavior, not a throughput regression.
+
+This is a 185-image subset, so it is directional rather than a full-library
+guarantee. Re-run the harness after material changes:
+
+```bash
+python scripts/benchmark_example_images.py prepare --count 20 --images 180
+python scripts/benchmark_example_images.py compare --repeats 3
+```
+
+The harness creates its old worktree, cache/sidecar copies and run logs under
+`.tmp/example-images-bench/`; none of it is written to the real settings
+directory or model library.
+
 ## Future work
 
-- Pipeline models, not just images within a model: start model N+1's image
-  jobs while model N's metadata/failure bookkeeping finishes. This helps
-  models with only a few gallery items.
 - Stream media to a temp file instead of `download_to_memory`; the current
   pool bounds memory at `concurrency × item size`, which is fine for
   transcoded videos but large if `optimize_example_images` is disabled.
-- Cache the `image.civitai.com` → `blobs-b2.civitai.com` redirect when a
-  rendition is retried, to save one hop per retry.
-- Expose the four settings in the settings UI if users need to tune them
-  without editing `settings.json`.
+- Expose the example-image performance settings in the settings UI if users
+  need to tune them without editing `settings.json`.

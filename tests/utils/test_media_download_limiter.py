@@ -74,3 +74,47 @@ def test_limiter_reset_restores_initial_limit() -> None:
     assert limiter.limit == 3
     assert limiter._in_flight == 0
     assert limiter._cooldown_until == 0.0
+
+
+@pytest.mark.asyncio
+async def test_limiter_probes_above_base_and_halves_on_429() -> None:
+    limiter = MediaDownloadLimiter(
+        max_concurrency=6,
+        probe_max_concurrency=8,
+        min_cooldown=0.0,
+        default_cooldown=0.01,
+        recovery_successes=2,
+        probe_successes=3,
+    )
+
+    assert limiter.limit == 6
+
+    # Probing uses the longer probe streak, not the recovery streak.
+    for _ in range(2):
+        await limiter.report_success()
+    assert limiter.limit == 6
+    await limiter.report_success()
+    assert limiter.limit == 7
+
+    for _ in range(3):
+        await limiter.report_success()
+    assert limiter.limit == 8
+
+    # A 429 drops below the base, then recovery resumes from there.
+    await limiter.report_rate_limit(0.01)
+    assert limiter.limit == 4
+
+
+@pytest.mark.asyncio
+async def test_limiter_probe_default_keeps_base_as_ceiling() -> None:
+    limiter = MediaDownloadLimiter(
+        max_concurrency=4,
+        min_cooldown=0.0,
+        default_cooldown=0.01,
+        recovery_successes=2,
+    )
+
+    for _ in range(20):
+        await limiter.report_success()
+
+    assert limiter.limit == 4

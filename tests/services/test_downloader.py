@@ -60,6 +60,14 @@ class FakeResponse:
         self.history = history or []
         self.released = False
 
+    async def read(self):
+        chunks = []
+        while True:
+            chunk = await self.content.read(0)
+            if not chunk:
+                return b"".join(chunks)
+            chunks.append(chunk)
+
     async def __aenter__(self):
         return self
 
@@ -412,3 +420,31 @@ async def test_download_to_memory_rate_limit_keeps_legacy_tuple_by_default():
     assert success is False
     assert message == "Rate limited (429), retry after 90s"
     assert headers is None
+
+
+@pytest.mark.asyncio
+async def test_download_to_memory_reuses_civitai_redirect() -> None:
+    original = (
+        "https://image.civitai.com/account/image-id/width=800,optimized=true/1.jpeg"
+    )
+    blob = "https://blobs-b2.civitai.com/file/blobs-managed-public/abc.webp"
+
+    def response():
+        return FakeResponse(
+            status=200,
+            headers={"content-type": "image/webp"},
+            chunks=[b"image-bytes"],
+            url=blob,
+            history=[object()],
+        )
+
+    downloader = _build_downloader([response, response])
+
+    first = await downloader.download_to_memory(original)
+    second = await downloader.download_to_memory(original)
+
+    assert first[0] is True and first[1] == b"image-bytes"
+    assert second[0] is True and second[1] == b"image-bytes"
+
+    session = _session(downloader)
+    assert [call["url"] for call in session.requests] == [original, blob]
