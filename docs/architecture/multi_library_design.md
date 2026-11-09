@@ -1,7 +1,10 @@
 # Multi-Library Management for Standalone Mode
 
-> **Deprecated:** Multi-library support is deprecated and will be removed in an
-> upcoming release. Multiple folder roots within a single library
+> **Removed:** Multi-library support and library switching have been removed.
+> On upgrade, folder paths from all configured libraries are merged into the
+> previously active library; its default download, workflow, and recipe folders
+> are preserved. The `libraries` and `active_library` keys are then removed from
+> `settings.json`. Multiple folder roots within a single library
 > (`folder_paths` / `extra_folder_paths`) remain fully supported. This document
 > is kept for historical reference only.
 

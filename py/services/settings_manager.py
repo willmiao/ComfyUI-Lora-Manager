@@ -83,6 +83,8 @@ CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
     "folder_paths",
 )
 
+RUNTIME_ONLY_SETTING_KEYS = frozenset({"libraries", "active_library"})
+
 # Threshold for aggressive cleanup: if file contains this many default keys, clean it up
 DEFAULT_KEYS_CLEANUP_THRESHOLD = 10
 
@@ -535,7 +537,7 @@ class SettingsManager:
         # Note: inserted_defaults no longer triggers save - defaults stay in memory only
 
     def _migrate_to_library_registry(self) -> None:
-        """Ensure settings include the multi-library registry structure."""
+        """Ensure settings include one library, consolidating legacy entries."""
         libraries = self.settings.get("libraries")
         active_name = self.settings.get("active_library")
         initial_bootstrap = self._bootstrap_reason == "missing"
@@ -650,39 +652,62 @@ class SettingsManager:
             else:
                 self.settings["active_library"] = "default"
 
+        if len(sanitized_libraries) > 1:
+            active_name = self.settings["active_library"]
+            self._consolidate_libraries(active_name, sanitized_libraries)
+            changed = True
+
         self._sync_active_library_to_root(save=changed and not initial_bootstrap)
         if changed and initial_bootstrap:
             self._needs_initial_save = True
 
-        self._warn_if_multi_library()
+    def _consolidate_libraries(
+        self, active_name: str, libraries: Mapping[str, Dict[str, Any]]
+    ) -> None:
+        """Merge legacy library paths into the active single-library settings."""
+        ordered_names = [active_name]
+        ordered_names.extend(name for name in libraries if name != active_name)
+        merged = copy.deepcopy(libraries[active_name])
 
-    def _warn_if_multi_library(self) -> None:
-        """Surface a deprecation notice when more than one library is configured."""
-        libraries = self.settings.get("libraries", {})
-        if not isinstance(libraries, Mapping) or len(libraries) <= 1:
-            return
+        for mapping_key in ("folder_paths", "extra_folder_paths"):
+            combined: Dict[str, List[str]] = {}
+            seen: Dict[str, Set[str]] = {}
+            for name in ordered_names:
+                paths = self._normalize_folder_paths(
+                    libraries[name].get(mapping_key, {})
+                )
+                for key, values in paths.items():
+                    target = combined.setdefault(key, [])
+                    key_seen = seen.setdefault(key, set())
+                    for value in values:
+                        identity = os.path.normcase(os.path.normpath(value))
+                        if identity in key_seen:
+                            continue
+                        key_seen.add(identity)
+                        target.append(value)
+            merged[mapping_key] = combined
+
+        merged["updated_at"] = self._current_timestamp()
+        self.settings["libraries"] = {active_name: merged}
+        self.settings["active_library"] = active_name
 
         names = ", ".join(sorted(str(name) for name in libraries))
-        logger.warning(
-            "Multi-library support is deprecated and will be removed in an "
-            "upcoming release. Detected %d libraries in settings.json (%s). "
-            "Multiple folder roots within a single library remain fully "
-            "supported; please consolidate your libraries into one.",
+        logger.info(
+            "Consolidated %d legacy libraries into '%s': %s",
             len(libraries),
+            active_name,
             names,
         )
         self._add_startup_message(
-            code="multi-library-deprecated",
-            title="Multi-library support is deprecated",
+            code="multi-library-consolidated",
+            title="Libraries consolidated",
             message=(
-                f"This installation has {len(libraries)} libraries configured in "
-                f"settings.json ({names}). Multi-library support is deprecated and "
-                "will be removed in an upcoming release; at that point all "
-                "libraries' folder paths will be merged into a single library. "
-                "Multiple folder roots within a single library remain fully "
-                "supported, so consider consolidating into one library now."
+                f"Multi-library support has been removed. Folder paths from "
+                f"{len(libraries)} libraries ({names}) were merged into "
+                f"'{active_name}'. Its default download, workflow, and recipe "
+                "folders were kept."
             ),
-            severity="warning",
+            severity="info",
             actions=self._default_settings_actions(),
             dismissible=True,
         )
@@ -779,6 +804,20 @@ class SettingsManager:
             )
             self._save_settings()
 
+    def _migrate_legacy_cache_namespace(self, library_name: str) -> None:
+        original = self._original_disk_payload or {}
+        if not any(key in original for key in RUNTIME_ONLY_SETTING_KEYS):
+            return
+
+        from ..utils.cache_paths import CacheType, migrate_library_cache_to_default
+
+        for cache_type in (
+            CacheType.MODEL,
+            CacheType.MODEL_UPDATE,
+            CacheType.RECIPE,
+        ):
+            migrate_library_cache_to_default(cache_type, library_name)
+
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
         libraries = self.settings.get("libraries", {})
@@ -790,6 +829,7 @@ class SettingsManager:
             active_name = next(iter(libraries.keys()))
             self.settings["active_library"] = active_name
 
+        self._migrate_legacy_cache_namespace(active_name)
         active_library = libraries.get(active_name, {})
         folder_paths = copy.deepcopy(active_library.get("folder_paths", {}))
         self.settings["folder_paths"] = folder_paths
@@ -2534,7 +2574,8 @@ class SettingsManager:
 
             if self._seed_template:
                 for key, value in self._seed_template.items():
-                    minimal.setdefault(key, copy.deepcopy(value))
+                    if key not in RUNTIME_ONLY_SETTING_KEYS:
+                        minimal.setdefault(key, copy.deepcopy(value))
 
             return minimal
 
@@ -2543,6 +2584,8 @@ class SettingsManager:
         minimal = {}
 
         for key, value in self.settings.items():
+            if key in RUNTIME_ONLY_SETTING_KEYS:
+                continue
             default_value = defaults.get(key)
 
             # Core settings are always saved (even if equal to default)
@@ -2580,25 +2623,6 @@ class SettingsManager:
         libraries = self.settings.get("libraries", {})
         active_name = self.get_active_library_name()
         return copy.deepcopy(libraries.get(active_name, {}))
-
-    def activate_library(self, library_name: str) -> None:
-        """Activate a library by name and refresh dependent services."""
-        libraries = self.settings.get("libraries", {})
-        if library_name not in libraries:
-            raise KeyError(f"Library '{library_name}' does not exist")
-
-        current_active = self.get_active_library_name()
-        if current_active == library_name:
-            # Ensure root settings stay in sync even if already active
-            self._sync_active_library_to_root(save=False)
-            self._save_settings()
-            self._notify_library_change(library_name)
-            return
-
-        self.settings["active_library"] = library_name
-        self._sync_active_library_to_root(save=False)
-        self._save_settings()
-        self._notify_library_change(library_name)
 
     def upsert_library(
         self,
@@ -2687,43 +2711,6 @@ class SettingsManager:
             self._notify_library_change(name)
 
         return payload
-
-    def create_library(
-        self,
-        library_name: str,
-        *,
-        folder_paths: Mapping[str, Iterable[str]],
-        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
-        default_lora_root: str = "",
-        default_checkpoint_root: str = "",
-        default_unet_root: str = "",
-        default_embedding_root: str = "",
-        default_other_roots: Optional[Mapping[str, str]] = None,
-        workflow_path: str = "",
-        recipes_path: str = "",
-        metadata: Optional[Mapping[str, Any]] = None,
-        activate: bool = False,
-    ) -> Dict[str, Any]:
-        """Create a new library entry."""
-
-        libraries = self.settings.get("libraries", {})
-        if library_name in libraries:
-            raise ValueError(f"Library '{library_name}' already exists")
-
-        return self.upsert_library(
-            library_name,
-            folder_paths=folder_paths,
-            extra_folder_paths=extra_folder_paths,
-            default_lora_root=default_lora_root,
-            default_checkpoint_root=default_checkpoint_root,
-            default_unet_root=default_unet_root,
-            default_embedding_root=default_embedding_root,
-            default_other_roots=default_other_roots,
-            workflow_path=workflow_path,
-            recipes_path=recipes_path,
-            metadata=metadata,
-            activate=activate,
-        )
 
     def rename_library(self, old_name: str, new_name: str) -> None:
         """Rename an existing library."""

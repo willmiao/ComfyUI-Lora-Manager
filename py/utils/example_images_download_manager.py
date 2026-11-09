@@ -16,12 +16,9 @@ from ..utils.example_images_paths import (
     ExampleImagePathResolver,
     clear_example_completion_marker,
     ensure_library_root_exists,
-    get_example_images_root,
-    get_library_root,
     has_completion_marker,
     is_hash_folder,
     mark_example_folder_complete,
-    uses_library_scoped_folders,
 )
 from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor, MediaDownloadLimiter
@@ -486,36 +483,6 @@ class DownloadManager:
         progress_file = os.path.join(output_dir, ".download_progress.json")
         progress_source = progress_file
 
-        # Handle legacy migration if needed
-        if uses_library_scoped_folders():
-            legacy_root = get_settings_manager().get("example_images_path") or ""
-            legacy_progress = (
-                os.path.join(legacy_root, ".download_progress.json")
-                if legacy_root
-                else ""
-            )
-            if (
-                legacy_progress
-                and os.path.exists(legacy_progress)
-                and not os.path.exists(progress_file)
-            ):
-                try:
-                    os.makedirs(output_dir, exist_ok=True)
-                    shutil.move(legacy_progress, progress_file)
-                    logger.info(
-                        "Migrated legacy download progress file '%s' to '%s'",
-                        legacy_progress,
-                        progress_file,
-                    )
-                except OSError as exc:
-                    logger.warning(
-                        "Failed to migrate download progress file from '%s' to '%s': %s",
-                        legacy_progress,
-                        progress_file,
-                        exc,
-                    )
-                    progress_source = legacy_progress
-
         processed_models = set()
         failed_models = set()
         rate_limited_models = set()
@@ -672,24 +639,6 @@ class DownloadManager:
                 folder_index = await asyncio.get_event_loop().run_in_executor(
                     None, _build_example_folder_index, output_dir
                 )
-                # In multi-library mode, folders that have not been consolidated
-                # into the library root yet (startup migration skipped, failed
-                # move, or created at the legacy path afterwards) still live at
-                # the legacy root/<hash> location. Only scan that root when at
-                # least one candidate is missing from the library-root index, so
-                # the fully-consolidated case does not pay an extra directory
-                # pass on every call.
-                if uses_library_scoped_folders() and any(
-                    not folder_index.get(model_hash, False)
-                    for model_hash in candidate_hashes
-                ):
-                    legacy_root = get_example_images_root()
-                    if legacy_root and legacy_root != output_dir:
-                        legacy_index = await asyncio.get_event_loop().run_in_executor(
-                            None, _build_example_folder_index, legacy_root
-                        )
-                        for hash_key, has_files in legacy_index.items():
-                            folder_index.setdefault(hash_key, has_files)
                 for model_hash in candidate_hashes:
                     if not folder_index.get(model_hash, False):
                         pending_hashes.add(model_hash)
@@ -2045,27 +1994,13 @@ _default_download_manager: DownloadManager | None = None
 
 
 def _progress_file_candidates(library_name: str | None = None) -> List[str]:
-    """Return existing-progress-file locations for a library (plus the legacy root)."""
+    """Return the existing progress file location."""
 
     settings_manager = get_settings_manager()
-    if not settings_manager.get("example_images_path"):
+    root = settings_manager.get("example_images_path")
+    if not root:
         return []
-
-    candidates: List[str] = []
-    library_root = get_library_root(
-        library_name or settings_manager.get_active_library_name()
-    )
-    if library_root:
-        candidates.append(os.path.join(library_root, ".download_progress.json"))
-
-    if uses_library_scoped_folders():
-        legacy_root = get_example_images_root()
-        if legacy_root:
-            legacy_file = os.path.join(legacy_root, ".download_progress.json")
-            if legacy_file not in candidates:
-                candidates.append(legacy_file)
-
-    return candidates
+    return [os.path.join(root, ".download_progress.json")]
 
 
 def _remove_hashes_from_progress_file(progress_file: str, hashes: Set[str]) -> int:

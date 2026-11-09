@@ -481,20 +481,19 @@ async def test_check_pending_models_uses_per_folder_check_for_small_candidate_se
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("tmp_path")
-async def test_check_pending_models_bulk_index_includes_legacy_folders(
+async def test_check_pending_models_bulk_index_includes_existing_folders(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
     settings_manager,
 ):
-    """In multi-library mode the bulk index also scans the legacy root so models
-    whose folders have not been consolidated yet are not reported pending."""
+    """The bulk index recognizes populated folders in the example images root."""
 
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
     monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
-    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
 
     # 1500 unprocessed models triggers the bulk lookup path
     models = [

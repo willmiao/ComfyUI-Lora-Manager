@@ -32,8 +32,6 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/doctor/resolve-filename-conflicts", "resolve_doctor_filename_conflicts"),
     RouteDefinition("POST", "/api/lm/doctor/export-bundle", "export_doctor_bundle"),
     RouteDefinition("GET", "/api/lm/priority-tags", "get_priority_tags"),
-    RouteDefinition("GET", "/api/lm/settings/libraries", "get_settings_libraries"),
-    RouteDefinition("POST", "/api/lm/settings/libraries/activate", "activate_library"),
     RouteDefinition("GET", "/api/lm/health-check", "health_check"),
     RouteDefinition("GET", "/api/lm/init-status", "get_init_status"),
     # First-run welcome page: info + gated initial scan kickoff. The GET alias

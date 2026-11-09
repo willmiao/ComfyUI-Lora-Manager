@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "調整模型和配方卡片上頁首和頁尾疊加層的模糊強度（0 = 無模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "使用中的資料庫（已棄用）",
-            "activeLibraryHelp": "在已設定的資料庫之間切換以更新預設資料夾。變更選項將重新載入頁面。已棄用：多資料庫支援將在即將推出的版本中移除。單一資料庫內的多個資料夾根目錄仍完全受支援。",
-            "loadingLibraries": "正在載入資料庫...",
-            "noLibraries": "尚未設定任何資料庫",
             "defaultLoraRoot": "LoRA 根目錄",
             "defaultLoraRootHelp": "設定下載、匯入和移動時的預設 LoRA 根目錄",
             "defaultCheckpointRoot": "Checkpoint 根目錄",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "緊湊模式已{state}",
             "settingSaveFailed": "儲存設定失敗：{message}",
             "displayDensitySet": "顯示密度已設為 {density}",
-            "libraryLoadFailed": "載入模型庫失敗：{message}",
-            "libraryActivateFailed": "啟動模型庫失敗：{message}",
             "languageChangeFailed": "切換語言失敗：{message}",
             "cacheCleared": "快取檔案已成功清除。快取將於下次操作時重建。",
             "cacheClearFailed": "清除快取失敗：{error}",

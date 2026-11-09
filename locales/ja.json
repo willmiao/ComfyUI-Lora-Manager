@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "モデルカードとレシピカードのヘッダー・フッターオーバーレイのぼかし強度を調整します（0 = ぼかしなし、20 = 最大ぼかし）。"
         },
         "folderSettings": {
-            "activeLibrary": "アクティブライブラリ（非推奨）",
-            "activeLibraryHelp": "設定済みのライブラリを切り替えてデフォルトのフォルダを更新します。選択を変更するとページが再読み込みされます。非推奨：複数ライブラリのサポートは今後のリリースで削除されます。単一ライブラリ内の複数のフォルダルートは引き続き完全にサポートされます。",
-            "loadingLibraries": "ライブラリを読み込み中...",
-            "noLibraries": "ライブラリが設定されていません",
             "defaultLoraRoot": "LoRAルート",
             "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
             "defaultCheckpointRoot": "Checkpointルート",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "コンパクトモード {state}",
             "settingSaveFailed": "設定の保存に失敗しました：{message}",
             "displayDensitySet": "表示密度が {density} に設定されました",
-            "libraryLoadFailed": "ライブラリを読み込めませんでした: {message}",
-            "libraryActivateFailed": "ライブラリをアクティブ化できませんでした: {message}",
             "languageChangeFailed": "言語の変更に失敗しました：{message}",
             "cacheCleared": "キャッシュファイルが正常にクリアされました。次回のアクションでキャッシュが再構築されます。",
             "cacheClearFailed": "キャッシュのクリアに失敗しました：{error}",

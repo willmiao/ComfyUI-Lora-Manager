@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "כוונן את עוצמת הטשטוש של שכבת-העל בכותרת ובכותרות תחתונה בכרטיסי מודל ומתכונים (0 = ללא טשטוש, 20 = טשטוש מקסימלי)."
         },
         "folderSettings": {
-            "activeLibrary": "ספרייה פעילה (מיושן)",
-            "activeLibraryHelp": "החלפה בין הספריות המוגדרות לעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף. מיושן: התמיכה בריבוי ספריות תוסר בגרסה קרובה. מספר תיקיות שורש בתוך ספרייה אחת עדיין נתמך במלואו.",
-            "loadingLibraries": "טוען ספריות...",
-            "noLibraries": "לא הוגדרו ספריות",
             "defaultLoraRoot": "תיקיית שורש LoRA",
             "defaultLoraRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של LoRA להורדות, ייבוא והעברות",
             "defaultCheckpointRoot": "תיקיית שורש Checkpoint",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "מצב קומפקטי {state}",
             "settingSaveFailed": "שמירת ההגדרה נכשלה: {message}",
             "displayDensitySet": "צפיפות התצוגה הוגדרה ל-{density}",
-            "libraryLoadFailed": "לא ניתן היה לטעון את הספריות: {message}",
-            "libraryActivateFailed": "לא ניתן היה להפעיל את הספרייה: {message}",
             "languageChangeFailed": "שינוי השפה נכשל: {message}",
             "cacheCleared": "קבצי המטמון נוקו בהצלחה. המטמון ייבנה מחדש בפעולה הבאה.",
             "cacheClearFailed": "ניקוי המטמון נכשל: {error}",

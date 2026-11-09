@@ -6,6 +6,7 @@ import pytest
 
 from py.utils.cache_paths import (
     CacheType,
+    migrate_library_cache_to_default,
     resolve_cache_path_with_migration,
 )
 
@@ -150,6 +151,52 @@ class TestResolveCachePathWithMigration:
         assert canonical.parent.exists()
         # But file should not exist yet
         assert not canonical.exists()
+
+
+@pytest.mark.parametrize(
+    ("cache_type", "subdir"),
+    [
+        (CacheType.MODEL, "model"),
+        (CacheType.MODEL_UPDATE, "model_update"),
+        (CacheType.RECIPE, "recipe"),
+    ],
+)
+def test_named_cache_migrates_to_default(
+    tmp_path, monkeypatch, cache_type, subdir
+):
+    settings_dir = tmp_path / "settings"
+    source = settings_dir / "cache" / subdir / "comfyui.sqlite"
+    source.parent.mkdir(parents=True)
+    source.write_text("cached data")
+    monkeypatch.setattr(
+        "py.utils.cache_paths.get_settings_dir",
+        lambda create=True: str(settings_dir),
+    )
+
+    migrate_library_cache_to_default(cache_type, "comfyui")
+
+    target = settings_dir / "cache" / subdir / "default.sqlite"
+    assert target.read_text() == "cached data"
+    assert not source.exists()
+
+
+def test_named_cache_migration_does_not_overwrite_default(tmp_path, monkeypatch):
+    settings_dir = tmp_path / "settings"
+    model_dir = settings_dir / "cache" / "model"
+    model_dir.mkdir(parents=True)
+    source = model_dir / "comfyui.sqlite"
+    target = model_dir / "default.sqlite"
+    source.write_text("named")
+    target.write_text("default")
+    monkeypatch.setattr(
+        "py.utils.cache_paths.get_settings_dir",
+        lambda create=True: str(settings_dir),
+    )
+
+    migrate_library_cache_to_default(CacheType.MODEL, "comfyui")
+
+    assert target.read_text() == "default"
+    assert source.read_text() == "named"
 
 
 class TestAutomaticCleanup:

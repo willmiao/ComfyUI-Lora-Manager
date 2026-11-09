@@ -8,6 +8,23 @@ import pytest
 from py.utils import example_images_migration as migration_module
 
 
+def test_consolidates_legacy_library_folders(tmp_path, monkeypatch):
+    example_root = tmp_path / "example_images"
+    model_hash = "a" * 64
+    legacy_folder = example_root / "archive" / model_hash
+    legacy_folder.mkdir(parents=True)
+    (legacy_folder / "image.png").write_bytes(b"image")
+
+    monkeypatch.setattr(
+        migration_module, "get_example_images_root", lambda: str(example_root)
+    )
+
+    migration_module.ExampleImagesMigration._consolidate_library_folders()
+
+    assert (example_root / model_hash / "image.png").read_bytes() == b"image"
+    assert not (example_root / "archive").exists()
+
+
 class FakeScanner:
     def __init__(self, data_map, init_cycles=0):
         self._data_map = data_map

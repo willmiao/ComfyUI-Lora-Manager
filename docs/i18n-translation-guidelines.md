@@ -233,11 +233,10 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > state, the bulk-fetch rate-limit copy, the "fetch metadata" post-scan banner, two download
 > link errors and two duplicate-delete follow-ups — 36 keys left behind as
 > `[TODO: Translate]`. All 36 are now translated in all 9 locales (renderings in §2, "First-run
-> welcome page and fetch-status copy"). The same pass re-translated the three keys whose English
-> text had changed without being re-queued: `settings.folderSettings.activeLibrary` /
-> `.activeLibraryHelp` (multi-library deprecation, commit `1a6b0f78`) and
-> `toast.contextMenu.linkHfSuccess` (the toast now says "model source" instead of
-> "HuggingFace", commit `5ab0e88ab`). No `[TODO: Translate]` placeholder remains.
+> welcome page and fetch-status copy"). The same pass also re-translated
+> `toast.contextMenu.linkHfSuccess`, whose English text had changed without being re-queued
+> (the toast now says "model source" instead of "HuggingFace", commit `5ab0e88ab`). No
+> `[TODO: Translate]` placeholder remains.
 
 > **Status (2026-10, workflow management):** the Workflows page (`workflows.*`) manages the
 > ComfyUI workflow JSON files in their own library folders and shipped with the settings toggle
@@ -1016,7 +1015,6 @@ Most of these strings are assembled from existing renderings rather than new ter
 | directory (of the centralized sidecar path) | zh-CN 目录 · zh-TW 目錄 · ja ディレクトリ · ko 디렉터리 · fr dossier · de Verzeichnis · es directorio · ru каталог · he תיקייה |
 | metadata storage | zh-CN 元数据存储 · zh-TW 中繼資料儲存 · ja メタデータの保存 · ko 메타데이터 저장 · fr Stockage des métadonnées · de Metadaten-Speicherung · es Almacenamiento de metadatos · ru Хранение метаданных · he אחסון מטא-נתונים |
 | rate limit (of the metadata provider) | zh-CN 速率限制 · zh-TW 速率限制 · ja レート制限 · ko 속도 제한 · fr limite de débit · de Ratenlimit · es límite de solicitudes · ru лимит запросов · he מגבלת קצב |
-| "(Deprecated)" (`settings.folderSettings.activeLibrary`) | zh-CN 已弃用 · zh-TW 已棄用 · ja 非推奨 · ko 사용 중단 예정 · fr obsolète · de veraltet · es obsoleto · ru устарело · he מיושן |
 | bulk-fetch banner title | zh-CN 让你的模型库焕发生机 · zh-TW 讓您的模型庫煥發生機 · ja ライブラリに命を吹き込もう · ko 라이브러리에 생기를 불어넣으세요 · fr Donnez vie à votre bibliothèque · de Erwecken Sie Ihre Bibliothek zum Leben · es Dale vida a tu biblioteca · ru Вдохните жизнь в свою библиотеку · he החייה את הספרייה שלך |
 | defer ("Later") / banner ("Maybe Later") | zh-CN 稍后 / 以后再说 · zh-TW 稍後 / 稍後再說 · ja 後で / また今度 · ko 나중에 / 나중에 하기 · fr Plus tard / Peut-être plus tard · de Später / Vielleicht später · es Más tarde / Quizás más tarde · ru Позже / Может быть, позже · he מאוחר יותר / אולי מאוחר יותר |
 
@@ -1182,8 +1180,7 @@ URL placeholders are the exception). As of the 2026-08 sweep, **all previously u
 blocks are translated** in every locale: `recipes.batchImport.*` + `toast.recipes.batchImport*`
 (fr/de/es/ru/he/ja/ko), `banners.communitySupport.*`, `modals.model.license.*`,
 `globalContextMenu.fetchMissingLicenses.*`, the `doctor.*` issue/action/label subset,
-`toast.settings.libraryLoadFailed` / `libraryActivateFailed`, `toast.api.moveFailed`,
-`settings.extraFolderPaths.restartRequired`, `toast.recipes.recipeSaved`,
+`toast.api.moveFailed`, `settings.extraFolderPaths.restartRequired`, `toast.recipes.recipeSaved`,
 `sidebar.dragDrop.moveUnsupported`, `checkpoints.modelTypes.diffusion_model`
 (ja/ko keep the English loanword), `initialization.recipes.title`.
 

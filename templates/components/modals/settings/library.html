@@ -4,22 +4,6 @@
     <!-- Folder Settings -->
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.folderSettings') }}
-        <div class="setting-item">
-            <div class="setting-row">
-                <div class="setting-info">
-                    <label for="librarySelect">
-                    {{ t('settings.folderSettings.activeLibrary') }}
-                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.activeLibraryHelp') }}"></i>
-                </label>
-                </div>
-                <div class="setting-control select-control">
-                    <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
-                        <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
         {{ sm.setting_select('defaultLoraRoot', 'default_lora_root', 'settings.folderSettings.defaultLoraRoot', [], 'settings.folderSettings.defaultLoraRootHelp') }}
 
         {{ sm.setting_select('defaultCheckpointRoot', 'default_checkpoint_root', 'settings.folderSettings.defaultCheckpointRoot', [], 'settings.folderSettings.defaultCheckpointRootHelp') }}

@@ -398,7 +398,7 @@ class Config:
         return filtered
 
     def save_folder_paths_to_settings(self):
-        """Persist ComfyUI-derived folder paths to the multi-library settings."""
+        """Persist ComfyUI-derived folder paths to the library settings."""
         try:
             ensure_settings_file(logger)
             from .services.settings_manager import get_settings_manager
@@ -470,7 +470,7 @@ class Config:
             # SettingsManager and never written into the library's
             # folder_paths map here.
             # Persist the other-model roots under their original folder_paths
-            # keys so library switching round-trips them.
+            # keys so settings reloads round-trip them.
             for key, roots in (self.other_folder_roots or {}).items():
                 target_folder_paths[key] = list(roots)
             # ...and keep an other-model root that is configured but unavailable.
@@ -2286,23 +2286,6 @@ class Config:
             len(self.embeddings_roots or []),
             len(self.extra_embeddings_roots or []),
         )
-
-    def get_library_registry_snapshot(self) -> Dict[str, object]:
-        """Return the current library registry and active library name."""
-
-        try:
-            from .services.settings_manager import get_settings_manager
-
-            settings_service = get_settings_manager()
-            libraries = settings_service.get_libraries()
-            active_library = settings_service.get_active_library_name()
-            return {
-                "active_library": active_library,
-                "libraries": libraries,
-            }
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.debug("Failed to collect library registry snapshot: %s", exc)
-            return {"active_library": "", "libraries": {}}
 
 
 # Global config instance

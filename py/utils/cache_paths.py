@@ -10,11 +10,11 @@ Target structure:
         ├── symlink/
         │   └── symlink_map.json
         ├── model/
-        │   └── {library_name}.sqlite
+        │   └── default.sqlite
         ├── model_update/
-        │   └── {library_name}.sqlite
+        │   └── default.sqlite
         ├── recipe/
-        │   └── {library_name}.sqlite
+        │   └── default.sqlite
         └── fts/
             ├── recipe_fts.sqlite
             └── tag_fts.sqlite
@@ -264,6 +264,41 @@ def _cleanup_empty_legacy_directories(legacy_path: str) -> None:
 
     except Exception as exc:
         logger.debug("Failed to cleanup empty legacy directories: %s", exc)
+
+
+def migrate_library_cache_to_default(
+    cache_type: CacheType, library_name: Optional[str]
+) -> None:
+    """Copy a legacy named cache to the single-library default namespace."""
+
+    safe_name = _sanitize_library_name(library_name)
+    if safe_name == "default" or cache_type not in (
+        CacheType.MODEL,
+        CacheType.MODEL_UPDATE,
+        CacheType.RECIPE,
+    ):
+        return
+
+    source = get_cache_file_path(cache_type, safe_name, create_dir=False)
+    target = get_cache_file_path(cache_type, "default", create_dir=True)
+    if not os.path.exists(source) or os.path.exists(target):
+        return
+
+    try:
+        shutil.copy2(source, target)
+        logger.info(
+            "Migrated %s cache from library '%s' to the default namespace",
+            cache_type.value,
+            safe_name,
+        )
+        _cleanup_legacy_file_after_migration(source, target)
+    except Exception as exc:
+        logger.warning(
+            "Failed to migrate %s cache from '%s' to default: %s",
+            cache_type.value,
+            safe_name,
+            exc,
+        )
 
 
 def resolve_cache_path_with_migration(

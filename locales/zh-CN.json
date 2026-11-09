@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "调整模型和配方卡片上页眉和页脚叠加层的模糊强度（0 = 无模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "活动库（已弃用）",
-            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。已弃用：多库支持将在即将发布的版本中移除。单个库内的多个文件夹根目录仍完全受支持。",
-            "loadingLibraries": "正在加载库...",
-            "noLibraries": "尚未配置库",
             "defaultLoraRoot": "LoRA 根目录",
             "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
             "defaultCheckpointRoot": "Checkpoint 根目录",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "紧凑模式 {state}",
             "settingSaveFailed": "保存设置失败：{message}",
             "displayDensitySet": "显示密度已设置为 {density}",
-            "libraryLoadFailed": "加载模型库失败：{message}",
-            "libraryActivateFailed": "激活模型库失败：{message}",
             "languageChangeFailed": "切换语言失败：{message}",
             "cacheCleared": "缓存文件已成功清除。下次操作将重建缓存。",
             "cacheClearFailed": "清除缓存失败：{error}",

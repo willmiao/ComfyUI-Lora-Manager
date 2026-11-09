@@ -203,10 +203,7 @@ class FirstRunManager:
             self._settings.set("initial_scan_completed", True)
 
     def _persistent_snapshot_exists(self) -> bool:
-        try:
-            library_name = self._settings.get_active_library_name()
-        except Exception:  # pragma: no cover - defensive guard
-            library_name = "default"
+        library_name = "default"
         candidates = (
             (
                 resolve_cache_path_with_migration(

@@ -49,9 +49,10 @@ python .agents/skills/lora-manager-runtime-context/scripts/inspect_runtime_conte
 - Settings file: `<settings_dir>/settings.json`.
 - Cache root: `<settings_dir>/cache`.
 - Canonical cache files:
-  - Model cache: `cache/model/<active_library>.sqlite`.
-  - Recipe cache: `cache/recipe/<active_library>.sqlite`.
-  - Model update cache: `cache/model_update/<active_library>.sqlite`.
+  - Model cache: `cache/model/default.sqlite`.
+  - Recipe cache: `cache/recipe/default.sqlite`.
+  - Model update cache: `cache/model_update/default.sqlite`.
+  - Upgrades copy legacy library-named caches to these paths.
   - Recipe FTS: `cache/fts/recipe_fts.sqlite`.
   - Tag FTS: `cache/fts/tag_fts.sqlite`.
   - Symlink map: `cache/symlink/symlink_map.json`.
@@ -61,12 +62,12 @@ python .agents/skills/lora-manager-runtime-context/scripts/inspect_runtime_conte
 
 ## Data Location Rules
 
-- Model roots come from `settings.folder_paths` and the active library payload under `settings.libraries[active_library]`.
+- Model roots come from top-level `settings.folder_paths`. Legacy `settings.libraries[active_library]` payloads are migrated and removed at startup.
 - Model metadata JSON sidecars live next to the model file as `<model basename>.metadata.json`.
 - Recipes root is `settings.recipes_path` when it is a non-empty string. If empty, use the first configured LoRA root plus `/recipes`.
 - Recipe JSON files are named `*.recipe.json` under the recipes root and may be nested in folders.
 - Example image root is `settings.example_images_path`.
-- If multiple libraries are configured, example images are stored under `<example_images_path>/<sanitized_library>/<sha256>/`; otherwise they are under `<example_images_path>/<sha256>/`.
+- Example images are stored under `<example_images_path>/<sha256>/`. Legacy library-named subfolders are consolidated into this root at startup.
 
 ## Useful Cache Tables
 

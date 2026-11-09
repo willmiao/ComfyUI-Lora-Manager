@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de Recipes (0 = aucun flou, 20 = flou maximal)."
         },
         "folderSettings": {
-            "activeLibrary": "Bibliothèque active (obsolète)",
-            "activeLibraryHelp": "Basculez entre les bibliothèques configurées pour mettre à jour les dossiers par défaut. Changer la sélection recharge la page. Obsolète : la prise en charge de plusieurs bibliothèques sera supprimée dans une prochaine version. Plusieurs racines de dossier au sein d’une même bibliothèque restent entièrement prises en charge.",
-            "loadingLibraries": "Chargement des bibliothèques...",
-            "noLibraries": "Aucune bibliothèque configurée",
             "defaultLoraRoot": "Racine LoRA",
             "defaultLoraRootHelp": "Définir le répertoire racine LoRA par défaut pour les téléchargements, imports et déplacements",
             "defaultCheckpointRoot": "Racine Checkpoint",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
             "displayDensitySet": "Densité d'affichage définie sur {density}",
-            "libraryLoadFailed": "Échec du chargement des bibliothèques : {message}",
-            "libraryActivateFailed": "Échec de l'activation de la bibliothèque : {message}",
             "languageChangeFailed": "Échec du changement de langue : {message}",
             "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
             "cacheClearFailed": "Échec du vidage du cache : {error}",

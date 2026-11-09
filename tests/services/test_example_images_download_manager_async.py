@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from py.services.settings_manager import SettingsManager, get_settings_manager
+from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_download_manager as download_module
 from py.utils.example_images_processor import ImageDownloadOutcome
 
@@ -475,7 +475,7 @@ async def test_model_pipeline_overlaps_across_models(
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_legacy_folder_migrated_and_skipped(
+async def test_existing_folder_is_skipped(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
     settings_manager,
@@ -484,8 +484,8 @@ async def test_legacy_folder_migrated_and_skipped(
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
     monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
-    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
 
     model_hash = "d" * 64
     model_path = tmp_path / "model.safetensors"
@@ -550,18 +550,14 @@ async def test_legacy_folder_migrated_and_skipped(
         if manager._download_task is not None and not manager._download_task.done():
             await asyncio.wait_for(manager._download_task, timeout=1)
 
-    library_root = tmp_path / "extra"
-    migrated_folder = library_root / model_hash
-
-    assert migrated_folder.exists()
-    assert not legacy_folder.exists()
+    assert legacy_folder.exists()
     assert not process_called
     assert not download_called
     assert model_hash in manager._progress["processed_models"]
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_legacy_progress_file_migrates(
+async def test_existing_progress_file_is_used(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
     settings_manager,
@@ -570,8 +566,8 @@ async def test_legacy_progress_file_migrates(
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
     monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
-    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "default")
 
     model_hash = "e" * 64
     model_path = tmp_path / "model-two.safetensors"
@@ -601,7 +597,7 @@ async def test_legacy_progress_file_migrates(
         return False
 
     async def fake_download_model_images(*_args, **_kwargs):
-        raise AssertionError("Remote download should not be attempted when progress is migrated")
+        raise AssertionError("Remote download should not be attempted for processed models")
 
     async def fake_get_downloader():
         class _Downloader:
@@ -628,94 +624,11 @@ async def test_legacy_progress_file_migrates(
     if manager._download_task is not None:
         await asyncio.wait_for(manager._download_task, timeout=1)
 
-    new_progress = (tmp_path / "extra") / ".download_progress.json"
-
     assert model_hash in manager._progress["processed_models"]
-    assert not legacy_progress.exists()
-    assert new_progress.exists()
-    contents = json.loads(new_progress.read_text(encoding="utf-8"))
+    assert legacy_progress.exists()
+    contents = json.loads(legacy_progress.read_text(encoding="utf-8"))
     assert model_hash in contents.get("processed_models", [])
 
-
-@pytest.mark.usefixtures("tmp_path")
-async def test_download_remains_in_initial_library(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path,
-    settings_manager,
-):
-    ws_manager = RecordingWebSocketManager()
-    manager = download_module.DownloadManager(ws_manager=ws_manager)
-
-    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings_manager.settings, "libraries", {"LibraryA": {}, "LibraryB": {}})
-    monkeypatch.setitem(settings_manager.settings, "active_library", "LibraryA")
-
-    state = {"active": "LibraryA"}
-
-    def fake_get_active_library_name(self):
-        return state["active"]
-
-    monkeypatch.setattr(SettingsManager, "get_active_library_name", fake_get_active_library_name)
-
-    model_hash = "f" * 64
-    model_path = tmp_path / "example-model.safetensors"
-    model_path.write_text("data", encoding="utf-8")
-
-    model = {
-        "sha256": model_hash,
-        "model_name": "Library Switch Model",
-        "file_path": str(model_path),
-        "file_name": "example-model.safetensors",
-    }
-
-    _patch_scanner(monkeypatch, StubScanner([model]))
-
-    async def fake_process_local_examples(
-        _file_path,
-        _file_name,
-        _model_name,
-        model_dir,
-        _optimize,
-    ):
-        Path(model_dir).mkdir(parents=True, exist_ok=True)
-        (Path(model_dir) / "local.txt").write_text("data", encoding="utf-8")
-        state["active"] = "LibraryB"
-        return True
-
-    async def fake_update_metadata(*_args, **_kwargs):
-        return True
-
-    async def fake_get_downloader():
-        return object()
-
-    monkeypatch.setattr(
-        download_module.ExampleImagesProcessor,
-        "process_local_examples",
-        staticmethod(fake_process_local_examples),
-    )
-    monkeypatch.setattr(
-        download_module.MetadataUpdater,
-        "update_metadata_from_local_examples",
-        staticmethod(fake_update_metadata),
-    )
-    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
-
-    result = await manager.start_download({"model_types": ["lora"], "delay": 0})
-    assert result["success"] is True
-
-    if manager._download_task is not None:
-        await asyncio.wait_for(manager._download_task, timeout=1)
-
-    library_a_root = tmp_path / "LibraryA"
-    library_b_root = tmp_path / "LibraryB"
-
-    progress_file = library_a_root / ".download_progress.json"
-    model_dir = library_a_root / model_hash
-
-    assert progress_file.exists()
-    assert (model_dir / "local.txt").exists()
-    assert not (library_b_root / ".download_progress.json").exists()
-    assert not (library_b_root / model_hash).exists()
 
 @pytest.mark.usefixtures("tmp_path")
 async def test_not_found_example_images_are_cleaned(

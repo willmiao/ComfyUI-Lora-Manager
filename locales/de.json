@@ -648,10 +648,6 @@
             "cardBlurAmountHelp": "Passen Sie die Unschärfeintensität der Kopf- und Fußzeilen-Overlays auf Modell- und Rezeptkarten an (0 = keine Unschärfe, 20 = maximale Unschärfe)."
         },
         "folderSettings": {
-            "activeLibrary": "Aktive Bibliothek (veraltet)",
-            "activeLibraryHelp": "Zwischen den konfigurierten Bibliotheken wechseln, um die Standardordner zu aktualisieren. Eine Änderung der Auswahl lädt die Seite neu. Veraltet: Die Unterstützung mehrerer Bibliotheken wird in einem kommenden Release entfernt. Mehrere Stammordner innerhalb einer Bibliothek werden weiterhin vollständig unterstützt.",
-            "loadingLibraries": "Bibliotheken werden geladen...",
-            "noLibraries": "Keine Bibliotheken konfiguriert",
             "defaultLoraRoot": "LoRA-Stammordner",
             "defaultLoraRootHelp": "Legen Sie den Standard-LoRA-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultCheckpointRoot": "Checkpoint-Stammordner",
@@ -2947,8 +2943,6 @@
             "compactModeToggled": "Kompakt-Modus {state}",
             "settingSaveFailed": "Fehler beim Speichern der Einstellung: {message}",
             "displayDensitySet": "Anzeige-Dichte auf {density} gesetzt",
-            "libraryLoadFailed": "Bibliotheken konnten nicht geladen werden: {message}",
-            "libraryActivateFailed": "Bibliothek konnte nicht aktiviert werden: {message}",
             "languageChangeFailed": "Fehler beim Ändern der Sprache: {message}",
             "cacheCleared": "Cache-Dateien wurden erfolgreich gelöscht. Cache wird bei der nächsten Aktion neu aufgebaut.",
             "cacheClearFailed": "Fehler beim Löschen des Caches: {error}",

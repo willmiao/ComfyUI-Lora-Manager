@@ -314,15 +314,10 @@ def resolve_recipes_root(settings: dict[str, Any], active_library: str) -> Path 
 
 def example_images_payload(settings: dict[str, Any], active_library: str) -> dict[str, Any]:
     root = settings.get("example_images_path") or ""
-    libraries = settings.get("libraries")
-    library_count = len(libraries) if isinstance(libraries, dict) else 0
-    scoped = library_count > 1
     root_path = Path(expand_path(root)) if isinstance(root, str) and root else None
-    library_root = root_path / sanitize_library_name(active_library) if root_path and scoped else root_path
     return {
         "root": str(root_path or ""),
-        "uses_library_scoped_folders": scoped,
-        "library_root": str(library_root or ""),
+        "library_root": str(root_path or ""),
     }
 
 

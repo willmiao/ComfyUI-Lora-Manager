@@ -10,7 +10,6 @@ from ..utils.example_images_paths import (
     get_example_images_root,
     is_hash_folder,
     iter_library_roots,
-    uses_library_scoped_folders,
     _library_folder_has_only_hash_dirs,
 )
 from ..utils.metadata_manager import MetadataManager
@@ -56,16 +55,12 @@ class ExampleImagesMigration:
     def _consolidate_library_folders():
         """Move hash folders from library-named subdirectories back to root.
 
-        When a user switches from multi-library mode back to single-library
-        mode, example images previously stored under e.g.
+        Example images previously stored under e.g.
         ``<root>/default/<hash>/`` need to be moved back to
         ``<root>/<hash>/``.  Running this once at startup removes the need
         for ``get_model_folder()`` to perform directory scans on every
         request.
         """
-        if uses_library_scoped_folders():
-            return
-
         root = get_example_images_root()
         if not root or not os.path.isdir(root):
             return

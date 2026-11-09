@@ -1,15 +1,15 @@
-# Library Switching and Preview Routes
+# Preview Routes
 
-> **Deprecated:** Multi-library support (and therefore library switching) is
-> deprecated and will be removed in an upcoming release. The dynamic preview
-> route described here will remain — it also serves single-library
-> installations.
+Multi-library support and library switching have been removed. On upgrade, all
+configured library folder paths are merged into the active library, and the
+`libraries` / `active_library` keys are removed from `settings.json`. Legacy
+library-named caches are migrated to the default cache namespace. Multiple
+folder roots within that single library remain fully supported.
 
-Library switching no longer requires restarting the backend. The preview
-thumbnails shown in the UI are now served through a dynamic endpoint that
-resolves files against the folders registered for the active library at request
-time. This allows the multi-library flow to update model roots without touching
-the aiohttp router, so previews remain available immediately after a switch.
+The preview thumbnails shown in the UI are served through a dynamic endpoint
+that resolves files against the currently configured folders at request time.
+This keeps previews available when model roots change without touching the
+aiohttp router.
 
 ## How the dynamic preview endpoint works
 
@@ -34,7 +34,6 @@ the aiohttp router, so previews remain available immediately after a switch.
   checks preview requests against this cache.【F:py/config.py†L51-L68】【F:py/config.py†L180-L248】【F:py/config.py†L332-L346】
 
 Both the ComfyUI runtime (`LoraManager.add_routes`) and the standalone launcher
-(`StandaloneLoraManager.add_routes`) register the new preview routes instead of
-mounting a static directory per root. Switching libraries therefore works
-without restarting the application, and preview URLs generated before or after a
-switch continue to resolve correctly.【F:py/lora_manager.py†L21-L82】【F:standalone.py†L302-L315】
+(`StandaloneLoraManager.add_routes`) register the preview routes instead of
+mounting a static directory per root. Preview URLs therefore continue to resolve
+correctly when the configured roots change.【F:py/lora_manager.py†L21-L82】【F:standalone.py†L302-L315】

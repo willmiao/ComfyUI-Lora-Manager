@@ -6,9 +6,8 @@ import json
 import logging
 import os
 import re
-import shutil
 import time
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, Optional, Tuple
 
 from ..services.settings_manager import get_settings_manager
 
@@ -35,16 +34,6 @@ _SAFE_FILENAMES: frozenset[str] = frozenset({
 logger = logging.getLogger(__name__)
 
 
-def _get_configured_libraries() -> List[str]:
-    """Return configured library names if multi-library support is enabled."""
-
-    settings_manager = get_settings_manager()
-    libraries = settings_manager.get("libraries")
-    if isinstance(libraries, dict) and libraries:
-        return list(libraries.keys())
-    return []
-
-
 def get_example_images_root() -> str:
     """Return the root directory configured for example images."""
 
@@ -53,81 +42,32 @@ def get_example_images_root() -> str:
     return os.path.abspath(root) if root else ""
 
 
-def uses_library_scoped_folders() -> bool:
-    """Return True when example images should be separated per library."""
-
-    libraries = _get_configured_libraries()
-    return len(libraries) > 1
-
-
-def sanitize_library_name(library_name: Optional[str]) -> str:
-    """Return a filesystem safe library name."""
-
-    settings_manager = get_settings_manager()
-    name = library_name or settings_manager.get_active_library_name() or "default"
-    safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
-    return safe_name or "default"
-
-
 def get_library_root(library_name: Optional[str] = None) -> str:
-    """Return the directory where a library's example images should live."""
+    """Return the example images root; the legacy name argument is ignored."""
 
-    root = get_example_images_root()
-    if not root:
-        return ""
-
-    if uses_library_scoped_folders():
-        return os.path.join(root, sanitize_library_name(library_name))
-    return root
+    return get_example_images_root()
 
 
 def ensure_library_root_exists(library_name: Optional[str] = None) -> str:
-    """Ensure the example image directory for a library exists and return it."""
+    """Ensure the example images root exists and return it."""
 
-    library_root = get_library_root(library_name)
-    if library_root:
-        os.makedirs(library_root, exist_ok=True)
-    return library_root
+    root = get_library_root()
+    if root:
+        os.makedirs(root, exist_ok=True)
+    return root
 
 
 def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str:
-    """Return the folder path for a model's example images.
-
-    Multi-library ↔ single-library consolidation is handled once at startup by
-    ``ExampleImagesMigration._consolidate_library_folders`` — this function is a
-    pure path computation on the hot path (no directory scans).
-    """
+    """Return the folder path for a model's example images."""
 
     if not model_hash:
         return ""
 
-    library_root = ensure_library_root_exists(library_name)
-    if not library_root:
+    root = ensure_library_root_exists()
+    if not root:
         return ""
 
-    normalized_hash = (model_hash or "").lower()
-    resolved_folder = os.path.join(library_root, normalized_hash)
-
-    if uses_library_scoped_folders():
-        legacy_root = get_example_images_root()
-        legacy_folder = os.path.join(legacy_root, normalized_hash)
-        if os.path.exists(legacy_folder) and not os.path.exists(resolved_folder):
-            try:
-                os.makedirs(library_root, exist_ok=True)
-                shutil.move(legacy_folder, resolved_folder)
-                logger.info(
-                    "Migrated legacy example images folder '%s' to '%s'", legacy_folder, resolved_folder
-                )
-            except OSError as exc:
-                logger.error(
-                    "Failed to migrate example images from '%s' to '%s': %s",
-                    legacy_folder,
-                    resolved_folder,
-                    exc,
-                )
-                return legacy_folder
-
-    return resolved_folder
+    return os.path.join(root, model_hash.lower())
 
 
 def get_completion_marker_path(model_dir: str) -> str:
@@ -254,28 +194,13 @@ def get_model_relative_path(model_hash: str, library_name: Optional[str] = None)
 
 
 def iter_library_roots() -> Iterable[Tuple[str, str]]:
-    """Yield configured library names and their resolved filesystem roots."""
+    """Return the single example images root using the legacy tuple shape."""
 
     root = get_example_images_root()
     if not root:
         return []
 
-    libraries = _get_configured_libraries()
-    if uses_library_scoped_folders():
-        results: List[Tuple[str, str]] = []
-        if libraries:
-            for library in libraries:
-                results.append((library, get_library_root(library)))
-        else:
-            # Fall back to the active library to avoid skipping migrations/cleanup
-            settings_manager = get_settings_manager()
-            active = settings_manager.get_active_library_name() or "default"
-            results.append((active, get_library_root(active)))
-        return results
-
-    settings_manager = get_settings_manager()
-    active = settings_manager.get_active_library_name() or "default"
-    return [(active, root)]
+    return [("default", root)]
 
 
 def is_hash_folder(name: str) -> bool:
@@ -326,11 +251,8 @@ def is_valid_example_images_root(folder_path: str) -> bool:
             if item == "_deleted":
                 # Allow cleanup staging folders
                 continue
-            # Accept legacy library folders even when current settings do not
-            # explicitly enable multi-library mode. This allows users to reuse a
-            # previously configured example images directory after settings are
-            # reset, as long as the nested structure still looks like dedicated
-            # hash folders.
+            # Accept legacy library folders so the startup consolidation can
+            # recover their hash directories.
             if _library_folder_has_only_hash_dirs(item_path):
                 continue
         return False

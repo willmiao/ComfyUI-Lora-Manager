@@ -401,11 +401,7 @@ class ModelUpdateService:
         self._initialize_schema()
 
     def _get_active_library_name(self) -> str:
-        try:
-            value = self._settings.get_active_library_name()
-        except Exception:
-            value = None
-        return value or "default"
+        return "default"
 
     def _resolve_default_path(self, library_name: str) -> str:
         env_override = os.environ.get("LORA_MANAGER_MODEL_UPDATE_DB")
@@ -416,7 +412,7 @@ class ModelUpdateService:
         )
 
     def on_library_changed(self) -> None:
-        """Switch to the database for the active library."""
+        """Re-resolve the default database after settings changes."""
 
         if self._custom_db_path:
             return

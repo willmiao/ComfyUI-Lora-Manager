@@ -89,7 +89,7 @@ class PersistentRecipeCache:
 
     @classmethod
     def clear_instances(cls) -> None:
-        """Clear all cached instances (useful for library switching)."""
+        """Clear all cached instances."""
         with cls._instance_lock:
             cls._instances.clear()
 
@@ -648,8 +648,5 @@ class PersistentRecipeCache:
 
 
 def get_persistent_recipe_cache() -> PersistentRecipeCache:
-    """Get the default persistent recipe cache instance for the active library."""
-    from .settings_manager import get_settings_manager
-
-    library_name = get_settings_manager().get_active_library_name()
-    return PersistentRecipeCache.get_default(library_name)
+    """Get the persistent recipe cache instance."""
+    return PersistentRecipeCache.get_default("default")
