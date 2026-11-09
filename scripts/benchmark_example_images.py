@@ -125,8 +125,53 @@ def prepare(args: argparse.Namespace) -> None:
     _log(f"copying cache -> {cache_dest}")
     _copy_model_cache(cache_source, cache_dest)
 
-    real_sidecar_root, sidecar_by_hash = _index_sidecars()
     db_path = cache_dest / "model" / "comfyui.sqlite"
+    if args.full:
+        # Full production-shaped run: all example-capable model types, no
+        # sidecar/image filters, and a complete sidecar copy. The download
+        # manager's explicit target path then processes the same 987 models
+        # as the normal UI run.
+        connection = sqlite3.connect(str(db_path))
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            "select model_type, file_path, file_name, model_name, sha256 "
+            "from models where model_type in ('lora','checkpoint','embedding')"
+        ).fetchall()
+        connection.close()
+        selected = []
+        for row in rows:
+            sha = (row["sha256"] or "").lower()
+            if len(sha) != 64:
+                continue
+            selected.append(
+                {
+                    "sha256": sha,
+                    "model_name": row["model_name"],
+                    "model_type": row["model_type"],
+                    "file_path": row["file_path"],
+                    "sidecar": "",
+                    "image_count": 0,
+                }
+            )
+        if not selected:
+            raise RuntimeError("no models found for full benchmark")
+        sidecar_dest = workdir / "sidecars"
+        if sidecar_dest.exists():
+            shutil.rmtree(sidecar_dest)
+        _log(f"copying full sidecars -> {sidecar_dest}")
+        shutil.copytree(REAL_CONFIG / "sidecars", sidecar_dest)
+        selection = {
+            "created_at": time.time(),
+            "models": selected,
+            "model_count": len(selected),
+            "total_images": 0,
+            "full": True,
+        }
+        _write_json(workdir / "selection.json", selection)
+        _log(f"selected {len(selected)} models for full run -> {workdir / 'selection.json'}")
+        return
+
+    real_sidecar_root, sidecar_by_hash = _index_sidecars()
     if not db_path.is_file():
         raise FileNotFoundError(f"model cache missing: {db_path}")
 
@@ -328,7 +373,7 @@ def run_once(
         response = _http_json(
             base_url + "/api/lm/download-example-images",
             {
-                "model_types": ["lora", "checkpoint"],
+                "model_types": ["lora", "checkpoint", "embedding"],
                 "model_hashes": model_hashes,
                 "delay": 0,
                 "optimize": True,
@@ -338,7 +383,7 @@ def run_once(
             raise RuntimeError(f"download rejected: {response}")
 
         download_start = time.monotonic()
-        deadline = download_start + 900
+        deadline = download_start + 2700
         status: dict[str, Any] = {}
         while time.monotonic() < deadline:
             payload = _http_json(base_url + "/api/lm/example-images-status")
@@ -352,7 +397,7 @@ def run_once(
                 break
             time.sleep(0.5)
         else:
-            raise TimeoutError("download did not finish within 900s")
+            raise TimeoutError("download did not finish within 2700s")
         elapsed = time.monotonic() - download_start
         files, size = _media_stats(examples_path)
         logs = _count_log_events(log_path)
@@ -500,6 +545,7 @@ def main() -> None:
     parser.add_argument("--images", type=int, default=180, help="max selected images")
     parser.add_argument("--min-images", type=int, default=4)
     parser.add_argument("--max-images", type=int, default=10)
+    parser.add_argument("--full", action="store_true", help="select all example-capable models")
     parser.add_argument("--repeats", type=int, default=2)
     parser.add_argument("--port", type=int, default=18200)
     parser.add_argument("--old-tree", default=str(DEFAULT_WORKDIR / "old-tree"))

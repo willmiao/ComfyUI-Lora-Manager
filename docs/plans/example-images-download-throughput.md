@@ -290,12 +290,70 @@ Measured on 19 models / 185 selected images, three alternating repeats:
   cleared explicit-target failures; both produced the same 177 files. This is
   the post-P1 failure-classification behavior, not a throughput regression.
 
-This is a 185-image subset, so it is directional rather than a full-library
-guarantee. Re-run the harness after material changes:
+### Medium-subset check
+
+A second, larger subset (80 models / 729 selected images) was run twice on the
+new tree only, because the old serial tree was aborted after 13/80 models in
+about 11 minutes: it stalled on stale metadata, which is exactly the failure the
+90 s refresh timeout in the current tree bounds. The new tree finished all 80
+models in every run.
+
+| Mode | Runs | Median wall | Speedup vs new-serial | Files | 429 | Probe steps |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `new-serial` | 2 | 110.1 s | 1.000× | 721–730 | 0 | 0 |
+| `pipeline` | 2 | 78.7 s | 1.398× | 730 | 0 | 0 |
+| `aimd` | 2 | 55.7 s | 1.977× | 730 | 0 | 4 |
+
+- Pipeline: **28.5% less wall time** than new-serial.
+- AIMD: **29.3% less** than pipeline and **49.4% less** than new-serial; both
+  AIMD runs probed 6 → 8 (two steps each).
+- One new-serial run produced 721 files instead of 730; the others produced
+  730. A single model was classified failed in every run; no 429s occurred.
+
+The 19-model and 80-model subsets agree on the direction and roughly on the
+magnitude of the pipeline/AIMD gains. Neither reproduces the old serial tree's
+stall, which is why the full old-vs-new A/B is not recommended.
+
+### Full-library validation (new code only)
+
+One full run of the current tree (`9a52ed0b`, `aimd`, model concurrency 2,
+probe ceiling 8) processed the UI's default 987 models (lora + checkpoint +
+embedding) into a fresh temporary examples directory:
+
+| Metric | Previous clean run (base 6, serial models) | Current full run |
+| --- | ---: | ---: |
+| Wall time | 1,164 s | 894.7 s |
+| Files | 7,990 | 7,404 |
+| Bytes | 1.045 GB | 995.3 MB |
+| Failed models | 46 | 46 |
+| 429 responses | 0 | 0 |
+| Probe steps | 0 | 2 (6 → 8) |
+
+- Wall time fell **23.1%**; file throughput rose from 6.86/s to 8.27/s
+  (+20.6%) and byte throughput from 0.898 MB/s to 1.112 MB/s (+23.8%).
+- The current run produced fewer files (7,404 vs 7,990), so the raw wall-time
+  delta is not entirely like-for-like. A sidecar scan of the same selection
+  finds 7,714 image entries, so 7,404 downloaded files is plausible after the
+  46 failed models; the earlier count likely included extra legacy/local files.
+- There were no 429s and exactly two probe steps, so the full run exercised
+  8-way concurrency without triggering a cooldown.
+- Four per-image download errors were logged; the failed-model count still
+  matches the previous run (46).
+
+This validates that the pipeline/AIMD settings survive a full-library run; it
+is not an old-vs-new full A/B (the old serial tree would take roughly
+70–90 minutes per run and downloads larger renditions).
+
+The subset runs are directional, and the full run validates stability rather
+than an old-vs-new full A/B. Re-run the harness after material changes:
 
 ```bash
 python scripts/benchmark_example_images.py prepare --count 20 --images 180
 python scripts/benchmark_example_images.py compare --repeats 3
+
+# Full 987-model validation of the current tree only:
+python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-full prepare --full
+python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-full run --tree . --mode aimd --port 18300
 ```
 
 The harness creates its old worktree, cache/sidecar copies and run logs under
