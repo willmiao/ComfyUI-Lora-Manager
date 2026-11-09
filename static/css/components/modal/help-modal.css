@@ -84,16 +84,16 @@
   display: block;
 }
 
-.help-text {
+.help-modal .help-features {
   margin: var(--space-2) 0;
 }
 
-.help-text ul {
+.help-modal .help-features ul {
   padding-left: 20px;
   margin-top: 8px;
 }
 
-.help-text li {
+.help-modal .help-features li {
   margin-bottom: 8px;
 }
 
