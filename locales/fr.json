@@ -467,14 +467,13 @@
         },
         "cardPreview": {
             "cycleOnHover": "Faire défiler les images d'exemple au survol",
-            "cycleOnHoverHelp": "Lors du survol d'une carte avec une image d'aperçu, ses images d'exemple défilent. L'image d'aperçu sélectionnée reste inchangée. Les aperçus vidéo ne sont pas affectés.",
+            "cycleOnHoverHelp": "Lors du survol de l'image d'aperçu d'une carte, ses images d'exemple défilent. Le survol de l'en-tête ou du pied de la carte ne lance pas le défilement, donc les boutons d'action et les infobulles restent utilisables. L'image d'aperçu sélectionnée reste inchangée. Les aperçus vidéo ne sont pas affectés.",
             "cycleInterval": "Intervalle de défilement",
             "cycleIntervalHelp": "Temps entre chaque changement d'image d'exemple lors du survol d'une carte.",
             "cycleIntervalOptions": {
-                "fast": "Rapide (2 s)",
-                "normal": "Normal (3 s)",
-                "relaxed": "Posé (5 s)",
-                "slow": "Lent (8 s)"
+                "fast": "Rapide (1,5 s)",
+                "normal": "Normal (2 s)",
+                "relaxed": "Posé (3 s)"
             }
         },
         "autoOrganizeExclusions": {

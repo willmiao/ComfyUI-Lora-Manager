@@ -298,6 +298,19 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (轮播 / 輪播 in zh), distinct from the manual media switch; the options keep each locale's
 > unit notation ("2 s" in the Latin locales, 2 секунды ru, 2 שניות he, 2秒 ja, 2초 ko,
 > 2 秒 zh). No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-11, card preview cycling, interval revision):** the interval options were
+> revised to Fast (1.5s) / Normal (2s, new default) / Relaxed (3s) and the 8s Slow option
+> was dropped. The three `cycleIntervalOptions.*` keys were re-queued as
+> `[TODO: Translate]` in all 9 locales (their translations described the old values) and
+> are now translated, keeping each locale's pace words and unit notation; 1.5 uses the
+> locale's decimal separator (1,5 in de/es/fr/ru, 1.5 elsewhere).
+>
+> **Status (2026-11, card preview cycling, hover-zone revision):** cycling now arms only
+> from the bare preview area — hovering the card header or footer never starts it — and
+> the activation delay dropped from 1.5s to 0.8s. `settings.cardPreview.cycleOnHoverHelp`
+> was reworded accordingly, re-queued as `[TODO: Translate]` in all 9 locales and is now
+> translated. No `[TODO: Translate]` placeholder remains.
 
 ---
 
@@ -904,7 +917,8 @@ configured by the Settings → Interface section `settings.sections.cardPreview`
 "card" noun and "example images" noun; "cycle" here is the automatic image rotation, so
 zh-CN/zh-TW use 轮播 / 輪播 rather than the manual `help.shortcuts.entries.cycleMedia` "switch".
 The interval options keep the locale's unit notation ("2 s" in the Latin locales, 2 секунды ru,
-2 שניות he, 2秒 ja, 2초 ko, 2 秒 zh) and put "Relaxed" between Normal and Slow as a pace word
+2 שניות he, 2秒 ja, 2초 ko, 2 秒 zh; 1.5 uses the locale's decimal separator — 1,5 in de/es/fr/ru,
+1.5 elsewhere) and top out at "Relaxed" as a pace word
 (Gemächlich, Pausado, Posé, Неспешный, נינוח, のんびり, 느긋함, 舒缓/舒緩).
 
 | Term | Rendering |
@@ -912,7 +926,7 @@ The interval options keep the locale's unit notation ("2 s" in the Latin locales
 | Card Preview (section title) | zh-CN 卡片预览 · zh-TW 卡片預覽 · ja カードプレビュー · ko 카드 미리보기 · fr Aperçu des cartes · de Kartenvorschau · es Vista previa de tarjeta · ru Превью карточек · he תצוגה מקדימה של כרטיסים |
 | Cycle Example Images on Hover | zh-CN 悬停时轮播示例图片 · zh-TW 滑鼠懸停時輪播範例圖片 · ja ホバー時に例画像を切り替え · ko 호버 시 예시 이미지 전환 · fr Faire défiler les images d'exemple au survol · de Beispielbilder bei Hover durchblättern · es Cambiar imágenes de ejemplo al pasar el ratón · ru Переключать примеры изображений при наведении · he עבור בין תמונות דוגמה בריחוף |
 | Cycle Interval | zh-CN 轮播间隔 · zh-TW 輪播間隔 · ja 切り替え間隔 · ko 전환 간격 · fr Intervalle de défilement · de Wechselintervall · es Intervalo de cambio · ru Интервал переключения · he מרווח החלפה |
-| interval options (fast / normal / relaxed / slow) | zh-CN 快 / 正常 / 舒缓 / 慢 · zh-TW 快 / 正常 / 舒緩 / 慢 · ja 速い / 標準 / のんびり / 遅い · ko 빠름 / 보통 / 느긋함 / 느림 · fr Rapide / Normal / Posé / Lent · de Schnell / Normal / Gemächlich / Langsam · es Rápido / Normal / Pausado / Lento · ru Быстрый / Обычный / Неспешный / Медленный · he מהיר / רגיל / נינוח / איטי |
+| interval options (fast / normal / relaxed) | zh-CN 快 / 正常 / 舒缓 · zh-TW 快 / 正常 / 舒緩 · ja 速い / 標準 / のんびり · ko 빠름 / 보통 / 느긋함 · fr Rapide / Normal / Posé · de Schnell / Normal / Gemächlich · es Rápido / Normal / Pausado · ru Быстрый / Обычный / Неспешный · he מהיר / רגיל / נינוח |
 
 ### Scoped scan and root availability
 

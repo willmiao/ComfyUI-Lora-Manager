@@ -467,14 +467,13 @@
         },
         "cardPreview": {
             "cycleOnHover": "Beispielbilder bei Hover durchblättern",
-            "cycleOnHoverHelp": "Beim Hovern über eine Karte mit Bildvorschau werden die Beispielbilder durchgeblättert. Das ausgewählte Vorschaubild selbst bleibt unverändert. Video-Vorschauen sind nicht betroffen.",
+            "cycleOnHoverHelp": "Beim Hovern über das Vorschaubild einer Karte werden die Beispielbilder durchgeblättert. Das Hovern über die Kopf- oder Fußzeile der Karte startet das Durchblättern nicht, sodass Aktions-Schaltflächen und Tooltips nutzbar bleiben. Das ausgewählte Vorschaubild selbst bleibt unverändert. Video-Vorschauen sind nicht betroffen.",
             "cycleInterval": "Wechselintervall",
             "cycleIntervalHelp": "Zeit zwischen dem Wechsel der Beispielbilder beim Hovern über eine Karte.",
             "cycleIntervalOptions": {
-                "fast": "Schnell (2 s)",
-                "normal": "Normal (3 s)",
-                "relaxed": "Gemächlich (5 s)",
-                "slow": "Langsam (8 s)"
+                "fast": "Schnell (1,5 s)",
+                "normal": "Normal (2 s)",
+                "relaxed": "Gemächlich (3 s)"
             }
         },
         "autoOrganizeExclusions": {

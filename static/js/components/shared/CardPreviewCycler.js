@@ -2,11 +2,13 @@
  * Card preview hover cycler.
  *
  * The single preview image is the memory anchor for a model and never
- * changes implicitly. While the user hovers a card whose preview is a
- * static image, this module crossfades through the model's example images
- * (CivitAI images + custom images, videos excluded) so multi-concept
- * models can be recognized at a glance. Leaving the card restores the
- * anchor preview immediately.
+ * changes implicitly. While the user hovers the bare preview area of a card
+ * whose preview is a static image, this module crossfades through the
+ * model's example images (CivitAI images + custom images, videos excluded)
+ * so multi-concept models can be recognized at a glance. Hovering the card
+ * header or footer never starts cycling, so action buttons and tooltips
+ * stay undisturbed. Leaving the card restores the anchor preview
+ * immediately.
  *
  * Video previews are intentionally excluded: their hover slot already
  * plays the video itself (see configureModelCardVideo).
@@ -18,13 +20,14 @@ import { NSFW_LEVELS } from '../../utils/constants.js';
 import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { getThumbnailUrl } from '../../utils/civitaiUtils.js';
 
-// How long the pointer must rest on a card before cycling mode activates and
-// the card chrome fades out. Generous on purpose: ordinary hover interactions
-// (action icons, tooltips) must stay usable, and the anchor preview has
-// already been seen by then — so the first example frame swaps in the moment
-// the mode activates (it was preloaded during the delay).
-const CYCLE_MODE_DELAY_MS = 1500;
-const DEFAULT_CYCLE_INTERVAL_SECONDS = 3;
+// How long the pointer must rest on the bare preview area before cycling
+// mode activates and the card chrome fades out. The card header and footer
+// live inside .card-preview, but hovering them disarms the timer, so chrome
+// interactions (action icons, tooltips) are protected structurally and the
+// delay can stay short. The first example frame is preloaded while the
+// timer runs, so it swaps in the moment the mode activates.
+const CYCLE_MODE_DELAY_MS = 800;
+const DEFAULT_CYCLE_INTERVAL_SECONDS = 2;
 
 // Per-model example image URL lists, keyed by file_path. Values are promises
 // so repeated hovers share one fetch for the session.
@@ -99,10 +102,12 @@ export function attachCardPreviewCycler(card, model) {
     if (!cardPreview) return;
 
     let hovered = false;
+    let pointerInChrome = false;
     let hoverDelayTimer = null;
     let cycleTimer = null;
     let buffers = null;
     let imageUrls = [];
+    let pendingImages = null;
     let currentIndex = -1;
     let activeBuffer = 0;
     let swapping = false;
@@ -149,6 +154,7 @@ export function attachCardPreviewCycler(card, model) {
         }
         currentIndex = -1;
         swapping = false;
+        pointerInChrome = false;
         card.classList.remove('cycling');
         removeBuffers();
     };
@@ -185,17 +191,12 @@ export function attachCardPreviewCycler(card, model) {
         ensurePreloaded(imageUrls[(currentIndex + 1) % imageUrls.length]);
     };
 
-    const onMouseEnter = () => {
-        if (!state.global?.settings?.card_preview_cycle) return;
-        if (prefersReducedMotion()) return;
-        // NSFW-blurred cards stay static until the user explicitly unblurs.
-        if (cardPreview.classList.contains('blurred')) return;
-
-        hovered = true;
-        // Data loading starts on hover, not when the mode activates: the
-        // delay only gates the visual mode switch, and the first frame is
-        // preloaded during it so it can fade in instantly on activation.
-        const pendingImages = getCycleImages(model).then(urls => {
+    // Data loading starts on first hover, not when the mode activates: the
+    // delay only gates the visual mode switch, and the first frame is
+    // preloaded during it so it can fade in instantly on activation.
+    const startPrefetch = () => {
+        if (pendingImages) return;
+        pendingImages = getCycleImages(model).then(urls => {
             // The first CivitAI example doubles as the cover/preview, so the
             // first frame shown is index 1 (the cover rejoins the rotation
             // when the cycle wraps).
@@ -204,21 +205,50 @@ export function attachCardPreviewCycler(card, model) {
             }
             return urls;
         });
-        hoverDelayTimer = setTimeout(async () => {
-            hoverDelayTimer = null;
-            imageUrls = await pendingImages;
-            // A single example is the cover image itself — nothing new to show.
-            if (!hovered || !card.isConnected || imageUrls.length < 2) {
-                return;
+    };
+
+    const activate = async () => {
+        hoverDelayTimer = null;
+        imageUrls = await pendingImages;
+        // A single example is the cover image itself — nothing new to show.
+        // The cycleTimer guard catches a second activation that was re-armed
+        // while this one was still awaiting its image list.
+        if (!hovered || pointerInChrome || !card.isConnected || imageUrls.length < 2 || cycleTimer) {
+            return;
+        }
+        // Index 0 is the anchor's double; treat it as the current frame so
+        // the first swap lands on index 1.
+        currentIndex = 0;
+        card.classList.add('cycling');
+        createBuffers();
+        swapToNext();
+        cycleTimer = setInterval(swapToNext, getCycleIntervalMs());
+    };
+
+    const onMouseOver = (event) => {
+        if (!state.global?.settings?.card_preview_cycle) return;
+        if (prefersReducedMotion()) return;
+        // NSFW-blurred cards stay static until the user explicitly unblurs.
+        if (cardPreview.classList.contains('blurred')) return;
+
+        if (!hovered) {
+            hovered = true;
+            startPrefetch();
+        }
+        if (cycleTimer) return;
+
+        // The card chrome (header/footer with action icons and tooltips) is
+        // a child of .card-preview; only the bare preview area arms the
+        // activation timer, and moving into the chrome disarms it again.
+        pointerInChrome = Boolean(event.target.closest?.('.card-header, .card-footer'));
+        if (pointerInChrome) {
+            if (hoverDelayTimer) {
+                clearTimeout(hoverDelayTimer);
+                hoverDelayTimer = null;
             }
-            // Index 0 is the anchor's double; treat it as the current frame so
-            // the first swap lands on index 1.
-            currentIndex = 0;
-            card.classList.add('cycling');
-            createBuffers();
-            swapToNext();
-            cycleTimer = setInterval(swapToNext, getCycleIntervalMs());
-        }, CYCLE_MODE_DELAY_MS);
+        } else if (!hoverDelayTimer) {
+            hoverDelayTimer = setTimeout(activate, CYCLE_MODE_DELAY_MS);
+        }
     };
 
     const onMouseLeave = () => {
@@ -226,7 +256,7 @@ export function attachCardPreviewCycler(card, model) {
         cleanup();
     };
 
-    cardPreview.addEventListener('mouseenter', onMouseEnter);
+    cardPreview.addEventListener('mouseover', onMouseOver);
     cardPreview.addEventListener('mouseleave', onMouseLeave);
 }
 

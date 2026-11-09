@@ -168,7 +168,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "mature_blur_level": "R",
     "autoplay_on_hover": False,
     "card_preview_cycle": True,
-    "card_preview_cycle_interval": 3,
+    "card_preview_cycle_interval": 2,
     "display_density": "default",
     "recipes_layout": "grid",
     "card_info_display": "always",

@@ -21,7 +21,7 @@ const stateMock = {
   global: {
     settings: {
       card_preview_cycle: true,
-      card_preview_cycle_interval: 3,
+      card_preview_cycle_interval: 2,
     },
   },
 };
@@ -72,6 +72,18 @@ function createCard() {
   return card;
 }
 
+// Mirrors the real card structure: header and footer are children of
+// .card-preview (see ModelCard.js), so they share its hover region.
+function createCardWithChrome() {
+  const card = document.createElement('div');
+  card.className = 'model-card';
+  card.innerHTML = '<div class="card-preview"><img src="/anchor.jpg">' +
+    '<div class="card-header"><div class="card-actions"><i class="action-icon"></i></div></div>' +
+    '<div class="card-footer"><span class="model-name">name</span></div></div>';
+  document.body.appendChild(card);
+  return card;
+}
+
 async function advance(ms) {
   await vi.advanceTimersByTimeAsync(ms);
 }
@@ -87,7 +99,7 @@ describe('CardPreviewCycler', () => {
     fetchModelMetadataMock.mockResolvedValue(METADATA);
     stateMock.settings.show_only_sfw = false;
     stateMock.global.settings.card_preview_cycle = true;
-    stateMock.global.settings.card_preview_cycle_interval = 3;
+    stateMock.global.settings.card_preview_cycle_interval = 2;
     document.body.innerHTML = '';
     ({ attachCardPreviewCycler, resetCardPreviewCycleCache } = await import(CYCLER_MODULE));
     resetCardPreviewCycleCache();
@@ -100,7 +112,7 @@ describe('CardPreviewCycler', () => {
 
   function hover(card) {
     const preview = card.querySelector('.card-preview');
-    preview.dispatchEvent(new Event('mouseenter'));
+    preview.dispatchEvent(new Event('mouseover', { bubbles: true }));
     return preview;
   }
 
@@ -115,10 +127,10 @@ describe('CardPreviewCycler', () => {
 
     // Ordinary hover interactions (action icons, tooltips) keep working:
     // the chrome stays visible until the mode delay elapses.
-    await advance(350);
+    await advance(400);
     expect(card.classList.contains('cycling')).toBe(false);
 
-    await advance(1150);
+    await advance(400);
     // Cycling mode hides the card chrome and fades the first frame in
     // as soon as it is loaded, without waiting for a full interval.
     expect(card.classList.contains('cycling')).toBe(true);
@@ -143,7 +155,7 @@ describe('CardPreviewCycler', () => {
     const preview = hover(card);
 
     // Cycle order for [1, 2, nsfw, custom] is 2 → nsfw → custom → 1 (wrap).
-    await advance(1500);
+    await advance(800);
     await advance(1);
     expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
 
@@ -158,7 +170,7 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     await advance(1);
     await advance(3000);
     await advance(1);
@@ -173,7 +185,7 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     await advance(0);
 
     preview.dispatchEvent(new Event('mouseleave'));
@@ -183,6 +195,36 @@ describe('CardPreviewCycler', () => {
     expect(card.classList.contains('cycling')).toBe(false);
     const anchor = preview.querySelector('img');
     expect(anchor.src).toContain('/anchor.jpg');
+  });
+
+  it('never arms the timer while the pointer is over the card chrome', async () => {
+    const card = createCardWithChrome();
+    attachCardPreviewCycler(card, MODEL);
+    card.querySelector('.card-header').dispatchEvent(new Event('mouseover', { bubbles: true }));
+
+    await advance(5000);
+    expect(card.classList.contains('cycling')).toBe(false);
+    expect(card.querySelectorAll('.card-preview-cycle-img')).toHaveLength(0);
+  });
+
+  it('disarms the timer in the chrome and re-arms it back on the preview', async () => {
+    const card = createCardWithChrome();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    // Half the delay on the bare preview, then move onto the footer: the
+    // pending activation is cancelled, not postponed.
+    await advance(400);
+    card.querySelector('.card-footer').dispatchEvent(new Event('mouseover', { bubbles: true }));
+    await advance(1000);
+    expect(card.classList.contains('cycling')).toBe(false);
+
+    // Back on the bare preview the full delay applies again.
+    preview.querySelector('img').dispatchEvent(new Event('mouseover', { bubbles: true }));
+    await advance(799);
+    expect(card.classList.contains('cycling')).toBe(false);
+    await advance(2);
+    expect(card.classList.contains('cycling')).toBe(true);
   });
 
   it('does not start when the setting is disabled', async () => {
@@ -224,7 +266,7 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     // Cycle through all remaining frames.
     await advance(9000);
 
@@ -239,7 +281,7 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     await advance(1);
     expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
 
@@ -264,7 +306,7 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     await advance(1);
 
     const visible = preview.querySelector('.card-preview-cycle-img.visible');
@@ -289,11 +331,11 @@ describe('CardPreviewCycler', () => {
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    await advance(1500);
+    await advance(800);
     preview.dispatchEvent(new Event('mouseleave'));
     await advance(500);
     hover(card);
-    await advance(1500);
+    await advance(800);
 
     expect(fetchModelMetadataMock).toHaveBeenCalledTimes(1);
   });

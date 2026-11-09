@@ -1250,7 +1250,7 @@ export class SettingsManager {
         }
         const cardPreviewCycleIntervalSelect = document.getElementById('cardPreviewCycleInterval');
         if (cardPreviewCycleIntervalSelect) {
-            cardPreviewCycleIntervalSelect.value = String(state.global.settings.card_preview_cycle_interval ?? 3);
+            cardPreviewCycleIntervalSelect.value = String(state.global.settings.card_preview_cycle_interval ?? 2);
         }
 
         // Set display density setting
