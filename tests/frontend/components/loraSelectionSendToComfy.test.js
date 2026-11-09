@@ -33,6 +33,7 @@ import {
   enableListedLorasFromCode,
   parseLoraCodeTags,
 } from '../../../web/comfyui/lora_selection.js';
+import { mergeLoras } from '../../../web/comfyui/utils.js';
 
 // Synthetic fixtures: every name below is invented and matches no real file.
 const listed = (name, { active = true, strength = '0.80' } = {}) => ({
@@ -249,7 +250,7 @@ describe('Send to ComfyUI wiring', () => {
     expect(node.inputWidget.value).toContain('<lora:styles/sample_wash:0.6>');
   });
 
-  it('leaves replace mode alone', async () => {
+  it('replaces the text without touching the list for an unlisted LoRA', async () => {
     await import('../../../web/comfyui/lora_loader.js');
     const extension = getLoaderExtension();
     const node = createNode([listed('portraits/sample_entry')]);
@@ -258,5 +259,40 @@ describe('Send to ComfyUI wiring', () => {
 
     expect(node.inputWidget.value).toBe('<lora:styles/sample_wash:1>');
     expect(node.lorasWidget.callback).not.toHaveBeenCalled();
+    expect(node.lorasWidget.value).toHaveLength(1);
+  });
+
+  it('enables a listed disabled LoRA in replace mode', async () => {
+    await import('../../../web/comfyui/lora_loader.js');
+    const extension = getLoaderExtension();
+
+    // Use the real merge: it keeps the saved active flag of listed entries,
+    // which is what left a replace target disabled on the textarea path.
+    const lorasWidget = {
+      value: [listed('portraits/sample_entry', { active: false })],
+      callback: vi.fn(),
+    };
+    const node = {
+      inputWidget: {
+        value: '',
+        callback: (value) => {
+          lorasWidget.value = mergeLoras(value, lorasWidget.value);
+        },
+      },
+      lorasWidget,
+    };
+
+    extension.updateNodeLoraCode(
+      node,
+      '<lora:portraits/sample_entry:0.75>',
+      'replace'
+    );
+
+    expect(lorasWidget.value).toHaveLength(1);
+    expect(lorasWidget.value[0].active).toBe(true);
+    // The saved strength wins over the strength in the sent code.
+    expect(lorasWidget.value[0].strength).toBe('0.80');
+    expect(lorasWidget.callback).toHaveBeenCalledTimes(1);
+    expect(node.inputWidget.value).toBe('<lora:portraits/sample_entry:0.75>');
   });
 });

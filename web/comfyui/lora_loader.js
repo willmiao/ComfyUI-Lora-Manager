@@ -176,6 +176,14 @@ app.registerExtension({
     if (typeof inputWidget.callback === "function") {
       inputWidget.callback(inputWidget.value);
     }
+
+    // Replace mode: mergeLoras keeps the saved active flag of entries that are
+    // also present in the new code, so a listed-but-disabled LoRA would stay
+    // off after the replace. Switch it on after the merge, as the append path
+    // does, so Shift+click "Send to ComfyUI" cannot leave the target disabled.
+    if (mode === "replace") {
+      this.enableListedLoras(node, loraCode);
+    }
   },
 
   /**
