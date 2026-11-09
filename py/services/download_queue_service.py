@@ -274,15 +274,6 @@ class DownloadQueueService:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    async def get_queued_count(self) -> int:
-        """Return the number of items with status ``'queued'``."""
-        async with self._lock:
-            conn = self._get_conn()
-            row = conn.execute(
-                "SELECT COUNT(*) AS cnt FROM download_queue WHERE status = 'queued'"
-            ).fetchone()
-        return row["cnt"] if row else 0
-
     async def update_status(
         self,
         download_id: str,
@@ -495,43 +486,6 @@ class DownloadQueueService:
             conn.commit()
         return dict(row)
 
-    async def pop_next_download(self) -> Optional[dict[str, Any]]:
-        """Atomically fetch and mark the next queued item as ``downloading``.
-
-        The item with the highest priority (and earliest ``added_at``
-        among ties) whose status is ``'queued'`` is selected, set to
-        ``'downloading'``, and returned as a dict.  Returns ``None`` if
-        the queue is empty.
-        """
-        async with self._lock:
-            conn = self._get_conn()
-            row = conn.execute(
-                """
-                SELECT * FROM download_queue
-                WHERE status = 'queued'
-                ORDER BY priority DESC, added_at ASC
-                LIMIT 1
-                """
-            ).fetchone()
-            if row is None:
-                return None
-
-            download_id = row["download_id"]
-            now = time.time()
-            conn.execute(
-                "UPDATE download_queue SET status = 'downloading', "
-                "started_at = COALESCE(started_at, ?) "
-                "WHERE download_id = ?",
-                (now, download_id),
-            )
-            conn.commit()
-            updated = conn.execute(
-                "SELECT * FROM download_queue WHERE download_id = ?",
-                (download_id,),
-            ).fetchone()
-
-        return dict(updated) if updated else None
-
     # ------------------------------------------------------------------
     # History methods
     # ------------------------------------------------------------------
@@ -689,21 +643,6 @@ class DownloadQueueService:
             )
             conn.commit()
         return cursor.rowcount
-
-    async def get_history_count(self, status_filter: Optional[str] = None) -> int:
-        """Return the number of history entries, optionally filtered by status."""
-        async with self._lock:
-            conn = self._get_conn()
-            if status_filter is not None:
-                row = conn.execute(
-                    "SELECT COUNT(*) AS cnt FROM download_history WHERE status = ?",
-                    (status_filter,),
-                ).fetchone()
-            else:
-                row = conn.execute(
-                    "SELECT COUNT(*) AS cnt FROM download_history"
-                ).fetchone()
-        return row["cnt"] if row else 0
 
     # ------------------------------------------------------------------
     # Retry
