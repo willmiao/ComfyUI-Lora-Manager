@@ -143,8 +143,9 @@ async def test_get_status_compact_replaces_hash_lists_with_counts():
     )
 
     full = await manager.get_status(SimpleNamespace(query={}))
-    assert full["status"]["processed_models"] == ["a", "b"]
-    assert full["status"]["failed_models"] == ["c"]
+    # The progress sets are unordered, so only their contents are contractual.
+    assert set(full["status"]["processed_models"]) == {"a", "b"}
+    assert set(full["status"]["failed_models"]) == {"c"}
 
     compact = await manager.get_status(
         SimpleNamespace(query={"compact": "1"})
