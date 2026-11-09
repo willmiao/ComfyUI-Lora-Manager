@@ -428,6 +428,95 @@ async def test_dedup_queue_unparseable_file_params_treated_as_none(tmp_path: Pat
 
 
 @pytest.mark.asyncio
+async def test_dedup_keeps_retry_for_other_file_of_failed_version(
+    tmp_path: Path,
+) -> None:
+    """A retried file survives while a *different* file of its version failed.
+
+    Multi-file versions: retrying file 1001 must not be treated as an orphan
+    just because file 1002 of the same version still has a failed history row.
+    """
+    svc = _make_service(tmp_path)
+    await svc.add_to_history(
+        download_id="dl-file-a",
+        model_id=1,
+        model_version_id=100,
+        status="failed",
+        file_params={"id": 1001},
+    )
+    await svc.add_to_history(
+        download_id="dl-file-b",
+        model_id=1,
+        model_version_id=100,
+        status="failed",
+        file_params={"id": 1002},
+    )
+
+    retried = await svc.retry_from_history(download_id="dl-file-a")
+    assert retried is not None
+    assert retried["source"] == "retry"
+
+    result = await svc.deduplicate()
+
+    assert result["removed_orphan_queue"] == 0
+    queue = await svc.get_queue()
+    assert [item["download_id"] for item in queue] == [retried["download_id"]]
+    assert json.loads(queue[0]["file_params"]) == {"id": 1001}
+
+
+@pytest.mark.asyncio
+async def test_dedup_removes_retry_for_same_file_of_failed_version(
+    tmp_path: Path,
+) -> None:
+    """A retried file is still cleaned up when that same file has a failed row."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_history(
+        download_id="dl-same",
+        model_id=1,
+        model_version_id=100,
+        status="failed",
+        file_params={"id": 1001},
+    )
+    await svc.add_to_queue(
+        download_id="dl-retry",
+        model_id=1,
+        model_version_id=100,
+        source="retry",
+        file_params={"id": 1001},
+    )
+
+    result = await svc.deduplicate()
+
+    assert result["removed_orphan_queue"] == 1
+    assert await svc.get_queue() == []
+
+
+@pytest.mark.asyncio
+async def test_dedup_removes_legacy_retry_without_file_identity(
+    tmp_path: Path,
+) -> None:
+    """Rows without file identity keep the version-level orphan cleanup."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_history(
+        download_id="dl-legacy-failed",
+        model_id=1,
+        model_version_id=100,
+        status="failed",
+    )
+    await svc.add_to_queue(
+        download_id="dl-legacy-retry",
+        model_id=1,
+        model_version_id=100,
+        source="retry",
+    )
+
+    result = await svc.deduplicate()
+
+    assert result["removed_orphan_queue"] == 1
+    assert await svc.get_queue() == []
+
+
+@pytest.mark.asyncio
 async def test_dedup_history_keeps_distinct_files_of_same_version(tmp_path: Path) -> None:
     """History rows of different files never collapse, even across statuses."""
     svc = _make_service(tmp_path)

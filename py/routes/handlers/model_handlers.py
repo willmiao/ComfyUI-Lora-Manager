@@ -1939,6 +1939,11 @@ class ModelQueryHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+def _is_truthy(value: Optional[str]) -> bool:
+    """Parse an optional boolean query-string flag."""
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 class ModelDownloadHandler:
     """Coordinate downloads and progress reporting."""
 
@@ -2322,6 +2327,11 @@ class ModelDownloadHandler:
             download_id = request.query.get("download_id")
             id_str = request.query.get("id")
             item_id = int(id_str) if id_str else None
+            # ``start=true`` runs the retried download on the backend. The
+            # companion extension omits it (it drains the queue itself); a
+            # client without the extension would otherwise leave the row
+            # ``queued`` forever, since the SQLite queue has no executor.
+            start = _is_truthy(request.query.get("start"))
 
             if not download_id and not item_id:
                 return web.json_response(
@@ -2340,12 +2350,55 @@ class ModelDownloadHandler:
                 return web.json_response(
                     {"success": False, "error": "History item not found or not retryable"}
                 )
-            return web.json_response({"success": True, "item": item})
+            if not start:
+                return web.json_response({"success": True, "item": item})
+
+            result = await self._start_queued_download(item)
+            payload = dict(result)
+            payload["item"] = item
+            payload["started"] = True
+            if not result.get("success", False):
+                status = 429 if result.get("reason") == "rate_limited" else 500
+                return web.json_response(payload, status=status)
+            return web.json_response(payload)
+        except DownloadModelValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except DownloadModelEarlyAccessError as exc:
+            self._logger.warning("Early access error: %s", exc)
+            return web.json_response({"success": False, "error": str(exc)}, status=401)
         except Exception as exc:
             self._logger.error(
                 "Error retrying download from history: %s", exc, exc_info=True
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def _start_queued_download(self, item: dict[str, Any]) -> dict[str, Any]:
+        """Start a re-queued download without a client-side executor.
+
+        ``retry_from_history`` only writes a ``queued`` row. The queue is
+        normally drained by the companion browser extension, so callers
+        without it (headless or third-party integrations) pass
+        ``start=true`` to have the backend run the download now. The payload
+        mirrors what the extension sends on retry, and reuses the re-queued
+        ``download_id`` so the normal status transitions keep updating the
+        same row.
+        """
+        file_params: Any = item.get("file_params")
+        if isinstance(file_params, str):
+            try:
+                file_params = json.loads(file_params) or None
+            except json.JSONDecodeError:
+                file_params = None
+
+        payload = {
+            "model_id": item.get("model_id"),
+            "model_version_id": item.get("model_version_id"),
+            "download_id": item.get("download_id"),
+            "use_default_paths": True,
+            "source": item.get("source") or "retry",
+            "file_params": file_params or None,
+        }
+        return await self._download_use_case.execute(payload)
 
     async def retry_all_failed_downloads(self, request: web.Request) -> web.Response:
         try:

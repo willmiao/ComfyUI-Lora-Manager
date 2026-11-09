@@ -18,6 +18,7 @@ from aiohttp.test_utils import make_mocked_request
 
 from py.routes.handlers.model_handlers import ModelDownloadHandler
 from py.services.download_queue_service import DownloadQueueService
+from py.services.use_cases import DownloadModelValidationError
 
 
 def _make_handler() -> ModelDownloadHandler:
@@ -266,3 +267,126 @@ async def test_download_model_get_keeps_500_for_other_failures() -> None:
     payload = json.loads(response.text)
     assert payload["success"] is False
     assert "reason" not in payload
+
+
+# ----------------------------------------------------------------------
+# retry with start=true: backend executor for clients that do not run the
+# companion browser extension (#1196)
+# ----------------------------------------------------------------------
+
+
+def _make_retry_start_handler(result: dict) -> tuple[ModelDownloadHandler, AsyncMock]:
+    execute = AsyncMock(return_value=result)
+    handler = ModelDownloadHandler(
+        ws_manager=None,  # pyright: ignore[reportArgumentType] - unused here
+        logger=logging.getLogger("test-retry-start"),
+        download_use_case=SimpleNamespace(execute=execute),  # pyright: ignore[reportArgumentType]
+        download_coordinator=None,  # pyright: ignore[reportArgumentType] - unused here
+    )
+    return handler, execute
+
+
+@pytest.mark.asyncio
+async def test_retry_with_start_runs_download_server_side(
+    queue_service: DownloadQueueService,
+) -> None:
+    """start=true executes the re-queued item instead of parking it."""
+    await queue_service.add_to_history(
+        download_id="dl-fail",
+        model_id=7,
+        model_version_id=70,
+        status="failed",
+        file_params={"id": 7001, "type": "Model"},
+    )
+    handler, execute = _make_retry_start_handler(
+        {"success": True, "download_id": "ignored-by-handler"}
+    )
+
+    response = await handler.retry_download_from_history(
+        _queue_request(
+            "/api/lm/downloads/history/retry",
+            {"download_id": "dl-fail", "start": "true"},
+        )
+    )
+
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["started"] is True
+    queued = (await queue_service.get_queue())[0]
+    execute.assert_awaited_once()
+    sent = execute.await_args.args[0]
+    assert sent["model_id"] == 7
+    assert sent["model_version_id"] == 70
+    assert sent["download_id"] == queued["download_id"]
+    assert sent["use_default_paths"] is True
+    assert sent["source"] == "retry"
+    assert sent["file_params"] == {"id": 7001, "type": "Model"}
+
+
+@pytest.mark.asyncio
+async def test_retry_without_start_keeps_client_side_drain(
+    queue_service: DownloadQueueService,
+) -> None:
+    """The extension's call (no start flag) must not trigger a download."""
+    await queue_service.add_to_history(
+        download_id="dl-fail", model_id=1, status="failed"
+    )
+    handler, execute = _make_retry_start_handler({"success": True})
+
+    response = await handler.retry_download_from_history(
+        _queue_request(
+            "/api/lm/downloads/history/retry", {"download_id": "dl-fail"}
+        )
+    )
+
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert "started" not in payload
+    execute.assert_not_awaited()
+    assert (await queue_service.get_queue())[0]["status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_retry_with_start_maps_rate_limit_to_429(
+    queue_service: DownloadQueueService,
+) -> None:
+    await queue_service.add_to_history(
+        download_id="dl-fail", model_id=1, status="failed"
+    )
+    handler, _execute = _make_retry_start_handler(dict(_RATE_LIMITED_RESULT))
+
+    response = await handler.retry_download_from_history(
+        _queue_request(
+            "/api/lm/downloads/history/retry",
+            {"download_id": "dl-fail", "start": "1"},
+        )
+    )
+
+    assert response.status == 429
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert payload["reason"] == "rate_limited"
+    assert payload["started"] is True
+
+
+@pytest.mark.asyncio
+async def test_retry_with_start_maps_validation_error_to_400(
+    queue_service: DownloadQueueService,
+) -> None:
+    await queue_service.add_to_history(
+        download_id="dl-fail", model_id=1, status="failed"
+    )
+    handler, execute = _make_retry_start_handler({})
+    execute.side_effect = DownloadModelValidationError("bad payload")
+
+    response = await handler.retry_download_from_history(
+        _queue_request(
+            "/api/lm/downloads/history/retry",
+            {"download_id": "dl-fail", "start": "true"},
+        )
+    )
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
