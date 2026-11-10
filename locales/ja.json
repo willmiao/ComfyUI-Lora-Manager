@@ -757,6 +757,13 @@
         "priorityTags": {
             "title": "優先タグ",
             "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "優先タグのないタグには「Unsorted」フォルダを使用",
+                "help": "正規の優先タグがないファイルを、{first_tag} から新しいフォルダを作るのではなく、単一のフォルダにまとめます。デフォルトはオフです。モデルを再整理するまで既存のフォルダは変わりません。",
+                "folderLabel": "フォルダ名",
+                "folderHelp": "優先タグに一致しないが使用可能なタグを持つモデルのフォルダ部分を置き換えます。この名前はパステンプレート内で使われるため、{base_model}/{first_tag} の場合は <ベースモデル>/<この名前> になります。使用可能なタグがないモデルは従来の動作を維持します。",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "優先タグのヘルプを開く",
             "modelTypes": {

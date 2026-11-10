@@ -757,6 +757,13 @@
         "priorityTags": {
             "title": "우선순위 태그",
             "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
+            "unsortedFallback": {
+                "label": "우선순위 태그가 없는 태그에는 'Unsorted' 폴더 사용",
+                "help": "정식 우선순위 태그가 없는 파일을 {first_tag}로 새 폴더를 만드는 대신 하나의 폴더에 모읍니다. 기본값은 꺼짐이며, 모델을 다시 정리하기 전까지 기존 폴더는 변경되지 않습니다.",
+                "folderLabel": "폴더 이름",
+                "folderHelp": "사용 가능한 태그는 있지만 우선순위 태그와 일치하지 않는 모델의 폴더 세그먼트를 대체합니다. 이 이름은 경로 템플릿 안에서 사용되므로 {base_model}/{first_tag}인 경우 <기본 모델>/<이 이름>이 됩니다. 사용 가능한 태그가 없는 모델은 기존 동작을 유지합니다.",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "우선순위 태그 도움말 열기",
             "modelTypes": {

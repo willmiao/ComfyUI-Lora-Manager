@@ -757,6 +757,13 @@
         "priorityTags": {
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "对缺少优先标签的标签使用 'Unsorted' 文件夹",
+                "help": "将所有缺少规范优先标签的文件放入同一个文件夹，而不是根据 {first_tag} 新建文件夹。默认关闭：在重新整理模型之前，现有文件夹不会改变。",
+                "folderLabel": "文件夹名称",
+                "folderHelp": "为有可用标签但没有匹配优先标签的模型替换文件夹片段。该名称用于你的路径模板，因此使用 {base_model}/{first_tag} 时结果为 <基础模型>/<此名称>。没有可用标签的模型保持现有行为。",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "打开优先标签帮助",
             "modelTypes": {

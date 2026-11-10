@@ -757,6 +757,13 @@
         "priorityTags": {
             "title": "Tags prioritaires",
             "description": "Personnalisez l'ordre de priorité des tags pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "Utiliser le dossier « Unsorted » pour les tags sans tag prioritaire",
+                "help": "Place tous les fichiers sans tag prioritaire canonique dans un seul dossier au lieu de créer un nouveau dossier à partir de {first_tag}. Désactivé par défaut : les dossiers existants ne changent pas tant qu'un modèle n'est pas réorganisé.",
+                "folderLabel": "Nom du dossier",
+                "folderHelp": "Remplace le segment de dossier pour les modèles ayant des tags utilisables mais aucune correspondance de tag prioritaire. Ce nom est utilisé dans votre modèle de chemin ; avec {base_model}/{first_tag}, le résultat est <modèle de base>/<ce nom>. Les modèles sans tag utilisable conservent leur comportement actuel.",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Ouvrir l'aide sur les tags prioritaires",
             "modelTypes": {
