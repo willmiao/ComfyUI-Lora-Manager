@@ -579,37 +579,7 @@ export class SettingsManager {
             }
         });
 
-        const autoOrganizeInput = document.getElementById('autoOrganizeExclusions');
-        if (autoOrganizeInput) {
-            autoOrganizeInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.saveAutoOrganizeExclusions();
-                }
-            });
-        }
-
-        const metadataRefreshSkipPathsInput = document.getElementById('metadataRefreshSkipPaths');
-        if (metadataRefreshSkipPathsInput) {
-            metadataRefreshSkipPathsInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.saveMetadataRefreshSkipPaths();
-                }
-            });
-        }
-
-        for (const inputId of ['sendToWorkflowExcludedClasses', 'sendToWorkflowExcludedTitles']) {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        this.saveSendToWorkflowExclusions();
-                    }
-                });
-            }
-        }
+        this.setupExclusionTextareaHandlers();
 
         const downloadSkipBaseModelsContainer = document.getElementById('downloadSkipBaseModelsContainer');
         if (downloadSkipBaseModelsContainer) {
@@ -4280,6 +4250,54 @@ export class SettingsManager {
         }
     }
 
+    /**
+     * Wire the free-text exclusion / skip-list textareas. They are autosaved
+     * like every other control in this modal, so a change must not depend on
+     * the user pressing Enter: commit on blur (click-away, section switch,
+     * modal close) and keep Enter as an explicit commit.
+     */
+    setupExclusionTextareaHandlers() {
+        this.bindTextareaCommit('autoOrganizeExclusions', () => this.saveAutoOrganizeExclusions());
+        this.bindTextareaCommit('metadataRefreshSkipPaths', () => this.saveMetadataRefreshSkipPaths());
+
+        // Both send-to-workflow textareas persist one setting, so either one
+        // commits the pair.
+        const saveSendToWorkflowExclusions = () => this.saveSendToWorkflowExclusions();
+        this.bindTextareaCommit('sendToWorkflowExcludedClasses', saveSendToWorkflowExclusions);
+        this.bindTextareaCommit('sendToWorkflowExcludedTitles', saveSendToWorkflowExclusions);
+    }
+
+    /**
+     * Commit a textarea setting on blur, on Enter and before the modal closes.
+     * Enter never saves directly: it blurs the field so every commit path is
+     * the same one (same pattern as the filename template inputs).
+     */
+    bindTextareaCommit(inputId, commit) {
+        const input = document.getElementById(inputId);
+        if (!input || input.dataset.commitBound === '1') return;
+        input.dataset.commitBound = '1';
+
+        input.addEventListener('blur', () => {
+            commit();
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                input.blur();
+                return;
+            }
+
+            // Escape closes the modal without moving focus. Hiding the modal
+            // is not guaranteed to fire blur, so flush explicitly; a duplicate
+            // commit is a no-op because the save methods bail out when the
+            // normalized value matches the stored one.
+            if (event.key === 'Escape') {
+                commit();
+            }
+        });
+    }
+
     async saveSendToWorkflowExclusions() {
         const classesInput = document.getElementById('sendToWorkflowExcludedClasses');
         const titlesInput = document.getElementById('sendToWorkflowExcludedTitles');
@@ -4302,10 +4320,12 @@ export class SettingsManager {
 
         try {
             await this.saveSetting('send_to_workflow_exclusions', normalized);
-            if (classesInput) {
+            // Do not overwrite a field the user already re-entered while the
+            // request was in flight.
+            if (classesInput && document.activeElement !== classesInput) {
                 classesInput.value = normalized.node_classes.join(', ');
             }
-            if (titlesInput) {
+            if (titlesInput && document.activeElement !== titlesInput) {
                 titlesInput.value = normalized.title_patterns.join(', ');
             }
 
@@ -4352,7 +4372,11 @@ export class SettingsManager {
             }
 
             await this.saveSetting('auto_organize_exclusions', normalized);
-            input.value = normalized.join(', ');
+            // Do not overwrite the field if the user re-entered it while the
+            // request was in flight.
+            if (document.activeElement !== input) {
+                input.value = normalized.join(', ');
+            }
 
             showToast(
                 'toast.settings.settingsUpdated',
@@ -5150,7 +5174,11 @@ export class SettingsManager {
             }
 
             await this.saveSetting('metadata_refresh_skip_paths', normalized);
-            input.value = normalized.join(', ');
+            // Do not overwrite the field if the user re-entered it while the
+            // request was in flight.
+            if (document.activeElement !== input) {
+                input.value = normalized.join(', ');
+            }
 
             showToast(
                 'toast.settings.settingsUpdated',
