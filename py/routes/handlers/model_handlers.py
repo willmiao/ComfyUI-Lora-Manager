@@ -961,6 +961,15 @@ class ModelManagementHandler:
             if not file_path:
                 return web.Response(text="File path is required", status=400)
 
+            if not os.path.isfile(os.path.abspath(file_path)):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Model file no longer exists; refresh the model list before editing metadata",
+                    },
+                    status=409,
+                )
+
             metadata_updates = {k: v for k, v in data.items() if k != "file_path"}
 
             updated_metadata = await self._metadata_sync.save_metadata_updates(
@@ -995,6 +1004,15 @@ class ModelManagementHandler:
 
             if not isinstance(new_tags, list):
                 return web.Response(text="Tags must be a list", status=400)
+
+            if not os.path.isfile(os.path.abspath(file_path)):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Model file no longer exists; refresh the model list before editing metadata",
+                    },
+                    status=409,
+                )
 
             tags, auto_tags = await self._tag_update_service.add_tags(
                 file_path=file_path,

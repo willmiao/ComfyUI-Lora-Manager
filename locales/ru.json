@@ -2765,6 +2765,7 @@
             "downloadSkippedByBaseModel": "Загрузка пропущена, потому что базовая модель {baseModel} исключена",
             "autoOrganizeSuccess": "Автоматическая организация успешно завершена для {count} {type}",
             "autoOrganizePartialSuccess": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей",
+            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
             "autoOrganizeFailed": "Ошибка автоматической организации: {error}",
             "filenameTemplateSuccess": "Шаблон имён файлов успешно применён для {count} {type}",
             "filenameTemplatePartialSuccess": "Шаблон имён файлов применён: переименовано {success}, не удалось {failures} из {total} моделей",

@@ -2765,6 +2765,7 @@
       "downloadSkippedByBaseModel": "Skipped download because base model {baseModel} is excluded",
       "autoOrganizeSuccess": "Auto-organize completed successfully for {count} {type}",
       "autoOrganizePartialSuccess": "Auto-organize completed with {success} moved, {failures} failed out of {total} models",
+      "autoOrganizeProgressUnavailable": "Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
       "autoOrganizeFailed": "Auto-organize failed: {error}",
       "filenameTemplateSuccess": "Filename template applied successfully for {count} {type}",
       "filenameTemplatePartialSuccess": "Filename template applied with {success} renamed, {failures} failed out of {total} models",

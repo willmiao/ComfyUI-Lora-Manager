@@ -2359,8 +2359,8 @@ export class BaseModelApiClient {
                     };
 
                     ws.onerror = (error) => {
-                        console.error('WebSocket error during auto-organize:', error);
-                        reject(new Error('Connection error'));
+                        console.warn('Auto-organize progress WebSocket unavailable; using the REST result:', error);
+                        resolve(null);
                     };
                 });
 
@@ -2391,12 +2391,22 @@ export class BaseModelApiClient {
                     throw new Error(errorData.error || 'Failed to start auto-organize operation');
                 }
 
-                // Wait for the operation to complete via WebSocket
-                const result = await operationComplete;
+                const responseData = await response.json();
+                const progressResult = await operationComplete;
+                const result = progressResult || {
+                    ...responseData,
+                    ...(responseData.summary || {}),
+                };
 
                 // Show appropriate success message based on results
                 if (result.status === 'cancelled') {
                     showToast('toast.api.operationCancelledPartial', { success: result.success, total: result.total }, 'info');
+                } else if (!progressResult) {
+                    showToast('toast.loras.autoOrganizeProgressUnavailable', {
+                        success: result.success,
+                        failures: result.failures,
+                        total: result.total
+                    }, 'warning');
                 } else if (result.failures === 0) {
                     showToast('toast.loras.autoOrganizeSuccess', {
                         count: result.success,

@@ -2765,6 +2765,7 @@
             "downloadSkippedByBaseModel": "Téléchargement ignoré, car le modèle de base {baseModel} est exclu",
             "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
+            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
             "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
             "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",

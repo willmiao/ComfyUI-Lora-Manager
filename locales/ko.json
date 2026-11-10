@@ -2765,6 +2765,7 @@
             "downloadSkippedByBaseModel": "베이스 모델 {baseModel}이(가) 제외되어 다운로드를 건너뛰었습니다",
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
+            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
             "filenameTemplateSuccess": "{count}개의 {type}에 파일명 템플릿이 성공적으로 적용되었습니다",
             "filenameTemplatePartialSuccess": "파일명 템플릿 적용 완료: 전체 {total}개 중 {success}개 이름 변경, {failures}개 실패",

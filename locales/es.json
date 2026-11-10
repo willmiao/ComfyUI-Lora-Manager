@@ -2765,6 +2765,7 @@
             "downloadSkippedByBaseModel": "Descarga omitida porque el modelo base {baseModel} está excluido",
             "autoOrganizeSuccess": "Auto-organización completada exitosamente para {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organización completada con {success} movidos, {failures} fallidos de un total de {total} modelos",
+            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
             "autoOrganizeFailed": "Auto-organización fallida: {error}",
             "filenameTemplateSuccess": "Plantilla de nombres de archivo aplicada exitosamente para {count} {type}",
             "filenameTemplatePartialSuccess": "Plantilla de nombres de archivo aplicada con {success} renombrados, {failures} fallidos de un total de {total} modelos",
