@@ -548,6 +548,74 @@ def test_resolve_priority_tag_falls_back_to_first_usable_tag(manager):
     )
 
 
+def test_unsorted_fallback_replaces_first_tag(manager):
+    """With the toggle on, an unclassified-but-tagged model goes to the configured name."""
+    manager.settings["unsorted_fallback_enabled"] = True
+    manager.settings["unsorted_fallback_folder"] = "unsorted"
+
+    assert (
+        manager.resolve_priority_tag_for_model(["portrait", "anime-ish"], "lora")
+        == "unsorted"
+    )
+
+
+def test_unsorted_fallback_is_off_by_default(manager):
+    """Default installs keep the documented first-tag behaviour exactly."""
+    assert manager.get("unsorted_fallback_enabled") is False
+    assert (
+        manager.resolve_priority_tag_for_model(["portrait", "anime-ish"], "lora")
+        == "portrait"
+    )
+
+
+def test_unsorted_fallback_does_not_override_a_priority_match(manager):
+    """A canonical hit wins regardless of the toggle."""
+    manager.settings["unsorted_fallback_enabled"] = True
+    manager.settings["unsorted_fallback_folder"] = "unsorted"
+
+    assert (
+        manager.resolve_priority_tag_for_model(["anime", "character"], "lora")
+        == "character"
+    )
+
+
+def test_unsorted_fallback_leaves_untaggable_lists_alone(manager):
+    """Empty, meta-only and unusable-only lists must keep returning "" — the
+    no-tags handling downstream is not this setting's business."""
+    manager.settings["unsorted_fallback_enabled"] = True
+    manager.settings["unsorted_fallback_folder"] = "unsorted"
+
+    assert manager.resolve_priority_tag_for_model([], "lora") == ""
+    assert manager.resolve_priority_tag_for_model([KEYWORD_DUMP_TAG], "lora") == ""
+    assert manager.resolve_priority_tag_for_model(["x" * 51], "lora") == ""
+    assert manager.resolve_priority_tag_for_model([None, 42], "lora") == ""
+
+
+def test_unsorted_fallback_ignored_when_folder_name_is_blank(manager):
+    """A blank configured name must not produce an empty path segment; fall back."""
+    manager.settings["unsorted_fallback_enabled"] = True
+    manager.settings["unsorted_fallback_folder"] = "   "
+
+    assert (
+        manager.resolve_priority_tag_for_model(["portrait", "anime-ish"], "lora")
+        == "portrait"
+    )
+
+
+def test_unsorted_fallback_can_be_skipped_per_call(manager):
+    """Filename templates pass use_unsorted_fallback=False so a folder setting
+    never silently renames files."""
+    manager.settings["unsorted_fallback_enabled"] = True
+    manager.settings["unsorted_fallback_folder"] = "unsorted"
+
+    assert (
+        manager.resolve_priority_tag_for_model(
+            ["portrait", "anime-ish"], "lora", use_unsorted_fallback=False
+        )
+        == "portrait"
+    )
+
+
 def test_resolve_priority_tag_skips_keyword_dump_tag(manager):
     """A keyword-dump tag must not be used as a folder name (#1119)."""
     assert manager.resolve_priority_tag_for_model([KEYWORD_DUMP_TAG], "lora") == ""

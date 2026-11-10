@@ -1498,6 +1498,29 @@ export class SettingsManager {
             textarea.value = storedValue;
             this.displayPriorityTagValidation(modelType, true, []);
         });
+
+        this.loadUnsortedFallbackSettings();
+    }
+
+    /**
+     * Restore the unsorted-fallback toggle and folder name, and reveal the folder
+     * row only when the toggle is on. The field keeps whatever was saved while the
+     * toggle is off, so turning it back on does not lose the configured name.
+     */
+    loadUnsortedFallbackSettings() {
+        const enabled = document.getElementById('unsortedFallbackEnabled');
+        const folder = document.getElementById('unsortedFallbackFolder');
+        const row = document.getElementById('unsortedFallbackFolderRow');
+
+        if (enabled) {
+            enabled.checked = !!state.global.settings.unsorted_fallback_enabled;
+        }
+        if (folder) {
+            folder.value = state.global.settings.unsorted_fallback_folder ?? 'unsorted';
+        }
+        if (row) {
+            row.style.display = enabled?.checked ? '' : 'none';
+        }
     }
 
     handlePriorityTagInput(modelType) {
@@ -3128,6 +3151,13 @@ export class SettingsManager {
                 const proxySettingsGroup = document.getElementById('proxySettingsGroup');
                 if (proxySettingsGroup) {
                     proxySettingsGroup.style.display = value ? 'block' : 'none';
+                }
+            }
+
+            if (settingKey === 'unsorted_fallback_enabled') {
+                const unsortedRow = document.getElementById('unsortedFallbackFolderRow');
+                if (unsortedRow) {
+                    unsortedRow.style.display = value ? '' : 'none';
                 }
             }
 

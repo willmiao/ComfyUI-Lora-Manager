@@ -178,6 +178,12 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "include_trigger_words": False,
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
+    # When enabled, a model with usable tags but no priority-tag match is filed
+    # under a single configured name instead of a folder built from its first
+    # tag. Off by default: the first-tag fallback is documented behaviour and
+    # existing layouts must not move under users.
+    "unsorted_fallback_enabled": False,
+    "unsorted_fallback_folder": "unsorted",
     "model_name_display": "model_name",
     "lora_syntax_format": "legacy",
     # Remap legacy 28-block Anima LoRA keys onto the block layout of the
@@ -1985,8 +1991,22 @@ class SettingsManager:
         return parse_priority_tag_string(raw_config)
 
     def resolve_priority_tag_for_model(
-        self, tags: Sequence[str] | Iterable[str], model_type: str
+        self,
+        tags: Sequence[str] | Iterable[str],
+        model_type: str,
+        *,
+        use_unsorted_fallback: bool = True,
     ) -> str:
+        """Priority tag for a model, else the first usable tag, else "".
+
+        ``use_unsorted_fallback`` substitutes the configured folder name at the
+        single point where the loop below would have returned a usable tag. It
+        deliberately does **not** run before the loop: an empty, meta-only or
+        unusable-only tag list must keep returning "" so callers' existing
+        "no tags" handling is untouched. Filename templates call this with
+        ``use_unsorted_fallback=False`` because a folder fallback should not
+        silently rename files.
+        """
         entries = self.get_priority_tag_entries(model_type)
         resolved = resolve_priority_tag(tags, entries)
         if resolved:
@@ -2000,6 +2020,10 @@ class SettingsManager:
             if is_civitai_meta_tag(tag):
                 continue
             if is_usable_path_tag(tag):
+                if use_unsorted_fallback and self.get("unsorted_fallback_enabled"):
+                    configured = self.get("unsorted_fallback_folder") or ""
+                    if isinstance(configured, str) and configured.strip():
+                        return configured.strip()
                 return tag.strip()
         return ""
 
