@@ -141,6 +141,27 @@
             <div class="setting-row">
                 <div class="setting-info">
                     <label>
+                        {{ t('settings.downloadPathTemplates.authorPathTemplates') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadPathTemplates.authorPathTemplatesHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addAuthorTemplateRow()">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('settings.downloadPathTemplates.addAuthorTemplate') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="mappings-container">
+                <div id="authorPathTemplatesContainer">
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
                         {{ t('settings.downloadRootRules.title') }}
                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadRootRules.help') }}"></i>
                     </label>

@@ -268,6 +268,23 @@ def test_calculate_relative_path_ignores_keyword_dump_tag():
     assert len(relative_path) < 50
 
 
+def test_calculate_relative_path_uses_author_template():
+    settings = get_settings_manager()
+    settings.settings["author_path_templates"] = {"Reijlita": "{base_model}/reijlita"}
+    manager = DownloadManager()
+
+    def version(author):
+        return {
+            "baseModel": "BaseModel",
+            "creator": {"username": author},
+            "name": "v1",
+            "model": {"name": "Model", "tags": ["style"]},
+        }
+
+    assert manager._calculate_relative_path(version("reijlita"), "checkpoint") == "MappedModel/reijlita"
+    assert manager._calculate_relative_path(version("other"), "checkpoint") == "MappedModel/style"
+
+
 def test_calculate_relative_path_sanitizes_tag_segment():
     """A tag with path separators must not create nested folders."""
     manager = DownloadManager()

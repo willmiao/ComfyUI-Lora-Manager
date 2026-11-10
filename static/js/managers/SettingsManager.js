@@ -168,6 +168,11 @@ export class SettingsManager {
             merged.base_model_path_mappings = defaults.base_model_path_mappings;
         }
 
+        const authorTemplates = backendSettings?.author_path_templates;
+        merged.author_path_templates = authorTemplates && typeof authorTemplates === 'object' && !Array.isArray(authorTemplates)
+            ? authorTemplates
+            : defaults.author_path_templates;
+
         let templates = backendSettings?.download_path_templates;
         if (typeof templates === 'string') {
             try {
@@ -1373,6 +1378,7 @@ export class SettingsManager {
 
         // Load base model path mappings
         this.loadBaseModelMappings();
+        this.loadAuthorPathTemplates();
 
         // Load download root rules (async: fetches per-type root lists)
         await this.loadDownloadRootRules();
@@ -2720,6 +2726,90 @@ export class SettingsManager {
         } catch (error) {
             console.error('Error saving base model mappings:', error);
             showToast('toast.settings.mappingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    loadAuthorPathTemplates() {
+        const container = document.getElementById('authorPathTemplatesContainer');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const templates = state.global.settings.author_path_templates || {};
+        Object.entries(templates).forEach(([author, template]) => this.addAuthorTemplateRow(author, template));
+        this.addAuthorTemplateRow();
+    }
+
+    addAuthorTemplateRow(author = '', template = '') {
+        const container = document.getElementById('authorPathTemplatesContainer');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'mapping-row';
+        row.innerHTML = `
+            <div class="mapping-controls">
+                <input type="text" class="author-input" placeholder="${translate('settings.downloadPathTemplates.authorPlaceholder', {}, 'CivitAI username')}">
+                <input type="text" class="path-value-input" placeholder="${translate('settings.downloadPathTemplates.authorTemplatePlaceholder', {}, 'Template (e.g., {base_model}/{author})')}">
+                <button type="button" class="remove-mapping-btn" title="${translate('settings.downloadPathTemplates.removeAuthorTemplate', {}, 'Remove author template')}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        // Assign values as properties so usernames are never parsed as HTML
+        row.querySelector('.author-input').value = author;
+        row.querySelector('.path-value-input').value = template;
+
+        row.querySelectorAll('input').forEach(input => {
+            input.addEventListener('blur', () => this.updateAuthorPathTemplates());
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur();
+                }
+            });
+        });
+        row.querySelector('.remove-mapping-btn').addEventListener('click', () => {
+            row.remove();
+            this.updateAuthorPathTemplates();
+        });
+
+        container.appendChild(row);
+    }
+
+    updateAuthorPathTemplates() {
+        const container = document.getElementById('authorPathTemplatesContainer');
+        if (!container) return;
+
+        const rows = Array.from(container.querySelectorAll('.mapping-row'));
+        const templates = {};
+        rows.forEach(row => {
+            const author = row.querySelector('.author-input').value.trim();
+            const template = row.querySelector('.path-value-input').value.trim();
+            if (author && template) {
+                templates[author] = template;
+            }
+        });
+
+        const current = state.global.settings.author_path_templates || {};
+        if (JSON.stringify(current) !== JSON.stringify(templates)) {
+            state.global.settings.author_path_templates = templates;
+            this.saveAuthorPathTemplates();
+        }
+
+        const hasEmptyRow = rows.some(row =>
+            !row.querySelector('.author-input').value && !row.querySelector('.path-value-input').value
+        );
+        if (!hasEmptyRow) {
+            this.addAuthorTemplateRow();
+        }
+    }
+
+    async saveAuthorPathTemplates() {
+        try {
+            await this.saveSetting('author_path_templates', state.global.settings.author_path_templates);
+            showToast('toast.settings.authorTemplatesUpdated', {}, 'success');
+        } catch (error) {
+            console.error('Error saving author path templates:', error);
+            showToast('toast.settings.authorTemplatesSaveFailed', { message: error.message }, 'error');
         }
     }
 

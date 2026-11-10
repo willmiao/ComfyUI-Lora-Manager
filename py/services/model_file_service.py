@@ -485,6 +485,12 @@ class ModelFileService:
         is_flat_structure: bool
     ) -> Optional[str]:
         """Calculate the target directory for a model"""
+        # The type template, or a creator's author_path_templates entry (which
+        # also applies when the type is flat), decides the subfolder.
+        new_relative_path = calculate_relative_path_for_model(model, self.model_type)
+        if new_relative_path:
+            return os.path.join(current_root, new_relative_path).replace(os.sep, '/')
+
         if is_flat_structure:
             file_path = model.get('file_path')
             if not isinstance(file_path, str):
@@ -498,14 +504,7 @@ class ModelFileService:
             # Match the templated branch (and the scanner's stored paths):
             # one separator form regardless of the configured layout.
             return current_root.replace(os.sep, '/')
-        else:
-            # Calculate new relative path based on settings
-            new_relative_path = calculate_relative_path_for_model(model, self.model_type)
-            
-            if not new_relative_path:
-                return None  # Signal to skip
-            
-            return os.path.join(current_root, new_relative_path).replace(os.sep, '/')
+        return None  # Signal to skip: insufficient metadata for the template
     
     def _add_result(
         self, 

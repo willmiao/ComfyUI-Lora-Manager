@@ -1404,6 +1404,31 @@ def test_setting_download_skip_base_models_normalizes_string_input(manager):
     assert manager.get("download_skip_base_models") == ["SDXL 1.0", "Pony"]
 
 
+def test_setting_author_path_templates_is_normalized(manager):
+    manager.set(
+        "author_path_templates",
+        {
+            " reijlita ": " {base_model}/reijlita ",
+            "empty": "  ",
+            "": "x",
+            "Reijlita": "{author}",
+            "n": 3,
+            "up": "../outside",
+            "win": "a\\..\\b",
+        },
+    )
+
+    assert manager.get("author_path_templates") == {"Reijlita": "{author}"}
+
+
+def test_author_path_template_lookup_ignores_case(manager):
+    manager.set("author_path_templates", {"Reijlita": "{base_model}/reijlita"})
+
+    assert manager.get_author_path_template("reijlita") == "{base_model}/reijlita"
+    assert manager.get_author_path_template("someone") == ""
+    assert manager.get_author_path_template(None) == ""
+
+
 def test_unknown_base_model_routing_defaults_to_diffusion_model(manager):
     assert manager.get("unknown_base_model_routing") == "diffusion_model"
 
