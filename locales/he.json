@@ -2765,7 +2765,7 @@
             "downloadSkippedByBaseModel": "ההורדה דולגה כי מודל הבסיס {baseModel} מוחרג",
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
-            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
+            "autoOrganizeProgressUnavailable": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים; התקדמות בזמן אמת לא הייתה זמינה",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
             "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
             "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",

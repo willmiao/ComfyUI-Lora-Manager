@@ -2765,7 +2765,7 @@
             "downloadSkippedByBaseModel": "ベースモデル {baseModel} が除外されているため、ダウンロードをスキップしました",
             "autoOrganizeSuccess": "{count} {type} の自動整理が正常に完了しました",
             "autoOrganizePartialSuccess": "自動整理が完了しました：{total} モデル中 {success} 移動、{failures} 失敗",
-            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
+            "autoOrganizeProgressUnavailable": "自動整理が完了しました：{total} モデル中 {success} 移動、{failures} 失敗。リアルタイムの進捗は利用できませんでした",
             "autoOrganizeFailed": "自動整理に失敗しました：{error}",
             "filenameTemplateSuccess": "{count} 件の{type}にファイル名テンプレートを正常に適用しました",
             "filenameTemplatePartialSuccess": "ファイル名テンプレートを適用しました：{total} 件中 {success} 件をリネーム、{failures} 件失敗",

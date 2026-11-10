@@ -2765,7 +2765,7 @@
             "downloadSkippedByBaseModel": "由於基礎模型 {baseModel} 已被排除，已跳過下載",
             "autoOrganizeSuccess": "自動整理已成功完成，共 {count} 個 {type} 已整理",
             "autoOrganizePartialSuccess": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型",
-            "autoOrganizeProgressUnavailable": "[TODO: Translate] Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
+            "autoOrganizeProgressUnavailable": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型；即時進度不可用",
             "autoOrganizeFailed": "自動整理失敗：{error}",
             "filenameTemplateSuccess": "已成功為 {count} 個 {type} 套用檔案名稱範本",
             "filenameTemplatePartialSuccess": "檔案名稱範本套用完成：已重新命名 {success} 個，{failures} 個失敗，共 {total} 個模型",
