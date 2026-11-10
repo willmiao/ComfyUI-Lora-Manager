@@ -85,7 +85,8 @@
         <i class="fas fa-th-large"></i>
         <span>{{ t('loras.bulkOperations.selected', {'count': 0}) }}</span>
     </div>
-    <div class="context-menu-separator"></div>
+    <!-- The header draws its own bottom border (see .bulk-context-header); a
+         separator here would render a second line right under it. -->
     <div class="context-menu-section" data-section="metadata">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.metadata') }}</div>
         <div class="context-menu-item" data-action="refresh-all">
