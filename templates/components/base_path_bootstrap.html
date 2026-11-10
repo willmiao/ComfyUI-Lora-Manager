@@ -53,10 +53,18 @@
             return prefixPath(url);
         }
         // Absolute same-origin URL (e.g. from a Request object).
-        if (url.indexOf('http') === 0) {
+        // ws:/wss: belong here too: a WebSocket URL is absolute, and its
+        // origin is the http(s) origin with the scheme swapped. Leaving them
+        // out let every `new WebSocket("ws://host/ws/...")` slip through
+        // unprefixed, so the socket dialled the proxy root and was answered
+        // by the front-end router instead of the backend.
+        if (/^(https?|wss?):\/\//i.test(url)) {
             try {
                 var u = new URL(url);
-                if (u.origin === window.location.origin) {
+                // A ws: URL's origin serialises as ws://host, never http://host,
+                // so compare hosts rather than origins to keep the same-origin
+                // test working across the scheme swap.
+                if (u.host === window.location.host) {
                     var prefixed = prefixPath(u.pathname);
                     if (prefixed !== u.pathname) {
                         u.pathname = prefixed;

@@ -172,6 +172,59 @@ describe('base_path_bootstrap.html', () => {
         ]);
     });
 
+    it('prefixes a same-origin absolute ws:// URL', () => {
+        // Regression: the absolute-URL branch tested `url.indexOf('http') === 0`,
+        // so a ws:// URL matched neither branch (it does not start with '/' and
+        // does not start with 'http') and was returned untouched. baseModelApi.js
+        // builds exactly this shape — `${protocol}${window.location.host}/ws/...`
+        // — so every progress socket dialled the proxy root, where the front-end
+        // router answered 302 instead of the backend upgrading it.
+        const constructed = [];
+        class FakeWebSocket {
+            constructor(url, protocols) {
+                constructed.push([url, protocols]);
+            }
+        }
+        FakeWebSocket.CONNECTING = 0;
+        FakeWebSocket.OPEN = 1;
+        FakeWebSocket.CLOSING = 2;
+        FakeWebSocket.CLOSED = 3;
+        window.WebSocket = FakeWebSocket;
+
+        runBootstrap('/comfyui/loras');
+
+        const host = window.location.host;
+        new window.WebSocket(`ws://${host}/ws/fetch-progress`);
+        new window.WebSocket(`wss://${host}/ws/init-progress`, ['p']);
+
+        expect(constructed).toEqual([
+            [`ws://${host}/comfyui/ws/fetch-progress`, undefined],
+            [`wss://${host}/comfyui/ws/init-progress`, ['p']],
+        ]);
+    });
+
+    it('does not prefix a ws:// URL on another host', () => {
+        const constructed = [];
+        class FakeWebSocket {
+            constructor(url, protocols) {
+                constructed.push([url, protocols]);
+            }
+        }
+        FakeWebSocket.CONNECTING = 0;
+        FakeWebSocket.OPEN = 1;
+        FakeWebSocket.CLOSING = 2;
+        FakeWebSocket.CLOSED = 3;
+        window.WebSocket = FakeWebSocket;
+
+        runBootstrap('/comfyui/loras');
+
+        new window.WebSocket('ws://other.example.com/ws/fetch-progress');
+
+        expect(constructed).toEqual([
+            ['ws://other.example.com/ws/fetch-progress', undefined],
+        ]);
+    });
+
     it('rewrites root-absolute URLs inside innerHTML markup', () => {
         runBootstrap('/comfyui/loras');
 
