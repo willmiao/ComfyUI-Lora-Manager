@@ -385,6 +385,14 @@
             "copied": "Ruta de configuración copiada al portapapeles: {{path}}",
             "clipboardFallback": "Ruta de configuración: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "[TODO: Translate] ComfyUI Node Settings",
+            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
+            "openButton": "[TODO: Translate] Open ComfyUI Settings",
+            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
+            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+        },
         "sections": {
             "contentFiltering": "Filtrado de contenido",
             "downloads": "Descargas",
@@ -411,6 +419,7 @@
         "nav": {
             "general": "General",
             "interface": "Interfaz",
+            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
             "library": "Biblioteca",
             "organization": "Organización",
             "about": "Acerca de",

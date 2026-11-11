@@ -86,6 +86,12 @@
             ('model_name', 'settings.layoutSettings.modelNameDisplayOptions.modelName'),
             ('file_name', 'settings.layoutSettings.modelNameDisplayOptions.fileName'),
         ], 'settings.layoutSettings.modelNameDisplayHelp') }}
+        <div class="input-help" id="nodeLoraNameDisplayHelp" data-comfyui-only>
+            <button type="button" class="comfyui-settings-context-link" data-open-comfyui-settings>
+                {{ t('settings.comfyuiNodes.modelNameDisplayLink') }}
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+            </button>
+        </div>
 
         <!-- Group by model toggle -->
         {{ sm.setting_toggle('groupByModel', 'group_by_model', 'settings.layoutSettings.groupByModel', 'settings.layoutSettings.groupByModelHelp') }}

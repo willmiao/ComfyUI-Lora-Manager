@@ -385,6 +385,14 @@
             "copied": "設定パスをクリップボードにコピーしました: {{path}}",
             "clipboardFallback": "設定パス: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "[TODO: Translate] ComfyUI Node Settings",
+            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
+            "openButton": "[TODO: Translate] Open ComfyUI Settings",
+            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
+            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+        },
         "sections": {
             "contentFiltering": "コンテンツフィルタリング",
             "downloads": "ダウンロード",
@@ -411,6 +419,7 @@
         "nav": {
             "general": "一般",
             "interface": "インターフェース",
+            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
             "library": "ライブラリ",
             "organization": "整理",
             "about": "このアプリについて",

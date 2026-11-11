@@ -385,6 +385,14 @@
       "copied": "Settings path copied to clipboard: {{path}}",
       "clipboardFallback": "Settings path: {{path}}"
     },
+    "comfyuiNodes": {
+      "title": "ComfyUI Node Settings",
+      "description": "Node-related settings are available in ComfyUI Settings.",
+      "openButton": "Open ComfyUI Settings",
+      "modelNameDisplayLink": "Node labels are configured separately in ComfyUI Node Settings",
+      "existingTab": "ComfyUI Settings opened in the existing tab.",
+      "openFailed": "Could not open ComfyUI Settings. Please open ComfyUI first."
+    },
     "sections": {
       "contentFiltering": "Content Filtering",
       "downloads": "Downloads",
@@ -411,6 +419,7 @@
     "nav": {
       "general": "General",
       "interface": "Interface",
+      "comfyuiNodes": "ComfyUI Nodes",
       "library": "Library",
       "organization": "Organization",
       "about": "About",

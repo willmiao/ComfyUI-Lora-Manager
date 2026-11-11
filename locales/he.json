@@ -385,6 +385,14 @@
             "copied": "נתיב ההגדרות הועתק ללוח העריכה: {{path}}",
             "clipboardFallback": "נתיב ההגדרות: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "[TODO: Translate] ComfyUI Node Settings",
+            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
+            "openButton": "[TODO: Translate] Open ComfyUI Settings",
+            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
+            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+        },
         "sections": {
             "contentFiltering": "סינון תוכן",
             "downloads": "הורדות",
@@ -411,6 +419,7 @@
         "nav": {
             "general": "כללי",
             "interface": "ממשק",
+            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
             "library": "ספרייה",
             "organization": "ארגון",
             "about": "אודות",

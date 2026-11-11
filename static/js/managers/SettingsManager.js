@@ -20,6 +20,7 @@ import { bannerService } from './BannerService.js';
 import { directoryPickerModal } from '../components/DirectoryPickerModal.js';
 import { showSidecarMigrationSummary } from '../components/SidecarMigrationSummaryModal.js';
 import { environmentPanel } from '../components/EnvironmentPanel.js';
+import { openComfyUISettings as requestComfyUISettings } from '../utils/comfySettingsNavigation.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
@@ -531,6 +532,10 @@ export class SettingsManager {
             });
         }
 
+        document.querySelectorAll('[data-open-comfyui-settings]').forEach(button => {
+            button.addEventListener('click', () => this.openComfyUISettings());
+        });
+
         ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
             const customInput = document.getElementById(`${modelType}CustomTemplate`);
             if (customInput) {
@@ -736,6 +741,11 @@ export class SettingsManager {
         let matchCount = 0;
 
         sections.forEach(section => {
+            if (section.style.display === 'none') {
+                this.removeSearchHighlights(section);
+                return;
+            }
+
             const sectionText = this.getSectionSearchableText(section);
             const hasMatch = sectionText.includes(lowerQuery);
 
@@ -1197,6 +1207,7 @@ export class SettingsManager {
             sendToWorkflowExcludedTitlesError.textContent = '';
         }
         this.updateSendToWorkflowSectionVisibility();
+        this.updateComfyUISettingsVisibility();
 
         this.renderDownloadSkipBaseModels();
         const downloadSkipBaseModelsError = document.getElementById('downloadSkipBaseModelsError');
@@ -4247,6 +4258,24 @@ export class SettingsManager {
         const subsection = document.getElementById('sendToWorkflowSubsection');
         if (subsection) {
             subsection.style.display = state.global.settings.standalone_mode ? 'none' : '';
+        }
+    }
+
+    updateComfyUISettingsVisibility() {
+        const isStandalone = state.global.settings.standalone_mode;
+        document.querySelectorAll('[data-comfyui-only]').forEach(element => {
+            element.style.display = isStandalone ? 'none' : '';
+        });
+    }
+
+    async openComfyUISettings() {
+        if (state.global.settings.standalone_mode) return;
+
+        const result = await requestComfyUISettings();
+        if (result === 'existing') {
+            showToast('settings.comfyuiNodes.existingTab', {}, 'info');
+        } else if (!result) {
+            showToast('settings.comfyuiNodes.openFailed', {}, 'warning');
         }
     }
 

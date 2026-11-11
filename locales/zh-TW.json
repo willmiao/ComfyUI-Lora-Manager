@@ -385,6 +385,14 @@
             "copied": "設定路徑已複製到剪貼簿：{{path}}",
             "clipboardFallback": "設定路徑：{{path}}"
         },
+        "comfyuiNodes": {
+            "title": "[TODO: Translate] ComfyUI Node Settings",
+            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
+            "openButton": "[TODO: Translate] Open ComfyUI Settings",
+            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
+            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+        },
         "sections": {
             "contentFiltering": "內容過濾",
             "downloads": "下載",
@@ -411,6 +419,7 @@
         "nav": {
             "general": "通用",
             "interface": "介面",
+            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
             "library": "模型庫",
             "organization": "整理",
             "about": "關於",

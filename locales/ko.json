@@ -385,6 +385,14 @@
             "copied": "설정 경로가 클립보드에 복사되었습니다: {{path}}",
             "clipboardFallback": "설정 경로: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "[TODO: Translate] ComfyUI Node Settings",
+            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
+            "openButton": "[TODO: Translate] Open ComfyUI Settings",
+            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
+            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+        },
         "sections": {
             "contentFiltering": "콘텐츠 필터링",
             "downloads": "다운로드",
@@ -411,6 +419,7 @@
         "nav": {
             "general": "일반",
             "interface": "인터페이스",
+            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
             "library": "라이브러리",
             "organization": "정리",
             "about": "정보",
