@@ -390,7 +390,7 @@
             "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
             "openButton": "[TODO: Translate] Open ComfyUI Settings",
             "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
-            "existingTab": "[TODO: Translate] ComfyUI Settings opened in the existing tab.",
+            "openSucceeded": "[TODO: Translate] ComfyUI Settings opened.",
             "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
         },
         "sections": {

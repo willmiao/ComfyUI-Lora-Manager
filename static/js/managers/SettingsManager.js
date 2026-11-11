@@ -4272,9 +4272,9 @@ export class SettingsManager {
         if (state.global.settings.standalone_mode) return;
 
         const result = await requestComfyUISettings();
-        if (result === 'existing') {
-            showToast('settings.comfyuiNodes.existingTab', {}, 'info');
-        } else if (!result) {
+        if (result) {
+            showToast('settings.comfyuiNodes.openSucceeded', {}, 'success');
+        } else {
             showToast('settings.comfyuiNodes.openFailed', {}, 'warning');
         }
     }

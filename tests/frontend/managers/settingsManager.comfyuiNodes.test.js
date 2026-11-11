@@ -143,13 +143,13 @@ describe('SettingsManager ComfyUI node settings', () => {
     expect(requestComfyUISettingsMock).not.toHaveBeenCalled();
   });
 
-  it('announces when settings open in an existing tab', async () => {
-    requestComfyUISettingsMock.mockResolvedValue('existing');
+  it.each(['opener', 'existing', 'new'])('announces every successful %s navigation', async (result) => {
+    requestComfyUISettingsMock.mockResolvedValue(result);
     const manager = createManager();
 
     await manager.openComfyUISettings();
 
-    expect(showToastMock).toHaveBeenCalledWith('settings.comfyuiNodes.existingTab', {}, 'info');
+    expect(showToastMock).toHaveBeenCalledWith('settings.comfyuiNodes.openSucceeded', {}, 'success');
   });
 
   it('shows the manual fallback when a new ComfyUI window is blocked', async () => {

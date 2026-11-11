@@ -390,7 +390,7 @@
       "description": "Node-related settings are available in ComfyUI Settings.",
       "openButton": "Open ComfyUI Settings",
       "modelNameDisplayLink": "Node labels are configured separately in ComfyUI Node Settings",
-      "existingTab": "ComfyUI Settings opened in the existing tab.",
+      "openSucceeded": "ComfyUI Settings opened.",
       "openFailed": "Could not open ComfyUI Settings. Please open ComfyUI first."
     },
     "sections": {
