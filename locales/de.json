@@ -766,6 +766,13 @@
         "priorityTags": {
             "title": "Prioritäts-Tags",
             "description": "Passen Sie die Tag-Prioritätsreihenfolge für jeden Modelltyp an (z. B. character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
+                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
+                "folderLabel": "[TODO: Translate] Folder name",
+                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
+                "folderPlaceholder": "[TODO: Translate] unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Prioritäts-Tags-Hilfe öffnen",
             "modelTypes": {

@@ -854,8 +854,11 @@ def calculate_filename_for_model(
     lowercase_tags = [
         tag.lower() for tag in model_data.get("tags", []) if isinstance(tag, str)
     ]
+    # Filenames keep the first-tag fallback regardless of the unsorted setting:
+    # that setting is about where files are FOLDED, and applying it here would
+    # silently rename files for users who only asked for tidier folders.
     first_tag = settings_manager.resolve_priority_tag_for_model(
-        lowercase_tags, model_type
+        lowercase_tags, model_type, use_unsorted_fallback=False
     )
 
     model_name = model_data.get("model_name", "")

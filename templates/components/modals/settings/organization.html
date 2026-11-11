@@ -208,6 +208,27 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Unsorted fallback: replaces the {first_tag} fallback with one configured name. -->
+            {{ sm.setting_toggle('unsortedFallbackEnabled', 'unsorted_fallback_enabled', 'settings.priorityTags.unsortedFallback.label', 'settings.priorityTags.unsortedFallback.help') }}
+            <div class="setting-item" id="unsortedFallbackFolderRow" style="display: none;">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <label for="unsortedFallbackFolder">
+                            {{ t('settings.priorityTags.unsortedFallback.folderLabel') }}
+                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priorityTags.unsortedFallback.folderHelp') }}"></i>
+                        </label>
+                    </div>
+                    <div class="setting-control">
+                        <div class="text-input-wrapper">
+                            <input type="text" id="unsortedFallbackFolder" placeholder="{{ t('settings.priorityTags.unsortedFallback.folderPlaceholder') }}"
+                                   onblur="settingsManager.saveInputSetting('unsortedFallbackFolder', 'unsorted_fallback_folder')"
+                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="priority-tags-tabs">
                 <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
                 <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
