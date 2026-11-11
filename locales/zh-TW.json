@@ -386,12 +386,12 @@
             "clipboardFallback": "設定路徑：{{path}}"
         },
         "comfyuiNodes": {
-            "title": "[TODO: Translate] ComfyUI Node Settings",
-            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
-            "openButton": "[TODO: Translate] Open ComfyUI Settings",
-            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
-            "openSucceeded": "[TODO: Translate] ComfyUI Settings opened.",
-            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+            "title": "ComfyUI 節點設定",
+            "description": "與節點相關的設定位於 ComfyUI 設定中。",
+            "openButton": "開啟 ComfyUI 設定",
+            "modelNameDisplayLink": "節點標籤請在 ComfyUI 節點設定中另行設定",
+            "openSucceeded": "已開啟 ComfyUI 設定。",
+            "openFailed": "無法開啟 ComfyUI 設定，請先開啟 ComfyUI。"
         },
         "sections": {
             "contentFiltering": "內容過濾",
@@ -419,7 +419,7 @@
         "nav": {
             "general": "通用",
             "interface": "介面",
-            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
+            "comfyuiNodes": "ComfyUI 節點",
             "library": "模型庫",
             "organization": "整理",
             "about": "關於",

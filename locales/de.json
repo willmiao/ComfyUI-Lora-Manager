@@ -386,12 +386,12 @@
             "clipboardFallback": "Einstellungspfad: {{path}}"
         },
         "comfyuiNodes": {
-            "title": "[TODO: Translate] ComfyUI Node Settings",
-            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
-            "openButton": "[TODO: Translate] Open ComfyUI Settings",
-            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
-            "openSucceeded": "[TODO: Translate] ComfyUI Settings opened.",
-            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+            "title": "ComfyUI-Knoteneinstellungen",
+            "description": "Knotenbezogene Einstellungen finden Sie in den ComfyUI-Einstellungen.",
+            "openButton": "ComfyUI-Einstellungen öffnen",
+            "modelNameDisplayLink": "Knotenbeschriftungen werden separat in den ComfyUI-Knoteneinstellungen konfiguriert",
+            "openSucceeded": "ComfyUI-Einstellungen geöffnet.",
+            "openFailed": "ComfyUI-Einstellungen konnten nicht geöffnet werden. Bitte öffnen Sie zuerst ComfyUI."
         },
         "sections": {
             "contentFiltering": "Inhaltsfilterung",
@@ -419,7 +419,7 @@
         "nav": {
             "general": "Allgemein",
             "interface": "Oberfläche",
-            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
+            "comfyuiNodes": "ComfyUI-Knoten",
             "library": "Bibliothek",
             "organization": "Organisation",
             "about": "Über",

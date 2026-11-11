@@ -386,12 +386,12 @@
             "clipboardFallback": "Chemin des paramètres: {{path}}"
         },
         "comfyuiNodes": {
-            "title": "[TODO: Translate] ComfyUI Node Settings",
-            "description": "[TODO: Translate] Node-related settings are available in ComfyUI Settings.",
-            "openButton": "[TODO: Translate] Open ComfyUI Settings",
-            "modelNameDisplayLink": "[TODO: Translate] Node labels are configured separately in ComfyUI Node Settings",
-            "openSucceeded": "[TODO: Translate] ComfyUI Settings opened.",
-            "openFailed": "[TODO: Translate] Could not open ComfyUI Settings. Please open ComfyUI first."
+            "title": "Paramètres des nœuds ComfyUI",
+            "description": "Les paramètres liés aux nœuds sont disponibles dans les paramètres ComfyUI.",
+            "openButton": "Ouvrir les paramètres ComfyUI",
+            "modelNameDisplayLink": "Les libellés des nœuds sont configurés séparément dans les paramètres des nœuds ComfyUI",
+            "openSucceeded": "Paramètres ComfyUI ouverts.",
+            "openFailed": "Impossible d’ouvrir les paramètres ComfyUI. Veuillez d’abord ouvrir ComfyUI."
         },
         "sections": {
             "contentFiltering": "Filtrage du contenu",
@@ -419,7 +419,7 @@
         "nav": {
             "general": "Général",
             "interface": "Interface",
-            "comfyuiNodes": "[TODO: Translate] ComfyUI Nodes",
+            "comfyuiNodes": "Nœuds ComfyUI",
             "library": "Bibliothèque",
             "organization": "Organisation",
             "about": "À propos",

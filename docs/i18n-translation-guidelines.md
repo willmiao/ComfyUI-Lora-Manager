@@ -310,6 +310,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > the activation delay dropped from 1.5s to 0.8s. `settings.cardPreview.cycleOnHoverHelp`
 > was reworded accordingly, re-queued as `[TODO: Translate]` in all 9 locales and is now
 > translated. No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-11, ComfyUI node settings navigation):** the settings modal gained a
+> ComfyUI-only nav tab linking into ComfyUI's own settings (commits `d81218f3`,
+> `79470bd8`), adding the 7 `settings.comfyuiNodes.*` / `settings.nav.comfyuiNodes` keys.
+> **ComfyUI** stays Latin everywhere (R3); "Settings" reuses each locale's
+> `common.actions.settings` noun (设置 / 設定 / 設定 / 설정 / Paramètres / Einstellungen /
+> Configuración / Настройки / הגדרות) and "Node" the established node-selector rendering
+> (节点 / 節點 / ノード / 노드 / nœud / Knoten / nodo / узел / צומת). All 9 locales are
+> translated, so no `[TODO: Translate]` placeholder remains.
 
 ---
 
