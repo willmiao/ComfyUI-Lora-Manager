@@ -433,6 +433,20 @@ class TestRootIdentityMap:
             component
         ]
 
+    def test_removed_root_reuses_its_existing_mirror(
+        self, model_roots: dict, centralized: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from py.config import config
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        sidecar = _write_sidecar(model)
+
+        monkeypatch.setattr(config, "loras_roots", [], raising=False)
+        sidecar_paths.reset_root_map_cache()
+
+        assert get_metadata_path(str(model)) == str(sidecar)
+        assert not model.with_suffix(METADATA_SUFFIX).exists()
+
     def test_unmatched_helper_is_empty_in_alongside_mode(
         self, model_roots: dict, tmp_path: Path
     ):

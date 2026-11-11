@@ -573,6 +573,7 @@ class SettingsManager:
             library_name = active_name or "default"
             library_payload = self._build_library_payload(
                 folder_paths=normalized_top_level_paths,
+                extra_folder_paths=self.settings.get("extra_folder_paths", {}),
                 default_lora_root=self.settings.get("default_lora_root", ""),
                 default_checkpoint_root=self.settings.get(
                     "default_checkpoint_root", ""

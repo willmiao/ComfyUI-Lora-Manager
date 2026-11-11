@@ -75,3 +75,41 @@ async def test_create_default_metadata_writes_autov3_null_for_non_safetensors(tm
     payload = json.loads(metadata_path.read_text(encoding="utf-8"))
 
     assert payload.get("autov3") is None
+
+
+@pytest.mark.asyncio
+async def test_create_default_metadata_skips_outside_roots_in_centralized_mode(
+    tmp_path, monkeypatch
+):
+    from py.config import config
+    from py.services.settings_manager import get_settings_manager
+    from py.utils import sidecar_paths
+
+    for attr in (
+        "loras_roots",
+        "base_models_roots",
+        "embeddings_roots",
+        "other_roots",
+        "workflows_roots",
+        "extra_loras_roots",
+        "extra_checkpoints_roots",
+        "extra_unet_roots",
+        "extra_embeddings_roots",
+    ):
+        monkeypatch.setattr(config, attr, [], raising=False)
+    settings = get_settings_manager()
+    settings.set("sidecar_storage_mode", "centralized")
+    settings.set("sidecar_storage_path", str(tmp_path / "sidecars"))
+    sidecar_paths.reset_root_map_cache()
+    model_path = tmp_path / "outside" / "example.safetensors"
+    model_path.parent.mkdir()
+    model_path.write_bytes(b"stub")
+
+    try:
+        metadata = await MetadataManager.create_default_metadata(str(model_path))
+
+        assert metadata is None
+        assert not model_path.with_suffix(".metadata.json").exists()
+        assert not (tmp_path / "sidecars").exists()
+    finally:
+        sidecar_paths.reset_root_map_cache()

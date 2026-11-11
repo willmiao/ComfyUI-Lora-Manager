@@ -238,12 +238,17 @@ def test_single_library_registry_is_removed_and_caches_migrated(
     tmp_path, monkeypatch
 ):
     settings_path = tmp_path / "settings.json"
+    extra_folder_paths = {
+        "loras": ["/extra-loras"],
+        "checkpoints": ["/extra-checkpoints"],
+    }
     settings_path.write_text(
         json.dumps(
             {
                 "libraries": {
                     "comfyui": {
                         "folder_paths": {"loras": ["/loras"]},
+                        "extra_folder_paths": extra_folder_paths,
                         "default_lora_root": "/loras",
                     }
                 },
@@ -271,6 +276,7 @@ def test_single_library_registry_is_removed_and_caches_migrated(
     assert "libraries" not in stored
     assert "active_library" not in stored
     assert stored["folder_paths"] == {"loras": ["/loras"]}
+    assert stored["extra_folder_paths"] == extra_folder_paths
     assert stored["default_lora_root"] == "/loras"
     for subdir in ("model", "model_update", "recipe"):
         assert (tmp_path / "cache" / subdir / "default.sqlite").read_text(
@@ -278,6 +284,13 @@ def test_single_library_registry_is_removed_and_caches_migrated(
         ) == subdir
         assert not (tmp_path / "cache" / subdir / "comfyui.sqlite").exists()
     assert manager.get("folder_paths") == {"loras": ["/loras"]}
+    assert manager.get("extra_folder_paths") == extra_folder_paths
+
+    restarted = SettingsManager()
+
+    stored = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert restarted.get("extra_folder_paths") == extra_folder_paths
+    assert stored["extra_folder_paths"] == extra_folder_paths
 
 
 def test_environment_variable_overrides_settings(tmp_path, monkeypatch):

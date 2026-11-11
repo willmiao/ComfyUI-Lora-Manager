@@ -14,6 +14,8 @@ from .sidecar_paths import (
     get_metadata_path,
     get_preview_dir,
     get_sidecar_base_name,
+    is_centralized,
+    is_configured_model_path,
     resolve_metadata_path,
 )
 
@@ -252,8 +254,16 @@ class MetadataManager:
             model_class: Class to instantiate
             
         Returns:
-            BaseModelMetadata instance or None if file doesn't exist
+            BaseModelMetadata instance or None if file doesn't exist or lies
+            outside the current model roots in centralized storage mode
         """
+        if is_centralized() and not is_configured_model_path(file_path):
+            logger.info(
+                "Skipping default metadata creation for model outside configured roots: %s",
+                file_path,
+            )
+            return None
+
         # First check if file actually exists and resolve symlinks
         try:
             real_path = os.path.realpath(file_path)

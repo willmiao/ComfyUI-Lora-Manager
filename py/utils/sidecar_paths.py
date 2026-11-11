@@ -818,8 +818,8 @@ def _warn_unmatched(sidecar_root: str, unmatched: List[str]) -> None:
     preview = ", ".join(unmatched[:5])
     logger.warning(
         "sidecar_paths: %d mirrored sidecar dir(s) under %s are not linked to any "
-        "configured model root (%s%s). Their metadata stays on disk but is not "
-        "used until the model root is restored or re-anchored.",
+        "configured model root (%s%s). Existing sidecars remain available at "
+        "their remembered model paths.",
         len(unmatched),
         sidecar_root,
         preview,
@@ -927,6 +927,54 @@ def root_mirror_component(root_path: str, *, sidecar_root: Optional[str] = None)
     return state.components.get(normalized) or _legacy_component(normalized)
 
 
+def is_configured_model_path(model_path: str) -> bool:
+    """Return whether ``model_path`` belongs to a currently configured root."""
+
+    normalized_dir = os.path.dirname(_normalize_for_match(model_path))
+    normalized_roots = _normalized_roots(_iter_model_roots())
+    return _best_root_for(normalized_dir, normalized_roots) is not None
+
+
+def _resolve_remembered_centralized_dir(
+    model_path: str, sidecar_root: str
+) -> Optional[str]:
+    """Reuse an existing mirror after its model root leaves the configuration."""
+
+    normalized_dir = os.path.dirname(_normalize_for_match(model_path))
+    state = _ensure_root_map(
+        sidecar_root, _normalized_roots(_iter_model_roots())
+    )
+    remembered_components: Dict[str, str] = {}
+    for entry in state.entries.values():
+        last_path = entry.get("last_path")
+        component = entry.get("component")
+        if not isinstance(last_path, str) or not last_path.strip():
+            continue
+        if not isinstance(component, str) or not component:
+            continue
+        remembered_components.setdefault(_normalize_for_match(last_path), component)
+
+    best_root = _best_root_for(
+        normalized_dir, tuple(remembered_components)
+    )
+    if best_root is None:
+        return None
+
+    component = remembered_components[best_root]
+    if not os.path.isdir(_join_component(sidecar_root, component)):
+        return None
+
+    rel_dir = os.path.relpath(normalized_dir, best_root)
+    parts = [_join_component(sidecar_root, component)]
+    if rel_dir and rel_dir != os.curdir:
+        parts.extend(
+            sanitize_path_component(part)
+            for part in rel_dir.split(os.sep)
+            if part not in ("", os.curdir)
+        )
+    return os.path.join(*parts)
+
+
 def resolve_centralized_dir(model_path: str) -> Optional[str]:
     """Return the centralized mirror directory for ``model_path``.
 
@@ -1014,14 +1062,20 @@ def get_unmatched_sidecar_components() -> List[Dict[str, str]]:
 def get_sidecar_dir(model_path: str) -> str:
     """Return the directory holding the model's sidecar/preview assets.
 
-    Centralized mode falls back to the model's own directory (with a warning)
-    when the path lies outside every configured model root.
+    Centralized mode keeps using an existing mirror remembered for a removed
+    model root. It falls back to the model's own directory only when neither a
+    current root nor an existing remembered mirror can resolve the path.
     """
 
     if get_storage_mode() == STORAGE_MODE_CENTRALIZED:
         mirror = resolve_centralized_dir(model_path)
         if mirror:
             return mirror
+        sidecar_root = get_sidecar_root()
+        if sidecar_root:
+            mirror = _resolve_remembered_centralized_dir(model_path, sidecar_root)
+            if mirror:
+                return mirror
         logger.warning(
             "sidecar_paths: %s is outside configured model roots; storing sidecar alongside",
             model_path,
