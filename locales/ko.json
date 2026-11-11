@@ -767,11 +767,11 @@
             "title": "우선순위 태그",
             "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "우선순위 태그와 일치하지 않는 모델을 한 폴더에 모으기",
+                "help": "우선순위 태그와 일치하지 않는 모델은 {first_tag}에서 폴더를 만드는 대신 한 폴더에 저장됩니다. 태그가 없는 모델은 영향을 받지 않습니다. 기본값은 꺼짐이며, 모델을 다시 정리하기 전까지 기존 폴더는 변경되지 않습니다.",
+                "folderLabel": "폴더 이름",
+                "folderHelp": "우선순위 태그와 일치하지 않을 때 {first_tag} 대신 사용됩니다. 기본 템플릿 {base_model}/{first_tag}에서는 결과가 {base_model}/<폴더 이름>이 됩니다. 비워 두면 현재 동작을 유지합니다.",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "우선순위 태그 도움말 열기",

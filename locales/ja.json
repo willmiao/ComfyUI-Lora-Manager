@@ -767,11 +767,11 @@
             "title": "優先タグ",
             "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "優先タグに一致しないモデルを 1 つのフォルダにまとめる",
+                "help": "優先タグに一致しないモデルは、{first_tag} からフォルダを作る代わりに 1 つのフォルダにまとめられます。タグがないモデルは影響を受けません。デフォルトはオフです。モデルを再整理するまで既存のフォルダは変わりません。",
+                "folderLabel": "フォルダ名",
+                "folderHelp": "優先タグに一致しない場合に {first_tag} の代わりに使われます。デフォルトのテンプレート {base_model}/{first_tag} では {base_model}/<フォルダ名> になります。空欄にすると現在の動作を維持します。",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "優先タグのヘルプを開く",

@@ -767,11 +767,11 @@
             "title": "Etiquetas prioritarias",
             "description": "Personaliza el orden de prioridad de etiquetas para cada tipo de modelo (p. ej., character, concept, style(toon|toon_style))",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "Agrupar en una sola carpeta los modelos sin etiqueta prioritaria",
+                "help": "Los modelos cuyas etiquetas no coinciden con ninguna etiqueta prioritaria se guardan en una sola carpeta en lugar de una carpeta creada a partir de {first_tag}. Los modelos sin etiquetas no se ven afectados. Desactivado por defecto; las carpetas existentes no cambian hasta que se vuelva a organizar un modelo.",
+                "folderLabel": "Nombre de la carpeta",
+                "folderHelp": "Se usa en lugar de {first_tag} cuando no coincide ninguna etiqueta prioritaria. Con la plantilla predeterminada {base_model}/{first_tag}, el resultado es {base_model}/<nombre de la carpeta>. Déjalo vacío para mantener el comportamiento actual.",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Abrir ayuda de etiquetas prioritarias",

@@ -767,10 +767,10 @@
       "title": "Priority Tags",
       "description": "Customize the tag priority order for each model type (e.g., character, concept, style(toon|toon_style))",
       "unsortedFallback": {
-        "label": "Use 'Unsorted' folder for tags lacking priority tags",
-        "help": "Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
+        "label": "Send models that match no priority tag to one folder",
+        "help": "Models that match no priority tag are filed in a single folder instead of a folder built from {first_tag}. Models with no tags are unaffected. Off by default; existing folders stay unchanged until a model is organized again.",
         "folderLabel": "Folder name",
-        "folderHelp": "Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
+        "folderHelp": "Used instead of {first_tag} when no priority tag matches. With the default template {base_model}/{first_tag} the result is {base_model}/<folder name>. Leave it empty to keep the current behavior.",
         "folderPlaceholder": "unsorted"
       },
       "placeholder": "character, concept, style(toon|toon_style)",

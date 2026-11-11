@@ -767,11 +767,11 @@
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "将没有匹配到优先标签的模型放入同一个文件夹",
+                "help": "没有匹配到优先标签的模型会放入同一个文件夹，而不是按 {first_tag} 创建文件夹。完全没有标签的模型不受影响。默认关闭；在重新整理模型之前，现有文件夹保持不变。",
+                "folderLabel": "文件夹名称",
+                "folderHelp": "没有匹配到优先标签时，用它替代 {first_tag}。在默认模板 {base_model}/{first_tag} 下，结果为 {base_model}/<文件夹名称>。留空则保持当前行为。",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "打开优先标签帮助",

@@ -767,11 +767,11 @@
             "title": "Приоритетные теги",
             "description": "Настройте порядок приоритетов тегов для каждого типа моделей (например, character, concept, style(toon|toon_style)).",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "Отправлять модели без совпадения с приоритетным тегом в одну папку",
+                "help": "Модели, теги которых не совпадают ни с одним приоритетным тегом, помещаются в одну папку вместо папки, созданной из {first_tag}. Модели без тегов не затрагиваются. По умолчанию выключено; существующие папки не меняются, пока модель не будет организована заново.",
+                "folderLabel": "Имя папки",
+                "folderHelp": "Используется вместо {first_tag}, если ни один приоритетный тег не совпал. С шаблоном по умолчанию {base_model}/{first_tag} получится {base_model}/<имя папки>. Оставьте пустым, чтобы сохранить текущее поведение.",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Открыть справку по приоритетным тегам",

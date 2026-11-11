@@ -767,11 +767,11 @@
             "title": "優先標籤",
             "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",
             "unsortedFallback": {
-                "label": "[TODO: Translate] Use 'Unsorted' folder for tags lacking priority tags",
-                "help": "[TODO: Translate] Sends all files lacking a canonical priority tag to a single folder rather than creating a new folder from {first_tag}. Off by default: existing folders are unaffected until a model is organized again.",
-                "folderLabel": "[TODO: Translate] Folder name",
-                "folderHelp": "[TODO: Translate] Replaces the folder segment for models with usable tags but no priority-tag match. This name is used inside your path template, so with {base_model}/{first_tag} the result is <base model>/<this name>. Models with no usable tags keep their existing behaviour.",
-                "folderPlaceholder": "[TODO: Translate] unsorted"
+                "label": "將沒有符合優先標籤的模型放入同一個資料夾",
+                "help": "沒有符合優先標籤的模型會放入同一個資料夾，而不是依 {first_tag} 建立資料夾。完全沒有標籤的模型不受影響。預設關閉；在重新整理模型之前，現有資料夾維持不變。",
+                "folderLabel": "資料夾名稱",
+                "folderHelp": "沒有符合優先標籤時，用它取代 {first_tag}。使用預設範本 {base_model}/{first_tag} 時，結果為 {base_model}/<資料夾名稱>。留空則維持目前行為。",
+                "folderPlaceholder": "unsorted"
             },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "開啟優先標籤說明",

@@ -320,6 +320,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (节点 / 節點 / ノード / 노드 / nœud / Knoten / nodo / узел / צומת). All 9 locales are
 > translated, so no `[TODO: Translate]` placeholder remains.
 
+> **Status (2026-11, unsorted fallback folder):** the Priority Tags panel gained a
+> default-off toggle plus a folder-name field (`settings.priorityTags.unsortedFallback.*`,
+> 5 keys) that files models matching no priority tag under one folder instead of a folder
+> built from `{first_tag}`. The English copy was reworded in the same pass: the label no
+> longer hardcodes "Unsorted" (the folder name is configurable) and the
+> "canonical" / "usable tags" jargon was dropped. All 9 locales are translated
+> (terminology in §2, "Unsorted fallback folder feature"), so no
+> `[TODO: Translate]` placeholder remains.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -724,6 +733,32 @@ the **noun for arranging files**, matching each locale's existing
 | he | ארגון |
 
 zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
+
+### Unsorted fallback folder feature (priority tag fallback)
+
+The Priority Tags panel (settings Organization tab) gained a default-off toggle that files
+models whose tags match no priority tag into one folder instead of a folder built from
+`{first_tag}`; enabling it reveals a **folder name** field (default `unsorted`).
+
+| Term | Rendering |
+|---|---|
+| match no priority tag | zh-CN 没有匹配到优先标签 · zh-TW 沒有符合優先標籤 · ja 優先タグに一致しない · ko 우선순위 태그와 일치하지 않는 · fr sans tag prioritaire · de ohne passenden Prioritäts-Tag · es sin etiqueta prioritaria · ru без совпадения с приоритетным тегом · he ללא התאמה לתגית עדיפות |
+| folder (name) | zh-CN 文件夹 / 文件夹名称 · zh-TW 資料夾 / 資料夾名稱 · ja フォルダ / フォルダ名 · ko 폴더 / 폴더 이름 · fr dossier / nom du dossier · de Ordner / Ordnername · es carpeta / nombre de la carpeta · ru папка / имя папки · he תיקייה / שם התיקייה |
+| organized again | zh-CN 重新整理 · zh-TW 重新整理 · ja 再整理 · ko 다시 정리 · fr réorganisé · de erneut organisiert · es se vuelva a organizar · ru организована заново · he יאורגן מחדש |
+
+- **The label must not name the folder.** The folder is user-configurable, so the copy says
+  "one folder" and lets the field supply the name; the first cut hardcoded 'Unsorted' and
+  read wrong as soon as the user renamed it.
+- **The two groups stay distinct**: models that *match no priority tag* go to the fallback
+  folder, while models *with no tags* keep their current handling (`no tags`). Every locale
+  keeps that second sentence — dropping it implies untagged models are moved too.
+- `{first_tag}` and `{base_model}/{first_tag}` appear verbatim (R2). The folder-name part of
+  the example is prose and is translated (`<文件夹名称>`, `<nom du dossier>`, …). Hebrew
+  avoids angle brackets around the Hebrew phrase and spells the example out
+  (`{base_model} ואחריו שם התיקייה`) so bidi does not mirror the brackets.
+- The field's placeholder is the literal default `unsorted` — a path value, not prose, so it
+  is never translated.
+- Register follows each file's norm: 你 (zh-CN), 您 (zh-TW), Sie (de), tú (es), вы (ru).
 
 ### Sidecar storage feature (centralized `.metadata.json` / preview storage)
 
