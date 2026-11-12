@@ -344,6 +344,7 @@ export function initMetadataPanelHandlers(container) {
                     'Steps': 'steps',
                     'Sampler': 'sampler',
                     'CFG': 'cfg_scale',
+                    'Clip Skip': 'clip_skip',
                 };
 
                 paramTags.forEach(tag => {
