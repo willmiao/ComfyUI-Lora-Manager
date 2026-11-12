@@ -1000,17 +1000,17 @@ the *root*, never a property of the models inside it, which stay in the library.
 The manual Refresh dialog renders its status line from `common.scanProgress.*`. During the
 reconcile walk the backend does not know the real file count yet (counting *is* the walk), so
 the client shows the roots being walked plus a running count instead of a `processed/total`
-ratio: `Checking for changes... G:, Y: (12,345 files) | ~3 min remaining`. The bar covers
-0-50 % for the walk and 50-99 % for the new-file pass.
+ratio: `Checking for changes... G:, Y: (12,345 files)`. The ETA appears on a separate line
+below the bar. The bar covers 0-50 % for the walk and 50-99 % for the new-file pass.
 
 | Term | Rendering |
 |---|---|
 | `walkFiles` ("{count} files") | zh-CN {count} 个文件 · zh-TW {count} 個檔案 · ja {count} 件のファイル · ko 파일 {count}개 · fr {count} fichiers · de {count} Dateien · es {count} archivos · ru {count} файл(ов) · he {count} קבצים |
 
-`walkFiles` is a **fragment, not a sentence**: the root labels, the `(` `)`, the ` | ` before
-the ETA and the ETA text itself all come from `static/js/api/baseModelApi.js`, so no locale
-carries punctuation here (the ASCII parentheses match the sibling `stages.process_models`
-count, `(5/10)`). `{count}` is substituted with an already-formatted number
+`walkFiles` is a **fragment, not a sentence**: the root labels and the `(` `)` come from
+`static/js/api/baseModelApi.js`, so no locale carries punctuation here (the ASCII parentheses
+match the sibling `stages.process_models` count, `(5/10)`). The separate ETA element uses the
+existing localized ETA strings without adding a separator. `{count}` is substituted with an already-formatted number
 (`toLocaleString()`), so no locale adds its own digit grouping. "files" means the **model
 files the walk looked at**, not every file on disk — the noun mirrors each locale's
 `stages.count_models` rendering, and `ru` uses the `файл(ов)` form because the count ticks

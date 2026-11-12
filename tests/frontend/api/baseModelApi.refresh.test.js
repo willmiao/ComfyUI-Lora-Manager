@@ -26,6 +26,7 @@ const showCancelButtonMock = vi.fn();
 const hideMock = vi.fn();
 const restoreProgressBarMock = vi.fn();
 const setProgressMock = vi.fn();
+const setIndeterminateMock = vi.fn();
 const setStatusMock = vi.fn();
 const resetAndReloadMock = vi.fn();
 
@@ -37,6 +38,7 @@ vi.mock(STATE_MODULE, () => ({
       hide: hideMock,
       restoreProgressBar: restoreProgressBarMock,
       setProgress: setProgressMock,
+      setIndeterminate: setIndeterminateMock,
       setStatus: setStatusMock,
     },
   },
@@ -131,6 +133,7 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     hideMock.mockReset();
     restoreProgressBarMock.mockReset();
     setProgressMock.mockReset();
+    setIndeterminateMock.mockReset();
     setStatusMock.mockReset();
     resetAndReloadMock.mockReset();
     FakeWebSocket.instances = [];
@@ -172,6 +175,7 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     const { promise, socket } = await startRefresh(client);
 
     expect(socket.url).toBe(`ws://${window.location.host}/ws/fetch-progress`);
+    expect(setIndeterminateMock).toHaveBeenCalledWith(true);
 
     socket.emit({
       type: 'scan_progress',
@@ -195,13 +199,15 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
       current_name: 'style.safetensors',
     });
 
-    expect(setProgressMock).toHaveBeenCalledWith(0);
-    expect(setProgressMock).toHaveBeenCalledWith(50);
-    const lastStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(setProgressMock).toHaveBeenCalledWith(0, { showPercent: false });
+    expect(setProgressMock).toHaveBeenCalledWith(50, { showPercent: true });
+    expect(setIndeterminateMock).toHaveBeenCalledWith(false);
+    const [lastStatus, lastEta] = setStatusMock.mock.calls.at(-1);
     expect(lastStatus).toContain('(5/10)');
     expect(lastStatus).toContain('style.safetensors');
-    // First ETA sample only anchors the timer
-    expect(lastStatus).toContain('Estimating time...');
+    // First ETA sample only anchors the timer, rendered separately from status.
+    expect(lastStatus).not.toContain('Estimating time...');
+    expect(lastEta).toBe('Estimating time...');
 
     fetchControl.resolveOk();
     await promise;
@@ -214,6 +220,30 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     );
     expect(socket.close).toHaveBeenCalled();
     expect(hideMock).toHaveBeenCalled();
+  });
+
+  it('keeps the displayed progress monotonic across stage updates', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise, socket } = await startRefresh(client);
+
+    const emitProgress = (progress) => socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage: 'process_models',
+      model_type: 'lora',
+      progress,
+      processed: 1,
+      total: 10,
+    });
+
+    emitProgress(55);
+    emitProgress(20);
+
+    expect(setProgressMock).toHaveBeenLastCalledWith(55, { showPercent: true });
+
+    fetchControl.resolveOk();
+    await promise;
   });
 
   it('ignores messages for other types or other model types', async () => {
@@ -287,18 +317,18 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
 
     // First sample anchors the timer
     emitProcessing(1, 10);
-    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('Estimating time...');
+    expect(setStatusMock.mock.calls.at(-1)[1]).toContain('Estimating time...');
 
     // 100s elapsed for 2 files -> 50s per file -> 400s remaining -> ~7 min
     now = 101000;
     emitProcessing(2, 10);
-    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('~7 min remaining');
+    expect(setStatusMock.mock.calls.at(-1)[1]).toContain('~7 min remaining');
 
     // 110s elapsed for 4 files -> EMA = 50000*0.7 + 27500*0.3 = 43250ms/file
     // remaining 6 files -> 259.5s -> ~4 min
     now = 111000;
     emitProcessing(4, 10);
-    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('~4 min remaining');
+    expect(setStatusMock.mock.calls.at(-1)[1]).toContain('~4 min remaining');
 
     fetchControl.resolveOk();
     await promise;
@@ -326,13 +356,13 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
       current_name: 'G:',
     });
 
-    expect(setProgressMock).toHaveBeenCalledWith(12);
-    const walkStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(setProgressMock).toHaveBeenCalledWith(12, { showPercent: true });
+    const [walkStatus, walkEta] = setStatusMock.mock.calls.at(-1);
     expect(walkStatus).toContain('G:, Y:');
     expect(walkStatus).toContain('1,234 files');
     // No processed/total ratio: the real file count is unknown mid-walk.
     expect(walkStatus).not.toContain('(1234/2000)');
-    expect(walkStatus).toContain('Estimating time...');
+    expect(walkEta).toBe('Estimating time...');
 
     // Walk finished: no ETA once the counters meet the estimate.
     socket.emit({
@@ -349,9 +379,9 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
       current_name: 'Y:',
     });
 
-    const finalWalkStatus = setStatusMock.mock.calls.at(-1)[0];
+    const [finalWalkStatus, finalWalkEta] = setStatusMock.mock.calls.at(-1);
     expect(finalWalkStatus).toContain('2,000 files');
-    expect(finalWalkStatus).not.toContain('Estimating time...');
+    expect(finalWalkEta).toBe('');
 
     fetchControl.resolveOk();
     await promise;
@@ -380,13 +410,13 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     emit('process_models', 1, 10);
     now = 101000;
     emit('process_models', 2, 10);
-    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('~7 min remaining');
+    expect(setStatusMock.mock.calls.at(-1)[1]).toContain('~7 min remaining');
 
     // Same counters on the walk stage: without the reset the old per-file rate
     // (50s/file for 2 files) would be reused and produce a huge ETA.
     now = 102000;
     emit('reconcile_scan', 2, 100, { files_seen: 2, active_roots: ['G:'] });
-    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('Estimating time...');
+    expect(setStatusMock.mock.calls.at(-1)[1]).toContain('Estimating time...');
 
     fetchControl.resolveOk();
     await promise;

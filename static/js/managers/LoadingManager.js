@@ -13,8 +13,11 @@ export class LoadingManager {
         this._initialized = false;
         this.overlay = null;
         this.loadingContent = null;
+        this.spinner = null;
         this.progressBar = null;
+        this.progressPercent = null;
         this.statusText = null;
+        this.etaText = null;
         this.cancelButton = null;
         this.onCancelCallback = null;
         this.detailsContainer = null;
@@ -41,6 +44,7 @@ export class LoadingManager {
             this.overlay.appendChild(this.loadingContent);
         }
 
+        this.spinner = this.loadingContent.querySelector('.loading-spinner');
         this.progressBar = this.loadingContent.querySelector('.progress-bar');
         if (!this.progressBar) {
             this.progressBar = document.createElement('div');
@@ -53,11 +57,28 @@ export class LoadingManager {
             this.loadingContent.appendChild(this.progressBar);
         }
 
+        this.progressPercent = this.loadingContent.querySelector('.loading-progress-percent');
+        if (!this.progressPercent) {
+            this.progressPercent = document.createElement('span');
+            this.progressPercent.className = 'loading-progress-percent';
+            this.progressPercent.hidden = true;
+            const progressContainer = this.progressBar.closest('.progress-container');
+            (progressContainer || this.progressBar).insertAdjacentElement('afterend', this.progressPercent);
+        }
+
         this.statusText = this.loadingContent.querySelector('.loading-status');
         if (!this.statusText) {
             this.statusText = document.createElement('div');
             this.statusText.className = 'loading-status';
             this.loadingContent.appendChild(this.statusText);
+        }
+
+        this.etaText = this.loadingContent.querySelector('.loading-eta');
+        if (!this.etaText) {
+            this.etaText = document.createElement('div');
+            this.etaText.className = 'loading-eta';
+            this.etaText.hidden = true;
+            this.loadingContent.appendChild(this.etaText);
         }
 
         this.cancelButton = this.loadingContent.querySelector('.loading-cancel');
@@ -98,15 +119,30 @@ export class LoadingManager {
         this.removeDetailsContainer();
     }
 
-    setProgress(percent) {
+    setProgress(percent, { showPercent = false } = {}) {
         if (!this._initialized) return;
         this.progressBar.style.width = `${percent}%`;
         this.progressBar.setAttribute('aria-valuenow', percent);
+        this.progressPercent.hidden = !showPercent;
+        this.progressPercent.textContent = showPercent ? `${Math.round(percent)}%` : '';
     }
 
-    setStatus(message) {
+    setIndeterminate(isIndeterminate) {
+        if (!this._initialized) return;
+        if (this.spinner) {
+            this.spinner.style.display = isIndeterminate ? '' : 'none';
+        }
+        this.progressBar.style.display = isIndeterminate ? 'none' : 'block';
+        if (isIndeterminate) {
+            this.progressPercent.hidden = true;
+        }
+    }
+
+    setStatus(message, eta = '') {
         if (!this._initialized) return;
         this.statusText.textContent = message;
+        this.etaText.textContent = eta;
+        this.etaText.hidden = !eta;
     }
 
     reset() {
@@ -115,6 +151,9 @@ export class LoadingManager {
         this.setStatus('');
         this.removeDetailsContainer();
         this.hideCancelButton();
+        if (this.spinner) {
+            this.spinner.style.display = '';
+        }
         this.progressBar.style.display = 'block';
     }
 

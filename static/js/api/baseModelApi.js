@@ -535,10 +535,19 @@ export class BaseModelApiClient {
         const etaTracker = createScanEtaTracker();
         let ws = null;
         let lastProgressStage = null;
+        let lastProgressValue = 0;
 
         const handleScanProgress = (data) => {
-            if (typeof data.progress === 'number') {
-                state.loadingManager.setProgress(data.progress);
+            const hasProgress = Number.isFinite(data.progress);
+            if (hasProgress && data.status === 'processing') {
+                state.loadingManager.setIndeterminate(false);
+            }
+            if (hasProgress) {
+                const progress = Math.min(100, Math.max(0, data.progress));
+                lastProgressValue = Math.max(lastProgressValue, progress);
+                state.loadingManager.setProgress(lastProgressValue, {
+                    showPercent: data.status === 'processing',
+                });
             }
             // The per-file rate of one stage says nothing about the next one:
             // the walk phase counts files while the new-file pass processes
@@ -552,6 +561,7 @@ export class BaseModelApiClient {
                 { total: data.total },
                 data.stage || ''
             );
+            let etaText = '';
             if (data.status === 'processing' && data.stage === 'reconcile_scan') {
                 // Walk phase: the real file count is only known once the walk
                 // finishes, so report the files checked so far and the roots
@@ -570,26 +580,21 @@ export class BaseModelApiClient {
                     statusText += roots.length
                         ? ` ${roots.join(', ')} (${filesText})`
                         : ` (${filesText})`;
-                    const etaText = etaTracker.update(data.processed, data.total);
-                    if (etaText) {
-                        statusText += ` | ${etaText}`;
-                    }
+                    etaText = etaTracker.update(data.processed, data.total) || '';
                 }
             } else if (data.status === 'processing' && data.total > 0) {
                 statusText += ` (${data.processed}/${data.total})`;
                 if (data.current_name) {
                     statusText += ` ${data.current_name}`;
                 }
-                const etaText = etaTracker.update(data.processed, data.total);
-                if (etaText) {
-                    statusText += ` | ${etaText}`;
-                }
+                etaText = etaTracker.update(data.processed, data.total) || '';
             }
-            state.loadingManager.setStatus(statusText);
+            state.loadingManager.setStatus(statusText, etaText);
         };
 
         try {
             state.loadingManager.show(initialMessage, 0);
+            state.loadingManager.setIndeterminate(true);
             state.loadingManager.showCancelButton(() => {
                 this.cancelTask();
                 abortController.abort();
