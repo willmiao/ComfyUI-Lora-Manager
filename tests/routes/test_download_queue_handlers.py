@@ -17,6 +17,9 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
 from py.routes.handlers.model_handlers import ModelDownloadHandler
+from py.services import download_manager as download_manager_module
+from py.services.download_coordinator import DownloadCoordinator
+from py.services.download_manager import DownloadManager
 from py.services.download_queue_service import DownloadQueueService
 from py.services.use_cases import DownloadModelValidationError
 
@@ -187,6 +190,108 @@ async def test_retry_failed_history_returns_success(
     queue = await queue_service.get_queue()
     assert len(queue) == 1
     assert queue[0]["status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_add_to_download_queue_canonicalizes_and_deduplicates(
+    queue_service: DownloadQueueService,
+) -> None:
+    resolved = {
+        "model_id": 1,
+        "model_version_id": 100,
+        "model_name": "Model",
+        "version_name": "V1",
+        "file_params": {"id": 1001, "fileName": "model.safetensors"},
+    }
+    coordinator = SimpleNamespace(
+        resolve_download_target=AsyncMock(return_value=resolved)
+    )
+    handler = ModelDownloadHandler(
+        ws_manager=None,  # pyright: ignore[reportArgumentType]
+        logger=logging.getLogger("test-download-queue-add"),
+        download_use_case=None,  # pyright: ignore[reportArgumentType]
+        download_coordinator=coordinator,  # pyright: ignore[reportArgumentType]
+    )
+
+    first = await handler.add_to_download_queue(
+        _queue_request("/api/lm/downloads/queue/add", {"download_id": "dl-first", "model_id": "1"})
+    )
+    second = await handler.add_to_download_queue(
+        _queue_request("/api/lm/downloads/queue/add", {"download_id": "dl-second", "model_id": "1"})
+    )
+
+    first_payload = json.loads(first.text)
+    second_payload = json.loads(second.text)
+    assert first_payload["queued"] is True
+    assert first_payload["item"]["model_version_id"] == 100
+    assert json.loads(first_payload["item"]["file_params"])["id"] == 1001
+    assert second_payload["success"] is True
+    assert second_payload["queued"] is False
+    assert second_payload["duplicate"] is True
+    assert second_payload["reason"] == "already_queued"
+    assert len(await queue_service.get_queue()) == 1
+
+
+@pytest.mark.asyncio
+async def test_card_then_model_page_creates_one_queue_item(
+    queue_service: DownloadQueueService,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = SimpleNamespace(
+        get_model_version=AsyncMock(return_value={
+            "id": 100,
+            "name": "V1",
+            "modelId": 1,
+            "model": {"id": 1, "name": "Model", "type": "LoRA"},
+            "files": [{
+                "id": 1001,
+                "type": "Model",
+                "primary": True,
+                "name": "model.safetensors",
+                "metadata": {"format": "SafeTensor"},
+            }],
+        })
+    )
+    monkeypatch.setattr(
+        download_manager_module,
+        "get_default_metadata_provider",
+        AsyncMock(return_value=provider),
+    )
+    manager = DownloadManager()
+    coordinator = DownloadCoordinator(
+        ws_manager=None,
+        download_manager_factory=AsyncMock(return_value=manager),
+    )
+    handler = ModelDownloadHandler(
+        ws_manager=None,  # pyright: ignore[reportArgumentType]
+        logger=logging.getLogger("test-download-queue-integration"),
+        download_use_case=None,  # pyright: ignore[reportArgumentType]
+        download_coordinator=coordinator,
+    )
+
+    card_response = await handler.add_to_download_queue(
+        _queue_request("/api/lm/downloads/queue/add", {"download_id": "card", "model_id": "1"})
+    )
+    page_response = await handler.add_to_download_queue(
+        _queue_request(
+            "/api/lm/downloads/queue/add",
+            {
+                "download_id": "page",
+                "model_id": "1",
+                "model_version_id": "100",
+                "file_params": json.dumps({"id": 1001}),
+            },
+        )
+    )
+
+    assert json.loads(card_response.text)["queued"] is True
+    page_payload = json.loads(page_response.text)
+    assert page_payload["duplicate"] is True
+    assert page_payload["item"]["download_id"] == "card"
+    queue = await queue_service.get_queue()
+    assert len(queue) == 1
+    assert queue[0]["model_version_id"] == 100
+    assert json.loads(queue[0]["file_params"])["id"] == 1001
 
 
 # ----------------------------------------------------------------------

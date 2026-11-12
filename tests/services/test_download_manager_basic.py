@@ -167,6 +167,44 @@ def noop_cleanup(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_resolve_download_target_returns_canonical_version_and_file(metadata_provider):
+    metadata_provider.payload["model"].update({"id": 7, "name": "Model"})
+    metadata_provider.payload["name"] = "V1"
+    metadata_provider.payload["files"] = [
+        {
+            "id": 999,
+            "type": "Model",
+            "primary": True,
+            "name": "primary.safetensors",
+            "metadata": {"format": "SafeTensor"},
+        },
+        {
+            "id": 1000,
+            "type": "Model",
+            "primary": False,
+            "name": "other.safetensors",
+            "metadata": {"format": "SafeTensor"},
+        },
+    ]
+    manager = DownloadManager()
+
+    default_target = await manager.resolve_download_target(
+        model_id=7, model_version_id=None
+    )
+    other_target = await manager.resolve_download_target(
+        model_id=7,
+        model_version_id=42,
+        file_params={"id": 1000},
+    )
+
+    assert default_target["model_version_id"] == 42
+    assert default_target["file_params"]["id"] == 999
+    assert default_target["file_params"]["isPrimary"] is True
+    assert other_target["file_params"]["id"] == 1000
+    assert other_target["file_params"]["fileName"] == "other.safetensors"
+
+
+@pytest.mark.asyncio
 async def test_download_requires_identifier():
     """Test that download fails when no identifier is provided."""
     manager = DownloadManager()

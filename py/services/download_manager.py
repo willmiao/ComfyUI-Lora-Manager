@@ -502,6 +502,94 @@ class DownloadManager:
 
         return file_info
 
+    def _select_download_file(
+        self,
+        files: Any,
+        file_params: Dict[str, Any] | None,
+        model_type: str,
+    ) -> Optional[Dict[str, Any]]:
+        file_info = self._resolve_target_file(files, file_params) if file_params else None
+        if not file_info and model_type == "workflow":
+            file_info = self._select_workflow_download_file(files)
+        if file_info:
+            return file_info
+
+        candidates = [f for f in files or [] if isinstance(f, dict)]
+        return (
+            next(
+                (
+                    f for f in candidates
+                    if f.get("primary") and f.get("type") in MODEL_WEIGHT_FILE_TYPES
+                ),
+                None,
+            )
+            or next((f for f in candidates if f.get("type") in MODEL_WEIGHT_FILE_TYPES), None)
+            or next(
+                (
+                    f for f in candidates
+                    if f.get("primary") and f.get("type") not in NON_DOWNLOADABLE_PRIMARY_TYPES
+                ),
+                None,
+            )
+        )
+
+    async def resolve_download_target(
+        self,
+        *,
+        model_id: Optional[int],
+        model_version_id: Optional[int],
+        source: str | None = None,
+        file_params: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        metadata_provider = (
+            await get_metadata_provider("civarchive_api")
+            if source == "civarchive"
+            else await get_default_metadata_provider()
+        )
+        try:
+            version_info = await metadata_provider.get_model_version(
+                cast(int, model_id), cast(int, model_version_id)
+            )
+        except Exception:
+            if source != "civarchive":
+                raise
+            metadata_provider = await get_default_metadata_provider()
+            version_info = await metadata_provider.get_model_version(
+                cast(int, model_id), cast(int, model_version_id)
+            )
+        if not version_info:
+            raise ValueError("Failed to fetch model metadata")
+
+        resolved_version_id = model_version_id or version_info.get("id")
+        resolved_model_id = model_id or version_info.get("modelId") or (version_info.get("model") or {}).get("id")
+        model_type = str((version_info.get("model") or {}).get("type") or "").lower()
+        selection_type = "workflow" if model_type in WORKFLOW_CIVITAI_TYPES else "model"
+        file_info = self._select_download_file(
+            version_info.get("files") or [], file_params or None, selection_type
+        )
+        if not file_info or file_info.get("id") is None:
+            raise ValueError("No suitable file found in metadata")
+
+        file_metadata = file_info.get("metadata") or {}
+        resolved_file_params = {
+            **(file_params or {}),
+            "id": file_info["id"],
+            "fileId": file_info["id"],
+            "fileName": file_info.get("name") or "",
+            "type": file_info.get("type") or "Model",
+            "format": file_metadata.get("format"),
+            "size": file_metadata.get("size"),
+            "fp": file_metadata.get("fp"),
+            "isPrimary": bool(file_info.get("primary")),
+        }
+        return {
+            "model_id": int(resolved_model_id) if resolved_model_id is not None else None,
+            "model_version_id": int(resolved_version_id) if resolved_version_id is not None else None,
+            "model_name": (version_info.get("model") or {}).get("name") or "",
+            "version_name": version_info.get("name") or "",
+            "file_params": resolved_file_params,
+        }
+
     @staticmethod
     def _select_workflow_download_file(
         files: Any,
@@ -2263,84 +2351,10 @@ class DownloadManager:
             if progress_callback:
                 await progress_callback(0)
 
-            # 2. Get file information
+            # 2. Get file information. Queue canonicalization uses this same
+            # selection logic, so the recorded file id is the file downloaded.
             files = version_info.get("files", [])
-            file_info = None
-
-            # If file_params is provided, reuse the file resolved right after
-            # the metadata fetch so the existence gate and this selection
-            # always agree on the target file (#1058).
-            if file_params is not None:
-                file_info = target_file
-                if not file_info:
-                    logger.debug(
-                        "[download] No match found via file_params — falling back to primary file lookup",
-                    )
-            else:
-                logger.debug(
-                    "[download] No file_params provided (null/None) — will use primary file lookup. "
-                    "model_version_id=%s, total_files=%d",
-                    model_version_id, len(files),
-                )
-
-            # Fallback to primary file if no match found
-            if not file_info and model_type == "workflow":
-                file_info = self._select_workflow_download_file(files)
-                if file_info:
-                    logger.debug(
-                        "[download] Workflow file selected: id=%s, name=%s",
-                        file_info.get("id"), file_info.get("name"),
-                    )
-
-            if not file_info:
-                logger.debug("[download] Looking for primary file as fallback")
-                # Prefer a weights-type file CivitAI marked primary; then any
-                # weights-type file (providers without primary flags, e.g.
-                # civarchive); then trust CivitAI's primary flag regardless of
-                # type — newer types like 'Enhancement LoRA' are valid primary
-                # files. Weights files are preferred over non-weights primary
-                # files so a Config/Archive primary never replaces a Model.
-                file_info = next(
-                    (
-                        f
-                        for f in files
-                        if f.get("primary") and f.get("type") in MODEL_WEIGHT_FILE_TYPES
-                    ),
-                    None,
-                )
-                if file_info:
-                    logger.debug(
-                        "[download] Fallback primary file selected (primary + weights): id=%s, name=%s",
-                        file_info.get("id"), file_info.get("name"),
-                    )
-                else:
-                    file_info = next(
-                        (f for f in files if f.get("type") in MODEL_WEIGHT_FILE_TYPES),
-                        None,
-                    )
-                    if file_info:
-                        logger.debug(
-                            "[download] Fallback primary file selected (weights type, no primary flag): id=%s, name=%s",
-                            file_info.get("id"), file_info.get("name"),
-                        )
-                    else:
-                        file_info = next(
-                            (
-                                f
-                                for f in files
-                                if f.get("primary")
-                                and f.get("type") not in NON_DOWNLOADABLE_PRIMARY_TYPES
-                            ),
-                            None,
-                        )
-                        if file_info:
-                            logger.debug(
-                                "[download] Fallback primary file selected (trusting CivitAI primary flag): id=%s, name=%s, type=%s",
-                                file_info.get("id"), file_info.get("name"), file_info.get("type"),
-                            )
-                        else:
-                            logger.debug("[download] No primary file found in fallback lookup")
-
+            file_info = self._select_download_file(files, file_params, model_type)
             if not file_info:
                 return {"success": False, "error": "No suitable file found in metadata"}
 

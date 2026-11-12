@@ -216,12 +216,14 @@ class DownloadQueueService:
         thumbnail_url: str = "",
         source: Optional[str] = None,
         file_params: Optional[dict[str, Any]] = None,
+        deduplicate: bool = True,
     ) -> dict[str, Any]:
         """Insert a new download into the queue.
 
-        Returns the inserted row as a dict (or an empty dict if the
-        download_id already exists in the queue or has a terminal
-        record in history).
+        Returns the inserted row, an existing row marked with ``duplicate``,
+        or an empty dict when the download_id has a terminal history record.
+        Missing version/file ids overlap conservatively so legacy rows cannot
+        bypass dedup; two concrete, different file ids remain independent.
         """
         now = time.time()
         file_params_json = json.dumps(file_params) if file_params is not None else None
@@ -236,6 +238,40 @@ class DownloadQueueService:
             ).fetchone()
             if history_row is not None:
                 return {}
+
+            existing_id = conn.execute(
+                "SELECT * FROM download_queue WHERE download_id = ?",
+                (download_id,),
+            ).fetchone()
+            if existing_id is not None:
+                return {**dict(existing_id), "duplicate": True}
+
+            if deduplicate and model_id is not None:
+                rows = conn.execute(
+                    "SELECT * FROM download_queue WHERE model_id = ?",
+                    (model_id,),
+                ).fetchall()
+                new_file_id = (file_params or {}).get("id") or (file_params or {}).get("fileId")
+                for existing in rows:
+                    existing_version_id = existing["model_version_id"]
+                    existing_params = existing["file_params"]
+                    try:
+                        parsed_params = json.loads(existing_params) if existing_params else {}
+                    except (TypeError, json.JSONDecodeError):
+                        parsed_params = {}
+                    existing_file_id = parsed_params.get("id") or parsed_params.get("fileId")
+                    version_overlap = (
+                        model_version_id is None
+                        or existing_version_id is None
+                        or str(model_version_id) == str(existing_version_id)
+                    )
+                    file_overlap = (
+                        new_file_id is None
+                        or existing_file_id is None
+                        or str(new_file_id) == str(existing_file_id)
+                    )
+                    if version_overlap and file_overlap:
+                        return {**dict(existing), "duplicate": True}
 
             conn.execute(
                 """

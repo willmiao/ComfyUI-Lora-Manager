@@ -2190,6 +2190,26 @@ class ModelDownloadHandler:
             # Normalize falsy payloads (e.g. {}) to None (#1058)
             file_params = (json.loads(file_params_json) if file_params_json else None) or None
 
+            resolved = {}
+            if self._download_coordinator is not None:
+                try:
+                    resolved = await self._download_coordinator.resolve_download_target({
+                        "model_id": model_id,
+                        "model_version_id": model_version_id,
+                        "source": source,
+                        "file_params": file_params,
+                    })
+                except Exception as exc:
+                    # Queueing remains available during metadata outages. The
+                    # queue service conservatively dedups these unresolved rows.
+                    self._logger.warning("Could not canonicalize download target: %s", exc)
+
+            model_id = resolved.get("model_id", model_id)
+            model_version_id = resolved.get("model_version_id", model_version_id)
+            model_name = model_name or resolved.get("model_name", "")
+            version_name = version_name or resolved.get("version_name", "")
+            file_params = resolved.get("file_params", file_params)
+
             service = await DownloadQueueService.get_instance()
             item = await service.add_to_queue(
                 download_id=download_id,
@@ -2201,7 +2221,14 @@ class ModelDownloadHandler:
                 source=source,
                 file_params=file_params,
             )
-            return web.json_response({"success": True, "item": item})
+            duplicate = item.pop("duplicate", False)
+            return web.json_response({
+                "success": True,
+                "queued": bool(item) and not duplicate,
+                "duplicate": duplicate,
+                "reason": "already_queued" if duplicate else None,
+                "item": item,
+            })
         except Exception as exc:
             self._logger.error(
                 "Error adding to download queue: %s", exc, exc_info=True

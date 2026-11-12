@@ -95,6 +95,17 @@ class DownloadCoordinator:
         result["download_id"] = download_id
         return result
 
+    async def resolve_download_target(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        download_manager = await self._download_manager_factory()
+        return await download_manager.resolve_download_target(
+            model_id=self._parse_optional_int(payload.get("model_id"), "model_id"),
+            model_version_id=self._parse_optional_int(
+                payload.get("model_version_id"), "model_version_id"
+            ),
+            source=payload.get("source"),
+            file_params=payload.get("file_params") or None,
+        )
+
     async def cancel_download(self, download_id: str) -> Dict[str, Any]:
         """Cancel an active download and emit a broadcast event."""
 

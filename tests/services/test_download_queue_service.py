@@ -357,25 +357,28 @@ async def test_dedup_queue_keeps_distinct_files_of_same_version(tmp_path: Path) 
 async def test_dedup_queue_collapses_same_file_and_legacy_rows(tmp_path: Path) -> None:
     """Same version + same/absent file id still collapses to the latest row."""
     svc = _make_service(tmp_path)
-    # Same file id -> only the most recently enqueued row survives
+    # Bypass enqueue-time protection to exercise cleanup of legacy databases.
     await svc.add_to_queue(
         download_id="dl-old",
         model_id=1,
         model_version_id=100,
         file_params={"id": 1001},
+        deduplicate=False,
     )
     await svc.add_to_queue(
         download_id="dl-new",
         model_id=1,
         model_version_id=100,
         file_params={"id": 1001},
-    )
-    # Rows without file identity keep the old per-version behavior
-    await svc.add_to_queue(
-        download_id="dl-legacy-old", model_id=2, model_version_id=200
+        deduplicate=False,
     )
     await svc.add_to_queue(
-        download_id="dl-legacy-new", model_id=2, model_version_id=200
+        download_id="dl-legacy-old", model_id=2, model_version_id=200,
+        deduplicate=False,
+    )
+    await svc.add_to_queue(
+        download_id="dl-legacy-new", model_id=2, model_version_id=200,
+        deduplicate=False,
     )
 
     result = await svc.deduplicate()
@@ -386,8 +389,8 @@ async def test_dedup_queue_collapses_same_file_and_legacy_rows(tmp_path: Path) -
 
 
 @pytest.mark.asyncio
-async def test_dedup_queue_does_not_mix_null_and_file_id(tmp_path: Path) -> None:
-    """A row with a file id never dedups against a row without one."""
+async def test_add_to_queue_rejects_null_and_file_id_overlap(tmp_path: Path) -> None:
+    """An unresolved row cannot be used to bypass file-level dedup."""
     svc = _make_service(tmp_path)
     await svc.add_to_queue(
         download_id="dl-file",
@@ -395,14 +398,31 @@ async def test_dedup_queue_does_not_mix_null_and_file_id(tmp_path: Path) -> None
         model_version_id=100,
         file_params={"id": 1001},
     )
-    await svc.add_to_queue(
+    duplicate = await svc.add_to_queue(
         download_id="dl-nofile", model_id=1, model_version_id=100
     )
 
-    result = await svc.deduplicate()
+    assert duplicate["duplicate"] is True
+    assert duplicate["download_id"] == "dl-file"
+    assert len(await svc.get_queue()) == 1
 
-    assert result["removed_queue"] == 0
-    assert len(await svc.get_queue()) == 2
+
+@pytest.mark.asyncio
+async def test_add_to_queue_rejects_same_concrete_file(tmp_path: Path) -> None:
+    svc = _make_service(tmp_path)
+    await svc.add_to_queue(
+        download_id="dl-first", model_id=1, model_version_id=100,
+        file_params={"id": 1001},
+    )
+
+    duplicate = await svc.add_to_queue(
+        download_id="dl-second", model_id=1, model_version_id=100,
+        file_params={"id": "1001"},
+    )
+
+    assert duplicate["duplicate"] is True
+    assert duplicate["download_id"] == "dl-first"
+    assert len(await svc.get_queue()) == 1
 
 
 @pytest.mark.asyncio
