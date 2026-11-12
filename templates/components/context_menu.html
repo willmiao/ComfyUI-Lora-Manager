@@ -180,8 +180,18 @@
 </div>
 
 <div id="globalContextMenu" class="context-menu">
-    <div class="context-menu-item" data-action="download-example-images">
-        <i class="fas fa-download"></i> <span>{{ t('globalContextMenu.downloadExampleImages.label') }}</span>
+    <div class="context-menu-item has-submenu" data-has-submenu="download-example-images">
+        <i class="fas fa-download"></i>
+        <span>{{ t('globalContextMenu.downloadExampleImages.label') }}</span>
+        <i class="fas fa-chevron-right submenu-arrow"></i>
+        <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-missing-example-images">
+                <i class="fas fa-download"></i> <span>{{ t('loras.contextMenu.downloadMissingExamples') }}</span>
+            </div>
+            <div class="context-menu-item" data-action="download-example-images">
+                <i class="fas fa-redo-alt"></i> <span>{{ t('loras.contextMenu.reprocessExamples') }}</span>
+            </div>
+        </div>
     </div>
     <div class="context-menu-item" data-action="check-model-updates">
         <i class="fas fa-sync-alt"></i> <span>{{ t('globalContextMenu.checkModelUpdates.label') }}</span>

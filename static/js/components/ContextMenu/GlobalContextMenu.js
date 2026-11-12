@@ -25,7 +25,9 @@ export class GlobalContextMenu extends BaseContextMenu {
         const isWorkflowsPage = state.currentPageType === MODEL_TYPES.WORKFLOW;
         const modelUpdateItem = this.menu.querySelector('[data-action="check-model-updates"]');
         const licenseRefreshItem = this.menu.querySelector('[data-action="fetch-missing-licenses"]');
-        const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
+        // The download entries live in a submenu, so the parent carries the
+        // trigger attribute instead of an action.
+        const downloadExamplesItem = this.menu.querySelector('[data-has-submenu="download-example-images"]');
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
         const rematchRecipesItem = this.menu.querySelector('[data-action="rematch-recipes"]');
@@ -90,8 +92,13 @@ export class GlobalContextMenu extends BaseContextMenu {
                     console.error('Failed to trigger example images cleanup:', error);
                 });
                 break;
+            case 'download-missing-example-images':
+                this.downloadExampleImages(menuItem, { force: false }).catch((error) => {
+                    console.error('Failed to trigger example images download:', error);
+                });
+                break;
             case 'download-example-images':
-                this.downloadExampleImages(menuItem).catch((error) => {
+                this.downloadExampleImages(menuItem, { force: true }).catch((error) => {
                     console.error('Failed to trigger example images download:', error);
                 });
                 break;
@@ -152,7 +159,7 @@ export class GlobalContextMenu extends BaseContextMenu {
         sm.reloadContent();
     }
 
-    async downloadExampleImages(menuItem) {
+    async downloadExampleImages(menuItem, { force = true } = {}) {
         const downloadPath = state?.global?.settings?.example_images_path;
         if (!downloadPath) {
             showToast('globalContextMenu.downloadExampleImages.missingPath', {}, 'warning');
@@ -170,7 +177,7 @@ export class GlobalContextMenu extends BaseContextMenu {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    force: true,
+                    force,
                     optimize,
                     model_types: ['lora', 'checkpoint', 'embedding']
                 })

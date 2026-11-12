@@ -2063,7 +2063,12 @@ describe('Interaction-level regression coverage', () => {
   it('processes global context menu actions for downloads and cleanup', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
-        <div class="context-menu-item" data-action="download-example-images"></div>
+        <div class="context-menu-item has-submenu" data-has-submenu="download-example-images">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-missing-example-images"></div>
+            <div class="context-menu-item" data-action="download-example-images"></div>
+          </div>
+        </div>
         <div class="context-menu-item" data-action="check-model-updates"></div>
         <div class="context-menu-item" data-action="fetch-missing-licenses"></div>
         <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
@@ -2205,7 +2210,12 @@ describe('Interaction-level regression coverage', () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="manage-excluded-models"></div>
-        <div class="context-menu-item" data-action="download-example-images"></div>
+        <div class="context-menu-item has-submenu" data-has-submenu="download-example-images">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-missing-example-images"></div>
+            <div class="context-menu-item" data-action="download-example-images"></div>
+          </div>
+        </div>
         <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
         <div class="context-menu-item" data-action="check-model-updates"></div>
       </div>
@@ -2214,13 +2224,16 @@ describe('Interaction-level regression coverage', () => {
     const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
     const menu = new GlobalContextMenu();
     const byAction = (action) => document.querySelector(`[data-action="${action}"]`);
-    const modelOnly = ['manage-excluded-models', 'download-example-images', 'cleanup-example-images-folders'];
+    const downloadExamplesTrigger = document.querySelector('[data-has-submenu="download-example-images"]');
+    const modelOnly = ['manage-excluded-models', 'cleanup-example-images-folders'];
 
     stateStub.currentPageType = 'workflows';
     menu.showMenu(100, 200);
     for (const action of modelOnly) {
       expect(byAction(action).classList.contains('hidden')).toBe(true);
     }
+    // The download entries live in a submenu, so the trigger is what hides.
+    expect(downloadExamplesTrigger.classList.contains('hidden')).toBe(true);
     // Workflow metadata is tracked from CivitAI, so the update check stays.
     expect(byAction('check-model-updates').classList.contains('hidden')).toBe(false);
 
@@ -2229,8 +2242,50 @@ describe('Interaction-level regression coverage', () => {
     for (const action of modelOnly) {
       expect(byAction(action).classList.contains('hidden')).toBe(false);
     }
+    expect(downloadExamplesTrigger.classList.contains('hidden')).toBe(false);
 
     delete stateStub.currentPageType;
+  });
+
+  it('routes global example image actions to missing-only and re-process paths', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item has-submenu" data-has-submenu="download-example-images">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-missing-example-images"></div>
+            <div class="context-menu-item" data-action="download-example-images"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+
+    stateStub.global.settings.example_images_path = '/tmp/examples';
+    stateStub.global.settings.optimize_example_images = false;
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
+
+    menu.showMenu(100, 200);
+    document.querySelector('[data-action="download-missing-example-images"]')
+      .dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/download-example-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: false, optimize: false, model_types: ['lora', 'checkpoint', 'embedding'] })
+    });
+
+    menu.showMenu(100, 200);
+    document.querySelector('[data-action="download-example-images"]')
+      .dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(global.fetch).toHaveBeenLastCalledWith('/api/lm/download-example-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: true, optimize: false, model_types: ['lora', 'checkpoint', 'embedding'] })
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
   it('routes single-model example downloads to missing-only and force paths', async () => {
