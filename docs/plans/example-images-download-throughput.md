@@ -316,9 +316,9 @@ stall, which is why the full old-vs-new A/B is not recommended.
 
 > **Superseded methodology.** These two tables reused one URL set across modes
 > and repeats, so later runs measured a warm Civitai edge cache and the
-> 2-repeat baseline mixed the only cold run. See
-> [Benchmark correction](#benchmark-correction-cdn-cache-and-per-model-cost-2026-11-13);
-> re-measure with the cache-neutral harness before quoting the pipeline gain.
+> 2-repeat baseline mixed the only cold run. The cache-neutral re-run below
+> confirms the direction (pipeline and AIMD gains are real, not warm-up), but
+> the percentages are environment-specific; quote the re-run table instead.
 
 ### Full-library validation (new code only)
 
@@ -375,8 +375,9 @@ The harness creates its old worktree, cache/sidecar copies and run logs under
 directory or model library.
 
 The A/B numbers above predate the cache-neutral methodology described in the
-next section; treat the incremental pipeline probe gain as provisional until it
-is re-measured with `--warm-cache` (the default) and three repeats.
+next section. They were re-measured on 2026-11-13 with `--repeats 3` and a
+100% warm edge for every run; see
+[Cache-neutral re-run](#cache-neutral-re-run-2026-11-13).
 
 ## Benchmark correction: CDN cache and per-model cost (2026-11-13)
 
@@ -526,6 +527,39 @@ Still open (deliberately not changed):
 - Folders that appear **after** the backfill (new models, interrupted runs) are
   still verified with blocking I/O; moving that to a thread pool is the next
   lever if it remains too slow on slow storage.
+
+### Cache-neutral re-run (2026-11-13)
+
+Re-ran the A/B with the cache-neutral harness: 20 models / 178 selected images
+(182 files), `--repeats 3`, warm-up before every run. All 12 runs probed a
+100% warm edge (`cache_clean_runs 3/3` per mode), 0 rate-limited responses, and
+every new-tree mode produced the same 182 files / 19.6 MB, so the comparison is
+like-for-like.
+
+| Mode | Runs (s) | Median | Speedup vs new-serial | Files | MB | Probe steps |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `serial` (old tree) | 269.0 / 324.8 / 290.6 | 290.6 s | 0.226× | 182 | 97.6 | 0 |
+| `new-serial` | 64.5 / 65.8 / 75.8 | 65.8 s | 1.000× | 182 | 19.6 | 0 |
+| `pipeline` | 44.2 / 42.2 / 46.2 | 44.2 s | 1.488× | 182 | 19.6 | 0 |
+| `aimd` | 37.1 / 36.2 / 38.1 | 37.1 s | 1.771× | 182 | 19.6 | 2 per run |
+
+- `serial` → `new-serial`: **4.4× less wall time** with **5.0× fewer bytes**
+  (97.6 → 19.6 MB). The byte reduction (rendition change) is the dominant part;
+  the media pool contributes the rest.
+- `new-serial` → `pipeline`: **32.8% less wall time** (1.49×). This is measured
+  against a warm baseline, so the pipeline gain is not a cold-start artifact;
+  it is larger than the 2026-11 session (23.4%) because that path was slower.
+- `pipeline` → `aimd`: **16.0% less**; `aimd` vs `new-serial` is **43.5% less**
+  (1.77×). Each AIMD run probed 6 → 8 with no 429s.
+
+Absolute times are about 2.8× slower than the 2026-11 session: the warm-up
+alone took 45–80 s for 182 URLs (about 0.5 MB/s) and the timed runs sustained
+about 2.8 files/s at concurrency 6, versus 7.8 files/s earlier. That is a
+higher-latency path, and both gains scale with latency (the pipeline keeps the
+media slots busy across model boundaries, and one more probe slot buys more
+when requests are latency-bound). The mechanisms are confirmed; the exact
+percentages remain environment-specific and do not describe a user's cold
+first run or a bandwidth-limited link.
 
 ## Future work
 
