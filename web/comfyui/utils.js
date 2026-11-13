@@ -2,6 +2,7 @@ export const CONVERTED_TYPE = 'converted-widget';
 import { app } from "../../scripts/app.js";
 import { AutoComplete } from "./autocomplete.js";
 import { lmUrl } from "./base_path.js";
+import { getLoraNodeAdapter } from "./lora_node_adapter_registry.js";
 
 const ROOT_GRAPH_ID = "root";
 
@@ -394,7 +395,10 @@ export function getConnectedInputLoraChainNodes(node) {
         }
 
         const sourceNode = node.graph?.getNodeById?.(link.origin_id);
-        if (sourceNode && isLoraChainNode(sourceNode.comfyClass)) {
+        if (
+            sourceNode &&
+            (isLoraChainNode(sourceNode.comfyClass) || getLoraNodeAdapter(sourceNode))
+        ) {
             connectedNodes.push(sourceNode);
         }
     }
@@ -404,36 +408,66 @@ export function getConnectedInputLoraChainNodes(node) {
 
 // Get connected TriggerWord Toggle nodes that receive output from the current node
 export function getConnectedTriggerToggleNodes(node) {
-    const connectedNodes = [];
+    const connectedNodes = new Set();
+    const visited = new Set();
 
-    if (!node?.outputs) {
-        return connectedNodes;
+    function visit(currentNode) {
+        if (!currentNode || visited.has(currentNode)) {
+            return;
+        }
+        visited.add(currentNode);
+
+        for (const output of currentNode.outputs ?? []) {
+            for (const linkId of output?.links ?? []) {
+                const link = getLinkFromGraph(currentNode.graph, linkId);
+                if (!link) {
+                    continue;
+                }
+
+                const targetNode = currentNode.graph?.getNodeById?.(link.target_id);
+                if (targetNode?.comfyClass === "TriggerWord Toggle (LoraManager)") {
+                    connectedNodes.add(targetNode);
+                } else if (targetNode?.comfyClass === "LoRA Trigger Words (LoraManager)") {
+                    visit(targetNode);
+                }
+            }
+        }
     }
 
-    for (const output of node.outputs) {
-        if (!output?.links?.length) {
-            continue;
-        }
-
-        for (const linkId of output.links) {
-            const link = getLinkFromGraph(node.graph, linkId);
-            if (!link) {
-                continue;
-            }
-
-            const targetNode = node.graph?.getNodeById?.(link.target_id);
-            if (targetNode && targetNode.comfyClass === "TriggerWord Toggle (LoraManager)") {
-                connectedNodes.push(targetNode);
-            }
-        }
-    }
-
-    return connectedNodes;
+    visit(node);
+    return Array.from(connectedNodes);
 }
 
 // Extract active lora names from a node's widgets
 export function getActiveLorasFromNode(node) {
     const activeLoraNames = new Set();
+    const adapter = getLoraNodeAdapter(node);
+
+    if (adapter?.getActiveLoraNames) {
+        try {
+            const names = adapter.getActiveLoraNames(node);
+            if (names == null) {
+                return activeLoraNames;
+            }
+            if (
+                typeof names === "string" ||
+                typeof names?.[Symbol.iterator] !== "function"
+            ) {
+                throw new TypeError("getActiveLoraNames must return an iterable of names");
+            }
+            for (const name of names) {
+                if (typeof name === "string" && name) {
+                    activeLoraNames.add(name);
+                }
+            }
+        } catch (error) {
+            console.error(
+                `LoRA Manager: adapter ${adapter.id} failed to read active LoRAs`,
+                error
+            );
+        }
+        return activeLoraNames;
+    }
 
     // Handle Lora Cycler (single LoRA from cycler_config widget)
     if (node.comfyClass === "Lora Cycler (LoraManager)") {

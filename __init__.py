@@ -17,6 +17,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_cycler import LoraCyclerLM
     from .py.nodes.lora_info import LoraInfoLM
     from .py.nodes.lora_syntax_to_path import LoraSyntaxToPath
+    from .py.nodes.lora_trigger_words import LoraTriggerWordsLM
     from .py.nodes.create_hook_lora import CreateHookLoraLM
     from .py.nodes.load_image_metadata import LoadImageMetadataLM
     from .py.nodes.metadata_overwrite import MetadataOverwriteLM
@@ -54,6 +55,7 @@ except (
     from py.nodes.lora_cycler import LoraCyclerLM
     from py.nodes.lora_info import LoraInfoLM
     from py.nodes.lora_syntax_to_path import LoraSyntaxToPath
+    from py.nodes.lora_trigger_words import LoraTriggerWordsLM
     from py.nodes.create_hook_lora import CreateHookLoraLM
     from py.nodes.load_image_metadata import LoadImageMetadataLM
     from py.nodes.metadata_overwrite import MetadataOverwriteLM
@@ -78,6 +80,7 @@ NODE_CLASS_MAPPINGS = {
     LoraCyclerLM.NAME: LoraCyclerLM,
     LoraInfoLM.NAME: LoraInfoLM,
     LoraSyntaxToPath.NAME: LoraSyntaxToPath,
+    LoraTriggerWordsLM.NAME: LoraTriggerWordsLM,
     CreateHookLoraLM.NAME: CreateHookLoraLM,
     MetadataOverwriteLM.NAME: MetadataOverwriteLM,
     LoadImageMetadataLM.NAME: LoadImageMetadataLM,

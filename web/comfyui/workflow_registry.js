@@ -3,6 +3,11 @@ import { api } from "../../scripts/api.js";
 import { lmUrl } from "./base_path.js";
 import { getAllGraphNodes, getNodeReference, getNodeFromGraph, getChildGraphs, chainCallback, getLinkFromGraph, interceptModeChange } from "./utils.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
+import {
+    hasLoraNodeAdapter,
+    notifyLoraNodeChanged,
+    onLoraNodeAdaptersChanged,
+} from "./lora_node_adapters.js";
 
 const DEBOUNCE_DELAY = 500;
 
@@ -227,12 +232,18 @@ app.registerExtension({
             this.refreshRegistry();
         });
 
+        onLoraNodeAdaptersChanged(() => {
+            this.refreshRegistry(true);
+            this.refreshCustomTriggerWords();
+        });
+
         this._hookGraphChanges();
     },
 
     async afterConfigureGraph(_missingNodeTypes, _app) {
         this._log("afterConfigureGraph: workflow loaded (%s missing types)", _missingNodeTypes?.length ?? 0);
         await this.refreshRegistry();
+        this.refreshCustomTriggerWords();
     },
 
     _hookGraphChanges() {
@@ -326,7 +337,20 @@ app.registerExtension({
             return;
         }
         node.__lmRegistryModeHooked = true;
-        interceptModeChange(node, () => this._scheduleRefresh("mode"));
+        interceptModeChange(node, () => {
+            this._scheduleRefresh("mode");
+            if (hasLoraNodeAdapter(node)) {
+                notifyLoraNodeChanged(node);
+            }
+        });
+    },
+
+    refreshCustomTriggerWords() {
+        for (const { node } of getAllGraphNodes(app.graph)) {
+            if (hasLoraNodeAdapter(node)) {
+                notifyLoraNodeChanged(node);
+            }
+        }
     },
 
     _log(format, ...args) {
@@ -354,7 +378,8 @@ app.registerExtension({
                           .filter((name) => typeof name === "string" && name.length > 0)
                     : [];
 
-                const supportsLora = LORA_NODE_CLASSES.has(node.comfyClass);
+                const supportsLora =
+                    LORA_NODE_CLASSES.has(node.comfyClass) || hasLoraNodeAdapter(node);
                 const hasTargetWidget = widgetNames.some((name) => TARGET_WIDGET_NAMES.has(name));
                 const hasTextWidget = TEXT_CAPABLE_CLASSES.has(node.comfyClass);
                 const markerRole = node.properties?.lm_marker_role ?? null;

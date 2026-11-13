@@ -5,11 +5,13 @@ const {
   API_MODULE,
   UTILS_MODULE,
   LORA_LOADER_MODULE,
+  ADAPTERS_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
   UTILS_MODULE: new URL("../../../web/comfyui/utils.js", import.meta.url).pathname,
   LORA_LOADER_MODULE: new URL("../../../web/comfyui/lora_loader.js", import.meta.url).pathname,
+  ADAPTERS_MODULE: new URL("../../../web/comfyui/lora_node_adapters.js", import.meta.url).pathname,
 }));
 
 const extensionState = { current: null };
@@ -76,6 +78,7 @@ vi.mock(UTILS_MODULE, () => ({
 describe("Lora Loader trigger word updates", () => {
   beforeEach(() => {
     vi.resetModules();
+    delete globalThis.__lmLoraNodeAdapterRegistry;
 
     extensionState.current = null;
     registerExtensionMock.mockClear();
@@ -156,5 +159,75 @@ describe("Lora Loader trigger word updates", () => {
     expect(targetNode).toBe(node);
     expect(triggerWordSet).toBe(activeSet);
     expect([...triggerWordSet]).toEqual(["Alpha"]);
+  });
+
+  it("dispatches targeted updates to a third-party adapter", async () => {
+    await import(LORA_LOADER_MODULE);
+    const { registerLoraNodeAdapter } = await import(ADAPTERS_MODULE);
+    const extension = extensionState.current;
+    const node = {
+      id: 9,
+      comfyClass: "Third Party LoRA Loader",
+      mode: 0,
+      inputs: [],
+      outputs: [],
+    };
+    const applyLoraCode = vi.fn();
+    getNodeFromGraph.mockReturnValue(node);
+    registerLoraNodeAdapter({
+      id: "example-pack",
+      nodeClasses: [node.comfyClass],
+      applyLoraCode,
+      getActiveLoraNames: vi.fn(() => ["Alpha"]),
+    });
+
+    extension.handleLoraCodeUpdate({
+      node_id: 9,
+      graph_id: "root",
+      lora_code: "<lora:Alpha:1>",
+      mode: "replace",
+    });
+
+    expect(applyLoraCode).toHaveBeenCalledWith({
+      node,
+      loraCode: "<lora:Alpha:1>",
+      mode: "replace",
+    });
+    expect(updateConnectedTriggerWords).toHaveBeenCalledWith(
+      node,
+      expect.any(Set)
+    );
+  });
+
+  it("includes third-party adapters in broadcast updates", async () => {
+    await import(LORA_LOADER_MODULE);
+    const { registerLoraNodeAdapter } = await import(ADAPTERS_MODULE);
+    const extension = extensionState.current;
+    const node = {
+      id: 12,
+      comfyClass: "Third Party LoRA Loader",
+      mode: 0,
+      inputs: [],
+      outputs: [],
+    };
+    const applyLoraCode = vi.fn();
+    getAllGraphNodes.mockReturnValue([{ node }]);
+    registerLoraNodeAdapter({
+      id: "example-pack",
+      nodeClasses: [node.comfyClass],
+      applyLoraCode,
+    });
+
+    extension.handleLoraCodeUpdate({
+      id: -1,
+      lora_code: "<lora:Beta:0.8>",
+      mode: "append",
+    });
+
+    expect(applyLoraCode).toHaveBeenCalledWith({
+      node,
+      loraCode: "<lora:Beta:0.8>",
+      mode: "append",
+    });
   });
 });

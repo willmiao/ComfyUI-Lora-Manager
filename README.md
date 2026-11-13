@@ -334,6 +334,7 @@ npm run test:coverage
 ## Documentation
 
 - **[metadata.json Schema Documentation](docs/metadata-json-schema.md)** — Complete reference for the `.metadata.json` sidecar file format, including all fields, types, and examples for LoRA, Checkpoint, and Embedding models.
+- **[Third-party LoRA Node Integration](docs/third-party-lora-node-integration.md)** — Adapter API for Send to Workflow, trigger-word synchronization, and execution-time trigger-word resolution.
 - **[Anima LoRA Block Compatibility](docs/anima-lora-compat.md)** — How legacy 28-block Anima LoRAs are remapped for Anima 2.9B / 3.8B, and how to disable it.
 
 ---

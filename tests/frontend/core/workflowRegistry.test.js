@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-const { APP_MODULE, API_MODULE, STYLES_MODULE, REGISTRY_MODULE, appMock, apiMock, registeredExtensions } =
+const { APP_MODULE, API_MODULE, STYLES_MODULE, REGISTRY_MODULE, ADAPTERS_MODULE, appMock, apiMock, registeredExtensions } =
   vi.hoisted(() => {
     const registeredExtensions = [];
     const appMock = {
@@ -17,6 +17,7 @@ const { APP_MODULE, API_MODULE, STYLES_MODULE, REGISTRY_MODULE, appMock, apiMock
       API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
       STYLES_MODULE: new URL("../../../web/comfyui/lm_styles_loader.js", import.meta.url).pathname,
       REGISTRY_MODULE: new URL("../../../web/comfyui/workflow_registry.js", import.meta.url).pathname,
+      ADAPTERS_MODULE: new URL("../../../web/comfyui/lora_node_adapters.js", import.meta.url).pathname,
       appMock,
       apiMock,
       registeredExtensions,
@@ -91,6 +92,7 @@ describe("LoraManager.WorkflowRegistry", () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    delete globalThis.__lmLoraNodeAdapterRegistry;
     registeredExtensions.length = 0;
     appMock.graph = null;
     apiMock.addEventListener.mockClear();
@@ -104,6 +106,7 @@ describe("LoraManager.WorkflowRegistry", () => {
   });
 
   afterEach(() => {
+    delete globalThis.__lmLoraNodeAdapterRegistry;
     delete global.fetch;
   });
 
@@ -158,6 +161,78 @@ describe("LoraManager.WorkflowRegistry", () => {
       await extension.refreshRegistry();
       const body = lastRegisterPayload(fetchMock);
       expect(body.nodes[0].capabilities.text_widget_connected).toBe(true);
+    });
+
+    it("discovers third-party LoRA adapters registered after setup", async () => {
+      const node = {
+        id: 9,
+        comfyClass: "Third Party LoRA Loader",
+        title: "Third Party Loader",
+        mode: 0,
+        properties: {},
+        widgets: [],
+        inputs: [],
+        outputs: [],
+      };
+      appMock.graph = createGraph({ nodes: [node] });
+      extension.setup();
+      const { registerLoraNodeAdapter } = await import(ADAPTERS_MODULE);
+
+      registerLoraNodeAdapter({
+        id: "example-pack",
+        nodeClasses: [node.comfyClass],
+        applyLoraCode: vi.fn(),
+      });
+
+      await vi.waitFor(() => {
+        const body = lastRegisterPayload(fetchMock);
+        expect(body.nodes).toHaveLength(1);
+        expect(body.nodes[0].comfy_class).toBe(node.comfyClass);
+        expect(body.nodes[0].capabilities.supports_lora).toBe(true);
+      });
+    });
+
+    it("clears trigger words when an adapted node is bypassed", async () => {
+      const node = {
+        id: 10,
+        comfyClass: "Third Party LoRA Loader",
+        title: "Third Party Loader",
+        mode: 0,
+        properties: {},
+        widgets: [],
+        inputs: [],
+        outputs: [{ links: [50] }],
+      };
+      const toggle = {
+        id: 11,
+        comfyClass: "TriggerWord Toggle (LoraManager)",
+        mode: 0,
+        properties: {},
+        widgets: [],
+        inputs: [],
+        outputs: [],
+      };
+      const graph = createGraph({ nodes: [node, toggle] });
+      graph.links = new Map([[50, { origin_id: 10, target_id: 11 }]]);
+      appMock.graph = graph;
+      const { registerLoraNodeAdapter } = await import(ADAPTERS_MODULE);
+      registerLoraNodeAdapter({
+        id: "example-pack",
+        nodeClasses: [node.comfyClass],
+        applyLoraCode: vi.fn(),
+        getActiveLoraNames: () => ["Alpha"],
+      });
+      await extension.refreshRegistry(true);
+
+      node.mode = 4;
+
+      await vi.waitFor(() => {
+        const request = fetchMock.mock.calls.find(
+          ([url]) => url === "/api/lm/loras/get_trigger_words"
+        );
+        expect(request).toBeDefined();
+        expect(JSON.parse(request[1].body).lora_names).toEqual([]);
+      });
     });
   });
 

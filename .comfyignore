@@ -20,6 +20,9 @@
 /AGENTS.md
 /update_logs.md
 
+# Third-party integration examples — developer reference, not runtime
+/examples/
+
 # Agent skill definitions (repo tooling, not loaded by ComfyUI)
 /.agents/
 

@@ -15872,6 +15872,19 @@ function stripAutocompleteMetadataFromPromptResult(result) {
   }
   return result;
 }
+const registryState = globalThis.__lmLoraNodeAdapterRegistry ?? {
+  adaptersByClass: /* @__PURE__ */ new Map(),
+  changeListeners: /* @__PURE__ */ new Set()
+};
+globalThis.__lmLoraNodeAdapterRegistry = registryState;
+const { adaptersByClass, changeListeners } = registryState;
+function getNodeClass(nodeOrClass) {
+  return typeof nodeOrClass === "string" ? nodeOrClass : nodeOrClass == null ? void 0 : nodeOrClass.comfyClass;
+}
+function getLoraNodeAdapter(nodeOrClass) {
+  const nodeClass = getNodeClass(nodeOrClass);
+  return nodeClass ? adaptersByClass.get(nodeClass) ?? null : null;
+}
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
@@ -16018,38 +16031,65 @@ function getConnectedInputLoraChainNodes(node) {
       continue;
     }
     const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
-    if (sourceNode && isLoraChainNode(sourceNode.comfyClass)) {
+    if (sourceNode && (isLoraChainNode(sourceNode.comfyClass) || getLoraNodeAdapter(sourceNode))) {
       connectedNodes.push(sourceNode);
     }
   }
   return connectedNodes;
 }
 function getConnectedTriggerToggleNodes(node) {
-  var _a2, _b, _c;
-  const connectedNodes = [];
-  if (!(node == null ? void 0 : node.outputs)) {
-    return connectedNodes;
-  }
-  for (const output of node.outputs) {
-    if (!((_a2 = output == null ? void 0 : output.links) == null ? void 0 : _a2.length)) {
-      continue;
+  const connectedNodes = /* @__PURE__ */ new Set();
+  const visited = /* @__PURE__ */ new Set();
+  function visit(currentNode) {
+    var _a2, _b;
+    if (!currentNode || visited.has(currentNode)) {
+      return;
     }
-    for (const linkId of output.links) {
-      const link = getLinkFromGraph(node.graph, linkId);
-      if (!link) {
-        continue;
-      }
-      const targetNode = (_c = (_b = node.graph) == null ? void 0 : _b.getNodeById) == null ? void 0 : _c.call(_b, link.target_id);
-      if (targetNode && targetNode.comfyClass === "TriggerWord Toggle (LoraManager)") {
-        connectedNodes.push(targetNode);
+    visited.add(currentNode);
+    for (const output of currentNode.outputs ?? []) {
+      for (const linkId of (output == null ? void 0 : output.links) ?? []) {
+        const link = getLinkFromGraph(currentNode.graph, linkId);
+        if (!link) {
+          continue;
+        }
+        const targetNode = (_b = (_a2 = currentNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
+        if ((targetNode == null ? void 0 : targetNode.comfyClass) === "TriggerWord Toggle (LoraManager)") {
+          connectedNodes.add(targetNode);
+        } else if ((targetNode == null ? void 0 : targetNode.comfyClass) === "LoRA Trigger Words (LoraManager)") {
+          visit(targetNode);
+        }
       }
     }
   }
-  return connectedNodes;
+  visit(node);
+  return Array.from(connectedNodes);
 }
 function getActiveLorasFromNode(node) {
   var _a2, _b;
   const activeLoraNames = /* @__PURE__ */ new Set();
+  const adapter = getLoraNodeAdapter(node);
+  if (adapter == null ? void 0 : adapter.getActiveLoraNames) {
+    try {
+      const names = adapter.getActiveLoraNames(node);
+      if (names == null) {
+        return activeLoraNames;
+      }
+      if (typeof names === "string" || typeof (names == null ? void 0 : names[Symbol.iterator]) !== "function") {
+        throw new TypeError("getActiveLoraNames must return an iterable of names");
+      }
+      for (const name of names) {
+        if (typeof name === "string" && name) {
+          activeLoraNames.add(name);
+        }
+      }
+    } catch (error) {
+      console.error(
+        `LoRA Manager: adapter ${adapter.id} failed to read active LoRAs`,
+        error
+      );
+    }
+    return activeLoraNames;
+  }
   if (node.comfyClass === "Lora Cycler (LoraManager)") {
     const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
     if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {

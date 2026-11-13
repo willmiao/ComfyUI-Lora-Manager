@@ -19,6 +19,10 @@ import {
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
 import { enableListedLorasFromCode } from "./lora_selection.js";
+import {
+  applyLoraCodeToNode,
+  hasLoraNodeAdapter,
+} from "./lora_node_adapters.js";
 
 // Node classes whose "text" widget uses the loras autocomplete. Kept in sync
 // with the broadcast-compatible classes in handleLoraCodeUpdate below.
@@ -105,12 +109,15 @@ app.registerExtension({
       const compatibleClasses = new Set(LORA_AUTOCOMPLETE_NODE_CLASSES);
       const targetNodes = getAllGraphNodes(app.graph)
         .map(({ node }) => node)
-        .filter((node) => compatibleClasses.has(node?.comfyClass));
+        .filter(
+          (node) =>
+            compatibleClasses.has(node?.comfyClass) || hasLoraNodeAdapter(node)
+        );
 
       // Update each node found
       if (targetNodes.length > 0) {
         targetNodes.forEach((node) => {
-          this.updateNodeLoraCode(node, loraCode, mode);
+          this.updateTargetNodeLoraCode(node, loraCode, mode);
         });
         console.log(
           `Updated ${targetNodes.length} nodes in broadcast mode`
@@ -128,10 +135,8 @@ app.registerExtension({
     const node = getNodeFromGraph(graphId, numericNodeId);
     if (
       !node ||
-      (node.comfyClass !== "Lora Loader (LoraManager)" &&
-        node.comfyClass !== "Lora Stacker (LoraManager)" &&
-        node.comfyClass !== "WanVideo Lora Select (LoraManager)" &&
-        node.comfyClass !== "Create Hook LoRA (LoraManager)")
+      (!LORA_AUTOCOMPLETE_NODE_CLASSES.includes(node.comfyClass) &&
+        !hasLoraNodeAdapter(node))
     ) {
       console.warn(
         "Node not found or not a compatible LoRA node:",
@@ -141,6 +146,13 @@ app.registerExtension({
       return;
     }
 
+    this.updateTargetNodeLoraCode(node, loraCode, mode);
+  },
+
+  updateTargetNodeLoraCode(node, loraCode, mode) {
+    if (applyLoraCodeToNode(node, loraCode, mode)) {
+      return;
+    }
     this.updateNodeLoraCode(node, loraCode, mode);
   },
 
