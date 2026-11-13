@@ -215,9 +215,10 @@ class ExifUtils:
 
             if img.format not in ["JPEG", "TIFF", "WEBP"]:
                 exif = img.getexif()
-                if exif and piexif.ExifIFD.UserComment in exif:
+                exif_ifd = exif.get_ifd(piexif.ImageIFD.ExifTag)
+                if piexif.ExifIFD.UserComment in exif_ifd:
                     metadata["comment"] = ExifUtils._decode_user_comment(
-                        exif[piexif.ExifIFD.UserComment]
+                        exif_ifd[piexif.ExifIFD.UserComment]
                     )
 
             # ComfyUI's WebP exporter stores JSON in EXIF Make/Model with
@@ -653,12 +654,12 @@ class ExifUtils:
         """Return ``(width, height)`` for an image, or ``None`` if unavailable.
 
         Video containers (``.mp4``/``.webm``/``.avi``) and formats PIL cannot
-        read (``.avif``/``.jxl``) return ``None`` before PIL is invoked.
-        Missing or corrupt files return ``None``. Never raises.
+        read (``.jxl``) return ``None`` before PIL is invoked. Missing or
+        corrupt files return ``None``. Never raises.
         """
         try:
             ext = os.path.splitext(image_path)[1].lower()
-            if ext in ('.mp4', '.webm', '.avi', '.avif', '.jxl'):
+            if ext in ('.mp4', '.webm', '.avi', '.jxl'):
                 return None
             stat = os.stat(image_path)
             return _get_image_dimensions_cached(

@@ -2,9 +2,17 @@ import json
 from typing import Any, Dict
 
 import piexif  # pyright: ignore[reportMissingTypeStubs]
-from PIL import Image, PngImagePlugin
+import pytest
+from PIL import Image, PngImagePlugin, features
 
 from py.utils.exif_utils import ExifUtils
+
+
+def _avif_supported():
+    try:
+        return features.check("avif")
+    except ValueError:
+        return False
 
 
 def test_append_recipe_metadata_includes_checkpoint(monkeypatch, tmp_path):
@@ -469,6 +477,25 @@ def test_get_image_dimensions_returns_actual_size(tmp_path):
     assert ExifUtils.get_image_dimensions(str(image_path)) == (64, 32)
 
 
+@pytest.mark.skipif(not _avif_supported(), reason="Pillow AVIF support is unavailable")
+def test_avif_exif_user_comment_and_dimensions(tmp_path):
+    parameters = "cat\nNegative prompt: blur\nSteps: 25, Seed: 42"
+    exif = piexif.dump({
+        "Exif": {
+            piexif.ExifIFD.UserComment: b"UNICODE\x00"
+            + parameters.encode("utf-16be"),
+        },
+    })
+    image_path = tmp_path / "preview.avif"
+    Image.new("RGB", (64, 32), color="red").save(image_path, exif=exif)
+
+    fields = ExifUtils._load_structured_metadata(str(image_path))
+
+    assert fields["parameters"] == parameters
+    assert fields["comment"] == parameters
+    assert ExifUtils.get_image_dimensions(str(image_path)) == (64, 32)
+
+
 def test_get_image_dimensions_missing_path_returns_none(tmp_path):
     """(b) A nonexistent path returns None without raising."""
     assert ExifUtils.get_image_dimensions(str(tmp_path / "missing.png")) is None
@@ -506,8 +533,7 @@ def test_get_image_dimensions_cache_key_includes_mtime(tmp_path):
 
 
 def test_get_image_dimensions_skips_unreadable_formats(tmp_path):
-    """(f) .avif/.jxl paths return None without raising."""
-    for ext in (".avif", ".jxl"):
-        image_path = tmp_path / f"preview{ext}"
-        image_path.write_bytes(b"fake container data")
-        assert ExifUtils.get_image_dimensions(str(image_path)) is None
+    """(f) .jxl paths return None without raising."""
+    image_path = tmp_path / "preview.jxl"
+    image_path.write_bytes(b"fake container data")
+    assert ExifUtils.get_image_dimensions(str(image_path)) is None

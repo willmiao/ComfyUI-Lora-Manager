@@ -6,10 +6,17 @@ from pathlib import Path
 import piexif
 import piexif.helper
 import pytest
-from PIL import Image, PngImagePlugin
+from PIL import Image, PngImagePlugin, features
 
 from py.nodes.load_image_metadata import LoadImageMetadataLM, MetadataError, resolve_resource
 from py.utils.exif_utils import ExifUtils
+
+
+def _avif_supported():
+    try:
+        return features.check("avif")
+    except ValueError:
+        return False
 
 
 PARAMETERS = 'cat <lora:style:0.7:0.2>\nNegative prompt: blur\nSteps: 25, Sampler: Euler, Schedule type: Normal, CFG scale: 6.5, Seed: 18446744073709551615, Size: 768x1024, Model: base'
@@ -85,6 +92,40 @@ def test_exif_parameters_from_real_image(runtime, extension):
     Image.new("RGB", (16, 24)).save(alternate, exif=exif)
     fields = ExifUtils._load_structured_metadata(str(alternate))
     assert "Steps: 25" in fields["parameters"]
+
+
+@pytest.mark.skipif(not _avif_supported(), reason="Pillow AVIF support is unavailable")
+def test_avif_parameters_preferred_over_ambiguous_workflow(runtime, monkeypatch):
+    import folder_paths
+
+    image_path, *_ = runtime
+    graph = {
+        "1": {"class_type": "KSampler", "inputs": {}},
+        "2": {"class_type": "KSampler", "inputs": {}},
+    }
+    exif = piexif.dump({
+        "0th": {
+            piexif.ImageIFD.Make: "prompt:" + json.dumps(graph),
+            piexif.ImageIFD.Model: 'workflow:{"nodes": []}',
+        },
+        "Exif": {
+            piexif.ExifIFD.UserComment: piexif.helper.UserComment.dump(
+                PARAMETERS, encoding="unicode"
+            ),
+        },
+    })
+    alternate = image_path.with_suffix(".avif")
+    Image.new("RGB", (16, 24)).save(alternate, exif=exif)
+    monkeypatch.setattr(
+        folder_paths, "get_annotated_filepath", lambda name: str(alternate)
+    )
+
+    result = LoadImageMetadataLM().load_metadata(alternate.name)
+
+    assert result[2:4] == ("cat", "blur")
+    assert result[7:15] == (2**64 - 1, 25, 6.5, "euler", "normal", 768, 1024, 1.0)
+    assert "saved image generation parameters (preferred)" in result[16]
+    assert "Choose a unique sampler_node_id" not in result[16]
 
 
 def test_missing_lora_strict_or_explicit_skip(runtime):
