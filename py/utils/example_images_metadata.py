@@ -315,14 +315,20 @@ class MetadataUpdater:
             return False
     
     @staticmethod
-    async def get_updated_model(model_hash, scanner):
-        """Load the most recent metadata for a model identified by hash."""
-        cache = await scanner.get_cached_data()
-        target = None
-        for item in cache.raw_data:
-            if item.get('sha256') == model_hash:
-                target = item
-                break
+    async def get_updated_model(model_hash, scanner, model=None):
+        """Load the most recent metadata for a model identified by hash.
+
+        ``model`` lets a caller that already holds the cache entry skip the
+        linear scan over the whole cache. That scan is O(N) per model, i.e.
+        O(N²) over a library-wide run (about 1.6 ms per lookup at 81k models).
+        """
+        target = model
+        if target is None:
+            cache = await scanner.get_cached_data()
+            for item in cache.raw_data:
+                if item.get('sha256') == model_hash:
+                    target = item
+                    break
 
         if not target:
             return None

@@ -314,6 +314,12 @@ The 19-model and 80-model subsets agree on the direction and roughly on the
 magnitude of the pipeline/AIMD gains. Neither reproduces the old serial tree's
 stall, which is why the full old-vs-new A/B is not recommended.
 
+> **Superseded methodology.** These two tables reused one URL set across modes
+> and repeats, so later runs measured a warm Civitai edge cache and the
+> 2-repeat baseline mixed the only cold run. See
+> [Benchmark correction](#benchmark-correction-cdn-cache-and-per-model-cost-2026-11-13);
+> re-measure with the cache-neutral harness before quoting the pipeline gain.
+
 ### Full-library validation (new code only)
 
 One full run of the current tree (`9a52ed0b`, `aimd`, model concurrency 2,
@@ -351,6 +357,14 @@ than an old-vs-new full A/B. Re-run the harness after material changes:
 python scripts/benchmark_example_images.py prepare --count 20 --images 180
 python scripts/benchmark_example_images.py compare --repeats 3
 
+# Re-verify cost of a library whose images are already on disk (per model):
+python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-reverify \
+  prepare --count 200 --images 2000
+python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-reverify \
+  reverify --force
+python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-reverify \
+  reverify --no-force
+
 # Full 987-model validation of the current tree only:
 python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-full prepare --full
 python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-full run --tree . --mode aimd --port 18300
@@ -359,6 +373,159 @@ python scripts/benchmark_example_images.py --workdir .tmp/example-images-bench-f
 The harness creates its old worktree, cache/sidecar copies and run logs under
 `.tmp/example-images-bench/`; none of it is written to the real settings
 directory or model library.
+
+The A/B numbers above predate the cache-neutral methodology described in the
+next section; treat the incremental pipeline probe gain as provisional until it
+is re-measured with `--warm-cache` (the default) and three repeats.
+
+## Benchmark correction: CDN cache and per-model cost (2026-11-13)
+
+A user report ([#1203](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1203),
+81,051 models, most images already on disk) showed no improvement from the
+pipeline/AIMD work, so the measurement setup was re-examined.
+
+### Civitai's edge cache invalidated the old A/B
+
+`image.civitai.com` is a Cloudflare edge cache:
+
+| Response | Cache-Control | Observed |
+| --- | --- | --- |
+| 301 rendition → blob | `public, max-age=172800` (48 h) | `cf-cache-status: MISS → HIT`, `age` up to 32 h on `/original=true` |
+| `blobs-b2.civitai.com` object | `max-age=3600` (1 h) | `MISS → HIT` |
+
+Measured on 60 rendition URLs at concurrency 6 from one machine: cold pass
+21.3 s (2.82 req/s, 59 MISS) versus warm passes 8.9 s and 9.2 s (6.6–6.8 req/s,
+60 HIT), i.e. **2.3×**. The old harness reused one fixed URL set for every mode
+and repeat (only the sandbox examples directory was reset), so the first pass
+was cold and every later pass was warm; the *old tree also uses a different
+URL form* (`.../<imageId>/optimized=true`, usually already warm from Civitai's
+own traffic) than the new tree (`width=800,optimized=true`).
+
+Impact on the tables above:
+
+- The 19-model / 185-image medians come from three repeats, so the median run
+  is warm; the direction of the pipeline gain may still hold, but it was not
+  measured against a warm baseline for every run.
+- The 80-model / 729-image runs used two repeats per mode; the `new-serial`
+  median is the mean of one cold and one warm run while `pipeline`/`aimd` ran
+  warm. The reported `pipeline −28.5%` is therefore not trustworthy and may be
+  entirely cache warm-up.
+- The full-library `1,164 s → 894.7 s` comparison is not like-for-like (7,990
+  vs 7,404 files, different renditions, warm URLs on the second run).
+
+### Harness changes
+
+- `--warm-cache` (default for `compare`) resolves the exact URLs each tree will
+  request with that tree's own URL builder (run in a subprocess so the old and
+  new modules cannot alias), fetches them once, then probes a sample and
+  records the edge hit ratio per run. Cold runs are reported, not silently
+  mixed into medians. A single `run` skips warming unless the flag is passed.
+- The per-run table is always printed, and the summary reports
+  `cache_clean_runs`. `--no-warm-cache` only skips warming; it cannot force
+  cold URLs, so its medians are documented as not comparable.
+- `--image-width` is pinned in the sandbox settings (default 800) so the
+  warm-up and the server agree even if the user's settings differ.
+- The A/B subset now skips models outside `folder_paths` roots: their sidecars
+  resolve alongside the model file, so the sandbox sidecar copy is not used and
+  the old tree cannot read their media. `--any-root` opts back in, `--full`
+  keeps every model.
+
+### `reverify`: the workload the report actually hit
+
+`compare` measures 100% missing media, i.e. one CDN request per image. The
+report's library has the opposite shape: 81,051 models at ~6.5 models/s
+(21,722 at 52 min, 35,029 at 90 min in the screenshots), so almost no requests
+are made and the run is bound by per-model bookkeeping. The new `reverify`
+command populates the sandbox examples tree from the sidecars and times a
+library-wide pass:
+
+| Mode | Request | Shape | Local result (987 models, populated) |
+| --- | --- | --- | --- |
+| `--force` | `force=true` + explicit hashes | per-model / bulk Re-process | ~5.5–6.3 ms/model |
+| `--force --global` | `force=true`, no hashes | global Re-process All | see fix below |
+| `--no-force` | `force=false`, no hashes | Download Missing, verified tree | ~0.06–0.08 ms/model |
+| `--no-force --no-markers` | `force=false`, no hashes | Download Missing, legacy unmarked tree | ~0.3 ms/model |
+
+`--force` passes the selected hashes, which models a per-model/bulk
+*Re-process*: explicit targets always bypass the verified-folder guard.
+`--force --global` omits the hashes and mirrors the UI's global entry (use it
+with `--full` so every cached model is in scope). A `model_concurrency`
+comparison on the populated tree (6.22 s / 5.48 s at 1 versus 6.97 s / 9.09 s
+at 2) shows the pipeline does not help a re-verify pass: that work is blocking
+synchronous code (sidecar load, `scandir`, marker write), so extra asyncio
+workers only interleave at `await` points.
+
+### Fix: force keeps the verified-folder skip
+
+v1.2.9 made `force` bypass the populated-folder guard (commit `04b26b2e9`,
+kept by `f9cb3988`) so the global Re-process All could retry stale Genur
+flags. That cost a sidecar read, per-image stat and marker rewrite for every
+model, even when nothing could change. The guard now skips a verified folder
+(media + `.lm-examples-complete`) under `force` unless the model is on the
+failed list: a completed pass marks a model failed as soon as any media stays
+flagged, and clears it on a successful retry, so the failed list is exactly the
+set that can still change. If no progress file was loaded, the failed list
+cannot be trusted and force keeps the historical full re-check.
+
+Measured with `reverify --force --global --repeat 2` over 989 models:
+
+| Run | State | Wall | Per model |
+| --- | --- | ---: | ---: |
+| 1 | no `.download_progress.json` (safety fallback) | 7.9 s | 8.0 ms |
+| 2 | progress loaded, all folders verified | 0.1 s | 0.12 ms |
+
+A steady-state Re-process All is therefore ~65× cheaper per model, while
+failed models are still re-checked and Genur retries still run. Tests:
+`test_force_skips_verified_folder_without_pending_retries`,
+`test_force_retries_failed_model_with_verified_folder`,
+`test_force_rechecks_verified_folder_without_loaded_progress`,
+`test_download_missing_skips_verified_folder`.
+
+Two smaller fixes shipped with it:
+
+- `MetadataUpdater.get_updated_model` accepts the cache entry the caller
+  already holds, so the per-model O(N) scan (O(N²) per run; ~1.6 ms/lookup at
+  81k) only remains on the rare failure paths.
+- `_save_progress` is throttled to one write per `PROGRESS_SAVE_INTERVAL_SECONDS`
+  (10 s) at a ten-model boundary and writes atomically (`os.replace`), so a
+  81k-model run no longer rewrites a ~6 MB file thousands of times or risks a
+  truncated file on a crash.
+
+### Legacy libraries: one-time marker backfill
+
+The first run over a library populated before the marker scheme used to verify
+every folder (sidecar read + per-image stat + marker write) just to learn that
+nothing was missing. `start_download` now runs
+`backfill_legacy_completion_markers` once per examples root: it scans the hash
+folders and writes a marker for any folder that already contains media, with no
+metadata reads. A `.lm-examples-backfill` flag in the root makes it a one-time
+operation.
+
+Trade-off, deliberately accepted for large libraries: a folder left partial by
+an interrupted run from **before** the upgrade is trusted instead of repaired
+retroactively. The showcase falls back to the remote image at runtime
+(`tryLocalImageOrFallbackToRemote`), and a per-model force download (explicit
+targets) still repairs it. Interruptions after the upgrade are still repaired,
+because every model pass clears its marker before it starts; folders that
+appear later go through normal verification.
+
+Measured on 987 populated folders (no progress file, migration gate pre-set):
+
+| Scenario | Rechecked folders | Wall | Note |
+| --- | ---: | ---: | --- |
+| No backfill (pre-fix behavior) | 985 | 9.7 s | 9.8 ms/model of verification |
+| Backfill at start | 0 | 5.4 s | backfill POST 0.11 s; the remaining 5.4 s is two models without an examples folder downloading their media |
+
+Tests: `test_backfill_marks_legacy_folders`, `test_backfill_runs_once`,
+`test_legacy_folder_is_trusted_on_upgrade`, plus the existing
+`test_unmarked_partial_folder_is_repaired_then_skipped` (which pre-writes the
+flag so the post-upgrade repair path stays covered).
+
+Still open (deliberately not changed):
+
+- Folders that appear **after** the backfill (new models, interrupted runs) are
+  still verified with blocking I/O; moving that to a thread pool is the next
+  lever if it remains too slow on slow storage.
 
 ## Future work
 

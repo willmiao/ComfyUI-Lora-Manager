@@ -169,6 +169,12 @@ _BULK_LOOKUP_THRESHOLD = 1000
 # in a few seconds; a hung provider must not park the serial download pipeline.
 METADATA_REFRESH_TIMEOUT_SECONDS = 90.0
 
+# Minimum seconds between periodic progress-file writes. The progress file
+# holds every processed/failed hash, so a rewrite costs ~6 MB at 81k models;
+# the old "every 10 models" trigger rewrote it thousands of times per run.
+# The run always writes once more when it finishes.
+PROGRESS_SAVE_INTERVAL_SECONDS = 10.0
+
 
 def _model_directory_has_files(path: str) -> bool:
     """Return True when the directory contains media (not just a marker)."""
@@ -226,6 +232,72 @@ def _build_example_folder_index(output_dir: str) -> dict[str, bool]:
     return index
 
 
+# Written once into the example-images root after a legacy library has been
+# backfilled, so later runs do not rescan (and, more importantly, so folders
+# left unmarked by an interrupted run are still verified instead of trusted).
+BACKFILL_FLAG_FILENAME = ".lm-examples-backfill"
+
+
+def backfill_legacy_completion_markers(output_dir: str) -> int:
+    """Mark pre-existing example folders as complete, once per library.
+
+    A library populated by an older version has example folders but no
+    ``.lm-examples-complete`` marker, so the first run after the upgrade would
+    read every sidecar and stat every image only to learn that nothing is
+    missing. This writes a marker for any hash folder that already contains
+    media, using one directory scan per folder and no metadata reads.
+
+    The trade-off: a folder left partially populated by an interrupted run from
+    *before* the upgrade is trusted rather than repaired retroactively. The user
+    can still repair a single model with a force download, and the showcase
+    falls back to the remote image at runtime. Interruptions after the upgrade
+    are still repaired, because every model pass clears its marker before it
+    starts.
+
+    Returns the number of folders marked; 0 when the library was already
+    backfilled or the root is missing.
+    """
+
+    if not output_dir or not os.path.isdir(output_dir):
+        return 0
+
+    flag_path = os.path.join(output_dir, BACKFILL_FLAG_FILENAME)
+    if os.path.exists(flag_path):
+        return 0
+
+    marked = 0
+    try:
+        with os.scandir(output_dir) as entries:
+            for entry in entries:
+                if not entry.is_dir() or not is_hash_folder(entry.name):
+                    continue
+                if has_completion_marker(entry.path):
+                    continue
+                if mark_example_folder_complete(entry.path):
+                    marked += 1
+    except OSError as exc:
+        # Do not write the flag: a partial scan must be retried next run.
+        logger.warning("Failed to backfill example completion markers: %s", exc)
+        return 0
+
+    try:
+        with open(flag_path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {"version": 1, "marked": marked, "completed_at": time.time()},
+                handle,
+            )
+    except OSError as exc:
+        logger.warning("Failed to write example marker backfill flag: %s", exc)
+        return marked
+
+    if marked:
+        logger.info(
+            "Backfilled example completion markers for %d pre-existing model folders",
+            marked,
+        )
+    return marked
+
+
 class DownloadManager:
     """Manages downloading example images for models."""
 
@@ -237,6 +309,11 @@ class DownloadManager:
         self._state_lock = state_lock or asyncio.Lock()
         self._metadata_refresh_lock = asyncio.Lock()
         self._stop_requested = False
+        # Whether this run loaded a previous progress file. A force pass only
+        # skips verified folders when the failed list can be trusted; without
+        # it the historical full re-check is kept.
+        self._progress_loaded = False
+        self._last_progress_save = 0.0
 
     def _resolve_output_dir(self, library_name: str | None = None) -> str:
         base_path = get_settings_manager().get("example_images_path")
@@ -362,6 +439,17 @@ class DownloadManager:
             logger.error(f"Failed to load progress file: {e}")
             # Continue with empty sets
 
+        # One-time upgrade aid: a library populated before the marker scheme
+        # would otherwise re-verify every folder on its first run. The scan
+        # runs outside the state lock and is a no-op after the first pass.
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None, backfill_legacy_completion_markers, output_dir
+            )
+        except Exception as exc:  # noqa: BLE001 - never block a download
+            logger.warning("Example marker backfill failed: %s", exc)
+
         # Step 4: Quick state check and update (minimal lock time)
         async with self._state_lock:
             if self._is_downloading:
@@ -378,6 +466,10 @@ class DownloadManager:
                 self._progress["status"] = "running"
                 self._progress["start_time"] = time.time()
                 self._progress["end_time"] = None
+                self._progress_loaded = bool(
+                    processed_models or failed_models or rate_limited_models
+                )
+                self._last_progress_save = time.monotonic()
 
                 self._is_downloading = True
                 snapshot = self._progress.snapshot()
@@ -865,7 +957,7 @@ class DownloadManager:
                 # save inside _process_model missed the common download path
                 # and a crash lost the whole processed/failed state.
                 if (
-                    self._progress["completed"] % 10 == 0
+                    self._should_save_progress()
                     or self._progress["completed"] == self._progress["total"] - 1
                 ):
                     self._save_progress(output_dir)
@@ -1074,14 +1166,26 @@ class DownloadManager:
             # Model-level guard: only a folder with media *and* a completion
             # marker is safe to skip. A populated folder without the marker may
             # be a legacy folder or the remains of an interrupted run, so it is
-            # processed and the per-image existence check fills the gaps. Force
-            # and explicitly targeted models bypass the guard entirely.
-            if not force and not explicit_targets:
-                if existing_files and has_completion_marker(model_dir):
+            # processed and the per-image existence check fills the gaps.
+            #
+            # A verified folder is done even under force. The only work left in
+            # it would be retrying flagged media, and a completed pass puts a
+            # model on the failed list as soon as any media stays flagged. That
+            # keeps Genur recovery while avoiding a sidecar read, per-image
+            # stat and marker rewrite for every model in a large library. If
+            # the failed list was not loaded, force keeps the historical full
+            # re-check because there is no way to know which models are pending.
+            verified = existing_files and has_completion_marker(model_dir)
+            if not explicit_targets and verified:
+                if not force or (
+                    self._progress_loaded
+                    and model_hash not in self._progress["failed_models"]
+                ):
                     self._progress["processed_models"].add(model_hash)
                     logger.debug(f"Skipping verified model: {model_name}")
                     return False
 
+            if not force and not explicit_targets:
                 if existing_files or model_hash in self._progress["processed_models"]:
                     if model_hash in self._progress["processed_models"]:
                         self._progress["processed_models"].discard(model_hash)
@@ -1122,7 +1226,9 @@ class DownloadManager:
                 mark_example_folder_complete(model_dir)
                 return False  # Return False to indicate no remote download happened
 
-            full_model = await MetadataUpdater.get_updated_model(model_hash, scanner)
+            full_model = await MetadataUpdater.get_updated_model(
+                model_hash, scanner, model=model
+            )
             civitai_payload = (full_model or {}).get("civitai") if full_model else None
             civitai_payload = civitai_payload or {}
 
@@ -1160,7 +1266,7 @@ class DownloadManager:
 
                     # Get the updated model data
                     updated_model = await MetadataUpdater.get_updated_model(
-                        model_hash, scanner
+                        model_hash, scanner, model=model
                     )
                     updated_civitai = (
                         (updated_model or {}).get("civitai") if updated_model else None
@@ -1298,8 +1404,27 @@ class DownloadManager:
             # model: leave it pending so the next run retries it.
             return False
 
+    def _should_save_progress(self) -> bool:
+        """Return True when the periodic progress save is due.
+
+        The completed count still gates the check (so a paused or idle run
+        does not write), but a time floor bounds the rewrites: the progress
+        file holds every processed/failed hash, so rewriting it every ten
+        models costs gigabytes of JSON traffic over an 81k-model run. The
+        run always saves once more when it finishes.
+        """
+
+        if self._progress["completed"] % 10 != 0:
+            return False
+        now = time.monotonic()
+        if now - self._last_progress_save < PROGRESS_SAVE_INTERVAL_SECONDS:
+            return False
+        self._last_progress_save = now
+        return True
+
     def _save_progress(self, output_dir):
         """Save download progress to file."""
+        temp_file = None
         try:
             progress_file = os.path.join(output_dir, ".download_progress.json")
 
@@ -1335,11 +1460,21 @@ class DownloadManager:
                 if key not in progress_data:
                     progress_data[key] = value
 
-            # Write updated progress data
-            with open(progress_file, "w", encoding="utf-8") as f:
+            # Write atomically: a crash mid-write must not truncate the file
+            # that the next run loads to skip completed work.
+            temp_file = f"{progress_file}.tmp"
+            with open(temp_file, "w", encoding="utf-8") as f:
                 json.dump(progress_data, f, indent=2)
+            os.replace(temp_file, progress_file)
+            temp_file = None
         except Exception as e:
             logger.error(f"Failed to save progress file: {e}")
+        finally:
+            if temp_file:
+                try:
+                    os.remove(temp_file)
+                except OSError:
+                    pass
 
     async def start_force_download(self, options: Dict[str, Any]):
         """Force download example images for specific models."""
@@ -1377,6 +1512,8 @@ class DownloadManager:
             self._progress["status"] = "running"
             self._progress["start_time"] = time.time()
             self._progress["end_time"] = None
+            self._progress_loaded = False
+            self._last_progress_save = time.monotonic()
 
             self._is_downloading = True
 
@@ -1488,7 +1625,7 @@ class DownloadManager:
                 self._progress["completed"] += 1
 
                 if (
-                    self._progress["completed"] % 10 == 0
+                    self._should_save_progress()
                     or self._progress["completed"] == self._progress["total"] - 1
                 ):
                     self._save_progress(output_dir)
@@ -1636,7 +1773,9 @@ class DownloadManager:
                 mark_example_folder_complete(model_dir)
                 return False  # Return False to indicate no remote download happened
 
-            full_model = await MetadataUpdater.get_updated_model(model_hash, scanner)
+            full_model = await MetadataUpdater.get_updated_model(
+                model_hash, scanner, model=model
+            )
             civitai_payload = (full_model or {}).get("civitai") if full_model else None
             civitai_payload = civitai_payload or {}
 
@@ -1674,7 +1813,7 @@ class DownloadManager:
 
                     # Get the updated model data
                     updated_model = await MetadataUpdater.get_updated_model(
-                        model_hash, scanner
+                        model_hash, scanner, model=model
                     )
                     updated_civitai = (
                         (updated_model or {}).get("civitai") if updated_model else None
