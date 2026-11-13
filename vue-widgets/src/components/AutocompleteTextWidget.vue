@@ -1,5 +1,18 @@
 <template>
   <div class="autocomplete-text-widget">
+    <div v-if="showSearchField" class="lora-search-row">
+      <input
+        ref="searchInputRef"
+        class="lora-search-input"
+        type="text"
+        placeholder="Search LoRAs"
+        aria-label="Search LoRAs"
+        spellcheck="false"
+        autocomplete="off"
+        @blur="clearSearchField"
+        @keydown.stop
+      />
+    </div>
     <div
       ref="inputWrapperRef"
       class="input-wrapper"
@@ -7,13 +20,12 @@
     >
       <textarea
         ref="textareaRef"
-        :placeholder="placeholder"
+        :placeholder="showSearchField ? '' : placeholder"
         :spellcheck="spellcheck ?? false"
         :class="['text-input', { 'vue-dom-mode': isVueDomMode, 'lm-wheel-scrollable': isVueDomMode }]"
         :style="maxHeight && isVueDomMode ? { maxHeight: maxHeight + 'px' } : undefined"
         data-capture-wheel="true"
         @input="onInput"
-        @wheel="onWheel"
       />
       <button
         v-if="showClearButton"
@@ -34,6 +46,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAutocomplete } from '@/composables/useAutocomplete'
+// @ts-ignore - ComfyUI external module
+import { forwardWheelToCanvas } from '../../../web/comfyui/utils.js'
 
 // Access LiteGraph global for initial mode detection
 declare const LiteGraph: { vueNodesMode?: boolean } | undefined
@@ -118,6 +132,31 @@ useAutocomplete(
   { showPreview: props.showPreview ?? true, node: props.node }
 )
 
+// Picks from the field go to the node's LoRA list, which prompt widgets lack.
+const showSearchField = computed(() => (props.modelType ?? 'loras') === 'loras')
+
+// A second binding of the same autocomplete class: same dropdown, request and
+// added/off cue. `pickIntoNode` routes a pick to the node's list instead of
+// writing a tag into the element being typed in.
+const searchInputRef = ref<HTMLInputElement | null>(null)
+useAutocomplete(searchInputRef, 'loras', {
+  node: props.node,
+  pickIntoNode: true,
+  anchorToElement: true,
+})
+
+// Leaving the field drops the query, like a pick does, so the next click starts
+// from the whole catalogue. The input event cancels any pending keystroke search
+// and, with an empty term, keeps the dropdown from reopening.
+const clearSearchField = () => {
+  const field = searchInputRef.value
+  if (!field) {
+    return
+  }
+  field.value = ''
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 const updateHasTextState = () => {
   hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false
 }
@@ -142,59 +181,6 @@ const onInput = (event: Event) => {
   // Call widget callback when text changes
   if (textareaRef.value && typeof props.widget.callback === 'function') {
     props.widget.callback(textareaRef.value.value)
-  }
-}
-
-/**
- * Handle mouse wheel events on the textarea.
- * Forwards the event to the ComfyUI canvas for zooming when the textarea has no scrollbar,
- * or handles pinch-to-zoom gestures.
- * 
- * Logic aligns with ComfyUI's built-in multiline widget:
- * src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts
- */
-const onWheel = (event: WheelEvent) => {
-  const textarea = textareaRef.value
-  if (!textarea) return
-
-  // Track if we have a vertical scrollbar
-  const canScrollY = textarea.scrollHeight > textarea.clientHeight
-  const deltaX = event.deltaX
-  const deltaY = event.deltaY
-  const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
-  
-  // Access ComfyUI app from global window
-  const app = (window as any).app
-  if (!app || !app.canvas || typeof app.canvas.processMouseWheel !== 'function') {
-    return
-  }
-
-  // 1. Handle pinch-to-zoom (ctrlKey is true for pinch-to-zoom on most browsers)
-  if (event.ctrlKey) {
-    event.preventDefault()
-    event.stopPropagation()
-    app.canvas.processMouseWheel(event)
-    return
-  }
-
-  // 2. Horizontal scroll: pass to canvas (textareas usually don't scroll horizontally)
-  if (isHorizontal) {
-    event.preventDefault()
-    event.stopPropagation()
-    app.canvas.processMouseWheel(event)
-    return
-  }
-
-  // 3. Vertical scrolling:
-  if (canScrollY) {
-    // If the textarea is scrollable, let it handle the wheel event but stop propagation
-    // to prevent the canvas from zooming while the user is trying to scroll the text
-    event.stopPropagation()
-  } else {
-    // If the textarea is NOT scrollable, forward the wheel event to the canvas
-    // so it can trigger zoom in/out
-    event.preventDefault()
-    app.canvas.processMouseWheel(event)
   }
 }
 
@@ -260,6 +246,15 @@ const clearText = () => {
 }
 
 onMounted(() => {
+  // A DOM widget swallows the wheel, so the node would stop zooming under the
+  // cursor. The shared helper (the LoRA list and tags widgets use it too) keeps
+  // the wheel on the canvas: it forwards when the element cannot scroll and
+  // leaves it alone when it can, which is what the prompt needs.
+  forwardWheelToCanvas(textareaRef.value)
+  if (searchInputRef.value) {
+    forwardWheelToCanvas(searchInputRef.value)
+  }
+
   // Register textarea reference with widget
   if (textareaRef.value) {
     props.widget.inputEl = textareaRef.value
@@ -353,6 +348,9 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   width: 100%;
+  /* The widget slot is shorter than the textarea's min-content height; without
+     this the wrapper keeps its full height and pushes the search strip out. */
+  min-height: 0;
 }
 
 /* Theme tokens (--lm-*) come from the widget container, which ComfyUI's
@@ -361,6 +359,7 @@ onUnmounted(() => {
 .text-input {
   flex: 1;
   width: 100%;
+  min-height: 0;
   background-color: var(--lm-surface);
   color: var(--lm-fg);
   overflow: hidden;
@@ -440,6 +439,45 @@ onUnmounted(() => {
 .text-input.vue-dom-mode ~ .clear-button svg {
   width: 14px;
   height: 14px;
+}
+
+/* Search field: its own place to click and type, so adding a LoRA never
+   needs a caret placed inside the prompt. It sits as the widget's first row
+   and the layout reserves its height (see applyAutocompleteTextLayoutFix), so
+   the prompt keeps its full size instead of being squeezed. */
+.lora-search-row {
+  flex: 0 0 18px;
+  height: 18px;
+  margin: 2px 2px 6px 2px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.lora-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  /* Same surface, border and radius as the prompt box and the LoRA list, so
+     the three blocks on the node read as one family. */
+  border: 1px solid var(--lm-border-soft);
+  border-radius: 6px;
+  background-color: var(--lm-surface);
+  color: var(--lm-fg);
+  font-family: inherit;
+  font-size: var(--comfy-textarea-font-size, 10px);
+  line-height: 16px;
+  outline: none;
+}
+
+.lora-search-input::placeholder {
+  color: color-mix(in srgb, var(--lm-fg) 55%, transparent);
+}
+
+.lora-search-input:focus {
+  border-color: color-mix(in srgb, var(--lm-fg) 45%, transparent);
 }
 
 </style>

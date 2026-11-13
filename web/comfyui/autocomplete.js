@@ -1512,11 +1512,12 @@ class AutoComplete {
     }
 
     /**
-     * Turn an already-listed LoRA on in place. Returns false when the node has
-     * no LoRA list to update (text-only node); the tag is already in the text
-     * there, so the selection is still handled.
+     * Add or enable a LoRA on the node's own list: `applyLoraSelection` is the
+     * same add-or-enable primitive the textarea path and "Send to ComfyUI" use,
+     * so a listed LoRA is switched on in place (strengths kept) and an unlisted
+     * one is appended. Returns false when the node has no LoRA list.
      */
-    _enableListedLora(relativePath) {
+    addToNodeList(relativePath) {
         const lorasWidget = this.options.node?.lorasWidget;
         if (!lorasWidget || !Array.isArray(lorasWidget.value)) {
             return false;
@@ -1529,6 +1530,12 @@ class AutoComplete {
             // The callback is what propagates the active set to trigger words,
             // downstream loaders and the textarea syntax.
             lorasWidget.callback?.(loras);
+        }
+
+        // Locate the pick in the list: select the row the way clicking it does
+        // and scroll it into view, so an appended LoRA is visibly placed.
+        if (typeof lorasWidget.selectLoraByName === 'function') {
+            lorasWidget.selectLoraByName(normalizeLoraNameKey(relativePath));
         }
         return true;
     }
@@ -2797,7 +2804,18 @@ class AutoComplete {
     }
     
     positionAtCursor() {
-        const position = this.helper.getCursorOffset();
+        // The text widget's search field anchors its dropdown to itself, not to
+        // the caret: typing must not walk it to the right, and it is never
+        // narrower than the field it belongs to.
+        const anchorRect = this.options.anchorToElement
+            ? this.inputElement?.getBoundingClientRect?.()
+            : null;
+        const position = anchorRect
+            ? {
+                left: anchorRect.left + (window.scrollX || 0),
+                top: anchorRect.bottom + (window.scrollY || 0) + 4,
+            }
+            : this.helper.getCursorOffset();
         this.dropdown.style.left = (position.left ?? 0) + "px";
         this.dropdown.style.top = (position.top ?? 0) + "px";
         this.dropdown.style.maxHeight = (window.innerHeight - position.top) + "px";
@@ -2810,12 +2828,12 @@ class AutoComplete {
 
         // Temporarily remove width constraints to allow content to expand naturally
         // This prevents items.scrollWidth from being limited by a narrow container
-        const originalWidth = this.dropdown.style.width;
+        const minimumWidth = anchorRect ? Math.round(anchorRect.width) : 200;
         this.dropdown.style.width = 'auto';
-        this.dropdown.style.minWidth = '200px';
+        this.dropdown.style.minWidth = `${minimumWidth}px`;
 
         // Measure the content width
-        let maxWidth = 200; // minimum width
+        let maxWidth = minimumWidth; // never narrower than the anchor
         // For virtual scrolling, query items from contentContainer; otherwise from dropdown
         const container = this.options.enableVirtualScroll && this.contentContainer
             ? this.contentContainer
@@ -2826,8 +2844,9 @@ class AutoComplete {
             maxWidth = Math.max(maxWidth, itemWidth);
         });
 
-        // Set the width and restore visibility
-        this.dropdown.style.width = Math.min(maxWidth, 400) + 'px'; // Cap at 400px
+        // Set the width and restore visibility. The 400px cap still applies, but
+        // an anchored dropdown may exceed it to match the field it hangs from.
+        this.dropdown.style.width = Math.min(maxWidth, Math.max(400, minimumWidth)) + 'px';
         this.dropdown.style.minWidth = '';
         this.dropdown.style.visibility = 'visible';
         this.dropdown.style.display = originalDisplay;
@@ -3065,10 +3084,22 @@ class AutoComplete {
     }
     
     async insertSelection(relativePath) {
+        // A pick from the text widget's search field belongs on the node's LoRA
+        // list, not in the field: the list rewrites the prompt through its own
+        // callback, so there is no caret to place and no tag can be written
+        // into the search box.
+        if (this.options.pickIntoNode) {
+            this.addToNodeList(relativePath);
+            this.inputElement.value = '';
+            this.hide();
+            this.inputElement.focus();
+            return;
+        }
+
         // A LoRA that is already on the node needs no tag: turn it on when it
         // is disabled, otherwise leave it alone, and drop the typed query.
         if (this.modelType === 'loras' && this._getAddedLoraState(relativePath)) {
-            this._enableListedLora(relativePath);
+            this.addToNodeList(relativePath);
             this._clearActiveSearchTerm();
             this.hide();
             this.inputElement.focus();
