@@ -3006,10 +3006,12 @@ class ModelAutoOrganizeHandler:
             file_paths = None
             exclusion_patterns = None
             settings_manager = get_settings_manager()
+            dry_run = request.query.get("dry_run", "").lower() in ("1", "true", "yes")
             if request.method == "POST":
                 try:
                     data = await request.json()
                     file_paths = data.get("file_paths")
+                    dry_run = dry_run or bool(data.get("dry_run"))
                     if "exclusion_patterns" in data:
                         exclusion_patterns = (
                             settings_manager.normalize_auto_organize_exclusions(
@@ -3021,10 +3023,14 @@ class ModelAutoOrganizeHandler:
 
             result = await self._use_case.execute(
                 file_paths=file_paths,
-                progress_callback=self._progress_callback,
+                # A dry run is a plain request/response preview: no progress
+                # toast, and nothing changed on disk to broadcast.
+                progress_callback=None if dry_run else self._progress_callback,
                 exclusion_patterns=exclusion_patterns,
+                dry_run=dry_run,
             )
-            _broadcast_models_changed()
+            if not dry_run:
+                _broadcast_models_changed()
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(

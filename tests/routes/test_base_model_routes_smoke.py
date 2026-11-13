@@ -759,7 +759,11 @@ def test_auto_organize_route_emits_progress(
     mock_service, monkeypatch: pytest.MonkeyPatch
 ):
     async def fake_auto_organize(
-        self, file_paths=None, progress_callback=None, exclusion_patterns=None
+        self,
+        file_paths=None,
+        progress_callback=None,
+        exclusion_patterns=None,
+        dry_run=False,
     ):
         result = AutoOrganizeResult()
         result.total = 1
@@ -797,6 +801,60 @@ def test_auto_organize_route_emits_progress(
             progress = ws_manager.get_auto_organize_progress()
             assert progress is not None
             assert progress["status"] == "completed"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "request_kwargs",
+    [
+        {"method": "post", "json": {"dry_run": True}},
+        {"method": "get", "params": {"dry_run": "true"}},
+    ],
+)
+def test_auto_organize_dry_run_route_reports_plan_without_progress(
+    mock_service, monkeypatch: pytest.MonkeyPatch, request_kwargs
+):
+    calls = []
+
+    async def fake_auto_organize(
+        self,
+        file_paths=None,
+        progress_callback=None,
+        exclusion_patterns=None,
+        dry_run=False,
+    ):
+        calls.append({"dry_run": dry_run, "progress_callback": progress_callback})
+        result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        result.total = 1
+        result.success_count = 1
+        result.planned_moves = [{"model": "m", "from": "/a/m.st", "to": "/b/m.st"}]
+        return result
+
+    monkeypatch.setattr(
+        model_file_service.ModelFileService,
+        "auto_organize_models",
+        fake_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            kwargs = dict(request_kwargs)
+            method = kwargs.pop("method")
+            response = await getattr(client, method)(
+                "/api/lm/test-models/auto-organize", **kwargs
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["dry_run"] is True
+            assert payload["planned_moves"][0]["to"] == "/b/m.st"
+            assert calls == [{"dry_run": True, "progress_callback": None}]
+            assert ws_manager.get_auto_organize_progress() is None
         finally:
             await client.close()
 

@@ -907,6 +907,71 @@ async def test_auto_organize_skips_model_when_target_path_exceeds_budget(
     assert "path length limit" in result.results[0]["message"]
 
 
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_reports_moves_without_moving(tmp_path: Path):
+    """A dry run lists each planned move and leaves the files where they are."""
+    service, scanner, model_path = _organize_setup(tmp_path)
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert scanner.moves == []
+    assert model_path.exists()
+    assert result.success_count == 1
+    payload = result.to_dict()
+    assert payload["dry_run"] is True
+    assert payload["planned_moves"] == [
+        {
+            "model": "mymodel",
+            "from": model_path.as_posix(),
+            "to": (tmp_path / "SDXL" / "mymodel.safetensors").as_posix(),
+        }
+    ]
+    assert "would move" in payload["message"]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_flags_two_models_bound_for_one_path(
+    tmp_path: Path,
+):
+    """A real run fails the second of two same-named models aimed at one
+    folder; the dry run must report that instead of planning both moves."""
+    service, scanner, model_path = _organize_setup(tmp_path)
+    twin_dir = tmp_path / "other"
+    twin_dir.mkdir()
+    twin = twin_dir / "mymodel.safetensors"
+    twin.write_bytes(b"model")
+    scanner._cache.raw_data.append(
+        {
+            "file_path": twin.as_posix(),
+            "model_name": "mymodel-twin",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        }
+    )
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert scanner.moves == []
+    assert result.success_count == 1
+    assert result.failure_count == 1
+    assert len(result.to_dict()["planned_moves"]) == 1
+    assert "already exists" in result.results[0]["message"]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_skips_empty_folder_cleanup(
+    tmp_path: Path, monkeypatch
+):
+    service, _scanner, _model_path = _organize_setup(tmp_path)
+    (tmp_path / "empty").mkdir()
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert (tmp_path / "empty").is_dir()
+    assert result.cleanup_counts == {}
+
+
 def _workflow_organize_setup(
     tmp_path: Path, *, template: str | None = None
 ) -> tuple:
