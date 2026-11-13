@@ -2218,6 +2218,7 @@
             "description": {
                 "noDescription": "Aucune description de modèle disponible",
                 "failedToLoad": "Échec du chargement de la description du modèle",
+                "offline": "[TODO: Translate] The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
                 "editTitle": "Modifier la description du modèle",
                 "validation": {
                     "cannotBeEmpty": "La description ne peut pas être vide"
@@ -2249,6 +2250,10 @@
                 "noDerivatives": "Pas de fusion de partage",
                 "noReLicense": "Mêmes autorisations requises",
                 "restrictionsLabel": "Restrictions de licence"
+            },
+            "notices": {
+                "offline": "[TODO: Translate] The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+                "partial": "[TODO: Translate] The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
             },
             "loading": {
                 "exampleImages": "Chargement des images d'exemple...",

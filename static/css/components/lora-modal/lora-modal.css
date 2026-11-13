@@ -172,6 +172,37 @@
     transform: translateY(-1px);
 }
 
+/* Metadata provenance notice (offline drive / unreadable sidecar) */
+.modal-metadata-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid color-mix(in oklch, var(--color-info, #4dabf7) 35%, transparent);
+    border-left-width: 3px;
+    border-radius: var(--border-radius-sm);
+    background: color-mix(in oklch, var(--color-info, #4dabf7) 10%, transparent);
+    color: var(--text-color);
+    font-size: 0.85em;
+    line-height: 1.45;
+}
+
+.modal-metadata-notice i {
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: var(--color-info, #4dabf7);
+}
+
+.modal-metadata-notice--offline {
+    border-color: color-mix(in oklch, var(--color-warning, #f59f00) 40%, transparent);
+    background: color-mix(in oklch, var(--color-warning, #f59f00) 12%, transparent);
+}
+
+.modal-metadata-notice--offline i {
+    color: var(--color-warning, #f59f00);
+}
+
 /* Info Grid */
 .info-grid {
     display: grid;

@@ -2218,6 +2218,7 @@
             "description": {
                 "noDescription": "Описание модели недоступно",
                 "failedToLoad": "Не удалось загрузить описание модели",
+                "offline": "[TODO: Translate] The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
                 "editTitle": "Редактировать описание модели",
                 "validation": {
                     "cannotBeEmpty": "Описание не может быть пустым"
@@ -2249,6 +2250,10 @@
                 "noDerivatives": "Запрет на совместное использование производных работ",
                 "noReLicense": "Требуются те же права",
                 "restrictionsLabel": "Лицензионные ограничения"
+            },
+            "notices": {
+                "offline": "[TODO: Translate] The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+                "partial": "[TODO: Translate] The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
             },
             "loading": {
                 "exampleImages": "Загрузка примеров изображений...",

@@ -2218,6 +2218,7 @@
       "description": {
         "noDescription": "No model description available",
         "failedToLoad": "Failed to load model description",
+        "offline": "The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
         "editTitle": "Edit model description",
         "validation": {
           "cannotBeEmpty": "Description cannot be empty"
@@ -2249,6 +2250,10 @@
         "noDerivatives": "No sharing merges",
         "noReLicense": "Same permissions required",
         "restrictionsLabel": "License restrictions"
+      },
+      "notices": {
+        "offline": "The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+        "partial": "The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
       },
       "loading": {
         "exampleImages": "Loading example images...",

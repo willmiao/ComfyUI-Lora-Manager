@@ -81,8 +81,19 @@ async function loadModelDescription() {
         
     } catch (error) {
         console.error('Error loading model description:', error);
-        const failedText = translate('modals.model.description.failedToLoad', {}, 'Failed to load model description');
-        descriptionContent.innerHTML = `<div class="no-description">${failedText}</div>`;
+        // The description lives in `.metadata.json`, next to the model file. If
+        // that disk is offline the generic failure text hides the real cause,
+        // so say what is going on (the modal already knows the provenance).
+        const modalElement = document.getElementById('modelModal');
+        const offline = modalElement?.dataset.metadataOffline === 'true';
+        const message = offline
+            ? translate(
+                'modals.model.description.offline',
+                {},
+                'The description is stored with the model file, which is on an offline disk. Reconnect it to read the description.'
+            )
+            : translate('modals.model.description.failedToLoad', {}, 'Failed to load model description');
+        descriptionContent.innerHTML = `<div class="no-description">${message}</div>`;
     } finally {
         // Hide loading state
         descriptionLoading?.classList.add('hidden');

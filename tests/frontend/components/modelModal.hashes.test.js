@@ -126,7 +126,7 @@ describe('Model modal hash rendering', () => {
     copyToClipboard.mockReset();
     calculateModelHash = vi.fn();
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata: vi.fn().mockResolvedValue(null),
+      fetchModelMetadataWithStatus: vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false }),
       saveModelMetadata: vi.fn(),
       calculateModelHash,
     });

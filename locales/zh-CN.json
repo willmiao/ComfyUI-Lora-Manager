@@ -2218,6 +2218,7 @@
             "description": {
                 "noDescription": "暂无模型描述",
                 "failedToLoad": "加载模型描述失败",
+                "offline": "[TODO: Translate] The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
                 "editTitle": "编辑模型描述",
                 "validation": {
                     "cannotBeEmpty": "描述不能为空"
@@ -2249,6 +2250,10 @@
                 "noDerivatives": "禁止分享合并作品",
                 "noReLicense": "需要相同权限",
                 "restrictionsLabel": "许可证限制"
+            },
+            "notices": {
+                "offline": "[TODO: Translate] The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+                "partial": "[TODO: Translate] The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
             },
             "loading": {
                 "exampleImages": "正在加载示例图片...",

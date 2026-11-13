@@ -2218,6 +2218,7 @@
             "description": {
                 "noDescription": "モデルの説明がありません",
                 "failedToLoad": "モデルの説明の読み込みに失敗しました",
+                "offline": "[TODO: Translate] The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
                 "editTitle": "モデルの説明を編集",
                 "validation": {
                     "cannotBeEmpty": "説明を空にすることはできません"
@@ -2249,6 +2250,10 @@
                 "noDerivatives": "共有マージ不可",
                 "noReLicense": "同じ権限が必要",
                 "restrictionsLabel": "ライセンス制限"
+            },
+            "notices": {
+                "offline": "[TODO: Translate] The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+                "partial": "[TODO: Translate] The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
             },
             "loading": {
                 "exampleImages": "例画像を読み込み中...",

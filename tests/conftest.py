@@ -285,6 +285,9 @@ class MockModelService:
     async def get_model_metadata(self, *_args, **_kwargs):  # pragma: no cover
         return {}
 
+    async def get_model_metadata_with_fallback(self, *_args, **_kwargs):  # pragma: no cover
+        return {}, False, False
+
     async def get_model_description(self, *_args, **_kwargs):  # pragma: no cover
         return ""
 

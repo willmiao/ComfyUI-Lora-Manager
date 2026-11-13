@@ -112,9 +112,9 @@ describe('Model modal license rendering', () => {
   });
 
   it('handles aggregated commercial strings without extra restrictions (classic style)', async () => {
-    const fetchModelMetadata = vi.fn().mockResolvedValue(null);
+    const fetchModelMetadataWithStatus = vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false });
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata,
+      fetchModelMetadataWithStatus,
       saveModelMetadata: vi.fn(),
     });
 

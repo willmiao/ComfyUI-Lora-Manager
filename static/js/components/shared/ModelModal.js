@@ -490,12 +490,19 @@ export async function showModelModal(model, modelType) {
     cleanupNavigationShortcuts();
     detachModalHandlers(modalId);
 
-    // Fetch complete civitai metadata
+    // Fetch complete civitai metadata. The backend falls back to the cached
+    // payload when the sidecar is unreadable (offline drive, missing file), so
+    // merge instead of replacing: a partial payload must never drop fields the
+    // list response already carried (creator, ids, trigger words).
     let completeCivitaiData = model.civitai || {};
+    let metadataPartial = false;
+    let metadataOffline = false;
     if (model.file_path) {
         try {
-            const fullMetadata = await getModelApiClient().fetchModelMetadata(model.file_path);
-            completeCivitaiData = fullMetadata || model.civitai || {};
+            const result = await getModelApiClient().fetchModelMetadataWithStatus(model.file_path);
+            metadataPartial = Boolean(result?.partial);
+            metadataOffline = Boolean(result?.offline);
+            completeCivitaiData = { ...(model.civitai || {}), ...(result?.metadata || {}) };
         } catch (error) {
             console.warn('Failed to fetch complete metadata, using existing data:', error);
             // Continue with existing data if fetch fails
@@ -507,6 +514,22 @@ export async function showModelModal(model, modelType) {
         ...model,
         civitai: completeCivitaiData
     };
+    // A model on a switched-off drive keeps its cached metadata, but nothing on
+    // disk can be read or written until it is reconnected. Say so instead of
+    // leaving the user wondering why the creator/description/examples are gone.
+    const offlineNotice = metadataOffline
+        ? `
+                <div class="modal-metadata-notice modal-metadata-notice--offline" role="status">
+                    <i class="fas fa-plug-circle-xmark" aria-hidden="true"></i>
+                    <span>${translate('modals.model.notices.offline', {}, 'The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.')}</span>
+                </div>`
+        : (metadataPartial
+            ? `
+                <div class="modal-metadata-notice" role="status">
+                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                    <span>${translate('modals.model.notices.partial', {}, 'The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable.')}</span>
+                </div>`
+            : '');
     const escapedFilePathAttr = escapeAttribute(modelWithFullData.file_path || '');
     const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
     // Centralized sidecar storage moves .metadata.json into a mirror tree, so
@@ -838,6 +861,7 @@ export async function showModelModal(model, modelType) {
             </header>
 
             <div class="modal-body">
+                ${offlineNotice}
                 <div class="info-section">
                     <div class="info-grid">
                         <div class="info-item">
@@ -1013,6 +1037,10 @@ export async function showModelModal(model, modelType) {
     const activeModalElement = document.getElementById(modalId);
     if (activeModalElement) {
         activeModalElement.dataset.filePath = modelWithFullData.file_path || '';
+        // Metadata provenance: the description tab reads this to explain why the
+        // text is unavailable instead of showing a generic "failed to load".
+        activeModalElement.dataset.metadataPartial = metadataPartial ? 'true' : 'false';
+        activeModalElement.dataset.metadataOffline = metadataOffline ? 'true' : 'false';
         // Store usage_tips for LoRA models
         if (modelType === 'loras' && modelWithFullData.usage_tips) {
             activeModalElement.dataset.usageTips = modelWithFullData.usage_tips;

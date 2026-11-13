@@ -1720,9 +1720,24 @@ class ModelQueryHandler:
             file_path = request.query.get("file_path")
             if not file_path:
                 return web.Response(text="File path is required", status=400)
-            metadata = await self._service.get_model_metadata(file_path)
+            metadata, partial, offline = await self._service.get_model_metadata_with_fallback(
+                file_path
+            )
             if metadata is not None:
-                return web.json_response({"success": True, "metadata": metadata})
+                return web.json_response(
+                    {
+                        "success": True,
+                        "metadata": metadata,
+                        # ``partial``: rebuilt from the cache because the
+                        # .metadata.json could not be read (offline drive,
+                        # unmounted share, missing/corrupt sidecar).
+                        # ``offline``: the model path is not under a reachable
+                        # root, so file actions will fail even when the sidecar
+                        # itself is readable (centralized sidecar storage).
+                        "partial": partial,
+                        "offline": offline,
+                    }
+                )
             return web.json_response(
                 {
                     "success": False,

@@ -2218,6 +2218,7 @@
             "description": {
                 "noDescription": "אין תיאור מודל זמין",
                 "failedToLoad": "טעינת תיאור המודל נכשלה",
+                "offline": "[TODO: Translate] The description is stored with the model file, which is on an offline disk. Reconnect the disk to read it.",
                 "editTitle": "ערוך תיאור מודל",
                 "validation": {
                     "cannotBeEmpty": "התיאור לא יכול להיות ריק"
@@ -2249,6 +2250,10 @@
                 "noDerivatives": "אין שיתוף מיזוגים",
                 "noReLicense": "נדרשות אותן הרשאות",
                 "restrictionsLabel": "הגבלות רישיון"
+            },
+            "notices": {
+                "offline": "[TODO: Translate] The disk holding this model is offline. Showing cached information — file actions and edits stay unavailable until it is reconnected.",
+                "partial": "[TODO: Translate] The model metadata file could not be read. Showing cached information — description, examples and creator avatar may be unavailable."
             },
             "loading": {
                 "exampleImages": "טוען תמונות דוגמה...",

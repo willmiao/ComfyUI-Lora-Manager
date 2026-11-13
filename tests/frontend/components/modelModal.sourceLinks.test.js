@@ -116,7 +116,7 @@ describe('Model modal source links (#1094)', () => {
     const { getModelApiClient } = await import(API_FACTORY);
     getModelApiClient.mockReset();
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata: vi.fn().mockResolvedValue(null),
+      fetchModelMetadataWithStatus: vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false }),
       saveModelMetadata: vi.fn(),
     });
   });

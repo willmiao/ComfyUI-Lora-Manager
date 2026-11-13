@@ -177,10 +177,10 @@ describe('Model metadata interactions keep file path in sync', () => {
 
   it('uses the latest file path when saving notes', async () => {
     const saveModelMetadata = vi.fn().mockResolvedValue({ success: true });
-    const fetchModelMetadata = vi.fn().mockResolvedValue(null);
+    const fetchModelMetadataWithStatus = vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false });
 
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata,
+      fetchModelMetadataWithStatus,
       saveModelMetadata,
     });
 
@@ -209,10 +209,10 @@ describe('Model metadata interactions keep file path in sync', () => {
   });
 
   it('shows recipes tab for checkpoint modals and loads linked recipes by hash', async () => {
-    const fetchModelMetadata = vi.fn().mockResolvedValue(null);
+    const fetchModelMetadataWithStatus = vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false });
 
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata,
+      fetchModelMetadataWithStatus,
       saveModelMetadata: vi.fn(),
     });
 

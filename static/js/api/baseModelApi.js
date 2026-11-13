@@ -2245,6 +2245,20 @@ export class BaseModelApiClient {
     }
 
     async fetchModelMetadata(filePath) {
+        const result = await this.fetchModelMetadataWithStatus(filePath);
+        return result.metadata;
+    }
+
+    /**
+     * Fetch the full CivitAI metadata together with its provenance.
+     *
+     * The backend degrades to the cached payload when `.metadata.json` cannot
+     * be read (offline drive, unmounted share, missing sidecar), so callers
+     * that render a full view need to know whether what they got is complete:
+     *
+     * @returns {Promise<{metadata: Object, partial: boolean, offline: boolean}>}
+     */
+    async fetchModelMetadataWithStatus(filePath) {
         try {
             const params = new URLSearchParams({ file_path: filePath });
             const response = await fetch(`${this.apiConfig.endpoints.metadata}?${params}`);
@@ -2256,7 +2270,11 @@ export class BaseModelApiClient {
             const data = await response.json();
 
             if (data.success) {
-                return data.metadata;
+                return {
+                    metadata: data.metadata || {},
+                    partial: Boolean(data.partial),
+                    offline: Boolean(data.offline),
+                };
             } else {
                 throw new Error(data.error || `No metadata found for ${this.apiConfig.config.singularName}`);
             }

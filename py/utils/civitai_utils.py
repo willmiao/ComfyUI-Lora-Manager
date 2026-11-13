@@ -339,6 +339,41 @@ def resolve_license_info(
     return payload, build_license_flags(payload)
 
 
+# Commercial permission bits, in the order ``_resolve_commercial_bits`` packs
+# them after ``_COMMERCIAL_SHIFT``. The names match CivitAI's API values so the
+# decoded payload renders through the exact same client-side code path.
+_COMMERCIAL_FLAG_VALUES: tuple[tuple[int, str], ...] = (
+    (1, "Image"),
+    (2, "RentCivit"),
+    (3, "Rent"),
+    (4, "Sell"),
+)
+
+
+def decode_license_flags(flags: Any) -> Dict[str, Any]:
+    """Decode a cached license bitfield back into a CivitAI license payload.
+
+    Inverse of :func:`build_license_flags`. Used when the authoritative
+    ``.metadata.json`` is unreachable (offline drive) but the model modal still
+    has to render the license icons: the bitfield survives in the persistent
+    cache, the original ``civitai.model`` section does not.
+    """
+
+    try:
+        value = int(flags)
+    except (TypeError, ValueError):
+        value = build_license_flags({})
+
+    return {
+        "allowNoCredit": bool(value & (1 << 0)),
+        "allowCommercialUse": [
+            name for bit, name in _COMMERCIAL_FLAG_VALUES if value & (1 << bit)
+        ],
+        "allowDerivatives": bool(value & (1 << 5)),
+        "allowDifferentLicense": bool(value & (1 << 6)),
+    }
+
+
 def _normalize_media_width(width: int | None) -> int | None:
     if width is None:
         return None

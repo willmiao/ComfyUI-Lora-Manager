@@ -126,7 +126,7 @@ describe('Model modal sidecar location entry', () => {
     getModelApiClient.mockReset();
     showToast.mockReset();
     getModelApiClient.mockReturnValue({
-      fetchModelMetadata: vi.fn().mockResolvedValue(null),
+      fetchModelMetadataWithStatus: vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false }),
       saveModelMetadata: vi.fn(),
     });
     originalMode = state.global.settings.sidecar_storage_mode;
