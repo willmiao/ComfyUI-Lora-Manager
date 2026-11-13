@@ -561,6 +561,29 @@ when requests are latency-bound). The mechanisms are confirmed; the exact
 percentages remain environment-specific and do not describe a user's cold
 first run or a bandwidth-limited link.
 
+#### Medium subset cross-check
+
+Repeated the comparison on a larger subset (79 models / 693 selected images,
+675 files) with `--repeats 2` against a clean worktree of the tested commit.
+Every run probed 100% warm, 0 rate-limited responses, and the new-tree modes
+again produced identical files and bytes.
+
+| Mode | Runs (s) | Median | Speedup vs new-serial | Files | MB | Probe steps |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `serial` (old tree) | 1115.2 / 1025.8 | 1070.5 s | 0.216× | 675 | 202.4 | 0 |
+| `new-serial` | 227.2 / 234.7 | 230.9 s | 1.000× | 675 | 65.9 | 0 |
+| `pipeline` | 151.5 / 162.0 | 156.7 s | 1.474× | 675 | 65.9 | 0 |
+| `aimd` | 128.4 / 130.9 | 129.6 s | 1.781× | 675 | 65.9 | 2 per run |
+
+- `serial` → `new-serial`: **4.6× less wall time** with **3.1× fewer bytes**.
+- `new-serial` → `pipeline`: **32.1% less** (1.47×).
+- `pipeline` → `aimd`: **17.3% less**; `aimd` vs `new-serial` is **43.9% less**
+  (1.78×), with 6 → 8 probing and no 429s.
+
+The two subsets agree closely (pipeline 1.47–1.49×, AIMD 1.77–1.78×), which is
+the point of the cross-check: on this network path the pipeline and AIMD gains
+reproduce at 20 and 79 models, not just on the small subset.
+
 ## Future work
 
 - Stream media to a temp file instead of `download_to_memory`; the current
