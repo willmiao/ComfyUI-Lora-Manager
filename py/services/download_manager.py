@@ -2724,16 +2724,7 @@ class DownloadManager:
         Returns:
             Relative path string
         """
-        # Get path template from settings for specific model type
         settings_manager = get_settings_manager()
-        path_template = settings_manager.get_download_path_template(model_type)
-
-        # If template is empty, return empty path (flat structure)
-        if not path_template:
-            return ""
-
-        # Get base model name
-        base_model = version_info.get("baseModel", "")
 
         # Get author from creator data
         creator_info = version_info.get("creator")
@@ -2741,6 +2732,18 @@ class DownloadManager:
             author = creator_info.get("username") or "Anonymous"
         else:
             author = "Anonymous"
+
+        # A creator-specific template wins over the model type's template
+        path_template = settings_manager.get_author_path_template(
+            author
+        ) or settings_manager.get_download_path_template(model_type)
+
+        # If template is empty, return empty path (flat structure)
+        if not path_template:
+            return ""
+
+        # Get base model name
+        base_model = version_info.get("baseModel", "")
 
         # Apply mapping if available
         base_model_mappings = settings_manager.get("base_model_path_mappings", {})

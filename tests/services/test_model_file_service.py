@@ -8,7 +8,8 @@ from typing import List
 
 import pytest
 
-from py.services.model_file_service import ModelMoveService
+from py.services.model_file_service import ModelFileService, ModelMoveService
+from py.services.settings_manager import SettingsManager, get_settings_manager
 
 
 class FakeScanner:
@@ -982,3 +983,31 @@ async def test_auto_organize_workflows_flattens_when_template_is_empty(
     assert scanner.moves == [
         (workflow_path.as_posix(), str(tmp_path).replace(os.sep, "/"))
     ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("type_template", ["", "{base_model}"])
+async def test_auto_organize_target_uses_author_template(tmp_path: Path, monkeypatch, type_template):
+    """author_path_templates places one creator's models in their own folder,
+    also when the type itself is flat; other creators keep the type layout."""
+    settings = get_settings_manager()
+    values = settings._get_default_settings()
+    values["download_path_templates"] = {"checkpoint": type_template}
+    values["author_path_templates"] = {"reijlita": "{base_model}/reijlita"}
+    monkeypatch.setattr(settings, "settings", values)
+    monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
+    service = ModelFileService(FakeScanner([tmp_path]), "checkpoint")
+    root = str(tmp_path).replace(os.sep, "/")
+
+    def model(author):
+        return {
+            "file_path": f"{root}/elsewhere/model.safetensors",
+            "base_model": "Illustrious",
+            "tags": [],
+            "civitai": {"id": 1, "creator": {"username": author}},
+        }
+
+    flat = not type_template
+    assert await service._calculate_target_directory(model("reijlita"), root, flat) == f"{root}/Illustrious/reijlita"
+    other = f"{root}" if flat else f"{root}/Illustrious"
+    assert await service._calculate_target_directory(model("someone"), root, flat) == other

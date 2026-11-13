@@ -106,6 +106,43 @@ def test_calculate_relative_path_for_model_uses_mappings_and_defaults(isolated_s
     assert relative_path == "SDXL-mapped/no tags/Creator"
 
 
+def test_calculate_relative_path_uses_author_template_for_that_author(isolated_settings):
+    isolated_settings["author_path_templates"] = {"reijlita": "{base_model}/reijlita"}
+
+    model_data = {
+        "base_model": "Illustrious",
+        "tags": ["anime"],
+        "civitai": {"id": 1, "creator": {"username": "Reijlita"}},
+    }
+
+    assert calculate_relative_path_for_model(model_data, "checkpoint") == "Illustrious/reijlita"
+
+
+def test_calculate_relative_path_keeps_type_template_for_other_authors(isolated_settings):
+    isolated_settings["author_path_templates"] = {"reijlita": "{base_model}/reijlita"}
+
+    model_data = {
+        "base_model": "Illustrious",
+        "tags": ["anime"],
+        "civitai": {"id": 1, "creator": {"username": "someone"}},
+    }
+
+    assert calculate_relative_path_for_model(model_data, "checkpoint") == "Illustrious/anime"
+
+
+def test_calculate_relative_path_author_template_applies_to_flat_types(isolated_settings):
+    isolated_settings["download_path_templates"]["checkpoint"] = ""
+    isolated_settings["author_path_templates"] = {"reijlita": "{author}"}
+
+    model_data = {
+        "base_model": "Illustrious",
+        "tags": [],
+        "civitai": {"id": 1, "creator": {"username": "reijlita"}},
+    }
+
+    assert calculate_relative_path_for_model(model_data, "checkpoint") == "reijlita"
+
+
 def test_calculate_relative_path_supports_model_and_version(isolated_settings):
     isolated_settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
 

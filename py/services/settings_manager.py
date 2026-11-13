@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import json
+import re
 import os
 import shutil
 import tempfile
@@ -140,6 +141,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "sidecar_storage_mode": "alongside",
     "sidecar_storage_path": "",
     "base_model_path_mappings": {},
+    # CivitAI creator username -> path template used instead of the model
+    # type's download path template (downloads and auto-organize).
+    "author_path_templates": {},
     "download_path_templates": {},
     "download_filename_templates": {},
     "folder_paths": {},
@@ -1344,6 +1348,7 @@ class SettingsManager:
         """Return default settings"""
         defaults = copy.deepcopy(DEFAULT_SETTINGS)
         defaults["base_model_path_mappings"] = {}
+        defaults["author_path_templates"] = {}
         defaults["download_path_templates"] = {}
         defaults["download_filename_templates"] = {}
         defaults["priority_tags"] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
@@ -1500,6 +1505,45 @@ class SettingsManager:
             self.settings["download_skip_base_models"] = base_models
             self._save_settings()
         return base_models
+
+    def normalize_author_path_templates(self, value: Any) -> Dict[str, str]:
+        """Keep non-empty ``{author: template}`` string pairs, trimmed.
+
+        Authors are matched case-insensitively, so a later duplicate that
+        differs only in case replaces the earlier one.
+        """
+        if not isinstance(value, Mapping):
+            return {}
+        templates: Dict[str, str] = {}
+        seen: Dict[str, str] = {}
+        for raw_author, raw_template in value.items():
+            if not isinstance(raw_author, str) or not isinstance(raw_template, str):
+                continue
+            author, template = raw_author.strip(), raw_template.strip()
+            if not author or not template:
+                continue
+            if ".." in re.split(r"[\\/]", template):
+                logger.warning("Dropping author path template for %s: '..' is not allowed", author)
+                continue
+            previous = seen.get(author.casefold())
+            if previous is not None:
+                templates.pop(previous, None)
+            seen[author.casefold()] = author
+            templates[author] = template
+        return templates
+
+    def get_author_path_template(self, author: Optional[str]) -> str:
+        """Return the path template configured for a CivitAI creator, or ``""``."""
+        if not author:
+            return ""
+        templates = self.normalize_author_path_templates(
+            self.settings.get("author_path_templates")
+        )
+        key = author.strip().casefold()
+        for name, template in templates.items():
+            if name.casefold() == key:
+                return template
+        return ""
 
     def normalize_download_root_rules(
         self, value: Any
@@ -2020,6 +2064,8 @@ class SettingsManager:
             value = self.normalize_download_skip_base_models(value)
         elif key == "download_root_rules":
             value = self.normalize_download_root_rules(value)
+        elif key == "author_path_templates":
+            value = self.normalize_author_path_templates(value)
         elif key == "mature_blur_level":
             value = self.normalize_mature_blur_level(value)
         elif key in ("folder_paths", "extra_folder_paths") and isinstance(
