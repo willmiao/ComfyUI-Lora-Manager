@@ -557,7 +557,9 @@ class ModelFileService:
         message: str
     ) -> None:
         """Add a result entry if under the limit"""
-        if len(result.results) < 100:  # Limit detailed results
+        # A dry run is the report itself, so it keeps every entry; a real run
+        # limits the detailed results.
+        if result.dry_run or len(result.results) < 100:
             result.results.append({
                 "model": model_name,
                 "success": success,

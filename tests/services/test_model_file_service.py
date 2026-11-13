@@ -972,6 +972,30 @@ async def test_auto_organize_dry_run_skips_empty_folder_cleanup(
     assert result.cleanup_counts == {}
 
 
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_keeps_every_result(tmp_path: Path):
+    """A real run trims per-model results after 100; a dry run is the report,
+    so a would-be failure must not be hidden behind a pile of skips."""
+    service, scanner, _model_path = _organize_setup(tmp_path)
+    scanner._cache.raw_data[:] = [
+        {
+            "file_path": (tmp_path / f"m{i}.safetensors").as_posix(),
+            "model_name": f"m{i}",
+            "base_model": "",
+            "tags": [],
+            "civitai": {},
+        }
+        for i in range(150)
+    ]
+
+    result = await service.auto_organize_models(dry_run=True)
+    payload = result.to_dict()
+
+    assert result.skipped_count == 150
+    assert "results_truncated" not in payload
+    assert len(payload["results"]) == 150
+
+
 def _workflow_organize_setup(
     tmp_path: Path, *, template: str | None = None
 ) -> tuple:
