@@ -10,8 +10,7 @@ from py.services.downloaded_version_history_service import (
 
 
 class DummySettings:
-    def get_active_library_name(self) -> str:
-        return "alpha"
+    pass
 
 
 @pytest.mark.asyncio

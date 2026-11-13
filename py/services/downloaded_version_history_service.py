@@ -124,13 +124,6 @@ class DownloadedVersionHistoryService:
             finally:
                 self._conn = None
 
-    def _get_active_library_name(self) -> str | None:
-        try:
-            value = self._settings.get_active_library_name()
-        except Exception:
-            return None
-        return value or None
-
     async def mark_downloaded(
         self,
         model_type: str,
@@ -150,7 +143,7 @@ class DownloadedVersionHistoryService:
         if normalized_type is None or normalized_version_id is None:
             return
 
-        active_library_name = library_name or self._get_active_library_name()
+        active_library_name = library_name or "default"
         timestamp = time.time()
 
         async with self._lock:
@@ -214,7 +207,7 @@ class DownloadedVersionHistoryService:
             return
 
         timestamp = time.time()
-        active_library_name = library_name or self._get_active_library_name()
+        active_library_name = library_name or "default"
         payload: list[tuple[object, ...]] = []
         for record in records:
             version_id = _normalize_int(record.get("version_id"))
@@ -292,7 +285,7 @@ class DownloadedVersionHistoryService:
                     normalized_version_id,
                     timestamp,
                     timestamp,
-                    self._get_active_library_name(),
+                    "default",
                 ),
             )
             # Whole-version deletion also clears the per-file records (#1058)

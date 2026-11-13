@@ -447,7 +447,7 @@ async def test_migrate_root_relocates_tree_and_reconciles(
     library_root: Path, sidecar_root: Path, tmp_path: Path
 ):
     _set_mode("centralized")
-    library = get_settings_manager().get_active_library_name()
+    library = "default"
     component = root_mirror_component(str(library_root))
 
     # Assets under the OLD root, mirroring the layout.

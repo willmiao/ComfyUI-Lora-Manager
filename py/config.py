@@ -23,7 +23,6 @@ from .utils.root_paths import normalize_root_identity
 from .utils.settings_paths import (
     ensure_settings_file,
     get_settings_dir,
-    load_settings_template,
 )
 
 # Use an environment variable to control standalone mode
@@ -117,60 +116,6 @@ def _resolve_valid_default_root(
     return valid_paths[0]
 
 
-def _normalize_folder_paths_for_comparison(
-    folder_paths: Mapping[str, Any],
-) -> Dict[str, Set[str]]:
-    """Normalize folder paths for comparison across libraries."""
-
-    normalized: Dict[str, Set[str]] = {}
-    for key, values in folder_paths.items():
-        if isinstance(values, str):
-            candidate_values: Iterable[str] = [values]
-        else:
-            try:
-                candidate_values = iter(values)
-            except TypeError:
-                continue
-
-        normalized_values: Set[str] = set()
-        for value in candidate_values:
-            if not isinstance(value, str):
-                continue
-            stripped = value.strip()
-            if not stripped:
-                continue
-            normalized_values.add(os.path.normcase(os.path.normpath(stripped)))
-
-        if normalized_values:
-            normalized[key] = normalized_values
-
-    return normalized
-
-
-def _normalize_library_folder_paths(
-    library_payload: Mapping[str, Any],
-) -> Dict[str, Set[str]]:
-    """Return normalized folder paths extracted from a library payload."""
-
-    folder_paths = library_payload.get("folder_paths")
-    if isinstance(folder_paths, Mapping):
-        return _normalize_folder_paths_for_comparison(folder_paths)
-    return {}
-
-
-def _get_template_folder_paths() -> Dict[str, Set[str]]:
-    """Return normalized folder paths defined in the bundled template."""
-
-    template_payload = load_settings_template()
-    if not template_payload:
-        return {}
-
-    folder_paths = template_payload.get("folder_paths")
-    if isinstance(folder_paths, Mapping):
-        return _normalize_folder_paths_for_comparison(folder_paths)
-    return {}
-
-
 class Config:
     """Global configuration for LoRA Manager"""
 
@@ -221,8 +166,8 @@ class Config:
         self.extra_embeddings_roots: List[str] = []
         self.recipes_path: str = ""
 
-        # Load extra folder paths from active library settings before symlink scan
-        # so both primary and extra paths are discovered in a single pass.
+        # Load extra folder paths before the symlink scan so primary and extra
+        # roots are discovered in a single pass.
         self._load_extra_paths_from_settings()
 
         # Scan symbolic links during initialization
@@ -233,38 +178,17 @@ class Config:
             self.save_folder_paths_to_settings()
 
     def _load_extra_paths_from_settings(self) -> None:
-        """Read extra folder paths from the active library and apply them.
-
-        Called during ``Config.__init__`` before the symlink scan so both primary and
-        extra paths are discovered in a single pass.  Mirrors the extra-path
-        portion of ``_apply_library_paths`` without replacing the primary roots
-        that were already resolved via ``folder_paths.get_folder_paths``.
-        """
+        """Load LoRA-Manager-only paths before the initial symlink scan."""
         try:
             from .services.settings_manager import get_settings_manager
 
             settings_manager = get_settings_manager()
-            library_name = settings_manager.get_active_library_name()
-            libraries = settings_manager.get_libraries()
-
-            if not library_name or library_name not in libraries:
-                return
-
-            library_config = libraries[library_name]
-            if not isinstance(library_config, dict):
-                return
-
-            # Always read recipes_path — it is independent of extra folder paths
-            # and must be set before any early returns below.
-            recipes_path = library_config.get("recipes_path", "")
+            recipes_path = settings_manager.get("recipes_path", "")
             if isinstance(recipes_path, str) and recipes_path:
                 self.recipes_path = recipes_path
 
-            self._remember_library_configured_paths(library_config)
-
-            extra_folder_paths = library_config.get("extra_folder_paths")
-            if not isinstance(extra_folder_paths, dict):
-                return
+            self._remember_settings_configured_paths(settings_manager.settings)
+            extra_folder_paths = settings_manager.get_extra_folder_paths()
 
             extra_lora = extra_folder_paths.get("loras", []) or []
             extra_checkpoint = extra_folder_paths.get("checkpoints", []) or []
@@ -313,18 +237,14 @@ class Config:
                 )
 
             logger.info(
-                "Applied library settings for '%s' with extra paths: loras=%s, "
-                "checkpoints=%s, embeddings=%s",
-                library_name,
+                "Applied extra folder paths: loras=%s, checkpoints=%s, embeddings=%s",
                 extra_lora,
                 extra_checkpoint,
                 extra_embedding,
             )
 
         except Exception as exc:
-            logger.debug(
-                "Could not load extra paths from library settings: %s", exc
-            )
+            logger.debug("Could not load extra folder paths: %s", exc)
 
     def _drop_missing_roots_without_cache(
         self,
@@ -398,55 +318,14 @@ class Config:
         return filtered
 
     def save_folder_paths_to_settings(self):
-        """Persist ComfyUI-derived folder paths to the library settings."""
+        """Persist ComfyUI-derived folder paths to the flat settings schema."""
         try:
             ensure_settings_file(logger)
             from .services.settings_manager import get_settings_manager
 
             settings_service = get_settings_manager()
-            libraries = settings_service.get_libraries()
-            comfy_library = libraries.get("comfyui", {})
-            default_library = libraries.get("default", {})
-
-            template_folder_paths = _get_template_folder_paths()
-            default_library_paths: Dict[str, Set[str]] = {}
-            if isinstance(default_library, Mapping):
-                default_library_paths = _normalize_library_folder_paths(default_library)
-
-            libraries_changed = False
-            if (
-                isinstance(default_library, Mapping)
-                and template_folder_paths
-                and default_library_paths == template_folder_paths
-            ):
-                if "comfyui" in libraries:
-                    try:
-                        settings_service.delete_library("default")
-                        libraries_changed = True
-                        logger.info("Removed template 'default' library entry")
-                    except Exception as delete_error:
-                        logger.debug(
-                            "Failed to delete template 'default' library: %s",
-                            delete_error,
-                        )
-                else:
-                    try:
-                        settings_service.rename_library("default", "comfyui")
-                        libraries_changed = True
-                        logger.info("Renamed template 'default' library to 'comfyui'")
-                    except Exception as rename_error:
-                        logger.debug(
-                            "Failed to rename template 'default' library: %s",
-                            rename_error,
-                        )
-
-            if libraries_changed:
-                libraries = settings_service.get_libraries()
-                comfy_library = libraries.get("comfyui", {})
-                default_library = libraries.get("default", {})
 
             # Persist what is *configured*, not what is readable right now:
-            # `upsert_library(folder_paths=...)` replaces the library's paths, so
             # writing the existence-filtered live lists would erase the path of a
             # drive that happened to be switched off when ComfyUI started.
             target_folder_paths = {
@@ -484,75 +363,9 @@ class Config:
                         configured_key_roots, target_folder_paths.get(key, [])
                     )
 
-            normalized_target_paths = _normalize_folder_paths_for_comparison(
-                target_folder_paths
-            )
-
-            normalized_default_paths: Optional[Dict[str, Set[str]]] = None
-            if isinstance(default_library, Mapping):
-                normalized_default_paths = _normalize_library_folder_paths(
-                    default_library
-                )
-
-            if (
-                not comfy_library
-                and default_library
-                and normalized_target_paths
-                and normalized_default_paths == normalized_target_paths
-            ):
-                try:
-                    settings_service.rename_library("default", "comfyui")
-                    logger.info("Renamed legacy 'default' library to 'comfyui'")
-                    libraries = settings_service.get_libraries()
-                    comfy_library = libraries.get("comfyui", {})
-                except Exception as rename_error:
-                    logger.debug(
-                        "Failed to rename legacy 'default' library: %s", rename_error
-                    )
-
-            # Clean up a stale "default" library entry that has no meaningful
-            # paths configured (e.g. leftover bootstrap artifact).  This only
-            # fires when "comfyui" already exists so we never delete the last
-            # remaining library.
-            if (
-                "default" in libraries
-                and "comfyui" in libraries
-                and isinstance(default_library, Mapping)
-            ):
-                default_folder_paths = _normalize_library_folder_paths(
-                    default_library
-                )
-                default_extra_paths = default_library.get("extra_folder_paths", {})
-                has_meaningful_paths = bool(default_folder_paths) or bool(
-                    default_extra_paths
-                ) or any(
-                    default_library.get(key)
-                    for key in (
-                        "default_lora_root",
-                        "default_checkpoint_root",
-                        "default_unet_root",
-                        "default_embedding_root",
-                        "recipes_path",
-                    )
-                )
-                if not has_meaningful_paths:
-                    try:
-                        settings_service.delete_library("default")
-                        libraries_changed = True
-                        logger.info(
-                            "Removed stale 'default' library entry "
-                            "with no meaningful paths configured"
-                        )
-                        libraries = settings_service.get_libraries()
-                        comfy_library = libraries.get("comfyui", {})
-                    except Exception as delete_error:
-                        logger.debug(
-                            "Failed to remove stale 'default' library: %s",
-                            delete_error,
-                        )
-
+            extra_folder_paths = settings_service.get_extra_folder_paths()
             default_lora_root = _resolve_valid_default_root(
-                comfy_library.get("default_lora_root", ""),
+                settings_service.get("default_lora_root", ""),
                 # A configured-but-unavailable root is still a valid choice: it
                 # must not be "repaired" away just because its drive is off.
                 _append_new_paths(
@@ -562,12 +375,12 @@ class Config:
                     self.loras_roots or [],
                 ),
                 list(self.loras_roots or [])
-                + list(comfy_library.get("extra_folder_paths", {}).get("loras", []) or []),
+                + list(extra_folder_paths.get("loras", []) or []),
                 "default_lora_root",
             )
 
             default_checkpoint_root = _resolve_valid_default_root(
-                comfy_library.get("default_checkpoint_root", ""),
+                settings_service.get("default_checkpoint_root", ""),
                 # A configured-but-unavailable root is still a valid choice: it
                 # must not be "repaired" away just because its drive is off.
                 _append_new_paths(
@@ -577,12 +390,12 @@ class Config:
                     self.checkpoints_roots or [],
                 ),
                 list(self.checkpoints_roots or [])
-                + list(comfy_library.get("extra_folder_paths", {}).get("checkpoints", []) or []),
+                + list(extra_folder_paths.get("checkpoints", []) or []),
                 "default_checkpoint_root",
             )
 
             default_embedding_root = _resolve_valid_default_root(
-                comfy_library.get("default_embedding_root", ""),
+                settings_service.get("default_embedding_root", ""),
                 # A configured-but-unavailable root is still a valid choice: it
                 # must not be "repaired" away just because its drive is off.
                 _append_new_paths(
@@ -592,75 +405,36 @@ class Config:
                     self.embeddings_roots or [],
                 ),
                 list(self.embeddings_roots or [])
-                + list(comfy_library.get("extra_folder_paths", {}).get("embeddings", []) or []),
+                + list(extra_folder_paths.get("embeddings", []) or []),
                 "default_embedding_root",
             )
 
-            metadata = dict(comfy_library.get("metadata", {}))
-            metadata.setdefault("display_name", "ComfyUI")
-            metadata["source"] = "comfyui"
-            extra_folder_paths = {}
-            if isinstance(comfy_library, Mapping):
-                existing_extra_paths = comfy_library.get("extra_folder_paths", {})
-                if isinstance(existing_extra_paths, Mapping):
-                    extra_folder_paths = {
-                        key: list(value) if isinstance(value, list) else []
-                        for key, value in existing_extra_paths.items()
-                    }
-
-            active_library_name = settings_service.get_active_library_name()
-            should_activate = (
-                active_library_name == "comfyui"
-                or self._should_activate_comfy_library(libraries, libraries_changed)
-            )
-
             # A root that the host registered but never created (and that holds no
-            # cached models) is not a library path: persisting it would bring it
+            # cached models) is not a configured root: persisting it would bring it
             # back as an unavailable root on every boot, and in standalone mode the
             # saved paths are the only source of truth (issue #1146).
             default_roots = {
                 "loras": default_lora_root
-                or comfy_library.get("default_lora_root", ""),
+                or settings_service.get("default_lora_root", ""),
                 "checkpoints": default_checkpoint_root
-                or comfy_library.get("default_checkpoint_root", ""),
-                "unet": comfy_library.get("default_unet_root", ""),
+                or settings_service.get("default_checkpoint_root", ""),
+                "unet": settings_service.get("default_unet_root", ""),
                 "embeddings": default_embedding_root
-                or comfy_library.get("default_embedding_root", ""),
+                or settings_service.get("default_embedding_root", ""),
             }
             persisted_folder_paths = self._drop_missing_roots_without_cache(
                 target_folder_paths, default_roots
             )
 
-            settings_service.upsert_library(
-                "comfyui",
-                folder_paths=persisted_folder_paths,
-                extra_folder_paths=extra_folder_paths,
+            settings_service.update_folder_settings(
+                persisted_folder_paths,
                 default_lora_root=default_lora_root,
                 default_checkpoint_root=default_checkpoint_root,
                 default_embedding_root=default_embedding_root,
-                metadata=metadata,
-                activate=should_activate,
             )
-
-            if should_activate:
-                logger.info("Updated 'comfyui' library with current folder paths")
-            else:
-                logger.info(
-                    "Updated 'comfyui' library with current folder paths without activating it"
-                )
+            logger.info("Updated folder paths from ComfyUI")
         except Exception as e:
             logger.warning(f"Failed to save folder paths: {e}")
-
-    def _should_activate_comfy_library(
-        self, libraries: Mapping[str, Any], libraries_changed: bool
-    ) -> bool:
-        """Return whether startup sync should make the ComfyUI library active."""
-
-        if libraries_changed:
-            return True
-        if not libraries:
-            return True
-        return "comfyui" in libraries and len(libraries) == 1
 
     def _is_link(self, path: str) -> bool:
         try:
@@ -1678,17 +1452,14 @@ class Config:
 
         self._initialize_symlink_mappings()
 
-    def _remember_library_configured_paths(
-        self, library_config: Mapping[str, Any]
+    def _remember_settings_configured_paths(
+        self, settings: Mapping[str, Any]
     ) -> None:
-        """Remember the paths the library configures, missing directories included.
+        """Remember configured paths, including currently missing directories.
 
-        In standalone mode the host mock already filters non-existent paths out of
-        ``folder_paths`` (see ``standalone.MockFolderPaths.get_folder_paths``), so
-        the library snapshot is the only record of what the user configured and it
-        wins there. In plugin mode ComfyUI's own list is unfiltered and therefore
-        authoritative — a path removed from the host config must be forgotten, not
-        resurrected from our mirror of it.
+        In standalone mode the host mock filters non-existent paths, making the
+        saved settings authoritative. In plugin mode ComfyUI's unfiltered list is
+        authoritative instead.
         """
         if not standalone_mode:
             return
@@ -1696,9 +1467,7 @@ class Config:
         from .services.settings_manager import get_settings_manager
 
         folder_paths_map = (
-            library_config.get("folder_paths")
-            if isinstance(library_config, Mapping)
-            else None
+            settings.get("folder_paths") if isinstance(settings, Mapping) else None
         )
         if not isinstance(folder_paths_map, Mapping):
             folder_paths_map = getattr(
@@ -2291,7 +2060,7 @@ class Config:
 # Global config instance
 # NOTE: Guard against re-import.  When ServiceRegistry.get_lora_scanner() triggers
 # a fresh import of lora_scanner → config, we must NOT re-execute Config.__init__()
-# (which re-scans all roots, re-registers libraries, etc.).
+# (which re-scans all roots and reloads path settings).
 #
 # Strategy: store the config instance in a dedicated sentinel module
 # ('_lm_config_cache') that is NEVER removed from sys.modules (its key does

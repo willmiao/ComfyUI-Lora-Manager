@@ -11,16 +11,12 @@ from py.utils.cache_paths import CacheType
 
 
 class DummySettings:
-    def __init__(self, settings_file: Path, *, library_name: str = "main", values=None):
+    def __init__(self, settings_file: Path, *, values=None):
         self.settings_file = str(settings_file)
-        self._library_name = library_name
         self._values = values or {}
 
     def get(self, key, default=None):
         return self._values.get(key, default)
-
-    def get_active_library_name(self):
-        return self._library_name
 
 
 def _configure_backup_paths(monkeypatch, root: Path):
@@ -196,8 +192,7 @@ async def test_model_update_service_migrates_legacy_snapshot_db(tmp_path, monkey
         conn.commit()
 
     class DummySettingsManager:
-        def get_active_library_name(self):
-            return "main"
+        pass
 
     monkeypatch.setattr(
         "py.services.model_update_service.resolve_cache_path_with_migration",

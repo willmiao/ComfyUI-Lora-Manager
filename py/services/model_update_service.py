@@ -391,7 +391,7 @@ class ModelUpdateService:
         settings_manager=None,
     ) -> None:
         self._settings = settings_manager or get_settings_manager()
-        self._library_name = self._get_active_library_name()
+        self._library_name = "default"
         self._db_path = db_path or self._resolve_default_path(self._library_name)
         self._ttl_seconds = ttl_seconds
         self._lock = asyncio.Lock()
@@ -399,9 +399,6 @@ class ModelUpdateService:
         self._custom_db_path = db_path is not None
         self._ensure_directory()
         self._initialize_schema()
-
-    def _get_active_library_name(self) -> str:
-        return "default"
 
     def _resolve_default_path(self, library_name: str) -> str:
         env_override = os.environ.get("LORA_MANAGER_MODEL_UPDATE_DB")
@@ -417,7 +414,7 @@ class ModelUpdateService:
         if self._custom_db_path:
             return
 
-        library_name = self._get_active_library_name()
+        library_name = "default"
         new_path = self._resolve_default_path(library_name)
         if new_path == self._db_path:
             return

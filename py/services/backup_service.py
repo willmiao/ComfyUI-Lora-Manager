@@ -170,11 +170,7 @@ class BackupService:
 
     def _build_manifest(self, entries: Iterable[BackupEntry], *, snapshot_type: str) -> dict[str, Any]:
         created_at = datetime.now(timezone.utc).isoformat()
-        active_library = None
-        try:
-            active_library = self._settings.get_active_library_name()
-        except Exception:
-            active_library = None
+        active_library = "default"
 
         return {
             "manifest_version": BACKUP_MANIFEST_VERSION,

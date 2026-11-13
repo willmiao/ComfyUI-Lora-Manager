@@ -408,8 +408,8 @@ class DownloadManager:
                 }
             raise DownloadConfigurationError(error_msg)
 
-        active_library = settings_manager.get_active_library_name()
-        output_dir = self._resolve_output_dir(active_library)
+        library_name = "default"
+        output_dir = self._resolve_output_dir(library_name)
         if not output_dir:
             raise DownloadConfigurationError(
                 "Example images path not configured in settings"
@@ -483,7 +483,7 @@ class DownloadManager:
                         optimize,
                         model_types,
                         delay,
-                        active_library,
+                        library_name,
                         force,
                         model_hashes,
                     )
@@ -674,9 +674,8 @@ class DownloadManager:
                 scanners.append(("other", other_scanner))
 
             # Load progress file to check processed models (async to avoid blocking)
-            settings_manager = get_settings_manager()
-            active_library = settings_manager.get_active_library_name()
-            output_dir = self._resolve_output_dir(active_library)
+            library_name = "default"
+            output_dir = self._resolve_output_dir(library_name)
 
             processed_models: set[str] = set()
             failed_models: set[str] = set()
@@ -721,7 +720,7 @@ class DownloadManager:
             if len(candidate_hashes) <= _BULK_LOOKUP_THRESHOLD or not output_dir:
                 for model_hash in candidate_hashes:
                     model_dir = ExampleImagePathResolver.get_model_folder(
-                        model_hash, active_library
+                        model_hash, library_name
                     )
                     if not _model_directory_has_files(model_dir) or not has_completion_marker(
                         model_dir
@@ -745,7 +744,7 @@ class DownloadManager:
                     if model_hash not in failed_models or model_hash in pending_hashes:
                         continue
                     model_dir = ExampleImagePathResolver.get_model_folder(
-                        model_hash, active_library
+                        model_hash, library_name
                     )
                     if _model_directory_has_files(
                         model_dir
@@ -760,7 +759,7 @@ class DownloadManager:
                     if model_hash not in processed_models or model_hash in pending_hashes:
                         continue
                     model_dir = ExampleImagePathResolver.get_model_folder(
-                        model_hash, active_library
+                        model_hash, library_name
                     )
                     if not (
                         _model_directory_has_files(model_dir)
@@ -1499,8 +1498,8 @@ class DownloadManager:
                 raise DownloadConfigurationError(
                     "Example images path not configured in settings"
                 )
-            active_library = settings_manager.get_active_library_name()
-            output_dir = self._resolve_output_dir(active_library)
+            library_name = "default"
+            output_dir = self._resolve_output_dir(library_name)
             if not output_dir:
                 raise DownloadConfigurationError(
                     "Example images path not configured in settings"
@@ -1526,7 +1525,7 @@ class DownloadManager:
                 optimize,
                 model_types,
                 delay,
-                active_library,
+                library_name,
             )
 
             async with self._state_lock:

@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any, Dict, Iterable, List, Mapping
 
@@ -57,318 +58,200 @@ def _setup_config_environment(monkeypatch: pytest.MonkeyPatch, tmp_path) -> Dict
     return folder_paths
 
 
-def test_save_paths_renames_default_library(monkeypatch: pytest.MonkeyPatch, tmp_path):
-    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+class _FakeSettingsService:
+    def __init__(self, folder_paths, **overrides):
+        self.settings = {
+            "folder_paths": {
+                key: list(value) for key, value in folder_paths.items()
+            },
+            "extra_folder_paths": {},
+            "default_lora_root": "",
+            "default_checkpoint_root": "",
+            "default_unet_root": "",
+            "default_embedding_root": "",
+            **overrides,
+        }
+        self.update_calls = []
+        self.payload = None
 
-    class FakeSettingsService:
-        def __init__(self, default_paths: Dict[str, List[str]]):
-            self._default_paths = default_paths
-            self.rename_calls = []
-            self.delete_calls = []
-            self.upsert_calls = []
-            self._renamed = False
-            self.active_library = "default"
+    def get(self, key, default=None):
+        return self.settings.get(key, default)
 
-        def get_libraries(self):
-            if self._renamed:
-                return {"comfyui": {}}
-            return {
-                "default": {
-                    "folder_paths": {key: list(value) for key, value in self._default_paths.items()},
-                    "default_lora_root": "",
-                    "default_checkpoint_root": "",
-                    "default_embedding_root": "",
-                }
-            }
+    def get_extra_folder_paths(self):
+        return self.settings.get("extra_folder_paths", {})
 
-        def rename_library(self, old_name: str, new_name: str):
-            self.rename_calls.append((old_name, new_name))
-            self._renamed = True
-            if self.active_library == old_name:
-                self.active_library = new_name
+    def is_workflows_enabled(self):
+        return False
 
-        def get_active_library_name(self):
-            return self.active_library
+    def update_folder_settings(self, folder_paths, **default_roots):
+        self.settings["folder_paths"] = {
+            key: list(value) for key, value in folder_paths.items()
+        }
+        self.settings.update(default_roots)
+        self.payload = {
+            "folder_paths": folder_paths,
+            "extra_folder_paths": self.get_extra_folder_paths(),
+            **default_roots,
+        }
+        self.update_calls.append(self.payload)
 
-        def delete_library(self, name: str):  # pragma: no cover - defensive guard
-            self.delete_calls.append(name)
-            raise AssertionError("delete_library should not be invoked in this scenario")
 
-        def upsert_library(self, name: str, **payload):
-            self.upsert_calls.append((name, payload))
-
-    fake_settings = FakeSettingsService(folder_paths)
+def _setup_flat_settings(monkeypatch, folder_paths, **overrides):
+    fake_settings = _FakeSettingsService(folder_paths, **overrides)
     monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    return fake_settings
+
+
+def test_save_paths_updates_flat_settings(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    fake_settings = _setup_flat_settings(monkeypatch, folder_paths)
 
     config_instance = config_module.Config()
 
     assert isinstance(config_instance, config_module.Config)
-    assert fake_settings.rename_calls == [("default", "comfyui")]
-    assert len(fake_settings.upsert_calls) == 1
-
-    name, payload = fake_settings.upsert_calls[0]
-    assert name == "comfyui"
-    
-    # The Config class normalizes paths to use forward slashes for cross-platform compatibility
-    # Convert expected paths to the same format for comparison
-    expected_folder_paths = {
-        key: [path.replace("\\", "/") for path in paths]
-        for key, paths in folder_paths.items()
-    }
-    assert _identity(payload["folder_paths"]) == _identity(expected_folder_paths)
-    assert _identity(payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert _identity(payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
-    assert _identity(payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
-    assert _identity(payload["metadata"]) == _identity({"display_name": "ComfyUI", "source": "comfyui"})
-    assert payload["activate"] is True
+    assert len(fake_settings.update_calls) == 1
+    payload = fake_settings.payload
+    assert _identity(payload["folder_paths"]) == _identity(folder_paths)
+    assert _identity(payload["default_lora_root"]) == _identity(
+        folder_paths["loras"][0]
+    )
+    assert _identity(payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0]
+    )
+    assert _identity(payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0]
+    )
+    assert "libraries" not in fake_settings.settings
+    assert "active_library" not in fake_settings.settings
 
 
-def test_save_paths_logs_warning_when_upsert_fails(
+def test_save_paths_updates_flat_settings_when_paths_drift(
     monkeypatch: pytest.MonkeyPatch, tmp_path, caplog
 ):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class RaisingSettingsService:
-        def __init__(self):
-            self.upsert_attempts = []
-            self.active_library = "comfyui"
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "default_lora_root": "existing",
-                }
+    extra_lora_dir = tmp_path / "extra-loras"
+    extra_lora_dir.mkdir()
+    settings_path = tmp_path / "manager-settings.json"
+    settings_path.write_text(
+        json.dumps(
+            {
+                "folder_paths": {
+                    **folder_paths,
+                    "vae": ["/stored/vae"],
+                },
+                "active_library": None,
+                "extra_folder_paths": {"loras": [str(extra_lora_dir)]},
+                "default_lora_root": str(extra_lora_dir),
+                "default_checkpoint_root": folder_paths["checkpoints"][0],
+                "default_embedding_root": folder_paths["embeddings"][0],
             }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.upsert_attempts.append((name, payload))
-            raise RuntimeError("boom")
-
-    fake_settings = RaisingSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        settings_manager_module,
+        "ensure_settings_file",
+        lambda logger=None: str(settings_path),
+    )
+    manager = settings_manager_module.SettingsManager()
+    monkeypatch.setattr(manager, "_notify_path_settings_changed", lambda: None)
+    monkeypatch.setattr(settings_manager_module, "settings", manager)
 
     with caplog.at_level(logging.WARNING, logger=config_module.logger.name):
         config_instance = config_module.Config()
 
+    assert "Failed to save folder paths" not in caplog.text
+    assert _identity(config_instance.extra_loras_roots) == _identity(
+        [str(extra_lora_dir)]
+    )
+    assert "libraries" not in manager.settings
+    assert "active_library" not in manager.settings
+    assert _identity(manager.get("extra_folder_paths")) == _identity(
+        {"loras": [str(extra_lora_dir)]}
+    )
+    assert _identity(manager.get("default_lora_root")) == _identity(
+        str(extra_lora_dir)
+    )
+
+
+def test_save_paths_logs_warning_when_update_fails(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, caplog
+):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+    fake_settings = _setup_flat_settings(monkeypatch, folder_paths)
+
+    def fail_update(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(fake_settings, "update_folder_settings", fail_update)
+    with caplog.at_level(logging.WARNING, logger=config_module.logger.name):
+        config_instance = config_module.Config()
+
     assert isinstance(config_instance, config_module.Config)
-    assert fake_settings.upsert_attempts and fake_settings.upsert_attempts[0][0] == "comfyui"
     assert "Failed to save folder paths: boom" in caplog.text
 
 
 def test_save_paths_repairs_empty_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "default_lora_root": "",
-                    "default_checkpoint_root": "",
-                    "default_embedding_root": "",
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    fake_settings = _setup_flat_settings(monkeypatch, folder_paths)
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        folder_paths["loras"][0]
+    )
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0]
+    )
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0]
+    )
 
 
 def test_save_paths_repairs_stale_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "default_lora_root": "/stale/loras",
-                    "default_checkpoint_root": "/stale/checkpoints",
-                    "default_embedding_root": "/stale/embeddings",
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        folder_paths,
+        default_lora_root="/stale/loras",
+        default_checkpoint_root="/stale/checkpoints",
+        default_embedding_root="/stale/embeddings",
+    )
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        folder_paths["loras"][0]
+    )
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0]
+    )
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0]
+    )
 
 
 def test_save_paths_keeps_valid_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "default_lora_root": folder_paths["loras"][0],
-                    "default_checkpoint_root": folder_paths["checkpoints"][0],
-                    "default_embedding_root": folder_paths["embeddings"][0],
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        folder_paths,
+        default_lora_root=folder_paths["loras"][0],
+        default_checkpoint_root=folder_paths["checkpoints"][0],
+        default_embedding_root=folder_paths["embeddings"][0],
+    )
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(folder_paths["checkpoints"][0].replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(folder_paths["embeddings"][0].replace("\\", "/"))
-
-
-def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
-    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    placeholder_paths = {
-        "loras": [
-            "C:/path/to/your/loras_folder",
-            "C:/path/to/another/loras_folder",
-        ],
-        "checkpoints": [
-            "C:/path/to/your/checkpoints_folder",
-            "C:/path/to/another/checkpoints_folder",
-        ],
-        "embeddings": [
-            "C:/path/to/your/embeddings_folder",
-            "C:/path/to/another/embeddings_folder",
-        ],
-    }
-
-    class FakeSettingsService:
-        def __init__(self):
-            self.libraries = {
-                "default": {
-                    "folder_paths": placeholder_paths,
-                    "default_lora_root": "",
-                    "default_checkpoint_root": "",
-                    "default_embedding_root": "",
-                }
-            }
-            self.rename_calls = []
-            self.delete_calls = []
-            self.upsert_calls = []
-            self.active_library = "default"
-
-        def get_libraries(self):
-            return self.libraries
-
-        def rename_library(self, old_name: str, new_name: str):
-            self.rename_calls.append((old_name, new_name))
-            self.libraries[new_name] = self.libraries.pop(old_name)
-            if self.active_library == old_name:
-                self.active_library = new_name
-
-        def delete_library(self, name: str):
-            self.delete_calls.append(name)
-            self.libraries.pop(name, None)
-
-        def upsert_library(self, name: str, **payload):
-            self.upsert_calls.append((name, payload))
-            self.libraries[name] = {**payload}
-            if payload.get("activate"):
-                self.active_library = name
-
-        def get_active_library_name(self):
-            return self.active_library
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
-
-    monkeypatch.setattr(
-        config_module,
-        "load_settings_template",
-        lambda: {"folder_paths": placeholder_paths},
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        folder_paths["loras"][0]
     )
-
-    config_instance = config_module.Config()
-
-    assert isinstance(config_instance, config_module.Config)
-    assert fake_settings.rename_calls == [("default", "comfyui")]
-    assert not fake_settings.delete_calls
-    assert len(fake_settings.upsert_calls) == 1
-    assert "default" not in fake_settings.libraries
-    assert set(fake_settings.libraries.keys()) == {"comfyui"}
-
-    name, payload = fake_settings.upsert_calls[0]
-    assert name == "comfyui"
-
-    expected_folder_paths = {
-        key: [path.replace("\\", "/") for path in paths]
-        for key, paths in folder_paths.items()
-    }
-    assert _identity(payload["folder_paths"]) == _identity(expected_folder_paths)
-    assert _identity(payload["default_lora_root"]) == _identity(folder_paths["loras"][0].replace("\\", "/"))
-    assert _identity(payload["default_checkpoint_root"]) == _identity(
-        folder_paths["checkpoints"][0].replace("\\", "/")
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(
+        folder_paths["checkpoints"][0]
     )
-    assert _identity(payload["default_embedding_root"]) == _identity(
-        folder_paths["embeddings"][0].replace("\\", "/")
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(
+        folder_paths["embeddings"][0]
     )
-    assert _identity(payload["metadata"]) == _identity({"display_name": "ComfyUI", "source": "comfyui"})
-    assert payload["activate"] is True
 
 
 def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.MonkeyPatch, tmp_path):
@@ -376,102 +259,64 @@ def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.Monke
     extra_lora_dir = tmp_path / "extra_loras"
     extra_checkpoint_dir = tmp_path / "extra_checkpoints"
     extra_embedding_dir = tmp_path / "extra_embeddings"
-
     for directory in (extra_lora_dir, extra_checkpoint_dir, extra_embedding_dir):
         directory.mkdir()
 
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "extra_folder_paths": {
-                        "loras": [str(extra_lora_dir)],
-                        "checkpoints": [str(extra_checkpoint_dir)],
-                        "embeddings": [str(extra_embedding_dir)],
-                    },
-                    "default_lora_root": str(extra_lora_dir),
-                    "default_checkpoint_root": str(extra_checkpoint_dir),
-                    "default_embedding_root": str(extra_embedding_dir),
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    extra_folder_paths = {
+        "loras": [str(extra_lora_dir)],
+        "checkpoints": [str(extra_checkpoint_dir)],
+        "embeddings": [str(extra_embedding_dir)],
+    }
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        folder_paths,
+        extra_folder_paths=extra_folder_paths,
+        default_lora_root=str(extra_lora_dir),
+        default_checkpoint_root=str(extra_checkpoint_dir),
+        default_embedding_root=str(extra_embedding_dir),
+    )
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["extra_folder_paths"]["loras"]) == _identity([str(extra_lora_dir).replace("\\", "/")])
-    assert _identity(fake_settings.payload["extra_folder_paths"]["checkpoints"]) == _identity([
-        str(extra_checkpoint_dir).replace("\\", "/")
-    ])
-    assert _identity(fake_settings.payload["extra_folder_paths"]["embeddings"]) == _identity([
-        str(extra_embedding_dir).replace("\\", "/")
-    ])
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(str(extra_lora_dir).replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(str(extra_checkpoint_dir).replace("\\", "/"))
-    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(str(extra_embedding_dir).replace("\\", "/"))
-    assert fake_settings.payload["activate"] is True
+    assert _identity(fake_settings.payload["extra_folder_paths"]) == _identity(
+        extra_folder_paths
+    )
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        str(extra_lora_dir)
+    )
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(
+        str(extra_checkpoint_dir)
+    )
+    assert _identity(fake_settings.payload["default_embedding_root"]) == _identity(
+        str(extra_embedding_dir)
+    )
 
 
 def test_save_paths_keeps_default_roots_in_extra_paths_with_windows_slash_mismatch(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "extra_folder_paths": {
-                        "loras": ["U:\\Lora7\\Loras"],
-                        "checkpoints": ["U:\\Lora7\\Models"],
-                        "embeddings": [],
-                    },
-                    "default_lora_root": "U:/Lora7/Loras",
-                    "default_checkpoint_root": "U:/Lora7/Models",
-                    "default_embedding_root": folder_paths["embeddings"][0],
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        folder_paths,
+        extra_folder_paths={
+            "loras": ["U:\\Lora7\\Loras"],
+            "checkpoints": ["U:\\Lora7\\Models"],
+            "embeddings": [],
+        },
+        default_lora_root="U:/Lora7/Loras",
+        default_checkpoint_root="U:/Lora7/Models",
+        default_embedding_root=folder_paths["embeddings"][0],
+    )
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity("U:/Lora7/Loras")
-    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity("U:/Lora7/Models")
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        "U:/Lora7/Loras"
+    )
+    assert _identity(fake_settings.payload["default_checkpoint_root"]) == _identity(
+        "U:/Lora7/Models"
+    )
 
 
 def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_missing(
@@ -487,87 +332,18 @@ def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_miss
         lambda kind: [] if kind == "loras" else [],
     )
 
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {
-                        "loras": [],
-                        "checkpoints": [],
-                        "unet": [],
-                        "embeddings": [],
-                    },
-                    "extra_folder_paths": {
-                        "loras": [str(extra_lora_dir)],
-                    },
-                    "default_lora_root": "",
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    empty_paths = {"loras": [], "checkpoints": [], "unet": [], "embeddings": []}
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        empty_paths,
+        extra_folder_paths={"loras": [str(extra_lora_dir)]},
+    )
 
     config_module.Config()
 
-    assert fake_settings.name == "comfyui"
-    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(str(extra_lora_dir).replace("\\", "/"))
-
-
-def test_save_paths_does_not_activate_comfyui_library_when_another_library_is_active(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-):
-    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        def __init__(self):
-            self.active_library = "studio"
-            self.upsert_calls = []
-
-        def get_libraries(self):
-            return {
-                "studio": {
-                    "folder_paths": {"loras": ["/studio/loras"]},
-                },
-                "comfyui": {
-                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
-                    "default_lora_root": folder_paths["loras"][0],
-                    "default_checkpoint_root": folder_paths["checkpoints"][0],
-                    "default_embedding_root": folder_paths["embeddings"][0],
-                },
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.upsert_calls.append((name, payload))
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
-
-    config_module.Config()
-
-    assert len(fake_settings.upsert_calls) == 1
-    name, payload = fake_settings.upsert_calls[0]
-    assert name == "comfyui"
-    assert payload["activate"] is False
+    assert _identity(fake_settings.payload["default_lora_root"]) == _identity(
+        str(extra_lora_dir)
+    )
 
 
 def test_apply_library_settings_merges_extra_paths(monkeypatch, tmp_path):
@@ -856,85 +632,13 @@ def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_root
     )
 
 
-def test_save_paths_removes_stale_empty_default_when_comfyui_exists(
-    monkeypatch: pytest.MonkeyPatch, tmp_path,
-):
-    """When an empty-shell 'default' library coexists with 'comfyui', the
-    stale 'default' entry should be removed and 'comfyui' activated."""
-    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
-
-    class FakeSettingsService:
-        def __init__(self):
-            # Replicate the user's settings.json: empty default + populated comfyui
-            self.libraries = {
-                "default": {
-                    "folder_paths": {},
-                    "extra_folder_paths": {},
-                    "default_lora_root": "",
-                    "default_checkpoint_root": "",
-                    "default_unet_root": "",
-                    "default_embedding_root": "",
-                    "recipes_path": "",
-                },
-                "comfyui": {
-                    "folder_paths": {
-                        key: list(value) for key, value in folder_paths.items()
-                    },
-                    "default_lora_root": folder_paths["loras"][0],
-                    "default_checkpoint_root": folder_paths["checkpoints"][0],
-                    "default_embedding_root": folder_paths["embeddings"][0],
-                },
-            }
-            # No active_library key — get_active_library_name() falls back to
-            # dict order, returning "default".
-            self.active_library = "default"
-            self.delete_calls: list[str] = []
-            self.upsert_calls: list[tuple[str, dict[str, Any]]] = []
-
-        def get_libraries(self):
-            return dict(self.libraries)
-
-        def delete_library(self, name: str):
-            self.delete_calls.append(name)
-            self.libraries.pop(name, None)
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.upsert_calls.append((name, payload))
-            self.libraries[name] = {**payload}
-            if payload.get("activate"):
-                self.active_library = name
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
-
-    config_module.Config()
-
-    assert fake_settings.delete_calls == ["default"]
-    assert "default" not in fake_settings.libraries
-    assert set(fake_settings.libraries.keys()) == {"comfyui"}
-
-    assert len(fake_settings.upsert_calls) == 1
-    name, payload = fake_settings.upsert_calls[0]
-    assert name == "comfyui"
-    assert payload["activate"] is True
-    assert fake_settings.active_library == "comfyui"
-
-
 def test_save_paths_keeps_configured_root_of_a_switched_off_drive(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):
-    """A root whose directory is missing right now must stay in the library.
+    """A configured but unavailable root must survive startup synchronization.
 
-    `upsert_library(folder_paths=...)` replaces the stored paths, so persisting
-    the existence-filtered live list would erase a drive that happened to be
-    switched off when ComfyUI started. A path the host no longer configures must
-    still be dropped.
+    Persisting the existence-filtered live list would erase a switched-off drive.
+    A path the host no longer configures must still be dropped.
     """
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
     readable = folder_paths["loras"][0]
@@ -944,36 +648,17 @@ def test_save_paths_keeps_configured_root_of_a_switched_off_drive(
     # the old location (that one only survives in the stored library paths).
     folder_paths["loras"] = [switched_off, readable]
 
-    class FakeSettingsService:
-        active_library = "comfyui"
-        name: str = ""
-        payload: Dict[str, Any] = {}
-
-        def get_libraries(self):
-            return {
-                "comfyui": {
-                    "folder_paths": {
-                        "loras": [removed_by_user, readable],
-                        "checkpoints": [],
-                        "unet": [],
-                        "embeddings": [],
-                    },
-                    "default_lora_root": switched_off,
-                }
-            }
-
-        def rename_library(self, *_):
-            raise AssertionError("rename_library should not be invoked")
-
-        def get_active_library_name(self):
-            return self.active_library
-
-        def upsert_library(self, name: str, **payload):
-            self.name = name
-            self.payload = payload
-
-    fake_settings = FakeSettingsService()
-    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+    stored_paths = {
+        "loras": [removed_by_user, readable],
+        "checkpoints": [],
+        "unet": [],
+        "embeddings": [],
+    }
+    fake_settings = _setup_flat_settings(
+        monkeypatch,
+        stored_paths,
+        default_lora_root=switched_off,
+    )
 
     config_instance = config_module.Config()
 
@@ -1018,29 +703,11 @@ def _stub_persistent_cache(monkeypatch: pytest.MonkeyPatch, cache) -> None:
     )
 
 
-class _LibrarySettingsService:
-    """Minimal settings service recording what the startup sync persists."""
-
-    active_library = "comfyui"
-
-    def __init__(self, library: Dict[str, Any]):
-        self._library = library
-        self.payload: Dict[str, Any] = {}
-
-    def get_libraries(self):
-        return {"comfyui": self._library}
-
-    def rename_library(self, *_):  # pragma: no cover - defensive guard
-        raise AssertionError("rename_library should not be invoked")
-
-    def delete_library(self, *_):  # pragma: no cover - defensive guard
-        raise AssertionError("delete_library should not be invoked")
-
-    def get_active_library_name(self):
-        return self.active_library
-
-    def upsert_library(self, name: str, **payload):
-        self.payload = payload
+class _LibrarySettingsService(_FakeSettingsService):
+    def __init__(self, stored_settings: Dict[str, Any]):
+        stored_settings = dict(stored_settings)
+        folder_paths = stored_settings.pop("folder_paths", {})
+        super().__init__(folder_paths, **stored_settings)
 
 
 def test_save_paths_drops_registered_directories_that_never_existed(
@@ -1158,7 +825,7 @@ def test_save_paths_keeps_the_root_a_default_setting_points_at(
 
     Dropping it would let the next boot "repair" the default onto another root and
     silently retarget downloads. ``default_unet_root`` is only known from the
-    stored library (the sync resolves the lora/checkpoint/embedding ones itself),
+    stored settings (the sync resolves the lora/checkpoint/embedding ones itself),
     so this covers the fallback to the stored value.
     """
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
