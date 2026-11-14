@@ -1587,9 +1587,34 @@ body.lm-lora-reordering * {
 .lm-info-card__strength {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   margin: 6px 0;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.lm-info-card__strength-label {
+  flex: 1;
+  min-width: 0;
+  user-select: none;
+}
+
+.lm-info-card__strength-grip {
+  flex: none;
+  color: var(--lm-fg-subtle);
+  font-size: 12px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.lm-info-card__strength:hover .lm-info-card__strength-grip,
+.lm-info-card__strength.is-dragging .lm-info-card__strength-grip {
+  color: var(--lm-accent-text);
+}
+
+.lm-info-card__strength.is-dragging .lm-info-card__number {
+  border-color: var(--lm-accent);
+  box-shadow: 0 0 0 2px var(--lm-accent-soft);
 }
 
 .lm-info-card__number {
@@ -1599,6 +1624,7 @@ body.lm-lora-reordering * {
   background: var(--lm-surface);
   border: 1px solid var(--lm-border-soft);
   border-radius: 5px;
+  cursor: text;
 }
 
 .lm-info-card__usage,

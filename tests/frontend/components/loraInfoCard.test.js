@@ -49,9 +49,16 @@ vi.mock(STYLES_MODULE, () => ({ ensureLmStyles: vi.fn() }));
 vi.mock(QUICK_PANEL_MODULE, () => quickMock);
 vi.mock(MEDIA_MODULE, () => ({ isVideoPreviewUrl: vi.fn(() => false) }));
 
-function makeWidget() {
+function makeWidget(entryOverrides = {}) {
   return {
-    value: [{ name: 'astral', strength: '0.50', clipStrength: '0.50', active: true, expanded: false }],
+    value: [{
+      name: 'astral',
+      strength: '0.50',
+      clipStrength: '0.50',
+      active: true,
+      expanded: false,
+      ...entryOverrides,
+    }],
     callback: vi.fn(),
   };
 }
@@ -114,6 +121,86 @@ describe('LoRA info card', () => {
 
     expect(widget.value[0]).toMatchObject({ strength: '0.75', clipStrength: '0.75' });
     expect(widget.callback).toHaveBeenCalledOnce();
+  });
+
+  it('adjusts strength by dragging horizontally on the row', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const widget = makeWidget();
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget,
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const row = card.tabContent.querySelector('.lm-info-card__strength');
+    const input = row.querySelector('input');
+
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0, pointerId: 11 }));
+    row.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 150, pointerId: 11 }));
+
+    expect(widget.value[0].strength).toBe('0.55');
+    expect(input.value).toBe('0.55');
+    expect(row.classList.contains('is-dragging')).toBe(true);
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(true);
+    expect(widget.callback).not.toHaveBeenCalled();
+
+    row.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 150, pointerId: 11 }));
+
+    expect(widget.callback).toHaveBeenCalledOnce();
+    expect(row.classList.contains('is-dragging')).toBe(false);
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
+    expect(widget.__dragActive).toBe(false);
+    expect(card.statusElement.textContent).toBe('Updated strength');
+    card.close();
+  });
+
+  it('adjusts clip strength independently when the clip row is visible', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const widget = makeWidget({ expanded: true, clipStrength: '0.40' });
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget,
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const rows = card.tabContent.querySelectorAll('.lm-info-card__strength');
+    expect(rows).toHaveLength(2);
+    const clipRow = rows[1];
+
+    clipRow.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0, pointerId: 12 }));
+    clipRow.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 200, pointerId: 12 }));
+    clipRow.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 200, pointerId: 12 }));
+
+    expect(widget.value[0].strength).toBe('0.50');
+    expect(widget.value[0].clipStrength).toBe('0.50');
+    expect(widget.callback).toHaveBeenCalledOnce();
+    card.close();
+  });
+
+  it('does not start a strength drag from the number input', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const widget = makeWidget();
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget,
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const row = card.tabContent.querySelector('.lm-info-card__strength');
+    const input = row.querySelector('input');
+    input.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0, pointerId: 13 }));
+    row.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 200, pointerId: 13 }));
+
+    expect(widget.value[0].strength).toBe('0.50');
+    expect(widget.callback).not.toHaveBeenCalled();
+    expect(row.classList.contains('is-dragging')).toBe(false);
+    card.close();
   });
 
   it('positions the card beside the whole node with a comfortable gap', async () => {

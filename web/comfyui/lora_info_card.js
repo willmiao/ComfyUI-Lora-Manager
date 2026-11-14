@@ -88,7 +88,7 @@ export function computeInfoCardPosition(anchor, panel, viewport, gap = PANEL_GAP
   };
 }
 
-export function updateLoraStrength(widget, loraName, field, rawValue) {
+export function updateLoraStrength(widget, loraName, field, rawValue, { commit = true } = {}) {
   const value = Number(rawValue);
   if (!Number.isFinite(value)) return false;
   const loras = Array.isArray(widget?.value) ? widget.value.slice() : [];
@@ -98,7 +98,7 @@ export function updateLoraStrength(widget, loraName, field, rawValue) {
   if (field === "strength") syncClipStrengthIfCollapsed(entry);
   loras[index] = entry;
   widget.value = loras;
-  widget.callback?.(loras);
+  if (commit) widget.callback?.(loras);
   return true;
 }
 
@@ -462,12 +462,18 @@ export class LoraInfoCard {
   }
 
   strengthInput(label, field, value) {
-    const row = el("label", "lm-info-card__strength");
-    row.appendChild(el("span", "", label));
+    const row = el("div", "lm-info-card__strength");
+    row.appendChild(el("span", "lm-info-card__strength-label", label));
+    const grip = el("span", "lm-info-card__strength-grip", "↔");
+    grip.title = "Drag horizontally to adjust";
+    grip.setAttribute("aria-hidden", "true");
+    row.appendChild(grip);
+
     const input = el("input", "lm-info-card__number");
     input.type = "number";
     input.step = "0.05";
     input.value = Number(value ?? 1).toFixed(2);
+    input.setAttribute("aria-label", label);
     input.addEventListener("change", () => {
       if (!updateLoraStrength(this.widget, this.loraName, field, input.value)) {
         this.setStatus("The LoRA row no longer exists");
@@ -477,7 +483,91 @@ export class LoraInfoCard {
       this.setStatus(`Updated ${label.toLowerCase()}`);
     });
     row.appendChild(input);
+    this.bindStrengthDrag(row, input, field, label);
     return row;
+  }
+
+  /**
+   * Horizontal drag on the row adjusts the value live, mirroring the strength
+   * drag on a LoRA widget entry: 0.001 per pixel, clamped to [-10, 10], with
+   * the widget callback committed once on release.
+   */
+  bindStrengthDrag(row, input, field, label) {
+    const SENSITIVITY = 0.001;
+    const DRAG_THRESHOLD = 3;
+    const MIN_STRENGTH = -10;
+    const MAX_STRENGTH = 10;
+    let pointerId = null;
+    let startX = 0;
+    let startValue = 0;
+    let moved = false;
+
+    const reset = () => {
+      if (pointerId === null) return;
+      const activePointerId = pointerId;
+      const wasMoved = moved;
+      pointerId = null;
+      moved = false;
+      try { row.releasePointerCapture(activePointerId); } catch { /* already released */ }
+      row.classList.remove("is-dragging");
+      document.body.classList.remove("lm-lora-strength-dragging");
+      try {
+        if (wasMoved) {
+          // Flush the final value once the drag is over: re-enabling the widget
+          // render lets it repaint its own row, and the callback lets the node
+          // persist the change.
+          this.widget.__dragActive = false;
+          this.widget.value = this.widget.value;
+          this.widget.callback?.(this.widget.value);
+          this.setStatus(`Updated ${label.toLowerCase()}`);
+        }
+      } finally {
+        this.widget.__dragActive = false;
+      }
+    };
+
+    row.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target.closest("input")) return;
+      const entry = this.currentEntry();
+      if (!entry) {
+        this.setStatus("The LoRA row no longer exists");
+        return;
+      }
+      const currentValue = Number(entry[field] ?? 1);
+      if (!Number.isFinite(currentValue)) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startValue = currentValue;
+      moved = false;
+      this.widget.__dragActive = true;
+      try { row.setPointerCapture(event.pointerId); } catch { /* older frontend */ }
+      event.preventDefault();
+    });
+
+    row.addEventListener("pointermove", (event) => {
+      if (pointerId === null || event.pointerId !== pointerId) return;
+      const deltaX = event.clientX - startX;
+      if (!moved && Math.abs(deltaX) < DRAG_THRESHOLD) return;
+      if (!moved) {
+        moved = true;
+        row.classList.add("is-dragging");
+        document.body.classList.add("lm-lora-strength-dragging");
+      }
+      event.preventDefault();
+      const nextValue = Math.max(
+        MIN_STRENGTH,
+        Math.min(MAX_STRENGTH, Number((startValue + deltaX * SENSITIVITY).toFixed(2)))
+      );
+      if (!updateLoraStrength(this.widget, this.loraName, field, nextValue, { commit: false })) {
+        reset();
+        return;
+      }
+      input.value = nextValue.toFixed(2);
+    });
+
+    row.addEventListener("pointerup", reset);
+    row.addEventListener("pointercancel", reset);
+    row.addEventListener("lostpointercapture", reset);
   }
 
   notesDirty() {
