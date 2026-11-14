@@ -32,6 +32,20 @@ at panel level rather than only while the search field is focused.
 requests reuse that tab, and the manager handles `hashchange` so a reused tab
 opens the requested model modal without reloading.
 
+## Active filters
+
+The toolbar's **Filters** toggle narrows both the folder tree and the search
+results to the LoRA Manager page's active filters (folder, base models, tags,
+auto tags, model types, and license flags). Clicking it applies or clears the
+scope immediately and reloads both views.
+
+The toggle is remembered per browser in `localStorage`
+(`lm:quick-panel:active-filters`, off by default). The filters themselves are
+read from the backend, where the manager page mirrors its filter state, so the
+picker applies them correctly even when ComfyUI and the manager page run on
+different origins. The button shows the number of restrictions in effect and
+the status bar reports when the manager page has no active filters to apply.
+
 ## Growth strategy
 
 Do not add one top-bar button per picker. Top-bar space is shared with ComfyUI

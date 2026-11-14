@@ -95,3 +95,72 @@ describe('LoRA canvas folder API', () => {
     }
   });
 });
+
+describe('LoRA canvas active filters', () => {
+  it('adds the active-filters flag to searches on demand', async () => {
+    fetchApiMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, items: [] }),
+    });
+    const { searchLoraLibrary } = await import('../../../web/comfyui/lora_canvas_api.js');
+
+    await searchLoraLibrary('astral', 30);
+    expect(fetchApiMock.mock.calls.at(-1)[0]).not.toContain('use_active_filters');
+
+    await searchLoraLibrary('astral', 30, { useActiveFilters: true });
+    const url = fetchApiMock.mock.calls.at(-1)[0];
+    expect(url).toContain('use_active_filters=true');
+    expect(url).toContain('search=astral');
+    expect(url).toContain('limit=30');
+  });
+
+  it('requests a filtered folder index when asked', async () => {
+    fetchApiMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, root: { count: 0, folders: {}, items: [] } }),
+    });
+    const { fetchLoraFolderIndex } = await import('../../../web/comfyui/lora_canvas_api.js');
+
+    await fetchLoraFolderIndex();
+    expect(fetchApiMock.mock.calls.at(-1)[0]).toBe('/lm/loras/folder-index');
+
+    await fetchLoraFolderIndex({ useActiveFilters: true });
+    expect(fetchApiMock.mock.calls.at(-1)[0]).toBe(
+      '/lm/loras/folder-index?use_active_filters=true',
+    );
+  });
+
+  it('reads the stored active-filter snapshot', async () => {
+    fetchApiMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, filters: { activeFolder: 'characters' } }),
+    });
+    const { fetchActiveFilters } = await import('../../../web/comfyui/lora_canvas_api.js');
+
+    const snapshot = await fetchActiveFilters();
+
+    expect(fetchApiMock.mock.calls.at(-1)[0]).toBe('/lm/loras/active-filters');
+    expect(snapshot).toEqual({ activeFolder: 'characters' });
+  });
+
+  it('counts filters the same way the manager page badge does', async () => {
+    const { countActiveFilters } = await import('../../../web/comfyui/lora_canvas_api.js');
+
+    expect(countActiveFilters(null)).toBe(0);
+    expect(countActiveFilters({ activeFolder: null, recursiveSearch: true, filters: null })).toBe(0);
+    expect(countActiveFilters({ activeFolder: null, recursiveSearch: false, filters: null })).toBe(1);
+    expect(
+      countActiveFilters({
+        activeFolder: 'characters',
+        recursiveSearch: true,
+        filters: {
+          baseModel: ['Flux', '__EMPTY_WILDCARD_RESULT__'],
+          tags: { anime: 'include', style: 'exclude' },
+          autoTags: { character: 'include' },
+          modelTypes: ['LoCon'],
+          license: { noCredit: 'include' },
+        },
+      }),
+    ).toBe(7);
+  });
+});

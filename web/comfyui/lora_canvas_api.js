@@ -9,13 +9,14 @@ async function readJson(response, fallbackMessage) {
   return data;
 }
 
-export async function searchLoraLibrary(query = "", limit = 50) {
+export async function searchLoraLibrary(query = "", limit = 50, { useActiveFilters = false } = {}) {
   const params = new URLSearchParams({
     search: query,
     limit: String(limit),
     match_model_name: "true",
     include_model_name: "true",
   });
+  if (useActiveFilters) params.set("use_active_filters", "true");
   const data = await readJson(
     await api.fetchApi(`/lm/loras/relative-paths?${params}`),
     "Failed to search the LoRA library",
@@ -37,9 +38,10 @@ export async function fetchLoraDetails(name) {
   return data.metadata || {};
 }
 
-export async function fetchLoraFolderIndex() {
+export async function fetchLoraFolderIndex({ useActiveFilters = false } = {}) {
+  const query = useActiveFilters ? "?use_active_filters=true" : "";
   const data = await readJson(
-    await api.fetchApi("/lm/loras/folder-index"),
+    await api.fetchApi(`/lm/loras/folder-index${query}`),
     "Failed to load LoRA folders",
   );
   const normalizeNode = (node) => ({
@@ -53,6 +55,49 @@ export async function fetchLoraFolderIndex() {
     ),
   });
   return normalizeNode(data.root);
+}
+
+export async function fetchActiveFilters() {
+  const data = await readJson(
+    await api.fetchApi("/lm/loras/active-filters"),
+    "Failed to load active filters",
+  );
+  return data.filters || null;
+}
+
+const EMPTY_WILDCARD_MARKER = "__EMPTY_WILDCARD_RESULT__";
+
+/**
+ * Count the restrictions carried by the manager page's active-filter snapshot.
+ *
+ * Mirrors the page's badge for tags/base models/model types/licenses, and also
+ * counts the folder scope: for the picker a pinned folder (or a non-recursive
+ * root scope) narrows the library just like a filter does.
+ *
+ * @param {object|null} snapshot
+ * @returns {number}
+ */
+export function countActiveFilters(snapshot) {
+  const filters = snapshot?.filters || {};
+  const countKeys = (value) => (
+    value && typeof value === "object" ? Object.keys(value).length : 0
+  );
+  const baseModels = Array.isArray(filters.baseModel)
+    ? filters.baseModel.filter((name) => name && name !== EMPTY_WILDCARD_MARKER)
+    : [];
+  const modelTypes = Array.isArray(filters.modelTypes) ? filters.modelTypes.length : 0;
+  const activeFolder = snapshot?.activeFolder;
+  const hasScope = Boolean(activeFolder && activeFolder !== "null")
+    || snapshot?.recursiveSearch === false;
+  const scope = hasScope ? 1 : 0;
+  return (
+    baseModels.length
+    + countKeys(filters.tags)
+    + countKeys(filters.autoTags)
+    + countKeys(filters.license)
+    + modelTypes
+    + scope
+  );
 }
 
 export async function refreshLoraMetadata(filePath) {

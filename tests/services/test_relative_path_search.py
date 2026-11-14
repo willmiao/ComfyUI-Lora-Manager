@@ -555,3 +555,65 @@ async def test_title_matching_honours_exclude_tokens():
         )
         == []
     )
+
+
+@pytest.mark.asyncio
+async def test_active_filtered_models_reuse_the_manager_page_filters():
+    from py.services.active_filters_store import ActiveFiltersStore
+
+    ActiveFiltersStore.reset_instance()
+    try:
+        ActiveFiltersStore.get_instance().set_filters(
+            "lora",
+            {
+                "activeFolder": "characters",
+                "recursiveSearch": True,
+                "filters": {"baseModel": ["Flux"]},
+            },
+        )
+        scanner = FakeScanner(
+            [
+                {
+                    "file_name": "astral.safetensors",
+                    "folder": "characters",
+                    "base_model": "Flux",
+                },
+                {
+                    "file_name": "legacy.safetensors",
+                    "folder": "characters",
+                    "base_model": "SD 1.5",
+                },
+                {
+                    "file_name": "styles.safetensors",
+                    "folder": "styles",
+                    "base_model": "Flux",
+                },
+            ],
+            ["/models"],
+        )
+        service = DummyService("lora", scanner, BaseModelMetadata)
+
+        models = await service.get_active_filtered_models()
+
+        assert [model["file_name"] for model in models] == ["astral.safetensors"]
+    finally:
+        ActiveFiltersStore.reset_instance()
+
+
+@pytest.mark.asyncio
+async def test_active_filtered_models_without_stored_state_returns_everything():
+    from py.services.active_filters_store import ActiveFiltersStore
+
+    ActiveFiltersStore.reset_instance()
+    scanner = FakeScanner(
+        [
+            {"file_name": "one.safetensors", "folder": "a", "base_model": "Flux"},
+            {"file_name": "two.safetensors", "folder": "b", "base_model": "SD 1.5"},
+        ],
+        ["/models"],
+    )
+    service = DummyService("lora", scanner, BaseModelMetadata)
+
+    models = await service.get_active_filtered_models()
+
+    assert [model["file_name"] for model in models] == ["one.safetensors", "two.safetensors"]

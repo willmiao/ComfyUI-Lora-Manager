@@ -13,6 +13,13 @@ from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
 
+_TRUTHY_VALUES = {"1", "true", "yes", "on"}
+
+
+def _is_truthy(value: Any) -> bool:
+    """Parse an optional boolean query-string flag."""
+    return str(value or "").strip().lower() in _TRUTHY_VALUES
+
 
 def _build_lora_folder_index(models):
     root = {"count": 0, "folders": {}, "items": []}
@@ -212,11 +219,20 @@ class LoraRoutes(BaseModelRoutes):
             logger.error(f"Error getting cached lora details: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
-    async def get_lora_folder_index(self, _request: web.Request) -> web.Response:
-        """Return the complete library-relative folder tree from the local cache."""
+    async def get_lora_folder_index(self, request: web.Request) -> web.Response:
+        """Return the complete library-relative folder tree from the local cache.
+
+        With ``use_active_filters=true`` the tree is built from the subset
+        matching the LoRA Manager page's active filters (synced server-side),
+        so the Quick Pick folder view mirrors the page.
+        """
         try:
-            cache = await self.service.scanner.get_cached_data()
-            root = _build_lora_folder_index(cache.raw_data)
+            if _is_truthy(request.query.get("use_active_filters")):
+                models = await self.service.get_active_filtered_models()
+            else:
+                cache = await self.service.scanner.get_cached_data()
+                models = cache.raw_data
+            root = _build_lora_folder_index(models)
             return web.json_response({"success": True, "root": root})
         except Exception as e:
             logger.error(f"Error building lora folder index: {e}", exc_info=True)

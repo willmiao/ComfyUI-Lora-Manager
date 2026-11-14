@@ -25,6 +25,17 @@ class StubLoraService:
         self.details = {}
         self.full_metadata = {}
         self.model_descriptions = {}
+        self.cache_models = []
+        self.filtered_models = []
+        self.active_filter_calls = 0
+        self.scanner = self
+
+    async def get_cached_data(self):
+        return SimpleNamespace(raw_data=list(self.cache_models))
+
+    async def get_active_filtered_models(self):
+        self.active_filter_calls += 1
+        return list(self.filtered_models)
 
     async def get_model_info_by_name(self, name):
         return self.details.get(name)
@@ -165,6 +176,44 @@ def test_build_lora_folder_index_counts_nested_items():
     assert root["folders"]["characters"]["folders"]["portraits"]["count"] == 1
     assert root["folders"]["characters"]["items"][0]["relative_path"] == "characters/two.safetensors"
     assert root["items"][0]["relative_path"] == "root.safetensors"
+
+
+async def test_folder_index_uses_active_filters_when_requested(routes):
+    routes.service.cache_models = [
+        {"file_name": "unfiltered.safetensors", "folder": "", "model_name": "Unfiltered"},
+    ]
+    routes.service.filtered_models = [
+        {"file_name": "kept.safetensors", "folder": "characters", "model_name": "Kept"},
+    ]
+
+    response = await routes.get_lora_folder_index(
+        DummyRequest(query={"use_active_filters": "true"})
+    )
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert payload["root"]["count"] == 1
+    assert (
+        payload["root"]["folders"]["characters"]["items"][0]["relative_path"]
+        == "characters/kept.safetensors"
+    )
+    assert routes.service.active_filter_calls == 1
+
+
+async def test_folder_index_ignores_active_filters_without_flag(routes):
+    routes.service.cache_models = [
+        {"file_name": "all.safetensors", "folder": "", "model_name": "All"},
+    ]
+    routes.service.filtered_models = [
+        {"file_name": "none.safetensors", "folder": "", "model_name": "None"},
+    ]
+
+    response = await routes.get_lora_folder_index(DummyRequest())
+    payload = json.loads(response.text)
+
+    assert payload["root"]["count"] == 1
+    assert payload["root"]["items"][0]["relative_path"] == "all.safetensors"
+    assert routes.service.active_filter_calls == 0
 
 
 async def test_get_lora_details_merges_full_sidecar_descriptions(routes):

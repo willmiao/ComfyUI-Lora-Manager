@@ -6,6 +6,8 @@ import { applyLoraSelection, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
 import { isVideoPreviewUrl } from "./mediaTypes.js";
 import {
+  countActiveFilters,
+  fetchActiveFilters,
   fetchLoraDetails,
   fetchLoraFolderIndex,
   openLoraManager,
@@ -16,6 +18,7 @@ import {
 const COMMAND_ID = "LoraManager.ToggleQuickPanel";
 const RECENT_KEY = "lm:quick-panel:recent-loras";
 const VIEW_KEY = "lm:quick-panel:view-mode";
+const ACTIVE_FILTERS_KEY = "lm:quick-panel:active-filters";
 let activeQuickPanel = null;
 
 function el(tag, className, text) {
@@ -90,6 +93,11 @@ export class LoraQuickPanel {
     this.panel = null;
     this.viewMode = "folders";
     try { this.viewMode = localStorage.getItem(VIEW_KEY) === "flat" ? "flat" : "folders"; } catch { /* default */ }
+    this.activeFilters = false;
+    try { this.activeFilters = localStorage.getItem(ACTIVE_FILTERS_KEY) === "1"; } catch { /* default */ }
+    this.activeFilterSnapshot = null;
+    this.activeFilterCount = 0;
+    this.filterSequence = 0;
     this.folderIndex = null;
     this.folderError = "";
     this.currentFolder = "";
@@ -113,6 +121,7 @@ export class LoraQuickPanel {
       },
     });
     this.build();
+    this.loadActiveFilters();
     this.loadFolderIndex();
     this.loadSearch();
     setTimeout(() => this.searchInput?.focus(), 20);
@@ -156,6 +165,10 @@ export class LoraQuickPanel {
       viewSwitch.appendChild(button);
     }
 
+    this.filterButton = el("button", "lm-quick__filter", "Filters");
+    this.filterButton.type = "button";
+    this.filterButton.addEventListener("click", () => this.toggleActiveFilters());
+
     this.recentButton = el("button", "lm-quick__filter", "Recent");
     this.recentButton.type = "button";
     this.recentButton.title = "Show recently applied LoRAs";
@@ -175,7 +188,7 @@ export class LoraQuickPanel {
       this.panel.setContext(this.targetNode ? `Add to ${nodeLabel(this.targetNode)}` : "No compatible node");
       this.renderDetail();
     });
-    toolbar.append(this.searchInput, viewSwitch, this.recentButton, this.targetSelect);
+    toolbar.append(this.searchInput, viewSwitch, this.filterButton, this.recentButton, this.targetSelect);
 
     const content = el("div", "lm-quick__content");
     this.resultsElement = el("div", "lm-quick__results");
@@ -188,6 +201,7 @@ export class LoraQuickPanel {
     const hints = el("span", "lm-quick__hints", "↑↓ Navigate · ←→ Folder · Enter Open/Apply · Shift+Enter Keep open · Esc Close");
     footer.append(this.statusElement, hints);
     this.renderTargets();
+    this.renderFilterButton();
     this.renderDetail();
   }
 
@@ -217,12 +231,15 @@ export class LoraQuickPanel {
     const query = this.searchInput.value.trim();
     this.setStatus(query ? `Searching “${query}”…` : "Loading library…");
     try {
-      const items = await searchLoraLibrary(query, 60);
+      const items = await searchLoraLibrary(query, 60, { useActiveFilters: this.activeFilters });
       if (sequence !== this.searchSequence || !this.panel?.isOpen()) return;
       this.items = items;
       this.selectedIndex = items.length ? 0 : -1;
       this.renderResults();
-      this.setStatus(items.length ? `${items.length} result${items.length === 1 ? "" : "s"}` : "No matching LoRAs");
+      const scope = this.activeFilters ? " within active filters" : "";
+      this.setStatus(items.length
+        ? `${items.length} result${items.length === 1 ? "" : "s"}${scope}`
+        : `No matching LoRAs${scope}`);
     } catch (error) {
       if (sequence !== this.searchSequence) return;
       this.items = [];
@@ -235,7 +252,7 @@ export class LoraQuickPanel {
   async loadFolderIndex() {
     const sequence = ++this.folderSequence;
     try {
-      const root = await fetchLoraFolderIndex();
+      const root = await fetchLoraFolderIndex({ useActiveFilters: this.activeFilters });
       if (sequence !== this.folderSequence || !this.panel?.isOpen()) return;
       this.folderIndex = root;
       this.folderError = "";
@@ -244,6 +261,51 @@ export class LoraQuickPanel {
       if (sequence !== this.folderSequence) return;
       this.folderError = error.message;
       this.renderResults();
+    }
+  }
+
+  /**
+   * Refresh the manager page's active-filter snapshot and reflect it on the
+   * Filters toggle. The filters themselves live server-side (the page mirrors
+   * them), so this works even when ComfyUI and the page are separate origins.
+   */
+  async loadActiveFilters() {
+    const sequence = ++this.filterSequence;
+    try {
+      const snapshot = await fetchActiveFilters();
+      if (sequence !== this.filterSequence || !this.panel?.isOpen()) return;
+      this.activeFilterSnapshot = snapshot;
+    } catch {
+      if (sequence !== this.filterSequence || !this.panel?.isOpen()) return;
+      this.activeFilterSnapshot = null;
+    }
+    this.activeFilterCount = countActiveFilters(this.activeFilterSnapshot);
+    this.renderFilterButton();
+  }
+
+  renderFilterButton() {
+    if (!this.filterButton) return;
+    const count = this.activeFilterCount;
+    this.filterButton.textContent = count ? `Filters · ${count}` : "Filters";
+    this.filterButton.classList.toggle("is-active", this.activeFilters);
+    this.filterButton.setAttribute("aria-pressed", String(this.activeFilters));
+    this.filterButton.title = this.activeFilters
+      ? `Showing LoRAs inside the LoRA Manager page's active filters${count ? ` (${count})` : ""}. Click to show the whole library.`
+      : count
+        ? `Filter by the LoRA Manager page's active filters (${count}).`
+        : "No active filters are set on the LoRA Manager page.";
+  }
+
+  async toggleActiveFilters() {
+    this.activeFilters = !this.activeFilters;
+    try { localStorage.setItem(ACTIVE_FILTERS_KEY, this.activeFilters ? "1" : "0"); } catch { /* cosmetic only */ }
+    this.renderFilterButton();
+    this.folderIndex = null;
+    this.selectedIndex = 0;
+    await this.loadActiveFilters();
+    await Promise.all([this.loadFolderIndex(), this.loadSearch()]);
+    if (this.activeFilters && !this.activeFilterCount) {
+      this.setStatus("No active filters are set on the LoRA Manager page.");
     }
   }
 

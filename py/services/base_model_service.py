@@ -1461,6 +1461,77 @@ class BaseModelService(ABC):
             relative_path, include_terms
         )
 
+    async def _apply_model_filters(
+        self,
+        data: List[Dict[str, Any]],
+        *,
+        folder: Optional[str] = None,
+        folder_include: Optional[list[str]] = None,
+        folder_exclude: Optional[list[str]] = None,
+        base_models: Optional[list[str]] = None,
+        model_types: Optional[list[str]] = None,
+        tags: Optional[dict[str, str]] = None,
+        auto_tags: Optional[dict[str, str]] = None,
+        tag_logic: str = "any",
+        credit_required: Optional[bool] = None,
+        allow_selling_generated_content: Optional[bool] = None,
+        recursive: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Apply the list-endpoint filter pipeline to raw cache entries.
+
+        Shared by the autocomplete search and the LoRA folder index so the
+        ComfyUI side filters exactly like the manager page does.
+        """
+        # Auto-tags are not stored in the scanner cache — they are computed
+        # on the fly. Pre-compute them only when an auto-tag filter is
+        # active to avoid mutating cache entries unnecessarily.
+        if auto_tags:
+            from .auto_tag_service import extract_auto_tags
+
+            for item in data:
+                if not item.get("auto_tags"):
+                    item["auto_tags"] = extract_auto_tags(item)
+
+        criteria = FilterCriteria(
+            folder=folder,
+            folder_include=folder_include,
+            folder_exclude=folder_exclude,
+            base_models=base_models,
+            model_types=model_types,
+            tags=tags,
+            auto_tags=auto_tags,
+            search_options={"recursive": recursive},
+            tag_logic=tag_logic,
+        )
+        filtered = self.filter_set.apply(data, criteria)
+        if credit_required is not None:
+            filtered = await self._apply_credit_required_filter(
+                filtered, credit_required
+            )
+        if allow_selling_generated_content is not None:
+            filtered = await self._apply_allow_selling_filter(
+                filtered, allow_selling_generated_content
+            )
+        return filtered
+
+    async def get_active_filtered_models(self) -> List[Dict[str, Any]]:
+        """Return cache entries narrowed by the manager page's active filters.
+
+        The manager page mirrors its filter state to the backend, so the
+        folder index can be built from the same subset the page lists without
+        trusting any client-side storage.
+        """
+        from .active_filters_store import (
+            ActiveFiltersStore,
+            active_filters_to_query_kwargs,
+        )
+
+        cache = await self.scanner.get_cached_data()
+        stored = ActiveFiltersStore.get_instance().get_filters(self.model_type)
+        return await self._apply_model_filters(
+            cache.raw_data, **active_filters_to_query_kwargs(stored)
+        )
+
     async def search_relative_paths(
         self,
         search_term: str,
@@ -1529,17 +1600,8 @@ class BaseModelService(ABC):
             ]
         )
         if has_filters:
-            # Auto-tags are not stored in the scanner cache — they are computed
-            # on the fly. Pre-compute them only when an auto-tag filter is
-            # active to avoid mutating cache entries unnecessarily.
-            if auto_tags:
-                from .auto_tag_service import extract_auto_tags
-
-                for item in data:
-                    if not item.get("auto_tags"):
-                        item["auto_tags"] = extract_auto_tags(item)
-
-            criteria = FilterCriteria(
+            data = await self._apply_model_filters(
+                data,
                 folder=folder,
                 folder_include=folder_include,
                 folder_exclude=folder_exclude,
@@ -1547,18 +1609,11 @@ class BaseModelService(ABC):
                 model_types=model_types,
                 tags=tags,
                 auto_tags=auto_tags,
-                search_options={"recursive": recursive},
                 tag_logic=tag_logic,
+                credit_required=credit_required,
+                allow_selling_generated_content=allow_selling_generated_content,
+                recursive=recursive,
             )
-            data = self.filter_set.apply(data, criteria)
-            if credit_required is not None:
-                data = await self._apply_credit_required_filter(
-                    data, credit_required
-                )
-            if allow_selling_generated_content is not None:
-                data = await self._apply_allow_selling_filter(
-                    data, allow_selling_generated_content
-                )
 
         path_matches: List[Dict[str, str]] = []
         title_only_matches: List[Dict[str, str]] = []

@@ -26,6 +26,8 @@ const { appMock, apiMocks } = vi.hoisted(() => ({
     searchLoraLibrary: vi.fn(),
     fetchLoraDetails: vi.fn(),
     fetchLoraFolderIndex: vi.fn(),
+    fetchActiveFilters: vi.fn(),
+    countActiveFilters: vi.fn(),
     openLoraManager: vi.fn(),
     recommendedStrength: vi.fn((details) => details?.usage_tips?.strength),
   },
@@ -67,7 +69,10 @@ describe('LoRA Quick Panel', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     graphNodes = [];
+    localStorage.removeItem('lm:quick-panel:active-filters');
     vi.clearAllMocks();
+    apiMocks.fetchActiveFilters.mockResolvedValue(null);
+    apiMocks.countActiveFilters.mockReturnValue(0);
     apiMocks.searchLoraLibrary.mockResolvedValue([
       { relativePath: 'characters/astral.safetensors', modelName: 'Astral Portrait' },
     ]);
@@ -253,6 +258,79 @@ describe('LoRA Quick Panel', () => {
     quick.viewButtons.folders.click();
     expect(localStorage.getItem('lm:quick-panel:view-mode')).toBe('folders');
     expect(quick.resultsElement.querySelector('.lm-quick__folder-nav').textContent).toContain('All');
+    quick.close();
+  });
+
+  it('applies and clears the manager page active filters from the toolbar', async () => {
+    apiMocks.fetchActiveFilters.mockResolvedValue({
+      activeFolder: 'characters',
+      recursiveSearch: true,
+      filters: { baseModel: ['Flux'] },
+    });
+    apiMocks.countActiveFilters.mockReturnValue(2);
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+    await flush();
+
+    expect(apiMocks.searchLoraLibrary).toHaveBeenLastCalledWith('', 60, { useActiveFilters: false });
+    expect(apiMocks.fetchLoraFolderIndex).toHaveBeenLastCalledWith({ useActiveFilters: false });
+
+    await quick.toggleActiveFilters();
+
+    expect(quick.activeFilters).toBe(true);
+    expect(localStorage.getItem('lm:quick-panel:active-filters')).toBe('1');
+    expect(quick.filterButton.textContent).toBe('Filters · 2');
+    expect(quick.filterButton.classList.contains('is-active')).toBe(true);
+    expect(quick.filterButton.getAttribute('aria-pressed')).toBe('true');
+    expect(apiMocks.searchLoraLibrary).toHaveBeenLastCalledWith('', 60, { useActiveFilters: true });
+    expect(apiMocks.fetchLoraFolderIndex).toHaveBeenLastCalledWith({ useActiveFilters: true });
+    expect(quick.statusElement.textContent).toContain('within active filters');
+
+    await quick.toggleActiveFilters();
+
+    expect(quick.activeFilters).toBe(false);
+    expect(localStorage.getItem('lm:quick-panel:active-filters')).toBe('0');
+    expect(apiMocks.searchLoraLibrary).toHaveBeenLastCalledWith('', 60, { useActiveFilters: false });
+    expect(quick.filterButton.classList.contains('is-active')).toBe(false);
+    expect(quick.filterButton.getAttribute('aria-pressed')).toBe('false');
+    quick.close();
+  });
+
+  it('starts filtered when the toggle was left on', async () => {
+    localStorage.setItem('lm:quick-panel:active-filters', '1');
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+    await quick.loadSearch();
+
+    expect(quick.activeFilters).toBe(true);
+    expect(apiMocks.fetchLoraFolderIndex).toHaveBeenLastCalledWith({ useActiveFilters: true });
+    expect(apiMocks.searchLoraLibrary).toHaveBeenLastCalledWith('', 60, { useActiveFilters: true });
+    quick.close();
+  });
+
+  it('warns when the page has no active filters to apply', async () => {
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+
+    await quick.toggleActiveFilters();
+
+    expect(quick.activeFilters).toBe(true);
+    expect(quick.statusElement.textContent).toContain('No active filters');
+    expect(quick.filterButton.textContent).toBe('Filters');
+    expect(apiMocks.searchLoraLibrary).toHaveBeenLastCalledWith('', 60, { useActiveFilters: true });
+    quick.close();
+  });
+
+  it('wires the filter toggle button to the filter state', async () => {
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    const toggle = vi.spyOn(quick, 'toggleActiveFilters').mockResolvedValue();
+
+    quick.filterButton.click();
+
+    expect(toggle).toHaveBeenCalledOnce();
     quick.close();
   });
 
