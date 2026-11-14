@@ -82,10 +82,19 @@ class AutoOrganizeResult:
         self.sample_results: List[Dict[str, Any]] = []
         self.is_flat_structure: bool = False
         self.status: str = 'success'
+        self.dry_run: bool = False
+        self.planned_moves: List[Dict[str, str]] = []
+        self.planned_targets: Set[str] = set()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
-        if self.operation_type == 'filename_template':
+        if self.dry_run:
+            message = (
+                f'Auto-organize dry run ({self.operation_type}): '
+                f'{self.success_count} would move, {self.skipped_count} skipped, '
+                f'{self.failure_count} would fail out of {self.total} total'
+            )
+        elif self.operation_type == 'filename_template':
             message = (
                 f'Filename template applied: {self.success_count} renamed, '
                 f'{self.skipped_count} skipped, {self.failure_count} failed '
@@ -101,6 +110,7 @@ class AutoOrganizeResult:
             'success': self.status != 'error',
             'status': self.status,
             'message': message,
+            'dry_run': self.dry_run,
             'summary': {
                 'total': self.total,
                 'success': self.success_count,
@@ -117,7 +127,12 @@ class AutoOrganizeResult:
             result['sample_results'] = self.sample_results
         else:
             result['results'] = self.results
-        
+
+        if self.dry_run:
+            # Unlike the per-model results, the plan is never truncated: it is
+            # the whole point of a dry run.
+            result['planned_moves'] = self.planned_moves
+
         return result
 
 
@@ -143,6 +158,7 @@ class ModelFileService:
         file_paths: Optional[List[str]] = None,
         progress_callback: Optional[ProgressCallback] = None,
         exclusion_patterns: Optional[Sequence[str]] = None,
+        dry_run: bool = False,
     ) -> AutoOrganizeResult:
         """Auto-organize models based on current settings
         
@@ -150,11 +166,19 @@ class ModelFileService:
             file_paths: Optional list of specific file paths to organize. 
                        If None, organizes all models.
             progress_callback: Optional callback for progress updates
+            dry_run: When true, compute and report every move without
+                     touching the disk (no moves, no empty-folder cleanup,
+                     no progress broadcasts)
             
         Returns:
             AutoOrganizeResult object with operation results
         """
         result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        if dry_run:
+            # Progress events drive the UI's organize toast; a preview is a
+            # plain request/response and must not look like a running job.
+            progress_callback = None
         source_directories: Set[str] = set()
         
         self.scanner.reset_cancellation()
@@ -247,6 +271,9 @@ class ModelFileService:
                 progress_callback,
                 source_directories  # Pass the set to track source directories
             )
+
+            if dry_run:
+                return result
 
             if self.scanner.is_cancelled():
                 result.status = 'cancelled'
@@ -410,10 +437,25 @@ class ModelFileService:
                 result.skipped_count += 1
                 return
 
-            if os.path.exists(target_file_path):
+            # In a dry run nothing moves, so also treat targets claimed by an
+            # earlier planned move as taken: the real run would fail there.
+            if os.path.exists(target_file_path) or (
+                result.dry_run
+                and target_file_path.replace(os.sep, '/') in result.planned_targets
+            ):
                 self._add_result(result, model_name, False, 
                                f"Target file already exists: {target_file_path}")
                 result.failure_count += 1
+                return
+
+            if result.dry_run:
+                result.planned_moves.append({
+                    'model': model_name,
+                    'from': file_path,
+                    'to': target_file_path.replace(os.sep, '/'),
+                })
+                result.planned_targets.add(target_file_path.replace(os.sep, '/'))
+                result.success_count += 1
                 return
             
             # Store the source directory for potential cleanup
@@ -515,7 +557,9 @@ class ModelFileService:
         message: str
     ) -> None:
         """Add a result entry if under the limit"""
-        if len(result.results) < 100:  # Limit detailed results
+        # A dry run is the report itself, so it keeps every entry; a real run
+        # limits the detailed results.
+        if result.dry_run or len(result.results) < 100:
             result.results.append({
                 "model": model_name,
                 "success": success,

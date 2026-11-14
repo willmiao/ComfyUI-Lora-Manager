@@ -42,6 +42,7 @@ class AutoOrganizeUseCase:
         file_paths: Optional[Sequence[str]] = None,
         progress_callback: Optional[ProgressCallback] = None,
         exclusion_patterns: Optional[Sequence[str]] = None,
+        dry_run: bool = False,
     ) -> AutoOrganizeResult:
         """Run the auto-organize routine guarded by a shared lock."""
 
@@ -57,4 +58,5 @@ class AutoOrganizeUseCase:
                 file_paths=list(file_paths) if file_paths is not None else None,
                 progress_callback=progress_callback,
                 exclusion_patterns=exclusion_patterns,
+                dry_run=dry_run,
             )
