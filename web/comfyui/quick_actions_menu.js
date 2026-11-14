@@ -1,6 +1,7 @@
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { openLoraManagerHome } from "./lora_canvas_api.js";
 import { toggleLoraQuickPanel } from "./lora_quick_panel.js";
+import { COMMAND_IDS, getCommandShortcutLabel } from "./shortcuts.js";
 
 let activeMenu = null;
 
@@ -49,7 +50,13 @@ export function toggleQuickActionsMenu(anchor) {
   element.className = "lm-popover lm-quick-actions-menu";
   element.setAttribute("role", "menu");
   element.setAttribute("aria-label", "LoRA Manager quick actions");
-  element.appendChild(createMenuItem("Quick LoRA Picker", "Alt+L", toggleLoraQuickPanel));
+  // The badge follows the user's keybinding override, and is omitted when the
+  // shortcut has been unbound. Rebuilt on every open, so remaps apply at once.
+  element.appendChild(createMenuItem(
+    "Quick LoRA Picker",
+    getCommandShortcutLabel(COMMAND_IDS.quickLoraPicker),
+    toggleLoraQuickPanel,
+  ));
   const divider = document.createElement("div");
   divider.className = "lm-quick-actions-menu__divider";
   element.appendChild(divider);

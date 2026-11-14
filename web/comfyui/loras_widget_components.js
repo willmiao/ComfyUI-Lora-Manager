@@ -1,3 +1,5 @@
+import { COMMAND_IDS, getCommandShortcutLabel } from "./shortcuts.js";
+
 // Function to create toggle element
 export function createToggle(active, onChange, {
   mixed = false,
@@ -57,8 +59,16 @@ export function createAddLoraButton(onClick) {
   button.className = "lm-lora-add-button";
   button.type = "button";
   button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;
-  button.title = "Add LoRA · Quick Picker (Alt+L)";
-  button.setAttribute("aria-label", "Add LoRA with Quick Picker (Alt+L)");
+  // Resolve the hint lazily: the binding can be remapped while the graph stays
+  // open, so refresh it when the pointer reaches the button.
+  const updateShortcutHint = () => {
+    const shortcut = getCommandShortcutLabel(COMMAND_IDS.quickLoraPicker);
+    const suffix = shortcut ? ` (${shortcut})` : "";
+    button.title = `Add LoRA · Quick Picker${suffix}`;
+    button.setAttribute("aria-label", `Add LoRA with Quick Picker${suffix}`);
+  };
+  updateShortcutHint();
+  button.addEventListener("pointerenter", updateShortcutHint);
   button.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();

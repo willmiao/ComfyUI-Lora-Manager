@@ -5,6 +5,7 @@ import { getAllGraphNodes, getWidgetByName } from "./utils.js";
 import { applyLoraSelection, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
 import { isVideoPreviewUrl } from "./mediaTypes.js";
+import { COMMAND_IDS, DEFAULT_KEYBINDINGS } from "./shortcuts.js";
 import {
   buildAddedLoraStateMap,
   createAddedLoraCue,
@@ -20,7 +21,7 @@ import {
   searchLoraLibrary,
 } from "./lora_canvas_api.js";
 
-const COMMAND_ID = "LoraManager.ToggleQuickPanel";
+const COMMAND_ID = COMMAND_IDS.quickLoraPicker;
 const RECENT_KEY = "lm:quick-panel:recent-loras";
 const VIEW_KEY = "lm:quick-panel:view-mode";
 const ACTIVE_FILTERS_KEY = "lm:quick-panel:active-filters";
@@ -742,7 +743,7 @@ app.registerExtension({
     icon: "pi pi-search",
     function: toggleLoraQuickPanel,
   }],
-  keybindings: [{ combo: { key: "l", alt: true }, commandId: COMMAND_ID }],
+  keybindings: [{ combo: DEFAULT_KEYBINDINGS[COMMAND_ID], commandId: COMMAND_ID }],
   getNodeMenuItems(node) {
     if (!loraWidget(node)) return [];
     return [null, {

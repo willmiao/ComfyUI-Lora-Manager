@@ -7,17 +7,18 @@ The full manager and canvas quick tools have separate primary entry points:
 - Clicking the top-bar LoRA Manager button opens the full manager in a new tab.
 - Shift+clicking it opens the full manager in a new window.
 - A single chevron beside the main button opens the **Quick Actions** menu.
-  **Quick LoRA Picker** displays its `Alt+L` keybinding using ComfyUI's menu
-  keybinding visual treatment; **Open LoRA Manager** remains available there too.
+  **Quick LoRA Picker** displays its keybinding using ComfyUI's menu keybinding
+  visual treatment; **Open LoRA Manager** remains available there too.
 - `Alt+L` toggles the Quick LoRA Picker through a registered ComfyUI command and
-  keybinding.
+  keybinding. This is the default, not a fixed shortcut — see
+  [Remapping shortcuts](#remapping-shortcuts).
 - LoRA nodes expose **Quick LoRA Picker** in their context menu. ComfyUI's
   current extension-menu converter does not pass shortcut badges through for
   extension items, so the node menu uses the plain label rather than custom HTML
   that would behave differently between legacy and Vue menus.
 - The **+** button in the LoRA widget header opens the picker with that node as
   its initial target. It remains available when the widget is empty, and its
-  tooltip displays the `Alt+L` shortcut.
+  tooltip displays the effective shortcut.
 
 Quick pickers are contextual canvas tools. They do not each need a permanent
 top-bar button. The top bar continues to use `actionBarButtons` on supported
@@ -37,6 +38,28 @@ node selection changes.
 **Full details** opens the manager in the named `lm-lora-manager` tab. Repeated
 requests reuse that tab, and the manager handles `hashchange` so a reused tab
 opens the requested model modal without reloading.
+
+## Remapping shortcuts
+
+Every quick picker registers a ComfyUI command plus a *default* keybinding, so
+the shortcut is remappable without an extension-specific setting:
+
+- **Settings → Keybindings** lists extension commands with their source column
+  (`LoraManager.QuickPanel`). Search for `Quick LoRA Picker` or
+  `LoraManager.ToggleQuickPanel`, then edit the binding, add another one, or
+  remove it. Shared keybinding presets work as well.
+- Removing the default binding disables the shortcut; the Quick Actions menu then
+  shows no badge, and the **+** tooltip drops the shortcut hint.
+- `Alt+L` is only the default. The Quick Actions badge and the **+** tooltip read
+  the effective user binding, so they follow remaps without a page reload.
+- ComfyUI reports a conflict when the chosen combo is already bound to another
+  command; the existing binding can be unset from the same dialog.
+
+Adding a new picker means adding a separate command id and default keybinding,
+then registering the id in `COMMAND_IDS` and the default combo in
+`DEFAULT_KEYBINDINGS` in `web/comfyui/shortcuts.js`, so the badge/tooltip text
+stays in sync with the registration. Keep command ids stable: user overrides are
+persisted by command id, so renaming one silently drops the user's customization.
 
 ## Active filters
 
