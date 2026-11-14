@@ -268,7 +268,11 @@ export class LoraInfoCard {
 
   renderActiveTab() {
     this.tabContent.replaceChildren();
-    if (this.activeTab === "notes") this.renderNotes();
+    const isNotes = this.activeTab === "notes";
+    // Notes owns the full tab height: the textarea grows with the card and
+    // the save button stays anchored above the footer.
+    this.tabContent.classList.toggle("lm-info-card__tab-content--notes", isNotes);
+    if (isNotes) this.renderNotes();
     else if (this.activeTab === "description") this.renderDescription();
     else this.renderOverview();
   }

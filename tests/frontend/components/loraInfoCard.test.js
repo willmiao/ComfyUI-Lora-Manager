@@ -181,6 +181,25 @@ describe('LoRA info card', () => {
     card.close();
   });
 
+  it('lets the notes editor fill the tab height', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+    card.tabButtons.notes.click();
+
+    expect(card.tabContent.classList.contains('lm-info-card__tab-content--notes')).toBe(true);
+    expect(card.tabContent.querySelector('textarea')).not.toBeNull();
+
+    card.tabButtons.overview.click();
+    expect(card.tabContent.classList.contains('lm-info-card__tab-content--notes')).toBe(false);
+    card.close();
+  });
+
   it('shows version and model descriptions from local metadata', async () => {
     const { LoraInfoCard } = await import(INFO_CARD_MODULE);
     const card = new LoraInfoCard({

@@ -1751,6 +1751,13 @@ body.lm-lora-reordering * {
   overflow-y: auto;
 }
 
+/* The notes editor tracks the card height instead of scrolling a fixed box. */
+.lm-info-card__tab-content--notes {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .lm-info-card__hint {
   margin: 8px 0 0;
   color: var(--lm-fg-muted);
@@ -1759,17 +1766,20 @@ body.lm-lora-reordering * {
 
 .lm-info-card__notes-section {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
   padding: 14px;
 }
 
 .lm-info-card__notes {
+  flex: 1;
   width: 100%;
-  min-height: 260px;
+  min-height: 120px;
   box-sizing: border-box;
   padding: 10px;
-  resize: vertical;
+  resize: none;
   color: var(--lm-fg);
   background: var(--lm-surface);
   border: 1px solid var(--lm-border-soft);
