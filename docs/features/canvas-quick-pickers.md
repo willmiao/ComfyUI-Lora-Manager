@@ -52,6 +52,18 @@ picker applies them correctly even when ComfyUI and the manager page run on
 different origins. The button shows the number of restrictions in effect and
 the status bar reports when the manager page has no active filters to apply.
 
+## Recent
+
+The toolbar's **Recent** toggle lists the LoRAs applied from the picker, newest
+first. The history lives in `localStorage` (`lm:quick-panel:recent-loras`, up to
+20 entries) and is written on every apply from the panel. The toggle itself is
+not persisted.
+
+Rows come from the complete folder index rather than the loaded search page, so
+a recent LoRA still appears when the empty-query page (60 rows) does not reach
+it. Entries whose file was removed or renamed are skipped. While a search query
+is active, Recent narrows the history to the matching results instead.
+
 ## Growth strategy
 
 Do not add one top-bar button per picker. Top-bar space is shared with ComfyUI

@@ -51,6 +51,12 @@ function recentNames() {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
 }
 
+function itemsByName(items) {
+  return new Map(
+    (items || []).map((item) => [normalizeLoraNameKey(item.relativePath), item]),
+  );
+}
+
 function rememberName(name) {
   const next = [name, ...recentNames().filter((item) => item !== name)].slice(0, 20);
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* cosmetic only */ }
@@ -104,6 +110,7 @@ export class LoraQuickPanel {
     this.activeFilterCount = 0;
     this.filterSequence = 0;
     this.folderIndex = null;
+    this.libraryCache = null;
     this.folderError = "";
     this.currentFolder = "";
     this.folderSequence = 0;
@@ -177,10 +184,12 @@ export class LoraQuickPanel {
     this.recentButton = el("button", "lm-quick__filter", "Recent");
     this.recentButton.type = "button";
     this.recentButton.title = "Show recently applied LoRAs";
+    this.recentButton.setAttribute("aria-pressed", String(this.recentOnly));
     this.recentButton.addEventListener("click", () => {
       this.recentOnly = !this.recentOnly;
       this.selectedIndex = this.visibleItems().length ? 0 : -1;
       this.recentButton.classList.toggle("is-active", this.recentOnly);
+      this.recentButton.setAttribute("aria-pressed", String(this.recentOnly));
       this.renderResults();
     });
 
@@ -358,11 +367,47 @@ export class LoraQuickPanel {
     this.openFolder(parts.join("/"), previous);
   }
 
+  /**
+   * Flat name → item map over the whole folder index, cached per index
+   * snapshot so navigation is not penalized.
+   */
+  libraryByName() {
+    if (!this.folderIndex) return null;
+    if (this.libraryCache?.source === this.folderIndex) return this.libraryCache.byName;
+    const byName = new Map();
+    const walk = (node) => {
+      for (const item of node?.items || []) {
+        byName.set(normalizeLoraNameKey(item.relativePath), item);
+      }
+      for (const child of Object.values(node?.folders || {})) walk(child);
+    };
+    walk(this.folderIndex);
+    this.libraryCache = { source: this.folderIndex, byName };
+    return byName;
+  }
+
+  /**
+   * Recently applied LoRAs, newest first, resolved against the whole library
+   * (via the folder index) instead of the loaded search page: that page is
+   * capped at 60 rows, so a recent LoRA often lives outside it. A search
+   * query narrows the history to the matching loaded results. While the
+   * folder index is still loading, fall back to the loaded page; the index
+   * load re-renders the list once it arrives.
+   */
+  recentItems() {
+    const names = recentNames();
+    if (!names.length) return [];
+    const query = this.searchInput?.value.trim() || "";
+    const byName = query
+      ? itemsByName(this.items)
+      : this.libraryByName() || itemsByName(this.items);
+    return names.map((name) => byName.get(normalizeLoraNameKey(name))).filter(Boolean);
+  }
+
   visibleItems() {
     if (this.isFolderBrowse()) return this.currentFolderNode()?.items || [];
     if (!this.recentOnly) return this.items;
-    const recent = new Set(recentNames());
-    return this.items.filter((item) => recent.has(normalizeLoraNameKey(item.relativePath)));
+    return this.recentItems();
   }
 
   navigationItems() {
@@ -496,13 +541,21 @@ export class LoraQuickPanel {
     const visible = this.visibleItems();
     this.resultsElement.replaceChildren();
     if (!visible.length) {
-      this.resultsElement.appendChild(el("div", "lm-quick__empty", this.recentOnly
-        ? "No recently applied LoRAs in this result set."
-        : "No LoRAs to show. Try another search or clear Recent."));
+      let message = "No LoRAs to show. Try another search or clear Recent.";
+      if (this.recentOnly) {
+        message = this.searchInput?.value.trim()
+          ? "No recently applied LoRAs match this search."
+          : "No recently applied LoRAs yet. Apply one from this picker to build the list.";
+      }
+      this.resultsElement.appendChild(el("div", "lm-quick__empty", message));
+      if (this.recentOnly) this.setStatus("No recently applied LoRAs");
       this.renderDetail();
       return;
     }
     if (this.selectedIndex >= visible.length) this.selectedIndex = 0;
+    if (this.recentOnly) {
+      this.setStatus(`${visible.length} recently applied LoRA${visible.length === 1 ? "" : "s"}`);
+    }
     this.appendLoraRows(visible);
     this.renderDetail();
   }
@@ -600,6 +653,12 @@ export class LoraQuickPanel {
         strength: recommendedStrength(this.details),
       }, this.replaceName);
       rememberName(name);
+      if (this.recentOnly) {
+        // The applied LoRA moved to the top of the history: rebuild so
+        // "Apply & keep open" shows the new order and contents.
+        this.selectedIndex = 0;
+        this.renderResults();
+      }
       this.refreshAddedMarkers();
       this.setStatus(result.changed ? `Applied ${item.modelName}` : `${item.modelName} is already active`);
       if (this.replaceName || !keepOpen) this.close();

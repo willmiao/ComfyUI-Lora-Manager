@@ -71,6 +71,7 @@ describe('LoRA Quick Panel', () => {
     graphNodes = [];
     localStorage.removeItem('lm:quick-panel:active-filters');
     localStorage.removeItem('lm:quick-panel:view-mode');
+    localStorage.removeItem('lm:quick-panel:recent-loras');
     vi.clearAllMocks();
     apiMocks.fetchActiveFilters.mockResolvedValue(null);
     apiMocks.countActiveFilters.mockReturnValue(0);
@@ -488,6 +489,109 @@ describe('LoRA Quick Panel', () => {
     expect(node.lorasWidget.value).toEqual([
       expect.objectContaining({ name: 'root', active: true }),
     ]);
+  });
+
+  it('lists recently applied LoRAs from the whole library, newest first', async () => {
+    localStorage.setItem('lm:quick-panel:recent-loras', JSON.stringify(['zzz/late', 'aaa/early']));
+    // The loaded search page only holds one of them, mirroring a large library
+    // where the 60-row page stops before the recent entries.
+    apiMocks.searchLoraLibrary.mockResolvedValue([
+      { relativePath: 'aaa/early.safetensors', modelName: 'Early' },
+    ]);
+    apiMocks.fetchLoraFolderIndex.mockResolvedValue({
+      count: 3,
+      folders: {},
+      items: [
+        { relativePath: 'aaa/early.safetensors', modelName: 'Early' },
+        { relativePath: 'mmm/middle.safetensors', modelName: 'Middle' },
+        { relativePath: 'zzz/late.safetensors', modelName: 'Late' },
+      ],
+    });
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+    await quick.loadSearch();
+
+    quick.recentButton.click();
+
+    const rows = quick.resultsElement.querySelectorAll('.lm-quick__row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('Late');
+    expect(rows[1].textContent).toContain('Early');
+    expect(quick.resultsElement.textContent).not.toContain('Middle');
+    expect(quick.recentButton.getAttribute('aria-pressed')).toBe('true');
+    quick.close();
+  });
+
+  it('drops recent entries that no longer exist in the library', async () => {
+    localStorage.setItem('lm:quick-panel:recent-loras', JSON.stringify([
+      'gone/missing',
+      'characters/astral.safetensors',
+    ]));
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+
+    quick.recentButton.click();
+
+    const rows = quick.resultsElement.querySelectorAll('.lm-quick__row');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Astral Portrait');
+    quick.close();
+  });
+
+  it('narrows the recent list with the search query', async () => {
+    localStorage.setItem('lm:quick-panel:recent-loras', JSON.stringify(['aaa/early', 'zzz/late']));
+    apiMocks.searchLoraLibrary.mockImplementation(async (query) => (query === 'late'
+      ? [{ relativePath: 'zzz/late.safetensors', modelName: 'Late' }]
+      : [
+        { relativePath: 'zzz/late.safetensors', modelName: 'Late' },
+        { relativePath: 'aaa/early.safetensors', modelName: 'Early' },
+      ]));
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+
+    quick.searchInput.value = 'late';
+    await quick.loadSearch();
+    quick.recentButton.click();
+
+    const rows = quick.resultsElement.querySelectorAll('.lm-quick__row');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].textContent).toContain('Late');
+    quick.close();
+  });
+
+  it('moves an applied LoRA to the top of the open recent list', async () => {
+    localStorage.setItem('lm:quick-panel:recent-loras', JSON.stringify(['aaa/early', 'zzz/late']));
+    apiMocks.fetchLoraFolderIndex.mockResolvedValue({
+      count: 2,
+      folders: {},
+      items: [
+        { relativePath: 'aaa/early.safetensors', modelName: 'Early' },
+        { relativePath: 'zzz/late.safetensors', modelName: 'Late' },
+      ],
+    });
+    const node = makeNode();
+    graphNodes = [node];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node }).open();
+    await quick.loadFolderIndex();
+    await flush();
+
+    quick.recentButton.click();
+    expect(quick.resultsElement.querySelectorAll('.lm-quick__row')[0].textContent).toContain('Early');
+
+    pressQuickKey(quick, 'ArrowDown');
+    await flush();
+    quick.apply(true);
+
+    const rows = quick.resultsElement.querySelectorAll('.lm-quick__row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('Late');
+    expect(localStorage.getItem('lm:quick-panel:recent-loras'))
+      .toBe(JSON.stringify(['zzz/late', 'aaa/early']));
+    quick.close();
   });
 });
 
