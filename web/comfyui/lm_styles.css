@@ -784,10 +784,11 @@ body.lm-lora-reordering * {
 .lm-autocomplete-category--species { --lm-cat: var(--lm-cat-species); }
 .lm-autocomplete-category--lore { --lm-cat: var(--lm-cat-lore); }
 
-/* "Already added" cue. Green means the node has it enabled, amber means it is
-   listed but turned off (selecting it enables it). Both hues are mixed against
-   the popover surface so contrast follows the theme. */
-.lm-autocomplete-added {
+/* "Already added" cue (autocomplete dropdown and quick picker). Green means
+   the node has it enabled, amber means it is listed but turned off (selecting
+   it enables it). Both hues are mixed against the popover surface so contrast
+   follows the theme. */
+.lm-lora-added {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -801,19 +802,19 @@ body.lm-lora-reordering * {
   white-space: nowrap;
 }
 
-.lm-autocomplete-added.is-active {
+.lm-lora-added.is-active {
   color: color-mix(in oklab, var(--lm-ok) 65%, var(--lm-fg));
   background: color-mix(in oklab, var(--lm-ok) 18%, var(--lm-surface));
   border-color: color-mix(in oklab, var(--lm-ok) 38%, transparent);
 }
 
-.lm-autocomplete-added.is-inactive {
+.lm-lora-added.is-inactive {
   color: color-mix(in oklab, var(--lm-warning) 65%, var(--lm-fg));
   background: color-mix(in oklab, var(--lm-warning) 18%, var(--lm-surface));
   border-color: color-mix(in oklab, var(--lm-warning) 40%, transparent);
 }
 
-.lm-autocomplete-added-icon {
+.lm-lora-added-icon {
   font-size: 10px;
   line-height: 1;
 }
@@ -1298,6 +1299,18 @@ body.lm-lora-reordering * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.lm-quick__row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lm-quick__row-head .lm-quick__row-name {
+  flex: 1;
+  min-width: 0;
 }
 
 .lm-quick__row-path {

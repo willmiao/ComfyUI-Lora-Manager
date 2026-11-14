@@ -28,6 +28,12 @@ Down follow the visible row order, Right or Enter opens a selected folder, Left
 returns to its parent, and Enter applies a selected LoRA. Navigation is handled
 at panel level rather than only while the search field is focused.
 
+Rows carry the same **Added** / **Off** cue as the autocomplete dropdown: a
+green cue means the LoRA is already enabled on the current target node, and an
+amber cue means it is listed there but turned off. The markers are read from the
+target node's own list and refresh in place when a LoRA is applied or the target
+node selection changes.
+
 **Full details** opens the manager in the named `lm-lora-manager` tab. Repeated
 requests reuse that tab, and the manager handles `hashchange` so a reused tab
 opens the requested model modal without reloading.

@@ -6,6 +6,11 @@ import { applyLoraSelection, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
 import { isVideoPreviewUrl } from "./mediaTypes.js";
 import {
+  buildAddedLoraStateMap,
+  createAddedLoraCue,
+  resolveAddedLoraState,
+} from "./lora_added_state.js";
+import {
   countActiveFilters,
   fetchActiveFilters,
   fetchLoraDetails,
@@ -186,6 +191,7 @@ export class LoraQuickPanel {
       this.targetNode = candidates[Number(this.targetSelect.value)] || null;
       this.replaceName = "";
       this.panel.setContext(this.targetNode ? `Add to ${nodeLabel(this.targetNode)}` : "No compatible node");
+      this.refreshAddedMarkers();
       this.renderDetail();
     });
     toolbar.append(this.searchInput, viewSwitch, this.filterButton, this.recentButton, this.targetSelect);
@@ -374,7 +380,14 @@ export class LoraQuickPanel {
     ];
   }
 
+  /** Snapshot of the target node's LoRA list, keyed by normalized name. */
+  addedLoraStates() {
+    if (!this.targetNode) return new Map();
+    return buildAddedLoraStateMap(loraWidget(this.targetNode)?.value);
+  }
+
   appendLoraRows(items, offset = 0) {
+    const states = this.addedLoraStates();
     items.forEach((item, index) => {
       const navigationIndex = offset + index;
       const row = el("button", "lm-quick__row");
@@ -382,13 +395,31 @@ export class LoraQuickPanel {
       row.setAttribute("role", "option");
       row.setAttribute("aria-selected", String(navigationIndex === this.selectedIndex));
       row.classList.toggle("is-selected", navigationIndex === this.selectedIndex);
-      row.append(
-        el("span", "lm-quick__row-name", item.modelName),
-        el("span", "lm-quick__row-path", item.relativePath),
-      );
+      row.dataset.loraPath = item.relativePath || "";
+      const head = el("span", "lm-quick__row-head");
+      head.appendChild(el("span", "lm-quick__row-name", item.modelName));
+      const addedState = resolveAddedLoraState(states, item.relativePath);
+      if (addedState) head.appendChild(createAddedLoraCue(addedState));
+      row.append(head, el("span", "lm-quick__row-path", item.relativePath));
       row.addEventListener("click", () => this.select(navigationIndex));
       row.addEventListener("dblclick", () => this.apply(false));
       this.resultsElement.appendChild(row);
+    });
+  }
+
+  /**
+   * Re-read the target node's LoRA list and update the "Added"/"Off" cues in
+   * place, so applying a LoRA or switching targets does not rebuild (and
+   * scroll-reset) the result list.
+   */
+  refreshAddedMarkers() {
+    const states = this.addedLoraStates();
+    this.resultsElement.querySelectorAll(".lm-quick__row").forEach((row) => {
+      const head = row.querySelector(".lm-quick__row-head");
+      if (!head) return;
+      const state = resolveAddedLoraState(states, row.dataset.loraPath || "");
+      head.querySelector(".lm-lora-added")?.remove();
+      if (state) head.appendChild(createAddedLoraCue(state));
     });
   }
 
@@ -569,6 +600,7 @@ export class LoraQuickPanel {
         strength: recommendedStrength(this.details),
       }, this.replaceName);
       rememberName(name);
+      this.refreshAddedMarkers();
       this.setStatus(result.changed ? `Applied ${item.modelName}` : `${item.modelName} is already active`);
       if (this.replaceName || !keepOpen) this.close();
     } catch (error) {

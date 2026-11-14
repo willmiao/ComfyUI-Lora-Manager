@@ -20,7 +20,11 @@ import {
     getTagSpaceReplacementPreference,
     setLoraManagerSettingValue,
 } from "./settings.js";
-import { normalizeLoraNameKey } from "./loras_widget_utils.js";
+import {
+    buildAddedLoraStateMap,
+    createAddedLoraCue,
+    resolveAddedLoraState,
+} from "./lora_added_state.js";
 import { applyLoraSelection, parseLoraCodeTags } from "./lora_selection.js";
 import { showToast } from "./utils.js";
 
@@ -1461,22 +1465,16 @@ class AutoComplete {
             return null;
         }
 
-        const states = new Map();
         const lorasWidget = node.lorasWidget;
         if (lorasWidget && Array.isArray(lorasWidget.value)) {
-            for (const lora of lorasWidget.value) {
-                const key = normalizeLoraNameKey(lora?.name);
-                if (key) {
-                    states.set(key, lora?.active !== false);
-                }
-            }
-            return states;
+            return buildAddedLoraStateMap(lorasWidget.value);
         }
 
-        for (const tag of parseLoraCodeTags(this.inputElement?.value || '')) {
-            states.set(tag.name, true);
-        }
-        return states;
+        return buildAddedLoraStateMap(
+            parseLoraCodeTags(this.inputElement?.value || '').map((tag) => ({
+                name: tag.name,
+            })),
+        );
     }
 
     /** Library title for a result path, or '' when it is unknown. */
@@ -1490,25 +1488,7 @@ class AutoComplete {
      * without their folder, so the bare name is accepted as a fallback.
      */
     _getAddedLoraState(relativePath) {
-        if (!this.addedLoraStatesForRender || this.addedLoraStatesForRender.size === 0) {
-            return null;
-        }
-        const key = normalizeLoraNameKey(relativePath);
-        if (!key) {
-            return null;
-        }
-        const stateFor = (name) => {
-            if (!this.addedLoraStatesForRender.has(name)) {
-                return null;
-            }
-            return this.addedLoraStatesForRender.get(name) ? 'active' : 'inactive';
-        };
-        const direct = stateFor(key);
-        if (direct) {
-            return direct;
-        }
-        const bareName = key.slice(key.lastIndexOf('/') + 1);
-        return bareName !== key ? stateFor(bareName) : null;
+        return resolveAddedLoraState(this.addedLoraStatesForRender, relativePath);
     }
 
     /**
@@ -2714,25 +2694,7 @@ class AutoComplete {
             // two states differ because selecting a disabled entry turns it on.
             const addedState = this._getAddedLoraState(itemData);
             if (addedState) {
-                const isActive = addedState === 'active';
-                const addedCue = document.createElement('span');
-                addedCue.className = `lm-autocomplete-added ${isActive ? 'is-active' : 'is-inactive'}`;
-                addedCue.title = isActive
-                    ? 'Added to this node'
-                    : 'Added but turned off — select to enable';
-                addedCue.setAttribute('aria-label', addedCue.title);
-
-                const icon = document.createElement('span');
-                icon.className = 'lm-autocomplete-added-icon';
-                icon.textContent = isActive ? '✓' : '○';
-                icon.setAttribute('aria-hidden', 'true');
-                addedCue.appendChild(icon);
-
-                const label = document.createElement('span');
-                label.textContent = isActive ? 'Added' : 'Off';
-                addedCue.appendChild(label);
-
-                item.appendChild(addedCue);
+                item.appendChild(createAddedLoraCue(addedState));
             }
         }
 

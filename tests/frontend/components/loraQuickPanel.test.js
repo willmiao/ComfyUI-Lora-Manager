@@ -70,6 +70,7 @@ describe('LoRA Quick Panel', () => {
     document.body.innerHTML = '';
     graphNodes = [];
     localStorage.removeItem('lm:quick-panel:active-filters');
+    localStorage.removeItem('lm:quick-panel:view-mode');
     vi.clearAllMocks();
     apiMocks.fetchActiveFilters.mockResolvedValue(null);
     apiMocks.countActiveFilters.mockReturnValue(0);
@@ -331,6 +332,80 @@ describe('LoRA Quick Panel', () => {
     quick.filterButton.click();
 
     expect(toggle).toHaveBeenCalledOnce();
+    quick.close();
+  });
+
+  it('marks LoRAs already on the target node as Added or Off', async () => {
+    const node = makeNode();
+    node.lorasWidget.value = [
+      { name: 'characters/astral.safetensors', active: true },
+      { name: 'characters/dormant', active: false },
+    ];
+    apiMocks.fetchLoraFolderIndex.mockResolvedValue({
+      count: 3,
+      folders: {},
+      items: [
+        { relativePath: 'characters/astral.safetensors', modelName: 'Astral Portrait' },
+        { relativePath: 'characters/dormant.safetensors', modelName: 'Dormant' },
+        { relativePath: 'characters/other.safetensors', modelName: 'Other' },
+      ],
+    });
+    graphNodes = [node];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node }).open();
+    await quick.loadFolderIndex();
+    await flush();
+
+    const rows = quick.resultsElement.querySelectorAll('.lm-quick__row');
+    expect(rows).toHaveLength(3);
+    const activeCue = rows[0].querySelector('.lm-lora-added.is-active');
+    expect(activeCue.textContent).toBe('✓Added');
+    expect(activeCue.title).toBe('Added to this node');
+    const inactiveCue = rows[1].querySelector('.lm-lora-added.is-inactive');
+    expect(inactiveCue.textContent).toBe('○Off');
+    expect(inactiveCue.title).toBe('Added but turned off — select to enable');
+    expect(rows[2].querySelector('.lm-lora-added')).toBeNull();
+    quick.close();
+  });
+
+  it('adds the marker after applying without rebuilding the list', async () => {
+    const node = makeNode();
+    graphNodes = [node];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node }).open();
+    await quick.loadFolderIndex();
+    await flush();
+    const row = quick.resultsElement.querySelector('.lm-quick__row');
+    expect(row.querySelector('.lm-lora-added')).toBeNull();
+
+    quick.apply(true);
+
+    const sameRow = quick.resultsElement.querySelector('.lm-quick__row');
+    expect(sameRow).toBe(row);
+    const cue = sameRow.querySelector('.lm-lora-added.is-active');
+    expect(cue.textContent).toBe('✓Added');
+    quick.close();
+  });
+
+  it('refreshes the markers when the target node changes', async () => {
+    const first = makeNode();
+    const second = makeNode();
+    second.id = 8;
+    second.title = 'Second Loader';
+    second.lorasWidget.value = [{ name: 'characters/astral.safetensors', active: false }];
+    graphNodes = [first, second];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: first }).open();
+    await quick.loadFolderIndex();
+    await flush();
+    const row = quick.resultsElement.querySelector('.lm-quick__row');
+    expect(row.querySelector('.lm-lora-added')).toBeNull();
+
+    quick.targetSelect.value = '1';
+    quick.targetSelect.dispatchEvent(new Event('change'));
+
+    expect(quick.targetNode).toBe(second);
+    expect(row.querySelector('.lm-lora-added.is-inactive')).toBeTruthy();
     quick.close();
   });
 

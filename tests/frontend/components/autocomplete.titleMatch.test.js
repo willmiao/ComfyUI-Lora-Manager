@@ -140,7 +140,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
       'portraits/example_entry',
     );
     expect(item.querySelector('.lm-autocomplete-subtitle')).toBeNull();
-    expect(item.querySelector('.lm-autocomplete-added')).toBeNull();
+    expect(item.querySelector('.lm-lora-added')).toBeNull();
   });
 
   it('requests and shows library titles in Model Name mode', async () => {
@@ -200,7 +200,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    const cue = item.querySelector('.lm-autocomplete-added.is-active');
+    const cue = item.querySelector('.lm-lora-added.is-active');
     expect(cue).toBeTruthy();
     expect(cue.textContent).toBe('✓Added');
     expect(cue.title).toBe('Added to this node');
@@ -218,7 +218,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    const cue = item.querySelector('.lm-autocomplete-added.is-inactive');
+    const cue = item.querySelector('.lm-lora-added.is-inactive');
     expect(cue).toBeTruthy();
     expect(cue.textContent).toBe('○Off');
     expect(cue.title).toBe('Added but turned off — select to enable');
@@ -232,7 +232,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    expect(item.querySelector('.lm-autocomplete-added.is-active')).toBeTruthy();
+    expect(item.querySelector('.lm-lora-added.is-active')).toBeTruthy();
   });
 
   it('does not mark a LoRA that is not on the node list', async () => {
@@ -245,7 +245,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     const { autoComplete } = await mountAutocomplete({ node });
 
     const [item] = itemEls(autoComplete);
-    expect(item.querySelector('.lm-autocomplete-added')).toBeNull();
+    expect(item.querySelector('.lm-lora-added')).toBeNull();
   });
 
   it('falls back to parsing the textarea when the node has no LoRA list', async () => {
@@ -259,7 +259,7 @@ describe('AutoComplete LoRA title matching and added cue', () => {
     autoComplete.render();
 
     const [item] = itemEls(autoComplete);
-    expect(item.querySelector('.lm-autocomplete-added.is-active')).toBeTruthy();
+    expect(item.querySelector('.lm-lora-added.is-active')).toBeTruthy();
   });
 
   it('enables a listed but disabled LoRA instead of inserting a tag', async () => {
