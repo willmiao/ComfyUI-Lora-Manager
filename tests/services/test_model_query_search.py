@@ -203,6 +203,60 @@ class TestSearchStrategyTriggerWords:
         assert strategy.apply([item], "anime", self.OPTIONS, fuzzy=True) == [item]
 
 
+class TestSearchStrategyFileNames:
+    """Filenames pasted from the file manager work despite the extension."""
+
+    OPTIONS = {
+        "filename": True,
+        "modelname": False,
+        "tags": False,
+        "creator": False,
+    }
+
+    def test_pasted_safetensors_filename_matches_stored_stem(self, strategy):
+        item = make_item(file_name="my_lora_v1", model_name="My LoRA")
+        assert strategy.apply([item], "my_lora_v1.safetensors", self.OPTIONS) == [item]
+
+    @pytest.mark.parametrize(
+        "extension",
+        [".safetensors", ".ckpt", ".pt", ".pth", ".bin", ".sft", ".gguf"],
+    )
+    def test_recognized_model_extensions_are_stripped(self, strategy, extension):
+        item = make_item(file_name="my_lora_v1")
+        assert strategy.apply([item], f"my_lora_v1{extension}", self.OPTIONS) == [item]
+
+    def test_extension_case_is_ignored(self, strategy):
+        item = make_item(file_name="my_lora_v1")
+        assert strategy.apply([item], "my_lora_v1.SafeTensors", self.OPTIONS) == [item]
+
+    def test_query_without_extension_still_matches(self, strategy):
+        item = make_item(file_name="my_lora_v1")
+        assert strategy.apply([item], "my_lora_v1", self.OPTIONS) == [item]
+
+    def test_pasted_filename_with_spaces_matches(self, strategy):
+        # Regression for the reported search: a filename copied from the file
+        # manager keeps its spaces and its .safetensors suffix.
+        item = make_item(
+            file_name="12 [CharacterAnima Base] Helen Parr Style-Crisisbeat"
+        )
+        query = "12 [CharacterAnima Base] Helen Parr Style-Crisisbeat.safetensors"
+        assert strategy.apply([item], query, self.OPTIONS) == [item]
+
+    def test_version_dot_is_not_treated_as_an_extension(self, strategy):
+        item = make_item(file_name="style_v1.5")
+        assert strategy.apply([item], "v1.5", self.OPTIONS) == [item]
+
+    def test_extension_only_query_does_not_match_everything(self, strategy):
+        items = [make_item(file_name="one"), make_item(file_name="two")]
+        assert strategy.apply(items, ".safetensors", self.OPTIONS) == []
+
+    def test_surrounding_whitespace_is_ignored(self, strategy):
+        item = make_item(file_name="my_lora_v1")
+        assert strategy.apply([item], "  my_lora_v1.safetensors  ", self.OPTIONS) == [
+            item
+        ]
+
+
 class TestFormatResponseAutov3:
     """format_response should pass the autov3 field through unchanged."""
 

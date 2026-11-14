@@ -19,6 +19,7 @@ from .model_query import (
     SettingsProvider,
     normalize_sub_type,
     resolve_sub_type,
+    strip_model_file_extension,
 )
 from .settings_manager import get_settings_manager
 from .model_sources import source_group_key
@@ -1382,7 +1383,12 @@ class BaseModelService(ABC):
 
     @staticmethod
     def _parse_search_tokens(search_term: str) -> tuple[List[str], List[str]]:
-        """Split a search string into include and exclude tokens."""
+        """Split a search string into include and exclude tokens.
+
+        Tokens are extension-free: paths are compared without their extension,
+        so a filename pasted from the file manager (``foo.safetensors``) must
+        be normalized the same way before matching.
+        """
         include_terms: List[str] = []
         exclude_terms: List[str] = []
 
@@ -1392,9 +1398,13 @@ class BaseModelService(ABC):
                 continue
 
             if term.startswith("-") and len(term) > 1:
-                exclude_terms.append(term[1:].lower())
+                term = strip_model_file_extension(term[1:])
+                if term:
+                    exclude_terms.append(term.lower())
             else:
-                include_terms.append(term.lower())
+                term = strip_model_file_extension(term)
+                if term:
+                    include_terms.append(term.lower())
 
         return include_terms, exclude_terms
 
