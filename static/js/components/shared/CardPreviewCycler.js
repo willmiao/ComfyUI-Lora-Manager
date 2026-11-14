@@ -4,11 +4,13 @@
  * The single preview image is the memory anchor for a model and never
  * changes implicitly. While the user hovers the bare preview area of a card
  * whose preview is a static image, this module crossfades through the
- * model's example images (CivitAI images + custom images, videos excluded)
- * so multi-concept models can be recognized at a glance. Hovering the card
- * header or footer never starts cycling, so action buttons and tooltips
- * stay undisturbed. Leaving the card restores the anchor preview
- * immediately.
+ * model's example images so multi-concept models can be recognized at a
+ * glance. Examples come from two sources: the CivitAI entries in the sidecar
+ * (remote CDN URLs) and the example files imported from disk, which carry an
+ * empty `url` and are served from `/example_images_static/...` (see
+ * exampleMediaResolver). Hovering the card header or footer never starts
+ * cycling, so action buttons and tooltips stay undisturbed. Leaving the card
+ * restores the anchor preview immediately.
  *
  * Video previews are intentionally excluded: their hover slot already
  * plays the video itself (see configureModelCardVideo).
@@ -17,8 +19,8 @@
 import { state } from '../../state/index.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { NSFW_LEVELS } from '../../utils/constants.js';
-import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { getThumbnailUrl } from '../../utils/civitaiUtils.js';
+import { resolveExampleMedia } from './showcase/exampleMediaResolver.js';
 
 // How long the pointer must rest on the bare preview area before cycling
 // mode activates and the card chrome fades out. The card header and footer
@@ -28,31 +30,99 @@ import { getThumbnailUrl } from '../../utils/civitaiUtils.js';
 // timer runs, so it swaps in the moment the mode activates.
 const CYCLE_MODE_DELAY_MS = 800;
 const DEFAULT_CYCLE_INTERVAL_SECONDS = 2;
+// The crossfade must stay short relative to the interval: at a rapid 0.5s
+// interval a full-length fade would keep the card permanently mid-transition.
+// The fade is capped at 400ms and takes a quarter of the interval below that.
+const MAX_FADE_MS = 400;
+const FADE_INTERVAL_RATIO = 0.25;
 
-// Per-model example image URL lists, keyed by file_path. Values are promises
-// so repeated hovers share one fetch for the session.
+// Per-model example data (resolved frame URLs + anchor index), keyed by
+// file_path. Values are promises so repeated hovers share one fetch for the
+// session.
 const cycleImagesCache = new Map();
 
-function isVideoEntry(entry) {
-    if (typeof entry?.type === 'string' && entry.type.toLowerCase() === 'video') {
-        return true;
-    }
-    return isVideoPreviewUrl(entry?.url || '');
+function normalizeMediaUrl(url) {
+    if (typeof url !== 'string') return '';
+    return url.split(/[?#]/)[0];
 }
 
-function extractCycleImages(metadata) {
-    // fetchModelMetadata returns the civitai section itself (see ModelModal),
-    // not a wrapper with a `civitai` key.
+function fetchLocalExampleFiles(sha256) {
+    if (!sha256) return Promise.resolve([]);
+    const params = new URLSearchParams({ model_hash: sha256 });
+    return fetch(`/api/lm/example-image-files?${params}`)
+        .then(response => (response.ok ? response.json() : null))
+        .then(data => (data?.success ? data.files || [] : []))
+        .catch(() => []);
+}
+
+// fetchModelMetadata returns the civitai section itself (see ModelModal), not
+// a wrapper with a `civitai` key.
+function getExampleSource(metadata) {
     const source = metadata?.images || metadata?.customImages ? metadata : metadata?.civitai || {};
-    const entries = [...(source.images || []), ...(source.customImages || [])];
+    return {
+        regularImages: Array.isArray(source.images) ? source.images : [],
+        customImages: Array.isArray(source.customImages) ? source.customImages : [],
+    };
+}
+
+/**
+ * True when at least one entry has no remote URL, i.e. it is an example
+ * imported from disk and needs the local file listing to become usable.
+ */
+function hasUnresolvedExampleEntries(metadata) {
+    const { regularImages, customImages } = getExampleSource(metadata);
+    return [...regularImages, ...customImages].some(entry => entry && !entry.url);
+}
+
+/**
+ * Build the cycling frame list from CivitAI metadata plus local files.
+ *
+ * Entries imported from disk have no `url`; resolveExampleMedia pairs them
+ * with their `custom_<id>` / `image_<index>` file, so those models cycle
+ * instead of being silently dropped. Remote URLs win when present because
+ * they are already card-sized (`getThumbnailUrl`) and browser-cached.
+ *
+ * @returns {{urls: string[], anchorIndex: number}}
+ *   `anchorIndex` is the frame matching the fixed preview, or -1 when the
+ *   preview is not part of the rotation (custom-only example sets).
+ */
+function extractCycleImages(metadata, exampleFiles, previewUrl) {
+    const { regularImages, customImages } = getExampleSource(metadata);
     const showOnlySFW = state.settings.show_only_sfw;
 
-    return entries
-        .filter(entry => entry?.url && !isVideoEntry(entry))
-        .filter(entry => !showOnlySFW || (entry.nsfwLevel ?? 0) < NSFW_LEVELS.R)
-        // Card-sized frames: width=450 keeps hover loads fast; non-CivitAI
-        // URLs (custom images) pass through unchanged.
-        .map(entry => getThumbnailUrl(entry.url));
+    const candidates = [
+        ...regularImages.map((entry, index) => ({ entry, index })),
+        ...customImages.map(entry => ({ entry, index: 0 })),
+    ];
+
+    const urls = [];
+    for (const { entry, index } of candidates) {
+        if (!entry) continue;
+        if (showOnlySFW && (entry.nsfwLevel ?? 0) >= NSFW_LEVELS.R) continue;
+
+        const { url: resolvedUrl, isVideo } = resolveExampleMedia(entry, index, exampleFiles);
+        if (isVideo || !resolvedUrl) continue;
+
+        // Card-sized frames: width=450 keeps hover loads fast for CivitAI
+        // URLs; local example paths pass through unchanged.
+        const url = entry.url ? getThumbnailUrl(resolvedUrl) : resolvedUrl;
+        if (!urls.includes(url)) {
+            urls.push(url);
+        }
+    }
+
+    const previewKey = normalizeMediaUrl(previewUrl);
+    let anchorIndex = previewKey
+        ? urls.findIndex(url => normalizeMediaUrl(url) === previewKey)
+        : -1;
+    // CivitAI models keep the historical assumption that the first example
+    // doubles as the card preview, even when the URL forms differ slightly
+    // after thumbnail rewriting.
+    if (anchorIndex < 0 && regularImages.length > 0) {
+        anchorIndex = 0;
+    }
+
+    return { urls, anchorIndex };
 }
 
 function getCycleImages(model) {
@@ -60,21 +130,40 @@ function getCycleImages(model) {
     if (!cycleImagesCache.has(filePath)) {
         const request = getModelApiClient()
             .fetchModelMetadata(filePath)
-            .then(metadata => extractCycleImages(metadata))
+            .then(async metadata => {
+                // Only CivitAI-less (or disk-imported) example sets need the
+                // local listing; a fully remote set never touches the disk.
+                const exampleFiles = hasUnresolvedExampleEntries(metadata)
+                    ? await fetchLocalExampleFiles(model.sha256)
+                    : [];
+                return extractCycleImages(metadata, exampleFiles, model.preview_url);
+            })
             .catch(() => {
                 // Allow a later hover to retry after a transient failure.
                 cycleImagesCache.delete(filePath);
-                return [];
+                return { urls: [], anchorIndex: -1 };
             });
         cycleImagesCache.set(filePath, request);
     }
     return cycleImagesCache.get(filePath);
 }
 
+// Keep in sync with the range input bounds in
+// templates/components/modals/settings/interface.html: stale settings.json
+// values (from the old 8s option or manual edits) are clamped so the runtime
+// always matches what the slider can express.
+const MIN_CYCLE_INTERVAL_SECONDS = 0.5;
+const MAX_CYCLE_INTERVAL_SECONDS = 3;
+
 function getCycleIntervalMs() {
     const seconds = Number(state.global?.settings?.card_preview_cycle_interval);
     const valid = Number.isFinite(seconds) && seconds > 0 ? seconds : DEFAULT_CYCLE_INTERVAL_SECONDS;
-    return valid * 1000;
+    const clamped = Math.min(MAX_CYCLE_INTERVAL_SECONDS, Math.max(MIN_CYCLE_INTERVAL_SECONDS, valid));
+    return clamped * 1000;
+}
+
+function getFadeDurationMs() {
+    return Math.min(MAX_FADE_MS, Math.round(getCycleIntervalMs() * FADE_INTERVAL_RATIO));
 }
 
 function prefersReducedMotion() {
@@ -124,11 +213,15 @@ export function attachCardPreviewCycler(card, model) {
     };
 
     const createBuffers = () => {
+        const fadeMs = getFadeDurationMs();
         buffers = [0, 1].map(() => {
             const img = document.createElement('img');
             img.className = 'card-preview-cycle-img';
             img.draggable = false;
             img.alt = '';
+            // Overrides the stylesheet default; keeps the crossfade short
+            // enough for rapid cycle intervals.
+            img.style.transitionDuration = `${fadeMs}ms`;
             cardPreview.appendChild(img);
             return img;
         });
@@ -140,7 +233,7 @@ export function attachCardPreviewCycler(card, model) {
         buffers = null;
         // Fade back to the anchor preview before dropping the overlays.
         stale.forEach(img => img.classList.remove('visible'));
-        setTimeout(() => stale.forEach(img => img.remove()), 450);
+        setTimeout(() => stale.forEach(img => img.remove()), getFadeDurationMs() + 50);
     };
 
     const cleanup = () => {
@@ -196,29 +289,29 @@ export function attachCardPreviewCycler(card, model) {
     // preloaded during it so it can fade in instantly on activation.
     const startPrefetch = () => {
         if (pendingImages) return;
-        pendingImages = getCycleImages(model).then(urls => {
-            // The first CivitAI example doubles as the cover/preview, so the
-            // first frame shown is index 1 (the cover rejoins the rotation
-            // when the cycle wraps).
+        pendingImages = getCycleImages(model).then(({ urls, anchorIndex }) => {
             if (urls.length > 1) {
-                ensurePreloaded(urls[1]);
+                ensurePreloaded(urls[(anchorIndex + 1) % urls.length]);
             }
-            return urls;
+            return { urls, anchorIndex };
         });
     };
 
     const activate = async () => {
         hoverDelayTimer = null;
-        imageUrls = await pendingImages;
+        const cycleData = await pendingImages;
+        const urls = cycleData?.urls || [];
         // A single example is the cover image itself — nothing new to show.
         // The cycleTimer guard catches a second activation that was re-armed
         // while this one was still awaiting its image list.
-        if (!hovered || pointerInChrome || !card.isConnected || imageUrls.length < 2 || cycleTimer) {
+        if (!hovered || pointerInChrome || !card.isConnected || urls.length < 2 || cycleTimer) {
             return;
         }
-        // Index 0 is the anchor's double; treat it as the current frame so
-        // the first swap lands on index 1.
-        currentIndex = 0;
+        imageUrls = urls;
+        // Start from the fixed preview when it is part of the rotation, so the
+        // first swap shows the next example. Custom-only example sets have no
+        // anchor in the list: start at -1 so frame 0 shows immediately.
+        currentIndex = cycleData.anchorIndex;
         card.classList.add('cycling');
         createBuffers();
         swapToNext();

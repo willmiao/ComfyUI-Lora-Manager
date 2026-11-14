@@ -478,12 +478,7 @@
             "cycleOnHover": "滑鼠懸停時輪播範例圖片",
             "cycleOnHoverHelp": "滑鼠懸停在卡片的預覽圖片上時，會輪播其範例圖片。滑鼠懸停在卡片的頂部或底部區域不會觸發輪播，因此操作按鈕和懸浮提示仍可正常使用。所選的預覽圖片本身不會改變。影片預覽不受影響。",
             "cycleInterval": "輪播間隔",
-            "cycleIntervalHelp": "滑鼠懸停於卡片時，範例圖片切換的時間間隔。",
-            "cycleIntervalOptions": {
-                "fast": "快（1.5 秒）",
-                "normal": "正常（2 秒）",
-                "relaxed": "舒緩（3 秒）"
-            }
+            "cycleIntervalHelp": "滑鼠懸停於卡片時，範例圖片切換的時間間隔。"
         },
         "autoOrganizeExclusions": {
             "label": "自動整理排除項目",

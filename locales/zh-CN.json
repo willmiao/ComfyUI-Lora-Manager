@@ -478,12 +478,7 @@
             "cycleOnHover": "悬停时轮播示例图片",
             "cycleOnHoverHelp": "悬停在卡片的预览图片上时，会轮播其示例图片。悬停在卡片的头部或底部区域不会触发轮播，因此操作按钮和悬浮提示仍可正常使用。所选预览图片本身不会改变。视频预览不受影响。",
             "cycleInterval": "轮播间隔",
-            "cycleIntervalHelp": "悬停卡片时，示例图片切换的时间间隔。",
-            "cycleIntervalOptions": {
-                "fast": "快（1.5 秒）",
-                "normal": "正常（2 秒）",
-                "relaxed": "舒缓（3 秒）"
-            }
+            "cycleIntervalHelp": "悬停卡片时，示例图片切换的时间间隔。"
         },
         "autoOrganizeExclusions": {
             "label": "自动整理排除项",

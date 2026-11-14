@@ -478,12 +478,7 @@
       "cycleOnHover": "Cycle Example Images on Hover",
       "cycleOnHoverHelp": "When hovering a card's preview image, cycle through its example images. Hovering the card header or footer does not start cycling, so action buttons and tooltips stay usable. The selected preview image itself stays unchanged. Video previews are not affected.",
       "cycleInterval": "Cycle Interval",
-      "cycleIntervalHelp": "Time between example image switches while hovering a card.",
-      "cycleIntervalOptions": {
-        "fast": "Fast (1.5s)",
-        "normal": "Normal (2s)",
-        "relaxed": "Relaxed (3s)"
-      }
+      "cycleIntervalHelp": "Time between example image switches while hovering a card."
     },
     "autoOrganizeExclusions": {
       "label": "Auto-organize exclusions",

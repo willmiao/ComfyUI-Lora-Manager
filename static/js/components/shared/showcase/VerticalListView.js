@@ -13,7 +13,8 @@ import {
     initMediaControlHandlers,
     positionAllMediaControls
 } from './MediaUtils.js';
-import { renderShowcaseMediaItem, findLocalFile } from './MediaRenderers.js';
+import { renderShowcaseMediaItem } from './MediaRenderers.js';
+import { findLocalFile } from './exampleMediaResolver.js';
 import { getShowcaseUrl } from '../../../utils/civitaiUtils.js';
 import { openMediaViewer } from '../MediaViewer.js';
 

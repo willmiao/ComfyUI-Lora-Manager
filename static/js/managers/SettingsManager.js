@@ -1011,14 +1011,9 @@ export class SettingsManager {
 
         // Set card blur amount slider
         const cardBlurAmountInput = document.getElementById('cardBlurAmount');
-        const cardBlurValue = state.global.settings.card_blur_amount ?? 8;
         if (cardBlurAmountInput) {
-            cardBlurAmountInput.value = cardBlurValue;
-            cardBlurAmountInput.style.setProperty('--range-fill', (cardBlurValue / 20 * 100) + '%');
-        }
-        const cardBlurAmountValue = document.getElementById('cardBlurAmountValue');
-        if (cardBlurAmountValue) {
-            cardBlurAmountValue.textContent = `${cardBlurValue}px`;
+            cardBlurAmountInput.value = state.global.settings.card_blur_amount ?? 8;
+            this.updateRangeControl(cardBlurAmountInput);
         }
 
         const usePortableCheckbox = document.getElementById('usePortableSettings');
@@ -1227,9 +1222,12 @@ export class SettingsManager {
         if (cardPreviewCycleCheckbox) {
             cardPreviewCycleCheckbox.checked = state.global.settings.card_preview_cycle ?? true;
         }
-        const cardPreviewCycleIntervalSelect = document.getElementById('cardPreviewCycleInterval');
-        if (cardPreviewCycleIntervalSelect) {
-            cardPreviewCycleIntervalSelect.value = String(state.global.settings.card_preview_cycle_interval ?? 2);
+        const cardPreviewCycleIntervalInput = document.getElementById('cardPreviewCycleInterval');
+        if (cardPreviewCycleIntervalInput) {
+            cardPreviewCycleIntervalInput.value = String(
+                state.global.settings.card_preview_cycle_interval ?? 2
+            );
+            this.updateRangeControl(cardPreviewCycleIntervalInput);
         }
 
         // Set display density setting
@@ -3481,25 +3479,65 @@ export class SettingsManager {
         });
     }
 
-    async saveRangeSetting(elementId, displayId, settingKey) {
+    /**
+     * Paint a range input's fill and keep its value label in sync.
+     *
+     * Label formatting is driven by data attributes so one helper serves every
+     * range control:
+     *   data-range-display -> id of the label element
+     *   data-range-format  -> 'px' (default) or 'seconds'
+     *
+     * The fill uses the input's own min/max, so sliders that do not start at 0
+     * (cycle interval starts at 0.5s) stay visually correct.
+     */
+    updateRangeControl(input) {
+        if (!input) return;
+
+        const min = parseFloat(input.min) || 0;
+        const max = parseFloat(input.max) || 100;
+        const value = parseFloat(input.value) || 0;
+        const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
+        input.style.setProperty('--range-fill', `${percent}%`);
+
+        const displayId = input.dataset.rangeDisplay;
+        const displayEl = displayId ? document.getElementById(displayId) : null;
+        if (displayEl) {
+            displayEl.textContent = this.formatRangeValue(input, value);
+        }
+    }
+
+    /**
+     * Render a range value for display. Seconds go through
+     * `Intl.NumberFormat` so each locale keeps its own unit rendering
+     * ("2s", "2秒", "2 с", ...) without extra i18n keys.
+     */
+    formatRangeValue(input, value) {
+        if (input?.dataset?.rangeFormat === 'seconds') {
+            try {
+                const locale = window.i18n?.getCurrentLocale?.() || 'en';
+                return new Intl.NumberFormat(locale, {
+                    style: 'unit',
+                    unit: 'second',
+                    unitDisplay: 'narrow',
+                }).format(value);
+            } catch (error) {
+                return `${value}s`;
+            }
+        }
+        return `${value}px`;
+    }
+
+    async saveRangeSetting(elementId, settingKey) {
         const element = document.getElementById(elementId);
         if (!element) return;
 
-        const value = parseInt(element.value, 10);
+        // parseFloat keeps sub-second values (cycle interval step is 0.5s).
+        const value = parseFloat(element.value);
 
         try {
             await this.saveSetting(settingKey, value);
             this.applyFrontendSettings();
-
-            // Update the displayed value next to the slider
-            const displayEl = document.getElementById(displayId);
-            if (displayEl) {
-                displayEl.textContent = `${value}px`;
-            }
-
-            const max = parseInt(element.max, 10) || 20;
-            element.style.setProperty('--range-fill', (value / max * 100) + '%');
-
+            this.updateRangeControl(element);
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');

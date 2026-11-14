@@ -305,6 +305,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > are now translated, keeping each locale's pace words and unit notation; 1.5 uses the
 > locale's decimal separator (1,5 in de/es/fr/ru, 1.5 elsewhere).
 >
+> **Status (2026-11, card preview cycling, interval slider):** the interval select was
+> replaced by a range slider (0.5–3s, 0.5s steps). Its value label is formatted with
+> `Intl.NumberFormat` (`style: "unit", unit: "second", unitDisplay: "narrow"`), so each
+> locale keeps its own unit notation automatically and the whole `cycleIntervalOptions.*`
+> group was deleted from `en.json` and all 9 locales — there are no replacement keys to
+> translate.
+>
 > **Status (2026-11, card preview cycling, hover-zone revision):** cycling now arms only
 > from the bare preview area — hovering the card header or footer never starts it — and
 > the activation delay dropped from 1.5s to 0.8s. `settings.cardPreview.cycleOnHoverHelp`

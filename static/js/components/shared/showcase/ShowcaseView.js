@@ -23,7 +23,8 @@ import {
     initMediaControlHandlers,
     positionAllMediaControls
 } from './MediaUtils.js';
-import { renderShowcaseMediaItem, findLocalFile } from './MediaRenderers.js';
+import { renderShowcaseMediaItem } from './MediaRenderers.js';
+import { findLocalFile } from './exampleMediaResolver.js';
 import { renderVerticalList, initVerticalList } from './VerticalListView.js';
 import { getShowcaseUrl, getDisplayUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
 import { openMediaViewer, isMediaViewerOpen } from '../MediaViewer.js';

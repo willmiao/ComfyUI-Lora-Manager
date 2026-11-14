@@ -478,12 +478,7 @@
             "cycleOnHover": "ホバー時に例画像を切り替え",
             "cycleOnHoverHelp": "カードのプレビュー画像にホバーすると、その例画像が順に切り替わります。カードのヘッダーやフッターにホバーしても切り替えは開始されないため、アクションボタンやツールチップはそのまま利用できます。選択中のプレビュー画像自体は変わりません。動画プレビューは対象外です。",
             "cycleInterval": "切り替え間隔",
-            "cycleIntervalHelp": "カードにホバーしている間、例画像を切り替える間隔です。",
-            "cycleIntervalOptions": {
-                "fast": "速い（1.5秒）",
-                "normal": "標準（2秒）",
-                "relaxed": "のんびり（3秒）"
-            }
+            "cycleIntervalHelp": "カードにホバーしている間、例画像を切り替える間隔です。"
         },
         "autoOrganizeExclusions": {
             "label": "自動整理除外設定",

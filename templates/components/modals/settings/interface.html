@@ -24,11 +24,23 @@
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.cardPreview') }}
         {{ sm.setting_toggle('cardPreviewCycle', 'card_preview_cycle', 'settings.cardPreview.cycleOnHover', 'settings.cardPreview.cycleOnHoverHelp') }}
-        {{ sm.setting_select('cardPreviewCycleInterval', 'card_preview_cycle_interval', 'settings.cardPreview.cycleInterval', [
-            ('1.5', 'settings.cardPreview.cycleIntervalOptions.fast'),
-            ('2', 'settings.cardPreview.cycleIntervalOptions.normal'),
-            ('3', 'settings.cardPreview.cycleIntervalOptions.relaxed'),
-        ], 'settings.cardPreview.cycleIntervalHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="cardPreviewCycleInterval">
+                        {{ t('settings.cardPreview.cycleInterval') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.cardPreview.cycleIntervalHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control range-control">
+                    <input type="range" id="cardPreviewCycleInterval" min="0.5" max="3" value="2" step="0.5"
+                           data-range-display="cardPreviewCycleIntervalValue" data-range-format="seconds"
+                           oninput="settingsManager.updateRangeControl(this)"
+                           onchange="settingsManager.saveRangeSetting('cardPreviewCycleInterval', 'card_preview_cycle_interval')">
+                    <span id="cardPreviewCycleIntervalValue" class="range-value">2s</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Layout Settings -->
@@ -119,8 +131,9 @@
                 </div>
                 <div class="setting-control range-control">
                     <input type="range" id="cardBlurAmount" min="0" max="20" value="8" step="1"
-                           oninput="var pct = (this.value / 20) * 100; this.style.setProperty('--range-fill', pct + '%'); document.getElementById('cardBlurAmountValue').textContent = this.value + 'px'"
-                           onchange="settingsManager.saveRangeSetting('cardBlurAmount', 'cardBlurAmountValue', 'card_blur_amount')">
+                           data-range-display="cardBlurAmountValue" data-range-format="px"
+                           oninput="settingsManager.updateRangeControl(this)"
+                           onchange="settingsManager.saveRangeSetting('cardBlurAmount', 'card_blur_amount')">
                     <span id="cardBlurAmountValue" class="range-value">8px</span>
                 </div>
             </div>

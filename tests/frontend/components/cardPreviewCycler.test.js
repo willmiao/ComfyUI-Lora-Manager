@@ -13,6 +13,9 @@ const {
 }));
 
 const fetchModelMetadataMock = vi.fn();
+// Local example files come from /api/lm/example-image-files, not from the
+// model API client, so the cycler calls global fetch directly.
+const fetchLocalFilesMock = vi.fn();
 
 const stateMock = {
   settings: {
@@ -95,8 +98,14 @@ describe('CardPreviewCycler', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.stubGlobal('Image', InstantImage);
+    vi.stubGlobal('fetch', fetchLocalFilesMock);
     fetchModelMetadataMock.mockReset();
     fetchModelMetadataMock.mockResolvedValue(METADATA);
+    fetchLocalFilesMock.mockReset();
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, files: [] }),
+    });
     stateMock.settings.show_only_sfw = false;
     stateMock.global.settings.card_preview_cycle = true;
     stateMock.global.settings.card_preview_cycle_interval = 2;
@@ -276,7 +285,7 @@ describe('CardPreviewCycler', () => {
   });
 
   it('uses the configured cycle interval', async () => {
-    stateMock.global.settings.card_preview_cycle_interval = 5;
+    stateMock.global.settings.card_preview_cycle_interval = 2.5;
     const card = createCard();
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
@@ -285,12 +294,54 @@ describe('CardPreviewCycler', () => {
     await advance(1);
     expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
 
-    // 5s interval: nothing new after 3s, second frame after 5s.
-    await advance(3000);
+    // 2.5s interval: nothing new after 2s, second frame after 2.5s.
+    await advance(2000);
     await advance(1);
     expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
 
-    await advance(2000);
+    await advance(500);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/nsfw.jpg');
+  });
+
+  it('clamps intervals outside the slider bounds', async () => {
+    // Values from the old 8s option (or manual settings.json edits) must not
+    // make cycling slower than the slider can express.
+    stateMock.global.settings.card_preview_cycle_interval = 8;
+    const card = createCard();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
+
+    // Clamped to 3s: still the first frame after 2.5s, next one at 3s.
+    await advance(2500);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
+
+    await advance(500);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/nsfw.jpg');
+  });
+
+  it('clamps sub-half-second intervals up to the slider minimum', async () => {
+    stateMock.global.settings.card_preview_cycle_interval = 0.1;
+    const card = createCard();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
+
+    // Clamped to 0.5s rather than switching every 100ms. 1ms has already
+    // elapsed since activation, so 498ms stays under the 500ms interval.
+    await advance(498);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/2.jpg');
+
+    await advance(2);
     await advance(1);
     expect(preview.querySelector('.card-preview-cycle-img.visible').src).toBe('https://img/nsfw.jpg');
   });
@@ -348,5 +399,113 @@ describe('CardPreviewCycler', () => {
 
     await advance(5000);
     expect(preview.querySelectorAll('.card-preview-cycle-img')).toHaveLength(0);
+  });
+
+  it('cycles example images imported from disk whose metadata urls are empty', async () => {
+    const model = { ...MODEL, sha256: 'hash123', preview_url: '/anchor.jpg' };
+    fetchModelMetadataMock.mockResolvedValue({
+      customImages: [
+        { id: 'a1', url: '', nsfwLevel: 1 },
+        { id: 'b2', url: '', nsfwLevel: 1 },
+        // Locally imported video: paired file is skipped like remote videos.
+        { id: 'v3', url: '', type: 'video', nsfwLevel: 1 },
+      ],
+    });
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        files: [
+          { name: 'custom_a1.png', path: '/example_images_static/m/custom_a1.png', is_video: false },
+          { name: 'custom_b2.png', path: '/example_images_static/m/custom_b2.png', is_video: false },
+          { name: 'custom_v3.mp4', path: '/example_images_static/m/custom_v3.mp4', is_video: true },
+        ],
+      }),
+    });
+
+    const card = createCard();
+    attachCardPreviewCycler(card, model);
+    const preview = hover(card);
+
+    // The fixed preview is not part of the local-only rotation, so the first
+    // frame is shown immediately instead of being skipped as the "cover".
+    await advance(800);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/example_images_static/m/custom_a1.png');
+
+    await advance(2000);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/example_images_static/m/custom_b2.png');
+
+    // The local video never enters the rotation.
+    const shownUrls = [...preview.querySelectorAll('.card-preview-cycle-img')].map(img => img.src);
+    expect(shownUrls.some(url => url.includes('custom_v3.mp4'))).toBe(false);
+
+    // Files are looked up by the model hash.
+    expect(fetchLocalFilesMock).toHaveBeenCalledWith(
+      expect.stringContaining('model_hash=hash123')
+    );
+  });
+
+  it('starts after the fixed preview when it is the first local example', async () => {
+    const model = {
+      ...MODEL,
+      sha256: 'hash123',
+      preview_url: '/example_images_static/m/custom_a1.png',
+    };
+    fetchModelMetadataMock.mockResolvedValue({
+      customImages: [
+        { id: 'a1', url: '', nsfwLevel: 1 },
+        { id: 'b2', url: '', nsfwLevel: 1 },
+      ],
+    });
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        files: [
+          { name: 'custom_a1.png', path: '/example_images_static/m/custom_a1.png', is_video: false },
+          { name: 'custom_b2.png', path: '/example_images_static/m/custom_b2.png', is_video: false },
+        ],
+      }),
+    });
+
+    const card = createCard();
+    attachCardPreviewCycler(card, model);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/example_images_static/m/custom_b2.png');
+  });
+
+  it('shortens the crossfade when the cycle interval is rapid', async () => {
+    stateMock.global.settings.card_preview_cycle_interval = 0.5;
+    const card = createCard();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(1);
+
+    const buffers = preview.querySelectorAll('.card-preview-cycle-img');
+    expect(buffers).toHaveLength(2);
+    buffers.forEach(img => expect(img.style.transitionDuration).toBe('125ms'));
+  });
+
+  it('keeps the full crossfade for slow intervals', async () => {
+    stateMock.global.settings.card_preview_cycle_interval = 3;
+    const card = createCard();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(1);
+
+    const buffers = preview.querySelectorAll('.card-preview-cycle-img');
+    buffers.forEach(img => expect(img.style.transitionDuration).toBe('400ms'));
   });
 });

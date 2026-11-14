@@ -180,6 +180,13 @@
     pointer-events: none;
 }
 
+/* Cycling keeps the pointer parked on the image for the whole rotation (moving
+   it off the card stops cycling), so the pointer cursor would sit right on top
+   of the frames. Hide it while cycling; leaving the card restores it. */
+.model-card.cycling {
+    cursor: none;
+}
+
 .nsfw-overlay {
     position: absolute;
     top: 0;

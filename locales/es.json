@@ -478,12 +478,7 @@
             "cycleOnHover": "Cambiar imágenes de ejemplo al pasar el ratón",
             "cycleOnHoverHelp": "Al pasar el ratón sobre la imagen de vista previa de una tarjeta, sus imágenes de ejemplo se muestran una tras otra. Pasar el ratón sobre el encabezado o el pie de la tarjeta no inicia el ciclo, por lo que los botones de acción y los tooltips siguen utilizables. La imagen de vista previa seleccionada no cambia. Las vistas previas de video no se ven afectadas.",
             "cycleInterval": "Intervalo de cambio",
-            "cycleIntervalHelp": "Tiempo entre cada cambio de imagen de ejemplo mientras se pasa el ratón sobre una tarjeta.",
-            "cycleIntervalOptions": {
-                "fast": "Rápido (1,5 s)",
-                "normal": "Normal (2 s)",
-                "relaxed": "Pausado (3 s)"
-            }
+            "cycleIntervalHelp": "Tiempo entre cada cambio de imagen de ejemplo mientras se pasa el ratón sobre una tarjeta."
         },
         "autoOrganizeExclusions": {
             "label": "Exclusiones de auto-organización",

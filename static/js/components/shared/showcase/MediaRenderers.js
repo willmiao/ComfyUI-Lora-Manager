@@ -7,6 +7,7 @@ import { translate } from '../../../utils/i18nHelpers.js';
 import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js';
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { getDisplayUrl, getShowcaseUrl } from '../../../utils/civitaiUtils.js';
+import { findLocalFile } from './exampleMediaResolver.js';
 
 /**
  * Generate video wrapper HTML. The wrapper fills its container (the gallery's
@@ -100,33 +101,6 @@ export function generateImageWrapper(media, shouldBlur, nsfwText, metadataPanel,
             ${metadataPanel}
         </div>
     `;
-}
-
-/**
- * Find the matching local file for an image
- * @param {Object} img - Image metadata
- * @param {number} index - Image index
- * @param {Array} exampleFiles - Array of local files
- * @returns {Object|null} Matching local file or null
- */
-export function findLocalFile(img, index, exampleFiles) {
-    if (!exampleFiles || exampleFiles.length === 0) return null;
-
-    let localFile = null;
-
-    if (typeof img.id === 'string' && img.id) {
-        // This is a custom image, find by custom_<id>
-        const customPrefix = `custom_${img.id}`;
-        localFile = exampleFiles.find(file => file.name.startsWith(customPrefix));
-    } else {
-        // This is a regular image from civitai, find by index
-        localFile = exampleFiles.find(file => {
-            const match = file.name.match(/image_(\d+)\./);
-            return match && parseInt(match[1]) === index;
-        });
-    }
-
-    return localFile;
 }
 
 /**
