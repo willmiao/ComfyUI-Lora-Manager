@@ -201,6 +201,12 @@ class LoraRoutes(BaseModelRoutes):
                     status=404,
                 )
             details = dict(metadata)
+            try:
+                annotated = await self.service.annotate_update_flags([details])
+                if annotated:
+                    details = annotated[0]
+            except Exception:
+                details["update_available"] = False
             file_path = details.get("file_path")
             if file_path:
                 full_metadata = await self.service.get_model_metadata(file_path)

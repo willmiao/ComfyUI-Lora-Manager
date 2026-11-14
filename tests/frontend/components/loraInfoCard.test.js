@@ -27,6 +27,7 @@ const { appMock, apiMocks, quickMock } = vi.hoisted(() => ({
     formatUsageTips: vi.fn(() => 'Strength 0.7'),
     openLoraManager: vi.fn(),
     refreshLoraMetadata: vi.fn(),
+    saveLoraFavorite: vi.fn(),
     saveLoraNotes: vi.fn(),
   },
   quickMock: { openLoraQuickPanel: vi.fn() },
@@ -102,6 +103,7 @@ describe('LoRA info card', () => {
       civitai: { trainedWords: ['astral', 'cinematic'] },
     });
     apiMocks.saveLoraNotes.mockResolvedValue({ success: true });
+    apiMocks.saveLoraFavorite.mockResolvedValue({ success: true });
   });
 
   it('updates strength and the collapsed clip strength through the widget', async () => {
@@ -268,6 +270,62 @@ describe('LoRA info card', () => {
     expect(description.querySelector('a').hasAttribute('href')).toBe(false);
     expect(description.querySelector('a').hasAttribute('onclick')).toBe(false);
     expect(description.querySelector('a').getAttribute('target')).toBe('_blank');
+    card.close();
+  });
+
+  it('shows the favorite state and toggles it through the metadata API', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+      favorite: false,
+    });
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const star = card.tabContent.querySelector('button.lm-info-card__favorite');
+    expect(star).not.toBeNull();
+    expect(star.textContent).toBe('☆');
+    expect(star.getAttribute('aria-pressed')).toBe('false');
+
+    star.click();
+    await flush();
+
+    expect(apiMocks.saveLoraFavorite).toHaveBeenCalledWith('/models/astral.safetensors', true);
+    expect(card.details.favorite).toBe(true);
+    expect(star.textContent).toBe('★');
+    expect(star.getAttribute('aria-pressed')).toBe('true');
+    card.close();
+  });
+
+  it('shows library badges from the local entry', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+      update_available: true,
+      exclude: true,
+      skip_metadata_refresh: true,
+    });
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const labels = [...card.tabContent.querySelectorAll('.lm-info-card__badge')]
+      .map((badge) => badge.textContent);
+    expect(labels).toEqual(['↑ Update available', 'Excluded', 'Metadata refresh skipped']);
+    expect(card.tabContent.querySelector('.lm-info-card__badge--update')).not.toBeNull();
     card.close();
   });
 

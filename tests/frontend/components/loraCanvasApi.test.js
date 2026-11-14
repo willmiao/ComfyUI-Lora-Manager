@@ -52,6 +52,24 @@ describe('LoRA canvas folder API', () => {
     expect(details).toEqual({ model_name: 'Astral', use_new_license_icons: false });
   });
 
+  it('saves the favorite flag through the metadata endpoint', async () => {
+    fetchApiMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    const { saveLoraFavorite } = await import('../../../web/comfyui/lora_canvas_api.js');
+    await saveLoraFavorite('/models/astral.safetensors', true);
+
+    const [url, options] = fetchApiMock.mock.calls.at(-1);
+    expect(url).toBe('/lm/loras/save-metadata');
+    expect(options.method).toBe('POST');
+    expect(JSON.parse(options.body)).toEqual({
+      favorite: true,
+      file_path: '/models/astral.safetensors',
+    });
+  });
+
   it('reuses the named manager tab for full details', async () => {
     const openMock = vi.spyOn(window, 'open').mockImplementation(() => null);
     try {

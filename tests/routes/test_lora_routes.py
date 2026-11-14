@@ -40,6 +40,12 @@ class StubLoraService:
     async def get_model_info_by_name(self, name):
         return self.details.get(name)
 
+    async def annotate_update_flags(self, items):
+        return [
+            {**item, "update_available": bool(item.get("update_available", False))}
+            for item in items
+        ]
+
     async def get_model_metadata(self, file_path):
         return self.full_metadata.get(file_path)
 
@@ -166,6 +172,36 @@ async def test_get_lora_details_includes_license_icon_style(monkeypatch, routes)
     response = await routes.get_lora_details(DummyRequest(query={"name": "demo"}))
     payload = json.loads(response.text)
     assert payload["use_new_license_icons"] is False
+
+
+async def test_get_lora_details_annotates_update_flag(routes):
+    routes.service.details["demo"] = {
+        "model_name": "Demo",
+        "file_path": "/models/demo.safetensors",
+        "favorite": True,
+    }
+
+    async def annotate(items):
+        return [{**item, "update_available": True} for item in items]
+
+    routes.service.annotate_update_flags = annotate
+    response = await routes.get_lora_details(DummyRequest(query={"name": "demo"}))
+    payload = json.loads(response.text)
+    assert payload["metadata"]["update_available"] is True
+    assert payload["metadata"]["favorite"] is True
+
+
+async def test_get_lora_details_survives_update_lookup_failure(routes):
+    routes.service.details["demo"] = {"model_name": "Demo"}
+
+    async def annotate(_items):
+        raise RuntimeError("update service unavailable")
+
+    routes.service.annotate_update_flags = annotate
+    response = await routes.get_lora_details(DummyRequest(query={"name": "demo"}))
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["metadata"]["update_available"] is False
 
 
 async def test_get_lora_details_requires_name(routes):

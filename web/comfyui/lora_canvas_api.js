@@ -164,14 +164,22 @@ export function formatUsageTips(details) {
   return parts.join(" · ");
 }
 
-export async function saveLoraNotes(filePath, notes) {
+export async function saveLoraMetadata(filePath, updates, fallbackMessage = "Failed to save metadata") {
   if (!filePath) throw new Error("This LoRA is outside the managed library");
   return readJson(
     await api.fetchApi("/lm/loras/save-metadata", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ file_path: filePath, notes }),
+      body: JSON.stringify({ ...updates, file_path: filePath }),
     }),
-    "Failed to save notes",
+    fallbackMessage,
   );
+}
+
+export async function saveLoraNotes(filePath, notes) {
+  return saveLoraMetadata(filePath, { notes }, "Failed to save notes");
+}
+
+export async function saveLoraFavorite(filePath, favorite) {
+  return saveLoraMetadata(filePath, { favorite }, "Failed to update favorite");
 }

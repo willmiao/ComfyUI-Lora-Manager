@@ -9,6 +9,7 @@ import {
   formatUsageTips,
   openLoraManager,
   refreshLoraMetadata,
+  saveLoraFavorite,
   saveLoraNotes,
 } from "./lora_canvas_api.js";
 import {
@@ -119,6 +120,7 @@ export class LoraInfoCard {
     this.notesDraft = null;
     this.originalNotes = "";
     this.savingNotes = false;
+    this.savingFavorite = false;
   }
 
   open() {
@@ -296,10 +298,15 @@ export class LoraInfoCard {
       header.appendChild(preview);
     }
     const identityText = el("div", "lm-info-card__identity-text");
-    identityText.appendChild(el("h2", "lm-info-card__name", details.model_name || this.loraName));
+    const nameRow = el("div", "lm-info-card__name-row");
+    nameRow.appendChild(el("h2", "lm-info-card__name", details.model_name || this.loraName));
+    nameRow.appendChild(this.buildFavoriteButton(details));
+    identityText.appendChild(nameRow);
     identityText.appendChild(el("div", "lm-info-card__meta", details.base_model || "Base model unknown"));
     const relativePath = [details.folder, details.file_name].filter(Boolean).join("/") || this.loraName;
     identityText.appendChild(el("div", "lm-info-card__path", relativePath));
+    const badges = this.badgeRow(details);
+    if (badges) identityText.appendChild(badges);
     header.appendChild(identityText);
     this.tabContent.appendChild(header);
 
@@ -339,6 +346,83 @@ export class LoraInfoCard {
       usageSection.appendChild(el("h3", "lm-info-card__heading", "Usage tips"));
       usageSection.appendChild(el("div", "lm-info-card__usage", usage));
       this.tabContent.appendChild(usageSection);
+    }
+  }
+
+  badgeRow(details) {
+    const badges = [];
+    if (details.update_available) {
+      badges.push({
+        className: "lm-info-card__badge lm-info-card__badge--update",
+        label: "↑ Update available",
+        title: "An update to this LoRA is available on its source site",
+      });
+    }
+    if (details.exclude) {
+      badges.push({
+        className: "lm-info-card__badge lm-info-card__badge--muted",
+        label: "Excluded",
+        title: "This LoRA is excluded from the library views",
+      });
+    }
+    if (details.skip_metadata_refresh) {
+      badges.push({
+        className: "lm-info-card__badge lm-info-card__badge--muted",
+        label: "Metadata refresh skipped",
+        title: "Metadata refresh is disabled for this LoRA",
+      });
+    }
+    if (!badges.length) {
+      return null;
+    }
+
+    const row = el("div", "lm-info-card__badges");
+    for (const { className, label, title } of badges) {
+      const badge = el("span", className, label);
+      badge.title = title;
+      row.appendChild(badge);
+    }
+    return row;
+  }
+
+  buildFavoriteButton(details) {
+    const button = el("button", "lm-info-card__favorite");
+    button.type = "button";
+    this.updateFavoriteButton(button, details.favorite === true);
+    button.addEventListener("click", () => this.toggleFavorite(button));
+    return button;
+  }
+
+  updateFavoriteButton(button, isFavorite) {
+    button.classList.toggle("is-favorite", isFavorite);
+    button.textContent = isFavorite ? "★" : "☆";
+    const label = isFavorite ? "Remove from favorites" : "Add to favorites";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", String(isFavorite));
+  }
+
+  async toggleFavorite(button) {
+    if (this.savingFavorite) return;
+    if (!this.details?.file_path) {
+      this.setStatus("This LoRA is outside the managed library");
+      return;
+    }
+
+    const nextFavorite = this.details.favorite !== true;
+    this.savingFavorite = true;
+    button.disabled = true;
+    this.setStatus(nextFavorite ? "Adding to favorites…" : "Removing from favorites…");
+    try {
+      await saveLoraFavorite(this.details.file_path, nextFavorite);
+      this.details.favorite = nextFavorite;
+      this.updateFavoriteButton(button, nextFavorite);
+      this.setStatus(nextFavorite ? "Added to favorites" : "Removed from favorites");
+    } catch (error) {
+      this.setStatus(error.message);
+    } finally {
+      this.savingFavorite = false;
+      button.disabled = false;
     }
   }
 

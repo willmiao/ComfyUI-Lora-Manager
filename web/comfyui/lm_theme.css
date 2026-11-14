@@ -57,6 +57,7 @@
   --lm-warning-soft: color-mix(in srgb, #f0b429 20%, transparent);
   --lm-warning-border: color-mix(in srgb, #f0b429 55%, transparent);
   --lm-ok: #0f7b3f;
+  --lm-favorite: #b07d00;
 
   /* Depth */
   --lm-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
@@ -118,6 +119,7 @@ html.dark-theme .lm-widget-root,
 html.dark-theme .lm-popover {
   --lm-warning: #f0b429;
   --lm-ok: #4ade80;
+  --lm-favorite: #f0b429;
   --lm-shadow: 0 2px 10px rgb(0 0 0 / 0.45);
   --lm-shadow-lg: 0 10px 25px rgb(0 0 0 / 0.55);
   --lm-scrim: rgb(0 0 0 / 0.6);

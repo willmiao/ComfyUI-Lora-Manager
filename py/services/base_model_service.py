@@ -588,6 +588,17 @@ class BaseModelService(ABC):
 
         return filtered_data
 
+    async def annotate_update_flags(
+        self,
+        items: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Attach ``update_available`` to a one-off set of response items.
+
+        Paginated listing paths call the private implementation directly; the
+        details endpoint uses this wrapper for a single model.
+        """
+        return await self._annotate_update_flags(items)
+
     async def _annotate_update_flags(
         self,
         items: List[Dict[str, Any]],
