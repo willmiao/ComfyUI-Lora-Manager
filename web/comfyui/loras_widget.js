@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState, createAddLoraButton, createStrengthDragHandle } from "./loras_widget_components.js";
+import { openLoraQuickPanel } from "./lora_quick_panel.js";
 import { 
   parseLoraValue, 
   formatLoraValue, 
@@ -271,7 +272,61 @@ export function addLorasWidget(node, name, opts, callback) {
       return loraName.replace(/"|\\/g, "\\$&");
     };
 
-    if (lorasData.length === 0) {
+    // Create header
+    const header = document.createElement("div");
+    header.className = "lm-loras-header";
+
+    const hasLoras = lorasData.length > 0;
+    const activeCount = lorasData.filter(lora => lora.active).length;
+    const allActive = hasLoras && activeCount === lorasData.length;
+    const partiallyActive = activeCount > 0 && !allActive;
+
+    // Add toggle all control
+    const toggleAll = createToggle(allActive, (active) => {
+      // Update all loras active state
+      const lorasData = parseLoraValue(widget.value);
+      lorasData.forEach(lora => lora.active = active);
+
+      const newValue = formatLoraValue(lorasData);
+      updateWidgetValue(newValue);
+    }, {
+      mixed: partiallyActive,
+      disabled: !hasLoras,
+      label: allActive ? "Disable all LoRAs" : "Enable all LoRAs",
+      focusable: true,
+    });
+    toggleAll.title = hasLoras
+      ? `${activeCount} of ${lorasData.length} LoRAs enabled · Click to ${allActive ? "disable" : "enable"} all`
+      : "No LoRAs to toggle";
+
+    // Add label to toggle all
+    const toggleLabel = document.createElement("div");
+    toggleLabel.textContent = hasLoras ? `${activeCount}/${lorasData.length} on` : "0 LoRAs";
+    toggleLabel.className = "lm-toggle-label";
+
+    const toggleContainer = document.createElement("div");
+    toggleContainer.className = "lm-toggle-container";
+    toggleContainer.appendChild(toggleAll);
+    toggleContainer.appendChild(toggleLabel);
+
+    const headerActions = document.createElement("div");
+    headerActions.className = "lm-loras-header-actions";
+
+    if (hasLoras) {
+      const strengthDragHandle = createStrengthDragHandle();
+      headerActions.appendChild(strengthDragHandle);
+      initHeaderDrag(strengthDragHandle, widget, renderLoras);
+    }
+
+    headerActions.appendChild(createAddLoraButton(() => {
+      previewTooltip.hide();
+      openLoraQuickPanel({ node });
+    }));
+    header.appendChild(toggleContainer);
+    header.appendChild(headerActions);
+    container.appendChild(header);
+
+    if (!hasLoras) {
       // Show message when no loras are added
       const emptyMessage = document.createElement("div");
       emptyMessage.textContent = "No LoRAs added";
@@ -280,49 +335,6 @@ export function addLorasWidget(node, name, opts, callback) {
       updateNodeErrorFlag(false);
       return;
     }
-
-    // Create header
-    const header = document.createElement("div");
-    header.className = "lm-loras-header";
-
-    // Add toggle all control
-    const allActive = lorasData.every(lora => lora.active);
-    const toggleAll = createToggle(allActive, (active) => {
-      // Update all loras active state
-      const lorasData = parseLoraValue(widget.value);
-      lorasData.forEach(lora => lora.active = active);
-      
-      const newValue = formatLoraValue(lorasData);
-      updateWidgetValue(newValue);
-    });
-
-    // Add label to toggle all
-    const toggleLabel = document.createElement("div");
-    toggleLabel.textContent = "Toggle All";
-    toggleLabel.className = "lm-toggle-label";
-
-    const toggleContainer = document.createElement("div");
-    toggleContainer.className = "lm-toggle-container";
-    toggleContainer.appendChild(toggleAll);
-    toggleContainer.appendChild(toggleLabel);
-
-    // Strength label with drag hint
-    const strengthLabel = document.createElement("div");
-    strengthLabel.textContent = "Strength";
-    strengthLabel.className = "lm-strength-label";
-
-    // Add drag hint icon next to strength label
-    const dragHint = document.createElement("span");
-    dragHint.innerHTML = "↔"; // Simple left-right arrow as drag indicator
-    dragHint.className = "lm-drag-hint";
-    strengthLabel.appendChild(dragHint);
-
-    header.appendChild(toggleContainer);
-    header.appendChild(strengthLabel);
-    container.appendChild(header);
-    
-    // Initialize the header drag functionality
-    initHeaderDrag(header, widget, renderLoras);
 
     // Render each lora entry
     const availableSet = getAvailableLorasSync();
@@ -348,6 +360,7 @@ export function addLorasWidget(node, name, opts, callback) {
       // Create the main LoRA entry
       const loraEl = document.createElement("div");
       loraEl.className = "lm-lora-entry";
+      loraEl.classList.toggle("lm-lora-entry--expanded", isExpanded);
 
       // Store lora name, active state, and locked state in dataset
       loraEl.dataset.loraName = name;
@@ -425,7 +438,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Create expand button
       const expandButton = createExpandButton(isExpanded, (shouldExpand) => {
-        // Toggle the clip entry expanded state
+        // Toggle the clip controls expanded state
         const lorasData = parseLoraValue(widget.value);
         const loraIndex = lorasData.findIndex(l => l.name === name);
         
@@ -441,7 +454,7 @@ export function addLorasWidget(node, name, opts, callback) {
           // Update the widget value
           updateWidgetValue(formatLoraValue(lorasData));
 
-          // Re-render to show/hide clip entry
+          // Re-render to show/hide clip controls
           renderLoras(widget.value, widget);
         }
       });
@@ -535,8 +548,9 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Strength display
       const strengthEl = document.createElement("input");
-      strengthEl.classList.add("lm-lora-strength-input");
+      strengthEl.classList.add("lm-lora-strength-input", "lm-lora-model-strength-input");
       strengthEl.type = "text";
+      strengthEl.setAttribute("aria-label", `Model strength: ${displayName}`);
       strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
       applyStrengthRangeCue(strengthEl, strength, getLoraStrengthRange(name));
       strengthEl.addEventListener('pointerdown', () => {
@@ -633,32 +647,35 @@ export function addLorasWidget(node, name, opts, callback) {
       leftSection.appendChild(expandButton); // Add expand button
       leftSection.appendChild(nameEl);
       leftSection.appendChild(infoButton);
-      
+
+      const strengthStack = document.createElement("div");
+      strengthStack.className = "lm-lora-strength-stack";
+      const modelStrengthRow = document.createElement("div");
+      modelStrengthRow.className = "lm-lora-strength-row";
+      if (isExpanded) {
+        const modelLabel = document.createElement("span");
+        modelLabel.className = "lm-lora-strength-label";
+        modelLabel.textContent = "M";
+        modelLabel.title = `Model strength: ${displayName}`;
+        modelStrengthRow.appendChild(modelLabel);
+      }
+      modelStrengthRow.appendChild(strengthControl);
+      strengthStack.appendChild(modelStrengthRow);
+
       loraEl.appendChild(leftSection);
-      loraEl.appendChild(strengthControl);
+      loraEl.appendChild(strengthStack);
 
       container.appendChild(loraEl);
 
-      // If expanded, show the clip entry
+      // If expanded, show separate model and clip strength controls
       if (isExpanded) {
-        const clipEl = document.createElement("div");
-        clipEl.className = "lm-lora-clip-entry";
-
-        // Store the same lora name in clip entry dataset
-        clipEl.dataset.loraName = name;
-        clipEl.dataset.active = active ? "true" : "false";
-
-        if (missing) {
-          clipEl.setAttribute("data-missing", "true");
-        }
-
-        // Create clip name display
-        const clipNameEl = document.createElement("div");
-        clipNameEl.textContent = "[clip] " + displayName;
-        clipNameEl.className = "lm-lora-name";
-        if (missing) {
-          clipNameEl.title = "LoRA not found in local library";
-        }
+        const clipStrengthRow = document.createElement("div");
+        clipStrengthRow.className = "lm-lora-strength-row lm-lora-clip-strength-row";
+        const clipLabel = document.createElement("span");
+        clipLabel.className = "lm-lora-strength-label";
+        clipLabel.textContent = "C";
+        clipLabel.title = `CLIP strength: ${displayName}`;
+        clipStrengthRow.appendChild(clipLabel);
 
         // Create clip strength control
         const clipStrengthControl = document.createElement("div");
@@ -682,6 +699,7 @@ export function addLorasWidget(node, name, opts, callback) {
         const clipStrengthEl = document.createElement("input");
         clipStrengthEl.classList.add("lm-lora-strength-input", "lm-lora-clip-strength-input");
         clipStrengthEl.type = "text";
+        clipStrengthEl.setAttribute("aria-label", `CLIP strength: ${displayName}`);
         clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
         applyStrengthRangeCue(clipStrengthEl, clipStrength, getLoraStrengthRange(name));
         clipStrengthEl.addEventListener('pointerdown', () => {
@@ -753,22 +771,18 @@ export function addLorasWidget(node, name, opts, callback) {
         clipStrengthControl.appendChild(clipStrengthEl);
         clipStrengthControl.appendChild(clipRightArrow);
 
-        // Assemble clip entry
-        const clipLeftSection = document.createElement("div");
-        clipLeftSection.className = "lm-lora-entry-left";
+        clipStrengthRow.appendChild(clipStrengthControl);
+        strengthStack.appendChild(clipStrengthRow);
 
-        clipLeftSection.appendChild(clipNameEl);
-
-        clipEl.appendChild(clipLeftSection);
-        clipEl.appendChild(clipStrengthControl);
-
-        // Add drag functionality to clip entry
-        initDrag(clipEl, name, widget, true, previewTooltip, renderLoras, {
+        // Add drag functionality to clip strength
+        initDrag(clipStrengthRow, name, widget, true, previewTooltip, renderLoras, {
           onDragStart: markStrengthDragStart,
           onDragEnd: markStrengthDragEnd
         });
-
-        container.appendChild(clipEl);
+        // Keep the parent row's model-strength drag from handling CLIP gestures too.
+        clipStrengthRow.addEventListener('pointerdown', (event) => {
+          event.stopPropagation();
+        });
       }
     });
     
@@ -805,9 +819,9 @@ export function addLorasWidget(node, name, opts, callback) {
       let selector = "";
 
       if (focusTarget.type === "strength") {
-        selector = `.lm-lora-entry[data-lora-name="${safeName}"] .lm-lora-strength-input`;
+        selector = `.lm-lora-entry[data-lora-name="${safeName}"] .lm-lora-model-strength-input`;
       } else if (focusTarget.type === "clip") {
-        selector = `.lm-lora-clip-entry[data-lora-name="${safeName}"] .lm-lora-clip-strength-input`;
+        selector = `.lm-lora-entry[data-lora-name="${safeName}"] .lm-lora-clip-strength-input`;
       }
 
       if (selector) {

@@ -78,6 +78,61 @@ describe('LoRA widget drag interactions', () => {
     expect(widget.callback).toHaveBeenCalledWith(widget.value);
   });
 
+  it('updates model and CLIP inputs by LoRA during header-handle drag', async () => {
+    const { initHeaderDrag } = await import(EVENTS_MODULE);
+    const container = document.createElement('div');
+    container.className = 'lm-loras-container';
+    const handle = document.createElement('button');
+    container.appendChild(handle);
+
+    const inputs = new Map();
+    for (const name of ['A', 'B']) {
+      const entry = document.createElement('div');
+      entry.className = 'lm-lora-entry';
+      entry.dataset.loraName = name;
+      const modelInput = document.createElement('input');
+      modelInput.className = 'lm-lora-strength-input lm-lora-model-strength-input';
+      const clipInput = document.createElement('input');
+      clipInput.className = 'lm-lora-strength-input lm-lora-clip-strength-input';
+      entry.append(modelInput, clipInput);
+      container.appendChild(entry);
+      inputs.set(name, { modelInput, clipInput });
+    }
+    document.body.appendChild(container);
+
+    const widget = {
+      value: [
+        { name: 'A', strength: 0.4, clipStrength: 0.2 },
+        { name: 'B', strength: 0.6, clipStrength: 0.8 },
+      ],
+      callback: vi.fn(),
+    };
+    initHeaderDrag(handle, widget, vi.fn());
+
+    handle.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 100,
+      bubbles: true,
+      button: 0,
+      pointerId: 9,
+    }));
+    handle.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 160,
+      bubbles: true,
+      pointerId: 9,
+    }));
+
+    for (const lora of widget.value) {
+      const { modelInput, clipInput } = inputs.get(lora.name);
+      expect(modelInput.value).toBe(lora.strength.toFixed(2));
+      expect(clipInput.value).toBe(lora.clipStrength.toFixed(2));
+    }
+    expect(widget.callback).not.toHaveBeenCalled();
+
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 9, bubbles: true }));
+    expect(widget.callback).toHaveBeenCalledWith(widget.value);
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
+  });
+
   it('initiates drag gestures, updates strength, and clears cursor state on pointerup', async () => {
     const module = await import(EVENTS_MODULE);
     const renderSpy = vi.fn();

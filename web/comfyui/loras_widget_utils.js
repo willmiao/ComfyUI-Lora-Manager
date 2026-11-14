@@ -671,7 +671,7 @@ export function formatLoraValue(loras) {
   return loras;
 }
 
-// Determine if clip entry should be shown - now based on expanded property or initial diff values
+// Determine if clip controls should be shown - now based on expanded property or initial diff values
 export function shouldShowClipEntry(loraData) {
   // If expanded property exists, use that
   if (loraData.hasOwnProperty('expanded')) {

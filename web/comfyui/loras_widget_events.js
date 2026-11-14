@@ -272,6 +272,7 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
   headerEl.addEventListener('pointerdown', (e) => {
     // Skip if clicking on toggle or other interactive elements
     if (e.target.closest('.lm-lora-toggle') ||
+        e.target.closest('.lm-lora-add-button') ||
         e.target.closest('input')) {
       return;
     }
@@ -331,16 +332,20 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     handleAllStrengthsDrag(initialStrengths, initialX, e, widget, false);
     
     // Update strength inputs directly instead of re-rendering to avoid losing event listeners
-    const strengthInputs = currentHeaderElement.parentElement.querySelectorAll('.lm-lora-strength-input');
+    const widgetContainer = currentHeaderElement.closest('.lm-loras-container');
+    const strengthInputs = widgetContainer?.querySelectorAll('.lm-lora-strength-input') || [];
     const lorasData = parseLoraValue(widget.value);
-    strengthInputs.forEach((input, index) => {
-      if (lorasData[index]) {
-        input.value = lorasData[index].strength.toFixed(2);
-      }
+    const lorasByName = new Map(lorasData.map(lora => [lora.name, lora]));
+    strengthInputs.forEach((input) => {
       const entryEl = input.closest('[data-lora-name]');
-      if (entryEl) {
-        applyStrengthRangeCue(input, input.value, getLoraStrengthRange(entryEl.dataset.loraName));
-      }
+      const loraData = entryEl ? lorasByName.get(entryEl.dataset.loraName) : null;
+      if (!loraData) return;
+
+      const value = input.classList.contains('lm-lora-clip-strength-input')
+        ? loraData.clipStrength
+        : loraData.strength;
+      input.value = Number(value).toFixed(2);
+      applyStrengthRangeCue(input, input.value, getLoraStrengthRange(entryEl.dataset.loraName));
     });
   });
   
@@ -455,7 +460,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     }
     
     const targetIndex = getDropTargetIndex(container, e.clientY);
-    const entries = container.querySelectorAll('.lm-lora-entry, .lm-lora-clip-entry');
+    const entries = container.querySelectorAll('.lm-lora-entry');
     
     if (targetIndex === 0) {
       // Show at top
@@ -530,7 +535,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
       const currentIndex = lorasData.findIndex(l => l.name === loraName);
 
       if (currentIndex !== -1 && currentIndex !== targetIndex) {
-        // Calculate actual target index (excluding clip entries from count)
+        // Calculate actual target index
         const loraEntries = container.querySelectorAll('.lm-lora-entry');
         let actualTargetIndex = targetIndex;
 

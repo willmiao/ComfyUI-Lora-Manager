@@ -15,6 +15,9 @@ The full manager and canvas quick tools have separate primary entry points:
   current extension-menu converter does not pass shortcut badges through for
   extension items, so the node menu uses the plain label rather than custom HTML
   that would behave differently between legacy and Vue menus.
+- The **+** button in the LoRA widget header opens the picker with that node as
+  its initial target. It remains available when the widget is empty, and its
+  tooltip displays the `Alt+L` shortcut.
 
 Quick pickers are contextual canvas tools. They do not each need a permanent
 top-bar button. The top bar continues to use `actionBarButtons` on supported

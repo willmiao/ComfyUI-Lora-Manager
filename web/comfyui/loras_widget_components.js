@@ -1,21 +1,70 @@
 // Function to create toggle element
-export function createToggle(active, onChange) {
+export function createToggle(active, onChange, {
+  mixed = false,
+  disabled = false,
+  label = "Toggle LoRA",
+  focusable = false,
+} = {}) {
   const toggle = document.createElement("div");
   toggle.className = "lm-lora-toggle";
+  toggle.setAttribute("role", "checkbox");
+  toggle.setAttribute("aria-label", label);
+  toggle.setAttribute("aria-disabled", String(disabled));
+  toggle.tabIndex = focusable && !disabled ? 0 : -1;
 
-  updateToggleStyle(toggle, active);
+  updateToggleStyle(toggle, active, mixed);
+  toggle.classList.toggle("lm-lora-toggle--disabled", disabled);
 
-  toggle.addEventListener("click", (e) => {
+  const activate = (e) => {
     e.stopPropagation();
-    onChange(!active);
-  });
+    if (!disabled) {
+      onChange(!active);
+    }
+  };
+
+  toggle.addEventListener("click", activate);
+  if (focusable) {
+    toggle.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate(e);
+      }
+    });
+  }
 
   return toggle;
 }
 
 // Helper function to update toggle style
-export function updateToggleStyle(toggleEl, active) {
+export function updateToggleStyle(toggleEl, active, mixed = false) {
   toggleEl.classList.toggle("lm-lora-toggle--active", active);
+  toggleEl.classList.toggle("lm-lora-toggle--mixed", mixed);
+  toggleEl.setAttribute("aria-checked", mixed ? "mixed" : String(active));
+}
+
+export function createStrengthDragHandle() {
+  const handle = document.createElement("button");
+  handle.className = "lm-lora-strength-drag-handle";
+  handle.type = "button";
+  handle.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 8 4 4-4 4"/><path d="m6 8-4 4 4 4"/><path d="M2 12h20"/></svg>`;
+  handle.title = "Drag to scale all strengths";
+  handle.setAttribute("aria-label", "Drag to scale all strengths");
+  return handle;
+}
+
+export function createAddLoraButton(onClick) {
+  const button = document.createElement("button");
+  button.className = "lm-lora-add-button";
+  button.type = "button";
+  button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;
+  button.title = "Add LoRA · Quick Picker (Alt+L)";
+  button.setAttribute("aria-label", "Add LoRA with Quick Picker (Alt+L)");
+  button.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  });
+  return button;
 }
 
 // Create arrow button for strength adjustment
