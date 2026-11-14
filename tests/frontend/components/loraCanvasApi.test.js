@@ -36,6 +36,22 @@ describe('LoRA canvas folder API', () => {
     });
   });
 
+  it('carries the license icon style from the details response', async () => {
+    fetchApiMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        metadata: { model_name: 'Astral' },
+        use_new_license_icons: false,
+      }),
+    });
+
+    const { fetchLoraDetails } = await import('../../../web/comfyui/lora_canvas_api.js');
+    const details = await fetchLoraDetails('astral');
+
+    expect(details).toEqual({ model_name: 'Astral', use_new_license_icons: false });
+  });
+
   it('reuses the named manager tab for full details', async () => {
     const openMock = vi.spyOn(window, 'open').mockImplementation(() => null);
     try {

@@ -11,6 +11,14 @@ import {
   refreshLoraMetadata,
   saveLoraNotes,
 } from "./lora_canvas_api.js";
+import {
+  buildLicenseIconData,
+  buildNewLicenseIconData,
+  createLicenseIconElement,
+  createNewLicenseIconElement,
+  hasLicenseMetadata,
+  parseLicenseFlags,
+} from "./license_icons.js";
 import { openLoraQuickPanel } from "./lora_quick_panel.js";
 
 const PANEL_GAP = 10;
@@ -99,6 +107,7 @@ export class LoraInfoCard {
     this.widget = widget;
     this.loraName = loraName;
     this.details = null;
+    this.useNewLicenseIcons = true;
     this.activeTab = "overview";
     try {
       const savedTab = localStorage.getItem(ACTIVE_TAB_KEY);
@@ -198,6 +207,7 @@ export class LoraInfoCard {
       const details = await fetchLoraDetails(this.loraName);
       if (!this.panel?.isOpen()) return;
       this.details = details;
+      this.useNewLicenseIcons = details.use_new_license_icons !== false;
       if (!this.notesDirty()) {
         this.originalNotes = details.notes || "";
         this.notesDraft = this.originalNotes;
@@ -237,7 +247,9 @@ export class LoraInfoCard {
     body.appendChild(tabs);
     this.tabContent = el("div", "lm-info-card__tab-content");
     body.appendChild(this.tabContent);
-    this.statusElement = el("div", "lm-info-card__status", "Local library data");
+    this.statusElement = el("div", "lm-info-card__status");
+    this.statusElement.setAttribute("role", "status");
+    this.statusElement.setAttribute("aria-live", "polite");
     body.appendChild(this.statusElement);
     this.renderActiveTab();
     this.renderFooter();
@@ -314,6 +326,9 @@ export class LoraInfoCard {
     }
     this.tabContent.appendChild(triggerSection);
 
+    const licenseSection = this.licenseSection();
+    if (licenseSection) this.tabContent.appendChild(licenseSection);
+
     const usage = formatUsageTips(details);
     if (usage) {
       const usageSection = el("section", "lm-info-card__section");
@@ -321,6 +336,41 @@ export class LoraInfoCard {
       usageSection.appendChild(el("div", "lm-info-card__usage", usage));
       this.tabContent.appendChild(usageSection);
     }
+  }
+
+  licenseSection() {
+    // The cached bitfield defaults to "all allowed" when no CivitAI license
+    // metadata was ever seen, so only render icons backed by real fields.
+    const licenseFlags = parseLicenseFlags(this.details?.license_flags);
+    if (licenseFlags === null || !hasLicenseMetadata(this.details?.civitai)) {
+      return null;
+    }
+
+    const useNew = this.useNewLicenseIcons !== false;
+    const icons = useNew
+      ? buildNewLicenseIconData(licenseFlags)
+      : buildLicenseIconData(licenseFlags);
+    if (!icons.length) {
+      return null;
+    }
+
+    const section = el("section", "lm-info-card__section");
+    section.appendChild(el("h3", "lm-info-card__heading", "License"));
+    const row = el("div", "lm-info-card__license");
+    row.setAttribute("role", "group");
+    row.setAttribute(
+      "aria-label",
+      useNew ? "License permissions" : "License restrictions"
+    );
+    for (const descriptor of icons) {
+      row.appendChild(
+        useNew
+          ? createNewLicenseIconElement(descriptor, "lm-info-card__license-icon-new")
+          : createLicenseIconElement(descriptor, "lm-info-card__license-icon")
+      );
+    }
+    section.appendChild(row);
+    return section;
   }
 
   strengthInput(label, field, value) {

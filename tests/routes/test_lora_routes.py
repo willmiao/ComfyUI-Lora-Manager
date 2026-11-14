@@ -149,6 +149,23 @@ async def test_get_lora_details_uses_cached_metadata(routes):
     assert payload["success"] is True
     assert payload["metadata"]["model_name"] == "Demo"
     assert payload["metadata"]["base_model"] == "Flux"
+    assert isinstance(payload["use_new_license_icons"], bool)
+
+
+async def test_get_lora_details_includes_license_icon_style(monkeypatch, routes):
+    routes.service.details["demo"] = {"model_name": "Demo"}
+
+    class StubSettings:
+        def get(self, key, default=None):
+            assert key == "use_new_license_icons"
+            return False
+
+    monkeypatch.setattr(
+        "py.routes.lora_routes.get_settings_manager", lambda: StubSettings()
+    )
+    response = await routes.get_lora_details(DummyRequest(query={"name": "demo"}))
+    payload = json.loads(response.text)
+    assert payload["use_new_license_icons"] is False
 
 
 async def test_get_lora_details_requires_name(routes):

@@ -251,4 +251,108 @@ describe('LoRA info card', () => {
     expect(description.querySelector('a').getAttribute('target')).toBe('_blank');
     card.close();
   });
+
+  it('shows the CivitAI license icons in the overview', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+      license_flags: 0,
+      use_new_license_icons: true,
+      civitai: {
+        trainedWords: [],
+        model: {
+          allowNoCredit: false,
+          allowCommercialUse: [],
+          allowDerivatives: false,
+          allowDifferentLicense: false,
+        },
+      },
+    });
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.tabContent.textContent).toContain('License');
+    const icons = card.tabContent.querySelectorAll('.lm-info-card__license-icon-new');
+    expect(icons).toHaveLength(5);
+    expect([...icons].every((icon) => icon.classList.contains('denied'))).toBe(true);
+    expect(icons[0].getAttribute('aria-label')).toBe('No commercial use');
+    card.close();
+  });
+
+  it('honours the legacy license icon style', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+      license_flags: 0,
+      use_new_license_icons: false,
+      civitai: {
+        trainedWords: [],
+        model: {
+          allowNoCredit: false,
+          allowCommercialUse: [],
+          allowDerivatives: false,
+          allowDifferentLicense: false,
+        },
+      },
+    });
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.tabContent.querySelectorAll('.lm-info-card__license-icon')).toHaveLength(7);
+    expect(card.tabContent.querySelectorAll('.lm-info-card__license-icon-new')).toHaveLength(0);
+    card.close();
+  });
+
+  it('omits the license section when only cached license defaults exist', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+      license_flags: 127,
+      civitai: { trainedWords: [], model: { type: 'LORA' } },
+    });
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.tabContent.querySelector('.lm-info-card__license')).toBeNull();
+    expect(card.tabContent.textContent).not.toContain('License');
+    card.close();
+  });
+
+  it('keeps the status line empty until an action reports progress', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.statusElement.textContent).toBe('');
+    expect(card.statusElement.getAttribute('role')).toBe('status');
+    card.setStatus('Notes saved');
+    expect(card.statusElement.textContent).toBe('Notes saved');
+    card.close();
+  });
 });

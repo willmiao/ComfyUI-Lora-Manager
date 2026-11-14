@@ -9,6 +9,7 @@ from .model_route_registrar import ModelRouteRegistrar
 from ..config import config
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
+from ..services.settings_manager import get_settings_manager
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -214,7 +215,20 @@ class LoraRoutes(BaseModelRoutes):
             details["preview_url"] = config.get_preview_static_url(
                 details.get("preview_url", "")
             )
-            return web.json_response({"success": True, "metadata": details})
+            response_payload: Dict[str, Any] = {
+                "success": True,
+                "metadata": details,
+            }
+            # Let the info card render the same license icon set the user
+            # picked in the standalone settings without an extra request.
+            try:
+                settings = get_settings_manager()
+                response_payload["use_new_license_icons"] = settings.get(
+                    "use_new_license_icons", True
+                )
+            except Exception:
+                pass
+            return web.json_response(response_payload)
         except Exception as e:
             logger.error(f"Error getting cached lora details: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)

@@ -35,7 +35,13 @@ export async function fetchLoraDetails(name) {
     await api.fetchApi(`/lm/loras/details?name=${encodeURIComponent(name)}`),
     "Failed to load LoRA details",
   );
-  return data.metadata || {};
+  const metadata = data.metadata || {};
+  if (data.use_new_license_icons === undefined) {
+    return metadata;
+  }
+  // The license icon style travels with the details response so the card
+  // reflects the current settings without a separate /lm/settings request.
+  return { ...metadata, use_new_license_icons: data.use_new_license_icons };
 }
 
 export async function fetchLoraFolderIndex({ useActiveFilters = false } = {}) {

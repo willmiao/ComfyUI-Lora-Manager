@@ -1378,6 +1378,40 @@ body.lm-lora-reordering * {
   margin-top: 16px;
 }
 
+.lm-info-card__license {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lm-info-card__license-icon,
+.lm-info-card__license-icon-new {
+  display: inline-block;
+  background-color: var(--lm-fg);
+  -webkit-mask: var(--license-icon-image) center/contain no-repeat;
+  mask: var(--license-icon-image) center/contain no-repeat;
+}
+
+.lm-info-card__license-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.lm-info-card__license-icon-new {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.lm-info-card__license-icon-new.allowed {
+  background-color: #40c057;
+}
+
+.lm-info-card__license-icon-new.denied {
+  background-color: #fa5252;
+}
+
 .lm-quick__primary,
 .lm-info-card__primary {
   padding: 7px 12px;
@@ -1510,6 +1544,12 @@ body.lm-lora-reordering * {
 
 .lm-info-card__status {
   padding: 10px 14px;
+}
+
+/* The status line only exists to report transient action feedback
+   ("Notes saved", "Refreshing metadata…"); hide it until there is one. */
+.lm-info-card__status:empty {
+  display: none;
 }
 
 .lm-info-card__warning {
