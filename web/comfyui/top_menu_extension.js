@@ -1,24 +1,16 @@
 import { app } from "../../scripts/app.js";
 import { lmUrl } from "./base_path.js";
+import { openLoraManagerHome } from "./lora_canvas_api.js";
+import { toggleQuickActionsMenu } from "./quick_actions_menu.js";
 
-const BUTTON_TOOLTIP = "Launch LoRA Manager (Shift+Click opens in new window)";
-const LORA_MANAGER_PATH = "/loras";
-const NEW_WINDOW_FEATURES = "width=1200,height=800,resizable=yes,scrollbars=yes,status=yes";
+const BUTTON_TOOLTIP = "Open LoRA Manager (Shift+Click opens in a new window)";
+const QUICK_ACTIONS_TOOLTIP = "LoRA Manager quick actions";
 const MAX_ATTACH_ATTEMPTS = 120;
 const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 
 const MIN_VERSION_FOR_ACTION_BAR = [1, 33, 9];
 
-const openLoraManager = (event) => {
-    const url = `${window.location.origin}${lmUrl(LORA_MANAGER_PATH)}`;
-
-    if (event.shiftKey) {
-        window.open(url, "_blank", NEW_WINDOW_FEATURES);
-        return;
-    }
-
-    window.open(url, "_blank");
-};
+const openLoraManager = (event) => openLoraManagerHome(event.shiftKey);
 
 const getComfyUIFrontendVersion = async () => {
     try {
@@ -96,7 +88,7 @@ const fetchVersionInfo = async () => {
 
 const createTopMenuButton = async () => {
     const { ComfyButton } = await import("../../scripts/ui/components/button.js");
-    
+
     const button = new ComfyButton({
         icon: "loramanager",
         tooltip: BUTTON_TOOLTIP,
@@ -118,6 +110,17 @@ const createTopMenuButton = async () => {
     return button;
 };
 
+const createQuickActionsButton = async () => {
+    const { ComfyButton } = await import("../../scripts/ui/components/button.js");
+    return new ComfyButton({
+        icon: "chevron-down",
+        tooltip: QUICK_ACTIONS_TOOLTIP,
+        app,
+        action: (event) => toggleQuickActionsMenu(event.currentTarget),
+        classList: "comfyui-button lm-quick-actions-button",
+    });
+};
+
 const attachTopMenuButton = async (attempt = 0) => {
     if (document.querySelector(`.${BUTTON_GROUP_CLASS}`)) {
         return;
@@ -134,10 +137,13 @@ const attachTopMenuButton = async (attempt = 0) => {
         return;
     }
 
-    const loraManagerButton = await createTopMenuButton();
+    const [loraManagerButton, quickActionsButton] = await Promise.all([
+        createTopMenuButton(),
+        createQuickActionsButton(),
+    ]);
     const { ComfyButtonGroup } = await import("../../scripts/ui/components/buttonGroup.js");
-    
-    const buttonGroup = new ComfyButtonGroup(loraManagerButton);
+
+    const buttonGroup = new ComfyButtonGroup(loraManagerButton, quickActionsButton);
     buttonGroup.element.classList.add(BUTTON_GROUP_CLASS);
 
     settingsGroup.element.before(buttonGroup.element);
@@ -175,11 +181,11 @@ const createExtensionObject = (useActionBar) => {
                 const style = document.createElement('style');
                 style.id = styleId;
                 style.textContent = `
-                    button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"].lm-top-menu-button {
+                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button {
                         transition: all 0.2s ease;
                         border: 1px solid transparent;
                     }
-                    button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"].lm-top-menu-button:hover {
+                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button:hover {
                         background-color: var(--primary-hover-bg) !important;
                     }
                 `;
@@ -204,7 +210,7 @@ const createExtensionObject = (useActionBar) => {
 
             // Initial application — retry until the button is rendered by Vue
             const pollUntilFound = () => {
-                const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
+                const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
                 if (buttons.length > 0) {
                     buttons.forEach(applyIconToButton);
                 } else {
@@ -217,7 +223,7 @@ const createExtensionObject = (useActionBar) => {
             // (e.g. when the properties panel is toggled inside a subgraph)
             if (typeof MutationObserver !== 'undefined') {
                 const observer = new MutationObserver(() => {
-                    const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
+                    const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
                     buttons.forEach(button => {
                         // Only re-apply when Vue has reset innerHTML back to <i>
                         if (button.querySelector('i')) {
@@ -242,6 +248,12 @@ const createExtensionObject = (useActionBar) => {
                 icon: "icon-[lucide--layers] size-4",
                 tooltip: BUTTON_TOOLTIP,
                 onClick: openLoraManager
+            },
+            {
+                icon: "icon-[lucide--chevron-down] size-4",
+                tooltip: QUICK_ACTIONS_TOOLTIP,
+                class: "lm-quick-actions-button",
+                onClick: (event) => toggleQuickActionsMenu(event.currentTarget)
             }
         ];
     }

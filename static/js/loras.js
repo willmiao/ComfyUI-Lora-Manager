@@ -6,6 +6,27 @@ import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } fr
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { initActiveFiltersSync } from './utils/activeFiltersSync.js';
 
+export async function openLinkedLoraModel() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const filePath = params.get('model');
+    if (!filePath) return;
+
+    try {
+        const [{ getModelApiClient }, { showModelModal }] = await Promise.all([
+            import('./api/modelApiFactory.js'),
+            import('./components/shared/ModelModal.js'),
+        ]);
+        const model = await getModelApiClient('loras').fetchDetailsByName(filePath);
+        await showModelModal(model, 'loras');
+    } catch (error) {
+        console.warn('Failed to open the linked LoRA:', error);
+    } finally {
+        if (window.location.hash) {
+            history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        }
+    }
+}
+
 // Initialize the LoRA page
 export class LoraPageManager {
     constructor() {
@@ -55,9 +76,12 @@ export async function initializeLoraPage() {
     // Initialize page-specific functionality
     const loraPage = new LoraPageManager();
     await loraPage.initialize();
+    await openLinkedLoraModel();
 
     return loraPage;
 }
+
+window.addEventListener('hashchange', openLinkedLoraModel);
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', initializeLoraPage);

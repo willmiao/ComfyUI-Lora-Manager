@@ -32,6 +32,15 @@ export class LoraApiClient extends BaseModelApiClient {
         }
     }
 
+    async fetchDetailsByName(name) {
+        const response = await fetch(`/api/lm/loras/details?name=${encodeURIComponent(name)}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false || !data.metadata) {
+            throw new Error(data.error || 'Failed to load the LoRA library entry');
+        }
+        return data.metadata;
+    }
+
     /**
      * Get LoRA notes
      */

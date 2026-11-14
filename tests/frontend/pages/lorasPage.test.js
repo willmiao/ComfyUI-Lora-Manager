@@ -11,6 +11,16 @@ const confirmExcludeMock = vi.fn();
 const closeExcludeModalMock = vi.fn();
 const state = {};
 const duplicatesManagerMock = vi.fn();
+const fetchModelMetadataMock = vi.fn();
+const showModelModalMock = vi.fn();
+
+vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
+  getModelApiClient: vi.fn(() => ({ fetchDetailsByName: fetchModelMetadataMock })),
+}));
+
+vi.mock('../../../static/js/components/shared/ModelModal.js', () => ({
+  showModelModal: showModelModalMock,
+}));
 
 vi.mock('../../../static/js/core.js', () => ({
   appCore: {
@@ -105,5 +115,33 @@ describe('LoraPageManager', () => {
     expect(manager).toBeInstanceOf(LoraPageManager);
     expect(updateCardsForBulkModeMock).toHaveBeenCalledWith(false);
     expect(window.modelDuplicatesManager).toBe(duplicatesManagerInstance);
+  });
+
+  it('opens the model linked by the quick panel', async () => {
+    window.location.hash = '#model=%2Fmodels%2Fastral.safetensors';
+    const model = { model_name: 'Astral', file_path: '/models/astral.safetensors', base_model: 'Flux' };
+    fetchModelMetadataMock.mockResolvedValue(model);
+
+    await initializeLoraPage();
+
+    expect(fetchModelMetadataMock).toHaveBeenCalledWith('/models/astral.safetensors');
+    expect(showModelModalMock).toHaveBeenCalledWith(model, 'loras');
+    expect(window.location.hash).toBe('');
+  });
+
+  it('opens a newly linked model when a reused manager tab changes hash', async () => {
+    await initializeLoraPage();
+    const model = { model_name: 'Astral', file_path: '/models/astral.safetensors', base_model: 'Flux' };
+    fetchModelMetadataMock.mockResolvedValue(model);
+    const changed = new Promise((resolve) => window.addEventListener('hashchange', resolve, { once: true }));
+
+    window.location.hash = '#model=%2Fmodels%2Fastral.safetensors';
+    await changed;
+
+    await vi.waitFor(() => {
+      expect(fetchModelMetadataMock).toHaveBeenCalledWith('/models/astral.safetensors');
+      expect(showModelModalMock).toHaveBeenCalledWith(model, 'loras');
+    });
+    expect(window.location.hash).toBe('');
   });
 });

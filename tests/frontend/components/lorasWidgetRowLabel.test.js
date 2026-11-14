@@ -135,6 +135,17 @@ describe('addLorasWidget row labels', () => {
 
     expect(labels(node)[0].textContent).toBe('Example model title');
   });
+
+  it('selects the row when its info button is clicked', async () => {
+    respondWith({ loras: [{ file_name: 'one' }, { file_name: 'two' }] });
+    const node = await mountWidget(['one', 'two']);
+    const infoButtons = node.container.querySelectorAll('.lm-lora-info-button');
+
+    infoButtons[1].click();
+
+    const rows = [...node.container.querySelectorAll('.lm-lora-entry')];
+    expect(rows.map((entry) => entry.dataset.selected)).toEqual(['false', 'true']);
+  });
 });
 
 describe('addLorasWidget duplicate titles', () => {

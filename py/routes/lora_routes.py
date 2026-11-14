@@ -6,11 +6,45 @@ from server import PromptServer  # pyright: ignore[reportMissingImports]
 
 from .base_model_routes import BaseModelRoutes
 from .model_route_registrar import ModelRouteRegistrar
+from ..config import config
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
+
+
+def _build_lora_folder_index(models):
+    root = {"count": 0, "folders": {}, "items": []}
+    for model in models:
+        file_name = model.get("file_name", "")
+        if not file_name or model.get("exclude"):
+            continue
+        folder = str(model.get("folder", "")).replace("\\", "/").strip("/")
+        relative_path = f"{folder}/{file_name}" if folder else file_name
+        item = {
+            "relative_path": relative_path,
+            "model_name": model.get("model_name") or file_name,
+        }
+        node = root
+        node["count"] += 1
+        for part in filter(None, folder.split("/")):
+            node = node["folders"].setdefault(
+                part, {"count": 0, "folders": {}, "items": []}
+            )
+            node["count"] += 1
+        node["items"].append(item)
+
+    def sort_node(node):
+        node["items"].sort(
+            key=lambda item: (item["model_name"].lower(), item["relative_path"].lower())
+        )
+        node["folders"] = dict(sorted(node["folders"].items(), key=lambda pair: pair[0].lower()))
+        for child in node["folders"].values():
+            sort_node(child)
+
+    sort_node(root)
+    return root
 
 
 class LoraRoutes(BaseModelRoutes):
@@ -50,6 +84,18 @@ class LoraRoutes(BaseModelRoutes):
             "/api/lm/{prefix}/get-trigger-words",
             prefix,
             self.get_lora_trigger_words,
+        )
+        registrar.add_prefixed_route(
+            "GET",
+            "/api/lm/{prefix}/details",
+            prefix,
+            self.get_lora_details,
+        )
+        registrar.add_prefixed_route(
+            "GET",
+            "/api/lm/{prefix}/folder-index",
+            prefix,
+            self.get_lora_folder_index,
         )
         registrar.add_prefixed_route(
             "GET",
@@ -131,6 +177,49 @@ class LoraRoutes(BaseModelRoutes):
 
         except Exception as e:
             logger.error(f"Error getting lora trigger words: {e}", exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def get_lora_details(self, request: web.Request) -> web.Response:
+        """Get library details from the cache and local sidecar, without remote requests."""
+        try:
+            lora_name = request.query.get("name")
+            if not lora_name:
+                return web.Response(text="Lora file name is required", status=400)
+
+            metadata = await self.service.get_model_info_by_name(lora_name)
+            if metadata is None:
+                return web.json_response(
+                    {"success": False, "error": "LoRA not found in the local library"},
+                    status=404,
+                )
+            details = dict(metadata)
+            file_path = details.get("file_path")
+            if file_path:
+                full_metadata = await self.service.get_model_metadata(file_path)
+                if full_metadata:
+                    details["civitai"] = full_metadata
+                    details["description"] = full_metadata.get(
+                        "description", details.get("description", "")
+                    )
+                model_description = await self.service.get_model_description(file_path)
+                if model_description:
+                    details["modelDescription"] = model_description
+            details["preview_url"] = config.get_preview_static_url(
+                details.get("preview_url", "")
+            )
+            return web.json_response({"success": True, "metadata": details})
+        except Exception as e:
+            logger.error(f"Error getting cached lora details: {e}", exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def get_lora_folder_index(self, _request: web.Request) -> web.Response:
+        """Return the complete library-relative folder tree from the local cache."""
+        try:
+            cache = await self.service.scanner.get_cached_data()
+            root = _build_lora_folder_index(cache.raw_data)
+            return web.json_response({"success": True, "root": root})
+        except Exception as e:
+            logger.error(f"Error building lora folder index: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def get_lora_usage_tips_by_path(self, request: web.Request) -> web.Response:

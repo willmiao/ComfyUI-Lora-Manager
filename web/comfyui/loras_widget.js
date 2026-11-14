@@ -20,6 +20,7 @@ import { updateConnectedLoraInfoNodes } from "./lora_info.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
+import { openLoraInfoCard, closeLoraInfoCardFor } from "./lora_info_card.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
@@ -365,7 +366,8 @@ export function addLorasWidget(node, name, opts, callback) {
             e.target.closest('.lm-lora-arrow') ||
             e.target.closest('.lm-lora-drag-handle') ||
             e.target.closest('.lm-lora-lock-button') ||
-            e.target.closest('.lm-lora-expand-button')) {
+            e.target.closest('.lm-lora-expand-button') ||
+            e.target.closest('.lm-lora-info-button')) {
           return;
         }
 
@@ -612,10 +614,25 @@ export function addLorasWidget(node, name, opts, callback) {
       const leftSection = document.createElement("div");
       leftSection.className = "lm-lora-entry-left";
 
+      const infoButton = document.createElement("button");
+      infoButton.type = "button";
+      infoButton.className = "lm-lora-info-button";
+      infoButton.textContent = "i";
+      infoButton.title = `LoRA info: ${displayName}`;
+      infoButton.setAttribute("aria-label", `LoRA info: ${displayName}`);
+      infoButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        selectLora(name);
+        previewTooltip.hide();
+        openLoraInfoCard({ node, widget, loraName: name, anchorElement: infoButton });
+      });
+
       leftSection.appendChild(dragHandleOrLockButton); // Add drag handle or lock button first
       leftSection.appendChild(toggle);
       leftSection.appendChild(expandButton); // Add expand button
       leftSection.appendChild(nameEl);
+      leftSection.appendChild(infoButton);
       
       loraEl.appendChild(leftSection);
       loraEl.appendChild(strengthControl);
@@ -902,6 +919,7 @@ export function addLorasWidget(node, name, opts, callback) {
   });
 
   widget.onRemove = () => {
+    closeLoraInfoCardFor(widget);
     unsubscribeLibraryChange();
     unsubscribeNodeLabelChange();
     if (errorFlagTimer !== null) {
