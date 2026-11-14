@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { createFloatingPanel } from "./floating_panel.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { findLoraIndex } from "./lora_selection.js";
-import { normalizeLoraNameKey, syncClipStrengthIfCollapsed } from "./loras_widget_utils.js";
+import { copyToClipboard, normalizeLoraNameKey, syncClipStrengthIfCollapsed } from "./loras_widget_utils.js";
 import { isVideoPreviewUrl } from "./mediaTypes.js";
 import {
   fetchLoraDetails,
@@ -327,14 +327,11 @@ export class LoraInfoCard {
     const words = details.civitai?.trainedWords || [];
     const chips = el("div", "lm-info-card__chips");
     if (words.length) {
-      words.forEach((word) => chips.appendChild(el("span", "lm-info-card__chip", word)));
+      words.forEach((word) => chips.appendChild(this.triggerWordChip(word)));
     } else {
       chips.appendChild(el("span", "lm-info-card__empty", "No trigger words in the local metadata."));
     }
     triggerSection.appendChild(chips);
-    if (words.length) {
-      triggerSection.appendChild(el("p", "lm-info-card__hint", "Enable or disable these in a connected TriggerWord Toggle node."));
-    }
     this.tabContent.appendChild(triggerSection);
 
     const licenseSection = this.licenseSection();
@@ -347,6 +344,34 @@ export class LoraInfoCard {
       usageSection.appendChild(el("div", "lm-info-card__usage", usage));
       this.tabContent.appendChild(usageSection);
     }
+  }
+
+  /**
+   * A trigger word chip doubles as a copy button, mirroring the manager's
+   * click-to-copy trigger word tags: the word and a copy icon. The card's
+   * status line is the feedback surface, so the shared helper's success toast
+   * is suppressed. The icon uses Material Design Icons because that is the
+   * icon font the ComfyUI page loads (the manager's Font Awesome copy glyph
+   * is not available inside the canvas UI).
+   */
+  triggerWordChip(word) {
+    const label = word == null ? "" : String(word);
+    const button = el("button", "lm-info-card__chip lm-info-card__chip--copy");
+    button.type = "button";
+    button.title = `Copy "${label}"`;
+    button.setAttribute("aria-label", `Copy trigger word: ${label}`);
+    button.appendChild(el("span", "lm-info-card__chip-label", label));
+    const icon = el("i", "mdi mdi-content-copy lm-info-card__chip-copy-icon");
+    icon.setAttribute("aria-hidden", "true");
+    button.appendChild(icon);
+    button.addEventListener("click", async () => {
+      const copied = await copyToClipboard(label, "");
+      this.setStatus(copied ? `Copied "${label}"` : "Could not copy the trigger word");
+      if (!copied) return;
+      button.classList.add("is-copied");
+      window.setTimeout(() => button.classList.remove("is-copied"), 1200);
+    });
+    return button;
   }
 
   badgeRow(details) {

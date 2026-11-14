@@ -1371,6 +1371,53 @@ body.lm-lora-reordering * {
   white-space: nowrap;
 }
 
+/* Trigger words are buttons in the info card: clicking copies the word. */
+.lm-info-card__chip--copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+/* The word truncates; the copy icon stays visible at the end of the chip. */
+.lm-info-card__chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lm-info-card__chip-copy-icon {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.lm-info-card__chip--copy:hover {
+  color: var(--lm-fg);
+  background: var(--lm-surface-hover);
+  border-color: var(--lm-accent);
+}
+
+.lm-info-card__chip--copy:hover .lm-info-card__chip-copy-icon,
+.lm-info-card__chip--copy.is-copied .lm-info-card__chip-copy-icon {
+  opacity: 1;
+}
+
+.lm-info-card__chip--copy:focus-visible {
+  outline: 2px solid var(--lm-accent);
+  outline-offset: 1px;
+}
+
+.lm-info-card__chip--copy.is-copied {
+  color: var(--lm-fg);
+  border-color: var(--lm-accent);
+}
+
 .lm-quick__actions {
   display: flex;
   flex-direction: column;
@@ -1848,12 +1895,6 @@ body.lm-lora-reordering * {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.lm-info-card__hint {
-  margin: 8px 0 0;
-  color: var(--lm-fg-muted);
-  font-size: 10px;
 }
 
 .lm-info-card__notes-section {

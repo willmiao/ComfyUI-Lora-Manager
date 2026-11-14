@@ -20,7 +20,7 @@ const {
   INFO_CARD_MODULE: new URL('../../../web/comfyui/lora_info_card.js', import.meta.url).pathname,
 }));
 
-const { appMock, apiMocks, quickMock } = vi.hoisted(() => ({
+const { appMock, apiMocks, quickMock, loraUtilsMock } = vi.hoisted(() => ({
   appMock: { registerExtension: vi.fn(), canvas: {} },
   apiMocks: {
     fetchLoraDetails: vi.fn(),
@@ -31,6 +31,7 @@ const { appMock, apiMocks, quickMock } = vi.hoisted(() => ({
     saveLoraNotes: vi.fn(),
   },
   quickMock: { openLoraQuickPanel: vi.fn() },
+  loraUtilsMock: { copyToClipboard: vi.fn() },
 }));
 
 vi.mock(APP_MODULE, () => ({ app: appMock }));
@@ -38,6 +39,7 @@ vi.mock(UTILS_MODULE, () => ({
   LORA_PATTERN: /<lora:([^:>]+):([^:>]+)(?::([^:>]+))?>/,
 }));
 vi.mock(LORA_UTILS_MODULE, () => ({
+  ...loraUtilsMock,
   normalizeLoraNameKey: (name) => String(name || '').replace(/\.(safetensors|ckpt|pt|bin)$/i, ''),
   syncClipStrengthIfCollapsed: (entry) => {
     if (entry.expanded === false) entry.clipStrength = entry.strength;
@@ -111,6 +113,7 @@ describe('LoRA info card', () => {
     });
     apiMocks.saveLoraNotes.mockResolvedValue({ success: true });
     apiMocks.saveLoraFavorite.mockResolvedValue({ success: true });
+    loraUtilsMock.copyToClipboard.mockResolvedValue(true);
   });
 
   it('updates strength and the collapsed clip strength through the widget', async () => {
@@ -228,7 +231,7 @@ describe('LoRA info card', () => {
     expect(position).toEqual({ left: 80, top: 60 });
   });
 
-  it('shows trigger words read-only without a Send to prompt action', async () => {
+  it('renders trigger words as copy buttons without a Send to prompt action', async () => {
     const { LoraInfoCard } = await import(INFO_CARD_MODULE);
     const card = new LoraInfoCard({
       node: { id: 1 },
@@ -238,10 +241,53 @@ describe('LoRA info card', () => {
     }).open();
     await card.loadDetails();
 
-    expect(card.tabContent.querySelectorAll('span.lm-info-card__chip')).toHaveLength(2);
-    expect(card.tabContent.querySelectorAll('button.lm-info-card__chip')).toHaveLength(0);
-    expect(card.panel.body.textContent).toContain('TriggerWord Toggle');
+    const chips = card.tabContent.querySelectorAll('button.lm-info-card__chip');
+    expect(chips).toHaveLength(2);
+    expect(card.tabContent.querySelectorAll('span.lm-info-card__chip')).toHaveLength(0);
+    expect([...chips].map((chip) => chip.textContent)).toEqual(['astral', 'cinematic']);
+    expect([...chips].every((chip) => chip.querySelector('i.mdi-content-copy'))).toBe(true);
+    expect(card.panel.body.textContent).not.toContain('TriggerWord Toggle');
     expect(card.panel.body.textContent).not.toContain('Send to prompt');
+    card.close();
+  });
+
+  it('copies the full trigger word when its chip is clicked', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const chip = card.tabContent.querySelectorAll('button.lm-info-card__chip')[1];
+    chip.click();
+    await flush();
+
+    expect(loraUtilsMock.copyToClipboard).toHaveBeenCalledWith('cinematic', '');
+    expect(chip.classList.contains('is-copied')).toBe(true);
+    expect(card.statusElement.textContent).toBe('Copied "cinematic"');
+    card.close();
+  });
+
+  it('reports a trigger word copy failure in the card status', async () => {
+    loraUtilsMock.copyToClipboard.mockResolvedValue(false);
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1 },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    const chip = card.tabContent.querySelector('button.lm-info-card__chip');
+    chip.click();
+    await flush();
+
+    expect(chip.classList.contains('is-copied')).toBe(false);
+    expect(card.statusElement.textContent).toBe('Could not copy the trigger word');
     card.close();
   });
 
