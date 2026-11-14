@@ -561,6 +561,7 @@ export class LoraQuickPanel {
   }
 
   select(index) {
+    const changed = index !== this.selectedIndex;
     this.selectedIndex = index;
     const rows = this.resultsElement.querySelectorAll(".lm-quick__folder-row, .lm-quick__row");
     rows.forEach((row, rowIndex) => {
@@ -568,7 +569,10 @@ export class LoraQuickPanel {
       row.setAttribute("aria-selected", String(rowIndex === index));
     });
     rows[index]?.scrollIntoView({ block: "nearest" });
-    this.renderDetail();
+    // Re-selecting the same row (arrow key held at a list edge, clicking the
+    // current row) must not replay the detail fetch: the "Loading local
+    // details…" placeholder made a clamped key press look like a duplicate row.
+    if (changed) this.renderDetail();
   }
 
   selectedItem() {
@@ -685,7 +689,10 @@ export class LoraQuickPanel {
       if (!items.length) return;
       const direction = event.key === "ArrowDown" ? 1 : -1;
       const next = Math.max(0, Math.min(items.length - 1, this.selectedIndex + direction));
-      this.select(next);
+      // Keep the selection pinned at the first/last row instead of re-selecting
+      // it. A no-op matches native autocomplete dropdowns, so the edge is
+      // signalled by the highlight no longer moving — not by a re-load.
+      if (next !== this.selectedIndex) this.select(next);
       return;
     }
     if (this.isFolderBrowse() && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {

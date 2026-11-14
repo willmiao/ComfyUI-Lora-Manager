@@ -491,6 +491,50 @@ describe('LoRA Quick Panel', () => {
     ]);
   });
 
+  it('pins the selection at the list edges without reloading details', async () => {
+    const items = [
+      { relativePath: 'a/first.safetensors', modelName: 'First' },
+      { relativePath: 'b/last.safetensors', modelName: 'Last' },
+    ];
+    apiMocks.searchLoraLibrary.mockResolvedValue(items);
+    apiMocks.fetchLoraFolderIndex.mockResolvedValue({ count: 2, folders: {}, items });
+    apiMocks.fetchLoraDetails.mockImplementation(async (path) => ({
+      model_name: path.includes('last') ? 'Last' : 'First',
+      file_path: `/models/${path}`,
+    }));
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: makeNode() }).open();
+    await quick.loadFolderIndex();
+    await quick.loadSearch();
+    await flush();
+    expect(quick.selectedIndex).toBe(0);
+    const detailCalls = apiMocks.fetchLoraDetails.mock.calls.length;
+
+    const up = pressQuickKey(quick, 'ArrowUp');
+    expect(up.defaultPrevented).toBe(true);
+    expect(quick.selectedIndex).toBe(0);
+    pressQuickKey(quick, 'ArrowUp');
+    expect(quick.selectedIndex).toBe(0);
+    expect(quick.detailElement.textContent).toContain('First');
+    // Clamped presses must not re-fetch the same row's details.
+    expect(apiMocks.fetchLoraDetails).toHaveBeenCalledTimes(detailCalls);
+
+    pressQuickKey(quick, 'ArrowDown');
+    expect(quick.selectedIndex).toBe(1);
+    expect(apiMocks.fetchLoraDetails).toHaveBeenCalledTimes(detailCalls + 1);
+    await flush();
+
+    pressQuickKey(quick, 'ArrowDown');
+    expect(quick.selectedIndex).toBe(1);
+    expect(quick.detailElement.textContent).toContain('Last');
+    expect(apiMocks.fetchLoraDetails).toHaveBeenCalledTimes(detailCalls + 1);
+
+    // Clicking the already-selected row is the same no-op.
+    quick.resultsElement.querySelectorAll('.lm-quick__row')[1].click();
+    expect(apiMocks.fetchLoraDetails).toHaveBeenCalledTimes(detailCalls + 1);
+    quick.close();
+  });
+
   it('lists recently applied LoRAs from the whole library, newest first', async () => {
     localStorage.setItem('lm:quick-panel:recent-loras', JSON.stringify(['zzz/late', 'aaa/early']));
     // The loaded search page only holds one of them, mirroring a large library
