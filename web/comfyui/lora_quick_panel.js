@@ -4,6 +4,7 @@ import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getAllGraphNodes, getWidgetByName } from "./utils.js";
 import { applyLoraSelection, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
+import { isVideoPreviewUrl } from "./mediaTypes.js";
 import {
   fetchLoraDetails,
   fetchLoraFolderIndex,
@@ -447,9 +448,19 @@ export class LoraQuickPanel {
       this.detailElement.replaceChildren();
 
       if (details.preview_url) {
-        const preview = el("img", "lm-quick__preview");
+        // Video LoRAs store an .mp4/.webm preview; an <img> would render a
+        // broken thumbnail for them, so pick the element from the media type.
+        const isVideo = isVideoPreviewUrl(details.preview_url);
+        const preview = el(isVideo ? "video" : "img", "lm-quick__preview");
         preview.src = details.preview_url;
-        preview.alt = "";
+        if (isVideo) {
+          preview.autoplay = true;
+          preview.loop = true;
+          preview.muted = true;
+          preview.playsInline = true;
+        } else {
+          preview.alt = "";
+        }
         this.detailElement.appendChild(preview);
       }
       this.detailElement.appendChild(el("h2", "lm-quick__name", details.model_name || item.modelName));

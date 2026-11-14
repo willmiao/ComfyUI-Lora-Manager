@@ -142,6 +142,30 @@ describe('LoRA Quick Panel', () => {
     quick.close();
   });
 
+  it('renders a video element for video previews', async () => {
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Motion LoRA',
+      base_model: 'Wan Video',
+      preview_url: '/api/lm/previews?path=%2Fmodels%2Fmotion.mp4&v=123',
+    });
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    graphNodes = [makeNode()];
+    const quick = new LoraQuickPanel({}).open();
+    await quick.loadSearch();
+    await quick.loadFolderIndex();
+    await flush();
+
+    const preview = quick.detailElement.querySelector('.lm-quick__preview');
+    expect(preview.tagName).toBe('VIDEO');
+    expect(preview.autoplay).toBe(true);
+    expect(preview.muted).toBe(true);
+    expect(preview.loop).toBe(true);
+    expect(preview.playsInline).toBe(true);
+    expect(preview.getAttribute('src')).toContain('motion.mp4');
+    expect(quick.detailElement.querySelector('img')).toBeNull();
+    quick.close();
+  });
+
   it('refuses to write after the target leaves the workflow', async () => {
     const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
     const node = makeNode();
