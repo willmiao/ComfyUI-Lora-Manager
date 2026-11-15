@@ -99,6 +99,7 @@ class PersistentModelCache:
         "civitai_model_type",
         "civitai_name",
         "civitai_creator_username",
+        "civitai_creator_image",
         "trained_words",
         "license_flags",
         "civitai_deleted",
@@ -210,6 +211,7 @@ class PersistentModelCache:
                     trained_words = []
 
             creator_username = row["civitai_creator_username"]
+            creator_image = row["civitai_creator_image"]
             civitai: Optional[Dict[str, Any]] = None
             civitai_has_data = any(
                 row[col] is not None
@@ -226,7 +228,10 @@ class PersistentModelCache:
                 if trained_words:
                     civitai["trainedWords"] = trained_words
                 if creator_username:
-                    civitai.setdefault("creator", {})["username"] = creator_username
+                    creator_payload = civitai.setdefault("creator", {})
+                    creator_payload["username"] = creator_username
+                    if creator_image:
+                        creator_payload["image"] = creator_image
                 model_type_value = row["civitai_model_type"]
                 if model_type_value:
                     civitai.setdefault("model", {})["type"] = model_type_value
@@ -685,6 +690,7 @@ class PersistentModelCache:
                             civitai_model_type TEXT,
                             civitai_name TEXT,
                             civitai_creator_username TEXT,
+                            civitai_creator_image TEXT,
                             trained_words TEXT,
                             civitai_deleted INTEGER,
                             exclude INTEGER,
@@ -761,6 +767,7 @@ class PersistentModelCache:
         required_columns = {
             "metadata_source": "TEXT",
             "civitai_creator_username": "TEXT",
+            "civitai_creator_image": "TEXT",
             "civitai_model_type": "TEXT",
             "civitai_deleted": "INTEGER DEFAULT 0",
             "skip_metadata_refresh": "INTEGER DEFAULT 0",
@@ -811,9 +818,11 @@ class PersistentModelCache:
 
         metadata_source = item.get("metadata_source") or None
         creator_username = None
+        creator_image = None
         creator_data = civitai.get("creator") if isinstance(civitai, dict) else None
         if isinstance(creator_data, dict):
             creator_username = creator_data.get("username") or None
+            creator_image = creator_data.get("image") or None
         model_type_value = None
         if isinstance(civitai, Mapping):
             civitai_model_info = civitai.get("model")
@@ -864,6 +873,7 @@ class PersistentModelCache:
             model_type_value,
             civitai.get("name"),
             creator_username,
+            creator_image,
             trained_words_json,
             int(license_flags),
             1 if item.get("civitai_deleted") else 0,

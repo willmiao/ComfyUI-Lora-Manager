@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+
+from py.utils.sidecar_paths import get_metadata_path
 
 from py.routes.handlers.misc_handlers import (
     ModelLibraryHandler,
@@ -28,10 +31,15 @@ class FakeScanner:
         return self._cache
 
 
-def _creator_entry(username: str, *, exclude: bool = False) -> dict[str, Any]:
+def _creator_entry(
+    username: str, *, exclude: bool = False, image: str | None = None
+) -> dict[str, Any]:
+    creator = {"username": username}
+    if image:
+        creator["image"] = image
     return {
         "file_path": f"/models/{username.lower()}.safetensors",
-        "civitai": {"creator": {"username": username}},
+        "civitai": {"creator": creator},
         **({"exclude": True} if exclude else {}),
     }
 
@@ -60,7 +68,7 @@ def test_build_creator_index_folds_case_and_skips_excluded() -> None:
     index = ModelLibraryHandler._build_creator_index(
         {
             "lora": [
-                _creator_entry("Lykon"),
+                _creator_entry("Lykon", image="https://example.com/lykon.png"),
                 _creator_entry("lykon"),
                 _creator_entry("Lykon"),
                 _creator_entry("local_artist"),
@@ -82,6 +90,8 @@ def test_build_creator_index_folds_case_and_skips_excluded() -> None:
         "local_artist": 1,
         "Other": 1,
     }
+    lykon = next(entry for entry in index if entry["username"] == "Lykon")
+    assert lykon["image"] == "https://example.com/lykon.png"
 
 
 def test_rank_creators_exact_prefix_substring_then_count() -> None:
@@ -116,7 +126,7 @@ async def test_get_creators_returns_ranked_page_and_total() -> None:
     handler = make_handler(
         {
             "lora": FakeScanner([
-                _creator_entry("Lykon"),
+                _creator_entry("Lykon", image="https://example.com/lykon.png"),
                 _creator_entry("lyko"),
                 _creator_entry("TheAlly"),
                 _creator_entry("sasha"),
@@ -138,6 +148,7 @@ async def test_get_creators_returns_ranked_page_and_total() -> None:
     assert payload["library_total"] == 4
     assert [item["username"] for item in payload["creators"]] == ["Lykon", "lyko"]
     assert payload["creators"][0]["model_count"] == 2
+    assert payload["creators"][0]["image"] == "https://example.com/lykon.png"
 
 
 @pytest.mark.asyncio
@@ -187,3 +198,45 @@ async def test_get_creators_rebuilds_index_when_cache_version_changes() -> None:
 
     second = json.loads((await handler.get_creators(FakeRequest())).text)
     assert [entry["username"] for entry in second["creators"]] == ["Lykon", "new_creator"]
+
+@pytest.mark.asyncio
+async def test_get_creators_lazily_reads_avatar_from_sidecar(tmp_path: Path) -> None:
+    model_path = tmp_path / "artist.safetensors"
+    model_path.write_bytes(b"model")
+    sidecar_path = Path(get_metadata_path(str(model_path)))
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    sidecar_path.write_text(
+        json.dumps(
+            {
+                "civitai": {
+                    "creator": {
+                        "username": "Lykon",
+                        "image": "https://example.com/lykon.png",
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    handler = make_handler(
+        {
+            "lora": FakeScanner(
+                [
+                    {
+                        "file_path": str(model_path),
+                        "civitai": {"creator": {"username": "Lykon"}},
+                    }
+                ]
+            ),
+            "checkpoint": FakeScanner([]),
+            "embedding": FakeScanner([]),
+            "other": FakeScanner([]),
+        }
+    )
+
+    response = await handler.get_creators(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = json.loads(response.text)
+
+    assert payload["creators"][0]["image"] == "https://example.com/lykon.png"
+    assert all("_file_path" not in creator for creator in payload["creators"])

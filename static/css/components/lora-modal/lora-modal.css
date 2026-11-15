@@ -1366,8 +1366,26 @@
 }
 
 .creator-info--editable {
+    box-sizing: border-box;
+    min-height: 30px;
     gap: 2px;
     padding-right: 4px;
+}
+
+.creator-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.creator-info--editable .creator-avatar {
+    width: 22px;
+    height: 22px;
+}
+
+.creator-info--editable .creator-placeholder i {
+    font-size: 11px;
 }
 
 .creator-info--editable .creator-username {
@@ -1379,15 +1397,16 @@
 
 .creator-badge {
     flex: none;
-    padding: 1px 6px;
-    border-radius: 999px;
-    border: 1px solid var(--lora-border);
-    background: var(--surface-subtle);
+    margin-left: -4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: var(--text-muted);
-    font-size: 0.6rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    line-height: 1.4;
+    font-size: 0.55rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    opacity: 0.72;
     cursor: help;
 }
 
@@ -1461,13 +1480,14 @@
 }
 
 .creator-popover {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    z-index: var(--z-dropdown);
-    width: 360px;
-    max-width: min(360px, calc(100vw - 32px));
-    max-height: min(70vh, 480px);
+    position: fixed;
+    top: var(--creator-popover-top, 0);
+    left: var(--creator-popover-left, 0);
+    right: auto;
+    z-index: var(--z-overlay);
+    width: min(360px, calc(100vw - 24px));
+    max-width: none;
+    max-height: var(--creator-popover-max-height, min(70vh, 480px));
     overflow-y: auto;
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-base);
@@ -1719,12 +1739,19 @@
     width: 24px;
     height: 24px;
     flex: none;
+    overflow: hidden;
     border-radius: 50%;
     border: 1px solid color-mix(in oklch, var(--lora-accent) 21%, var(--lora-border));
     background: color-mix(in oklch, var(--lora-accent) 10%, transparent);
     color: var(--lora-accent);
     font-size: 0.61rem;
     font-weight: 700;
+}
+
+.creator-option-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .creator-option-name {
@@ -1812,14 +1839,12 @@
 
 @media (max-width: 640px) {
     .creator-popover {
-        position: fixed;
         top: var(--creator-popover-top, 180px);
         left: 12px;
         right: 12px;
         width: auto;
         max-width: none;
         max-height: 60vh;
-        z-index: var(--z-overlay);
     }
 
     .creator-dropdown-footer .creator-hint {

@@ -65,9 +65,11 @@ export function renderCreatorChip(creator) {
                  data-username="${usernameAttribute}"
                  data-source="${escapeAttribute(isManual ? 'manual' : 'civitai')}"
                  title="${escapeAttribute(profileTitle)}">
-                ${avatar}
-                <span class="creator-username">${displayName}</span>
-                ${manualBadge}
+                <span class="creator-identity">
+                    ${avatar}
+                    <span class="creator-username">${displayName}</span>
+                    ${manualBadge}
+                </span>
                 <button type="button" class="creator-edit-btn"
                         data-action="edit-creator" title="${escapeAttribute(editLabel)}"
                         aria-label="${escapeAttribute(editLabel)}"
@@ -281,9 +283,14 @@ export class CreatorPicker {
         );
         const creatorLabel = translate('modals.model.metadata.creator', {}, 'Creator');
 
-        this.wrapper.insertAdjacentHTML(
+        // Portal the panel to <body>: `.modal-content` is a scroll container
+        // with `overflow-x: hidden`, which clips absolutely positioned
+        // children when the chip sits near the left edge. A fixed panel with
+        // viewport-clamped coordinates stays fully visible at every width.
+        document.getElementById('creatorPickerPopover')?.remove();
+        document.body.insertAdjacentHTML(
             'beforeend',
-            `<div class="creator-popover" role="dialog" aria-label="${escapeAttribute(dialogLabel)}">
+            `<div class="creator-popover" id="creatorPickerPopover" role="dialog" aria-label="${escapeAttribute(dialogLabel)}">
                 <div class="creator-popover-search">
                     <div class="creator-input-wrap">
                         <i class="fas fa-search creator-search-icon" aria-hidden="true"></i>
@@ -297,12 +304,15 @@ export class CreatorPicker {
                 </div>
                 <div class="creator-popover-body"></div>
                 <div class="sr-only creator-live" aria-live="polite"></div>
-            </div>
-            <span class="creator-popover-caret" aria-hidden="true"></span>`
+            </div>`
         );
 
-        this.popover = this.wrapper.querySelector('.creator-popover');
-        this.caret = this.wrapper.querySelector('.creator-popover-caret');
+        this.popover = document.getElementById('creatorPickerPopover');
+        this.wrapper.querySelector('.creator-popover-caret')?.remove();
+        this.caret = document.createElement('span');
+        this.caret.className = 'creator-popover-caret';
+        this.caret.setAttribute('aria-hidden', 'true');
+        this.wrapper.appendChild(this.caret);
         this.input = this.popover?.querySelector('.creator-input');
         this.body = this.popover?.querySelector('.creator-popover-body');
     }
@@ -370,6 +380,9 @@ export class CreatorPicker {
                 break;
             case 'Escape':
                 event.preventDefault();
+                // The ModalManager listens for Escape on document; closing the
+                // picker must not also close the model modal.
+                event.stopPropagation();
                 this.close();
                 break;
             case 'Tab':
@@ -588,10 +601,13 @@ export class CreatorPicker {
         const query = this.query.trim();
         const label = query ? this.highlightMatch(username, query) : escapeHtml(username);
         const count = Number(creator.model_count) || 0;
+        const avatarMarkup = creator.image
+            ? `<span class="creator-option-avatar" aria-hidden="true"><img src="${escapeAttribute(creator.image)}" alt="" loading="lazy" onerror="this.onerror=null; this.src='/loras_static/icons/user-placeholder.png';"></span>`
+            : `<span class="creator-option-avatar" aria-hidden="true">${escapeHtml(initialOf(username))}</span>`;
         return `<div class="creator-option${current ? ' is-current' : ''}${isActive ? ' is-active' : ''}"
                      id="creatorPickerOption${index}" data-index="${index}" role="option"
                      aria-selected="${isActive}"${current ? ' aria-current="true"' : ''}>
-                    <span class="creator-option-avatar" aria-hidden="true">${escapeHtml(initialOf(username))}</span>
+                    ${avatarMarkup}
                     <span class="creator-option-name" title="${escapeAttribute(username)}" dir="auto">${label}</span>
                     ${current ? '<i class="fas fa-check creator-check" aria-hidden="true"></i>' : ''}
                     <span class="creator-count">${escapeHtml(modelCountLabel(count))}</span>
@@ -727,7 +743,7 @@ export class CreatorPicker {
             this.close();
             return;
         }
-        this.saveCreatorValue(username);
+        this.saveCreatorValue(username, creator.image || null);
     }
 
     commitName(raw) {
@@ -754,24 +770,25 @@ export class CreatorPicker {
             this.commitCreator(known);
             return;
         }
-        this.saveCreatorValue(name);
+        this.saveCreatorValue(name, null);
     }
 
-    async saveCreatorValue(username) {
+    async saveCreatorValue(username, image = null) {
         if (this.saving) return;
         this.saving = true;
         this.updateLoadingState();
         this.input?.focus();
 
+        const avatar = typeof image === 'string' && image ? image : null;
         try {
             await this.saveCreatorImpl({
                 username,
-                image: null,
+                image: avatar,
                 source: 'manual',
             });
             this.creator = {
                 username,
-                image: null,
+                image: avatar,
                 source: 'manual',
             };
             this.close({ restoreFocus: false });
@@ -880,6 +897,12 @@ export class CreatorPicker {
             return;
         }
         if (this.wrapper?.contains(event.target)) return;
+        if (this.popover?.contains(event.target)) return;
+        if (event.target === modal || event.target.closest?.('.close')) {
+            // Closing the model modal must not implicitly commit typed text.
+            this.close({ restoreFocus: false });
+            return;
+        }
         if (this.query.trim()) {
             this.commitTyped();
         } else {
@@ -889,16 +912,27 @@ export class CreatorPicker {
 
     positionPopover() {
         if (!this.isOpen || !this.popover || !this.wrapper) return;
+        const rect = this.wrapper.getBoundingClientRect();
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const top = Math.max(8, Math.min(rect.bottom + 10, viewportHeight - 120));
+        this.popover.style.setProperty('--creator-popover-top', `${top}px`);
+
         if (isNarrowViewport()) {
-            const rect = this.wrapper.getBoundingClientRect();
-            const top = Math.max(
-                12,
-                Math.min(rect.bottom + 8, window.innerHeight - 180)
-            );
-            this.popover.style.setProperty('--creator-popover-top', `${top}px`);
-        } else {
-            this.popover.style.removeProperty('--creator-popover-top');
+            // The 640px breakpoint uses a full-width fixed panel (CSS).
+            this.popover.style.removeProperty('--creator-popover-left');
+            this.popover.style.removeProperty('--creator-popover-max-height');
+            return;
         }
+
+        const width = Math.min(360, viewportWidth - 24);
+        const left = Math.max(
+            8,
+            Math.min(rect.right - width, viewportWidth - width - 8)
+        );
+        const maxHeight = Math.max(180, Math.min(480, viewportHeight - top - 12));
+        this.popover.style.setProperty('--creator-popover-left', `${left}px`);
+        this.popover.style.setProperty('--creator-popover-max-height', `${maxHeight}px`);
     }
 }
 

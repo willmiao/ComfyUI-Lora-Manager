@@ -3887,7 +3887,7 @@ async def test_add_model_to_cache_slims_civitai_payload(tmp_path: Path, monkeypa
         "id": 123,
         "modelId": 456,
         "name": "v1",
-        "creator": {"username": "alice"},
+        "creator": {"username": "alice", "image": "avatar.png"},
         "trainedWords": ["trigger"],
         "model": {"type": "LORA"},
     }

@@ -1052,7 +1052,11 @@ class ModelScanner:
         if isinstance(creator, Mapping):
             username = creator.get('username')
             if username:
-                slim['creator'] = {'username': username}
+                creator_payload = {'username': username}
+                image = creator.get('image')
+                if isinstance(image, str) and image:
+                    creator_payload['image'] = image
+                slim['creator'] = creator_payload
 
         trained_words = civitai.get('trainedWords')
         if trained_words:

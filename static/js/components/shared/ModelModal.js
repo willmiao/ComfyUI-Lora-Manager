@@ -1030,6 +1030,12 @@ export async function showModelModal(model, modelType) {
             modalElement.removeEventListener('click', modalElement._clickHandler);
             delete modalElement._clickHandler;
         }
+        // The creator picker portals its panel to <body>; destroy it explicitly
+        // so closing the modal cannot leave the panel floating on the page.
+        modalElement?._creatorPicker?.destroy?.();
+        if (modalElement) {
+            modalElement._creatorPicker = null;
+        }
         cleanupNavigationShortcuts();
     };
 

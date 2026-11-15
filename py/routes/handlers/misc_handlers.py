@@ -24,7 +24,7 @@ import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from urllib.parse import quote
-from typing import Any, Awaitable, Callable, Dict, Mapping, Protocol, Sequence
+from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol, Sequence
 
 from aiohttp import web
 
@@ -2453,6 +2453,8 @@ class ModelLibraryHandler:
         # moves and deletes invalidate it without extra hooks.
         self._creator_index_cache: list[dict[str, Any]] | None = None
         self._creator_index_key: tuple[Any, ...] | None = None
+        # Cache of lazily-read sidecar avatars, keyed by lowercased username.
+        self._creator_image_cache: dict[str, Optional[str]] = {}
 
     @staticmethod
     def _normalize_model_type(model_type: str | None) -> str | None:
@@ -2507,6 +2509,8 @@ class ModelLibraryHandler:
         """
         totals: dict[str, int] = {}
         spellings: dict[str, dict[str, int]] = {}
+        images: dict[str, str] = {}
+        sample_paths: dict[str, str] = {}
 
         for entries in entries_by_type.values():
             for item in entries:
@@ -2528,13 +2532,67 @@ class ModelLibraryHandler:
                 totals[key] = totals.get(key, 0) + 1
                 variants = spellings.setdefault(key, {})
                 variants[username] = variants.get(username, 0) + 1
+                image = creator.get("image")
+                if isinstance(image, str) and image and key not in images:
+                    images[key] = image
+                file_path = item.get("file_path")
+                if isinstance(file_path, str) and file_path and key not in sample_paths:
+                    sample_paths[key] = file_path
 
         creators: list[dict[str, Any]] = []
         for key, count in totals.items():
             variants = spellings.get(key) or {}
             canonical = max(variants.items(), key=lambda item: item[1])[0] if variants else key
-            creators.append({"username": canonical, "model_count": count})
+            entry: dict[str, Any] = {"username": canonical, "model_count": count}
+            if key in images:
+                entry["image"] = images[key]
+            if key in sample_paths:
+                # Private field: used to lazily read an avatar from a sidecar
+                # when the persisted cache predates image storage.
+                entry["_file_path"] = sample_paths[key]
+            creators.append(entry)
         return creators
+
+    @staticmethod
+    def _read_creator_image(file_path: str) -> Optional[str]:
+        """Best-effort read of a creator avatar from one model sidecar."""
+
+        try:
+            metadata_path = get_metadata_path(file_path)
+            if not os.path.isfile(metadata_path):
+                return None
+            with open(metadata_path, "r", encoding="utf-8") as handle:
+                metadata = json.load(handle)
+            if not isinstance(metadata, dict):
+                return None
+            civitai = metadata.get("civitai")
+            creator = civitai.get("creator") if isinstance(civitai, dict) else None
+            image = creator.get("image") if isinstance(creator, dict) else None
+            return image.strip() if isinstance(image, str) and image.strip() else None
+        except Exception as exc:  # pragma: no cover - offline sidecar / bad JSON
+            logger.debug("Unable to read creator image from %s: %s", file_path, exc)
+            return None
+
+    def _enrich_creator_images(self, creators: Sequence[dict[str, Any]]) -> None:
+        """Fill missing avatars from a representative sidecar per creator.
+
+        New cache entries carry ``civitai_creator_image``. Libraries persisted
+        before that column existed do not, so the few creators actually returned
+        by a query fall back to reading one sidecar each (memoized in memory).
+        """
+
+        for creator in creators:
+            if creator.get("image"):
+                continue
+            key = str(creator.get("username", "")).lower()
+            if key in self._creator_image_cache:
+                image = self._creator_image_cache[key]
+            else:
+                file_path = creator.get("_file_path")
+                image = self._read_creator_image(file_path) if isinstance(file_path, str) else None
+                self._creator_image_cache[key] = image
+            if image:
+                creator["image"] = image
 
     @staticmethod
     def _rank_creators(
@@ -2606,6 +2664,7 @@ class ModelLibraryHandler:
         index = self._build_creator_index(entries_by_type)
         self._creator_index_key = key
         self._creator_index_cache = index
+        self._creator_image_cache.clear()
         return index
 
     async def get_creators(self, request: web.Request) -> web.Response:
@@ -2631,10 +2690,20 @@ class ModelLibraryHandler:
 
             index = await self._get_creator_index()
             ranked = self._rank_creators(index, query)
+            page = ranked[:limit]
+            self._enrich_creator_images(page)
+            public_creators = [
+                {
+                    key: value
+                    for key, value in creator.items()
+                    if not key.startswith("_")
+                }
+                for creator in page
+            ]
             return web.json_response(
                 {
                     "success": True,
-                    "creators": ranked[:limit],
+                    "creators": public_creators,
                     "total": len(ranked),
                     # Unfiltered library size, used by the chip's "N in
                     # library" label while a query is active.

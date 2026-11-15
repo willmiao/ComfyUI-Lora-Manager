@@ -42,7 +42,10 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
                 'modelId': 2,
                 'name': 'verA',
                 'trainedWords': ['word1'],
-                'creator': {'username': 'artist42'},
+                'creator': {
+                    'username': 'artist42',
+                    'image': 'https://example.com/artist42.png',
+                },
             },
             'license_flags': 13,
         },
@@ -92,6 +95,7 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
     assert first['tags'] == ['alpha', 'beta']
     assert first['metadata_source'] == 'civitai_api'
     assert first['civitai']['creator']['username'] == 'artist42'
+    assert first['civitai']['creator']['image'] == 'https://example.com/artist42.png'
     assert first['civitai_deleted'] is False
     assert first['license_flags'] == 13
 

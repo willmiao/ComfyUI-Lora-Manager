@@ -121,9 +121,10 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'add-creator'));
     await tick(10);
 
-    const popover = wrapper.querySelector('.creator-popover');
+    const popover = document.querySelector('.creator-popover');
     expect(popover).not.toBeNull();
-    expect(wrapper.contains(popover)).toBe(true);
+    expect(document.body.contains(popover)).toBe(true);
+    expect(wrapper.contains(popover)).toBe(false);
     expect(document.activeElement).toBe(popover.querySelector('.creator-input'));
     expect(fetchCreators).toHaveBeenCalledWith('');
     expect(popover.querySelector('.creator-option-name').textContent).toBe('Lykon');
@@ -137,11 +138,11 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'add-creator'));
     await tick(10);
 
-    const input = wrapper.querySelector('.creator-input');
+    const input = document.querySelector('.creator-input');
     input.value = 'ly';
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const createRow = wrapper.querySelector('.creator-create-row');
+    const createRow = document.querySelector('.creator-create-row');
     expect(createRow).not.toBeNull();
     expect(createRow.textContent).toContain('ly');
 
@@ -155,7 +156,7 @@ describe('CreatorPicker', () => {
     });
     expect(wrapper.querySelector('.creator-username')?.textContent).toBe('ly');
     expect(wrapper.querySelector('.creator-badge')?.textContent).toBe('Manual');
-    expect(wrapper.querySelector('.creator-popover')).toBeNull();
+    expect(document.querySelector('.creator-popover')).toBeNull();
     expect(showToast).toHaveBeenCalled();
   });
 
@@ -169,11 +170,11 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'add-creator'));
     await tick(10);
 
-    const input = wrapper.querySelector('.creator-input');
+    const input = document.querySelector('.creator-input');
     input.value = 'LYKON';
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    expect(wrapper.querySelector('.creator-create-row')).toBeNull();
+    expect(document.querySelector('.creator-create-row')).toBeNull();
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
     await tick(10);
 
@@ -185,6 +186,36 @@ describe('CreatorPicker', () => {
     expect(wrapper.querySelector('.creator-username')?.textContent).toBe('Lykon');
   });
 
+  it('reuses the known creator image when selecting from the library', async () => {
+    const fetchCreators = vi.fn(async () => ({
+      creators: [{
+        username: 'Lykon',
+        model_count: 24,
+        image: 'https://example.com/lykon.png',
+      }],
+      total: 1,
+    }));
+    const { wrapper, picker, saveCreator } = mountPicker({ fetchCreators });
+
+    picker.open(getTrigger(wrapper, 'add-creator'));
+    await tick(10);
+
+    const option = document.querySelector('.creator-option');
+    expect(option.querySelector('.creator-option-avatar img')?.getAttribute('src'))
+      .toBe('https://example.com/lykon.png');
+
+    option.click();
+    await tick(10);
+
+    expect(saveCreator).toHaveBeenCalledWith({
+      username: 'Lykon',
+      image: 'https://example.com/lykon.png',
+      source: 'manual',
+    });
+    expect(wrapper.querySelector('.creator-avatar img')?.getAttribute('src'))
+      .toBe('https://example.com/lykon.png');
+  });
+
   it('removes a manual creator and returns to the add chip', async () => {
     const creator = { username: 'local_artist', image: null, source: 'manual' };
     const { wrapper, picker, saveCreator } = mountPicker({ creator });
@@ -192,7 +223,7 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'edit-creator'));
     await tick(10);
 
-    wrapper.querySelector('.creator-remove-btn').click();
+    document.querySelector('.creator-remove-btn').click();
     await tick(10);
 
     expect(saveCreator).toHaveBeenCalledWith(null);
@@ -208,11 +239,11 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'edit-creator'));
     await tick(10);
 
-    wrapper.querySelector('.creator-input').dispatchEvent(
+    document.querySelector('.creator-input').dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     );
 
-    expect(wrapper.querySelector('.creator-popover')).toBeNull();
+    expect(document.querySelector('.creator-popover')).toBeNull();
     expect(saveCreator).not.toHaveBeenCalled();
   });
 
@@ -222,7 +253,7 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'add-creator'));
     await tick(10);
 
-    const input = wrapper.querySelector('.creator-input');
+    const input = document.querySelector('.creator-input');
     input.value = 'outside_new';
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -244,7 +275,7 @@ describe('CreatorPicker', () => {
     await tick(10);
     fetchCreators.mockClear();
 
-    const input = wrapper.querySelector('.creator-input');
+    const input = document.querySelector('.creator-input');
     input.value = 'ly';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await tick(50);
@@ -264,12 +295,12 @@ describe('CreatorPicker', () => {
     picker.open(getTrigger(wrapper, 'add-creator'));
     await tick(10);
 
-    expect(wrapper.querySelector('.creator-empty-state')?.textContent)
+    expect(document.querySelector('.creator-empty-state')?.textContent)
       .toContain("Couldn't load creators");
 
-    const input = wrapper.querySelector('.creator-input');
+    const input = document.querySelector('.creator-input');
     input.value = 'new_name';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    expect(wrapper.querySelector('.creator-create-row')).not.toBeNull();
+    expect(document.querySelector('.creator-create-row')).not.toBeNull();
   });
 });
