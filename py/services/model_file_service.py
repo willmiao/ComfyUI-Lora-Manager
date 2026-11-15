@@ -57,6 +57,16 @@ def _normalize_match_path(path: Any) -> str:
     return os.path.normpath(os.path.abspath(str(path))).replace(os.sep, "/")
 
 
+def _plan_key(path: str) -> str:
+    """Key a path the way the filesystem compares it, for dry-run collisions.
+
+    ``normcase`` folds case on Windows so ``Foo.st`` and ``foo.st`` collide
+    there as they would on disk. Business paths only — symlinks are never
+    resolved.
+    """
+    return os.path.normcase(os.path.normpath(path))
+
+
 class ProgressCallback(ABC):
     """Abstract callback interface for progress reporting"""
     
@@ -84,14 +94,18 @@ class AutoOrganizeResult:
         self.status: str = 'success'
         self.dry_run: bool = False
         self.planned_moves: List[Dict[str, str]] = []
-        self.planned_targets: Set[str] = set()
+        # Dry-run bookkeeping, keyed by _plan_key(): target -> model planned
+        # to land there, and the sources those planned moves free up.
+        self.planned_targets: Dict[str, str] = {}
+        self.vacated_sources: Set[str] = set()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
         if self.dry_run:
             message = (
                 f'Auto-organize dry run ({self.operation_type}): '
-                f'{self.success_count} would move, {self.skipped_count} skipped, '
+                f'{self.success_count} would move, '
+                f'{self.skipped_count} would be skipped, '
                 f'{self.failure_count} would fail out of {self.total} total'
             )
         elif self.operation_type == 'filename_template':
@@ -168,7 +182,12 @@ class ModelFileService:
             progress_callback: Optional callback for progress updates
             dry_run: When true, compute and report every move without
                      touching the disk (no moves, no empty-folder cleanup,
-                     no progress broadcasts)
+                     no progress broadcasts). It still holds the
+                     auto-organize lock. The plan is advisory: a later real
+                     run re-plans from the then-current library rather than
+                     applying this exact plan. Every result and planned move
+                     is returned untruncated, so on a very large library the
+                     response is correspondingly large.
             
         Returns:
             AutoOrganizeResult object with operation results
@@ -374,8 +393,9 @@ class ModelFileService:
                     'operation_type': result.operation_type
                 })
             
-            # Small delay between batches
-            await asyncio.sleep(0.1)
+            # Pace real runs between batches; a dry run does no I/O, so it
+            # only yields to the event loop.
+            await asyncio.sleep(0 if result.dry_run else 0.1)
     
     async def _process_single_model(
         self, 
@@ -437,11 +457,13 @@ class ModelFileService:
                 result.skipped_count += 1
                 return
 
-            # In a dry run nothing moves, so also treat targets claimed by an
-            # earlier planned move as taken: the real run would fail there.
-            if os.path.exists(target_file_path) or (
-                result.dry_run
-                and target_file_path.replace(os.sep, '/') in result.planned_targets
+            # A real run moves models one by one in this order, and a dry run
+            # moves nothing, so it simulates the earlier moves: a target
+            # vacated by one is free, and a target claimed by one is taken.
+            target_key = _plan_key(target_file_path)
+            if (
+                os.path.exists(target_file_path)
+                and target_key not in result.vacated_sources
             ):
                 self._add_result(result, model_name, False, 
                                f"Target file already exists: {target_file_path}")
@@ -449,12 +471,22 @@ class ModelFileService:
                 return
 
             if result.dry_run:
+                claimed_by = result.planned_targets.get(target_key)
+                if claimed_by is not None:
+                    self._add_result(
+                        result, model_name, False,
+                        f"Target file {target_file_path} would collide with "
+                        f"the planned move of {claimed_by}",
+                    )
+                    result.failure_count += 1
+                    return
                 result.planned_moves.append({
                     'model': model_name,
-                    'from': file_path,
+                    'from': file_path.replace(os.sep, '/'),
                     'to': target_file_path.replace(os.sep, '/'),
                 })
-                result.planned_targets.add(target_file_path.replace(os.sep, '/'))
+                result.planned_targets[target_key] = model_name
+                result.vacated_sources.add(_plan_key(file_path))
                 result.success_count += 1
                 return
             

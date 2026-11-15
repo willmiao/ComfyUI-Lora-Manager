@@ -1972,8 +1972,12 @@ class ModelQueryHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
-def _is_truthy(value: Optional[str]) -> bool:
-    """Parse an optional boolean query-string flag."""
+def _is_truthy(value: Any) -> bool:
+    """Parse an optional boolean flag from a query string or JSON body.
+
+    Strict: only ``True``/``1`` and the strings ``1``/``true``/``yes``/``on``
+    count, so ``"false"`` or ``0`` stay false.
+    """
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
@@ -3002,16 +3006,20 @@ class ModelAutoOrganizeHandler:
         self._logger = logger
 
     async def auto_organize_models(self, request: web.Request) -> web.Response:
+        # ``dry_run`` may come from the query string or the POST body; either
+        # one set to a true value makes the request a preview. Scoping a
+        # preview to ``file_paths`` needs POST (GET previews the whole library).
+        dry_run = False
         try:
             file_paths = None
             exclusion_patterns = None
             settings_manager = get_settings_manager()
-            dry_run = request.query.get("dry_run", "").lower() in ("1", "true", "yes")
+            dry_run = _is_truthy(request.query.get("dry_run"))
             if request.method == "POST":
                 try:
                     data = await request.json()
                     file_paths = data.get("file_paths")
-                    dry_run = dry_run or bool(data.get("dry_run"))
+                    dry_run = dry_run or _is_truthy(data.get("dry_run"))
                     if "exclusion_patterns" in data:
                         exclusion_patterns = (
                             settings_manager.normalize_auto_organize_exclusions(
@@ -3042,16 +3050,18 @@ class ModelAutoOrganizeHandler:
             )
         except Exception as exc:
             self._logger.error("Error in auto_organize_models: %s", exc, exc_info=True)
-            try:
-                await self._progress_callback.on_progress(
-                    {
-                        "type": "auto_organize_progress",
-                        "status": "error",
-                        "error": str(exc),
-                    }
-                )
-            except Exception:  # pragma: no cover - defensive reporting
-                pass
+            # A dry run never reports progress, so its failure must not either.
+            if not dry_run:
+                try:
+                    await self._progress_callback.on_progress(
+                        {
+                            "type": "auto_organize_progress",
+                            "status": "error",
+                            "error": str(exc),
+                        }
+                    )
+                except Exception:  # pragma: no cover - defensive reporting
+                    pass
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_auto_organize_progress(self, request: web.Request) -> web.Response:

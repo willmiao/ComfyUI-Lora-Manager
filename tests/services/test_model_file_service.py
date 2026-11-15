@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 from typing import List
@@ -956,7 +957,158 @@ async def test_auto_organize_dry_run_flags_two_models_bound_for_one_path(
     assert result.success_count == 1
     assert result.failure_count == 1
     assert len(result.to_dict()["planned_moves"]) == 1
-    assert "already exists" in result.results[0]["message"]
+    assert "would collide" in result.results[0]["message"]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_frees_target_vacated_by_earlier_move(
+    tmp_path: Path,
+):
+    """A real run moves models in cache order, so a target freed by an
+    earlier move is free; the dry run must not report a false conflict."""
+    service, scanner, _model_path = _organize_setup(tmp_path)
+    sdxl_dir = tmp_path / "SDXL"
+    sdxl_dir.mkdir()
+    occupant = sdxl_dir / "mymodel.safetensors"
+    occupant.write_bytes(b"model")
+    other_dir = tmp_path / "other"
+    other_dir.mkdir()
+    newcomer = other_dir / "mymodel.safetensors"
+    newcomer.write_bytes(b"model")
+    scanner._cache.raw_data[:] = [
+        {
+            "file_path": occupant.as_posix(),
+            "model_name": "occupant",
+            "base_model": "Flux.1 D",
+            "tags": [],
+            "civitai": {"id": 1},
+        },
+        {
+            "file_path": newcomer.as_posix(),
+            "model_name": "newcomer",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        },
+    ]
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert scanner.moves == []
+    assert result.failure_count == 0
+    assert result.success_count == 2
+    planned = result.to_dict()["planned_moves"]
+    assert [move["model"] for move in planned] == ["occupant", "newcomer"]
+    assert planned[1]["to"] == occupant.as_posix()
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_names_the_planned_collision(tmp_path: Path):
+    """When the target is only claimed by a planned move (not on disk yet),
+    the message says so instead of claiming the file already exists."""
+    service, scanner, _model_path = _organize_setup(tmp_path)
+    twin_dir = tmp_path / "other"
+    twin_dir.mkdir()
+    twin = twin_dir / "mymodel.safetensors"
+    twin.write_bytes(b"model")
+    scanner._cache.raw_data.append(
+        {
+            "file_path": twin.as_posix(),
+            "model_name": "mymodel-twin",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        }
+    )
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    message = result.results[0]["message"]
+    assert "planned move of mymodel" in message
+    assert "already exists" not in message
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_collides_targets_case_insensitively(
+    tmp_path: Path, monkeypatch
+):
+    """On a case-insensitive filesystem Foo.st and foo.st are one file."""
+    service, scanner, model_path = _organize_setup(tmp_path)
+    twin_dir = tmp_path / "other"
+    twin_dir.mkdir()
+    twin = twin_dir / "MyModel.safetensors"
+    twin.write_bytes(b"model")
+    scanner._cache.raw_data.append(
+        {
+            "file_path": twin.as_posix(),
+            "model_name": "twin",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        }
+    )
+    monkeypatch.setattr(os.path, "normcase", lambda path: path.lower())
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert result.success_count == 1
+    assert result.failure_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_honours_file_paths(tmp_path: Path):
+    service, scanner, model_path = _organize_setup(tmp_path)
+    other = tmp_path / "other.safetensors"
+    other.write_bytes(b"model")
+    scanner._cache.raw_data.append(
+        {
+            "file_path": other.as_posix(),
+            "model_name": "other",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        }
+    )
+
+    result = await service.auto_organize_models(
+        file_paths=[other.as_posix()], dry_run=True
+    )
+
+    assert result.operation_type == "bulk"
+    assert result.total == 1
+    assert [m["model"] for m in result.to_dict()["planned_moves"]] == ["other"]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_does_not_pace_batches(
+    tmp_path: Path, monkeypatch
+):
+    """A dry run does no I/O, so the inter-batch pacing sleep is skipped."""
+    import py.services.model_file_service as module
+
+    service, scanner, _model_path = _organize_setup(tmp_path)
+    scanner._cache.raw_data[:] = [
+        {
+            "file_path": (tmp_path / f"m{i}.safetensors").as_posix(),
+            "model_name": f"m{i}",
+            "base_model": "",
+            "tags": [],
+            "civitai": {},
+        }
+        for i in range(120)
+    ]
+    delays: List[float] = []
+    real_sleep = asyncio.sleep
+
+    async def recording_sleep(delay, *args, **kwargs):
+        delays.append(delay)
+        await real_sleep(0)
+
+    monkeypatch.setattr(module.asyncio, "sleep", recording_sleep)
+
+    await service.auto_organize_models(dry_run=True)
+
+    assert delays and all(delay == 0 for delay in delays)
 
 
 @pytest.mark.asyncio

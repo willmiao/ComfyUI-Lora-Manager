@@ -861,6 +861,117 @@ def test_auto_organize_dry_run_route_reports_plan_without_progress(
     asyncio.run(scenario())
 
 
+def test_auto_organize_dry_run_does_not_broadcast_models_changed(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    from py.routes.handlers import model_handlers
+
+    broadcasts = []
+    monkeypatch.setattr(
+        model_handlers, "_broadcast_models_changed", lambda: broadcasts.append(1)
+    )
+
+    async def fake_auto_organize(self, dry_run=False, **_kwargs):
+        result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        return result
+
+    monkeypatch.setattr(
+        model_file_service.ModelFileService,
+        "auto_organize_models",
+        fake_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/auto-organize", json={"dry_run": True}
+            )
+            assert response.status == 200
+            assert broadcasts == []
+
+            response = await client.post("/api/lm/test-models/auto-organize")
+            assert response.status == 200
+            assert broadcasts == [1]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_auto_organize_dry_run_error_does_not_broadcast_progress(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    async def failing_auto_organize(self, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        model_file_service.ModelFileService,
+        "auto_organize_models",
+        failing_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/auto-organize", json={"dry_run": True}
+            )
+            payload = await response.json()
+
+            assert response.status == 500
+            assert payload == {"success": False, "error": "boom"}
+            assert ws_manager.get_auto_organize_progress() is None
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("request_kwargs", "expected"),
+    [
+        ({"method": "post", "json": {"dry_run": "false"}}, False),
+        ({"method": "post", "json": {"dry_run": 0}}, False),
+        ({"method": "post", "json": {"dry_run": "true"}}, True),
+        ({"method": "get", "params": {"dry_run": "0"}}, False),
+        ({"method": "get", "params": {"dry_run": "1"}}, True),
+    ],
+)
+def test_auto_organize_parses_dry_run_flag_strictly(
+    mock_service, monkeypatch: pytest.MonkeyPatch, request_kwargs, expected
+):
+    seen = []
+
+    async def fake_auto_organize(self, dry_run=False, **_kwargs):
+        seen.append(dry_run)
+        result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        return result
+
+    monkeypatch.setattr(
+        model_file_service.ModelFileService,
+        "auto_organize_models",
+        fake_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            kwargs = dict(request_kwargs)
+            method = kwargs.pop("method")
+            response = await getattr(client, method)(
+                "/api/lm/test-models/auto-organize", **kwargs
+            )
+            assert response.status == 200
+            assert seen == [expected]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_auto_organize_conflict_when_running(mock_service):
     async def scenario():
         client = await create_test_client(mock_service)
