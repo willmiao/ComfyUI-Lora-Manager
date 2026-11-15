@@ -1,5 +1,11 @@
 import { app } from "../../scripts/app.js";
 import { lmUrl } from "./base_path.js";
+import {
+    applyLmAccent,
+    LM_THEME_ACCENT_DEFAULT,
+    LM_THEME_ACCENT_SETTING_ID,
+    renderLmAccentSetting,
+} from "./lm_theme.js";
 
 // ============================================================================
 // Setting IDs and Defaults
@@ -527,6 +533,16 @@ const getNodeLoraNameDisplayPreference = (() => {
 app.registerExtension({
     name: "LoraManager.Settings",
     settings: [
+        {
+            id: LM_THEME_ACCENT_SETTING_ID,
+            name: "Widget accent color",
+            // Custom renderer: preset swatches plus a free colour picker.
+            type: renderLmAccentSetting,
+            defaultValue: LM_THEME_ACCENT_DEFAULT,
+            tooltip: "Highlight color for LoRA Manager nodes, their popovers and the LoRA quick panel (selection, focus ring, badges, accent labels). Surfaces and text always follow the ComfyUI palette, so only the accent is adjustable here; a mid-tone color reads best both as a fill and as a background tint. This does not affect the LoRA Manager browser page.",
+            category: ["LoRA Manager", "Appearance", "Widget accent color"],
+            onChange: (value) => applyLmAccent(value),
+        },
         {
             id: TRIGGER_WORD_WHEEL_SENSITIVITY_ID,
             name: "Trigger Word Wheel Sensitivity",

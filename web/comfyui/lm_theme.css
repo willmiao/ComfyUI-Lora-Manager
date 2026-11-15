@@ -3,8 +3,7 @@
  * Every value aliases a ComfyUI theme token (or is derived from one with
  * color-mix), so all built-in palettes and user-imported custom palettes are
  * handled without per-theme rules. Only genuinely "directional" values
- * (status colors, shadows, scrims) have a light and a dark variant, keyed on
- * the `.dark-theme` class ComfyUI puts on <html>.
+ * (status colors, shadows, scrims) have a light and a dark variant.
  *
  * Three contexts:
  *   .lm-widget-root  inline node widget (canvas DOM widget or Vue node)
@@ -12,10 +11,22 @@
  *                    widgets there use the --component-node-* token family
  *   .lm-popover      menus / dropdowns appended to <body>
  *
+ * The palette is never copied: surfaces, text and borders stay aliased to
+ * ComfyUI, so an LM widget always matches the node around it. The accent is
+ * the one value LM owns, and it is indirected through --lm-base-accent so the
+ * accent setting can override it from <html> (see lm_theme.js).
+ *
  * Never style an LM widget with --color-* scale tokens (e.g.
  * --color-charcoal-400): those are fixed values that do not flip with the
  * theme.
  */
+
+/* The accent base lives on :root only. Declaring it in the shared block below
+   would put a copy on every .lm-widget-root, which would shadow the inline
+   override the accent setting writes on <html>. */
+:root {
+  --lm-base-accent: #4299e1;
+}
 
 /* :root carries the token defaults so LM can also style ComfyUI-owned rows
    (e.g. the .lm-flash value highlight) that live outside LM containers. */
@@ -40,11 +51,11 @@
   --lm-fg-subtle: color-mix(in srgb, var(--lm-fg) 60%, transparent);
 
   /* Brand accent */
-  --lm-accent: #4299e1;
+  --lm-accent: var(--lm-base-accent);
   --lm-accent-text: color-mix(in oklab, var(--lm-accent) 60%, var(--lm-fg));
   --lm-accent-soft: color-mix(in srgb, var(--lm-accent) 18%, transparent);
   --lm-accent-track: color-mix(in srgb, var(--lm-accent) 15%, transparent);
-  --lm-on-accent: #fff;
+  --lm-on-accent: var(--lm-base-on-accent, #fff);
   --lm-accent-fill: color-mix(in srgb, var(--lm-accent) 65%, transparent);
   --lm-accent-border: color-mix(in srgb, var(--lm-accent) 55%, transparent);
 
@@ -124,4 +135,58 @@ html.dark-theme .lm-popover {
   --lm-shadow-lg: 0 10px 25px rgb(0 0 0 / 0.55);
   --lm-scrim: rgb(0 0 0 / 0.6);
   color-scheme: dark;
+}
+
+/* ---- Accent setting control ----------------------------------------------
+   Rendered by lm_theme.js inside ComfyUI's settings panel, so it uses the
+   panel's chrome tokens rather than the --lm-* widget tokens. The swatch
+   colour itself is written inline as --lm-accent-swatch-color, keeping the
+   preset table in one place (lm_theme.js). */
+.lm-accent-setting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.lm-accent-setting__swatch,
+.lm-accent-setting__custom {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg-color, #fff) 30%, transparent);
+  background: var(--lm-accent-swatch-color, transparent);
+  cursor: pointer;
+}
+
+.lm-accent-setting__swatch:hover,
+.lm-accent-setting__custom:hover {
+  border-color: var(--fg-color, #fff);
+}
+
+/* Selected preset: a ring drawn outside the swatch with the panel surface in
+   between, so it reads on any palette. */
+.lm-accent-setting__swatch[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--comfy-menu-bg, #171718),
+    0 0 0 3px var(--fg-color, #fff);
+}
+
+/* The native colour input doubles as the "current value" chip and the custom
+   picker; square so it reads differently from the preset swatches. */
+.lm-accent-setting__custom {
+  border-radius: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+}
+
+.lm-accent-setting__custom::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.lm-accent-setting__custom::-webkit-color-swatch {
+  border: 0;
+  border-radius: 4px;
 }

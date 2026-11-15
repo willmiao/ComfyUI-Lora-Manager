@@ -566,6 +566,7 @@ container.classList.add("lm-popover");     // any menu/dropdown appended to <bod
 
 4. **Never use design-system scale tokens** (`--color-charcoal-400`, `--color-smoke-200`, …) as surfaces or text colours. They are fixed values that do not flip with the theme; only the semantic tokens (`--comfy-input-bg`, `--component-node-*`, `--border-color`, …) do.
 5. **Do not paint whole-node containers.** Leave the root transparent (the node surface shows through) and paint only inputs, cards and buttons. A translucent dark container over a light node renders as grey mud.
+6. **Do not do theme branching in JS.** LM has no light/dark switch of its own: the palette comes from ComfyUI, and the only LM-owned value is the accent. Never read `.dark-theme` (or any other theme flag) to pick a colour — if a widget needs to look different, that is a new `--lm-*` token, not a conditional.
 
 ### 8.2 Token map
 
@@ -576,12 +577,28 @@ container.classList.add("lm-popover");     // any menu/dropdown appended to <bod
 | Hover / selected row | `--lm-surface-hover`, `--lm-surface-selected` | |
 | Borders | `--lm-border`, `--lm-border-soft` | |
 | Text | `--lm-fg`, `--lm-fg-muted`, `--lm-fg-subtle` | |
-| Accent | `--lm-accent`, `--lm-accent-text`, `--lm-accent-soft`, `--lm-accent-border` | use `-text` for accent-coloured labels |
+| Accent | `--lm-accent`, `--lm-accent-text`, `--lm-accent-soft`, `--lm-accent-border` | use `-text` for accent-coloured labels; `--lm-accent` is fed by `--lm-base-accent`, which the *Widget accent color* setting rewrites |
 | Status | `--lm-danger(-text/-soft/-border)`, `--lm-warning(-soft/-border)`, `--lm-ok` | the only values with a light/dark variant |
 | Depth | `--lm-shadow`, `--lm-shadow-lg`, `--lm-scrim` | |
 | Tag category hues | `--lm-cat-<category>` | mix with `oklab` for badge fill/text |
 
-### 8.3 Blend, don't overlay
+### 8.3 Appearance settings
+
+There is exactly one: **LoRA Manager → Appearance → Widget accent color**. It drives `--lm-accent` and everything mixed from it (selection, focus ring, badges, accent labels) by writing two inline properties on `<html>`:
+
+| Property | Value |
+| --- | --- |
+| `--lm-base-accent` | the chosen colour |
+| `--lm-base-on-accent` | `#fff` or `#111`, whichever wins WCAG contrast on that fill, so a pale accent never ends up with white text on it |
+
+The setting renders a custom control (`renderLmAccentSetting` in `lm_theme.js`, wired as a function-typed `type`): six preset swatches plus a native colour input. Presets are single colours — naming one promises nothing beyond that colour, unlike a named palette. Selecting the default (`#4299e1`) removes the override entirely, which restores the brand's white-on-accent treatment.
+
+Two constraints worth knowing:
+
+- `--lm-base-accent` must stay declared on `:root` only. A copy in the shared `:root, .lm-widget-root, .lm-popover` block would sit on every widget and shadow the inline override — the accent would silently stop working. `--lm-base-on-accent` is indirected the same way.
+- The setting is per-ComfyUI-user and independent of the LoRA Manager browser page, which keeps its own theme menu (`data-theme` / `data-theme-preset` in `static/css/tokens/colors.css`).
+
+### 8.4 Blend, don't overlay
 
 Replace translucent dark fills with a `color-mix` against the surface token, so the node colour underneath can never bleed through:
 
@@ -593,6 +610,11 @@ Replace translucent dark fills with a `color-mix` against the surface token, so 
 
 Text size in widgets should follow `--comfy-textarea-font-size` (10px) to stay aligned with ComfyUI's own text widgets.
 
-### 8.4 Verifying
+### 8.5 Verifying
 
-Switch ComfyUI between the Light and Dark palettes (and at least one tinted dark palette) in **Settings → Color Palette** and check every LM node in both canvas and Vue node mode. Theme switches are pure CSS-variable changes: no re-render or JS listener should be needed.
+Switch ComfyUI between the Light and Dark palettes (and at least one tinted dark palette) in **Settings → Color Palette** and check every LM node in both canvas and Vue node mode.
+
+Token values are pure CSS variables, so no widget re-renders on a palette switch and no JS listener is involved.
+
+Repeat once with a non-default *Widget accent color*, ideally a pale one (e.g. `#ffd54a`) to exercise the on-accent contrast flip, and confirm the accent also shows up in `--lm-accent` for code that reads the computed value — the widget flash highlight in `workflow_registry.js` is one such reader.
+

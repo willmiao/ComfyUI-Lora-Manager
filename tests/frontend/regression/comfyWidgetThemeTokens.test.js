@@ -70,10 +70,14 @@ const CSS_LITERAL_ALLOWLIST = new Set([
 //  - top_menu_extension.js: inline SVG brand artwork (brand colours).
 //  - textarea_caret_helper.js: debug-only caret mirror highlight.
 //  - workflow_registry.js: last-resort fallback when --lm-accent cannot be read.
+//  - lm_theme.js: the token layer itself. It owns the accent default and the
+//    white/near-black pair it writes for text on a solid accent fill; those are
+//    definitions, not widget colours.
 const JS_LITERAL_ALLOWLIST = new Set([
   'top_menu_extension.js',
   'textarea_caret_helper.js',
   'workflow_registry.js',
+  'lm_theme.js',
 ]);
 
 describe('ComfyUI widget theme tokens', () => {
@@ -126,7 +130,21 @@ describe('ComfyUI widget theme tokens', () => {
     expect(theme).toMatch(/:root,\s*\n\.lm-widget-root,\s*\n\.lm-popover\s*\{/);
     // Vue node mode must switch to the --component-node-* family.
     expect(theme).toContain('.lm-widget-root.lm-vue-node {');
-    // Light is the default; dark is keyed on the class ComfyUI puts on <html>.
+    // Only the accent is LM-owned; the variant always comes from ComfyUI.
     expect(theme).toContain('html.dark-theme .lm-widget-root,');
+    expect(theme).not.toContain('data-lm-theme');
+  });
+
+  it('indirects the accent so the setting can override it', async () => {
+    const theme = read('web/comfyui/lm_theme.css');
+    const { LM_THEME_ACCENT_DEFAULT } = await import('../../../web/comfyui/lm_theme.js');
+
+    // --lm-accent is declared per context, so an inline value for it on <html>
+    // would be shadowed there. The override has to travel through --lm-base-*.
+    expect(theme).toContain('--lm-accent: var(--lm-base-accent);');
+    expect(theme).toContain('--lm-on-accent: var(--lm-base-on-accent, #fff);');
+    // The base must be declared on :root only, and match the JS default.
+    expect(theme).toContain(`--lm-base-accent: ${LM_THEME_ACCENT_DEFAULT};`);
+    expect(theme).not.toContain('--lm-base-surface');
   });
 });
