@@ -364,6 +364,134 @@ describe('CardPreviewCycler', () => {
     expect(visible.src).toContain('/width=450,optimized=true/12345.jpeg');
   });
 
+  it('prefers a downloaded local copy over its remote URL', async () => {
+    const model = { ...MODEL, sha256: 'hash123' };
+    fetchModelMetadataMock.mockResolvedValue({
+      images: [
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/cover/original=true/11111.jpeg', nsfwLevel: 1 },
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg', nsfwLevel: 1 },
+      ],
+    });
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        files: [
+          { name: 'image_0.webp', path: '/example_images_static/h/image_0.webp', is_video: false },
+          { name: 'image_1.webp', path: '/example_images_static/h/image_1.webp', is_video: false },
+        ],
+      }),
+    });
+
+    const card = createCard();
+    attachCardPreviewCycler(card, model);
+    const preview = hover(card);
+
+    // The local listing is requested even though every entry has a remote
+    // URL: that is what tells a downloaded model apart from a remote-only one.
+    expect(fetchLocalFilesMock).toHaveBeenCalledWith(
+      expect.stringContaining('model_hash=hash123')
+    );
+
+    await advance(800);
+    await advance(1);
+    // Local files are already downloaded at display size, so they are used
+    // as-is; frame 0 is the cover, which matches the anchor preview.
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/example_images_static/h/image_1.webp');
+
+    await advance(2000);
+    await advance(1);
+    const shownUrls = [...preview.querySelectorAll('.card-preview-cycle-img')].map(img => img.src);
+    expect(shownUrls.some(url => url.includes('/example_images_static/'))).toBe(true);
+    expect(shownUrls.some(url => url.includes('image.civitai.com'))).toBe(false);
+
+    // One listing per model for the session, even across re-hovers.
+    preview.dispatchEvent(new Event('mouseleave'));
+    await advance(500);
+    hover(card);
+    await advance(801);
+    expect(fetchLocalFilesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the remote URL for entries with no local file', async () => {
+    const model = { ...MODEL, sha256: 'hash123' };
+    fetchModelMetadataMock.mockResolvedValue({
+      images: [
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/a/original=true/1.jpeg', nsfwLevel: 1 },
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/b/original=true/2.jpeg', nsfwLevel: 1 },
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/c/original=true/3.jpeg', nsfwLevel: 1 },
+      ],
+    });
+    // The download skipped the second image, so it is still remote-only.
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        files: [
+          { name: 'image_0.webp', path: '/example_images_static/h/image_0.webp', is_video: false },
+          { name: 'image_2.webp', path: '/example_images_static/h/image_2.webp', is_video: false },
+        ],
+      }),
+    });
+
+    const card = createCard();
+    attachCardPreviewCycler(card, model);
+    const preview = hover(card);
+
+    // Frames are [local 0, remote 1, local 2] and cycling starts after the
+    // cover, so the first swap is the entry without a local copy.
+    await advance(800);
+    await advance(1);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/width=450,optimized=true/2.jpeg');
+  });
+
+  it('shows the remote fallback when a local frame fails to load', async () => {
+    // Local files can vanish (folder cleanup, unmounted drive) while the
+    // sidecar still lists them; the frame must degrade to its remote URL
+    // instead of leaving a blank slot.
+    class MissingLocalImage {
+      set src(value) {
+        this._src = value;
+        setTimeout(() => (
+          value.includes('/example_images_static/') ? this.onerror?.() : this.onload?.()
+        ), 0);
+      }
+      get src() {
+        return this._src;
+      }
+    }
+    vi.stubGlobal('Image', MissingLocalImage);
+
+    const model = { ...MODEL, sha256: 'hash123' };
+    fetchModelMetadataMock.mockResolvedValue({
+      images: [
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/a/original=true/1.jpeg', nsfwLevel: 1 },
+        { url: 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/b/original=true/2.jpeg', nsfwLevel: 1 },
+      ],
+    });
+    fetchLocalFilesMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        files: [
+          { name: 'image_0.webp', path: '/example_images_static/h/image_0.webp', is_video: false },
+          { name: 'image_1.webp', path: '/example_images_static/h/image_1.webp', is_video: false },
+        ],
+      }),
+    });
+
+    const card = createCard();
+    attachCardPreviewCycler(card, model);
+    const preview = hover(card);
+
+    await advance(800);
+    await advance(5);
+    expect(preview.querySelector('.card-preview-cycle-img.visible').src)
+      .toContain('/width=450,optimized=true/2.jpeg');
+  });
+
   it('does not cycle when the only example is the preview itself', async () => {
     fetchModelMetadataMock.mockResolvedValue({
       images: [{ url: 'https://img/cover.jpg', nsfwLevel: 1 }],

@@ -5,10 +5,14 @@
  * changes implicitly. While the user hovers the bare preview area of a card
  * whose preview is a static image, this module crossfades through the
  * model's example images so multi-concept models can be recognized at a
- * glance. Examples come from two sources: the CivitAI entries in the sidecar
- * (remote CDN URLs) and the example files imported from disk, which carry an
- * empty `url` and are served from `/example_images_static/...` (see
- * exampleMediaResolver). Hovering the card header or footer never starts
+ * glance. Examples come from two sources: the example files under the
+ * example-images root (served from `/example_images_static/...`) and the
+ * CivitAI CDN URLs in the sidecar. A downloaded local copy wins over its
+ * remote URL (see exampleMediaResolver): the cycle interval can be shorter
+ * than a cold CDN fetch, so the first pass would otherwise stall on every
+ * frame. The remote URL stays as the per-frame fallback for entries that were
+ * never downloaded, and for local files that have gone missing (deleted
+ * folder, unmounted drive). Hovering the card header or footer never starts
  * cycling, so action buttons and tooltips stay undisturbed. Leaving the card
  * restores the anchor preview immediately.
  *
@@ -36,9 +40,9 @@ const DEFAULT_CYCLE_INTERVAL_SECONDS = 2;
 const MAX_FADE_MS = 400;
 const FADE_INTERVAL_RATIO = 0.25;
 
-// Per-model example data (resolved frame URLs + anchor index), keyed by
-// file_path. Values are promises so repeated hovers share one fetch for the
-// session.
+// Per-model example data (resolved frames + anchor index), keyed by
+// file_path. Values are promises so repeated hovers share one fetch pair for
+// the session.
 const cycleImagesCache = new Map();
 
 function normalizeMediaUrl(url) {
@@ -50,6 +54,7 @@ function fetchLocalExampleFiles(sha256) {
     if (!sha256) return Promise.resolve([]);
     const params = new URLSearchParams({ model_hash: sha256 });
     return fetch(`/api/lm/example-image-files?${params}`)
+        // A model without an example folder answers 404 with `files: []`.
         .then(response => (response.ok ? response.json() : null))
         .then(data => (data?.success ? data.files || [] : []))
         .catch(() => []);
@@ -66,23 +71,18 @@ function getExampleSource(metadata) {
 }
 
 /**
- * True when at least one entry has no remote URL, i.e. it is an example
- * imported from disk and needs the local file listing to become usable.
- */
-function hasUnresolvedExampleEntries(metadata) {
-    const { regularImages, customImages } = getExampleSource(metadata);
-    return [...regularImages, ...customImages].some(entry => entry && !entry.url);
-}
-
-/**
  * Build the cycling frame list from CivitAI metadata plus local files.
  *
- * Entries imported from disk have no `url`; resolveExampleMedia pairs them
- * with their `custom_<id>` / `image_<index>` file, so those models cycle
- * instead of being silently dropped. Remote URLs win when present because
- * they are already card-sized (`getThumbnailUrl`) and browser-cached.
+ * The downloaded local copy is preferred over the entry's remote URL: the
+ * cycle can run faster than a cold CDN fetch, so a remote-first list makes the
+ * first pass stall frame by frame. `exampleFiles` is fetched for every model
+ * (see getCycleImages), which means the pairing works the same for entries
+ * imported from disk (empty `url`) and for entries whose images were
+ * downloaded after the metadata was cached.
  *
- * @returns {{urls: string[], anchorIndex: number}}
+ * @returns {{frames: Array<{url: string, fallback: string}>, anchorIndex: number}}
+ *   `url` is the frame to show; `fallback` is the remote URL to use when a
+ *   local frame fails to load, and is empty when there is no remote source.
  *   `anchorIndex` is the frame matching the fixed preview, or -1 when the
  *   preview is not part of the rotation (custom-only example sets).
  */
@@ -95,25 +95,29 @@ function extractCycleImages(metadata, exampleFiles, previewUrl) {
         ...customImages.map(entry => ({ entry, index: 0 })),
     ];
 
-    const urls = [];
+    const frames = [];
     for (const { entry, index } of candidates) {
         if (!entry) continue;
         if (showOnlySFW && (entry.nsfwLevel ?? 0) >= NSFW_LEVELS.R) continue;
 
-        const { url: resolvedUrl, isVideo } = resolveExampleMedia(entry, index, exampleFiles);
-        if (isVideo || !resolvedUrl) continue;
+        const { localFile, url, isVideo } = resolveExampleMedia(entry, index, exampleFiles);
+        if (isVideo || !url) continue;
 
-        // Card-sized frames: width=450 keeps hover loads fast for CivitAI
-        // URLs; local example paths pass through unchanged.
-        const url = entry.url ? getThumbnailUrl(resolvedUrl) : resolvedUrl;
-        if (!urls.includes(url)) {
-            urls.push(url);
-        }
+        // Local files already have the size the download produced; remote
+        // frames are rewritten to the card-sized variant (width=450 keeps the
+        // hover fetch fast).
+        const frameUrl = localFile ? url : (entry.url ? getThumbnailUrl(url) : url);
+        if (frames.some(frame => frame.url === frameUrl)) continue;
+
+        frames.push({
+            url: frameUrl,
+            fallback: localFile && entry.url ? getThumbnailUrl(entry.url) : '',
+        });
     }
 
     const previewKey = normalizeMediaUrl(previewUrl);
     let anchorIndex = previewKey
-        ? urls.findIndex(url => normalizeMediaUrl(url) === previewKey)
+        ? frames.findIndex(frame => normalizeMediaUrl(frame.url) === previewKey)
         : -1;
     // CivitAI models keep the historical assumption that the first example
     // doubles as the card preview, even when the URL forms differ slightly
@@ -122,26 +126,25 @@ function extractCycleImages(metadata, exampleFiles, previewUrl) {
         anchorIndex = 0;
     }
 
-    return { urls, anchorIndex };
+    return { frames, anchorIndex };
 }
 
 function getCycleImages(model) {
     const filePath = model.file_path;
     if (!cycleImagesCache.has(filePath)) {
-        const request = getModelApiClient()
-            .fetchModelMetadata(filePath)
-            .then(async metadata => {
-                // Only CivitAI-less (or disk-imported) example sets need the
-                // local listing; a fully remote set never touches the disk.
-                const exampleFiles = hasUnresolvedExampleEntries(metadata)
-                    ? await fetchLocalExampleFiles(model.sha256)
-                    : [];
-                return extractCycleImages(metadata, exampleFiles, model.preview_url);
-            })
+        // The two requests are independent, so they go out together: the local
+        // listing is what tells a downloaded model apart from a remote-only
+        // one, and it must not extend the wait before the first frame.
+        const request = Promise.all([
+            getModelApiClient().fetchModelMetadata(filePath),
+            fetchLocalExampleFiles(model.sha256),
+        ])
+            .then(([metadata, exampleFiles]) =>
+                extractCycleImages(metadata, exampleFiles, model.preview_url))
             .catch(() => {
                 // Allow a later hover to retry after a transient failure.
                 cycleImagesCache.delete(filePath);
-                return { urls: [], anchorIndex: -1 };
+                return { frames: [], anchorIndex: -1 };
             });
         cycleImagesCache.set(filePath, request);
     }
@@ -195,21 +198,25 @@ export function attachCardPreviewCycler(card, model) {
     let hoverDelayTimer = null;
     let cycleTimer = null;
     let buffers = null;
-    let imageUrls = [];
+    let frames = [];
     let pendingImages = null;
     let currentIndex = -1;
     let activeBuffer = 0;
     let swapping = false;
     // Resolved preloads persist for the card's lifetime: a re-hover after a
     // drive-by gets an instant first frame, and every shown frame warms the
-    // next one so interval ticks never wait on the network.
+    // next one so interval ticks never wait on the network. Keyed by the
+    // frame's primary URL; the promise resolves to the URL that actually
+    // loaded, i.e. the remote fallback when a local file is gone.
     const preloads = new Map();
 
-    const ensurePreloaded = (url) => {
-        if (!preloads.has(url)) {
-            preloads.set(url, preloadImage(url));
+    const ensurePreloaded = (frame) => {
+        if (!preloads.has(frame.url)) {
+            preloads.set(frame.url, preloadImage(frame.url).then(
+                loaded => loaded || (frame.fallback ? preloadImage(frame.fallback) : null)
+            ));
         }
-        return preloads.get(url);
+        return preloads.get(frame.url);
     };
 
     const createBuffers = () => {
@@ -258,16 +265,17 @@ export function attachCardPreviewCycler(card, model) {
             cleanup();
             return;
         }
-        if (!hovered || swapping || document.hidden || imageUrls.length === 0) {
+        if (!hovered || swapping || document.hidden || frames.length === 0) {
             return;
         }
 
         swapping = true;
-        const nextIndex = (currentIndex + 1) % imageUrls.length;
-        const url = await ensurePreloaded(imageUrls[nextIndex]);
+        const nextIndex = (currentIndex + 1) % frames.length;
+        const url = await ensurePreloaded(frames[nextIndex]);
         swapping = false;
 
-        // Broken image URLs are skipped without stalling the cycle.
+        // Frames with neither a loadable local file nor a remote fallback are
+        // skipped without stalling the cycle.
         currentIndex = nextIndex;
         if (!url || !hovered || !buffers) {
             return;
@@ -281,7 +289,7 @@ export function attachCardPreviewCycler(card, model) {
         activeBuffer = 1 - activeBuffer;
 
         // Warm the following frame while this one is on screen.
-        ensurePreloaded(imageUrls[(currentIndex + 1) % imageUrls.length]);
+        ensurePreloaded(frames[(currentIndex + 1) % frames.length]);
     };
 
     // Data loading starts on first hover, not when the mode activates: the
@@ -289,25 +297,25 @@ export function attachCardPreviewCycler(card, model) {
     // preloaded during it so it can fade in instantly on activation.
     const startPrefetch = () => {
         if (pendingImages) return;
-        pendingImages = getCycleImages(model).then(({ urls, anchorIndex }) => {
-            if (urls.length > 1) {
-                ensurePreloaded(urls[(anchorIndex + 1) % urls.length]);
+        pendingImages = getCycleImages(model).then(({ frames: frameList, anchorIndex }) => {
+            if (frameList.length > 1) {
+                ensurePreloaded(frameList[(anchorIndex + 1) % frameList.length]);
             }
-            return { urls, anchorIndex };
+            return { frames: frameList, anchorIndex };
         });
     };
 
     const activate = async () => {
         hoverDelayTimer = null;
         const cycleData = await pendingImages;
-        const urls = cycleData?.urls || [];
+        const frameList = cycleData?.frames || [];
         // A single example is the cover image itself — nothing new to show.
         // The cycleTimer guard catches a second activation that was re-armed
-        // while this one was still awaiting its image list.
-        if (!hovered || pointerInChrome || !card.isConnected || urls.length < 2 || cycleTimer) {
+        // while this one was still awaiting its frame list.
+        if (!hovered || pointerInChrome || !card.isConnected || frameList.length < 2 || cycleTimer) {
             return;
         }
-        imageUrls = urls;
+        frames = frameList;
         // Start from the fixed preview when it is part of the rotation, so the
         // first swap shows the next example. Custom-only example sets have no
         // anchor in the list: start at -1 so frame 0 shows immediately.
@@ -353,7 +361,7 @@ export function attachCardPreviewCycler(card, model) {
     cardPreview.addEventListener('mouseleave', onMouseLeave);
 }
 
-/** Test hook: drop cached image lists between tests. */
+/** Test hook: drop cached frame lists between tests. */
 export function resetCardPreviewCycleCache() {
     cycleImagesCache.clear();
 }

@@ -44,26 +44,29 @@ export function findLocalFile(img, index, exampleFiles) {
         });
     }
 
-    return localFile;
+    return localFile ?? null;
 }
 
 /**
  * Resolve a metadata entry to something displayable.
  *
- * Prefers the remote URL when the entry has one (already card-sized after
- * `getThumbnailUrl` at the call site, and cached by the browser); falls back
- * to the local file for entries imported from disk, whose `url` is empty.
+ * The downloaded local copy wins when one exists: it is served by this server
+ * (no CDN round trip) and already has the size the download produced, which
+ * matters for consumers that swap frames faster than a cold remote fetch.
+ * Downloaded entries keep their CivitAI `url` in the sidecar, so the remote
+ * URL is only the fallback for entries the download never reached; entries
+ * imported from disk have no remote URL at all and are local-only.
  *
  * @param {Object} img - Image/video metadata entry
  * @param {number} index - Position of the entry in its source array
  * @param {Array} exampleFiles - Files from `/api/lm/example-image-files`
  * @returns {{localFile: Object|null, url: string, isVideo: boolean}}
- *   `url` is empty when neither a remote URL nor a local file exists
+ *   `url` is empty when neither a local file nor a remote URL exists
  */
 export function resolveExampleMedia(img, index, exampleFiles = []) {
     const localFile = findLocalFile(img, index, exampleFiles);
     const remoteUrl = typeof img?.url === 'string' ? img.url : '';
-    const url = remoteUrl || localFile?.path || '';
+    const url = localFile?.path || remoteUrl || '';
     const isVideo = Boolean(localFile?.is_video)
         || isVideoPreviewUrl(remoteUrl)
         || (typeof img?.type === 'string' && img.type.toLowerCase() === 'video');
