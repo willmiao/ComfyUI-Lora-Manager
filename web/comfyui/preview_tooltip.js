@@ -11,6 +11,36 @@ import {
 } from "./license_icons.js";
 
 /**
+ * Fetch a model's preview URL and license metadata.
+ *
+ * Returns `null` when the model has no preview: a missing preview is normal
+ * (e.g. a LoRA only added to the target node, or a file without a sidecar
+ * image), so callers can stay quiet instead of reporting an error.
+ *
+ * @param {string} modelType - backend model prefix (`loras`, `checkpoints`, …)
+ * @param {string} modelName - file name or library-relative path
+ */
+export async function fetchModelPreviewData(modelType, modelName) {
+  const response = await api.fetchApi(
+    `/lm/${modelType}/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`,
+    { method: "GET" }
+  );
+  if (!response.ok) {
+    return null;
+  }
+  const data = await response.json().catch(() => null);
+  if (!data || !data.success || !data.preview_url) {
+    return null;
+  }
+  return {
+    previewUrl: data.preview_url,
+    displayName: data.display_name,
+    licenseFlags: parseLicenseFlags(data.license_flags),
+    useNewLicenseIcons: data.use_new_license_icons,
+  };
+}
+
+/**
  * Lightweight preview tooltip that can display images or videos for different model types.
  */
 export class PreviewTooltip {
@@ -19,7 +49,17 @@ export class PreviewTooltip {
       modelType = "loras",
       previewUrlResolver,
       displayNameFormatter,
+      // Extra class on the tooltip element. Callers may need to lift it above
+      // their own layer (e.g. a floating panel), which is a styling concern.
+      className = "",
+      // Optional () => DOMRect bounding the area the tooltip may occupy.
+      // Callers that live in a split pane can keep the preview off the
+      // neighbouring pane (e.g. a detail column with its own actions).
+      positionBoundary,
     } = options;
+
+    this.positionBoundary =
+      typeof positionBoundary === "function" ? positionBoundary : null;
 
     this.modelType = modelType;
     this.previewUrlResolver =
@@ -38,11 +78,16 @@ export class PreviewTooltip {
     void getUseNewLicenseIcons();
 
     this.element = document.createElement("div");
-    this.element.className = "lm-tooltip";
+    this.element.className = className
+      ? `lm-tooltip ${className}`
+      : "lm-tooltip";
     document.body.appendChild(this.element);
     this.hideTimeout = null;
     this.isFromAutocomplete = false;
     this.currentModelName = null;
+    // Bumped by hide()/cleanup() so an in-flight show() that resolves after
+    // the pointer left does not pop the tooltip back up.
+    this.requestSequence = 0;
 
     this.globalClickHandler = (event) => {
       if (!event.target.closest(".comfy-autocomplete-dropdown")) {
@@ -56,30 +101,15 @@ export class PreviewTooltip {
   }
 
   async defaultPreviewUrlResolver(modelName) {
-    const response = await api.fetchApi(
-      `/lm/${this.modelType}/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`,
-      { method: "GET" }
-    );
-    if (!response.ok) {
-      throw new Error("Failed to fetch preview URL");
-    }
-    const data = await response.json();
-    if (!data.success || !data.preview_url) {
-      throw new Error("No preview available");
-    }
-    return {
-      previewUrl: data.preview_url,
-      displayName: data.display_name ?? modelName,
-      licenseFlags: parseLicenseFlags(data.license_flags),
-      useNewLicenseIcons: data.use_new_license_icons,
-    };
+    return fetchModelPreviewData(this.modelType, modelName);
   }
 
   async resolvePreviewData(modelName) {
     const raw = await this.previewUrlResolver(modelName);
-    if (!raw) {
-      throw new Error("No preview data returned");
-    }
+    // A resolver may report "nothing to preview" (missing file, recipe
+    // without a preview) by returning null; that is a normal no-op, not an
+    // error worth logging.
+    if (!raw) return null;
     if (typeof raw === "string") {
       return {
         previewUrl: raw,
@@ -88,9 +118,7 @@ export class PreviewTooltip {
     }
 
     const { previewUrl, displayName, licenseFlags, useNewLicenseIcons } = raw;
-    if (!previewUrl) {
-      throw new Error("No preview URL available");
-    }
+    if (!previewUrl) return null;
     return {
       previewUrl,
       displayName:
@@ -115,14 +143,27 @@ export class PreviewTooltip {
         this.element.style.display === "block" &&
         this.currentModelName === modelName
       ) {
+        // Re-entering the trigger cancels hide()'s fade-out; restore the
+        // opacity it set. Bump the sequence so a show() for another row that
+        // is still resolving cannot replace this one when it lands.
+        this.requestSequence += 1;
+        this.currentModelName = modelName;
+        this.element.style.opacity = "1";
         this.position(x, y);
         return;
       }
 
+      const requestSequence = ++this.requestSequence;
       this.currentModelName = modelName;
-      const { previewUrl, displayName, licenseFlags, useNewLicenseIcons } = await this.resolvePreviewData(
-        modelName
-      );
+      const preview = await this.resolvePreviewData(modelName);
+      if (requestSequence !== this.requestSequence) return;
+      if (!preview) {
+        // Nothing to show for this item: drop any tooltip left from the
+        // previous one instead of leaving it attached to the new name.
+        this.hide();
+        return;
+      }
+      const { previewUrl, displayName, licenseFlags, useNewLicenseIcons } = preview;
 
       while (this.element.firstChild) {
         this.element.removeChild(this.element.firstChild);
@@ -179,8 +220,10 @@ export class PreviewTooltip {
 
       mediaElement.src = previewUrl;
       await waitForLoad();
+      if (requestSequence !== this.requestSequence) return;
 
       requestAnimationFrame(() => {
+        if (requestSequence !== this.requestSequence) return;
         this.position(x, y);
         this.element.style.transition = "opacity 0.15s ease";
         this.element.style.opacity = "1";
@@ -190,20 +233,42 @@ export class PreviewTooltip {
     }
   }
 
+  /** Resolve the caller's allowed area, if any, into a usable rect. */
+  resolvePositionBoundary() {
+    if (!this.positionBoundary) return null;
+    try {
+      const rect = this.positionBoundary();
+      return rect && rect.width > 0 ? rect : null;
+    } catch {
+      return null;
+    }
+  }
+
   position(x, y) {
     const rect = this.element.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const boundary = this.resolvePositionBoundary();
+    const gap = 10;
 
-    let left = x + 10;
-    let top = y + 10;
+    let left = x + gap;
+    let top = y + gap;
 
-    if (left + rect.width > viewportWidth) {
-      left = x - rect.width - 10;
+    // Prefer the right of the anchor, but flip left as soon as that would
+    // cross the caller's pane (or the viewport). Inside the quick picker the
+    // pane ends where the detail column starts, so the preview stays on the
+    // list side instead of covering the selected item's info and actions.
+    const rightEdge = boundary ? boundary.right : viewportWidth;
+    if (left + rect.width + (boundary ? gap : 0) > rightEdge) {
+      left = x - rect.width - gap;
     }
 
     if (top + rect.height > viewportHeight) {
-      top = y - rect.height - 10;
+      top = y - rect.height - gap;
+    }
+
+    if (boundary) {
+      left = Math.max(boundary.left + gap, left);
     }
 
     left = Math.max(10, Math.min(left, viewportWidth - rect.width - 10));
@@ -216,6 +281,10 @@ export class PreviewTooltip {
   }
 
   hide() {
+    // Invalidate an in-flight show() as well: without this, leaving the
+    // trigger before the preview URL resolved would let show() complete and
+    // pop the tooltip up after the pointer is gone.
+    this.requestSequence += 1;
     if (this.element.style.display === "block") {
       this.element.style.opacity = "0";
       this.hideTimeout = setTimeout(() => {
@@ -255,6 +324,7 @@ export class PreviewTooltip {
   }
 
   cleanup() {
+    this.requestSequence += 1;
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
     }

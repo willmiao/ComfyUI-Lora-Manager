@@ -7,6 +7,7 @@ const {
   LORA_CANVAS_API_MODULE,
   RECIPE_CANVAS_API_MODULE,
   STYLES_MODULE,
+  PREVIEW_TOOLTIP_MODULE,
   QUICK_PANEL_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL('../../../scripts/app.js', import.meta.url).pathname,
@@ -15,30 +16,39 @@ const {
   LORA_CANVAS_API_MODULE: new URL('../../../web/comfyui/lora_canvas_api.js', import.meta.url).pathname,
   RECIPE_CANVAS_API_MODULE: new URL('../../../web/comfyui/recipe_canvas_api.js', import.meta.url).pathname,
   STYLES_MODULE: new URL('../../../web/comfyui/lm_styles_loader.js', import.meta.url).pathname,
+  PREVIEW_TOOLTIP_MODULE: new URL('../../../web/comfyui/preview_tooltip.js', import.meta.url).pathname,
   QUICK_PANEL_MODULE: new URL('../../../web/comfyui/lora_quick_panel.js', import.meta.url).pathname,
 }));
 
-const { appMock, loraApiMocks, recipeApiMocks } = vi.hoisted(() => ({
-  appMock: {
-    registerExtension: vi.fn(),
-    graph: { setDirtyCanvas: vi.fn() },
-    canvas: { selected_nodes: {} },
-  },
-  loraApiMocks: {
-    searchLoraLibrary: vi.fn(),
-    fetchLoraDetails: vi.fn(),
-    fetchLoraFolderIndex: vi.fn(),
-    fetchActiveFilters: vi.fn(),
-    countActiveFilters: vi.fn(),
-    openLoraManager: vi.fn(),
-    recommendedStrength: vi.fn(() => undefined),
-  },
-  recipeApiMocks: {
-    searchRecipes: vi.fn(),
-    fetchRecipeDetails: vi.fn(),
-    openRecipeManager: vi.fn(),
-  },
-}));
+const { appMock, loraApiMocks, recipeApiMocks, previewTooltipMocks, PreviewTooltipMock } = vi.hoisted(() => {
+  const instance = { show: vi.fn(), hide: vi.fn(), cleanup: vi.fn() };
+  return {
+    appMock: {
+      registerExtension: vi.fn(),
+      graph: { setDirtyCanvas: vi.fn() },
+      canvas: { selected_nodes: {} },
+    },
+    loraApiMocks: {
+      searchLoraLibrary: vi.fn(),
+      fetchLoraDetails: vi.fn(),
+      fetchLoraFolderIndex: vi.fn(),
+      fetchActiveFilters: vi.fn(),
+      countActiveFilters: vi.fn(),
+      openLoraManager: vi.fn(),
+      recommendedStrength: vi.fn(() => undefined),
+    },
+    recipeApiMocks: {
+      searchRecipes: vi.fn(),
+      fetchRecipeDetails: vi.fn(),
+      openRecipeManager: vi.fn(),
+    },
+    previewTooltipMocks: {
+      instance,
+      fetchModelPreviewData: vi.fn(),
+    },
+    PreviewTooltipMock: vi.fn(() => instance),
+  };
+});
 
 let graphNodes = [];
 
@@ -54,6 +64,10 @@ vi.mock(LORA_UTILS_MODULE, () => ({
 vi.mock(LORA_CANVAS_API_MODULE, () => loraApiMocks);
 vi.mock(RECIPE_CANVAS_API_MODULE, () => recipeApiMocks);
 vi.mock(STYLES_MODULE, () => ({ ensureLmStyles: vi.fn() }));
+vi.mock(PREVIEW_TOOLTIP_MODULE, () => ({
+  PreviewTooltip: PreviewTooltipMock,
+  fetchModelPreviewData: previewTooltipMocks.fetchModelPreviewData,
+}));
 
 function makeNode() {
   return {
@@ -136,6 +150,7 @@ describe('Recipe quick panel', () => {
     recipeApiMocks.fetchRecipeDetails.mockImplementation(async (id) => (
       id === 'a' ? makeRecipe('a') : makeRecipe('b', { loras: [astral], favorite: false })
     ));
+    previewTooltipMocks.fetchModelPreviewData.mockResolvedValue(null);
   });
 
   afterEach(async () => {
@@ -160,6 +175,8 @@ describe('Recipe quick panel', () => {
     expect(firstRow.textContent).toContain('2 LoRAs · Flux');
     expect(firstRow.textContent).toContain('1 missing');
     expect(firstRow.querySelector('.lm-quick__recipe-thumb')).not.toBeNull();
+    // The preview tooltip labels the recipe; no duplicate native tooltip.
+    expect(firstRow.title).toBe('');
 
     expect(quick.detailElement.textContent).toContain('Cyberpunk portrait');
     expect(quick.detailElement.textContent).toContain('Astral Portrait');
@@ -320,5 +337,67 @@ describe('Recipe quick panel', () => {
     await flush();
     toggleRecipeQuickPanel();
     expect(quick.panel.isOpen()).toBe(false);
+  });
+
+  it('opens the recipe preview tooltip with the row payload', async () => {
+    vi.useFakeTimers();
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    graphNodes = [makeNode()];
+    const quick = new LoraQuickPanel({ node: graphNodes[0], initialView: 'recipe' }).open();
+    await quick.loadRecipeSearch();
+    await flush();
+    await quick.ensurePreviewTooltip();
+
+    const options = PreviewTooltipMock.mock.calls[0][0];
+    const preview = await options.previewUrlResolver('recipe:a');
+    expect(preview).toEqual({
+      previewUrl: '/previews/a.png',
+      displayName: 'Cyberpunk portrait',
+    });
+    expect(previewTooltipMocks.fetchModelPreviewData).not.toHaveBeenCalled();
+
+    const row = quick.resultsElement.querySelector('.lm-quick__recipe-row');
+    row.getBoundingClientRect = () => ({ top: 60, right: 340 });
+    row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+
+    await vi.advanceTimersByTimeAsync(400);
+    await flush();
+    expect(previewTooltipMocks.instance.show).toHaveBeenCalledWith('recipe:a', 340, 60);
+
+    row.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }));
+    expect(previewTooltipMocks.instance.hide).toHaveBeenCalled();
+    vi.useRealTimers();
+    quick.close();
+  });
+
+  it('resolves nothing for a recipe with only the no-preview placeholder', async () => {
+    recipeApiMocks.searchRecipes.mockResolvedValue([makeRecipe('c', {
+      fileUrl: '/loras_static/images/no-preview.png',
+    })]);
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    graphNodes = [makeNode()];
+    const quick = new LoraQuickPanel({ node: graphNodes[0], initialView: 'recipe' }).open();
+    await quick.loadRecipeSearch();
+    await flush();
+    await quick.ensurePreviewTooltip();
+
+    const options = PreviewTooltipMock.mock.calls[0][0];
+    expect(await options.previewUrlResolver('recipe:c')).toBeNull();
+    // Preview-less rows keep the native title for truncated names.
+    const row = quick.resultsElement.querySelector('.lm-quick__recipe-row');
+    expect(row.title).toBe('Soft light portrait');
+    quick.close();
+  });
+
+  it('keeps the preview tooltip above the floating panel', async () => {
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    graphNodes = [makeNode()];
+    const quick = new LoraQuickPanel({ node: graphNodes[0], initialView: 'recipe' }).open();
+    await quick.ensurePreviewTooltip();
+
+    expect(PreviewTooltipMock).toHaveBeenCalledWith(expect.objectContaining({
+      className: 'lm-tooltip--elevated',
+    }));
+    quick.close();
   });
 });

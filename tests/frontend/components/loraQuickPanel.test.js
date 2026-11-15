@@ -6,6 +6,7 @@ const {
   LORA_UTILS_MODULE,
   CANVAS_API_MODULE,
   STYLES_MODULE,
+  PREVIEW_TOOLTIP_MODULE,
   QUICK_PANEL_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL('../../../scripts/app.js', import.meta.url).pathname,
@@ -13,25 +14,34 @@ const {
   LORA_UTILS_MODULE: new URL('../../../web/comfyui/loras_widget_utils.js', import.meta.url).pathname,
   CANVAS_API_MODULE: new URL('../../../web/comfyui/lora_canvas_api.js', import.meta.url).pathname,
   STYLES_MODULE: new URL('../../../web/comfyui/lm_styles_loader.js', import.meta.url).pathname,
+  PREVIEW_TOOLTIP_MODULE: new URL('../../../web/comfyui/preview_tooltip.js', import.meta.url).pathname,
   QUICK_PANEL_MODULE: new URL('../../../web/comfyui/lora_quick_panel.js', import.meta.url).pathname,
 }));
 
-const { appMock, apiMocks } = vi.hoisted(() => ({
-  appMock: {
-    registerExtension: vi.fn(),
-    graph: { setDirtyCanvas: vi.fn() },
-    canvas: { selected_nodes: {} },
-  },
-  apiMocks: {
-    searchLoraLibrary: vi.fn(),
-    fetchLoraDetails: vi.fn(),
-    fetchLoraFolderIndex: vi.fn(),
-    fetchActiveFilters: vi.fn(),
-    countActiveFilters: vi.fn(),
-    openLoraManager: vi.fn(),
-    recommendedStrength: vi.fn((details) => details?.usage_tips?.strength),
-  },
-}));
+const { appMock, apiMocks, previewTooltipMocks, PreviewTooltipMock } = vi.hoisted(() => {
+  const instance = { show: vi.fn(), hide: vi.fn(), cleanup: vi.fn() };
+  return {
+    appMock: {
+      registerExtension: vi.fn(),
+      graph: { setDirtyCanvas: vi.fn() },
+      canvas: { selected_nodes: {} },
+    },
+    apiMocks: {
+      searchLoraLibrary: vi.fn(),
+      fetchLoraDetails: vi.fn(),
+      fetchLoraFolderIndex: vi.fn(),
+      fetchActiveFilters: vi.fn(),
+      countActiveFilters: vi.fn(),
+      openLoraManager: vi.fn(),
+      recommendedStrength: vi.fn((details) => details?.usage_tips?.strength),
+    },
+    previewTooltipMocks: {
+      instance,
+      fetchModelPreviewData: vi.fn(),
+    },
+    PreviewTooltipMock: vi.fn(() => instance),
+  };
+});
 
 let graphNodes = [];
 
@@ -46,6 +56,10 @@ vi.mock(LORA_UTILS_MODULE, () => ({
 }));
 vi.mock(CANVAS_API_MODULE, () => apiMocks);
 vi.mock(STYLES_MODULE, () => ({ ensureLmStyles: vi.fn() }));
+vi.mock(PREVIEW_TOOLTIP_MODULE, () => ({
+  PreviewTooltip: PreviewTooltipMock,
+  fetchModelPreviewData: previewTooltipMocks.fetchModelPreviewData,
+}));
 
 function makeNode() {
   return {
@@ -89,6 +103,12 @@ describe('LoRA Quick Panel', () => {
       file_path: '/models/characters/astral.safetensors',
       usage_tips: { strength: 0.7 },
       civitai: { trainedWords: ['astral'] },
+    });
+    previewTooltipMocks.fetchModelPreviewData.mockResolvedValue({
+      previewUrl: '/api/lm/previews?path=astral.png',
+      displayName: undefined,
+      licenseFlags: null,
+      useNewLicenseIcons: true,
     });
   });
 
@@ -635,6 +655,107 @@ describe('LoRA Quick Panel', () => {
     expect(rows[0].textContent).toContain('Late');
     expect(localStorage.getItem('lm:quick-panel:recent-loras'))
       .toBe(JSON.stringify(['zzz/late', 'aaa/early']));
+    quick.close();
+  });
+
+  it('opens an elevated preview tooltip after hovering a LoRA row', async () => {
+    vi.useFakeTimers();
+    graphNodes = [makeNode()];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: graphNodes[0] }).open();
+    await quick.loadSearch();
+    await flush();
+
+    expect(PreviewTooltipMock).not.toHaveBeenCalled();
+    const tooltip = await quick.ensurePreviewTooltip();
+    expect(tooltip).toBe(previewTooltipMocks.instance);
+    expect(PreviewTooltipMock).toHaveBeenCalledWith(expect.objectContaining({
+      modelType: 'loras',
+      className: 'lm-tooltip--elevated',
+    }));
+    const options = PreviewTooltipMock.mock.calls[0][0];
+    const resultsRect = { left: 0, right: 600, top: 0, bottom: 400, width: 600, height: 400 };
+    quick.resultsElement.getBoundingClientRect = () => resultsRect;
+    expect(options.positionBoundary()).toBe(resultsRect);
+
+    const row = quick.resultsElement.querySelector('.lm-quick__row');
+    row.getBoundingClientRect = () => ({ top: 40, right: 320 });
+    row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+
+    await vi.advanceTimersByTimeAsync(399);
+    await flush();
+    expect(previewTooltipMocks.instance.show).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    await flush();
+    expect(previewTooltipMocks.instance.show).toHaveBeenCalledWith(
+      'lora:characters/astral.safetensors',
+      320,
+      40,
+    );
+
+    row.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }));
+    expect(previewTooltipMocks.instance.hide).toHaveBeenCalled();
+    vi.useRealTimers();
+    quick.close();
+  });
+
+  it('skips the preview when the pointer only passes over a row', async () => {
+    vi.useFakeTimers();
+    graphNodes = [makeNode()];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: graphNodes[0] }).open();
+    await quick.loadSearch();
+    await flush();
+    await quick.ensurePreviewTooltip();
+
+    const row = quick.resultsElement.querySelector('.lm-quick__row');
+    row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+    row.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }));
+
+    await vi.advanceTimersByTimeAsync(500);
+    await flush();
+    expect(previewTooltipMocks.instance.show).not.toHaveBeenCalled();
+    vi.useRealTimers();
+    quick.close();
+  });
+
+  it('resolves a LoRA preview from its library path and keeps the display name', async () => {
+    graphNodes = [makeNode()];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: graphNodes[0] }).open();
+    await quick.loadSearch();
+    await flush();
+    await quick.ensurePreviewTooltip();
+
+    const options = PreviewTooltipMock.mock.calls[0][0];
+    const preview = await options.previewUrlResolver('lora:characters/astral.safetensors');
+
+    expect(previewTooltipMocks.fetchModelPreviewData)
+      .toHaveBeenCalledWith('loras', 'characters/astral.safetensors');
+    expect(preview).toMatchObject({
+      previewUrl: '/api/lm/previews?path=astral.png',
+      displayName: 'Astral Portrait',
+    });
+    quick.close();
+  });
+
+  it('does not preview the backend no-preview placeholder', async () => {
+    previewTooltipMocks.fetchModelPreviewData.mockResolvedValue({
+      previewUrl: '/loras_static/images/no-preview.png',
+      displayName: undefined,
+      licenseFlags: null,
+      useNewLicenseIcons: true,
+    });
+    graphNodes = [makeNode()];
+    const { LoraQuickPanel } = await import(QUICK_PANEL_MODULE);
+    const quick = new LoraQuickPanel({ node: graphNodes[0] }).open();
+    await quick.loadSearch();
+    await flush();
+    await quick.ensurePreviewTooltip();
+
+    const options = PreviewTooltipMock.mock.calls[0][0];
+    expect(await options.previewUrlResolver('lora:characters/astral.safetensors')).toBeNull();
     quick.close();
   });
 });

@@ -43,6 +43,27 @@ amber cue means it is listed there but turned off. The markers are read from the
 target node's own list and refresh in place when a LoRA is applied or the target
 node selection changes.
 
+## Preview tooltips
+
+Hovering a result row for about 400 ms opens its preview next to the row: the
+image or video, the display name, and — for LoRAs — the same license icons the
+autocomplete and the LoRA widget show. LoRA previews use the existing
+`/lm/{modelType}/preview-url` endpoint; recipes already carry their preview URL
+in the list payload, so opening a recipe preview needs no request. Rows without
+a preview stay quiet, and previews are not fetched while the pointer merely
+crosses the list.
+
+The preview stays over the results column: it flips to the inside of the list
+edge instead of running into the detail column, so the selected item's overview
+and its **Add** / **Apply & keep open** / **Full details** buttons remain
+visible while browsing (the tooltip's `positionBoundary` option).
+
+The tooltip is appended to `<body>` and lifted above the floating panel's layer
+(`.lm-tooltip--elevated`), otherwise the panel would paint over it. Moving off
+the row, scrolling or rebuilding the list, and closing the panel all hide it. A
+preview request that resolves after the pointer left is discarded instead of
+popping the tooltip up late.
+
 **Full details** opens the manager in the named `lm-lora-manager` tab. Repeated
 requests reuse that tab, and the manager handles `hashchange` so a reused tab
 opens the requested model modal without reloading.

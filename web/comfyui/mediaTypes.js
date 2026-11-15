@@ -10,6 +10,23 @@
 
 export const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".mkv"];
 
+const NO_PREVIEW_PATH = "/loras_static/images/no-preview.png";
+
+/**
+ * Whether a preview URL points at a real preview asset.
+ *
+ * Model and recipe payloads substitute `no-preview.png` when no preview is
+ * available. A surface that already has a fallback (a row's name and path, a
+ * preview-less layout) should treat that as "no preview" instead of rendering
+ * the generic image.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function hasRealPreview(url) {
+  return typeof url === "string" && url !== "" && !url.endsWith(NO_PREVIEW_PATH);
+}
+
 /**
  * Extract the file extension from a single path fragment, query value or URL.
  * Anything from the first `?`/`#` onwards is dropped so

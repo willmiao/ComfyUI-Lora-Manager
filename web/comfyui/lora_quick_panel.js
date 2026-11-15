@@ -4,7 +4,7 @@ import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getAllGraphNodes, getWidgetByName } from "./utils.js";
 import { applyLoraSelection, applyLoraSet, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
-import { isVideoPreviewUrl } from "./mediaTypes.js";
+import { hasRealPreview, isVideoPreviewUrl } from "./mediaTypes.js";
 import { COMMAND_IDS, DEFAULT_KEYBINDINGS } from "./shortcuts.js";
 import {
   fetchRecipeDetails,
@@ -36,6 +36,9 @@ const VIEW_KEY = "lm:quick-panel:view-mode";
 const ACTIVE_FILTERS_KEY = "lm:quick-panel:active-filters";
 const ASSET_VIEW_KEY = "lm:quick-panel:asset-view";
 const RECIPE_PAGE_SIZE = 30;
+// Hovering a row this long opens its preview; shorter passes over the list
+// should not flash previews for every row the pointer crosses.
+const ROW_PREVIEW_DELAY_MS = 400;
 let activeQuickPanel = null;
 
 function el(tag, className, text) {
@@ -144,6 +147,10 @@ export class LoraQuickPanel {
     this.recipeSequence = 0;
     this.recipeDetailSequence = 0;
     this.keyboardWired = false;
+    this.previewTooltip = null;
+    this.previewTooltipPromise = null;
+    this.previewTimer = null;
+    this.previewRow = null;
     this.viewMode = "folders";
     try { this.viewMode = localStorage.getItem(VIEW_KEY) === "flat" ? "flat" : "folders"; } catch { /* default */ }
     this.activeFilters = false;
@@ -171,6 +178,7 @@ export class LoraQuickPanel {
       minHeight: 380,
       onClose: () => {
         clearTimeout(this.debounceTimer);
+        this.teardownPreview();
         if (activeQuickPanel === this) activeQuickPanel = null;
       },
     });
@@ -281,6 +289,7 @@ export class LoraQuickPanel {
 
   build() {
     const { body, footer } = this.panel;
+    this.clearRowPreview();
     body.replaceChildren();
     footer.replaceChildren();
 
@@ -365,6 +374,8 @@ export class LoraQuickPanel {
       "listbox",
       this.assetView === "recipe" ? "Recipe results" : "LoRA results",
     );
+    this.resultsElement.addEventListener("mouseover", (event) => this.onRowPointerOver(event));
+    this.resultsElement.addEventListener("mouseout", (event) => this.onRowPointerOut(event));
     this.detailElement = el("aside", "lm-quick__detail");
     content.append(this.resultsElement, this.detailElement);
     body.append(tabs, toolbar, content);
@@ -463,6 +474,7 @@ export class LoraQuickPanel {
   }
 
   renderRecipeResults() {
+    this.clearRowPreview();
     this.resultsElement.replaceChildren();
     if (!this.recipeItems.length) {
       const query = this.searchInput?.value.trim() || "";
@@ -782,6 +794,130 @@ export class LoraQuickPanel {
     });
   }
 
+  /** The `lora:`/`recipe:` key identifying the row's preview, if it has one. */
+  previewKeyForRow(row) {
+    if (row.dataset.recipeId) return `recipe:${row.dataset.recipeId}`;
+    if (row.dataset.loraPath) return `lora:${row.dataset.loraPath}`;
+    return "";
+  }
+
+  onRowPointerOver(event) {
+    const row = event.target?.closest?.(".lm-quick__row");
+    if (!row || row === this.previewRow) return;
+    this.startRowPreview(row);
+  }
+
+  onRowPointerOut(event) {
+    const row = event.target?.closest?.(".lm-quick__row");
+    if (!row || row !== this.previewRow) return;
+    const next = event.relatedTarget;
+    if (next && row.contains(next)) return;
+    this.clearRowPreview();
+  }
+
+  /**
+   * Wait out a short hover before showing the preview, so moving the pointer
+   * across the list does not open a tooltip for every row it crosses.
+   */
+  startRowPreview(row) {
+    const key = this.previewKeyForRow(row);
+    if (!key) {
+      this.clearRowPreview();
+      return;
+    }
+    this.previewRow = row;
+    clearTimeout(this.previewTimer);
+    this.previewTimer = setTimeout(() => {
+      this.previewTimer = null;
+      void this.showRowPreview(row, key);
+    }, ROW_PREVIEW_DELAY_MS);
+  }
+
+  clearRowPreview() {
+    clearTimeout(this.previewTimer);
+    this.previewTimer = null;
+    this.previewRow = null;
+    this.previewTooltip?.hide();
+  }
+
+  async showRowPreview(row, key) {
+    if (this.previewRow !== row) return;
+    const tooltip = await this.ensurePreviewTooltip();
+    // The pointer may have left while the tooltip module was loading.
+    if (!tooltip || this.previewRow !== row) return;
+    const rect = row.getBoundingClientRect();
+    await tooltip.show(key, rect.right, rect.top);
+  }
+
+  /**
+   * Create the shared preview tooltip on first hover. Loading it lazily keeps
+   * the picker's startup free of the tooltip and license-icon modules.
+   */
+  ensurePreviewTooltip() {
+    if (this.previewTooltip) return Promise.resolve(this.previewTooltip);
+    if (!this.previewTooltipPromise) {
+      this.previewTooltipPromise = import("./preview_tooltip.js")
+        .then(({ PreviewTooltip, fetchModelPreviewData }) => {
+          this.previewTooltipPromise = null;
+          if (!this.panel?.isOpen()) return null;
+          this.previewTooltip = new PreviewTooltip({
+            modelType: "loras",
+            // The tooltip is appended to <body>, so without this modifier the
+            // floating panel (z-index 10020) would cover it.
+            className: "lm-tooltip--elevated",
+            // Keep the preview over the results column: the detail column
+            // holds the selected item's overview and its action buttons.
+            positionBoundary: () => this.resultsElement?.getBoundingClientRect() || null,
+            previewUrlResolver: (key) => this.resolveRowPreview(key, fetchModelPreviewData),
+          });
+          return this.previewTooltip;
+        })
+        .catch((error) => {
+          this.previewTooltipPromise = null;
+          console.warn("Failed to load the preview tooltip:", error);
+          return null;
+        });
+    }
+    return this.previewTooltipPromise;
+  }
+
+  /**
+   * Resolve the hovered row's preview. LoRAs reuse the same preview-url
+   * endpoint as the autocomplete; recipes carry their preview in the list
+   * payload, so opening a recipe tooltip needs no request.
+   */
+  async resolveRowPreview(key, fetchPreview) {
+    const separator = key.indexOf(":");
+    if (separator < 0) return null;
+    const kind = key.slice(0, separator);
+    const value = key.slice(separator + 1);
+    if (kind === "recipe") {
+      const recipe = this.recipeItems.find((entry) => String(entry.id) === value);
+      if (!hasRealPreview(recipe?.fileUrl)) return null;
+      return { previewUrl: recipe.fileUrl, displayName: recipe.title };
+    }
+    if (kind !== "lora" || !value) return null;
+    const data = await fetchPreview("loras", value);
+    if (!data || !hasRealPreview(data.previewUrl)) return null;
+    return {
+      ...data,
+      displayName: this.findLoraItem(value)?.modelName || data.displayName || value,
+    };
+  }
+
+  findLoraItem(relativePath) {
+    const loaded = this.items.find((item) => item.relativePath === relativePath);
+    if (loaded) return loaded;
+    return this.libraryByName()?.get(normalizeLoraNameKey(relativePath)) || null;
+  }
+
+  teardownPreview() {
+    this.clearRowPreview();
+    this.previewTooltip?.cleanup();
+    this.previewTooltip = null;
+    this.previewTooltipPromise = null;
+  }
+
   renderFolderResults() {
     this.resultsElement.replaceChildren();
     if (this.folderError) {
@@ -848,6 +984,7 @@ export class LoraQuickPanel {
   }
 
   renderResults() {
+    this.clearRowPreview();
     if (this.assetView === "recipe") {
       this.renderRecipeResults();
       return;

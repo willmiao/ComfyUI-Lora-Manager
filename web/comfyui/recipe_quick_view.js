@@ -1,3 +1,5 @@
+import { hasRealPreview } from "./mediaTypes.js";
+
 function el(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -43,7 +45,10 @@ export function appendRecipeRows({
     row.setAttribute("aria-selected", String(index === selectedIndex));
     row.classList.toggle("is-selected", index === selectedIndex);
     row.dataset.recipeId = recipe.id;
-    row.title = recipe.title;
+    // With a preview the tooltip already labels the recipe; the native title
+    // would pop over it. Keep the title only for preview-less rows, where it
+    // is the only way to read a truncated title.
+    if (!hasRealPreview(recipe.fileUrl)) row.title = recipe.title;
 
     const thumb = recipe.fileUrl
       ? el("img", "lm-quick__recipe-thumb")

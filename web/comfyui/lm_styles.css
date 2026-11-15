@@ -12,6 +12,11 @@
   transition: opacity 0.15s ease;
 }
 
+/* Previews opened from a floating panel must clear that panel's layer. */
+.lm-tooltip--elevated {
+  z-index: 10030;
+}
+
 .lm-tooltip__media-container {
   position: relative;
   max-width: 300px;
