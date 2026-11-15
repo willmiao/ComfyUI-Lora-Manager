@@ -67,6 +67,14 @@ describe('command shortcut labels', () => {
     expect(getCommandShortcutLabel(COMMAND_IDS.quickLoraPicker)).toBe('Alt+L');
   });
 
+  it('registers the recipe picker with its own stable command id and default', async () => {
+    const { COMMAND_IDS, DEFAULT_KEYBINDINGS, getCommandShortcutLabel } = await loadShortcuts();
+
+    expect(COMMAND_IDS.quickRecipePicker).toBe('LoraManager.ToggleRecipeQuickPanel');
+    expect(DEFAULT_KEYBINDINGS[COMMAND_IDS.quickRecipePicker]).toEqual({ key: 'r', alt: true });
+    expect(getCommandShortcutLabel(COMMAND_IDS.quickRecipePicker)).toBe('Alt+R');
+  });
+
   it('returns an empty label for a command without a default shortcut', async () => {
     const { getCommandShortcutLabel } = await loadShortcuts();
 

@@ -7,6 +7,7 @@ const {
   QUICK_PANEL_MODULE,
   appMock,
   toggleQuickPanelMock,
+  toggleRecipePanelMock,
   openManagerMock,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL('../../../scripts/app.js', import.meta.url).pathname,
@@ -15,13 +16,17 @@ const {
   QUICK_PANEL_MODULE: new URL('../../../web/comfyui/lora_quick_panel.js', import.meta.url).pathname,
   appMock: { extensionManager: undefined },
   toggleQuickPanelMock: vi.fn(),
+  toggleRecipePanelMock: vi.fn(),
   openManagerMock: vi.fn(),
 }));
 
 vi.mock(APP_MODULE, () => ({ app: appMock }));
 vi.mock(STYLES_MODULE, () => ({ ensureLmStyles: vi.fn() }));
 vi.mock(CANVAS_API_MODULE, () => ({ openLoraManagerHome: openManagerMock }));
-vi.mock(QUICK_PANEL_MODULE, () => ({ toggleLoraQuickPanel: toggleQuickPanelMock }));
+vi.mock(QUICK_PANEL_MODULE, () => ({
+  toggleLoraQuickPanel: toggleQuickPanelMock,
+  toggleRecipeQuickPanel: toggleRecipePanelMock,
+}));
 
 function createAnchor() {
   const anchor = document.createElement('button');
@@ -40,6 +45,14 @@ function createAnchor() {
 
 describe('LoRA Manager Quick Actions menu', () => {
   beforeEach(() => {
+    // The menu module keeps a module-level `activeMenu`; close any menu left
+    // open by the previous test before resetting the DOM.
+    document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    }));
+    document.body.innerHTML = '';
     vi.clearAllMocks();
     appMock.extensionManager = undefined;
   });
@@ -53,13 +66,29 @@ describe('LoRA Manager Quick Actions menu', () => {
     const menu = document.querySelector('.lm-quick-actions-menu');
     expect(menu).not.toBeNull();
     expect(menu.textContent).toContain('Quick LoRA Picker');
-    expect(menu.querySelector('kbd').textContent).toBe('Alt+L');
+    expect(menu.textContent).toContain('Quick Recipe Picker');
+    expect([...menu.querySelectorAll('kbd')].map((badge) => badge.textContent)).toEqual([
+      'Alt+L',
+      'Alt+R',
+    ]);
     expect(anchor.getAttribute('aria-expanded')).toBe('true');
 
     menu.querySelector('[role="menuitem"]').click();
     expect(toggleQuickPanelMock).toHaveBeenCalledOnce();
     expect(document.querySelector('.lm-quick-actions-menu')).toBeNull();
     expect(anchor.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('opens the recipe picker from its own menu item', async () => {
+    const { toggleQuickActionsMenu } = await import('../../../web/comfyui/quick_actions_menu.js');
+    const anchor = createAnchor();
+    toggleQuickActionsMenu(anchor);
+
+    const items = document.querySelectorAll('[role="menuitem"]');
+    items[1].click();
+
+    expect(toggleRecipePanelMock).toHaveBeenCalledOnce();
+    expect(toggleQuickPanelMock).not.toHaveBeenCalled();
   });
 
   it('shows the user-remapped shortcut instead of the default', async () => {
@@ -90,7 +119,9 @@ describe('LoRA Manager Quick Actions menu', () => {
 
     toggleQuickActionsMenu(createAnchor());
 
-    expect(document.querySelector('.lm-quick-actions-menu kbd')).toBeNull();
+    const items = document.querySelectorAll('[role="menuitem"]');
+    expect(items[0].querySelector('kbd')).toBeNull();
+    expect(items[1].querySelector('kbd').textContent).toBe('Alt+R');
   });
 
   it('keeps the full manager available from the same menu', async () => {

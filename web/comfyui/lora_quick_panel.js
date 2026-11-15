@@ -2,10 +2,19 @@ import { app } from "../../scripts/app.js";
 import { createFloatingPanel } from "./floating_panel.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getAllGraphNodes, getWidgetByName } from "./utils.js";
-import { applyLoraSelection, findLoraIndex } from "./lora_selection.js";
+import { applyLoraSelection, applyLoraSet, findLoraIndex } from "./lora_selection.js";
 import { normalizeLoraNameKey } from "./loras_widget_utils.js";
 import { isVideoPreviewUrl } from "./mediaTypes.js";
 import { COMMAND_IDS, DEFAULT_KEYBINDINGS } from "./shortcuts.js";
+import {
+  fetchRecipeDetails,
+  openRecipeManager,
+  searchRecipes,
+} from "./recipe_canvas_api.js";
+import {
+  appendRecipeRows,
+  renderRecipeDetail,
+} from "./recipe_quick_view.js";
 import {
   buildAddedLoraStateMap,
   createAddedLoraCue,
@@ -25,6 +34,8 @@ const COMMAND_ID = COMMAND_IDS.quickLoraPicker;
 const RECENT_KEY = "lm:quick-panel:recent-loras";
 const VIEW_KEY = "lm:quick-panel:view-mode";
 const ACTIVE_FILTERS_KEY = "lm:quick-panel:active-filters";
+const ASSET_VIEW_KEY = "lm:quick-panel:asset-view";
+const RECIPE_PAGE_SIZE = 30;
 let activeQuickPanel = null;
 
 function el(tag, className, text) {
@@ -91,8 +102,28 @@ export function applyQuickLoraSelection(node, selection, replaceName = "") {
   return { changed, loras: next };
 }
 
+/**
+ * Write a recipe's LoRA set to a node's widget.
+ *
+ * `mode` is `append` (keep the node's list, enable/append each recipe entry) or
+ * `replace` (rewrite the list to the recipe's available entries).
+ */
+export function applyQuickLoraSet(node, entries, mode = "append") {
+  const widget = loraWidget(node);
+  if (!widget) throw new Error("The target node no longer accepts LoRAs");
+  const current = Array.isArray(widget.value) ? widget.value : [];
+  const result = applyLoraSet(current, entries, { mode });
+  if (result.changed) {
+    widget.value = result.loras;
+    widget.callback?.(result.loras);
+    node.setDirtyCanvas?.(true, true);
+    app.graph?.setDirtyCanvas?.(true, true);
+  }
+  return result;
+}
+
 export class LoraQuickPanel {
-  constructor({ node = null, replaceName = "" } = {}) {
+  constructor({ node = null, replaceName = "", initialView = "" } = {}) {
     this.targetNode = node;
     this.replaceName = replaceName;
     this.items = [];
@@ -103,6 +134,16 @@ export class LoraQuickPanel {
     this.recentOnly = false;
     this.debounceTimer = null;
     this.panel = null;
+    this.assetView = "lora";
+    try {
+      const requested = initialView || localStorage.getItem(ASSET_VIEW_KEY);
+      if (requested === "recipe") this.assetView = "recipe";
+    } catch { /* default */ }
+    this.recipeItems = [];
+    this.recipeDetails = null;
+    this.recipeSequence = 0;
+    this.recipeDetailSequence = 0;
+    this.keyboardWired = false;
     this.viewMode = "folders";
     try { this.viewMode = localStorage.getItem(VIEW_KEY) === "flat" ? "flat" : "folders"; } catch { /* default */ }
     this.activeFilters = false;
@@ -120,8 +161,8 @@ export class LoraQuickPanel {
   open() {
     ensureLmStyles();
     this.panel = createFloatingPanel({
-      title: "Quick Pick · LoRA",
-      context: this.replaceName ? "Replace a LoRA" : "Add to the current workflow",
+      title: this.panelTitle(),
+      context: "",
       className: "lm-quick-panel",
       storageKey: "lm:quick-panel:rect",
       width: 880,
@@ -133,10 +174,9 @@ export class LoraQuickPanel {
         if (activeQuickPanel === this) activeQuickPanel = null;
       },
     });
+    this.wirePanelKeyboard();
     this.build();
-    this.loadActiveFilters();
-    this.loadFolderIndex();
-    this.loadSearch();
+    this.loadInitialForView();
     setTimeout(() => this.searchInput?.focus(), 20);
     return this;
   }
@@ -145,80 +185,200 @@ export class LoraQuickPanel {
     this.panel?.close();
   }
 
+  panelTitle() {
+    return this.assetView === "recipe" ? "Quick Pick · Recipe" : "Quick Pick · LoRA";
+  }
+
+  wirePanelKeyboard() {
+    if (this.keyboardWired) return;
+    this.keyboardWired = true;
+    this.panel.element.addEventListener("keydown", (event) => {
+      if (event.target !== this.searchInput) this.onSearchKey(event);
+    }, true);
+  }
+
+  searchPlaceholder() {
+    return this.assetView === "recipe"
+      ? "Search recipes, tags, LoRA names…"
+      : "Search file or model name…";
+  }
+
+  footerHints() {
+    return this.assetView === "recipe"
+      ? "↑↓ Navigate · Enter Append · Shift+Enter Keep open · Esc Close"
+      : "↑↓ Navigate · ←→ Folder · Enter Open/Apply · Shift+Enter Keep open · Esc Close";
+  }
+
+  loadInitialForView() {
+    if (this.assetView === "recipe") {
+      this.loadRecipeSearch();
+      return;
+    }
+    this.loadActiveFilters();
+    this.loadFolderIndex();
+    this.loadSearch();
+  }
+
+  loadCurrentSearch() {
+    if (this.assetView === "recipe") this.loadRecipeSearch();
+    else this.loadSearch();
+  }
+
+  setAssetView(view) {
+    if (view !== "lora" && view !== "recipe") return;
+    if (view === this.assetView) {
+      this.searchInput?.focus();
+      return;
+    }
+    this.assetView = view;
+    try { localStorage.setItem(ASSET_VIEW_KEY, view); } catch { /* cosmetic only */ }
+    clearTimeout(this.debounceTimer);
+    this.searchSequence += 1;
+    this.detailSequence += 1;
+    this.folderSequence += 1;
+    this.filterSequence += 1;
+    this.recipeSequence += 1;
+    this.recipeDetailSequence += 1;
+    this.selectedIndex = -1;
+    this.recipeItems = [];
+    this.recipeDetails = null;
+    this.panel.titleElement.textContent = this.panelTitle();
+    this.panel.element.setAttribute("aria-label", this.panelTitle());
+    this.build();
+    this.loadInitialForView();
+    setTimeout(() => this.searchInput?.focus(), 20);
+  }
+
+  onTargetChanged() {
+    const candidates = compatibleNodes();
+    this.targetNode = candidates[Number(this.targetSelect.value)] || null;
+    this.replaceName = "";
+    this.updateContext();
+    if (this.assetView === "recipe") {
+      this.renderRecipeDetailContent();
+    } else {
+      this.refreshAddedMarkers();
+      this.renderDetail();
+    }
+  }
+
+  updateContext() {
+    const label = this.targetNode
+      ? this.assetView === "recipe"
+        ? `Apply recipe to ${nodeLabel(this.targetNode)}`
+        : `${this.replaceName ? "Replace in" : "Add to"} ${nodeLabel(this.targetNode)}`
+      : "No compatible LoRA Manager node on this workflow";
+    this.panel?.setContext(label);
+  }
+
+  setTargetNode(node) {
+    if (!node) return;
+    this.targetNode = node;
+    this.replaceName = "";
+    this.renderTargets();
+    this.onTargetChanged();
+  }
+
   build() {
     const { body, footer } = this.panel;
     body.replaceChildren();
     footer.replaceChildren();
-    this.panel.element.addEventListener("keydown", (event) => {
-      if (event.target !== this.searchInput) this.onSearchKey(event);
-    }, true);
+
+    const tabs = el("div", "lm-quick__tabs");
+    tabs.setAttribute("role", "tablist");
+    tabs.setAttribute("aria-label", "Picker asset type");
+    this.assetTabs = {};
+    for (const [view, label] of [["lora", "LoRAs"], ["recipe", "Recipes"]]) {
+      const button = el("button", "lm-quick__tab", label);
+      button.type = "button";
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", String(this.assetView === view));
+      button.classList.toggle("is-active", this.assetView === view);
+      button.addEventListener("click", () => this.setAssetView(view));
+      this.assetTabs[view] = button;
+      tabs.append(button);
+    }
 
     const toolbar = el("div", "lm-quick__toolbar");
     this.searchInput = el("input", "lm-quick__search");
     this.searchInput.type = "search";
-    this.searchInput.placeholder = "Search file or model name…";
-    this.searchInput.setAttribute("aria-label", "Search LoRA library");
+    this.searchInput.placeholder = this.searchPlaceholder();
+    this.searchInput.setAttribute(
+      "aria-label",
+      this.assetView === "recipe" ? "Search recipes" : "Search LoRA library",
+    );
     this.searchInput.addEventListener("input", () => {
       clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => this.loadSearch(), 180);
+      this.debounceTimer = setTimeout(() => this.loadCurrentSearch(), 180);
     });
     this.searchInput.addEventListener("keydown", (event) => this.onSearchKey(event));
 
     this.viewButtons = {};
-    const viewSwitch = el("div", "lm-quick__view-switch");
-    viewSwitch.setAttribute("role", "group");
-    viewSwitch.setAttribute("aria-label", "Library layout");
-    for (const [mode, label] of [["folders", "Folder"], ["flat", "Flat"]]) {
-      const button = el("button", "lm-quick__view-button", label);
-      button.type = "button";
-      button.classList.toggle("is-active", this.viewMode === mode);
-      button.setAttribute("aria-pressed", String(this.viewMode === mode));
-      button.addEventListener("click", () => this.setViewMode(mode));
-      this.viewButtons[mode] = button;
-      viewSwitch.appendChild(button);
-    }
+    this.filterButton = null;
+    this.recentButton = null;
+    let viewSwitch = null;
+    if (this.assetView === "lora") {
+      viewSwitch = el("div", "lm-quick__view-switch");
+      viewSwitch.setAttribute("role", "group");
+      viewSwitch.setAttribute("aria-label", "Library layout");
+      for (const [mode, label] of [["folders", "Folder"], ["flat", "Flat"]]) {
+        const button = el("button", "lm-quick__view-button", label);
+        button.type = "button";
+        button.classList.toggle("is-active", this.viewMode === mode);
+        button.setAttribute("aria-pressed", String(this.viewMode === mode));
+        button.addEventListener("click", () => this.setViewMode(mode));
+        this.viewButtons[mode] = button;
+        viewSwitch.appendChild(button);
+      }
 
-    this.filterButton = el("button", "lm-quick__filter", "Filters");
-    this.filterButton.type = "button";
-    this.filterButton.addEventListener("click", () => this.toggleActiveFilters());
+      this.filterButton = el("button", "lm-quick__filter", "Filters");
+      this.filterButton.type = "button";
+      this.filterButton.addEventListener("click", () => this.toggleActiveFilters());
 
-    this.recentButton = el("button", "lm-quick__filter", "Recent");
-    this.recentButton.type = "button";
-    this.recentButton.title = "Show recently applied LoRAs";
-    this.recentButton.setAttribute("aria-pressed", String(this.recentOnly));
-    this.recentButton.addEventListener("click", () => {
-      this.recentOnly = !this.recentOnly;
-      this.selectedIndex = this.visibleItems().length ? 0 : -1;
-      this.recentButton.classList.toggle("is-active", this.recentOnly);
+      this.recentButton = el("button", "lm-quick__filter", "Recent");
+      this.recentButton.type = "button";
+      this.recentButton.title = "Show recently applied LoRAs";
       this.recentButton.setAttribute("aria-pressed", String(this.recentOnly));
-      this.renderResults();
-    });
+      this.recentButton.addEventListener("click", () => {
+        this.recentOnly = !this.recentOnly;
+        this.selectedIndex = this.visibleItems().length ? 0 : -1;
+        this.recentButton.classList.toggle("is-active", this.recentOnly);
+        this.recentButton.setAttribute("aria-pressed", String(this.recentOnly));
+        this.renderResults();
+      });
+    }
 
     this.targetSelect = el("select", "lm-quick__target");
     this.targetSelect.setAttribute("aria-label", "Target LoRA node");
-    this.targetSelect.addEventListener("change", () => {
-      const candidates = compatibleNodes();
-      this.targetNode = candidates[Number(this.targetSelect.value)] || null;
-      this.replaceName = "";
-      this.panel.setContext(this.targetNode ? `Add to ${nodeLabel(this.targetNode)}` : "No compatible node");
-      this.refreshAddedMarkers();
-      this.renderDetail();
-    });
-    toolbar.append(this.searchInput, viewSwitch, this.filterButton, this.recentButton, this.targetSelect);
+    this.targetSelect.addEventListener("change", () => this.onTargetChanged());
+
+    toolbar.append(this.searchInput);
+    if (this.assetView === "lora") {
+      toolbar.append(viewSwitch, this.filterButton, this.recentButton);
+    }
+    toolbar.append(this.targetSelect);
 
     const content = el("div", "lm-quick__content");
     this.resultsElement = el("div", "lm-quick__results");
-    this.resultsElement.setAttribute("role", "listbox", "LoRA results");
+    this.resultsElement.setAttribute(
+      "role",
+      "listbox",
+      this.assetView === "recipe" ? "Recipe results" : "LoRA results",
+    );
     this.detailElement = el("aside", "lm-quick__detail");
     content.append(this.resultsElement, this.detailElement);
-    body.append(toolbar, content);
+    body.append(tabs, toolbar, content);
 
     this.statusElement = el("span", "lm-quick__status");
-    const hints = el("span", "lm-quick__hints", "↑↓ Navigate · ←→ Folder · Enter Open/Apply · Shift+Enter Keep open · Esc Close");
+    const hints = el("span", "lm-quick__hints", this.footerHints());
     footer.append(this.statusElement, hints);
     this.renderTargets();
-    this.renderFilterButton();
-    this.renderDetail();
+    if (this.assetView === "lora") {
+      this.renderFilterButton();
+      this.renderDetail();
+    } else {
+      this.renderRecipeDetailContent();
+    }
   }
 
   renderTargets() {
@@ -237,9 +397,7 @@ export class LoraQuickPanel {
     this.targetSelect.hidden = candidates.length < 2;
     this.targetSelect.disabled = !candidates.length;
     if (this.targetNode) this.targetSelect.value = String(candidates.indexOf(this.targetNode));
-    this.panel.setContext(this.targetNode
-      ? `${this.replaceName ? "Replace in" : "Add to"} ${nodeLabel(this.targetNode)}`
-      : "No compatible LoRA Manager node on this workflow");
+    this.updateContext();
   }
 
   async loadSearch() {
@@ -248,7 +406,11 @@ export class LoraQuickPanel {
     this.setStatus(query ? `Searching “${query}”…` : "Loading library…");
     try {
       const items = await searchLoraLibrary(query, 60, { useActiveFilters: this.activeFilters });
-      if (sequence !== this.searchSequence || !this.panel?.isOpen()) return;
+      if (
+        sequence !== this.searchSequence
+        || !this.panel?.isOpen()
+        || this.assetView !== "lora"
+      ) return;
       this.items = items;
       this.selectedIndex = items.length ? 0 : -1;
       this.renderResults();
@@ -258,9 +420,151 @@ export class LoraQuickPanel {
         : `No matching LoRAs${scope}`);
     } catch (error) {
       if (sequence !== this.searchSequence) return;
+      if (this.assetView !== "lora") return;
       this.items = [];
       this.selectedIndex = -1;
       this.renderResults();
+      this.setStatus(error.message);
+    }
+  }
+
+  async loadRecipeSearch() {
+    const sequence = ++this.recipeSequence;
+    const query = this.searchInput.value.trim();
+    this.setStatus(query ? `Searching “${query}”…` : "Loading recipes…");
+    try {
+      const items = await searchRecipes(query, RECIPE_PAGE_SIZE);
+      if (
+        sequence !== this.recipeSequence
+        || !this.panel?.isOpen()
+        || this.assetView !== "recipe"
+      ) return;
+      this.recipeItems = items;
+      this.selectedIndex = items.length ? 0 : -1;
+      this.recipeDetails = null;
+      this.renderRecipeResults();
+      const suffix = query ? ` for “${query}”` : "";
+      this.setStatus(items.length
+        ? `${items.length} recipe${items.length === 1 ? "" : "s"}${suffix}`
+        : `No recipes match${suffix}`);
+    } catch (error) {
+      if (sequence !== this.recipeSequence) return;
+      if (this.assetView !== "recipe") return;
+      this.recipeItems = [];
+      this.selectedIndex = -1;
+      this.renderRecipeResults();
+      this.setStatus(error.message);
+    }
+  }
+
+  selectedRecipe() {
+    if (this.assetView !== "recipe") return null;
+    return this.recipeItems[this.selectedIndex] || null;
+  }
+
+  renderRecipeResults() {
+    this.resultsElement.replaceChildren();
+    if (!this.recipeItems.length) {
+      const query = this.searchInput?.value.trim() || "";
+      const message = el("div", "lm-quick__empty");
+      message.textContent = query
+        ? `No recipes match “${query}”.`
+        : "No recipes yet. Save one from the LoRA widget or the manager.";
+      if (!query) {
+        const open = el("button", "lm-quick__secondary", "Open LoRA Manager");
+        open.type = "button";
+        open.addEventListener("click", () => openRecipeManager(""));
+        message.appendChild(document.createElement("br"));
+        message.appendChild(open);
+      }
+      this.resultsElement.appendChild(message);
+      this.renderRecipeDetailContent();
+      return;
+    }
+    if (this.selectedIndex < 0 || this.selectedIndex >= this.recipeItems.length) {
+      this.selectedIndex = 0;
+    }
+    appendRecipeRows({
+      container: this.resultsElement,
+      recipes: this.recipeItems,
+      selectedIndex: this.selectedIndex,
+      onSelect: (index) => this.select(index),
+      onActivate: (index) => {
+        this.select(index);
+        this.applyRecipe("append", false);
+      },
+    });
+    this.renderRecipeDetail();
+  }
+
+  async renderRecipeDetail() {
+    const sequence = ++this.recipeDetailSequence;
+    const recipe = this.selectedRecipe();
+    this.recipeDetails = null;
+    if (!recipe) {
+      this.renderRecipeDetailContent();
+      return;
+    }
+    renderRecipeDetail({
+      container: this.detailElement,
+      recipe,
+      targetNode: this.targetNode,
+      loading: true,
+      onApply: (mode) => this.applyRecipe(mode, false),
+      onOpen: (recipeId) => openRecipeManager(recipeId),
+    });
+    try {
+      const details = await fetchRecipeDetails(recipe.id);
+      if (
+        sequence !== this.recipeDetailSequence
+        || !this.panel?.isOpen()
+        || this.assetView !== "recipe"
+      ) return;
+      this.recipeDetails = details;
+      this.renderRecipeDetailContent();
+    } catch (error) {
+      if (sequence !== this.recipeDetailSequence) return;
+      this.renderRecipeDetailContent(error.message);
+    }
+  }
+
+  renderRecipeDetailContent(error = "") {
+    const recipe = this.recipeDetails || this.selectedRecipe();
+    renderRecipeDetail({
+      container: this.detailElement,
+      recipe,
+      targetNode: this.targetNode,
+      error,
+      onApply: (mode) => this.applyRecipe(mode, false),
+      onOpen: (recipeId) => openRecipeManager(recipeId),
+    });
+  }
+
+  applyRecipe(mode = "append", keepOpen = false) {
+    const recipe = this.recipeDetails || this.selectedRecipe();
+    if (!recipe) return;
+    if (!this.targetNode) {
+      this.setStatus("Select a LoRA node to apply this recipe.");
+      return;
+    }
+    try {
+      if (app.graph && !compatibleNodes().includes(this.targetNode)) {
+        throw new Error("The target node is no longer on this workflow. Reopen Quick Pick from the node.");
+      }
+      const result = applyQuickLoraSet(this.targetNode, recipe.loras, mode);
+      const skipped = result.skipped ? ` · ${result.skipped} skipped` : "";
+      if (!result.applied) {
+        this.setStatus(`No available LoRAs in this recipe${skipped}`);
+        return;
+      }
+      if (!result.changed) {
+        this.setStatus(`Recipe is already applied${skipped}`);
+        return;
+      }
+      const verb = mode === "replace" ? "Replaced with" : "Applied";
+      this.setStatus(`${verb} ${result.applied} LoRA${result.applied === 1 ? "" : "s"}${skipped}`);
+      if (!keepOpen) this.close();
+    } catch (error) {
       this.setStatus(error.message);
     }
   }
@@ -269,12 +573,17 @@ export class LoraQuickPanel {
     const sequence = ++this.folderSequence;
     try {
       const root = await fetchLoraFolderIndex({ useActiveFilters: this.activeFilters });
-      if (sequence !== this.folderSequence || !this.panel?.isOpen()) return;
+      if (
+        sequence !== this.folderSequence
+        || !this.panel?.isOpen()
+        || this.assetView !== "lora"
+      ) return;
       this.folderIndex = root;
       this.folderError = "";
       this.renderResults();
     } catch (error) {
       if (sequence !== this.folderSequence) return;
+      if (this.assetView !== "lora") return;
       this.folderError = error.message;
       this.renderResults();
     }
@@ -296,6 +605,7 @@ export class LoraQuickPanel {
       this.activeFilterSnapshot = null;
     }
     this.activeFilterCount = countActiveFilters(this.activeFilterSnapshot);
+    if (this.assetView !== "lora") return;
     this.renderFilterButton();
   }
 
@@ -412,6 +722,9 @@ export class LoraQuickPanel {
   }
 
   navigationItems() {
+    if (this.assetView === "recipe") {
+      return this.recipeItems.map((item) => ({ type: "recipe", item }));
+    }
     if (!this.isFolderBrowse()) {
       return this.visibleItems().map((item) => ({ type: "lora", item }));
     }
@@ -535,6 +848,10 @@ export class LoraQuickPanel {
   }
 
   renderResults() {
+    if (this.assetView === "recipe") {
+      this.renderRecipeResults();
+      return;
+    }
     if (this.isFolderBrowse()) {
       this.renderFolderResults();
       return;
@@ -582,6 +899,10 @@ export class LoraQuickPanel {
   }
 
   async renderDetail() {
+    if (this.assetView === "recipe") {
+      await this.renderRecipeDetail();
+      return;
+    }
     const sequence = ++this.detailSequence;
     const item = this.selectedItem();
     this.details = null;
@@ -646,6 +967,7 @@ export class LoraQuickPanel {
   }
 
   apply(keepOpen) {
+    if (this.assetView !== "lora") return;
     const item = this.selectedItem();
     if (!item) return;
     try {
@@ -678,7 +1000,7 @@ export class LoraQuickPanel {
         event.preventDefault();
         event.stopPropagation();
         this.searchInput.value = "";
-        this.loadSearch();
+        this.loadCurrentSearch();
       }
       return;
     }
@@ -696,7 +1018,11 @@ export class LoraQuickPanel {
       if (next !== this.selectedIndex) this.select(next);
       return;
     }
-    if (this.isFolderBrowse() && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    if (
+      this.assetView === "lora"
+      && this.isFolderBrowse()
+      && (event.key === "ArrowLeft" || event.key === "ArrowRight")
+    ) {
       event.preventDefault();
       if (event.key === "ArrowLeft") {
         this.closeFolder();
@@ -708,8 +1034,12 @@ export class LoraQuickPanel {
     }
     if (event.key !== "Enter") return;
     if (event.target !== this.searchInput && !this.resultsElement.contains(event.target)) return;
-    if (event.target.closest(".lm-quick__folder-back")) return;
+    if (this.assetView === "lora" && event.target.closest(".lm-quick__folder-back")) return;
     event.preventDefault();
+    if (this.assetView === "recipe") {
+      this.applyRecipe("append", event.shiftKey);
+      return;
+    }
     const selected = items[this.selectedIndex];
     if (selected?.type === "folder") this.openFolder(selected.path);
     else if (selected?.type === "lora") this.apply(event.shiftKey);
@@ -720,19 +1050,55 @@ export class LoraQuickPanel {
   }
 }
 
-export function openLoraQuickPanel(options = {}) {
-  activeQuickPanel?.close();
-  activeQuickPanel = new LoraQuickPanel(options).open();
+function openQuickPanel(options = {}, view) {
+  if (activeQuickPanel?.panel?.isOpen()) {
+    activeQuickPanel.setAssetView(view);
+    if (options?.node) activeQuickPanel.setTargetNode(options.node);
+    if (options?.replaceName && view === "lora") {
+      activeQuickPanel.replaceName = options.replaceName;
+      activeQuickPanel.updateContext();
+    }
+    activeQuickPanel.searchInput?.focus();
+    return activeQuickPanel;
+  }
+  activeQuickPanel = new LoraQuickPanel({ ...options, initialView: view }).open();
   return activeQuickPanel;
+}
+
+export function openLoraQuickPanel(options = {}) {
+  return openQuickPanel(options, "lora");
+}
+
+export function openRecipeQuickPanel(options = {}) {
+  return openQuickPanel(options, "recipe");
 }
 
 export function closeLoraQuickPanel() {
   activeQuickPanel?.close();
 }
 
+export function closeRecipeQuickPanel() {
+  activeQuickPanel?.close();
+}
+
+export function closeQuickPanel() {
+  activeQuickPanel?.close();
+}
+
 export function toggleLoraQuickPanel() {
-  if (activeQuickPanel?.panel?.isOpen()) closeLoraQuickPanel();
-  else openLoraQuickPanel();
+  if (activeQuickPanel?.panel?.isOpen() && activeQuickPanel.assetView === "lora") {
+    closeQuickPanel();
+  } else {
+    openLoraQuickPanel();
+  }
+}
+
+export function toggleRecipeQuickPanel() {
+  if (activeQuickPanel?.panel?.isOpen() && activeQuickPanel.assetView === "recipe") {
+    closeQuickPanel();
+  } else {
+    openRecipeQuickPanel();
+  }
 }
 
 app.registerExtension({
@@ -752,6 +1118,6 @@ app.registerExtension({
     }];
   },
   afterConfigureGraph() {
-    closeLoraQuickPanel();
+    closeQuickPanel();
   },
 });

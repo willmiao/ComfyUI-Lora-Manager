@@ -1,6 +1,6 @@
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { openLoraManagerHome } from "./lora_canvas_api.js";
-import { toggleLoraQuickPanel } from "./lora_quick_panel.js";
+import { toggleLoraQuickPanel, toggleRecipeQuickPanel } from "./lora_quick_panel.js";
 import { COMMAND_IDS, getCommandShortcutLabel } from "./shortcuts.js";
 
 let activeMenu = null;
@@ -56,6 +56,11 @@ export function toggleQuickActionsMenu(anchor) {
     "Quick LoRA Picker",
     getCommandShortcutLabel(COMMAND_IDS.quickLoraPicker),
     toggleLoraQuickPanel,
+  ));
+  element.appendChild(createMenuItem(
+    "Quick Recipe Picker",
+    getCommandShortcutLabel(COMMAND_IDS.quickRecipePicker),
+    toggleRecipeQuickPanel,
   ));
   const divider = document.createElement("div");
   divider.className = "lm-quick-actions-menu__divider";

@@ -376,4 +376,28 @@ describe('RecipeManager', () => {
     expect(entry.handler(keydownEvent('f', document.body))).toBe(false);
     expect(entry.handler(keydownEvent('d', document.body))).toBe(false);
   });
+
+  it('opens a recipe from the #recipe=<id> deep link', async () => {
+    window.location.hash = '#recipe=abc%2Fdef';
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'abc/def', title: 'Linked recipe' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const manager = new RecipeManager();
+      await manager.initialize();
+
+      await vi.waitFor(() => {
+        expect(recipeModalInstance.showRecipeDetails).toHaveBeenCalledWith({
+          id: 'abc/def',
+          title: 'Linked recipe',
+        });
+      });
+      expect(fetchMock).toHaveBeenCalledWith('/api/lm/recipe/abc%2Fdef');
+    } finally {
+      vi.unstubAllGlobals();
+      window.location.hash = '';
+    }
+  });
 });

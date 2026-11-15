@@ -162,3 +162,93 @@ export function enableListedLorasFromCode(currentLoras, code) {
 
   return { loras: next, changed, unlistedTags };
 }
+
+function normalizeSetEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  if (entry.exclude || entry.isDeleted) return null;
+  if (entry.inLibrary === false) return null;
+  const name = normalizeLoraNameKey(
+    entry.name ?? entry.file_name ?? entry.fileName ?? entry.relativePath ?? "",
+  );
+  if (!name) return null;
+  const rawStrength = entry.strength ?? entry.weight;
+  const numeric = Number(rawStrength);
+  return {
+    name,
+    strength: Number.isFinite(numeric) ? numeric : undefined,
+  };
+}
+
+function sameLoraEntry(left, right) {
+  return left?.name === right?.name
+    && String(left?.strength ?? "") === String(right?.strength ?? "")
+    && String(left?.clipStrength ?? "") === String(right?.clipStrength ?? "")
+    && Boolean(left?.active) === Boolean(right?.active);
+}
+
+function sameLoraList(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+  return left.every((entry, index) => sameLoraEntry(entry, right[index]));
+}
+
+/**
+ * Apply a set of LoRAs (a recipe) to a node's LoRA list.
+ *
+ * `append` keeps the existing list and applies each available entry through
+ * `applyLoraSelection`: a listed entry is enabled in place (its strengths are
+ * kept), a missing one is appended active with the recipe strength.
+ *
+ * `replace` rewrites the list to exactly the available recipe entries, using
+ * the recipe strengths. In both modes entries with `isDeleted`, `inLibrary ===
+ * false`, or `exclude` are skipped and counted in `skipped`.
+ *
+ * Returns `{ loras, changed, applied, skipped }`; `applied` counts the
+ * available entries, not only the ones that changed the list.
+ */
+export function applyLoraSet(currentLoras, entries, { mode = "append" } = {}) {
+  const current = Array.isArray(currentLoras) ? currentLoras : [];
+  const list = Array.isArray(entries) ? entries : [];
+  const unique = [];
+  const seen = new Set();
+  for (const entry of list.map(normalizeSetEntry)) {
+    if (!entry || seen.has(entry.name)) continue;
+    seen.add(entry.name);
+    unique.push(entry);
+  }
+  const skipped = list.length - unique.length;
+  if (!unique.length) {
+    return { loras: current, changed: false, applied: 0, skipped };
+  }
+
+  if (mode === "replace") {
+    let next = [];
+    for (const entry of unique) {
+      next = applyLoraSelection(next, {
+        name: entry.name,
+        strength: entry.strength,
+      }).loras;
+    }
+    return {
+      loras: next,
+      changed: !sameLoraList(current, next),
+      applied: unique.length,
+      skipped,
+    };
+  }
+
+  let next = current;
+  let changed = false;
+  for (const entry of unique) {
+    const result = applyLoraSelection(next, {
+      name: entry.name,
+      strength: entry.strength,
+    });
+    if (result.changed) {
+      next = result.loras;
+      changed = true;
+    }
+  }
+  return { loras: next, changed, applied: unique.length, skipped };
+}

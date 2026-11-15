@@ -7,18 +7,24 @@ The full manager and canvas quick tools have separate primary entry points:
 - Clicking the top-bar LoRA Manager button opens the full manager in a new tab.
 - Shift+clicking it opens the full manager in a new window.
 - A single chevron beside the main button opens the **Quick Actions** menu.
-  **Quick LoRA Picker** displays its keybinding using ComfyUI's menu keybinding
-  visual treatment; **Open LoRA Manager** remains available there too.
+  **Quick LoRA Picker** and **Quick Recipe Picker** display their keybindings
+  using ComfyUI's menu keybinding visual treatment; **Open LoRA Manager** remains
+  available there too.
 - `Alt+L` toggles the Quick LoRA Picker through a registered ComfyUI command and
-  keybinding. This is the default, not a fixed shortcut — see
-  [Remapping shortcuts](#remapping-shortcuts).
-- LoRA nodes expose **Quick LoRA Picker** in their context menu. ComfyUI's
-  current extension-menu converter does not pass shortcut badges through for
-  extension items, so the node menu uses the plain label rather than custom HTML
-  that would behave differently between legacy and Vue menus.
-- The **+** button in the LoRA widget header opens the picker with that node as
-  its initial target. It remains available when the widget is empty, and its
-  tooltip displays the effective shortcut.
+  keybinding; `Alt+R` toggles the Quick Recipe Picker the same way. These are
+  defaults, not fixed shortcuts — see [Remapping shortcuts](#remapping-shortcuts).
+- LoRA nodes expose **Quick LoRA Picker** in their context menu. The recipe
+  picker deliberately does not add a second node-menu entry: it stays reachable
+  from the chevron menu, `Alt+R`, and the panel's `Recipes` tab, so the node menu
+  does not grow with every asset type. ComfyUI's current extension-menu converter
+  does not pass shortcut badges through for extension items, so the node menu
+  uses the plain label rather than custom HTML that would behave differently
+  between legacy and Vue menus.
+- The **+** button in the LoRA widget header opens the picker in its `LoRAs` view
+  with that node as the initial target. It remains available when the widget is
+  empty, and its tooltip displays the effective shortcut.
+- The panel itself switches between `LoRAs` and `Recipes` views in place; the
+  explicit entry point selects the initial view.
 
 Quick pickers are contextual canvas tools. They do not each need a permanent
 top-bar button. The top bar continues to use `actionBarButtons` on supported
@@ -27,7 +33,9 @@ frontends, with direct menu DOM insertion retained only as the legacy fallback.
 The picker uses one keyboard-driven selection across folders and LoRAs. Up and
 Down follow the visible row order, Right or Enter opens a selected folder, Left
 returns to its parent, and Enter applies a selected LoRA. Navigation is handled
-at panel level rather than only while the search field is focused.
+at panel level rather than only while the search field is focused. The Recipes
+view uses the same Up/Down/Enter handling but leaves Left/Right to the search
+field; its view switch is the tab row, not an arrow-key gesture.
 
 Rows carry the same **Added** / **Off** cue as the autocomplete dropdown: a
 green cue means the LoRA is already enabled on the current target node, and an
@@ -45,13 +53,15 @@ Every quick picker registers a ComfyUI command plus a *default* keybinding, so
 the shortcut is remappable without an extension-specific setting:
 
 - **Settings → Keybindings** lists extension commands with their source column
-  (`LoraManager.QuickPanel`). Search for `Quick LoRA Picker` or
-  `LoraManager.ToggleQuickPanel`, then edit the binding, add another one, or
-  remove it. Shared keybinding presets work as well.
+  (`LoraManager.QuickPanel` and `LoraManager.RecipeQuickPanel`). Search for
+  `Quick LoRA Picker` / `LoraManager.ToggleQuickPanel` or `Quick Recipe Picker` /
+  `LoraManager.ToggleRecipeQuickPanel`, then edit the binding, add another one,
+  or remove it. Shared keybinding presets work as well.
 - Removing the default binding disables the shortcut; the Quick Actions menu then
   shows no badge, and the **+** tooltip drops the shortcut hint.
-- `Alt+L` is only the default. The Quick Actions badge and the **+** tooltip read
-  the effective user binding, so they follow remaps without a page reload.
+- `Alt+L` and `Alt+R` are only defaults. The Quick Actions badges and the **+**
+  tooltip read the effective user binding, so they follow remaps without a page
+  reload.
 - ComfyUI reports a conflict when the chosen combo is already bound to another
   command; the existing binding can be unset from the same dialog.
 
@@ -87,6 +97,35 @@ a recent LoRA still appears when the empty-query page (60 rows) does not reach
 it. Entries whose file was removed or renamed are skipped. While a search query
 is active, Recent narrows the history to the matching results instead.
 
+## Recipes view
+
+The `Recipes` tab lists saved recipes with preview, title, LoRA count, base
+model, and missing/deleted counts. Search covers recipe title, tags, LoRA file
+and model names, and prompt. The list payload already carries enriched LoRA
+availability, so the actions stay usable while the detail request is in flight.
+
+**Append** (Enter, or the primary button) applies the recipe's available LoRAs to
+the target node: an entry already on the node is enabled in place with its
+current strengths kept; a new entry is appended active with the recipe strength.
+**Replace** rewrites the node's list to the available recipe entries using the
+recipe strengths; it is button-only so the destructive action has no accidental
+keyboard default. Missing and deleted entries are skipped and counted in the
+status bar.
+
+Recipe apply covers the LoRA set only. The recipe's checkpoint, prompt, and
+generation parameters are not applied; the detail column says so. **Open in
+manager** opens `/loras/recipes#recipe=<id>` in the named manager tab, and the
+recipes page opens that recipe modal from the hash (a reused tab follows
+`hashchange`).
+
+The tab choice is remembered in `lm:quick-panel:asset-view`, but an explicit
+entry wins: the LoRA `+` button and `Alt+L` open `LoRAs`; `Alt+R` and the Quick
+Actions item open `Recipes`. The recipe view is intentionally not in the
+LoRA-node context menu, so its target comes from the panel's target select
+(which defaults to the selected compatible node). Switching tabs clears the
+query (a query tuned for LoRA names rarely fits recipes) and keeps the target
+node.
+
 ## Growth strategy
 
 Do not add one top-bar button per picker. Top-bar space is shared with ComfyUI
@@ -97,6 +136,7 @@ The existing chevron opens a single **Quick Actions** menu. As tools are added,
 it can contain entries such as:
 
 - Quick LoRA Picker
+- Quick Recipe Picker
 - Quick Workflow Picker
 - Open LoRA Manager
 
@@ -105,9 +145,14 @@ registered commands, not more permanent buttons. A single chevron is preferable
 to a row of feature-specific icons, and modifier-only click overloads should not
 become the primary way to discover tools.
 
+Recipes are the second view, ahead of workflows: recipes are available by
+default (the recipes directory falls back to `<first LoRA root>/recipes`) while
+workflow management is opt-in, and applying a recipe reuses the LoRA picker's
+target node and apply path. Workflows become the third view later.
+
 When roughly three or four quick tools exist, evaluate a unified Quick Launcher:
 
-- One search field with `LoRAs`, `Workflows`, and `Recipes` views.
+- One search field with `LoRAs`, `Recipes`, and `Workflows` views.
 - The most recently used view is restored.
 - The current node context selects the initial view when relevant.
 - The existing floating-panel shell and keyboard navigation are shared, while
@@ -115,4 +160,6 @@ When roughly three or four quick tools exist, evaluate a unified Quick Launcher:
 - Existing commands and shortcuts remain available as direct routes to a view.
 
 This is an evolution path, not a requirement to build the launcher before the
-additional tools exist.
+additional tools exist. See
+[quick-picker-recipe-view.md](../plans/quick-picker-recipe-view.md) for the
+Recipe view's implementation notes.
