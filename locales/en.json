@@ -2169,7 +2169,7 @@
         "creator": "Creator",
         "creatorAdd": "Add creator",
         "creatorEdit": "Edit creator",
-        "creatorSearchPlaceholder": "Search creators or type a new name…",
+        "creatorSearchPlaceholder": "Search creators or type a new name...",
         "creatorLibraryHeader": "Creators in your library",
         "creatorMatchingHeader": "Matching creators",
         "creatorLibraryCount": "{count} in library",
@@ -2192,7 +2192,7 @@
         "creatorSaveFailed": "Couldn't update creator. Try again.",
         "creatorLoadFailed": "Couldn't load creators. You can still type a new name.",
         "creatorTooLong": "Creator name is too long (max 64 characters)",
-        "creatorLoading": "Loading creators…",
+        "creatorLoading": "Loading creators...",
         "creatorKeyboardHint": "↑↓ navigate · ↵ select · esc cancel"
       },
       "notes": {

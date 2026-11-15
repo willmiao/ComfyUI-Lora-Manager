@@ -279,7 +279,7 @@ export class CreatorPicker {
         const searchPlaceholder = translate(
             'modals.model.metadata.creatorSearchPlaceholder',
             {},
-            'Search creators or type a new name…'
+            'Search creators or type a new name...'
         );
         const creatorLabel = translate('modals.model.metadata.creator', {}, 'Creator');
 
@@ -529,7 +529,7 @@ export class CreatorPicker {
         if (this.loading && !this.creators.length) {
             listHtml += `<div class="creator-empty-state" role="presentation">
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                <span>${escapeHtml(translate('modals.model.metadata.creatorLoading', {}, 'Loading creators…'))}</span>
+                <span>${escapeHtml(translate('modals.model.metadata.creatorLoading', {}, 'Loading creators...'))}</span>
             </div>`;
         } else if (this.creators.length) {
             this.creators.forEach((creator, index) => {

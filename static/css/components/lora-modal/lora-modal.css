@@ -1607,11 +1607,13 @@
     display: inline-flex;
     align-items: center;
     min-width: 0;
+    overflow: hidden;
     color: var(--text-color);
     opacity: 0.6;
     font-size: 0.64rem;
     font-weight: 650;
     letter-spacing: 0.075em;
+    text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
 }
