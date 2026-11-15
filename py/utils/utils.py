@@ -731,13 +731,7 @@ def calculate_relative_path_for_model(
     Returns:
         Relative path string (empty string for flat structure)
     """
-    # Get path template from settings for specific model type
     settings_manager = get_settings_manager()
-    path_template = settings_manager.get_download_path_template(model_type)
-
-    # If template is empty, return empty path (flat structure)
-    if not path_template:
-        return ""
 
     # Get base model name from model metadata
     civitai_data = model_data.get("civitai", {})
@@ -752,6 +746,15 @@ def calculate_relative_path_for_model(
         # Fallback to model_data fields for non-CivitAI models
         base_model = model_data.get("base_model", "")
         author = "Anonymous"  # Default for non-CivitAI models
+
+    # A creator-specific template wins over the model type's template
+    path_template = settings_manager.get_author_path_template(
+        author
+    ) or settings_manager.get_download_path_template(model_type)
+
+    # If template is empty, return empty path (flat structure)
+    if not path_template:
+        return ""
 
     model_tags = model_data.get("tags", [])
 

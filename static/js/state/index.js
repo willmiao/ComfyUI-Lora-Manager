@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},
+    author_path_templates: {},
     download_path_templates: {},
     download_filename_templates: {},
     example_images_path: '',
@@ -90,6 +91,7 @@ export function createDefaultSettings() {
     return {
         ...DEFAULT_SETTINGS_BASE,
         base_model_path_mappings: {},
+        author_path_templates: {},
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
         download_filename_templates: { ...DEFAULT_FILENAME_TEMPLATES },
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },

@@ -14,6 +14,7 @@ def test_calculate_relative_path_handles_case_insensitive_tags():
     mock_settings.get.return_value = {}  # base_model_path_mappings
     mock_settings.resolve_priority_tag_for_model.return_value = "test"
     mock_settings.get_download_path_template.return_value = "{base_model}/{first_tag}"
+    mock_settings.get_author_path_template.return_value = ""
     
     # Mock the settings manager function
     import py.utils.utils as utils_module
