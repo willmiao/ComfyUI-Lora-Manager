@@ -1148,6 +1148,86 @@ async def test_auto_organize_dry_run_keeps_every_result(tmp_path: Path):
     assert len(payload["results"]) == 150
 
 
+@pytest.mark.asyncio
+async def test_auto_organize_results_carry_reason_codes(tmp_path: Path):
+    """Skips and failures expose a stable code, so a preview UI can group them
+    without string-matching the human-readable message."""
+    from py.services.model_file_service import (
+        REASON_MISSING_METADATA,
+        REASON_PLANNED_COLLISION,
+        REASON_TARGET_EXISTS,
+    )
+
+    service, scanner, model_path = _organize_setup(tmp_path)
+    twin_dir = tmp_path / "other"
+    twin_dir.mkdir()
+    (twin_dir / "mymodel.safetensors").write_bytes(b"model")
+    metadata_less = tmp_path / "nometa.safetensors"
+    metadata_less.write_bytes(b"model")
+    blocked = tmp_path / "taken.safetensors"
+    blocked.write_bytes(b"model")
+    # A stray file occupies the target without being a cache model, so nothing
+    # in this run would move it away: the target really is taken.
+    blocked_dir = tmp_path / "SD1.5"
+    blocked_dir.mkdir()
+    (blocked_dir / "taken.safetensors").write_bytes(b"model")
+    scanner._cache.raw_data[:] = [
+        {
+            "file_path": model_path.as_posix(),
+            "model_name": "mymodel",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 1},
+        },
+        {
+            "file_path": (twin_dir / "mymodel.safetensors").as_posix(),
+            "model_name": "twin",
+            "base_model": "SDXL",
+            "tags": [],
+            "civitai": {"id": 2},
+        },
+        {
+            "file_path": metadata_less.as_posix(),
+            "model_name": "nometa",
+            "base_model": "",
+            "tags": [],
+            "civitai": {},
+        },
+        {
+            "file_path": blocked.as_posix(),
+            "model_name": "taken",
+            "base_model": "SD1.5",
+            "tags": [],
+            "civitai": {"id": 3},
+        },
+    ]
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    reasons = {entry["model"]: entry["reason"] for entry in result.results}
+    assert reasons["twin"] == REASON_PLANNED_COLLISION
+    assert reasons["nometa"] == REASON_MISSING_METADATA
+    assert reasons["taken"] == REASON_TARGET_EXISTS
+    assert all(entry["success"] is False for entry in result.results)
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_real_run_results_carry_reason_codes(tmp_path: Path):
+    from py.services.model_file_service import REASON_MOVE_FAILED
+
+    service, scanner, _model_path = _organize_setup(tmp_path)
+
+    async def failing_move(file_path: str, target_dir: str) -> bool:
+        return False
+
+    scanner.move_model = failing_move  # type: ignore[method-assign]
+
+    result = await service.auto_organize_models()
+
+    assert result.failure_count == 1
+    assert result.results[0]["reason"] == REASON_MOVE_FAILED
+
+
 def _workflow_organize_setup(
     tmp_path: Path, *, template: str | None = None
 ) -> tuple:

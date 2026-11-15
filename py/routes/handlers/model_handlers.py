@@ -2863,7 +2863,7 @@ class ModelMoveHandler:
                 return web.json_response(
                     {"success": False, "error": "Folder path is required"}, status=400
                 )
-            dry_run = bool(data.get("dry_run"))
+            dry_run = _is_truthy(data.get("dry_run"))
             result = await self._move_service.delete_folder(
                 folder_path, dry_run=dry_run
             )
@@ -3007,18 +3007,22 @@ class ModelAutoOrganizeHandler:
 
     async def auto_organize_models(self, request: web.Request) -> web.Response:
         # ``dry_run`` may come from the query string or the POST body; either
-        # one set to a true value makes the request a preview. Scoping a
-        # preview to ``file_paths`` needs POST (GET previews the whole library).
+        # one set to a true value makes the request a preview. ``file_paths``
+        # scopes a preview and may come from either side too: a POST body, or
+        # repeated ``file_paths`` query params for GET-only clients. A body
+        # value wins when both are present.
         dry_run = False
         try:
-            file_paths = None
+            file_paths = [
+                path for path in request.query.getall("file_paths", None) or [] if path
+            ] or None
             exclusion_patterns = None
             settings_manager = get_settings_manager()
             dry_run = _is_truthy(request.query.get("dry_run"))
             if request.method == "POST":
                 try:
                     data = await request.json()
-                    file_paths = data.get("file_paths")
+                    file_paths = data.get("file_paths") or file_paths
                     dry_run = dry_run or _is_truthy(data.get("dry_run"))
                     if "exclusion_patterns" in data:
                         exclusion_patterns = (

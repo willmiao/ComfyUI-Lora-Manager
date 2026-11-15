@@ -67,6 +67,19 @@ def _plan_key(path: str) -> str:
     return os.path.normcase(os.path.normpath(path))
 
 
+# Machine-readable reasons attached to the per-model ``results`` entries.
+# A preview UI groups skips and failures by these instead of string-matching
+# the human-readable message, which is free to change.
+REASON_NO_FILE_PATH = "no_file_path"
+REASON_OUTSIDE_ROOTS = "outside_roots"
+REASON_MISSING_METADATA = "missing_metadata"
+REASON_PATH_TOO_LONG = "path_too_long"
+REASON_TARGET_EXISTS = "target_exists"
+REASON_PLANNED_COLLISION = "planned_collision"
+REASON_MOVE_FAILED = "move_failed"
+REASON_ERROR = "error"
+
+
 class ProgressCallback(ABC):
     """Abstract callback interface for progress reporting"""
     
@@ -190,7 +203,9 @@ class ModelFileService:
                      response is correspondingly large.
             
         Returns:
-            AutoOrganizeResult object with operation results
+            AutoOrganizeResult object with operation results. Entries in
+            ``results`` (skips and failures) carry a stable ``reason`` code
+            so callers can group them without parsing the message.
         """
         result = AutoOrganizeResult()
         result.dry_run = dry_run
@@ -393,8 +408,9 @@ class ModelFileService:
                     'operation_type': result.operation_type
                 })
             
-            # Pace real runs between batches; a dry run does no I/O, so it
-            # only yields to the event loop.
+            # A dry run has no progress consumer to pace for (and moves
+            # nothing), so it only yields to the event loop; the 0.1s pacing
+            # exists to keep real runs from freezing the UI between batches.
             await asyncio.sleep(0 if result.dry_run else 0.1)
     
     async def _process_single_model(
@@ -410,7 +426,10 @@ class ModelFileService:
             model_name = model.get('model_name', 'Unknown')
             
             if not file_path:
-                self._add_result(result, model_name, False, "No file path found")
+                self._add_result(
+                    result, model_name, False, "No file path found",
+                    reason=REASON_NO_FILE_PATH,
+                )
                 result.failure_count += 1
                 return
             
@@ -418,7 +437,8 @@ class ModelFileService:
             current_root = self._find_model_root(file_path, model_roots)
             if not current_root:
                 self._add_result(result, model_name, False, 
-                               "Model file not found in any configured root directory")
+                               "Model file not found in any configured root directory",
+                               reason=REASON_OUTSIDE_ROOTS)
                 result.failure_count += 1
                 return
             
@@ -429,7 +449,8 @@ class ModelFileService:
             
             if target_dir is None:
                 self._add_result(result, model_name, False, 
-                               "Skipped - insufficient metadata for organization")
+                               "Skipped - insufficient metadata for organization",
+                               reason=REASON_MISSING_METADATA)
                 result.skipped_count += 1
                 return
             
@@ -453,7 +474,8 @@ class ModelFileService:
                 self._add_result(result, model_name, False,
                                "Skipped - target path would exceed the OS path "
                                "length limit; shorten the file name or move the "
-                               "library to a shallower root")
+                               "library to a shallower root",
+                               reason=REASON_PATH_TOO_LONG)
                 result.skipped_count += 1
                 return
 
@@ -466,7 +488,8 @@ class ModelFileService:
                 and target_key not in result.vacated_sources
             ):
                 self._add_result(result, model_name, False, 
-                               f"Target file already exists: {target_file_path}")
+                               f"Target file already exists: {target_file_path}",
+                               reason=REASON_TARGET_EXISTS)
                 result.failure_count += 1
                 return
 
@@ -477,6 +500,7 @@ class ModelFileService:
                         result, model_name, False,
                         f"Target file {target_file_path} would collide with "
                         f"the planned move of {claimed_by}",
+                        reason=REASON_PLANNED_COLLISION,
                     )
                     result.failure_count += 1
                     return
@@ -500,12 +524,18 @@ class ModelFileService:
             if success:
                 result.success_count += 1
             else:
-                self._add_result(result, model_name, False, "Failed to move model")
+                self._add_result(
+                    result, model_name, False, "Failed to move model",
+                    reason=REASON_MOVE_FAILED,
+                )
                 result.failure_count += 1
             
         except Exception as e:
             logger.error(f"Error processing model {model.get('model_name', 'Unknown')}: {e}", exc_info=True)
-            self._add_result(result, model.get('model_name', 'Unknown'), False, f"Error: {str(e)}")
+            self._add_result(
+                result, model.get('model_name', 'Unknown'), False,
+                f"Error: {str(e)}", reason=REASON_ERROR,
+            )
             result.failure_count += 1
     
     def _find_model_root(self, file_path: str, model_roots: List[str]) -> Optional[str]:
@@ -586,7 +616,8 @@ class ModelFileService:
         result: AutoOrganizeResult, 
         model_name: str, 
         success: bool, 
-        message: str
+        message: str,
+        reason: Optional[str] = None,
     ) -> None:
         """Add a result entry if under the limit"""
         # A dry run is the report itself, so it keeps every entry; a real run
@@ -595,7 +626,10 @@ class ModelFileService:
             result.results.append({
                 "model": model_name,
                 "success": success,
-                "message": message
+                "message": message,
+                # Always present so clients can branch on the code even when
+                # a caller adds a result without one.
+                "reason": reason,
             })
         elif len(result.results) == 100:
             # Mark as truncated and save sample
