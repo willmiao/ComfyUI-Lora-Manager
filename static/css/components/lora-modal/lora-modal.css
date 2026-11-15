@@ -1358,6 +1358,475 @@
     flex-wrap: wrap;
 }
 
+/* ── Creator chip editing and anchored picker ─────────────────────────────── */
+.creator-chip-wrap {
+    position: relative;
+    display: inline-flex;
+    max-width: 100%;
+}
+
+.creator-info--editable {
+    gap: 2px;
+    padding-right: 4px;
+}
+
+.creator-info--editable .creator-username {
+    max-width: 168px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.creator-badge {
+    flex: none;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--lora-border);
+    background: var(--surface-subtle);
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    cursor: help;
+}
+
+.creator-edit-btn {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.66rem;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.creator-info:hover .creator-edit-btn,
+.creator-info:focus-within .creator-edit-btn,
+.creator-edit-btn[aria-expanded="true"] {
+    opacity: 0.9;
+}
+
+.creator-edit-btn:hover,
+.creator-edit-btn:focus-visible,
+.creator-edit-btn[aria-expanded="true"] {
+    opacity: 1;
+    color: var(--lora-accent);
+    background: color-mix(in oklch, var(--lora-accent) 10%, transparent);
+    outline: none;
+}
+
+@media (hover: none) {
+    .creator-edit-btn {
+        opacity: 0.65;
+    }
+}
+
+.creator-info--add {
+    appearance: none;
+    box-sizing: border-box;
+    min-height: 30px;
+    gap: 7px;
+    padding: 3px 10px;
+    border-style: dashed;
+    background: var(--surface-subtle);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+[data-theme="dark"] .creator-info--add {
+    border-style: dashed;
+}
+
+.creator-info--add i {
+    font-size: 0.7em;
+}
+
+.creator-info--add:hover,
+.creator-info--add:focus-visible {
+    color: var(--lora-accent);
+    border-color: var(--lora-accent);
+    background: color-mix(in oklch, var(--lora-accent) 7%, transparent);
+    outline: none;
+}
+
+.creator-popover {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: var(--z-dropdown);
+    width: 360px;
+    max-width: min(360px, calc(100vw - 32px));
+    max-height: min(70vh, 480px);
+    overflow-y: auto;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-base);
+    background: var(--bg-color);
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.26),
+        0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .creator-popover {
+    box-shadow:
+        0 22px 46px rgba(0, 0, 0, 0.55),
+        0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.creator-popover-caret {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 20px;
+    z-index: calc(var(--z-dropdown) + 1);
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    background: var(--bg-color);
+    border-top: 1px solid var(--lora-border);
+    border-left: 1px solid var(--lora-border);
+    pointer-events: none;
+}
+
+.creator-popover-search {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 10px;
+    border-bottom: 1px solid var(--lora-border);
+    background: var(--surface-subtle);
+}
+
+.creator-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-color);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--lora-accent) 11%, transparent);
+}
+
+.creator-search-icon {
+    flex: none;
+    color: var(--text-color);
+    opacity: 0.42;
+    font-size: 0.68rem;
+    pointer-events: none;
+}
+
+.creator-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text-color);
+    font: inherit;
+    font-size: 0.86rem;
+}
+
+.creator-input::placeholder {
+    color: var(--text-color);
+    opacity: 0.38;
+}
+
+/* Font Awesome loads after the app stylesheet and its `.fas` rule sets
+   `display: inline-block`; scope the idle state so the icon stays hidden. */
+.creator-popover .creator-spinner {
+    display: none;
+    flex: none;
+    color: var(--lora-accent);
+    font-size: 0.7rem;
+}
+
+.creator-popover.is-loading .creator-spinner,
+.creator-popover.is-saving .creator-spinner {
+    display: inline-block;
+}
+
+.creator-popover.is-saving .creator-input {
+    opacity: 0.55;
+}
+
+.creator-popover-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.creator-listbox {
+    display: block;
+}
+
+.creator-list-header {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 30px;
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--lora-border);
+    background: var(--surface-subtle);
+}
+
+.creator-list-title {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 0.64rem;
+    font-weight: 650;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.creator-current {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    white-space: nowrap;
+}
+
+.creator-current strong {
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.creator-remove-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.62rem;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.creator-remove-btn:hover,
+.creator-remove-btn:focus-visible {
+    color: var(--lora-error);
+    border-color: color-mix(in oklch, var(--lora-error) 45%, transparent);
+    background: color-mix(in oklch, var(--lora-error) 9%, transparent);
+    outline: none;
+}
+
+.creator-create-row {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 42px;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--lora-border);
+    background: color-mix(in oklch, var(--lora-accent) 6%, transparent);
+    cursor: pointer;
+}
+
+.creator-create-row:hover,
+.creator-create-row.is-active {
+    background: color-mix(in oklch, var(--lora-accent) 13%, transparent);
+}
+
+.creator-create-icon {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    border: 1px dashed color-mix(in oklch, var(--lora-accent) 55%, transparent);
+    color: var(--lora-accent);
+    font-size: 0.62rem;
+}
+
+.creator-create-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-color);
+    font-size: 0.82rem;
+}
+
+.creator-create-label strong {
+    color: var(--lora-accent);
+    font-weight: 650;
+}
+
+.creator-new-badge {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.creator-options {
+    overflow: visible;
+}
+
+.creator-option {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 40px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: background 90ms ease;
+}
+
+.creator-option:hover,
+.creator-option.is-active {
+    background: color-mix(in oklch, var(--lora-accent) 10%, transparent);
+}
+
+.creator-option.is-current {
+    background: color-mix(in oklch, var(--lora-accent) 4%, transparent);
+}
+
+.creator-option-avatar {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    border: 1px solid color-mix(in oklch, var(--lora-accent) 21%, var(--lora-border));
+    background: color-mix(in oklch, var(--lora-accent) 10%, transparent);
+    color: var(--lora-accent);
+    font-size: 0.61rem;
+    font-weight: 700;
+}
+
+.creator-option-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-color);
+    font-size: 0.82rem;
+}
+
+.creator-option.is-current .creator-option-name {
+    font-weight: 600;
+}
+
+.creator-option-name mark {
+    padding: 0;
+    background: transparent;
+    color: var(--lora-accent);
+    font-weight: 650;
+}
+
+.creator-check {
+    flex: none;
+    color: var(--lora-accent);
+    font-size: 0.62rem;
+}
+
+.creator-count {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.9;
+}
+
+.creator-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 22px 18px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.creator-empty-state i {
+    margin-bottom: 2px;
+    color: var(--text-color);
+    opacity: 0.28;
+    font-size: 1rem;
+}
+
+.creator-dropdown-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 30px;
+    padding: 4px 10px;
+    border-top: 1px solid var(--lora-border);
+    background: var(--surface-subtle);
+    color: var(--text-muted);
+    font-size: 0.64rem;
+    white-space: nowrap;
+}
+
+.creator-dropdown-footer .creator-hint {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.creator-dropdown-footer .creator-result-count {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+    .creator-popover {
+        position: fixed;
+        top: var(--creator-popover-top, 180px);
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+        max-height: 60vh;
+        z-index: var(--z-overlay);
+    }
+
+    .creator-dropdown-footer .creator-hint {
+        display: none;
+    }
+}
+
 .civitai-view {
     display: flex;
     align-items: center;

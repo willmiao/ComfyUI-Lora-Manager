@@ -61,6 +61,73 @@ def _inapplicable_providers_for_sub_type(sub_type: Optional[str]) -> set:
     }
 
 
+CREATOR_USERNAME_MAX_LENGTH = 64
+
+
+def normalize_creator_updates(updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate and normalize a user-submitted creator update.
+
+    Creator writes through ``save-metadata`` are always user actions, so the
+    resulting object is tagged ``source: "manual"``. Metadata refreshes go
+    through :meth:`MetadataSyncService.update_model_metadata` instead and must
+    preserve this tag. ``creator: None`` is passed through for the save path to
+    delete the key.
+
+    Raises:
+        ValueError: if the creator payload is malformed or the name is invalid.
+    """
+
+    if not isinstance(updates, dict):
+        raise ValueError("Metadata updates must be an object")
+
+    civitai = updates.get("civitai")
+    if civitai is None:
+        return updates
+    if not isinstance(civitai, dict):
+        raise ValueError("civitai must be an object")
+    if "creator" not in civitai:
+        return updates
+
+    creator = civitai.get("creator")
+    if creator is None:
+        return updates
+    if not isinstance(creator, dict):
+        raise ValueError("Creator must be an object or null")
+
+    username = creator.get("username")
+    if not isinstance(username, str):
+        raise ValueError("Creator name is required")
+
+    username = username.strip()
+    if username.startswith("@"):
+        username = username.lstrip("@")
+    username = " ".join(username.split())
+    if not username:
+        raise ValueError("Creator name is required")
+    if len(username) > CREATOR_USERNAME_MAX_LENGTH:
+        raise ValueError(
+            f"Creator name is too long (max {CREATOR_USERNAME_MAX_LENGTH} characters)"
+        )
+    if any(ord(character) < 32 or ord(character) == 127 for character in username):
+        raise ValueError("Creator name contains invalid characters")
+
+    image = creator.get("image")
+    if image is not None and not isinstance(image, str):
+        image = None
+    if isinstance(image, str):
+        image = image.strip() or None
+
+    normalized_civitai = dict(civitai)
+    normalized_civitai["creator"] = {
+        "username": username,
+        "image": image,
+        "source": "manual",
+    }
+    normalized_updates = dict(updates)
+    normalized_updates["civitai"] = normalized_civitai
+    return normalized_updates
+
+
 def _merge_ordered_unique(existing: Iterable[str], new: Iterable[str]) -> list[str]:
     """Concatenate two word lists, dropping duplicates without reordering.
 
@@ -155,6 +222,15 @@ class MetadataSyncService:
         """Merge remote metadata into the local record and persist the result."""
 
         existing_civitai = local_metadata.get("civitai") or {}
+        existing_creator = (
+            existing_civitai.get("creator")
+            if isinstance(existing_civitai, dict)
+            else None
+        )
+        manual_creator = (
+            isinstance(existing_creator, dict)
+            and existing_creator.get("source") == "manual"
+        )
 
         if (
             not self.is_civitai_api_metadata(civitai_metadata)
@@ -184,6 +260,12 @@ class MetadataSyncService:
                 # Order preserving merge: the saved order drives prompt order.
                 merged_trained = _merge_ordered_unique(existing_trained, new_trained)
                 merged_civitai["trainedWords"] = merged_trained
+
+            # A creator entered by the user is authoritative until they remove
+            # it (the explicit escape hatch) or change it again. A provider
+            # refresh must not silently replace it.
+            if manual_creator:
+                merged_civitai["creator"] = existing_creator
 
             local_metadata["civitai"] = merged_civitai
 
@@ -858,6 +940,13 @@ class MetadataSyncService:
                 metadata[key].update(value)
             else:
                 metadata[key] = value
+
+        # `creator: null` means "remove the creator". Do not persist a null
+        # member: the picker and the metadata schema treat a missing creator as
+        # empty, and a literal null would leak into other readers.
+        civitai_payload = metadata.get("civitai")
+        if isinstance(civitai_payload, dict) and civitai_payload.get("creator") is None:
+            civitai_payload.pop("creator", None)
 
         await self._metadata_manager.save_metadata(file_path, metadata)
         await update_cache(file_path, file_path, metadata)

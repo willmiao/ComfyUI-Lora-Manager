@@ -73,3 +73,49 @@ async def test_existing_model_can_update_metadata(tmp_path, method_name):
     else:
         handler._tag_update_service.add_tags.assert_awaited_once()
         handler._metadata_sync.save_metadata_updates.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_save_metadata_rejects_invalid_creator(tmp_path):
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"model")
+    handler = make_handler()
+
+    response = await handler.save_metadata(
+        FakeRequest(
+            {
+                "file_path": str(model_path),
+                "civitai": {"creator": {"username": "   "}},
+            }
+        )
+    )
+
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "Creator name is required" in payload["error"]
+    handler._metadata_sync.save_metadata_updates.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_save_metadata_normalizes_creator_before_saving(tmp_path):
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"model")
+    handler = make_handler()
+
+    response = await handler.save_metadata(
+        FakeRequest(
+            {
+                "file_path": str(model_path),
+                "civitai": {"creator": {"username": "  @Lykon  "}},
+            }
+        )
+    )
+
+    assert response.status == 200
+    handler._metadata_sync.save_metadata_updates.assert_awaited_once()
+    updates = handler._metadata_sync.save_metadata_updates.await_args.kwargs["updates"]
+    assert updates["civitai"]["creator"] == {
+        "username": "Lykon",
+        "image": None,
+        "source": "manual",
+    }

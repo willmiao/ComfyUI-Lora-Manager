@@ -2435,6 +2435,10 @@ class ServiceRegistryAdapter:
 
 
 class ModelLibraryHandler:
+    #: Model categories whose cached ``civitai.creator.username`` values feed
+    #: the creator suggestions endpoint. Workflows are intentionally excluded.
+    _CREATOR_MODEL_TYPES = ("lora", "checkpoint", "embedding", "other")
+
     def __init__(
         self,
         service_registry: ServiceRegistryAdapter,
@@ -2444,6 +2448,11 @@ class ModelLibraryHandler:
     ) -> None:
         self._service_registry = service_registry
         self._metadata_provider_factory = metadata_provider_factory
+        # Creator suggestions are derived from scanner caches. The snapshot is
+        # keyed by each scanner's monotonic cache_version, so scans, saves,
+        # moves and deletes invalidate it without extra hooks.
+        self._creator_index_cache: list[dict[str, Any]] | None = None
+        self._creator_index_key: tuple[Any, ...] | None = None
 
     @staticmethod
     def _normalize_model_type(model_type: str | None) -> str | None:
@@ -2486,6 +2495,159 @@ class ModelLibraryHandler:
 
     async def _get_download_history_service(self):
         return await self._service_registry.get_downloaded_version_history_service()
+    @staticmethod
+    def _build_creator_index(
+        entries_by_type: Mapping[str, Sequence[Mapping[str, Any]]],
+    ) -> list[dict[str, Any]]:
+        """Aggregate creator usernames from cached model entries.
+
+        Duplicate spellings are folded case-insensitively. The canonical
+        spelling is the variant used by the most entries (first seen wins on a
+        tie), matching how the library is displayed elsewhere.
+        """
+        totals: dict[str, int] = {}
+        spellings: dict[str, dict[str, int]] = {}
+
+        for entries in entries_by_type.values():
+            for item in entries:
+                if not isinstance(item, Mapping) or item.get("exclude"):
+                    continue
+                civitai = item.get("civitai")
+                if not isinstance(civitai, Mapping):
+                    continue
+                creator = civitai.get("creator")
+                if not isinstance(creator, Mapping):
+                    continue
+                username = creator.get("username")
+                if not isinstance(username, str):
+                    continue
+                username = username.strip()
+                if not username:
+                    continue
+                key = username.lower()
+                totals[key] = totals.get(key, 0) + 1
+                variants = spellings.setdefault(key, {})
+                variants[username] = variants.get(username, 0) + 1
+
+        creators: list[dict[str, Any]] = []
+        for key, count in totals.items():
+            variants = spellings.get(key) or {}
+            canonical = max(variants.items(), key=lambda item: item[1])[0] if variants else key
+            creators.append({"username": canonical, "model_count": count})
+        return creators
+
+    @staticmethod
+    def _rank_creators(
+        creators: Sequence[Mapping[str, Any]], query: str
+    ) -> list[dict[str, Any]]:
+        """Filter and rank creators for a query.
+
+        Without a query the list is ordered by model count. With a query the
+        order is exact match, prefix match, substring match, then model count
+        and name; this matches the picker's documented ranking.
+        """
+        normalized_query = query.strip().lower()
+        items = [dict(creator) for creator in creators]
+
+        if not normalized_query:
+            items.sort(
+                key=lambda creator: (
+                    -int(creator.get("model_count", 0)),
+                    str(creator.get("username", "")).lower(),
+                )
+            )
+            return items
+
+        def rank(creator: Mapping[str, Any]) -> tuple[int, int, str]:
+            name = str(creator.get("username", "")).lower()
+            if name == normalized_query:
+                group = 0
+            elif name.startswith(normalized_query):
+                group = 1
+            else:
+                group = 2
+            return (group, -int(creator.get("model_count", 0)), name)
+
+        filtered = [
+            creator
+            for creator in items
+            if normalized_query in str(creator.get("username", "")).lower()
+        ]
+        filtered.sort(key=rank)
+        return filtered
+
+    async def _get_creator_index(self) -> list[dict[str, Any]]:
+        entries_by_type: dict[str, Sequence[Mapping[str, Any]]] = {}
+        version_parts: list[tuple[str, int, int]] = []
+
+        for model_type in self._CREATOR_MODEL_TYPES:
+            _, scanner = await self._get_scanner_for_type(model_type)
+            if scanner is None:
+                continue
+            try:
+                cache = await scanner.get_cached_data()
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.debug("Unable to read %s cache for creators: %s", model_type, exc)
+                continue
+            raw_data = getattr(cache, "raw_data", []) or []
+            entries_by_type[model_type] = raw_data
+            version_parts.append(
+                (
+                    model_type,
+                    int(getattr(scanner, "cache_version", 0) or 0),
+                    len(raw_data),
+                )
+            )
+
+        key = tuple(version_parts)
+        if self._creator_index_key == key and self._creator_index_cache is not None:
+            return self._creator_index_cache
+
+        index = self._build_creator_index(entries_by_type)
+        self._creator_index_key = key
+        self._creator_index_cache = index
+        return index
+
+    async def get_creators(self, request: web.Request) -> web.Response:
+        """Return library creators for the model-detail creator picker.
+
+        Query parameters:
+            query: case-insensitive substring filter (optional)
+            limit: page size, default 8, capped at 50
+
+        The response is ``{"success": true, "creators": [...], "total": N}``
+        where each creator is ``{"username": str, "model_count": int}``.
+        """
+        try:
+            query = request.query.get("query", "")
+            if not isinstance(query, str):
+                query = ""
+            raw_limit = request.query.get("limit", "8")
+            try:
+                limit = int(raw_limit)
+            except (TypeError, ValueError):
+                limit = 8
+            limit = max(1, min(limit, 50))
+
+            index = await self._get_creator_index()
+            ranked = self._rank_creators(index, query)
+            return web.json_response(
+                {
+                    "success": True,
+                    "creators": ranked[:limit],
+                    "total": len(ranked),
+                    # Unfiltered library size, used by the chip's "N in
+                    # library" label while a query is active.
+                    "library_total": len(index),
+                }
+            )
+        except Exception as exc:
+            logger.error("Error retrieving creators: %s", exc, exc_info=True)
+            return web.json_response(
+                {"success": False, "error": str(exc)},
+                status=500,
+            )
+
 
     @staticmethod
     def _with_downloaded_flag(versions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -4733,6 +4895,7 @@ class MiscHandlerSet:
             "set_model_version_download_status": self.model_library.set_model_version_download_status,
             "delete_model_version": self.model_library.delete_model_version,
             "get_civitai_user_models": self.model_library.get_civitai_user_models,
+            "get_creators": self.model_library.get_creators,
             "download_metadata_archive": self.metadata_archive.download_metadata_archive,
             "remove_metadata_archive": self.metadata_archive.remove_metadata_archive,
             "get_metadata_archive_status": self.metadata_archive.get_metadata_archive_status,

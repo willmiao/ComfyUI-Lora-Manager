@@ -24,7 +24,7 @@ from ...services.connectivity_guard import (
     OFFLINE_FRIENDLY_MESSAGE,
     is_expected_offline_error,
 )
-from ...services.metadata_sync_service import MetadataSyncService
+from ...services.metadata_sync_service import MetadataSyncService, normalize_creator_updates
 from ...services.model_file_service import (
     ModelMoveService,
     normalize_relative_folder,
@@ -971,6 +971,13 @@ class ModelManagementHandler:
                 )
 
             metadata_updates = {k: v for k, v in data.items() if k != "file_path"}
+            try:
+                metadata_updates = normalize_creator_updates(metadata_updates)
+            except ValueError as exc:
+                return web.json_response(
+                    {"success": False, "error": str(exc)},
+                    status=400,
+                )
 
             updated_metadata = await self._metadata_sync.save_metadata_updates(
                 file_path=file_path,

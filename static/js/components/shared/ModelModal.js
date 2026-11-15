@@ -14,6 +14,7 @@ import {
     setupVersionNameEditing
 } from './ModelMetadata.js';
 import { setupTagEditMode } from './ModelTags.js';
+import { renderCreatorChip, setupCreatorEditing } from './CreatorPicker.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { renderCompactTags, setupTagTooltip, formatFileSize, escapeAttribute, escapeHtml, hasCivitaiSource } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
@@ -489,6 +490,11 @@ export async function showModelModal(model, modelType) {
     const modalTitle = model.model_name;
     cleanupNavigationShortcuts();
     detachModalHandlers(modalId);
+    const priorModal = document.getElementById(modalId);
+    priorModal?._creatorPicker?.destroy?.();
+    if (priorModal) {
+        priorModal._creatorPicker = null;
+    }
 
     // Fetch complete civitai metadata. The backend falls back to the cached
     // payload when the sidecar is unreadable (offline drive, missing file), so
@@ -634,18 +640,12 @@ export async function showModelModal(model, modelType) {
 <div class="civitai-view" title="${escapeAttribute(sourceTitle)}" data-action="${isHuggingFaceSource ? 'view-huggingface' : 'view-model-source'}" ${isHuggingFaceSource ? 'data-hf-url' : 'data-source-url'}="${escapedSourceUrl}">
     <i class="fas fa-globe"></i> ${escapeHtml(sourceTitle)}
 </div>`.trim() : '';
-    const creatorInfoAction = modelWithFullData.civitai?.creator ? `
-<div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
-    ${modelWithFullData.civitai.creator.image ?
-            `<div class="creator-avatar">
-            <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='/loras_static/icons/user-placeholder.png';">
-        </div>` :
-            `<div class="creator-avatar creator-placeholder">
-            <i class="fas fa-user"></i>
-        </div>`
-        }
-    <span class="creator-username">${modelWithFullData.civitai.creator.username}</span>
-</div>`.trim() : '';
+    // Keep the creator where users already look for it: the header chip.
+    // Workflows do not carry creator metadata and do not get the add chip.
+    const supportsCreatorEditing = modelType !== MODEL_TYPES.WORKFLOW;
+    const creatorChipMarkup = supportsCreatorEditing
+        ? `<div class="creator-chip-wrap">${renderCreatorChip(modelWithFullData.civitai?.creator || null)}</div>`
+        : '';
     const creatorActionItems = [];
     if (viewOnCivitaiAction) {
         creatorActionItems.push(indentMarkup(viewOnCivitaiAction, 24));
@@ -653,8 +653,8 @@ export async function showModelModal(model, modelType) {
     if (viewOnHuggingFaceAction) {
         creatorActionItems.push(indentMarkup(viewOnHuggingFaceAction, 24));
     }
-    if (creatorInfoAction) {
-        creatorActionItems.push(indentMarkup(creatorInfoAction, 24));
+    if (creatorChipMarkup) {
+        creatorActionItems.push(indentMarkup(creatorChipMarkup, 24));
     }
     const creatorActionsMarkup = creatorActionItems.length
         ? [
@@ -1087,6 +1087,12 @@ export async function showModelModal(model, modelType) {
     setupVersionNameEditing(modelWithFullData.file_path);
     setupBaseModelEditing(modelWithFullData.file_path);
     setupFileNameEditing(modelWithFullData.file_path);
+    setupCreatorEditing({
+        filePath: modelWithFullData.file_path,
+        modelType,
+        creator: modelWithFullData.civitai?.creator || null,
+        modalElement: document.getElementById(modalId),
+    });
     setupEventHandlers(modelWithFullData.file_path, modelType);
     setupNavigationShortcuts(modelType);
     updateNavigationControls();
@@ -1196,11 +1202,16 @@ function setupEventHandlers(filePath, modelType) {
                     openModelSource(target.dataset.sourceUrl);
                 }
                 break;
+            case 'edit-creator':
+            case 'add-creator':
+                modalElement._creatorPicker?.open(target);
+                break;
             case 'view-creator':
+                modalElement._creatorPicker?.close({ restoreFocus: false });
                 const username = target.dataset.username;
                 if (username) {
                     const host = state.global.settings.civitai_host || 'civitai.com';
-                    window.open(`https://${host}/user/${username}`, '_blank');
+                    window.open(`https://${host}/user/${encodeURIComponent(username)}`, '_blank');
                 }
                 break;
             case 'open-file-location':

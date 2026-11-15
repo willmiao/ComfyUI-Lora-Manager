@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 
 const {
   MODAL_MODULE,
@@ -111,6 +111,11 @@ function makeModel(overrides = {}) {
 }
 
 describe('Model modal source links (#1094)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.getElementById('modelModal')?._creatorPicker?.destroy?.();
+  });
+
   beforeEach(async () => {
     document.body.innerHTML = '';
     const { getModelApiClient } = await import(API_FACTORY);
@@ -224,5 +229,71 @@ describe('Model modal source links (#1094)', () => {
     const links = document.querySelectorAll('[data-action="view-model-source"]');
     expect(links.length).toBe(1);
     expect(links[0].dataset.sourceUrl).toBe('https://openmodeldb.info/models/1x-DeJPG');
+  });
+});
+
+describe('Model modal creator header chip', () => {
+  beforeEach(async () => {
+    document.body.innerHTML = '';
+    // The real browser resolves relative API URLs; jsdom's Node fetch needs
+    // an absolute one, so the picker's default fetch is stubbed here.
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ creators: [], total: 0 }),
+    })));
+    const { getModelApiClient } = await import(API_FACTORY);
+    getModelApiClient.mockReset();
+    getModelApiClient.mockReturnValue({
+      fetchModelMetadataWithStatus: vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false }),
+      saveModelMetadata: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    document.getElementById('modelModal')?._creatorPicker?.destroy?.();
+  });
+
+  async function renderModal(model) {
+    const { showModelModal } = await import(MODAL_MODULE);
+    await showModelModal(model, 'loras');
+  }
+
+  it('renders the add chip and opens the anchored picker from it', async () => {
+    await renderModal(makeModel({ civitai: {} }));
+
+    const addChip = document.querySelector('[data-action="add-creator"]');
+    expect(addChip).not.toBeNull();
+
+    addChip.click();
+
+    const popover = document.querySelector('.creator-popover');
+    expect(popover).not.toBeNull();
+    expect(document.activeElement).toBe(popover.querySelector('.creator-input'));
+    expect(addChip.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('keeps the familiar profile click and opens the picker only from the pencil', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    await renderModal(
+      makeModel({
+        civitai: { creator: { username: 'Lykon', image: null } },
+      })
+    );
+
+    const chip = document.querySelector('.creator-info[data-action="view-creator"]');
+    const pencil = document.querySelector('[data-action="edit-creator"]');
+    expect(chip).not.toBeNull();
+    expect(pencil).not.toBeNull();
+
+    chip.click();
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(openSpy.mock.calls[0][0]).toContain('/user/Lykon');
+    expect(document.querySelector('.creator-popover')).toBeNull();
+
+    pencil.click();
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('.creator-popover')).not.toBeNull();
   });
 });

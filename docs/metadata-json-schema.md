@@ -187,12 +187,13 @@ The `civitai` object stores the complete Civitai/CivArchive API response. Lora M
 
 ### Creator Fields (`civitai.creator.*`)
 
-Both fields are used by Lora Manager:
+These fields are used by Lora Manager:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `username` | string | Creator username (used for author display and search) |
-| `image` | string | Creator avatar URL (used for display) |
+| `image` | string\|null | Creator avatar URL (used for display) |
+| `source` | string | `"civitai"` for provider data, `"manual"` for a value entered in the model modal. Missing = legacy Civitai data. Manual creators are preserved by metadata refresh until the creator is removed. |
 
 ### Model Type Field (Top-Level, Outside `civitai`)
 

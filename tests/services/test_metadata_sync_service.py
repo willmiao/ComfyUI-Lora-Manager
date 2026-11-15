@@ -7,7 +7,11 @@ import pytest
 from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
 from py.services.errors import MetadataPersistError, RateLimitError
 from py.utils.constants import EMPTY_HASH_SHA256
-from py.services.metadata_sync_service import MetadataSyncService, _merge_ordered_unique
+from py.services.metadata_sync_service import (
+    MetadataSyncService,
+    _merge_ordered_unique,
+    normalize_creator_updates,
+)
 
 
 class DummySettings:
@@ -1330,3 +1334,110 @@ async def test_relink_keeps_the_existing_payload_values(tmp_path):
 
     assert result["sha256"] == "original"
     assert result["model_name"] == "Remote"
+
+def test_normalize_creator_updates_marks_manual_and_canonicalizes_whitespace() -> None:
+    updates = {
+        "civitai": {
+            "creator": {
+                "username": "  @Lykon  ",
+                "image": " https://example.com/avatar.png ",
+                "unexpected": "drop me",
+            }
+        },
+        "tags": ["style"],
+    }
+
+    normalized = normalize_creator_updates(updates)
+
+    assert normalized["civitai"]["creator"] == {
+        "username": "Lykon",
+        "image": "https://example.com/avatar.png",
+        "source": "manual",
+    }
+    assert normalized["tags"] == ["style"]
+    # The caller's nested payload is not mutated.
+    assert updates["civitai"]["creator"]["username"] == "  @Lykon  "
+
+
+def test_normalize_creator_updates_accepts_unicode_and_collapses_spaces() -> None:
+    normalized = normalize_creator_updates(
+        {"civitai": {"creator": {"username": "  miao\n  ai  "}}}
+    )
+    assert normalized["civitai"]["creator"]["username"] == "miao ai"
+    assert normalized["civitai"]["creator"]["source"] == "manual"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"civitai": "not-an-object"},
+        {"civitai": {"creator": "not-an-object"}},
+        {"civitai": {"creator": {"username": 123}}},
+        {"civitai": {"creator": {"username": "   "}}},
+        {"civitai": {"creator": {"username": "@@@"}}},
+        {"civitai": {"creator": {"username": "x" * 65}}},
+        {"civitai": {"creator": {"username": "bad\x00name"}}},
+    ],
+)
+def test_normalize_creator_updates_rejects_invalid_payloads(payload) -> None:
+    with pytest.raises(ValueError):
+        normalize_creator_updates(payload)
+
+
+@pytest.mark.asyncio
+async def test_save_metadata_updates_removes_creator_on_null() -> None:
+    helpers = build_service()
+    metadata = {
+        "civitai": {
+            "id": 1,
+            "creator": {"username": "Lykon", "source": "civitai"},
+        },
+        "tags": ["old"],
+    }
+
+    updated = await helpers.service.save_metadata_updates(
+        file_path="path/to/model.safetensors",
+        updates={"civitai": {"creator": None}},
+        metadata_loader=AsyncMock(return_value=metadata),
+        update_cache=AsyncMock(return_value=True),
+    )
+
+    assert updated["civitai"]["id"] == 1
+    assert "creator" not in updated["civitai"]
+    saved_payload = helpers.metadata_manager.save_metadata.await_args.args[1]
+    assert "creator" not in saved_payload["civitai"]
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_preserves_manual_creator() -> None:
+    helpers = build_service()
+    manual_creator = {
+        "username": "local_artist",
+        "image": None,
+        "source": "manual",
+    }
+    local = {
+        "civitai": {"creator": manual_creator, "trainedWords": ["alpha"]},
+        "model_name": "Local",
+    }
+    remote = {
+        "source": "api",
+        "files": [{"id": 1}],
+        "images": ["img"],
+        "trainedWords": ["beta"],
+        "model": {
+            "name": "Remote Model",
+            "creator": {"username": "Lykon", "image": "https://example.com/a.png"},
+        },
+        "baseModel": "sdxl",
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    assert result["civitai"]["creator"] == manual_creator
+    assert result["model_name"] == "Remote Model"
