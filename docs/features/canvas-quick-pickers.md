@@ -10,6 +10,12 @@ The full manager and canvas quick tools have separate primary entry points:
   **Quick LoRA Picker** and **Quick Recipe Picker** display their keybindings
   using ComfyUI's menu keybinding visual treatment; **Open LoRA Manager** remains
   available there too.
+- The menu's last item, **Settings**, opens ComfyUI's settings dialog on the
+  LoRA Manager category. These are ComfyUI settings — widget accent,
+  autocomplete, node labels, strength step, new tab template — not the manager
+  page's own settings modal. The short label is unambiguous because the menu
+  hangs off the LoRA Manager button; it does not claim to cover the manager
+  page's settings (API key, folders, downloads).
 - `Alt+L` toggles the Quick LoRA Picker through a registered ComfyUI command and
   keybinding; `Alt+R` toggles the Quick Recipe Picker the same way. These are
   defaults, not fixed shortcuts — see [Remapping shortcuts](#remapping-shortcuts).
@@ -160,6 +166,7 @@ it can contain entries such as:
 - Quick Recipe Picker
 - Quick Workflow Picker
 - Open LoRA Manager
+- Settings (opens ComfyUI's settings on the LoRA Manager category)
 
 The main button keeps its existing click behavior. New tools add menu items and
 registered commands, not more permanent buttons. A single chevron is preferable

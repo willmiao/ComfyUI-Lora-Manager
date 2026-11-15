@@ -5,19 +5,23 @@ const {
   STYLES_MODULE,
   CANVAS_API_MODULE,
   QUICK_PANEL_MODULE,
+  SETTINGS_DIALOG_MODULE,
   appMock,
   toggleQuickPanelMock,
   toggleRecipePanelMock,
   openManagerMock,
+  openComfyUISettingsMock,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL('../../../scripts/app.js', import.meta.url).pathname,
   STYLES_MODULE: new URL('../../../web/comfyui/lm_styles_loader.js', import.meta.url).pathname,
   CANVAS_API_MODULE: new URL('../../../web/comfyui/lora_canvas_api.js', import.meta.url).pathname,
   QUICK_PANEL_MODULE: new URL('../../../web/comfyui/lora_quick_panel.js', import.meta.url).pathname,
+  SETTINGS_DIALOG_MODULE: new URL('../../../web/comfyui/comfy_settings_dialog.js', import.meta.url).pathname,
   appMock: { extensionManager: undefined },
   toggleQuickPanelMock: vi.fn(),
   toggleRecipePanelMock: vi.fn(),
   openManagerMock: vi.fn(),
+  openComfyUISettingsMock: vi.fn(),
 }));
 
 vi.mock(APP_MODULE, () => ({ app: appMock }));
@@ -26,6 +30,9 @@ vi.mock(CANVAS_API_MODULE, () => ({ openLoraManagerHome: openManagerMock }));
 vi.mock(QUICK_PANEL_MODULE, () => ({
   toggleLoraQuickPanel: toggleQuickPanelMock,
   toggleRecipeQuickPanel: toggleRecipePanelMock,
+}));
+vi.mock(SETTINGS_DIALOG_MODULE, () => ({
+  openComfyUISettingsDialog: openComfyUISettingsMock,
 }));
 
 function createAnchor() {
@@ -129,11 +136,32 @@ describe('LoRA Manager Quick Actions menu', () => {
     const anchor = createAnchor();
     toggleQuickActionsMenu(anchor);
 
-    const items = document.querySelectorAll('[role="menuitem"]');
-    items[items.length - 1].click();
+    const items = [...document.querySelectorAll('[role="menuitem"]')];
+    items.find((item) => item.textContent.includes('Open LoRA Manager')).click();
 
     expect(openManagerMock).toHaveBeenCalledWith();
     expect(toggleQuickPanelMock).not.toHaveBeenCalled();
+    expect(openComfyUISettingsMock).not.toHaveBeenCalled();
+  });
+
+  it('opens ComfyUI settings from the last menu item, after its own divider', async () => {
+    const { toggleQuickActionsMenu } = await import('../../../web/comfyui/quick_actions_menu.js');
+    const anchor = createAnchor();
+    toggleQuickActionsMenu(anchor);
+
+    const menu = document.querySelector('.lm-quick-actions-menu');
+    const items = [...menu.querySelectorAll('[role="menuitem"]')];
+    const settingsItem = items.find((item) => item.textContent === 'Settings');
+    expect(settingsItem).toBeDefined();
+
+    // Two dividers: quick tools | manager | settings.
+    expect(menu.querySelectorAll('.lm-quick-actions-menu__divider')).toHaveLength(2);
+    expect(items.indexOf(settingsItem)).toBe(items.length - 1);
+
+    settingsItem.click();
+    expect(openComfyUISettingsMock).toHaveBeenCalledOnce();
+    expect(openManagerMock).not.toHaveBeenCalled();
+    expect(document.querySelector('.lm-quick-actions-menu')).toBeNull();
   });
 
   it('closes on Escape and restores focus to the chevron', async () => {

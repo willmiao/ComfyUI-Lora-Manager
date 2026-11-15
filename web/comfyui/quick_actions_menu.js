@@ -1,4 +1,5 @@
 import { ensureLmStyles } from "./lm_styles_loader.js";
+import { openComfyUISettingsDialog } from "./comfy_settings_dialog.js";
 import { openLoraManagerHome } from "./lora_canvas_api.js";
 import { toggleLoraQuickPanel, toggleRecipeQuickPanel } from "./lora_quick_panel.js";
 import { COMMAND_IDS, getCommandShortcutLabel } from "./shortcuts.js";
@@ -38,6 +39,12 @@ function createMenuItem(label, shortcut, action) {
   return button;
 }
 
+function createDivider() {
+  const divider = document.createElement("div");
+  divider.className = "lm-quick-actions-menu__divider";
+  return divider;
+}
+
 export function toggleQuickActionsMenu(anchor) {
   if (activeMenu) {
     closeQuickActionsMenu();
@@ -62,10 +69,14 @@ export function toggleQuickActionsMenu(anchor) {
     getCommandShortcutLabel(COMMAND_IDS.quickRecipePicker),
     toggleRecipeQuickPanel,
   ));
-  const divider = document.createElement("div");
-  divider.className = "lm-quick-actions-menu__divider";
-  element.appendChild(divider);
+  element.appendChild(createDivider());
   element.appendChild(createMenuItem("Open LoRA Manager", "", () => openLoraManagerHome()));
+  // These settings are ComfyUI's: the LoRA Manager ones that live in ComfyUI's
+  // settings dialog (widget accent, autocomplete, node labels, ...), not the
+  // manager page's own settings. The chevron is attached to the LoRA Manager
+  // button, so the short label is unambiguous here.
+  element.appendChild(createDivider());
+  element.appendChild(createMenuItem("Settings", "", () => void openComfyUISettingsDialog()));
   document.body.appendChild(element);
 
   const anchorRect = anchor.getBoundingClientRect();
