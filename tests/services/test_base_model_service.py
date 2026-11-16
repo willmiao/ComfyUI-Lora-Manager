@@ -975,6 +975,211 @@ async def test_version_grouping_value_is_normalized(strategy_value):
 
 
 @pytest.mark.asyncio
+async def test_group_by_model_search_matches_alternate_version():
+    """Issue #1210 follow-up: a grouped card must stay findable by any local
+    version's file name, and the matching version becomes the card."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "file_name": "lora-MMH3-Huge_Breasts_v1.0.safetensors",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "file_name": "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        search="BigSloppyTits",
+        group_by_model=True,
+    )
+
+    assert response["total"] == 1
+    item = response["items"][0]
+    assert item["file_name"] == "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors"
+    assert item["version_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_search_matches_alternate_version_hash():
+    """Hash search is version-specific, so it must reach alternates too."""
+    alt_hash = "b" * 64
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "file_name": "lora-MMH3-Huge_Breasts_v1.0.safetensors",
+            "base_model": "MiniMax H3",
+            "sha256": "a" * 64,
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "file_name": "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors",
+            "base_model": "LTXV 2.3",
+            "sha256": alt_hash,
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        search=alt_hash,
+        group_by_model=True,
+    )
+
+    assert response["total"] == 1
+    assert response["items"][0]["sha256"] == alt_hash
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_search_respects_search_options():
+    """The pre-group search pass uses the same options as the regular pass, so
+    a term confined to the file name stays filtered out when filename search is
+    disabled."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "file_name": "lora-MMH3-Huge_Breasts_v1.0.safetensors",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "file_name": "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        search="BigSloppyTits",
+        search_options={"filename": False, "modelname": True},
+        group_by_model=True,
+    )
+
+    assert response["items"] == []
+    assert response["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_search_and_base_filter_must_both_match():
+    """Group-aware filters are ANDed: the representative must satisfy the
+    search term *and* the base-model filter, so a group that only has one
+    version per criterion is not returned."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "file_name": "lora-MMH3-Huge_Breasts_v1.0.safetensors",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "file_name": "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        search="MiniMax",
+        base_models=["LTXV 2.3"],
+        group_by_model=True,
+    )
+
+    assert response["items"] == []
+    assert response["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_search_same_base_mode_unchanged():
+    """same_base grouping already isolates the versions: searching an alternate
+    file name returns that version's own card."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "file_name": "lora-MMH3-Huge_Breasts_v1.0.safetensors",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "file_name": "lora-BigSloppyTits_LTXV2.3_v3.0.safetensors",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "same_base"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        search="BigSloppyTits",
+        group_by_model=True,
+    )
+
+    assert response["total"] == 1
+    item = response["items"][0]
+    assert item["base_model"] == "LTXV 2.3"
+    assert item["version_count"] == 1
+
+
+@pytest.mark.asyncio
 async def test_get_paginated_data_versions_count_non_grouped_desc():
     """Non-grouped, versions_count:desc — groups by model, sorts by count desc,
     within-group by version id desc, then flattens."""

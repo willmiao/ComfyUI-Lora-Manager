@@ -137,36 +137,54 @@ class BaseModelService(ABC):
             # stay consistent (card shows correct count for its base model).
             group_by_base = self._resolve_version_grouping() == "same_base"
 
-            # An active base-model filter must not drop a group whose
-            # *representative* has another base model: the card stands for the
-            # whole model, and the user asked for models usable with that base
-            # model. Let matching versions compete for the representative slot
-            # while still counting every version, so the "N versions" badge
-            # keeps its meaning. See issue #1210.
+            # Group-aware filters must see every local version: a card stands
+            # for the whole model, so a base-model or search match on a version
+            # hidden behind the newest one must keep the card — and that
+            # matching version should be the one shown. Narrow the candidates
+            # for the representative slot, but keep counting every version so
+            # the "N versions" badge keeps the model's total.
+            # Only the filters evaluated here are group-aware; the remaining
+            # criteria (folder, tags, favorites, license, ...) still run against
+            # the chosen representative in the pipeline below.
             # ``hash_filters`` bypass the common filter pipeline below, so only
-            # narrow groups when the filter will actually be applied.
+            # narrow when those filters will actually be applied.
+            # See issue #1210.
             base_model_filter = (
                 set(base_models)
                 if base_models and not hash_filters
                 else set()
             )
+            candidates = sorted_data
+            if base_model_filter:
+                candidates = [
+                    item
+                    for item in candidates
+                    if item.get("base_model") in base_model_filter
+                ]
+            if search and not hash_filters:
+                candidates = self.search_strategy.apply(
+                    candidates,
+                    search,
+                    self.search_strategy.normalize_options(search_options),
+                    fuzzy_search,
+                )
 
-            dedup_map = {}  # (modelId [,base_model]) -> (item, version_or_modified)
-            version_counter = {}  # same-key -> count
-            standalone = []
+            version_counter = {}  # group key -> version count (all versions)
+            grouped_items = 0
             for item in sorted_data:
-                mid = self._extract_group_key(item)
-                if mid is None:
-                    standalone.append(item)
+                key = self._group_key(item, group_by_base)
+                if key is None:
                     continue
-                key = (mid, item.get("base_model") or "") if group_by_base else mid
-                # Count all versions per key
+                grouped_items += 1
                 version_counter[key] = version_counter.get(key, 0) + 1
-                if (
-                    base_model_filter
-                    and item.get("base_model") not in base_model_filter
-                ):
-                    # Still counted above; just not eligible to represent the group.
+            dedup_lost = grouped_items - len(version_counter)
+
+            dedup_map = {}  # group key -> (representative, version_or_modified)
+            standalone = []
+            for item in candidates:
+                key = self._group_key(item, group_by_base)
+                if key is None:
+                    standalone.append(item)
                     continue
                 # Prefer CivitAI version_id; fall back to modified timestamp
                 vid = self._extract_version_id(item)
@@ -180,7 +198,6 @@ class BaseModelService(ABC):
                 item = dict(item)
                 item["version_count"] = version_counter[key]
                 dedup_map[key] = (item, vid)
-            dedup_lost = len(sorted_data) - (len(dedup_map) + len(standalone))
             sorted_data = [entry[0] for entry in dedup_map.values()] + standalone
 
         # Re-sort by version_count (grouped: after dedup; non-grouped: group internally, sort, expand)
@@ -204,11 +221,10 @@ class BaseModelService(ABC):
                 model_groups: Dict[Any, List[Dict[str, Any]]] = {}
                 ungrouped_standalone: List[Dict[str, Any]] = []
                 for item in sorted_data:
-                    mid = self._extract_group_key(item)
-                    if mid is None:
+                    key = self._group_key(item, group_by_base)
+                    if key is None:
                         ungrouped_standalone.append(item)
                         continue
-                    key = (mid, item.get("base_model") or "") if group_by_base else mid
                     model_groups.setdefault(key, []).append(item)
                 # Sort versions within each group by version id (descending);
                 # fall back to modified timestamp for non-CivitAI sources.
@@ -793,6 +809,18 @@ class BaseModelService(ABC):
         if mid is not None:
             return mid
         return BaseModelService._extract_source_group_key(item)
+
+    def _group_key(self, item: Dict[str, Any], group_by_base: bool) -> Any:
+        """Return the version-group key for *item*, or ``None`` when ungrouped.
+
+        With ``group_by_base`` the base model is part of the identity, so
+        versions for different base models are distinct cards; otherwise the
+        model identity alone decides the group.
+        """
+        mid = self._extract_group_key(item)
+        if mid is None:
+            return None
+        return (mid, item.get("base_model") or "") if group_by_base else mid
 
     @staticmethod
     def _extract_model_id(item: Dict[str, Any]) -> Optional[int]:
