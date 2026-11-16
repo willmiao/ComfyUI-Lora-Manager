@@ -123,6 +123,44 @@ def _workflows_disabled_response() -> Dict[str, Any]:
     }
 
 
+def _is_generation_only_version(
+    version_info: Dict[str, Any], source: str | None = None
+) -> bool:
+    """True when CivitAI only permits on-site generation for this version.
+
+    ``usageControl`` is a creator-side setting ("Download" / "Generation" /
+    "InternalGeneration") and is independent of the viewer's paid access. A
+    Generation-Only version can never be downloaded — probing it only earns a
+    misleading 401/403 that the generic error path reports as an early-access
+    paywall. CivArchive has no equivalent field, so its source is exempt.
+    """
+    if source == "civarchive":
+        return False
+    usage_control = str(version_info.get("usageControl") or "").strip().lower()
+    if usage_control not in ("generation", "internalgeneration"):
+        return False
+    # The public model-version API does not expose the viewer's canDownload,
+    # but an authenticated response may; never override an explicit allowance
+    # (e.g. the creator downloading their own model).
+    return version_info.get("canDownload") is not True
+
+
+def _generation_only_response() -> Dict[str, Any]:
+    """Structured rejection for a Generation-Only version.
+
+    The machine-readable ``reason`` is consumed by the companion browser
+    extension, which localizes it; keep the value stable.
+    """
+    return {
+        "success": False,
+        "error": (
+            "This model version is Generation-Only on Civitai and cannot be "
+            "downloaded."
+        ),
+        "reason": "generation_only",
+    }
+
+
 @dataclass
 class _PathSlot:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -1903,6 +1941,17 @@ class DownloadManager:
                     # the structured 429 so the download is re-queued, not failed.
                     raise civarchive_rate_limit
                 return {"success": False, "error": "Failed to fetch model metadata"}
+
+            # A Generation-Only version cannot be downloaded at all. Refuse
+            # before any file selection / download work: the metadata fetch
+            # above already supplied usageControl, so this costs no extra
+            # CivitAI request and avoids a misleading 401/403 later.
+            if _is_generation_only_version(version_info, source=source):
+                logger.info(
+                    "Download refused: model version %s is Generation-Only on Civitai",
+                    version_info.get("id") or model_version_id,
+                )
+                return _generation_only_response()
 
             model_type_from_info = version_info.get("model", {}).get("type", "").lower()
 
