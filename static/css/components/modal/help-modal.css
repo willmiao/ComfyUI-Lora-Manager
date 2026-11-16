@@ -220,37 +220,6 @@
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Update date badge styles */
-.update-date-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.75em;
-  font-weight: 500;
-  background-color: var(--lora-accent);
-  color: var(--text-on-accent);
-  padding: 4px 8px;
-  border-radius: 12px;
-  margin-left: 10px;
-  vertical-align: middle;
-  animation: fadeIn 0.5s ease-in-out;
-  box-shadow: var(--shadow-md);
-}
-
-.update-date-badge i {
-  margin-right: 5px;
-  font-size: 0.9em;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Dark theme adjustments */
-[data-theme="dark"] .update-date-badge {
-  box-shadow: var(--shadow-md);
-}
-
 /* Privacy-friendly video embed styles */
 .video-container {
   position: relative;
@@ -330,6 +299,10 @@
 }
 /* Replay tutorial button styles */
 .help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   margin-top: var(--space-3);
 }
 

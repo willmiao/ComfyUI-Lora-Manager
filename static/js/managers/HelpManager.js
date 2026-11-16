@@ -139,9 +139,8 @@ export class HelpManager {
     updateNewContentTabIndicators() {
         if (!this.hasNewContent()) return;
 
-        // Tabs updated in the 2026-09-03 discoverability release:
-        // getting-started (Replay Tutorial button) and shortcuts (new cheat-sheet tab)
-        const NEW_CONTENT_TABS = ['getting-started', 'shortcuts'];
+        // Tabs updated in the 2026-11-16 documentation refresh.
+        const NEW_CONTENT_TABS = ['getting-started', 'documentation'];
         NEW_CONTENT_TABS.forEach(tabId => {
             const tab = document.querySelector(`.help-tabs .tab-btn[data-tab="${tabId}"]`);
             if (tab) {

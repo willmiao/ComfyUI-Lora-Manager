@@ -2668,12 +2668,20 @@
     "title": "Help & Tutorials",
     "tabs": {
       "gettingStarted": "Getting Started",
-      "updateVlogs": "Update Vlogs",
+      "updates": "Updates",
       "documentation": "Documentation",
       "shortcuts": "Shortcuts"
     },
     "gettingStarted": {
       "title": "Getting Started with LoRA Manager",
+      "stepsTitle": "First steps",
+      "steps": {
+        "configure": "Configure your model folders and add a CivitAI API key if you plan to download models.",
+        "find": "Find a model by browsing folders or searching names, tags, and trigger words.",
+        "send": "Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
+        "refresh": "Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+      },
+      "readGuide": "Open the Getting Started guide",
       "replayTutorial": "Replay Tutorial"
     },
     "shortcuts": {
@@ -2719,17 +2727,26 @@
       "title": "Latest Updates",
       "watchOnYouTube": "Watch on YouTube",
       "playlistTitle": "LoRA Manager Updates Playlist",
-      "playlistDescription": "Watch all update videos showcasing the latest features and improvements."
+      "playlistDescription": "Watch all update videos showcasing the latest features and improvements.",
+      "releaseNotes": "Read release notes on GitHub"
     },
     "documentation": {
       "title": "Documentation",
-      "general": "General",
+      "startSupport": "Start & Support",
+      "workingWithAssets": "Working with Assets",
+      "integrationConfiguration": "Integration & Configuration",
+      "gettingStarted": "Getting Started",
+      "faq": "FAQ",
       "troubleshooting": "Troubleshooting",
-      "modelManagement": "Model Management",
+      "modelLibrary": "Model Library",
+      "downloadsOrganization": "Downloading and Organizing Models",
       "recipes": "Recipes",
-      "settings": "Settings & Configuration",
-      "extensions": "Extensions",
-      "newBadge": "NEW"
+      "workflowLibrary": "Workflow Library",
+      "comfyuiIntegration": "ComfyUI Integration",
+      "configuration": "Configuration",
+      "loraSyntax": "LoRA Syntax and Duplicate Filenames",
+      "browserExtension": "LM Civitai Extension",
+      "browseAll": "Browse all documentation"
     },
     "newContentBadge": "New"
   },

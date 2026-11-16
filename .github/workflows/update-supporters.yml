@@ -1,4 +1,4 @@
-name: Update Supporters in README
+name: Update Supporters
 
 on:
   push:
@@ -6,26 +6,26 @@ on:
       - 'data/supporters.json'
     branches:
       - main
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
-  update-readme:
+  update-supporters:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          
-      - name: Update README
+
+      - name: Generate supporter recognition page
         run: python scripts/update_supporters.py
-        
+
       - name: Commit and push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: auto-update supporters list in README"
-          file_pattern: "README.md"
+          commit_message: "docs: auto-update supporters list"
+          file_pattern: "SUPPORTERS.md"

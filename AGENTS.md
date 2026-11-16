@@ -231,6 +231,14 @@ The system runs in two modes:
 - Widget registration: `app.registerExtension()` and `getCustomWidgets` hooks; `node.addDOMWidget(...)` embeds HTML in LiteGraph nodes
 - See `docs/dom_widget_dev_guide.md` for the DOMWidget development guide
 
+### Documentation
+
+- `README.md` is the project landing page and quick-start summary, not the full user manual.
+- The GitHub Wiki (`willmiao/ComfyUI-Lora-Manager.wiki`) is the canonical source for complete user guides, FAQs, and troubleshooting. Its `Home.md` and `_Sidebar.md` form the shared navigation.
+- `docs/` contains versioned technical references, node integration contracts, architecture notes, development plans, and `docs/development.md` for test commands.
+- The in-app Help modal and contextual Settings links point to canonical Wiki guides instead of duplicating detailed instructions.
+- When moving or renaming a Wiki page, update README links, `templates/components/modals/help_modal.html`, contextual Settings links, and Wiki navigation together. Check links against a local Wiki clone when available.
+
 ## Testing
 
 ### Backend (pytest)

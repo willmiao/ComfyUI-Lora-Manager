@@ -2668,12 +2668,20 @@
         "title": "說明與教學",
         "tabs": {
             "gettingStarted": "快速開始",
-            "updateVlogs": "更新影片",
+            "updates": "[TODO: Translate] Updates",
             "documentation": "文件",
             "shortcuts": "快捷鍵"
         },
         "gettingStarted": {
             "title": "LoRA 管理器快速開始",
+            "stepsTitle": "[TODO: Translate] First steps",
+            "steps": {
+                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
+                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
+                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
+                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+            },
+            "readGuide": "[TODO: Translate] Open the Getting Started guide",
             "replayTutorial": "重新播放教學"
         },
         "shortcuts": {
@@ -2719,17 +2727,26 @@
             "title": "最新更新",
             "watchOnYouTube": "在 YouTube 觀看",
             "playlistTitle": "LoRA 管理器更新影片清單",
-            "playlistDescription": "觀看所有展示最新功能與改進的更新影片。"
+            "playlistDescription": "觀看所有展示最新功能與改進的更新影片。",
+            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
         },
         "documentation": {
             "title": "文件",
-            "general": "一般",
+            "startSupport": "[TODO: Translate] Start & Support",
+            "workingWithAssets": "[TODO: Translate] Working with Assets",
+            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
+            "gettingStarted": "[TODO: Translate] Getting Started",
+            "faq": "[TODO: Translate] FAQ",
             "troubleshooting": "疑難排解",
-            "modelManagement": "模型管理",
+            "modelLibrary": "[TODO: Translate] Model Library",
+            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
             "recipes": "配方",
-            "settings": "設定與配置",
-            "extensions": "擴充功能",
-            "newBadge": "新"
+            "workflowLibrary": "[TODO: Translate] Workflow Library",
+            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
+            "configuration": "[TODO: Translate] Configuration",
+            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
+            "browserExtension": "[TODO: Translate] LM Civitai Extension",
+            "browseAll": "[TODO: Translate] Browse all documentation"
         },
         "newContentBadge": "新"
     },

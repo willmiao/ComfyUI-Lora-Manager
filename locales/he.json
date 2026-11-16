@@ -2668,12 +2668,20 @@
         "title": "עזרה ומדריכים",
         "tabs": {
             "gettingStarted": "תחילת עבודה",
-            "updateVlogs": "בלוגי וידאו של עדכונים",
+            "updates": "[TODO: Translate] Updates",
             "documentation": "תיעוד",
             "shortcuts": "קיצורי דרך"
         },
         "gettingStarted": {
             "title": "תחילת עבודה עם מנהל LoRA",
+            "stepsTitle": "[TODO: Translate] First steps",
+            "steps": {
+                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
+                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
+                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
+                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+            },
+            "readGuide": "[TODO: Translate] Open the Getting Started guide",
             "replayTutorial": "הפעל את המדריך מחדש"
         },
         "shortcuts": {
@@ -2719,17 +2727,26 @@
             "title": "עדכונים אחרונים",
             "watchOnYouTube": "צפה ביוטיוב",
             "playlistTitle": "פלייליסט עדכוני מנהל LoRA",
-            "playlistDescription": "צפה בכל סרטוני העדכונים המציגים את התכונות והשיפורים האחרונים."
+            "playlistDescription": "צפה בכל סרטוני העדכונים המציגים את התכונות והשיפורים האחרונים.",
+            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
         },
         "documentation": {
             "title": "תיעוד",
-            "general": "כללי",
+            "startSupport": "[TODO: Translate] Start & Support",
+            "workingWithAssets": "[TODO: Translate] Working with Assets",
+            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
+            "gettingStarted": "[TODO: Translate] Getting Started",
+            "faq": "[TODO: Translate] FAQ",
             "troubleshooting": "פתרון בעיות",
-            "modelManagement": "ניהול מודלים",
+            "modelLibrary": "[TODO: Translate] Model Library",
+            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
             "recipes": "מתכונים",
-            "settings": "הגדרות ותצורה",
-            "extensions": "הרחבות",
-            "newBadge": "חדש"
+            "workflowLibrary": "[TODO: Translate] Workflow Library",
+            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
+            "configuration": "[TODO: Translate] Configuration",
+            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
+            "browserExtension": "[TODO: Translate] LM Civitai Extension",
+            "browseAll": "[TODO: Translate] Browse all documentation"
         },
         "newContentBadge": "חדש"
     },

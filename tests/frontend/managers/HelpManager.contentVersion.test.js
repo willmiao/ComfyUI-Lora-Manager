@@ -12,6 +12,7 @@ function setupDom({ versionMarker = null } = {}) {
         <div id="helpModal" class="modal"${markerAttr}>
             <div class="help-tabs">
                 <button class="tab-btn" data-tab="getting-started"></button>
+                <button class="tab-btn" data-tab="documentation"></button>
                 <button class="tab-btn" data-tab="shortcuts"></button>
             </div>
             <div class="tab-pane active" id="getting-started">
@@ -116,14 +117,15 @@ describe('HelpManager content-version badge logic', () => {
         delete window.modalManager;
     });
 
-    it('adds new-content indicators to the getting-started and shortcuts tabs', () => {
-        setupDom({ versionMarker: '2026-09-03' });
+    it('adds new-content indicators to the getting-started and documentation tabs', () => {
+        setupDom({ versionMarker: '2026-11-16' });
         const manager = new HelpManager();
 
         manager.updateNewContentTabIndicators();
 
         expect(document.querySelector('.help-tabs .tab-btn[data-tab="getting-started"]').classList.contains('has-new-content')).toBe(true);
-        expect(document.querySelector('.help-tabs .tab-btn[data-tab="shortcuts"]').classList.contains('has-new-content')).toBe(true);
+        expect(document.querySelector('.help-tabs .tab-btn[data-tab="documentation"]').classList.contains('has-new-content')).toBe(true);
+        expect(document.querySelector('.help-tabs .tab-btn[data-tab="shortcuts"]').classList.contains('has-new-content')).toBe(false);
     });
 
     it('flags the Replay Tutorial button and scrolls it into view', () => {

@@ -2668,12 +2668,20 @@
         "title": "도움말 & 튜토리얼",
         "tabs": {
             "gettingStarted": "시작하기",
-            "updateVlogs": "업데이트 영상",
+            "updates": "[TODO: Translate] Updates",
             "documentation": "문서",
             "shortcuts": "단축키"
         },
         "gettingStarted": {
             "title": "LoRA Manager 시작하기",
+            "stepsTitle": "[TODO: Translate] First steps",
+            "steps": {
+                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
+                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
+                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
+                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+            },
+            "readGuide": "[TODO: Translate] Open the Getting Started guide",
             "replayTutorial": "튜토리얼 다시 보기"
         },
         "shortcuts": {
@@ -2719,17 +2727,26 @@
             "title": "최신 업데이트",
             "watchOnYouTube": "YouTube에서 보기",
             "playlistTitle": "LoRA Manager 업데이트 재생목록",
-            "playlistDescription": "최신 기능과 개선사항을 보여주는 모든 업데이트 비디오를 시청하세요."
+            "playlistDescription": "최신 기능과 개선사항을 보여주는 모든 업데이트 비디오를 시청하세요.",
+            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
         },
         "documentation": {
             "title": "문서",
-            "general": "일반",
+            "startSupport": "[TODO: Translate] Start & Support",
+            "workingWithAssets": "[TODO: Translate] Working with Assets",
+            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
+            "gettingStarted": "[TODO: Translate] Getting Started",
+            "faq": "[TODO: Translate] FAQ",
             "troubleshooting": "문제 해결",
-            "modelManagement": "모델 관리",
+            "modelLibrary": "[TODO: Translate] Model Library",
+            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
             "recipes": "레시피",
-            "settings": "설정 & 구성",
-            "extensions": "확장",
-            "newBadge": "신규"
+            "workflowLibrary": "[TODO: Translate] Workflow Library",
+            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
+            "configuration": "[TODO: Translate] Configuration",
+            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
+            "browserExtension": "[TODO: Translate] LM Civitai Extension",
+            "browseAll": "[TODO: Translate] Browse all documentation"
         },
         "newContentBadge": "신규"
     },
