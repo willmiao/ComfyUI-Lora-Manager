@@ -1,6 +1,6 @@
 [project]
 name = "comfyui-lora-manager"
-description = "A visual model, recipe, and workflow manager for ComfyUI."
+description = "Revolutionize your workflow with the ultimate LoRA companion for ComfyUI!"
 version = "1.2.9"
 license = {file = "LICENSE"}
 dependencies = [
