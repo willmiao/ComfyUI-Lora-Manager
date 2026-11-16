@@ -819,6 +819,162 @@ async def test_get_paginated_data_group_by_model_dedup():
 
 
 @pytest.mark.asyncio
+async def test_group_by_model_base_filter_prefers_matching_version():
+    """Issue #1210: with version_grouping=any the grouped card must survive a
+    base-model filter when *any* local version matches, and the matching
+    version must become the card's representative."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778, "baseModel": "MiniMax H3"},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430, "baseModel": "LTXV 2.3"},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        group_by_model=True,
+        base_models=["LTXV 2.3"],
+    )
+
+    assert response["total"] == 1
+    item = response["items"][0]
+    assert item["base_model"] == "LTXV 2.3"
+    assert item["civitai"]["id"] == 3153430
+    # The card still stands for the whole model, so the badge keeps its count.
+    assert item["version_count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_base_filter_drops_group_without_match():
+    """A group with no local version for the filtered base model stays hidden."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "any"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        group_by_model=True,
+        base_models=["SDXL 1.0"],
+    )
+
+    assert response["items"] == []
+    assert response["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_group_by_model_base_filter_same_base_mode_unchanged():
+    """same_base grouping already yields one card per base model: filtering by
+    that base model returns the card with its per-base version count."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": "same_base"})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        group_by_model=True,
+        base_models=["LTXV 2.3"],
+    )
+
+    assert response["total"] == 1
+    item = response["items"][0]
+    assert item["base_model"] == "LTXV 2.3"
+    assert item["version_count"] == 1
+
+
+@pytest.mark.parametrize("strategy_value", [" Same_Base ", "SAME_BASE", "", None])
+@pytest.mark.asyncio
+async def test_version_grouping_value_is_normalized(strategy_value):
+    """Grouping must interpret the stored strategy like the update-badge scope:
+    trimmed, case-insensitive, falling back to the default for garbage values."""
+    items = [
+        {
+            "model_name": "Huge Breasts (MiniMax)",
+            "base_model": "MiniMax H3",
+            "civitai": {"modelId": 1890652, "id": 3220778},
+        },
+        {
+            "model_name": "Huge Breasts (LTXV)",
+            "base_model": "LTXV 2.3",
+            "civitai": {"modelId": 1890652, "id": 3153430},
+        },
+    ]
+    settings = StubSettings({"version_grouping": strategy_value})
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        group_by_model=True,
+    )
+
+    assert {item["base_model"] for item in response["items"]} == {
+        "MiniMax H3",
+        "LTXV 2.3",
+    }
+
+
+@pytest.mark.asyncio
 async def test_get_paginated_data_versions_count_non_grouped_desc():
     """Non-grouped, versions_count:desc — groups by model, sorts by count desc,
     within-group by version id desc, then flattens."""

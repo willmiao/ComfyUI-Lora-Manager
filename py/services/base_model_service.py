@@ -135,8 +135,21 @@ class BaseModelService(ABC):
             # base models are effectively different groups — the dedup key
             # needs to include base_model so the version count and VLM flow
             # stay consistent (card shows correct count for its base model).
-            ufs = self.settings.get("version_grouping", "same_base")
-            group_by_base = ufs == "same_base"
+            group_by_base = self._resolve_version_grouping() == "same_base"
+
+            # An active base-model filter must not drop a group whose
+            # *representative* has another base model: the card stands for the
+            # whole model, and the user asked for models usable with that base
+            # model. Let matching versions compete for the representative slot
+            # while still counting every version, so the "N versions" badge
+            # keeps its meaning. See issue #1210.
+            # ``hash_filters`` bypass the common filter pipeline below, so only
+            # narrow groups when the filter will actually be applied.
+            base_model_filter = (
+                set(base_models)
+                if base_models and not hash_filters
+                else set()
+            )
 
             dedup_map = {}  # (modelId [,base_model]) -> (item, version_or_modified)
             version_counter = {}  # same-key -> count
@@ -149,6 +162,12 @@ class BaseModelService(ABC):
                 key = (mid, item.get("base_model") or "") if group_by_base else mid
                 # Count all versions per key
                 version_counter[key] = version_counter.get(key, 0) + 1
+                if (
+                    base_model_filter
+                    and item.get("base_model") not in base_model_filter
+                ):
+                    # Still counted above; just not eligible to represent the group.
+                    continue
                 # Prefer CivitAI version_id; fall back to modified timestamp
                 vid = self._extract_version_id(item)
                 if vid is None:
@@ -180,8 +199,7 @@ class BaseModelService(ABC):
             else:
                 # Non-grouped mode: group internally, sort groups by count, expand
                 # Respect the version_grouping setting (same logic as grouped dedup)
-                ufs = self.settings.get("version_grouping", "same_base")
-                group_by_base = ufs == "same_base"
+                group_by_base = self._resolve_version_grouping() == "same_base"
 
                 model_groups: Dict[Any, List[Dict[str, Any]]] = {}
                 ungrouped_standalone: List[Dict[str, Any]] = []
@@ -633,12 +651,7 @@ class BaseModelService(ABC):
         if not ordered_ids:
             return annotated
 
-        strategy_value = self.settings.get("version_grouping")
-        if isinstance(strategy_value, str) and strategy_value.strip():
-            strategy = strategy_value.strip().lower()
-        else:
-            strategy = "same_base"
-        same_base_mode = strategy == "same_base"
+        same_base_mode = self._resolve_version_grouping() == "same_base"
 
         # Check user setting for hiding early access updates
         hide_early_access = False
@@ -835,6 +848,20 @@ class BaseModelService(ABC):
             except Exception:
                 return None
         return candidate.lower() if candidate else None
+
+    def _resolve_version_grouping(self) -> str:
+        """Return the normalized ``version_grouping`` strategy.
+
+        The value is stored as-is in ``settings.json``, so legacy or hand-edited
+        entries can carry surrounding whitespace or a different case. List
+        grouping, the ``versions_count`` sort and the update-badge scope must
+        all interpret the strategy the same way, hence one normalize helper.
+        Anything that is not a usable string falls back to ``same_base``.
+        """
+        value = self.settings.get("version_grouping", "same_base")
+        if isinstance(value, str) and value.strip():
+            return value.strip().lower()
+        return "same_base"
 
     def _build_highest_local_versions_by_base(self, record) -> Dict[str, int]:
         """Return the highest local version id known for each normalized base model."""
