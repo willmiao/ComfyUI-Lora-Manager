@@ -2650,7 +2650,6 @@
         "closeModal": "Close modal / panel",
         "openShortcuts": "Open this shortcuts panel",
         "refresh": "Refresh model list",
-        "fetchMetadata": "Fetch metadata from CivitAI (model pages only)",
         "downloadModel": "Download a model (model pages only)",
         "toggleBulkMode": "Toggle bulk mode",
         "selectAll": "Select all visible models",

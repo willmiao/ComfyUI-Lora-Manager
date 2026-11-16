@@ -2650,7 +2650,6 @@
                 "closeModal": "Fermer la fenêtre modale / le panneau",
                 "openShortcuts": "Ouvrir ce panneau de raccourcis",
                 "refresh": "Actualiser la liste des modèles",
-                "fetchMetadata": "Récupérer les métadonnées depuis CivitAI (pages de modèles uniquement)",
                 "downloadModel": "Télécharger un modèle (pages de modèles uniquement)",
                 "toggleBulkMode": "Activer/désactiver le mode groupé",
                 "selectAll": "Sélectionner tous les modèles visibles",

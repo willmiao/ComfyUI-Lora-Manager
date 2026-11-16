@@ -166,13 +166,13 @@ export class PageControls {
         // Page-specific event listeners
         this.initPageSpecificListeners();
 
-        // Keyboard shortcuts for the actions toolbar (R / F / D)
+        // Keyboard shortcuts for the actions toolbar (R / D)
         this.registerKeyboardShortcuts();
     }
 
     /**
      * Register keyboard shortcuts for the actions toolbar buttons
-     * (R = refresh, F = fetch metadata, D = download)
+     * (R = refresh, D = download)
      */
     registerKeyboardShortcuts() {
         registerActionShortcuts();

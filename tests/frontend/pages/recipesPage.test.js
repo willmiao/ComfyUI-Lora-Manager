@@ -372,7 +372,8 @@ describe('RecipeManager', () => {
     expect(entry.handler(keydownEvent('r', document.createElement('input')))).toBe(false);
     expect(refreshRecipesMock).not.toHaveBeenCalled();
 
-    // Recipes has no fetch/download buttons, so F / D pass through
+    // F is never a shortcut (left to the browser's find bar), and recipes has
+    // no download button, so D passes through too
     expect(entry.handler(keydownEvent('f', document.body))).toBe(false);
     expect(entry.handler(keydownEvent('d', document.body))).toBe(false);
   });

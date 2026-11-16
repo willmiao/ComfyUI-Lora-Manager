@@ -2650,7 +2650,6 @@
                 "closeModal": "Dialog / Panel schließen",
                 "openShortcuts": "Dieses Tastenkürzel-Panel öffnen",
                 "refresh": "Modellliste aktualisieren",
-                "fetchMetadata": "Metadaten von CivitAI abrufen (nur Modellseiten)",
                 "downloadModel": "Ein Modell herunterladen (nur Modellseiten)",
                 "toggleBulkMode": "Massenmodus umschalten",
                 "selectAll": "Alle sichtbaren Modelle auswählen",

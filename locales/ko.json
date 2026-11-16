@@ -2650,7 +2650,6 @@
                 "closeModal": "모달 / 패널 닫기",
                 "openShortcuts": "이 단축키 패널 열기",
                 "refresh": "모델 목록 새로고침",
-                "fetchMetadata": "CivitAI에서 메타데이터 가져오기 (모델 페이지만)",
                 "downloadModel": "모델 다운로드 (모델 페이지만)",
                 "toggleBulkMode": "일괄 모드 전환",
                 "selectAll": "표시된 모든 모델 선택",

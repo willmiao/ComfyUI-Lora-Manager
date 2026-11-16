@@ -27,8 +27,8 @@ class RecipePageControls {
 
     /**
      * Register keyboard shortcuts for the actions toolbar.
-     * Only R (refresh) is wired on recipes: the page has no fetch/download
-     * buttons, and the shared handler skips missing buttons on its own.
+     * Only R (refresh) is wired on recipes: the page has no download button,
+     * and the shared handler skips missing buttons on its own.
      */
     registerKeyboardShortcuts() {
         registerActionShortcuts();

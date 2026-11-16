@@ -2650,7 +2650,6 @@
                 "closeModal": "モーダル / パネルを閉じる",
                 "openShortcuts": "このショートカットパネルを開く",
                 "refresh": "モデルリストを更新",
-                "fetchMetadata": "CivitAIからメタデータを取得（モデルページのみ）",
                 "downloadModel": "モデルをダウンロード（モデルページのみ）",
                 "toggleBulkMode": "一括モードを切り替え",
                 "selectAll": "表示中のモデルをすべて選択",

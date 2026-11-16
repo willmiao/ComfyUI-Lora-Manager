@@ -1352,17 +1352,23 @@ describe('PageControls action keyboard shortcuts', () => {
     expect(keydownHandlers.some((h) => h.source === 'pageControls-actions')).toBe(true);
   });
 
-  it('triggers refresh, fetch, and download via the R / F / D keys', async () => {
+  it('triggers refresh and download via the R / D keys', async () => {
     const controls = await setupLorasControls();
 
     expect(controls.handleActionShortcut(keydownEvent('r'))).toBe(true);
     expect(refreshModelsMock).toHaveBeenCalledWith(false);
 
-    expect(controls.handleActionShortcut(keydownEvent('f'))).toBe(true);
-    expect(fetchCivitaiMetadataMock).toHaveBeenCalledTimes(1);
-
     expect(controls.handleActionShortcut(keydownEvent('d'))).toBe(true);
     expect(downloadManagerMock.showDownloadModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves F to the browser so a missed Ctrl+F does not fetch metadata', async () => {
+    const controls = await setupLorasControls();
+
+    const event = keydownEvent('f');
+    expect(controls.handleActionShortcut(event)).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(fetchCivitaiMetadataMock).not.toHaveBeenCalled();
   });
 
   it('handles a real keydown dispatched on the document', async () => {
@@ -1375,22 +1381,21 @@ describe('PageControls action keyboard shortcuts', () => {
     expect(refreshModelsMock).toHaveBeenCalledWith(false);
   });
 
-  it('ignores R / F / D while typing in an input', async () => {
+  it('ignores R / D while typing in an input', async () => {
     const controls = await setupLorasControls();
 
     const input = document.getElementById('searchInput');
-    for (const key of ['r', 'f', 'd']) {
+    for (const key of ['r', 'd']) {
       const event = keydownEvent(key, { target: input });
       expect(controls.handleActionShortcut(event)).toBe(false);
       expect(event.defaultPrevented).toBe(false);
     }
 
     expect(refreshModelsMock).not.toHaveBeenCalled();
-    expect(fetchCivitaiMetadataMock).not.toHaveBeenCalled();
     expect(downloadManagerMock.showDownloadModal).not.toHaveBeenCalled();
   });
 
-  it('ignores R / F / D when combined with modifier keys', async () => {
+  it('ignores R / D when combined with modifier keys', async () => {
     const controls = await setupLorasControls();
 
     const event = keydownEvent('r', { ctrlKey: true });
@@ -1402,12 +1407,12 @@ describe('PageControls action keyboard shortcuts', () => {
   it('passes the event through when the action button does not exist', async () => {
     const controls = await setupLorasControls();
 
-    // Recipes page has no fetch/download buttons
-    document.querySelector('[data-action="fetch"]').closest('.control-group').remove();
+    // Recipes page has no download button
+    document.querySelector('[data-action="download"]').closest('.control-group').remove();
 
-    const event = keydownEvent('f');
+    const event = keydownEvent('d');
     expect(controls.handleActionShortcut(event)).toBe(false);
     expect(event.defaultPrevented).toBe(false);
-    expect(fetchCivitaiMetadataMock).not.toHaveBeenCalled();
+    expect(downloadManagerMock.showDownloadModal).not.toHaveBeenCalled();
   });
 });

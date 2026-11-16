@@ -2650,7 +2650,6 @@
                 "closeModal": "Cerrar modal / panel",
                 "openShortcuts": "Abrir este panel de atajos",
                 "refresh": "Actualizar la lista de modelos",
-                "fetchMetadata": "Obtener metadatos de CivitAI (solo páginas de modelos)",
                 "downloadModel": "Descargar un modelo (solo páginas de modelos)",
                 "toggleBulkMode": "Activar/desactivar el modo por lotes",
                 "selectAll": "Seleccionar todos los modelos visibles",

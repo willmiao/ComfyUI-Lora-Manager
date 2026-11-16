@@ -2650,7 +2650,6 @@
                 "closeModal": "关闭弹窗 / 面板",
                 "openShortcuts": "打开本快捷键面板",
                 "refresh": "刷新模型列表",
-                "fetchMetadata": "从 CivitAI 获取元数据（仅模型页面）",
                 "downloadModel": "下载模型（仅模型页面）",
                 "toggleBulkMode": "切换批量模式",
                 "selectAll": "全选所有可见模型",

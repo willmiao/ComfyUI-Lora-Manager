@@ -1,4 +1,4 @@
-// ActionShortcuts.js - Shared R/F/D keyboard shortcuts for the actions toolbar
+// ActionShortcuts.js - Shared R/D keyboard shortcuts for the actions toolbar
 import { eventManager } from '../../utils/EventManager.js';
 import { isTypingContext } from '../../utils/uiHelpers.js';
 
@@ -10,13 +10,16 @@ export const ACTION_SHORTCUTS_SOURCE = 'pageControls-actions';
 
 const ACTION_BY_KEY = Object.freeze({
     r: 'refresh',
-    f: 'fetch',
     d: 'download'
 });
 
 /**
  * Handle a keydown event for the actions toolbar shortcuts
- * (R = refresh, F = fetch metadata, D = download).
+ * (R = refresh, D = download).
+ *
+ * Fetch deliberately has no shortcut: it is not a frequent action, and a
+ * stray "f" (a missed Ctrl+F for the browser find bar) triggering a CivitAI
+ * metadata fetch is more annoying than the shortcut is useful.
  *
  * The shortcut reuses the button's own click handler, so it needs no
  * page-specific knowledge beyond the data-action attribute.
