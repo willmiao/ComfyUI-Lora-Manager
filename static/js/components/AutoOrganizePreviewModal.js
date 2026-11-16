@@ -52,7 +52,7 @@ export class AutoOrganizePreviewModal {
         this.renderShell(`
             <div class="auto-organize-preview-loading" role="status" aria-live="polite">
                 <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-                <h3>${this.t('loadingTitle', 'Calculating preview…')}</h3>
+                <h3>${this.t('loadingTitle', 'Calculating preview...')}</h3>
                 <p>${this.t('loadingMessage', 'No files are being changed.')}</p>
             </div>
         `);
@@ -141,8 +141,8 @@ export class AutoOrganizePreviewModal {
                     </button>
                 </div>
                 <input type="search" class="auto-organize-preview-search" data-role="search"
-                    placeholder="${this.t('searchPlaceholder', 'Search model or path…')}"
-                    aria-label="${this.t('searchPlaceholder', 'Search model or path…')}">
+                    placeholder="${this.t('searchPlaceholder', 'Search model or path...')}"
+                    aria-label="${this.t('searchPlaceholder', 'Search model or path...')}">
             </div>
             <div id="autoOrganizePreviewList" class="auto-organize-preview-list" role="tabpanel" aria-labelledby="autoOrganizeMovesTab"></div>
             <p class="auto-organize-preview-footnote">${this.t('replanNote', 'Execution recalculates from the latest library state, so actual results may differ from this preview.')}</p>
