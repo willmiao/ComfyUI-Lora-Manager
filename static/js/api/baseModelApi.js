@@ -2306,6 +2306,39 @@ export class BaseModelApiClient {
         }
     }
 
+    buildAutoOrganizeRequestBody(filePaths = null, dryRun = false) {
+        const requestBody = { dry_run: dryRun };
+        const exclusionPatterns = (state.global.settings.auto_organize_exclusions || [])
+            .filter(pattern => typeof pattern === 'string' && pattern.trim())
+            .map(pattern => pattern.trim());
+
+        if (filePaths) {
+            requestBody.file_paths = filePaths;
+        }
+        if (exclusionPatterns.length > 0) {
+            requestBody.exclusion_patterns = exclusionPatterns;
+        }
+        return requestBody;
+    }
+
+    /**
+     * Preview auto-organize without opening a progress socket or changing files.
+     * @param {Array} filePaths - Optional array of file paths to preview.
+     * @returns {Promise<Object>} The complete dry-run plan and summary.
+     */
+    async previewAutoOrganizeModels(filePaths = null) {
+        const response = await fetch(this.apiConfig.endpoints.autoOrganize, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.buildAutoOrganizeRequestBody(filePaths, true)),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to preview auto-organize operation');
+        }
+        return result;
+    }
+
     /**
      * Auto-organize models based on current path template settings
      * @param {Array} filePaths - Optional array of file paths to organize. If not provided, organizes all models.
@@ -2389,22 +2422,10 @@ export class BaseModelApiClient {
 
                 // Start the auto-organize operation
                 const endpoint = this.apiConfig.endpoints.autoOrganize;
-                const exclusionPatterns = (state.global.settings.auto_organize_exclusions || [])
-                    .filter(pattern => typeof pattern === 'string' && pattern.trim())
-                    .map(pattern => pattern.trim());
-
-                const requestBody = {};
-                if (filePaths) {
-                    requestBody.file_paths = filePaths;
-                }
-                if (exclusionPatterns.length > 0) {
-                    requestBody.exclusion_patterns = exclusionPatterns;
-                }
-
                 const requestOptions = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
+                    body: JSON.stringify(this.buildAutoOrganizeRequestBody(filePaths)),
                 };
 
                 const response = await fetch(endpoint, requestOptions);

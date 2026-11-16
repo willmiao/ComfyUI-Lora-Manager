@@ -920,14 +920,76 @@ async def test_auto_organize_dry_run_reports_moves_without_moving(tmp_path: Path
     assert result.success_count == 1
     payload = result.to_dict()
     assert payload["dry_run"] is True
+    assert payload["summary"]["path_template"] == "{base_model}"
     assert payload["planned_moves"] == [
         {
             "model": "mymodel",
             "from": model_path.as_posix(),
             "to": (tmp_path / "SDXL" / "mymodel.safetensors").as_posix(),
+            "status": "planned_move",
+            "reason": "path_template",
         }
     ]
     assert "would move" in payload["message"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("template", ["{base_model}", ""])
+async def test_auto_organize_dry_run_reports_already_organized_entries(
+    tmp_path: Path, template: str
+):
+    service, scanner, model_path = _organize_setup(tmp_path)
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_path_templates") or {})
+    templates["lora"] = template
+    manager.settings["download_path_templates"] = templates
+    if template:
+        organized_path = tmp_path / "SDXL" / model_path.name
+        organized_path.parent.mkdir()
+        model_path.rename(organized_path)
+        scanner._cache.raw_data[0]["file_path"] = organized_path.as_posix()
+    else:
+        organized_path = model_path
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert result.success_count == 0
+    assert result.skipped_count == 1
+    assert result.failure_count == 0
+    assert result.results == [
+        {
+            "model": "mymodel",
+            "success": False,
+            "status": "skipped",
+            "message": "Already in the correct location",
+            "reason": "already_organized",
+            "from": organized_path.as_posix(),
+            "to": organized_path.as_posix(),
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_auto_organize_dry_run_marks_flat_structure_move_reason(tmp_path: Path):
+    service, scanner, model_path = _organize_setup(tmp_path)
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_path_templates") or {})
+    templates["lora"] = ""
+    manager.settings["download_path_templates"] = templates
+    nested_path = tmp_path / "nested" / model_path.name
+    nested_path.parent.mkdir()
+    model_path.rename(nested_path)
+    scanner._cache.raw_data[0]["file_path"] = nested_path.as_posix()
+
+    result = await service.auto_organize_models(dry_run=True)
+
+    assert result.planned_moves[0]["status"] == "planned_move"
+    assert result.planned_moves[0]["reason"] == "flat_structure"
+    assert result.to_dict()["summary"]["path_template"] == ""
 
 
 @pytest.mark.asyncio
@@ -1205,9 +1267,15 @@ async def test_auto_organize_results_carry_reason_codes(tmp_path: Path):
     result = await service.auto_organize_models(dry_run=True)
 
     reasons = {entry["model"]: entry["reason"] for entry in result.results}
+    statuses = {entry["model"]: entry["status"] for entry in result.results}
     assert reasons["twin"] == REASON_PLANNED_COLLISION
     assert reasons["nometa"] == REASON_MISSING_METADATA
     assert reasons["taken"] == REASON_TARGET_EXISTS
+    assert statuses == {
+        "twin": "issue",
+        "nometa": "skipped",
+        "taken": "issue",
+    }
     assert all(entry["success"] is False for entry in result.results)
 
 

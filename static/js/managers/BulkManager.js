@@ -14,6 +14,7 @@ import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../utils/extensionReimportBridge.js';
 import { getNsfwLevelSelector } from '../components/shared/NsfwLevelSelector.js';
+import { AutoOrganizePreviewModal } from '../components/AutoOrganizePreviewModal.js';
 
 export class BulkManager {
     constructor() {
@@ -1977,7 +1978,7 @@ export class BulkManager {
     }
 
     /**
-     * Auto-organize selected models based on current path template settings
+     * Preview auto-organize for selected models before running the operation.
      */
     async autoOrganizeSelectedModels() {
         if (state.selectedModels.size === 0) {
@@ -1985,21 +1986,38 @@ export class BulkManager {
             return;
         }
 
+        const filePaths = Array.from(state.selectedModels);
+        const apiClient = getModelApiClient();
+        const previewModal = new AutoOrganizePreviewModal({
+            onApply: async () => {
+                try {
+                    await apiClient.autoOrganizeModels(filePaths);
+                    if (state.bulkMode) this.toggleBulkMode();
+                    resetAndReload(true);
+                } catch (error) {
+                    console.error('Error during bulk auto-organize:', error);
+                    showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
+                }
+            },
+            onRefresh: () => this.loadAutoOrganizePreview(apiClient, filePaths, previewModal),
+            onClose: () => {
+                if (this.autoOrganizePreviewModal === previewModal) {
+                    this.autoOrganizePreviewModal = null;
+                }
+            },
+        });
+        this.autoOrganizePreviewModal = previewModal;
+        await this.loadAutoOrganizePreview(apiClient, filePaths, previewModal);
+    }
+
+    async loadAutoOrganizePreview(apiClient, filePaths, previewModal) {
+        previewModal.showLoading();
         try {
-            // Get selected file paths
-            const filePaths = Array.from(state.selectedModels);
-
-            // Get the API client for the current model type
-            const apiClient = getModelApiClient();
-
-            // Call the auto-organize method with selected file paths
-            await apiClient.autoOrganizeModels(filePaths);
-
-            if (state.bulkMode) this.toggleBulkMode();
-            resetAndReload(true);
+            const result = await apiClient.previewAutoOrganizeModels(filePaths);
+            previewModal.showResult(result);
         } catch (error) {
-            console.error('Error during bulk auto-organize:', error);
-            showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
+            console.error('Error previewing bulk auto-organize:', error);
+            previewModal.showError(error);
         }
     }
 

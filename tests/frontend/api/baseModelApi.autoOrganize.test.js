@@ -206,3 +206,63 @@ describe('BaseModelApiClient.autoOrganizeModels progress fallback', () => {
     );
   });
 });
+
+describe('BaseModelApiClient.previewAutoOrganizeModels', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    FakeWebSocket.instances = [];
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+  });
+
+  afterEach(() => {
+    delete global.fetch;
+    vi.unstubAllGlobals();
+  });
+
+  it('requests a dry run with the same scope and exclusions without opening progress UI', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global.settings.auto_organize_exclusions = [' curated/* ', '', 42];
+    const payload = {
+      dry_run: true,
+      summary: { total: 1, success: 1, skipped: 0, failures: 0 },
+      planned_moves: [{ model: 'A', from: '/a.st', to: '/SDXL/a.st' }],
+      results: [],
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    });
+    const client = await createClient();
+
+    await expect(client.previewAutoOrganizeModels(['/a.st'])).resolves.toBe(payload);
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/loras/auto-organize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dry_run: true,
+        file_paths: ['/a.st'],
+        exclusion_patterns: ['curated/*'],
+      }),
+    });
+    expect(FakeWebSocket.instances).toHaveLength(0);
+    expect(showWithProgressMock).not.toHaveBeenCalled();
+    expect(showToastMock).not.toHaveBeenCalled();
+    state.global.settings.auto_organize_exclusions = [];
+  });
+
+  it('returns backend failures to the preview caller without operation toasts', async () => {
+    const { state } = await import(STATE_MODULE);
+    state.global.settings.auto_organize_exclusions = [];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Another organize is running' }),
+    });
+    const client = await createClient();
+
+    await expect(client.previewAutoOrganizeModels()).rejects.toThrow('Another organize is running');
+
+    expect(showToastMock).not.toHaveBeenCalled();
+    expect(showWithProgressMock).not.toHaveBeenCalled();
+  });
+});

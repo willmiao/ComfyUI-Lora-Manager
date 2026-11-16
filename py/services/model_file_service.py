@@ -67,9 +67,12 @@ def _plan_key(path: str) -> str:
     return os.path.normcase(os.path.normpath(path))
 
 
-# Machine-readable reasons attached to the per-model ``results`` entries.
-# A preview UI groups skips and failures by these instead of string-matching
-# the human-readable message, which is free to change.
+# Machine-readable reasons attached to planned moves and per-model ``results``.
+# A preview UI groups entries by status and explains these codes instead of
+# string-matching human-readable messages, which are free to change.
+REASON_PATH_TEMPLATE = "path_template"
+REASON_FLAT_STRUCTURE = "flat_structure"
+REASON_ALREADY_ORGANIZED = "already_organized"
 REASON_NO_FILE_PATH = "no_file_path"
 REASON_OUTSIDE_ROOTS = "outside_roots"
 REASON_MISSING_METADATA = "missing_metadata"
@@ -104,6 +107,7 @@ class AutoOrganizeResult:
         self.results_truncated: bool = False
         self.sample_results: List[Dict[str, Any]] = []
         self.is_flat_structure: bool = False
+        self.path_template: Optional[str] = None
         self.status: str = 'success'
         self.dry_run: bool = False
         self.planned_moves: List[Dict[str, str]] = []
@@ -144,6 +148,7 @@ class AutoOrganizeResult:
                 'skipped': self.skipped_count,
                 'failures': self.failure_count,
                 'organization_type': 'flat' if self.is_flat_structure else 'structured',
+                'path_template': self.path_template,
                 'cleaned_dirs': self.cleanup_counts,
                 'operation_type': self.operation_type
             }
@@ -204,8 +209,11 @@ class ModelFileService:
             
         Returns:
             AutoOrganizeResult object with operation results. Entries in
-            ``results`` (skips and failures) carry a stable ``reason`` code
-            so callers can group them without parsing the message.
+            ``results`` carry a ``status`` (``skipped`` or ``issue``) and a
+            stable ``reason`` code so callers can group them without parsing
+            the message. Dry runs include already-organized models in this
+            list, and planned moves carry ``planned_move`` plus their own
+            ``path_template`` or ``flat_structure`` reason.
         """
         result = AutoOrganizeResult()
         result.dry_run = dry_run
@@ -252,6 +260,7 @@ class ModelFileService:
             # Check if flat structure is configured for this model type
             settings_manager = get_settings_manager()
             path_template = settings_manager.get_download_path_template(self.model_type)
+            result.path_template = path_template
             result.is_flat_structure = not path_template
             
             # Initialize tracking
@@ -448,19 +457,25 @@ class ModelFileService:
             )
             
             if target_dir is None:
-                self._add_result(result, model_name, False, 
+                self._add_result(result, model_name, False,
                                "Skipped - insufficient metadata for organization",
-                               reason=REASON_MISSING_METADATA)
+                               reason=REASON_MISSING_METADATA, status="skipped")
                 result.skipped_count += 1
                 return
-            
+
             current_dir = os.path.dirname(file_path)
-            
+
             # Skip if already in correct location
             if current_dir.replace(os.sep, '/') == target_dir.replace(os.sep, '/'):
+                if result.dry_run:
+                    self._add_result(
+                        result, model_name, False, "Already in the correct location",
+                        reason=REASON_ALREADY_ORGANIZED, status="skipped",
+                        from_path=file_path, to_path=file_path,
+                    )
                 result.skipped_count += 1
                 return
-            
+
             # Check for conflicts
             file_name = os.path.basename(file_path)
             target_file_path = os.path.join(target_dir, file_name)
@@ -475,7 +490,7 @@ class ModelFileService:
                                "Skipped - target path would exceed the OS path "
                                "length limit; shorten the file name or move the "
                                "library to a shallower root",
-                               reason=REASON_PATH_TOO_LONG)
+                               reason=REASON_PATH_TOO_LONG, status="skipped")
                 result.skipped_count += 1
                 return
 
@@ -487,7 +502,7 @@ class ModelFileService:
                 os.path.exists(target_file_path)
                 and target_key not in result.vacated_sources
             ):
-                self._add_result(result, model_name, False, 
+                self._add_result(result, model_name, False,
                                f"Target file already exists: {target_file_path}",
                                reason=REASON_TARGET_EXISTS)
                 result.failure_count += 1
@@ -508,6 +523,12 @@ class ModelFileService:
                     'model': model_name,
                     'from': file_path.replace(os.sep, '/'),
                     'to': target_file_path.replace(os.sep, '/'),
+                    'status': 'planned_move',
+                    'reason': (
+                        REASON_FLAT_STRUCTURE
+                        if result.is_flat_structure
+                        else REASON_PATH_TEMPLATE
+                    ),
                 })
                 result.planned_targets[target_key] = model_name
                 result.vacated_sources.add(_plan_key(file_path))
@@ -583,9 +604,9 @@ class ModelFileService:
         return False
     
     async def _calculate_target_directory(
-        self, 
-        model: Dict[str, Any], 
-        current_root: str, 
+        self,
+        model: Dict[str, Any],
+        current_root: str,
         is_flat_structure: bool
     ) -> Optional[str]:
         """Calculate the target directory for a model"""
@@ -593,11 +614,6 @@ class ModelFileService:
             file_path = model.get('file_path')
             if not isinstance(file_path, str):
                 return None
-            current_dir = os.path.dirname(file_path)
-            
-            # Check if already in root directory
-            if os.path.normpath(current_dir) == os.path.normpath(current_root):
-                return None  # Signal to skip
 
             # Match the templated branch (and the scanner's stored paths):
             # one separator form regardless of the configured layout.
@@ -605,32 +621,41 @@ class ModelFileService:
         else:
             # Calculate new relative path based on settings
             new_relative_path = calculate_relative_path_for_model(model, self.model_type)
-            
+
             if not new_relative_path:
                 return None  # Signal to skip
-            
+
             return os.path.join(current_root, new_relative_path).replace(os.sep, '/')
-    
+
     def _add_result(
-        self, 
-        result: AutoOrganizeResult, 
-        model_name: str, 
-        success: bool, 
+        self,
+        result: AutoOrganizeResult,
+        model_name: str,
+        success: bool,
         message: str,
         reason: Optional[str] = None,
+        status: str = "issue",
+        from_path: Optional[str] = None,
+        to_path: Optional[str] = None,
     ) -> None:
         """Add a result entry if under the limit"""
         # A dry run is the report itself, so it keeps every entry; a real run
         # limits the detailed results.
         if result.dry_run or len(result.results) < 100:
-            result.results.append({
+            entry = {
                 "model": model_name,
                 "success": success,
+                "status": status,
                 "message": message,
                 # Always present so clients can branch on the code even when
                 # a caller adds a result without one.
                 "reason": reason,
-            })
+            }
+            if from_path is not None:
+                entry["from"] = from_path.replace(os.sep, '/')
+            if to_path is not None:
+                entry["to"] = to_path.replace(os.sep, '/')
+            result.results.append(entry)
         elif len(result.results) == 100:
             # Mark as truncated and save sample
             result.results_truncated = True
