@@ -6,9 +6,9 @@
 [![Release](https://img.shields.io/github/v/release/willmiao/ComfyUI-Lora-Manager?include_prereleases&color=blue&logo=github)](https://github.com/willmiao/ComfyUI-Lora-Manager/releases)
 [![Release Date](https://img.shields.io/github/release-date/willmiao/ComfyUI-Lora-Manager?color=green&logo=github)](https://github.com/willmiao/ComfyUI-Lora-Manager/releases)
 
-**A visual model, recipe, and workflow manager for ComfyUI.**
+**A visual model, recipe, and workflow manager with deep ComfyUI integration.**
 
-Organize large model libraries, download and organize new assets, reuse LoRA combinations, manage ComfyUI workflows, and integrate everything with purpose-built ComfyUI nodes. LoRA Manager also runs as a standalone application.
+Organize and download assets, send models and recipes directly to workflows, and reuse generation metadata through custom loader and metadata nodes. LoRA Manager also runs as a standalone application.
 
 [Getting Started](https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Getting-Started) ·
 [Documentation](https://github.com/willmiao/ComfyUI-Lora-Manager/wiki) ·
