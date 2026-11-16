@@ -61,6 +61,7 @@ class StubFileService(ModelFileService):
         file_paths: Optional[List[str]] = None,
         progress_callback=None,
         exclusion_patterns=None,
+        dry_run: bool = False,
     ) -> AutoOrganizeResult:
         result = AutoOrganizeResult()
         result.total = len(file_paths or [])
@@ -68,6 +69,7 @@ class StubFileService(ModelFileService):
             "file_paths": file_paths,
             "progress_callback": progress_callback,
             "exclusion_patterns": exclusion_patterns,
+            "dry_run": dry_run,
         })
         return result
 
@@ -174,6 +176,18 @@ async def test_auto_organize_use_case_executes_with_lock() -> None:
     assert isinstance(result, AutoOrganizeResult)
     assert file_service.calls[0]["file_paths"] == ["model1"]
     assert file_service.calls[0]["exclusion_patterns"] is None
+    assert file_service.calls[0]["dry_run"] is False
+
+
+async def test_auto_organize_use_case_forwards_dry_run() -> None:
+    file_service = StubFileService()
+    use_case = AutoOrganizeUseCase(
+        file_service=file_service, lock_provider=StubLockProvider()
+    )
+
+    await use_case.execute(file_paths=None, progress_callback=None, dry_run=True)
+
+    assert file_service.calls[0]["dry_run"] is True
 
 
 async def test_auto_organize_use_case_rejects_when_running() -> None:

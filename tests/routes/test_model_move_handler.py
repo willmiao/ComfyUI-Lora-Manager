@@ -171,6 +171,30 @@ async def test_delete_folder_forwards_dry_run():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (True, True),
+        (1, True),
+        ("true", True),
+        ("1", True),
+        ("false", False),
+        (0, False),
+        (None, False),
+    ],
+)
+async def test_delete_folder_parses_dry_run_strictly(value, expected):
+    handler, service = _make_handler({"success": True})
+
+    response = await handler.delete_folder(
+        FakeRequest({"folder_path": "/library/empty", "dry_run": value})
+    )
+
+    assert response.status == 200
+    assert service.received_dry_run is expected
+
+
+@pytest.mark.asyncio
 async def test_resolve_folder_returns_the_matching_roots():
     handler, service = _make_handler(
         {

@@ -57,6 +57,29 @@ def _normalize_match_path(path: Any) -> str:
     return os.path.normpath(os.path.abspath(str(path))).replace(os.sep, "/")
 
 
+def _plan_key(path: str) -> str:
+    """Key a path the way the filesystem compares it, for dry-run collisions.
+
+    ``normcase`` folds case on Windows so ``Foo.st`` and ``foo.st`` collide
+    there as they would on disk. Business paths only — symlinks are never
+    resolved.
+    """
+    return os.path.normcase(os.path.normpath(path))
+
+
+# Machine-readable reasons attached to the per-model ``results`` entries.
+# A preview UI groups skips and failures by these instead of string-matching
+# the human-readable message, which is free to change.
+REASON_NO_FILE_PATH = "no_file_path"
+REASON_OUTSIDE_ROOTS = "outside_roots"
+REASON_MISSING_METADATA = "missing_metadata"
+REASON_PATH_TOO_LONG = "path_too_long"
+REASON_TARGET_EXISTS = "target_exists"
+REASON_PLANNED_COLLISION = "planned_collision"
+REASON_MOVE_FAILED = "move_failed"
+REASON_ERROR = "error"
+
+
 class ProgressCallback(ABC):
     """Abstract callback interface for progress reporting"""
     
@@ -82,10 +105,23 @@ class AutoOrganizeResult:
         self.sample_results: List[Dict[str, Any]] = []
         self.is_flat_structure: bool = False
         self.status: str = 'success'
+        self.dry_run: bool = False
+        self.planned_moves: List[Dict[str, str]] = []
+        # Dry-run bookkeeping, keyed by _plan_key(): target -> model planned
+        # to land there, and the sources those planned moves free up.
+        self.planned_targets: Dict[str, str] = {}
+        self.vacated_sources: Set[str] = set()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
-        if self.operation_type == 'filename_template':
+        if self.dry_run:
+            message = (
+                f'Auto-organize dry run ({self.operation_type}): '
+                f'{self.success_count} would move, '
+                f'{self.skipped_count} would be skipped, '
+                f'{self.failure_count} would fail out of {self.total} total'
+            )
+        elif self.operation_type == 'filename_template':
             message = (
                 f'Filename template applied: {self.success_count} renamed, '
                 f'{self.skipped_count} skipped, {self.failure_count} failed '
@@ -101,6 +137,7 @@ class AutoOrganizeResult:
             'success': self.status != 'error',
             'status': self.status,
             'message': message,
+            'dry_run': self.dry_run,
             'summary': {
                 'total': self.total,
                 'success': self.success_count,
@@ -117,7 +154,12 @@ class AutoOrganizeResult:
             result['sample_results'] = self.sample_results
         else:
             result['results'] = self.results
-        
+
+        if self.dry_run:
+            # Unlike the per-model results, the plan is never truncated: it is
+            # the whole point of a dry run.
+            result['planned_moves'] = self.planned_moves
+
         return result
 
 
@@ -143,6 +185,7 @@ class ModelFileService:
         file_paths: Optional[List[str]] = None,
         progress_callback: Optional[ProgressCallback] = None,
         exclusion_patterns: Optional[Sequence[str]] = None,
+        dry_run: bool = False,
     ) -> AutoOrganizeResult:
         """Auto-organize models based on current settings
         
@@ -150,11 +193,26 @@ class ModelFileService:
             file_paths: Optional list of specific file paths to organize. 
                        If None, organizes all models.
             progress_callback: Optional callback for progress updates
+            dry_run: When true, compute and report every move without
+                     touching the disk (no moves, no empty-folder cleanup,
+                     no progress broadcasts). It still holds the
+                     auto-organize lock. The plan is advisory: a later real
+                     run re-plans from the then-current library rather than
+                     applying this exact plan. Every result and planned move
+                     is returned untruncated, so on a very large library the
+                     response is correspondingly large.
             
         Returns:
-            AutoOrganizeResult object with operation results
+            AutoOrganizeResult object with operation results. Entries in
+            ``results`` (skips and failures) carry a stable ``reason`` code
+            so callers can group them without parsing the message.
         """
         result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        if dry_run:
+            # Progress events drive the UI's organize toast; a preview is a
+            # plain request/response and must not look like a running job.
+            progress_callback = None
         source_directories: Set[str] = set()
         
         self.scanner.reset_cancellation()
@@ -247,6 +305,9 @@ class ModelFileService:
                 progress_callback,
                 source_directories  # Pass the set to track source directories
             )
+
+            if dry_run:
+                return result
 
             if self.scanner.is_cancelled():
                 result.status = 'cancelled'
@@ -347,8 +408,10 @@ class ModelFileService:
                     'operation_type': result.operation_type
                 })
             
-            # Small delay between batches
-            await asyncio.sleep(0.1)
+            # A dry run has no progress consumer to pace for (and moves
+            # nothing), so it only yields to the event loop; the 0.1s pacing
+            # exists to keep real runs from freezing the UI between batches.
+            await asyncio.sleep(0 if result.dry_run else 0.1)
     
     async def _process_single_model(
         self, 
@@ -363,7 +426,10 @@ class ModelFileService:
             model_name = model.get('model_name', 'Unknown')
             
             if not file_path:
-                self._add_result(result, model_name, False, "No file path found")
+                self._add_result(
+                    result, model_name, False, "No file path found",
+                    reason=REASON_NO_FILE_PATH,
+                )
                 result.failure_count += 1
                 return
             
@@ -371,7 +437,8 @@ class ModelFileService:
             current_root = self._find_model_root(file_path, model_roots)
             if not current_root:
                 self._add_result(result, model_name, False, 
-                               "Model file not found in any configured root directory")
+                               "Model file not found in any configured root directory",
+                               reason=REASON_OUTSIDE_ROOTS)
                 result.failure_count += 1
                 return
             
@@ -382,7 +449,8 @@ class ModelFileService:
             
             if target_dir is None:
                 self._add_result(result, model_name, False, 
-                               "Skipped - insufficient metadata for organization")
+                               "Skipped - insufficient metadata for organization",
+                               reason=REASON_MISSING_METADATA)
                 result.skipped_count += 1
                 return
             
@@ -406,14 +474,44 @@ class ModelFileService:
                 self._add_result(result, model_name, False,
                                "Skipped - target path would exceed the OS path "
                                "length limit; shorten the file name or move the "
-                               "library to a shallower root")
+                               "library to a shallower root",
+                               reason=REASON_PATH_TOO_LONG)
                 result.skipped_count += 1
                 return
 
-            if os.path.exists(target_file_path):
+            # A real run moves models one by one in this order, and a dry run
+            # moves nothing, so it simulates the earlier moves: a target
+            # vacated by one is free, and a target claimed by one is taken.
+            target_key = _plan_key(target_file_path)
+            if (
+                os.path.exists(target_file_path)
+                and target_key not in result.vacated_sources
+            ):
                 self._add_result(result, model_name, False, 
-                               f"Target file already exists: {target_file_path}")
+                               f"Target file already exists: {target_file_path}",
+                               reason=REASON_TARGET_EXISTS)
                 result.failure_count += 1
+                return
+
+            if result.dry_run:
+                claimed_by = result.planned_targets.get(target_key)
+                if claimed_by is not None:
+                    self._add_result(
+                        result, model_name, False,
+                        f"Target file {target_file_path} would collide with "
+                        f"the planned move of {claimed_by}",
+                        reason=REASON_PLANNED_COLLISION,
+                    )
+                    result.failure_count += 1
+                    return
+                result.planned_moves.append({
+                    'model': model_name,
+                    'from': file_path.replace(os.sep, '/'),
+                    'to': target_file_path.replace(os.sep, '/'),
+                })
+                result.planned_targets[target_key] = model_name
+                result.vacated_sources.add(_plan_key(file_path))
+                result.success_count += 1
                 return
             
             # Store the source directory for potential cleanup
@@ -426,12 +524,18 @@ class ModelFileService:
             if success:
                 result.success_count += 1
             else:
-                self._add_result(result, model_name, False, "Failed to move model")
+                self._add_result(
+                    result, model_name, False, "Failed to move model",
+                    reason=REASON_MOVE_FAILED,
+                )
                 result.failure_count += 1
             
         except Exception as e:
             logger.error(f"Error processing model {model.get('model_name', 'Unknown')}: {e}", exc_info=True)
-            self._add_result(result, model.get('model_name', 'Unknown'), False, f"Error: {str(e)}")
+            self._add_result(
+                result, model.get('model_name', 'Unknown'), False,
+                f"Error: {str(e)}", reason=REASON_ERROR,
+            )
             result.failure_count += 1
     
     def _find_model_root(self, file_path: str, model_roots: List[str]) -> Optional[str]:
@@ -512,14 +616,20 @@ class ModelFileService:
         result: AutoOrganizeResult, 
         model_name: str, 
         success: bool, 
-        message: str
+        message: str,
+        reason: Optional[str] = None,
     ) -> None:
         """Add a result entry if under the limit"""
-        if len(result.results) < 100:  # Limit detailed results
+        # A dry run is the report itself, so it keeps every entry; a real run
+        # limits the detailed results.
+        if result.dry_run or len(result.results) < 100:
             result.results.append({
                 "model": model_name,
                 "success": success,
-                "message": message
+                "message": message,
+                # Always present so clients can branch on the code even when
+                # a caller adds a result without one.
+                "reason": reason,
             })
         elif len(result.results) == 100:
             # Mark as truncated and save sample
