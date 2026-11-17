@@ -2123,14 +2123,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-ba49c841] {
+.autocomplete-text-widget[data-v-af46ca6b] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-ba49c841] {
+.input-wrapper[data-v-af46ca6b] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2140,7 +2140,7 @@ to { transform: rotate(360deg);
 /* Theme tokens (--lm-*) come from the widget container, which ComfyUI's
    renderer switches between the canvas widget palette and the Vue node
    widget palette. Text size matches ComfyUI's own textarea in both modes. */
-.text-input[data-v-ba49c841] {
+.text-input[data-v-af46ca6b] {
   flex: 1;
   width: 100%;
   background-color: var(--lm-surface);
@@ -2160,18 +2160,18 @@ to { transform: rotate(360deg);
 
 /* Vue DOM mode: same surface/foreground as the built-in WidgetTextarea,
    only the box metrics differ. */
-.text-input.vue-dom-mode[data-v-ba49c841] {
+.text-input.vue-dom-mode[data-v-af46ca6b] {
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
   border-radius: 6px;  /* matches ComfyUI's rounded-md textarea */
   font-family: inherit;
 }
-.text-input[data-v-ba49c841]:focus {
+.text-input[data-v-af46ca6b]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-ba49c841] {
+.clear-button[data-v-af46ca6b] {
   position: absolute;
   right: calc(6px + var(--lm-vscrollbar-width, 0px));
   bottom: 6px;  /* Changed from top to bottom */
@@ -2194,28 +2194,28 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-ba49c841] {
+.input-wrapper:hover .clear-button[data-v-af46ca6b] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-ba49c841]:hover {
+.clear-button[data-v-af46ca6b]:hover {
   opacity: 1;
   background: var(--lm-danger-soft);
   color: var(--lm-danger-text);
 }
-.clear-button svg[data-v-ba49c841] {
+.clear-button svg[data-v-af46ca6b] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-ba49c841] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-af46ca6b] {
   right: calc(8px + var(--lm-vscrollbar-width, 0px));
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-ba49c841] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-af46ca6b] {
   width: 14px;
   height: 14px;
 }
@@ -11056,7 +11056,7 @@ const _sfc_main$o = /* @__PURE__ */ defineComponent({
 const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["__scopeId", "data-v-1cb95afc"]]);
 const _hoisted_1$k = { class: "section" };
 const _hoisted_2$j = { class: "section__header" };
-const _hoisted_3$g = { class: "section__content" };
+const _hoisted_3$h = { class: "section__content" };
 const _hoisted_4$f = {
   key: 0,
   class: "section__placeholder"
@@ -11086,7 +11086,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$g, [
+        createBaseVNode("div", _hoisted_3$h, [
           __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$f, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$d, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
@@ -11105,7 +11105,7 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
 const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["__scopeId", "data-v-41d2aa1b"]]);
 const _hoisted_1$j = { class: "section" };
 const _hoisted_2$i = { class: "section__columns" };
-const _hoisted_3$f = { class: "section__column" };
+const _hoisted_3$g = { class: "section__column" };
 const _hoisted_4$e = { class: "section__column-header" };
 const _hoisted_5$c = { class: "section__column-content" };
 const _hoisted_6$c = {
@@ -11141,7 +11141,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$i, [
-          createBaseVNode("div", _hoisted_3$f, [
+          createBaseVNode("div", _hoisted_3$g, [
             createBaseVNode("div", _hoisted_4$e, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
@@ -11187,7 +11187,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
 const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-3c494bd5"]]);
 const _hoisted_1$i = { class: "section" };
 const _hoisted_2$h = { class: "section__columns" };
-const _hoisted_3$e = { class: "section__column" };
+const _hoisted_3$f = { class: "section__column" };
 const _hoisted_4$d = { class: "section__column-header" };
 const _hoisted_5$b = { class: "section__content" };
 const _hoisted_6$b = {
@@ -11235,7 +11235,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$h, [
-          createBaseVNode("div", _hoisted_3$e, [
+          createBaseVNode("div", _hoisted_3$f, [
             createBaseVNode("div", _hoisted_4$d, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
@@ -11303,7 +11303,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
 const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-899728b5"]]);
 const _hoisted_1$h = { class: "section" };
 const _hoisted_2$g = { class: "section__header" };
-const _hoisted_3$d = { class: "section__toggle" };
+const _hoisted_3$e = { class: "section__toggle" };
 const _hoisted_4$c = ["checked"];
 const _hoisted_5$a = { class: "section__columns" };
 const _hoisted_6$a = { class: "section__column" };
@@ -11359,7 +11359,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("div", _hoisted_1$h, [
         createBaseVNode("div", _hoisted_2$g, [
           _cache[4] || (_cache[4] = createBaseVNode("span", { class: "section__title" }, "NAME PATTERNS", -1)),
-          createBaseVNode("label", _hoisted_3$d, [
+          createBaseVNode("label", _hoisted_3$e, [
             createBaseVNode("input", {
               type: "checkbox",
               checked: __props.useRegex,
@@ -11443,7 +11443,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
 const NamePatternsSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-54f65fc1"]]);
 const _hoisted_1$g = { class: "section" };
 const _hoisted_2$f = { class: "section__toggles" };
-const _hoisted_3$c = { class: "toggle-item" };
+const _hoisted_3$d = { class: "toggle-item" };
 const _hoisted_4$b = ["aria-checked"];
 const _hoisted_5$9 = { class: "toggle-item" };
 const _hoisted_6$9 = ["aria-checked"];
@@ -11461,7 +11461,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
         createBaseVNode("div", _hoisted_2$f, [
-          createBaseVNode("label", _hoisted_3$c, [
+          createBaseVNode("label", _hoisted_3$d, [
             _cache[3] || (_cache[3] = createBaseVNode("span", {
               class: "toggle-item__label",
               title: "Use the model without crediting the creator"
@@ -11501,7 +11501,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
 const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-c6ebd825"]]);
 const _hoisted_1$f = { class: "preview" };
 const _hoisted_2$e = { class: "preview__title" };
-const _hoisted_3$b = ["disabled"];
+const _hoisted_3$c = ["disabled"];
 const _hoisted_4$a = {
   key: 0,
   class: "preview__tooltip"
@@ -11560,7 +11560,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$b)
+          ])], 10, _hoisted_3$c)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
@@ -11672,7 +11672,7 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
 const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-83235a00"]]);
 const _hoisted_1$d = { class: "lora-pool-modal__header" };
 const _hoisted_2$c = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$a = { class: "lora-pool-modal__title" };
+const _hoisted_3$b = { class: "lora-pool-modal__title" };
 const _hoisted_4$9 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
@@ -11732,7 +11732,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
               }, [
                 createBaseVNode("div", _hoisted_1$d, [
                   createBaseVNode("div", _hoisted_2$c, [
-                    createBaseVNode("h3", _hoisted_3$a, toDisplayString(__props.title), 1),
+                    createBaseVNode("h3", _hoisted_3$b, toDisplayString(__props.title), 1),
                     __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$9, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
@@ -11760,7 +11760,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
 const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-d7a07432"]]);
 const _hoisted_1$c = { class: "search-container" };
 const _hoisted_2$b = { class: "model-list" };
-const _hoisted_3$9 = ["checked", "onChange"];
+const _hoisted_3$a = ["checked", "onChange"];
 const _hoisted_4$8 = { class: "model-checkbox-visual" };
 const _hoisted_5$6 = {
   key: 0,
@@ -11870,7 +11870,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$9),
+                }, null, 40, _hoisted_3$a),
                 createBaseVNode("span", _hoisted_4$8, [
                   isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$6, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
@@ -11891,7 +11891,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
 const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-1b5c130c"]]);
 const _hoisted_1$b = { class: "search-container" };
 const _hoisted_2$a = ["onClick"];
-const _hoisted_3$8 = {
+const _hoisted_3$9 = {
   key: 0,
   class: "no-results"
 };
@@ -12035,7 +12035,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                 onClick: ($event) => toggleTag(tag.tag)
               }, toDisplayString(tag.tag), 11, _hoisted_2$a);
             }), 128)),
-            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$8, " No tags found ")) : createCommentVNode("", true),
+            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$9, " No tags found ")) : createCommentVNode("", true),
             hasMoreTags.value ? (openBlock(), createElementBlock("div", _hoisted_4$7, " Scroll to load more... ")) : createCommentVNode("", true)
           ], 544)
         ]),
@@ -12050,7 +12050,7 @@ const _hoisted_2$9 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$7 = { class: "tree-node__checkbox-label" };
+const _hoisted_3$8 = { class: "tree-node__checkbox-label" };
 const _hoisted_4$6 = ["checked"];
 const _hoisted_5$5 = {
   key: 0,
@@ -12111,7 +12111,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
           ])) : (openBlock(), createElementBlock("span", _hoisted_2$9)),
-          createBaseVNode("label", _hoisted_3$7, [
+          createBaseVNode("label", _hoisted_3$8, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
@@ -12157,7 +12157,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
 const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-e6f673b4"]]);
 const _hoisted_1$9 = { class: "search-container" };
 const _hoisted_2$8 = { class: "folder-tree" };
-const _hoisted_3$6 = {
+const _hoisted_3$7 = {
   key: 1,
   class: "no-results"
 };
@@ -12256,7 +12256,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$6, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$7, " No folders found "))
           ])
         ]),
         _: 1
@@ -12675,7 +12675,7 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
 const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-271afb29"]]);
 const _hoisted_1$8 = { class: "last-used-preview" };
 const _hoisted_2$7 = { class: "last-used-preview__content" };
-const _hoisted_3$5 = ["src", "onError"];
+const _hoisted_3$6 = ["src", "onError"];
 const _hoisted_4$5 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
@@ -12727,7 +12727,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$5)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$6)) : (openBlock(), createElementBlock("div", _hoisted_4$5, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -13168,7 +13168,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
 const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-e2333f13"]]);
 const _hoisted_1$5 = { class: "randomizer-settings" };
 const _hoisted_2$5 = { class: "setting-section" };
-const _hoisted_3$4 = { class: "count-mode-tabs" };
+const _hoisted_3$5 = { class: "count-mode-tabs" };
 const _hoisted_4$4 = ["checked"];
 const _hoisted_5$3 = ["checked"];
 const _hoisted_6$3 = { class: "slider-container" };
@@ -13233,7 +13233,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$5, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3$4, [
+          createBaseVNode("div", _hoisted_3$5, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -13877,7 +13877,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
 const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-54f2f3a9"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$4 = { class: "setting-section progress-section" };
-const _hoisted_3$3 = { class: "progress-label" };
+const _hoisted_3$4 = { class: "progress-label" };
 const _hoisted_4$3 = ["title"];
 const _hoisted_5$2 = { class: "progress-counter" };
 const _hoisted_6$2 = { class: "progress-index" };
@@ -14002,7 +14002,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
               class: normalizeClass(["progress-info", { disabled: __props.isPauseDisabled }]),
               onClick: handleOpenSelector
             }, [
-              createBaseVNode("span", _hoisted_3$3, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
+              createBaseVNode("span", _hoisted_3$4, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
               createBaseVNode("span", {
                 class: normalizeClass(["progress-name clickable", { disabled: __props.isPauseDisabled, "no-lora": __props.isNoLora }]),
                 title: __props.currentLoraFilename
@@ -14202,7 +14202,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
 const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-a772e649"]]);
 const _hoisted_1$3 = { class: "search-container" };
 const _hoisted_2$3 = { class: "lora-list" };
-const _hoisted_3$2 = ["onMouseenter", "onClick"];
+const _hoisted_3$3 = ["onMouseenter", "onClick"];
 const _hoisted_4$2 = { class: "lora-index" };
 const _hoisted_5$1 = ["title"];
 const _hoisted_6$1 = {
@@ -14383,7 +14383,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   title: item.lora.file_name
                 }, toDisplayString(item.lora.file_name), 9, _hoisted_5$1),
                 __props.currentIndex === item.index ? (openBlock(), createElementBlock("span", _hoisted_6$1, "Current")) : createCommentVNode("", true)
-              ], 42, _hoisted_3$2);
+              ], 42, _hoisted_3$3);
             }), 128)),
             filteredList.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_7$1, " No LoRAs found ")) : createCommentVNode("", true)
           ])
@@ -15013,7 +15013,7 @@ const _hoisted_2$2 = {
   class: "json-content",
   ref: "contentRef"
 };
-const _hoisted_3$1 = ["innerHTML"];
+const _hoisted_3$2 = ["innerHTML"];
 const _hoisted_4$1 = {
   key: 1,
   class: "placeholder"
@@ -15108,7 +15108,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           hasMetadata.value ? (openBlock(), createElementBlock("pre", {
             key: 0,
             innerHTML: highlightedJson.value
-          }, null, 8, _hoisted_3$1)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
+          }, null, 8, _hoisted_3$2)) : (openBlock(), createElementBlock("div", _hoisted_4$1, "No metadata available"))
         ], 512)
       ]);
     };
@@ -15180,8 +15180,478 @@ function useAutocomplete(textareaRef, modelType = "loras", options = {}) {
     refreshCaretHelper
   };
 }
+function getComfyUIBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmUrl(path) {
+  return `${getComfyUIBasePath()}${path}`;
+}
+let _loraSyntaxFormatCache = null;
+let _loraSyntaxFormatRefreshPromise = null;
+async function _fetchLoraSyntaxFormat() {
+  try {
+    const response = await api.fetchApi("/lm/settings");
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.settings) {
+        _loraSyntaxFormatCache = data.settings.lora_syntax_format || "legacy";
+        return;
+      }
+    }
+  } catch (e) {
+  }
+  if (_loraSyntaxFormatCache === null) {
+    _loraSyntaxFormatCache = "legacy";
+  }
+}
+function _triggerBackgroundRefresh() {
+  if (_loraSyntaxFormatRefreshPromise) {
+    return;
+  }
+  _loraSyntaxFormatRefreshPromise = _fetchLoraSyntaxFormat().finally(() => {
+    _loraSyntaxFormatRefreshPromise = null;
+  });
+}
+function _initLoraSyntaxFormat() {
+  _triggerBackgroundRefresh();
+}
+_initLoraSyntaxFormat();
+function _initLoraSyntaxFormatReactive() {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "lm:lora-syntax-format-changed") {
+      _triggerBackgroundRefresh();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      _triggerBackgroundRefresh();
+    }
+  });
+}
+_initLoraSyntaxFormatReactive();
+const AUTOCOMPLETE_METADATA_WIDGET_PREFIX = "__lm_autocomplete_meta_";
+const LORA_MANAGER_WIDGET_IDS_PROPERTY$1 = "__lm_widget_ids";
+function stripAutocompleteLastAccepted(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  if (!("lastAccepted" in value)) {
+    return value;
+  }
+  const stripped = { ...value };
+  delete stripped.lastAccepted;
+  return stripped;
+}
+function stripAutocompleteMetadataFromNodes(nodes) {
+  var _a2;
+  if (!Array.isArray(nodes)) {
+    return;
+  }
+  for (const node of nodes) {
+    if (!node || typeof node !== "object") {
+      continue;
+    }
+    const widgetIds = (_a2 = node.properties) == null ? void 0 : _a2[LORA_MANAGER_WIDGET_IDS_PROPERTY$1];
+    if (Array.isArray(node.widgets_values) && Array.isArray(widgetIds)) {
+      for (let i2 = 0; i2 < node.widgets_values.length && i2 < widgetIds.length; i2++) {
+        if (typeof widgetIds[i2] === "string" && widgetIds[i2].startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          node.widgets_values[i2] = stripAutocompleteLastAccepted(node.widgets_values[i2]);
+        }
+      }
+    }
+    const named = node.widgets_values_named;
+    if (named && typeof named === "object") {
+      for (const [key, value] of Object.entries(named)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          named[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+}
+function stripAutocompleteMetadataFromPromptResult(result) {
+  var _a2;
+  if (!result || typeof result !== "object") {
+    return result;
+  }
+  const workflow = result.workflow;
+  if (workflow && typeof workflow === "object") {
+    stripAutocompleteMetadataFromNodes(workflow.nodes);
+    const subgraphs = (_a2 = workflow.definitions) == null ? void 0 : _a2.subgraphs;
+    if (Array.isArray(subgraphs)) {
+      for (const subgraph of subgraphs) {
+        stripAutocompleteMetadataFromNodes(subgraph == null ? void 0 : subgraph.nodes);
+      }
+    }
+  }
+  const output = result.output;
+  if (output && typeof output === "object") {
+    for (const nodeOutput of Object.values(output)) {
+      const inputs = nodeOutput == null ? void 0 : nodeOutput.inputs;
+      if (!inputs || typeof inputs !== "object") {
+        continue;
+      }
+      for (const [key, value] of Object.entries(inputs)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          inputs[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+  return result;
+}
+const registryState = globalThis.__lmLoraNodeAdapterRegistry ?? {
+  adaptersByClass: /* @__PURE__ */ new Map(),
+  changeListeners: /* @__PURE__ */ new Set()
+};
+globalThis.__lmLoraNodeAdapterRegistry = registryState;
+const { adaptersByClass, changeListeners } = registryState;
+function getNodeClass(nodeOrClass) {
+  return typeof nodeOrClass === "string" ? nodeOrClass : nodeOrClass == null ? void 0 : nodeOrClass.comfyClass;
+}
+function getLoraNodeAdapter(nodeOrClass) {
+  const nodeClass = getNodeClass(nodeOrClass);
+  return nodeClass ? adaptersByClass.get(nodeClass) ?? null : null;
+}
+const ROOT_GRAPH_ID = "root";
+const LORA_PROVIDER_NODE_TYPES$1 = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)"
+];
+const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
+  "Lora Stack Combiner (LoraManager)"
+];
+const LORA_CHAIN_NODE_TYPES$1 = [
+  ...LORA_PROVIDER_NODE_TYPES$1,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
+];
+function isLoraStackAggregatorNode$1(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
+}
+function isLoraChainNode(comfyClass) {
+  return LORA_CHAIN_NODE_TYPES$1.includes(comfyClass);
+}
+function isMapLike(collection) {
+  return collection && typeof collection.entries === "function" && typeof collection.values === "function";
+}
+function getGraphId(graph) {
+  return (graph == null ? void 0 : graph.id) ?? ROOT_GRAPH_ID;
+}
+function getNodeGraphId(node) {
+  if (!node) {
+    return ROOT_GRAPH_ID;
+  }
+  return getGraphId(node.graph || app.graph);
+}
+function getNodeReference(node) {
+  if (!node) {
+    return null;
+  }
+  return {
+    node_id: node.id,
+    graph_id: getNodeGraphId(node)
+  };
+}
+function getNodeKey(node) {
+  if (!node) {
+    return null;
+  }
+  return `${getNodeGraphId(node)}:${node.id}`;
+}
+function getLinkFromGraph(graph, linkId) {
+  if (!graph || graph.links == null) {
+    return null;
+  }
+  if (isMapLike(graph.links)) {
+    return graph.links.get(linkId) || null;
+  }
+  return graph.links[linkId] || null;
+}
+function findModeAccessor(node) {
+  let proto = Object.getPrototypeOf(node);
+  while (proto && proto !== Object.prototype) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
+    if (descriptor && (descriptor.get || descriptor.set)) {
+      return descriptor;
+    }
+    proto = Object.getPrototypeOf(proto);
+  }
+  return null;
+}
+function interceptModeChange(node, onModeChange) {
+  if (!node || typeof onModeChange !== "function") {
+    return;
+  }
+  if (!Array.isArray(node._lmModeChangeListeners)) {
+    Object.defineProperty(node, "_lmModeChangeListeners", {
+      configurable: true,
+      writable: true,
+      value: []
+    });
+  }
+  node._lmModeChangeListeners.push(onModeChange);
+  if (node._lmModeChangeIntercepted) {
+    return;
+  }
+  Object.defineProperty(node, "_lmModeChangeIntercepted", {
+    configurable: true,
+    writable: true,
+    value: true
+  });
+  const notify = (newMode, oldMode) => {
+    for (const listener of node._lmModeChangeListeners ?? []) {
+      try {
+        listener(newMode, oldMode);
+      } catch (listenerError) {
+        console.error("LoRA Manager: mode change listener failed", listenerError);
+      }
+    }
+  };
+  const delegate = findModeAccessor(node);
+  if (delegate && typeof delegate.get === "function" && typeof delegate.set === "function") {
+    Object.defineProperty(node, "mode", {
+      configurable: true,
+      get() {
+        return delegate.get.call(this);
+      },
+      set(value) {
+        const oldValue = delegate.get.call(this);
+        delegate.set.call(this, value);
+        if (oldValue !== value) {
+          notify(value, oldValue);
+        }
+      }
+    });
+    return;
+  }
+  let currentMode = node.mode;
+  Object.defineProperty(node, "mode", {
+    configurable: true,
+    get() {
+      return currentMode;
+    },
+    set(value) {
+      const oldValue = currentMode;
+      currentMode = value;
+      if (oldValue !== value) {
+        notify(value, oldValue);
+      }
+    }
+  });
+}
+const LORA_PATTERN = /<lora:([^:]+):([-\d\.]+)(?::([-\d\.]+))?>/g;
+function isLoraStackInput(input) {
+  return (input == null ? void 0 : input.type) === "LORA_STACK";
+}
+function getConnectedInputLoraChainNodes(node) {
+  var _a2, _b;
+  const connectedNodes = [];
+  if (!(node == null ? void 0 : node.inputs)) {
+    return connectedNodes;
+  }
+  for (const input of node.inputs) {
+    if (!isLoraStackInput(input) || !input.link) {
+      continue;
+    }
+    const link = getLinkFromGraph(node.graph, input.link);
+    if (!link) {
+      continue;
+    }
+    const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
+    if (sourceNode && (isLoraChainNode(sourceNode.comfyClass) || getLoraNodeAdapter(sourceNode))) {
+      connectedNodes.push(sourceNode);
+    }
+  }
+  return connectedNodes;
+}
+function getConnectedTriggerToggleNodes(node) {
+  const connectedNodes = /* @__PURE__ */ new Set();
+  const visited = /* @__PURE__ */ new Set();
+  function visit(currentNode) {
+    var _a2, _b;
+    if (!currentNode || visited.has(currentNode)) {
+      return;
+    }
+    visited.add(currentNode);
+    for (const output of currentNode.outputs ?? []) {
+      for (const linkId of (output == null ? void 0 : output.links) ?? []) {
+        const link = getLinkFromGraph(currentNode.graph, linkId);
+        if (!link) {
+          continue;
+        }
+        const targetNode = (_b = (_a2 = currentNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
+        if ((targetNode == null ? void 0 : targetNode.comfyClass) === "TriggerWord Toggle (LoraManager)") {
+          connectedNodes.add(targetNode);
+        } else if ((targetNode == null ? void 0 : targetNode.comfyClass) === "LoRA Trigger Words (LoraManager)") {
+          visit(targetNode);
+        }
+      }
+    }
+  }
+  visit(node);
+  return Array.from(connectedNodes);
+}
+function getActiveLorasFromNode(node) {
+  var _a2, _b;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const adapter = getLoraNodeAdapter(node);
+  if (adapter == null ? void 0 : adapter.getActiveLoraNames) {
+    try {
+      const names = adapter.getActiveLoraNames(node);
+      if (names == null) {
+        return activeLoraNames;
+      }
+      if (typeof names === "string" || typeof (names == null ? void 0 : names[Symbol.iterator]) !== "function") {
+        throw new TypeError("getActiveLoraNames must return an iterable of names");
+      }
+      for (const name of names) {
+        if (typeof name === "string" && name) {
+          activeLoraNames.add(name);
+        }
+      }
+    } catch (error) {
+      console.error(
+        `LoRA Manager: adapter ${adapter.id} failed to read active LoRAs`,
+        error
+      );
+    }
+    return activeLoraNames;
+  }
+  if (node.comfyClass === "Lora Cycler (LoraManager)") {
+    const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
+    if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+      activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+    }
+    return activeLoraNames;
+  }
+  if (isLoraStackAggregatorNode$1(node.comfyClass)) {
+    return activeLoraNames;
+  }
+  let lorasWidget = node.lorasWidget;
+  if (!lorasWidget && node.widgets) {
+    lorasWidget = node.widgets.find((w2) => w2.name === "loras");
+  }
+  if (lorasWidget && lorasWidget.value) {
+    lorasWidget.value.forEach((lora) => {
+      if (lora.active) {
+        activeLoraNames.add(lora.name);
+      }
+    });
+  }
+  return activeLoraNames;
+}
+function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) {
+  const nodeKey = getNodeKey(node);
+  if (!nodeKey) {
+    return /* @__PURE__ */ new Set();
+  }
+  if (visited.has(nodeKey)) {
+    return /* @__PURE__ */ new Set();
+  }
+  visited.add(nodeKey);
+  const isNodeActive2 = node.mode === void 0 || node.mode === 0 || node.mode === 3;
+  if (!isNodeActive2) {
+    return /* @__PURE__ */ new Set();
+  }
+  const allActiveLoraNames = getActiveLorasFromNode(node);
+  const inputChainNodes = getConnectedInputLoraChainNodes(node);
+  for (const chainNode of inputChainNodes) {
+    const upstreamLoras = collectActiveLorasFromChain(chainNode, visited);
+    upstreamLoras.forEach((name) => allActiveLoraNames.add(name));
+  }
+  return allActiveLoraNames;
+}
+const TRIGGER_WORD_SYNC_TIMER = "__lmTriggerWordSyncTimer";
+const TRIGGER_WORD_SYNC_DELAY_MS = 50;
+function updateConnectedTriggerWords(node, loraNames) {
+  const connectedNodes = getConnectedTriggerToggleNodes(node);
+  if (connectedNodes.length === 0) {
+    return;
+  }
+  const nodeIds = connectedNodes.map((connectedNode) => getNodeReference(connectedNode)).filter((reference) => reference !== null);
+  if (nodeIds.length === 0) {
+    return;
+  }
+  const pendingTimer = node[TRIGGER_WORD_SYNC_TIMER];
+  if (pendingTimer) {
+    clearTimeout(pendingTimer);
+  }
+  const loraNamesSnapshot = Array.from(loraNames);
+  node[TRIGGER_WORD_SYNC_TIMER] = setTimeout(() => {
+    delete node[TRIGGER_WORD_SYNC_TIMER];
+    fetch(lmUrl("/api/lm/loras/get_trigger_words"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lora_names: loraNamesSnapshot,
+        node_ids: nodeIds
+      })
+    }).catch((err) => console.error("Error fetching trigger words:", err));
+  }, TRIGGER_WORD_SYNC_DELAY_MS);
+}
+function getConnectedPoolConfigNode(node) {
+  var _a2, _b;
+  if (!(node == null ? void 0 : node.inputs)) {
+    return null;
+  }
+  for (const input of node.inputs) {
+    if (input.name !== "pool_config" || !input.link) {
+      continue;
+    }
+    const link = getLinkFromGraph(node.graph, input.link);
+    if (!link) {
+      continue;
+    }
+    const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
+    if (sourceNode && sourceNode.comfyClass === "Lora Pool (LoraManager)") {
+      return sourceNode;
+    }
+  }
+  return null;
+}
+function getPoolConfigFromConnectedNode(node) {
+  var _a2;
+  const poolNode = getConnectedPoolConfigNode(node);
+  if (!poolNode) {
+    return null;
+  }
+  const isNodeActive2 = poolNode.mode === void 0 || poolNode.mode === 0 || poolNode.mode === 3;
+  if (!isNodeActive2) {
+    return null;
+  }
+  const poolWidget = (_a2 = poolNode.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "pool_config");
+  return (poolWidget == null ? void 0 : poolWidget.value) || null;
+}
+function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set()) {
+  var _a2, _b;
+  const nodeKey = getNodeKey(startNode);
+  if (!nodeKey || visited.has(nodeKey)) return;
+  visited.add(nodeKey);
+  if (startNode.outputs) {
+    for (const output of startNode.outputs) {
+      if (output.links) {
+        for (const linkId of output.links) {
+          const link = getLinkFromGraph(startNode.graph, linkId);
+          if (link) {
+            const targetNode = (_b = (_a2 = startNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
+            if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
+              const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
+              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
+            } else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
+              updateDownstreamLoaders(targetNode, visited);
+            }
+          }
+        }
+      }
+    }
+  }
+}
 const _hoisted_1$1 = { class: "autocomplete-text-widget" };
 const _hoisted_2$1 = ["placeholder", "spellcheck"];
+const _hoisted_3$1 = ["title"];
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "AutocompleteTextWidget",
   props: {
@@ -15230,6 +15700,10 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
     const hasText = ref(false);
     const showClearButton = computed(() => hasText.value);
+    const isLoraTextWidget = computed(() => (props.modelType ?? "loras") === "loras");
+    const clearButtonTitle = computed(
+      () => isLoraTextWidget.value ? "Clear text, keeping enabled LoRAs" : "Clear text"
+    );
     useAutocomplete(
       textareaRef,
       props.modelType ?? "loras",
@@ -15293,22 +15767,49 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         };
       }
     };
+    const enabledLoraNames = () => {
+      var _a2;
+      const loras = (_a2 = props.node.lorasWidget) == null ? void 0 : _a2.value;
+      if (!Array.isArray(loras)) return null;
+      const names = /* @__PURE__ */ new Set();
+      for (const lora of loras) {
+        const name = typeof (lora == null ? void 0 : lora.name) === "string" ? lora.name : "";
+        if (name && (lora == null ? void 0 : lora.active) !== false) names.add(name);
+      }
+      return names;
+    };
+    const retainedLoraText = (text) => {
+      const enabled = enabledLoraNames();
+      if (!enabled || enabled.size === 0) return "";
+      const pattern = new RegExp(LORA_PATTERN.source, "g");
+      const kept = [];
+      let match = pattern.exec(text);
+      while (match) {
+        if (enabled.has(match[1])) kept.push(match[0]);
+        match = pattern.exec(text);
+      }
+      return kept.join(" ");
+    };
     const clearText = () => {
       const ta = textareaRef.value;
       if (!ta || ta.value.length === 0) return;
+      const nextValue = isLoraTextWidget.value ? retainedLoraText(ta.value) : "";
       ta.focus();
+      if (nextValue === ta.value) {
+        return;
+      }
       ta.setSelectionRange(0, ta.value.length);
       let ok = false;
       try {
-        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, "");
+        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, nextValue);
       } catch {
         ok = false;
       }
       if (ok) {
-        hasText.value = false;
+        hasText.value = nextValue.length > 0;
         return;
       }
-      ta.value = "";
+      ta.value = nextValue;
       ta.dispatchEvent(new Event("input"));
     };
     onMounted(() => {
@@ -15382,7 +15883,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
             key: 0,
             type: "button",
             class: "clear-button",
-            title: "Clear text",
+            title: clearButtonTitle.value,
             onClick: clearText
           }, [..._cache[0] || (_cache[0] = [
             createBaseVNode("svg", {
@@ -15404,13 +15905,13 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 y2: "18"
               })
             ], -1)
-          ])])) : createCommentVNode("", true)
+          ])], 8, _hoisted_3$1)) : createCommentVNode("", true)
         ], 4)
       ]);
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-ba49c841"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-af46ca6b"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -15750,474 +16251,6 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
     didUnmount = true;
     onCleanup == null ? void 0 : onCleanup();
   };
-}
-function getComfyUIBasePath() {
-  const { pathname } = window.location;
-  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-}
-function lmUrl(path) {
-  return `${getComfyUIBasePath()}${path}`;
-}
-let _loraSyntaxFormatCache = null;
-let _loraSyntaxFormatRefreshPromise = null;
-async function _fetchLoraSyntaxFormat() {
-  try {
-    const response = await api.fetchApi("/lm/settings");
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.settings) {
-        _loraSyntaxFormatCache = data.settings.lora_syntax_format || "legacy";
-        return;
-      }
-    }
-  } catch (e) {
-  }
-  if (_loraSyntaxFormatCache === null) {
-    _loraSyntaxFormatCache = "legacy";
-  }
-}
-function _triggerBackgroundRefresh() {
-  if (_loraSyntaxFormatRefreshPromise) {
-    return;
-  }
-  _loraSyntaxFormatRefreshPromise = _fetchLoraSyntaxFormat().finally(() => {
-    _loraSyntaxFormatRefreshPromise = null;
-  });
-}
-function _initLoraSyntaxFormat() {
-  _triggerBackgroundRefresh();
-}
-_initLoraSyntaxFormat();
-function _initLoraSyntaxFormatReactive() {
-  window.addEventListener("storage", (e) => {
-    if (e.key === "lm:lora-syntax-format-changed") {
-      _triggerBackgroundRefresh();
-    }
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      _triggerBackgroundRefresh();
-    }
-  });
-}
-_initLoraSyntaxFormatReactive();
-const AUTOCOMPLETE_METADATA_WIDGET_PREFIX = "__lm_autocomplete_meta_";
-const LORA_MANAGER_WIDGET_IDS_PROPERTY$1 = "__lm_widget_ids";
-function stripAutocompleteLastAccepted(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return value;
-  }
-  if (!("lastAccepted" in value)) {
-    return value;
-  }
-  const stripped = { ...value };
-  delete stripped.lastAccepted;
-  return stripped;
-}
-function stripAutocompleteMetadataFromNodes(nodes) {
-  var _a2;
-  if (!Array.isArray(nodes)) {
-    return;
-  }
-  for (const node of nodes) {
-    if (!node || typeof node !== "object") {
-      continue;
-    }
-    const widgetIds = (_a2 = node.properties) == null ? void 0 : _a2[LORA_MANAGER_WIDGET_IDS_PROPERTY$1];
-    if (Array.isArray(node.widgets_values) && Array.isArray(widgetIds)) {
-      for (let i2 = 0; i2 < node.widgets_values.length && i2 < widgetIds.length; i2++) {
-        if (typeof widgetIds[i2] === "string" && widgetIds[i2].startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
-          node.widgets_values[i2] = stripAutocompleteLastAccepted(node.widgets_values[i2]);
-        }
-      }
-    }
-    const named = node.widgets_values_named;
-    if (named && typeof named === "object") {
-      for (const [key, value] of Object.entries(named)) {
-        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
-          named[key] = stripAutocompleteLastAccepted(value);
-        }
-      }
-    }
-  }
-}
-function stripAutocompleteMetadataFromPromptResult(result) {
-  var _a2;
-  if (!result || typeof result !== "object") {
-    return result;
-  }
-  const workflow = result.workflow;
-  if (workflow && typeof workflow === "object") {
-    stripAutocompleteMetadataFromNodes(workflow.nodes);
-    const subgraphs = (_a2 = workflow.definitions) == null ? void 0 : _a2.subgraphs;
-    if (Array.isArray(subgraphs)) {
-      for (const subgraph of subgraphs) {
-        stripAutocompleteMetadataFromNodes(subgraph == null ? void 0 : subgraph.nodes);
-      }
-    }
-  }
-  const output = result.output;
-  if (output && typeof output === "object") {
-    for (const nodeOutput of Object.values(output)) {
-      const inputs = nodeOutput == null ? void 0 : nodeOutput.inputs;
-      if (!inputs || typeof inputs !== "object") {
-        continue;
-      }
-      for (const [key, value] of Object.entries(inputs)) {
-        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
-          inputs[key] = stripAutocompleteLastAccepted(value);
-        }
-      }
-    }
-  }
-  return result;
-}
-const registryState = globalThis.__lmLoraNodeAdapterRegistry ?? {
-  adaptersByClass: /* @__PURE__ */ new Map(),
-  changeListeners: /* @__PURE__ */ new Set()
-};
-globalThis.__lmLoraNodeAdapterRegistry = registryState;
-const { adaptersByClass, changeListeners } = registryState;
-function getNodeClass(nodeOrClass) {
-  return typeof nodeOrClass === "string" ? nodeOrClass : nodeOrClass == null ? void 0 : nodeOrClass.comfyClass;
-}
-function getLoraNodeAdapter(nodeOrClass) {
-  const nodeClass = getNodeClass(nodeOrClass);
-  return nodeClass ? adaptersByClass.get(nodeClass) ?? null : null;
-}
-const ROOT_GRAPH_ID = "root";
-const LORA_PROVIDER_NODE_TYPES$1 = [
-  "Lora Stacker (LoraManager)",
-  "Lora Randomizer (LoraManager)",
-  "Lora Cycler (LoraManager)",
-  "Create Hook LoRA (LoraManager)"
-];
-const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
-  "Lora Stack Combiner (LoraManager)"
-];
-const LORA_CHAIN_NODE_TYPES$1 = [
-  ...LORA_PROVIDER_NODE_TYPES$1,
-  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
-];
-function isLoraStackAggregatorNode$1(comfyClass) {
-  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
-}
-function isLoraChainNode(comfyClass) {
-  return LORA_CHAIN_NODE_TYPES$1.includes(comfyClass);
-}
-function isMapLike(collection) {
-  return collection && typeof collection.entries === "function" && typeof collection.values === "function";
-}
-function getGraphId(graph) {
-  return (graph == null ? void 0 : graph.id) ?? ROOT_GRAPH_ID;
-}
-function getNodeGraphId(node) {
-  if (!node) {
-    return ROOT_GRAPH_ID;
-  }
-  return getGraphId(node.graph || app.graph);
-}
-function getNodeReference(node) {
-  if (!node) {
-    return null;
-  }
-  return {
-    node_id: node.id,
-    graph_id: getNodeGraphId(node)
-  };
-}
-function getNodeKey(node) {
-  if (!node) {
-    return null;
-  }
-  return `${getNodeGraphId(node)}:${node.id}`;
-}
-function getLinkFromGraph(graph, linkId) {
-  if (!graph || graph.links == null) {
-    return null;
-  }
-  if (isMapLike(graph.links)) {
-    return graph.links.get(linkId) || null;
-  }
-  return graph.links[linkId] || null;
-}
-function findModeAccessor(node) {
-  let proto = Object.getPrototypeOf(node);
-  while (proto && proto !== Object.prototype) {
-    const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
-    if (descriptor && (descriptor.get || descriptor.set)) {
-      return descriptor;
-    }
-    proto = Object.getPrototypeOf(proto);
-  }
-  return null;
-}
-function interceptModeChange(node, onModeChange) {
-  if (!node || typeof onModeChange !== "function") {
-    return;
-  }
-  if (!Array.isArray(node._lmModeChangeListeners)) {
-    Object.defineProperty(node, "_lmModeChangeListeners", {
-      configurable: true,
-      writable: true,
-      value: []
-    });
-  }
-  node._lmModeChangeListeners.push(onModeChange);
-  if (node._lmModeChangeIntercepted) {
-    return;
-  }
-  Object.defineProperty(node, "_lmModeChangeIntercepted", {
-    configurable: true,
-    writable: true,
-    value: true
-  });
-  const notify = (newMode, oldMode) => {
-    for (const listener of node._lmModeChangeListeners ?? []) {
-      try {
-        listener(newMode, oldMode);
-      } catch (listenerError) {
-        console.error("LoRA Manager: mode change listener failed", listenerError);
-      }
-    }
-  };
-  const delegate = findModeAccessor(node);
-  if (delegate && typeof delegate.get === "function" && typeof delegate.set === "function") {
-    Object.defineProperty(node, "mode", {
-      configurable: true,
-      get() {
-        return delegate.get.call(this);
-      },
-      set(value) {
-        const oldValue = delegate.get.call(this);
-        delegate.set.call(this, value);
-        if (oldValue !== value) {
-          notify(value, oldValue);
-        }
-      }
-    });
-    return;
-  }
-  let currentMode = node.mode;
-  Object.defineProperty(node, "mode", {
-    configurable: true,
-    get() {
-      return currentMode;
-    },
-    set(value) {
-      const oldValue = currentMode;
-      currentMode = value;
-      if (oldValue !== value) {
-        notify(value, oldValue);
-      }
-    }
-  });
-}
-function isLoraStackInput(input) {
-  return (input == null ? void 0 : input.type) === "LORA_STACK";
-}
-function getConnectedInputLoraChainNodes(node) {
-  var _a2, _b;
-  const connectedNodes = [];
-  if (!(node == null ? void 0 : node.inputs)) {
-    return connectedNodes;
-  }
-  for (const input of node.inputs) {
-    if (!isLoraStackInput(input) || !input.link) {
-      continue;
-    }
-    const link = getLinkFromGraph(node.graph, input.link);
-    if (!link) {
-      continue;
-    }
-    const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
-    if (sourceNode && (isLoraChainNode(sourceNode.comfyClass) || getLoraNodeAdapter(sourceNode))) {
-      connectedNodes.push(sourceNode);
-    }
-  }
-  return connectedNodes;
-}
-function getConnectedTriggerToggleNodes(node) {
-  const connectedNodes = /* @__PURE__ */ new Set();
-  const visited = /* @__PURE__ */ new Set();
-  function visit(currentNode) {
-    var _a2, _b;
-    if (!currentNode || visited.has(currentNode)) {
-      return;
-    }
-    visited.add(currentNode);
-    for (const output of currentNode.outputs ?? []) {
-      for (const linkId of (output == null ? void 0 : output.links) ?? []) {
-        const link = getLinkFromGraph(currentNode.graph, linkId);
-        if (!link) {
-          continue;
-        }
-        const targetNode = (_b = (_a2 = currentNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
-        if ((targetNode == null ? void 0 : targetNode.comfyClass) === "TriggerWord Toggle (LoraManager)") {
-          connectedNodes.add(targetNode);
-        } else if ((targetNode == null ? void 0 : targetNode.comfyClass) === "LoRA Trigger Words (LoraManager)") {
-          visit(targetNode);
-        }
-      }
-    }
-  }
-  visit(node);
-  return Array.from(connectedNodes);
-}
-function getActiveLorasFromNode(node) {
-  var _a2, _b;
-  const activeLoraNames = /* @__PURE__ */ new Set();
-  const adapter = getLoraNodeAdapter(node);
-  if (adapter == null ? void 0 : adapter.getActiveLoraNames) {
-    try {
-      const names = adapter.getActiveLoraNames(node);
-      if (names == null) {
-        return activeLoraNames;
-      }
-      if (typeof names === "string" || typeof (names == null ? void 0 : names[Symbol.iterator]) !== "function") {
-        throw new TypeError("getActiveLoraNames must return an iterable of names");
-      }
-      for (const name of names) {
-        if (typeof name === "string" && name) {
-          activeLoraNames.add(name);
-        }
-      }
-    } catch (error) {
-      console.error(
-        `LoRA Manager: adapter ${adapter.id} failed to read active LoRAs`,
-        error
-      );
-    }
-    return activeLoraNames;
-  }
-  if (node.comfyClass === "Lora Cycler (LoraManager)") {
-    const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
-    if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
-      activeLoraNames.add(cyclerWidget.value.current_lora_filename);
-    }
-    return activeLoraNames;
-  }
-  if (isLoraStackAggregatorNode$1(node.comfyClass)) {
-    return activeLoraNames;
-  }
-  let lorasWidget = node.lorasWidget;
-  if (!lorasWidget && node.widgets) {
-    lorasWidget = node.widgets.find((w2) => w2.name === "loras");
-  }
-  if (lorasWidget && lorasWidget.value) {
-    lorasWidget.value.forEach((lora) => {
-      if (lora.active) {
-        activeLoraNames.add(lora.name);
-      }
-    });
-  }
-  return activeLoraNames;
-}
-function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) {
-  const nodeKey = getNodeKey(node);
-  if (!nodeKey) {
-    return /* @__PURE__ */ new Set();
-  }
-  if (visited.has(nodeKey)) {
-    return /* @__PURE__ */ new Set();
-  }
-  visited.add(nodeKey);
-  const isNodeActive2 = node.mode === void 0 || node.mode === 0 || node.mode === 3;
-  if (!isNodeActive2) {
-    return /* @__PURE__ */ new Set();
-  }
-  const allActiveLoraNames = getActiveLorasFromNode(node);
-  const inputChainNodes = getConnectedInputLoraChainNodes(node);
-  for (const chainNode of inputChainNodes) {
-    const upstreamLoras = collectActiveLorasFromChain(chainNode, visited);
-    upstreamLoras.forEach((name) => allActiveLoraNames.add(name));
-  }
-  return allActiveLoraNames;
-}
-const TRIGGER_WORD_SYNC_TIMER = "__lmTriggerWordSyncTimer";
-const TRIGGER_WORD_SYNC_DELAY_MS = 50;
-function updateConnectedTriggerWords(node, loraNames) {
-  const connectedNodes = getConnectedTriggerToggleNodes(node);
-  if (connectedNodes.length === 0) {
-    return;
-  }
-  const nodeIds = connectedNodes.map((connectedNode) => getNodeReference(connectedNode)).filter((reference) => reference !== null);
-  if (nodeIds.length === 0) {
-    return;
-  }
-  const pendingTimer = node[TRIGGER_WORD_SYNC_TIMER];
-  if (pendingTimer) {
-    clearTimeout(pendingTimer);
-  }
-  const loraNamesSnapshot = Array.from(loraNames);
-  node[TRIGGER_WORD_SYNC_TIMER] = setTimeout(() => {
-    delete node[TRIGGER_WORD_SYNC_TIMER];
-    fetch(lmUrl("/api/lm/loras/get_trigger_words"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        lora_names: loraNamesSnapshot,
-        node_ids: nodeIds
-      })
-    }).catch((err) => console.error("Error fetching trigger words:", err));
-  }, TRIGGER_WORD_SYNC_DELAY_MS);
-}
-function getConnectedPoolConfigNode(node) {
-  var _a2, _b;
-  if (!(node == null ? void 0 : node.inputs)) {
-    return null;
-  }
-  for (const input of node.inputs) {
-    if (input.name !== "pool_config" || !input.link) {
-      continue;
-    }
-    const link = getLinkFromGraph(node.graph, input.link);
-    if (!link) {
-      continue;
-    }
-    const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
-    if (sourceNode && sourceNode.comfyClass === "Lora Pool (LoraManager)") {
-      return sourceNode;
-    }
-  }
-  return null;
-}
-function getPoolConfigFromConnectedNode(node) {
-  var _a2;
-  const poolNode = getConnectedPoolConfigNode(node);
-  if (!poolNode) {
-    return null;
-  }
-  const isNodeActive2 = poolNode.mode === void 0 || poolNode.mode === 0 || poolNode.mode === 3;
-  if (!isNodeActive2) {
-    return null;
-  }
-  const poolWidget = (_a2 = poolNode.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "pool_config");
-  return (poolWidget == null ? void 0 : poolWidget.value) || null;
-}
-function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set()) {
-  var _a2, _b;
-  const nodeKey = getNodeKey(startNode);
-  if (!nodeKey || visited.has(nodeKey)) return;
-  visited.add(nodeKey);
-  if (startNode.outputs) {
-    for (const output of startNode.outputs) {
-      if (output.links) {
-        for (const linkId of output.links) {
-          const link = getLinkFromGraph(startNode.graph, linkId);
-          if (link) {
-            const targetNode = (_b = (_a2 = startNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
-            if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
-              const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
-              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
-            } else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
-              updateDownstreamLoaders(targetNode, visited);
-            }
-          }
-        }
-      }
-    }
-  }
 }
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",

@@ -136,6 +136,171 @@ describe('AutocompleteTextWidget clear button', () => {
 })
 
 /**
+ * Tests for the LoRA widget's clear.
+ *
+ * On a LoRA widget the box holds the node's LoRA list in tag form, so a clear
+ * keeps the tags of the LoRAs that are enabled and drops everything else:
+ * disabled entries and any prompt text around them. Prompt widgets have no
+ * list, so they still clear outright.
+ */
+
+interface MockLoraEntry {
+  name: string
+  strength?: string
+  active?: boolean
+}
+
+function mountLoraWidget(loras: MockLoraEntry[] | undefined, modelType: 'loras' | 'prompt' = 'loras') {
+  const widget = createMockWidget()
+  const node: { id: number; lorasWidget?: { value: MockLoraEntry[] } } = { id: 1 }
+  if (loras !== undefined) {
+    node.lorasWidget = { value: loras }
+  }
+  const wrapper = shallowMount(AutocompleteTextWidget, {
+    props: { widget, node, modelType },
+    attachTo: document.body,
+  })
+  return { wrapper, widget, node }
+}
+
+describe('AutocompleteTextWidget clear on a LoRA widget', () => {
+  it('keeps the enabled LoRAs, dropping disabled entries and prompt text', async () => {
+    const { wrapper, widget } = mountLoraWidget([
+      { name: 'style/enabled_one', strength: '0.80', active: true },
+      { name: 'style/off_two', strength: '1.20', active: false },
+    ])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue(
+      'masterpiece, <lora:style/enabled_one:0.80>, <lora:style/off_two:1.20>, best quality'
+    )
+    widget.callback.mockClear()
+
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('<lora:style/enabled_one:0.80>')
+    expect(widget.callback).toHaveBeenCalledTimes(1)
+    expect(widget.callback).toHaveBeenCalledWith('<lora:style/enabled_one:0.80>')
+    // Something is still in the box, so the button stays available
+    expect(wrapper.find('.clear-button').exists()).toBe(true)
+  })
+
+  it('keeps clip strengths and tag order as they are in the box', async () => {
+    const { wrapper } = mountLoraWidget([
+      { name: 'a', active: true },
+      { name: 'b', active: true },
+    ])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('<lora:b:0.50:0.70> <lora:a:1.00>')
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('<lora:b:0.50:0.70> <lora:a:1.00>')
+  })
+
+  it('clears the box when no listed LoRA is enabled', async () => {
+    const { wrapper, widget } = mountLoraWidget([
+      { name: 'a', active: false },
+      { name: 'b', active: false },
+    ])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('<lora:a:1.00> and some prompt text <lora:b:1.00>')
+    widget.callback.mockClear()
+
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('')
+    expect(widget.callback).toHaveBeenCalledWith('')
+    expect(wrapper.find('.clear-button').exists()).toBe(false)
+  })
+
+  it('clears the box when the node has no LoRA list', async () => {
+    const { wrapper } = mountLoraWidget(undefined)
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('<lora:a:1.00>')
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('')
+  })
+
+  it('counts a listed LoRA without an active flag as enabled', async () => {
+    const { wrapper } = mountLoraWidget([{ name: 'legacy_entry' }])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('<lora:legacy_entry:1.00> prompt words')
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('<lora:legacy_entry:1.00>')
+  })
+
+  it('leaves the box untouched when it already holds only enabled LoRAs', async () => {
+    const { wrapper, widget } = mountLoraWidget([{ name: 'a', active: true }])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('<lora:a:1.00>')
+    widget.callback.mockClear()
+
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('<lora:a:1.00>')
+    // Nothing was cleared, so no edit is reported to the node
+    expect(widget.callback).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(textarea.element)
+  })
+
+  it('records the retained text as the trusted edit so undo restores the clear', async () => {
+    const { wrapper, widget } = mountLoraWidget([
+      { name: 'a', active: true },
+      { name: 'b', active: false },
+    ])
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('words <lora:a:1.00> <lora:b:1.00>')
+    widget.callback.mockClear()
+
+    const execMock = vi.fn((_cmd: string, _showUI: boolean, value: string) => {
+      const ta = document.activeElement as HTMLTextAreaElement | null
+      if (!ta || ta.tagName !== 'TEXTAREA') return false
+      ta.value = String(value ?? '')
+      ta.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    })
+    Object.defineProperty(document, 'execCommand', { configurable: true, value: execMock })
+
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect(execMock).toHaveBeenCalledWith('insertText', false, '<lora:a:1.00>')
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('<lora:a:1.00>')
+    expect(widget.callback).toHaveBeenCalledTimes(1)
+    expect(widget.callback).toHaveBeenCalledWith('<lora:a:1.00>')
+  })
+
+  it('still clears everything on a prompt widget that has a LoRA list', async () => {
+    const { wrapper } = mountLoraWidget([{ name: 'a', active: true }], 'prompt')
+    const textarea = wrapper.find('textarea')
+
+    await textarea.setValue('words <lora:a:1.00>')
+    await wrapper.find('.clear-button').trigger('click')
+
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('')
+  })
+
+  it('titles the button for the behaviour it has', async () => {
+    const lora = mountLoraWidget([{ name: 'a', active: true }])
+    await lora.wrapper.find('textarea').setValue('<lora:a:1.00>')
+    expect(lora.wrapper.find('.clear-button').attributes('title')).toBe(
+      'Clear text, keeping enabled LoRAs'
+    )
+
+    const prompt = mountLoraWidget([{ name: 'a', active: true }], 'prompt')
+    await prompt.wrapper.find('textarea').setValue('words')
+    expect(prompt.wrapper.find('.clear-button').attributes('title')).toBe('Clear text')
+  })
+})
+
+/**
  * Tests for the vertical-scrollbar inset.
  *
  * When the textarea content overflows and a classic (non-overlay) scrollbar

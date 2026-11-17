@@ -19,7 +19,7 @@
         v-if="showClearButton"
         type="button"
         class="clear-button"
-        title="Clear text"
+        :title="clearButtonTitle"
         @click="clearText"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -34,6 +34,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAutocomplete } from '@/composables/useAutocomplete'
+// @ts-ignore - ComfyUI external module
+import { LORA_PATTERN } from '../../../web/comfyui/utils.js'
 
 // Access LiteGraph global for initial mode detection
 declare const LiteGraph: { vueNodesMode?: boolean } | undefined
@@ -110,6 +112,16 @@ const hasText = ref(false)
 
 // Show clear button when there is text
 const showClearButton = computed(() => hasText.value)
+
+// A LoRA widget's box is its node's LoRA list in tag form; a prompt widget's is
+// free text. Only the former has LoRAs to keep when the box is cleared.
+const isLoraTextWidget = computed(() => (props.modelType ?? 'loras') === 'loras')
+
+// The LoRA widget's clear keeps the LoRAs that are switched on, so the tooltip
+// says what it does instead of reading as "empty the box".
+const clearButtonTitle = computed(() =>
+  isLoraTextWidget.value ? 'Clear text, keeping enabled LoRAs' : 'Clear text'
+)
 
 // Initialize autocomplete with direct ref access
 useAutocomplete(
@@ -220,27 +232,80 @@ const setupWidgetOnSetValue = () => {
 }
 
 /**
+ * Names of the LoRAs this node currently has enabled.
+ *
+ * `active` is the LoRA list's own on/off flag; an entry without one is on by
+ * default, matching the list widget. Returns null when the node carries no LoRA
+ * list (prompt widgets, or a node whose list widget is not attached), which is
+ * the case where the box holds nothing but text.
+ */
+const enabledLoraNames = (): Set<string> | null => {
+  const loras = (props.node as { lorasWidget?: { value?: unknown } }).lorasWidget?.value
+  if (!Array.isArray(loras)) return null
+  const names = new Set<string>()
+  for (const lora of loras) {
+    const name = typeof lora?.name === 'string' ? lora.name : ''
+    if (name && lora?.active !== false) names.add(name)
+  }
+  return names
+}
+
+/**
+ * What a clear leaves behind in a LoRA widget's box: the tags of the LoRAs the
+ * node has enabled, in the order they appear. Disabled entries and any prompt
+ * text around them are dropped.
+ *
+ * The tag text is kept verbatim rather than reformatted, so a clear never
+ * rewrites a strength the user typed; tags are matched by name the way
+ * `mergeLoras` matches them, so everything kept survives the merge that the
+ * widget callback runs next.
+ */
+const retainedLoraText = (text: string): string => {
+  const enabled = enabledLoraNames()
+  if (!enabled || enabled.size === 0) return ''
+  const pattern = new RegExp(LORA_PATTERN.source, 'g')
+  const kept: string[] = []
+  let match = pattern.exec(text)
+  while (match) {
+    if (enabled.has(match[1])) kept.push(match[0])
+    match = pattern.exec(text)
+  }
+  return kept.join(' ')
+}
+
+/**
  * Clear the textarea contents.
  *
- * Uses a trusted editing command (execCommand: select all + replace with
- * empty string) so the browser records the clear as an undoable edit —
- * Ctrl+Z with focus in the textarea restores the cleared text. Falls back
- * to a plain programmatic clear when execCommand is unavailable (e.g. jsdom
- * test environment), which is not undoable via native Ctrl+Z.
+ * On a LoRA widget the box is the node's LoRA list in tag form, so clearing it
+ * outright takes the LoRAs that are switched on with it — the enabled ones stay
+ * and only the disabled entries (and any other text) are dropped. Prompt
+ * widgets have no list to keep, so they clear outright.
+ *
+ * Uses a trusted editing command (execCommand: select all + replace with the
+ * retained text) so the browser records the clear as an undoable edit — Ctrl+Z
+ * with focus in the textarea restores the cleared content. Falls back to a
+ * plain programmatic write when execCommand is unavailable (e.g. jsdom test
+ * environment), which is not undoable via native Ctrl+Z.
  */
 const clearText = () => {
   const ta = textareaRef.value
   if (!ta || ta.value.length === 0) return
 
+  const nextValue = isLoraTextWidget.value ? retainedLoraText(ta.value) : ''
+  ta.focus()
+  if (nextValue === ta.value) {
+    // Only enabled LoRAs in the box: nothing to clear, so record no edit.
+    return
+  }
+
   // Select all + replace via a trusted edit command so the browser pushes an
   // undo entry that restores the full previous content.
-  ta.focus()
   ta.setSelectionRange(0, ta.value.length)
   let ok = false
   try {
     // Guarded for engines without execCommand (jsdom); some engines also
     // throw instead of returning false for unsupported commands.
-    ok = typeof document.execCommand === 'function' && document.execCommand('insertText', false, '')
+    ok = typeof document.execCommand === 'function' && document.execCommand('insertText', false, nextValue)
   } catch {
     ok = false
   }
@@ -248,14 +313,14 @@ const clearText = () => {
   if (ok) {
     // execCommand fired a trusted 'input' event → onInput already synced
     // hasText, called the widget callback, and notified the autocomplete.
-    hasText.value = false
+    hasText.value = nextValue.length > 0
     return
   }
 
   // Fallback: execCommand unavailable (jsdom / unsupported browser) — plain
-  // programmatic clear. The dispatched input event keeps onInput, the widget
+  // programmatic write. The dispatched input event keeps onInput, the widget
   // callback, and the autocomplete in sync.
-  ta.value = ''
+  ta.value = nextValue
   ta.dispatchEvent(new Event('input'))
 }
 
