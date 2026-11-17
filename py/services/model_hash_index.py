@@ -309,10 +309,22 @@ class ModelHashIndex:
         return self._filename_to_hash.get(filename)
     
     def get_hash_by_filename(self, filename: str) -> Optional[str]:
-        """Get hash for a filename (bare basename or path-prefixed name)"""
-        if "/" in filename or "\\" in filename:
-            filename = os.path.splitext(os.path.basename(filename.replace("\\", "/")))[0]
-        return self._filename_to_hash.get(filename)
+        """Get hash for a filename (bare basename or path-prefixed name)
+
+        Callers pass several shapes: a bare stem ("my_lora"), a path-prefixed
+        stem ("sub/my_lora", the LoRA syntax emitted since #917), or a filename
+        that still carries its real extension. The index key is always the stem
+        of the basename, so try the name as-is first: a dot inside the stem is
+        content, not an extension ("x1.5" must not lose the ".5"). Only then
+        fall back to stripping one extension from names that still have one.
+        """
+        name = os.path.basename(filename.replace("\\", "/"))
+        hash_value = self._filename_to_hash.get(name)
+        if hash_value is None:
+            stem, extension = os.path.splitext(name)
+            if extension:
+                hash_value = self._filename_to_hash.get(stem)
+        return hash_value
     
     def clear(self) -> None:
         """Clear all entries"""

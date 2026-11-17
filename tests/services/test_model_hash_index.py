@@ -327,3 +327,44 @@ class TestModelHashIndexEmptyPlaceholder:
         index.add_entry("b" * 64, "/models/other.safetensors", autov3="e3b0c44298fc")
         assert index.get_path("abcdef123456") == "/models/real.safetensors"
         assert index.get_all_autov3() == {"abcdef123456": "/models/real.safetensors"}
+
+
+class TestGetHashByFilename:
+    def test_path_prefixed_dotted_stem_resolves(self):
+        # The lookup name arrives without its extension but with the subfolder
+        # prefix; a dot inside the stem is content, not an extension.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/Anima/Concept/Anima-protect-x1.5.safetensors")
+        assert (
+            index.get_hash_by_filename("Anima/Concept/Anima-protect-x1.5") == "a" * 64
+        )
+
+    def test_windows_path_prefix_resolves(self):
+        index = ModelHashIndex()
+        index.add_entry(
+            "b" * 64, "/models/Anima/Concept/rimworld_pawn.Copy.safetensors"
+        )
+        assert (
+            index.get_hash_by_filename("Anima\\Concept\\rimworld_pawn.Copy") == "b" * 64
+        )
+
+    def test_path_prefixed_name_with_extension_resolves(self):
+        index = ModelHashIndex()
+        index.add_entry("c" * 64, "/models/sub/my_lora.safetensors")
+        assert index.get_hash_by_filename("sub/my_lora.safetensors") == "c" * 64
+
+    def test_bare_name_with_extension_resolves(self):
+        index = ModelHashIndex()
+        index.add_entry("d" * 64, "/models/my_lora.safetensors")
+        assert index.get_hash_by_filename("my_lora.safetensors") == "d" * 64
+
+    def test_bare_stem_still_resolves(self):
+        index = ModelHashIndex()
+        index.add_entry("e" * 64, "/models/my_lora.safetensors")
+        assert index.get_hash_by_filename("my_lora") == "e" * 64
+
+    def test_unknown_name_returns_none(self):
+        index = ModelHashIndex()
+        index.add_entry("f" * 64, "/models/my_lora.safetensors")
+        assert index.get_hash_by_filename("sub/missing") is None
+        assert index.get_hash_by_filename("missing.safetensors") is None
