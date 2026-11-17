@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState, createAddLoraButton, createStrengthDragHandle } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState, createAddLoraButton, createStrengthDragHandle, createSweepButton, updateSweepButtonState } from "./loras_widget_components.js";
 import { openLoraQuickPanel } from "./lora_quick_panel.js";
 import { 
   parseLoraValue, 
@@ -317,6 +317,27 @@ export function addLorasWidget(node, name, opts, callback) {
       headerActions.appendChild(strengthDragHandle);
       initHeaderDrag(strengthDragHandle, widget, renderLoras);
     }
+
+    // Sweep: drop the rows that are switched off and keep the rest, strengths
+    // and order untouched. The count is re-read on hover because toggling all
+    // off updates the value without re-rendering this header.
+    const countOffLoras = () =>
+      parseLoraValue(widget.value).filter((lora) => lora.active === false).length;
+    const sweepButton = createSweepButton(() => {
+      const lorasData = parseLoraValue(widget.value);
+      const kept = lorasData.filter((lora) => lora.active !== false);
+      if (kept.length === lorasData.length) {
+        return;
+      }
+      previewTooltip.hide();
+      updateWidgetValue(formatLoraValue(kept));
+      renderLoras(widget.value, widget);
+    });
+    updateSweepButtonState(sweepButton, countOffLoras());
+    sweepButton.addEventListener("pointerenter", () =>
+      updateSweepButtonState(sweepButton, countOffLoras())
+    );
+    headerActions.appendChild(sweepButton);
 
     headerActions.appendChild(createAddLoraButton(() => {
       previewTooltip.hide();

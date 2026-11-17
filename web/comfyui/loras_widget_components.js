@@ -77,6 +77,43 @@ export function createAddLoraButton(onClick) {
   return button;
 }
 
+/**
+ * Header button that drops the rows which are switched off.
+ *
+ * Same 24px chrome as the add button and the strength drag handle, so the three
+ * header actions read as one group; the mark is a list whose last row is being
+ * removed.
+ */
+export function createSweepButton(onClick) {
+  const button = document.createElement("button");
+  button.className = "lm-lora-sweep-button";
+  button.type = "button";
+  button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h7"/><path d="m16 16 5 5"/><path d="m21 16-5 5"/></svg>`;
+  button.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick();
+  });
+  return button;
+}
+
+/**
+ * Reflect how many rows a sweep would remove.
+ *
+ * The count comes from the widget value, not from the render that created the
+ * button: toggling all off changes the value without re-rendering the header,
+ * so the caller re-applies it when the pointer reaches the button.
+ */
+export function updateSweepButtonState(button, offCount) {
+  const count = Number.isFinite(offCount) && offCount > 0 ? offCount : 0;
+  const label = count === 0
+    ? "No turned-off LoRAs to remove"
+    : `Remove ${count} turned-off LoRA${count === 1 ? "" : "s"}`;
+  button.disabled = count === 0;
+  button.title = label;
+  button.setAttribute("aria-label", label);
+}
+
 // Create arrow button for strength adjustment
 export function createArrowButton(direction, onClick) {
   const button = document.createElement("div");

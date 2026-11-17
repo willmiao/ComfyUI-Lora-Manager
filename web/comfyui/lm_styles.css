@@ -206,7 +206,8 @@
 }
 
 .lm-lora-add-button,
-.lm-lora-strength-drag-handle {
+.lm-lora-strength-drag-handle,
+.lm-lora-sweep-button {
   width: 24px;
   height: 24px;
   display: flex;
@@ -224,14 +225,16 @@
 }
 
 .lm-lora-add-button:hover,
-.lm-lora-strength-drag-handle:hover {
+.lm-lora-strength-drag-handle:hover,
+.lm-lora-sweep-button:hover:not(:disabled) {
   color: var(--lm-fg);
   background: var(--lm-accent-soft);
   border-color: var(--lm-accent-border);
 }
 
 .lm-lora-add-button:focus-visible,
-.lm-lora-strength-drag-handle:focus-visible {
+.lm-lora-strength-drag-handle:focus-visible,
+.lm-lora-sweep-button:focus-visible {
   outline: 2px solid var(--lm-accent-border);
   outline-offset: 1px;
 }
@@ -239,6 +242,13 @@
 .lm-lora-strength-drag-handle {
   cursor: ew-resize;
   touch-action: none;
+}
+
+/* Nothing switched off to remove: the button stays in place so the header
+   keeps its geometry, dimmed and untargetable. */
+.lm-lora-sweep-button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .lm-lora-entry {
