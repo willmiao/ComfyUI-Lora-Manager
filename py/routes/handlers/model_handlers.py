@@ -707,6 +707,22 @@ class ModelManagementHandler:
                 metadata_path
             )
 
+            # The relink payload is built from the sidecar and then becomes the
+            # cache entry. For checkpoint/other libraries sub_type is derived
+            # from the root that holds the file, but the sidecar may be stale
+            # (imported before the move), missing (freshly recreated) or seeded
+            # with CivitAI's own model type ("Checkpoint" for a UNet file).
+            # Carry the location-derived value into the payload so the rebuilt
+            # sidecar and cache keep the model under the loader that can load
+            # it, instead of flipping it to a checkpoint until the next restart.
+            resolve_sub_type = getattr(
+                self._service.scanner, "resolve_sub_type_for_path", None
+            )
+            if callable(resolve_sub_type) and isinstance(local_metadata, dict):
+                resolved_sub_type = resolve_sub_type(file_path)
+                if resolved_sub_type:
+                    local_metadata["sub_type"] = resolved_sub_type
+
             relink_kwargs = {
                 "file_path": file_path,
                 "metadata": local_metadata,

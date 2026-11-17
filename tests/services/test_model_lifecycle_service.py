@@ -704,9 +704,9 @@ async def test_unexclude_model_restores_cache_entry(tmp_path: Path):
             self._excluded_models = [str(model_path)]
             self.updated = []
 
-        async def update_single_model_cache(self, old_path, new_path, metadata, recalculate_type=False):
+        async def update_single_model_cache(self, old_path, new_path, metadata):
             exclude_value = metadata.get("exclude") if isinstance(metadata, dict) else metadata.exclude
-            self.updated.append((old_path, new_path, exclude_value, recalculate_type))
+            self.updated.append((old_path, new_path, exclude_value))
 
     saved_metadata = []
 
@@ -734,7 +734,7 @@ async def test_unexclude_model_restores_cache_entry(tmp_path: Path):
     assert scanner._excluded_models == []
     assert saved_metadata[0][1]["exclude"] is False
     assert scanner.updated == [
-        (str(model_path), str(model_path), False, True)
+        (str(model_path), str(model_path), False)
     ]
 
 

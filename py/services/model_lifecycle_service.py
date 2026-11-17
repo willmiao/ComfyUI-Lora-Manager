@@ -396,7 +396,6 @@ class ModelLifecycleService:
             file_path,
             file_path,
             metadata,
-            recalculate_type=True,
         )
 
         message = f"Model {os.path.basename(file_path)} restored"

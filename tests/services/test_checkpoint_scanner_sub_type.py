@@ -295,3 +295,154 @@ async def test_sync_cache_from_metadata_does_not_revert_sub_type(
     entry = scanner._cache.raw_data[0]
     assert entry["sub_type"] == "diffusion_model"
     assert entry["model_name"] == "mymodel Renamed"
+
+
+def _patch_base_models_roots(monkeypatch, ckpt_root: Path, unet_root: Path) -> None:
+    from py import config as config_module
+
+    monkeypatch.setattr(
+        config_module.config,
+        "base_models_roots",
+        [str(ckpt_root), str(unet_root)],
+        raising=False,
+    )
+
+
+@pytest.mark.parametrize("sidecar_sub_type", ["checkpoint", None])
+@pytest.mark.asyncio
+async def test_update_single_model_cache_derives_sub_type_from_location(
+    tmp_path, monkeypatch, sidecar_sub_type
+):
+    """A metadata-driven cache rebuild must keep the location-derived sub_type.
+
+    Regression: relinking a manually imported Flux UNet rebuilt its cache entry
+    from a sidecar that said "checkpoint" (or had no sub_type at all), so the
+    model vanished from the UNET loader dropdown — which filters strictly on
+    ``sub_type == "diffusion_model"`` — until ComfyUI was restarted.
+    """
+    ckpt_root = tmp_path / "checkpoints"
+    unet_root = tmp_path / "unet"
+    ckpt_root.mkdir()
+    unet_root.mkdir()
+    _set_config_roots(monkeypatch, ckpt_root, unet_root)
+
+    scanner = _make_move_scanner(ckpt_root, unet_root)
+    file_path = _write_model(unet_root, "CenKreChro_2_5", "checkpoint")
+    scanner._cache = ModelCache(raw_data=[], folders=[])
+
+    metadata = {
+        "file_path": file_path,
+        "file_name": "CenKreChro_2_5",
+        "model_name": "CenKreChro",
+        "sha256": "abc123",
+        "hash_status": "completed",
+        "tags": [],
+    }
+    if sidecar_sub_type:
+        metadata["sub_type"] = sidecar_sub_type
+
+    await scanner.update_single_model_cache(file_path, file_path, metadata)
+
+    entry = scanner._cache.raw_data[0]
+    assert entry["sub_type"] == "diffusion_model"
+
+
+@pytest.mark.asyncio
+async def test_add_model_to_cache_derives_sub_type_from_location(
+    tmp_path, monkeypatch
+):
+    """Imports (external-source links) must also be filed by their location."""
+    ckpt_root = tmp_path / "checkpoints"
+    unet_root = tmp_path / "unet"
+    ckpt_root.mkdir()
+    unet_root.mkdir()
+    _set_config_roots(monkeypatch, ckpt_root, unet_root)
+
+    scanner = _make_move_scanner(ckpt_root, unet_root)
+    file_path = _write_model(unet_root, "CenKreChro_2_5", "checkpoint")
+    scanner._cache = ModelCache(raw_data=[], folders=[])
+
+    added = await scanner.add_model_to_cache(
+        {
+            "file_path": file_path,
+            "file_name": "CenKreChro_2_5",
+            "model_name": "CenKreChro",
+            "sha256": "abc123",
+            "size": 4,
+            "modified": 1.0,
+            "base_model": "Flux.1 D",
+            "preview_url": "",
+            "tags": [],
+        }
+    )
+
+    assert added is True
+    assert scanner._cache.raw_data[0]["sub_type"] == "diffusion_model"
+
+
+@pytest.mark.asyncio
+async def test_new_unet_entry_is_born_as_diffusion_model(tmp_path, monkeypatch):
+    """A manually imported UNet must not get a sidecar seeded as a checkpoint."""
+    ckpt_root = tmp_path / "checkpoints"
+    unet_root = tmp_path / "unet"
+    ckpt_root.mkdir()
+    unet_root.mkdir()
+    _set_config_roots(monkeypatch, ckpt_root, unet_root)
+    _patch_base_models_roots(monkeypatch, ckpt_root, unet_root)
+
+    model_path = unet_root / "CenKreChro_2_5.safetensors"
+    model_path.write_bytes(b"fake model weights")
+
+    scanner = CheckpointScanner()
+    entry = await scanner._process_model_file(str(model_path), str(unet_root))
+
+    assert entry is not None
+    assert entry["sub_type"] == "diffusion_model"
+
+    sidecar = json.loads(
+        (unet_root / "CenKreChro_2_5.metadata.json").read_text(encoding="utf-8")
+    )
+    assert sidecar["sub_type"] == "diffusion_model"
+
+
+@pytest.mark.asyncio
+async def test_scan_repairs_stale_sidecar_sub_type(tmp_path, monkeypatch):
+    """A sidecar written before a cross-root move heals on the next scan."""
+    ckpt_root = tmp_path / "checkpoints"
+    unet_root = tmp_path / "unet"
+    ckpt_root.mkdir()
+    unet_root.mkdir()
+    _set_config_roots(monkeypatch, ckpt_root, unet_root)
+    _patch_base_models_roots(monkeypatch, ckpt_root, unet_root)
+
+    model_path = unet_root / "CenKreChro_2_5.safetensors"
+    model_path.write_bytes(b"fake model weights")
+    (unet_root / "CenKreChro_2_5.metadata.json").write_text(
+        json.dumps(
+            {
+                "file_path": str(model_path).replace(os.sep, "/"),
+                "file_name": "CenKreChro_2_5",
+                "model_name": "CenKreChro",
+                "size": len(b"fake model weights"),
+                "modified": 1.0,
+                "sha256": "abc123",
+                "base_model": "Flux.1 D",
+                "preview_url": "",
+                "tags": [],
+                "sub_type": "checkpoint",
+                "hash_status": "completed",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner = CheckpointScanner()
+    entry = await scanner._process_model_file(str(model_path), str(unet_root))
+
+    assert entry is not None
+    assert entry["sub_type"] == "diffusion_model"
+
+    sidecar = json.loads(
+        (unet_root / "CenKreChro_2_5.metadata.json").read_text(encoding="utf-8")
+    )
+    assert sidecar["sub_type"] == "diffusion_model"

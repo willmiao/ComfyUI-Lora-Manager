@@ -3487,6 +3487,21 @@ class ModelScanner:
         """Hook for subclasses: adjust metadata during scanning"""
         return metadata
 
+    def _apply_location_sub_type(self, metadata, file_path: str) -> Optional[str]:
+        """Set the location-derived sub_type on *metadata*, returning it.
+
+        ``checkpoint`` and ``other`` scanners derive ``sub_type`` from the
+        root that holds the file, and that value is authoritative over
+        whatever a sidecar recorded: older versions could leave a stale value,
+        a cross-root move changes it, and CivitAI labels a UNet-only file
+        "Checkpoint". Returns ``None`` for scanners without location-derived
+        sub-types (LoRA, embedding, workflow).
+        """
+        resolved = self.resolve_sub_type_for_path(file_path)
+        if resolved and isinstance(metadata, BaseModelMetadata):
+            metadata.sub_type = resolved
+        return resolved
+
     def _log_metadata_creation_failure(self, file_path: str) -> None:
         """Log a model that could not be converted into a cache entry."""
 
@@ -3610,6 +3625,11 @@ class ModelScanner:
 
                         metadata = cast(Any, self.model_class).from_civitai_info(version_info, file_info, file_path)
                         metadata.preview_url = find_preview_file(get_sidecar_base_name(file_path), get_preview_dir(file_path))
+                        # .civitai.info records the CivitAI model type, which is
+                        # not the local sub_type (a Flux UNet is a "Checkpoint"
+                        # there). Apply the location-derived value before the
+                        # first save so the sidecar is born consistent.
+                        self._apply_location_sub_type(metadata, file_path)
                         await MetadataManager.save_metadata(file_path, metadata)
                         logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
                 except Exception as e:
@@ -3652,7 +3672,28 @@ class ModelScanner:
             return None
 
         # Hook: allow subclasses to adjust metadata
+        previous_sub_type = getattr(metadata, "sub_type", None)
         metadata = self.adjust_metadata(metadata, file_path, root_path)
+
+        # sub_type is location-derived for checkpoint/other models. When the
+        # sidecar predates a cross-root move (or was seeded with the wrong
+        # value), persist the corrected value now: later metadata-driven cache
+        # rebuilds (relink, metadata refresh, notes edits) trust the sidecar
+        # and would otherwise revert the entry to the stale type.
+        resolved_sub_type = getattr(metadata, "sub_type", None)
+        if (
+            resolved_sub_type
+            and resolved_sub_type != previous_sub_type
+            and isinstance(metadata, BaseModelMetadata)
+        ):
+            try:
+                await MetadataManager.save_metadata(file_path, metadata)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.error(
+                    "Failed to persist location-derived sub_type for %s: %s",
+                    file_path,
+                    exc,
+                )
         
         rel_path = os.path.relpath(file_path, root_path)
         folder = os.path.dirname(rel_path)
@@ -4000,6 +4041,11 @@ class ModelScanner:
                 cache_entry['civitai'] = self._slim_civitai_payload(cache_entry['civitai'])
             metadata_dict = cache_entry
 
+            # Same location-derived contract as update_single_model_cache:
+            # downloads/imports may carry no sub_type (or a stale one), so
+            # derive it from the root that now holds the file.
+            metadata_dict = self.adjust_cached_entry(metadata_dict)
+
             file_path = metadata_dict.get('file_path', '')
             if file_path:
                 old_entries = [item for item in self._cache.raw_data if item.get('file_path') == file_path]
@@ -4175,7 +4221,7 @@ class ModelScanner:
                     except Exception as e:
                         logger.error(f"Error persisting sub_type for moved model: {e}")
 
-            update_result = await self.update_single_model_cache(source_path, target_file, metadata, recalculate_type=True)
+            update_result = await self.update_single_model_cache(source_path, target_file, metadata)
             
             return {
                 "new_path": target_file,
@@ -4237,7 +4283,7 @@ class ModelScanner:
                     metadata['file_path'] = new_path
                     metadata['file_name'] = os.path.splitext(os.path.basename(new_path))[0]
 
-            update_result = await self.update_single_model_cache(source_path, new_path, metadata, recalculate_type=True)
+            update_result = await self.update_single_model_cache(source_path, new_path, metadata)
             return {
                 "new_path": new_path,
                 "cache_entry": update_result if isinstance(update_result, dict) else None,
@@ -4334,7 +4380,7 @@ class ModelScanner:
                 exc_info=True,
             )
 
-    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Optional[Dict[str, Any]], recalculate_type: bool = False) -> Union[bool, Dict[str, Any]]:
+    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Optional[Dict[str, Any]]) -> Union[bool, Dict[str, Any]]:
         """Update cache after a model has been moved or modified.
 
         Performs the full maintenance chain (version-index rebuild, resort,
@@ -4342,6 +4388,13 @@ class ModelScanner:
         inside a :meth:`defer_cache_persist` context, in which case only
         the in-memory entry swap and incremental index updates run and the
         heavy chain executes once at context exit.
+
+        Location-derived fields (``sub_type`` for the checkpoint and other
+        scanners) are always re-derived from the model's path: the metadata
+        feeding this write may come from a sidecar that predates a move, was
+        created before sub_types existed, or was rebuilt during a relink.
+        Trusting it would file a diffusion model as a checkpoint and hide it
+        from the loader node that can actually load it.
         """
         deferred = self._cache_persist_deferred
         cache = await self.get_cached_data()
@@ -4403,8 +4456,10 @@ class ModelScanner:
                 except Exception as e:
                     logger.error(f"Failed to compute SHA256 for {normalized_new_path}: {e}")
 
-            if recalculate_type:
-                cache_entry = self.adjust_cached_entry(cache_entry)
+            # The location-derived fields are authoritative at this write
+            # boundary: never persist a cache entry whose sub_type disagrees
+            # with the root holding the file (see the docstring).
+            cache_entry = self.adjust_cached_entry(cache_entry)
 
             cache.raw_data.append(cache_entry)
             cache.add_to_version_index(cache_entry)

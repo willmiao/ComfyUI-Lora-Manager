@@ -76,7 +76,11 @@ class CheckpointScanner(ModelScanner):
             # safetensors dtypes). "" = checked, no quantization detected.
             quantization = detect_quantization(real_path)
 
-            # Create metadata WITHOUT calculating hash
+            # Create metadata WITHOUT calculating hash. sub_type is
+            # location-derived: a manually imported Flux UNet living in a
+            # unet/diffusion_models root must not be born as a checkpoint, or
+            # every later sidecar-driven cache rebuild would file it under the
+            # wrong type until the next restart.
             metadata = CheckpointMetadata(
                 file_name=base_name,
                 model_name=base_name,
@@ -88,7 +92,7 @@ class CheckpointScanner(ModelScanner):
                 preview_url=normalize_path(preview_url),
                 tags=[],
                 modelDescription="",
-                sub_type="checkpoint",
+                sub_type=self.resolve_sub_type_for_path(file_path) or "checkpoint",
                 from_civitai=False,  # Mark as local model since no hash yet
                 hash_status="pending",  # Mark hash as pending
                 autov3=autov3 or "",

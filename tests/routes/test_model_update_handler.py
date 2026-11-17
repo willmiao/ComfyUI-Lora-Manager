@@ -1155,6 +1155,65 @@ async def test_relink_civitai_passes_provider_name_for_civarchive_source():
 
 
 @pytest.mark.asyncio
+async def test_relink_civitai_carries_location_derived_sub_type():
+    """Relinking must keep the location-derived sub_type in the rebuilt payload.
+
+    A manually imported Flux UNet gets a sidecar seeded with
+    ``sub_type="checkpoint"``; relinking used to rebuild the cache entry from
+    that sidecar, flipping the card to CKPT and hiding the model from the UNET
+    loader dropdown until ComfyUI restarted.
+    """
+    relinked_payload = {
+        "model_name": "CenKreChro",
+        "sha256": "abc",
+        "sub_type": "diffusion_model",
+    }
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(
+            return_value={"model_name": "CenKreChro", "sub_type": "checkpoint"}
+        ),
+        relink_metadata=AsyncMock(return_value=relinked_payload),
+    )
+    scanner = SimpleNamespace(
+        update_single_model_cache=AsyncMock(),
+        resolve_sub_type_for_path=lambda file_path: "diffusion_model",
+    )
+    handler = ModelManagementHandler(
+        service=SimpleNamespace(scanner=scanner),
+        logger=logging.getLogger(__name__),
+        metadata_sync=metadata_sync,
+        preview_service=SimpleNamespace(),
+        tag_update_service=SimpleNamespace(),
+        lifecycle_service=SimpleNamespace(),
+    )
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/models/diffusion_models/model.safetensors",
+                "model_id": "1836040",
+                "model_version_id": "2427120",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 200
+
+    metadata_sync.relink_metadata.assert_awaited_once_with(
+        file_path="/models/diffusion_models/model.safetensors",
+        metadata={"model_name": "CenKreChro", "sub_type": "diffusion_model"},
+        model_id=1836040,
+        model_version_id=2427120,
+    )
+    scanner.update_single_model_cache.assert_awaited_once_with(
+        "/models/diffusion_models/model.safetensors",
+        "/models/diffusion_models/model.safetensors",
+        relinked_payload,
+    )
+
+
+@pytest.mark.asyncio
 async def test_relink_civitai_surfaces_provider_unavailable_without_500():
     metadata_sync = SimpleNamespace(
         load_local_metadata=AsyncMock(return_value={}),

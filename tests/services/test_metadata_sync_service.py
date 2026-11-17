@@ -1335,6 +1335,47 @@ async def test_relink_keeps_the_existing_payload_values(tmp_path):
     assert result["sha256"] == "original"
     assert result["model_name"] == "Remote"
 
+
+@pytest.mark.asyncio
+async def test_relink_keeps_the_caller_location_sub_type(tmp_path):
+    """The caller's location-derived sub_type wins over sidecar data.
+
+    Relinking rebuilds the payload from the sidecar. The route handler injects
+    the sub_type resolved from the model's root, so a stale sidecar (or one
+    seeded with CivitAI's own "Checkpoint" model type for a UNet-only file)
+    cannot flip a diffusion model to a checkpoint.
+    """
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(
+            return_value={
+                "files": [
+                    {"primary": True, "type": "Model", "hashes": {"SHA256": "ABCDEF"}}
+                ],
+                "model": {"name": "Remote", "type": "Checkpoint"},
+                "images": [],
+            }
+        ),
+    )
+    helpers = build_service(default_provider=provider)
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"real model bytes")
+
+    result = await helpers.service.relink_metadata(
+        file_path=str(model_path),
+        metadata={
+            "file_path": str(model_path),
+            "sub_type": "diffusion_model",
+        },
+        model_id=1,
+        model_version_id=2,
+    )
+
+    assert result["sub_type"] == "diffusion_model"
+    saved_payload = helpers.metadata_manager.save_metadata.await_args.args[1]
+    assert saved_payload["sub_type"] == "diffusion_model"
+
+
 def test_normalize_creator_updates_marks_manual_and_canonicalizes_whitespace() -> None:
     updates = {
         "civitai": {
