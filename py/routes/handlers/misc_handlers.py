@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import io
 import json
 import logging
@@ -23,7 +24,7 @@ import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, unquote, urlparse
 from typing import Any, Awaitable, Callable, Dict, Mapping, Optional, Protocol, Sequence
 
 from aiohttp import web
@@ -4384,6 +4385,22 @@ class WildcardsHandler:
 
 
 class NodeRegistryHandler:
+    _IMAGE_SEND_MAX_BYTES = 64 * 1024 * 1024
+    _IMAGE_SEND_TIMEOUT_SECONDS = 30.0
+    _IMAGE_SEND_HOST_SUFFIXES = ("civitai.com", "civitai.red", "genur.art")
+    _IMAGE_FORMAT_EXTENSIONS = {
+        "JPEG": ".jpg",
+        "MPO": ".jpg",
+        "PNG": ".png",
+        "WEBP": ".webp",
+        "GIF": ".gif",
+        "BMP": ".bmp",
+        "TIFF": ".tif",
+    }
+    _IMAGE_WIDGET_EXTENSIONS = frozenset(
+        {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
+    )
+
     def __init__(
         self,
         node_registry: NodeRegistry,
@@ -4820,6 +4837,405 @@ class NodeRegistryHandler:
             logger.error("Failed to update node widget (GET): %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    @staticmethod
+    def _is_within_root(root: str, path: str) -> bool:
+        """Return True when *path* resolves inside *root*."""
+        try:
+            root_normalized = os.path.normcase(os.path.realpath(root))
+            path_normalized = os.path.normcase(os.path.realpath(path))
+            return os.path.commonpath([root_normalized, path_normalized]) == root_normalized
+        except (OSError, ValueError):
+            return False
+
+    @staticmethod
+    def _input_directory() -> str:
+        import folder_paths  # Imported lazily so standalone mode stays importable.
+
+        return os.path.realpath(folder_paths.get_input_directory())
+
+    def _resolve_allowed_local_path(self, path: str) -> str:
+        """Resolve a local image path only when it is inside a trusted root."""
+        candidate = os.path.abspath(os.path.expanduser(path))
+
+        try:
+            input_dir = self._input_directory()
+        except Exception:
+            input_dir = ""
+        if input_dir and self._is_within_root(input_dir, candidate):
+            return os.path.realpath(candidate)
+
+        try:
+            if config.is_preview_path_allowed(candidate):
+                return os.path.realpath(candidate)
+        except Exception:
+            pass
+
+        try:
+            example_root = get_settings_manager().get("example_images_path")
+        except Exception:
+            example_root = ""
+        if (
+            isinstance(example_root, str)
+            and example_root.strip()
+            and self._is_within_root(example_root, candidate)
+        ):
+            return os.path.realpath(candidate)
+
+        raise ValueError("Image path is not inside an allowed folder")
+
+    def _resolve_example_static_path(self, relative_path: str) -> str:
+        """Map ``/example_images_static/<relative>`` to its on-disk file."""
+        try:
+            example_root = get_settings_manager().get("example_images_path")
+        except Exception:
+            example_root = ""
+        if not isinstance(example_root, str) or not example_root.strip():
+            raise ValueError("Example images path is not configured")
+
+        root = os.path.realpath(os.path.expanduser(example_root))
+        candidate = os.path.realpath(
+            os.path.join(root, relative_path.lstrip("/\\"))
+        )
+        if not self._is_within_root(root, candidate):
+            raise ValueError("Invalid example image path")
+        if not os.path.isfile(candidate):
+            raise ValueError("Example image file not found")
+        return candidate
+
+    @staticmethod
+    def _resolve_preview_path(preview_path: str) -> str:
+        """Validate and resolve an ``/api/lm/previews?path=...`` target."""
+        try:
+            allowed = config.is_preview_path_allowed(preview_path)
+        except Exception:
+            allowed = False
+        if not allowed:
+            raise ValueError("Preview image path is not allowed")
+        resolved = os.path.realpath(os.path.expanduser(preview_path))
+        if not os.path.isfile(resolved):
+            raise ValueError("Preview image file not found")
+        return resolved
+
+    def _try_resolve_local_url(self, url: str) -> Optional[str]:
+        """Resolve LoRA Manager's own image URLs without an HTTP round trip."""
+        parsed = urlparse(url)
+        path = unquote(parsed.path or "")
+
+        marker = "/example_images_static/"
+        if marker in path:
+            relative_path = path.split(marker, 1)[1]
+            return self._resolve_example_static_path(relative_path)
+
+        if "/api/lm/previews" in path:
+            preview_paths = parse_qs(parsed.query).get("path") or []
+            if not preview_paths:
+                raise ValueError("Preview URL is missing its path parameter")
+            return self._resolve_preview_path(preview_paths[0])
+
+        return None
+
+    @staticmethod
+    def _read_local_image(path: str) -> bytes:
+        if not os.path.isfile(path):
+            raise ValueError("Image file not found")
+        try:
+            if os.path.getsize(path) > NodeRegistryHandler._IMAGE_SEND_MAX_BYTES:
+                raise ValueError("Image is too large")
+            with open(path, "rb") as handle:
+                return handle.read()
+        except OSError as exc:
+            raise ValueError("Unable to read the image file") from exc
+
+    async def _download_remote_image(self, url: str) -> bytes:
+        host = (urlparse(url).hostname or "").lower()
+        if not any(
+            host == suffix or host.endswith("." + suffix)
+            for suffix in self._IMAGE_SEND_HOST_SUFFIXES
+        ):
+            raise ValueError("Only CivitAI image URLs can be sent to the workflow")
+
+        downloader = await get_downloader()
+        try:
+            success, content, _headers = await asyncio.wait_for(
+                downloader.download_to_memory(
+                    url,
+                    use_auth=False,
+                    return_headers=True,
+                ),
+                timeout=self._IMAGE_SEND_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError as exc:
+            raise ValueError("Timed out downloading the image") from exc
+
+        if not success or not isinstance(content, (bytes, bytearray)):
+            raise ValueError(str(content) or "Failed to download the image")
+        data = bytes(content)
+        if len(data) > self._IMAGE_SEND_MAX_BYTES:
+            raise ValueError("Image is too large")
+        return data
+
+    async def _resolve_image_source(
+        self, source: Any
+    ) -> tuple[bytes, str, Optional[str]]:
+        """Return ``(bytes, original_name, trusted_local_path)``."""
+        if isinstance(source, str):
+            source = {"url": source}
+        if not isinstance(source, dict):
+            raise ValueError("Missing image source")
+
+        path = source.get("path")
+        if isinstance(path, str) and path.strip():
+            resolved = await asyncio.to_thread(
+                self._resolve_allowed_local_path, path.strip()
+            )
+            data = await asyncio.to_thread(self._read_local_image, resolved)
+            return data, os.path.basename(resolved), resolved
+
+        url = source.get("url")
+        if not isinstance(url, str) or not url.strip():
+            raise ValueError("Missing image source URL or path")
+        url = url.strip()
+
+        local_path = self._try_resolve_local_url(url)
+        if local_path:
+            data = await asyncio.to_thread(self._read_local_image, local_path)
+            return data, os.path.basename(local_path), local_path
+
+        parsed = urlparse(url)
+        if parsed.scheme in ("http", "https"):
+            data = await self._download_remote_image(url)
+            name = os.path.basename(unquote(parsed.path)) or "image"
+            return data, name, None
+
+        raise ValueError("Unsupported image source")
+
+    def _detect_image_extension(self, data: bytes) -> str:
+        """Validate the bytes with Pillow and return the canonical extension."""
+        from PIL import Image
+
+        try:
+            with Image.open(io.BytesIO(data)) as image:
+                image_format = (image.format or "").upper()
+                image.verify()
+        except Exception as exc:
+            raise ValueError("The selected file is not a supported image") from exc
+
+        extension = self._IMAGE_FORMAT_EXTENSIONS.get(image_format)
+        if not extension:
+            raise ValueError(f"Unsupported image format: {image_format or 'unknown'}")
+        return extension
+
+    @staticmethod
+    def _sanitize_image_stem(name: str) -> str:
+        stem = os.path.splitext(os.path.basename(name or "image"))[0]
+        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-")
+        return stem[:60] or "image"
+
+    def _save_image_to_input(
+        self,
+        data: bytes,
+        source_name: str,
+        extension: str,
+        source_path: Optional[str] = None,
+    ) -> str:
+        """Persist an image into ComfyUI's input folder and return its widget value."""
+        input_dir = self._input_directory()
+        os.makedirs(input_dir, exist_ok=True)
+
+        # A file already in the input root is directly usable, and keeping its
+        # original name avoids surprising duplicates.
+        if source_path:
+            try:
+                if os.path.dirname(os.path.realpath(source_path)) == os.path.realpath(
+                    input_dir
+                ):
+                    source_extension = os.path.splitext(source_path)[1].lower()
+                    if source_extension in self._IMAGE_WIDGET_EXTENSIONS:
+                        return os.path.basename(source_path)
+            except OSError:
+                pass
+
+        digest = hashlib.sha256(data).hexdigest()[:32]
+        stem = self._sanitize_image_stem(source_name)
+        base = f"lm_{digest}_{stem}"
+        filename = f"{base}{extension}"
+        destination = os.path.join(input_dir, filename)
+        counter = 1
+        while os.path.exists(destination):
+            if os.path.isfile(destination) and os.path.getsize(destination) == len(data):
+                return filename
+            filename = f"{base}_{counter}{extension}"
+            destination = os.path.join(input_dir, filename)
+            counter += 1
+
+        fd, temp_path = tempfile.mkstemp(
+            prefix=".lm-image-", suffix=".tmp", dir=input_dir
+        )
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(data)
+            os.replace(temp_path, destination)
+        except Exception:
+            with contextlib.suppress(OSError):
+                os.unlink(temp_path)
+            raise
+
+        return filename
+
+    @staticmethod
+    def _normalize_image_targets(
+        node_ids: Any,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        targets: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        if not isinstance(node_ids, list):
+            return targets, errors
+
+        for entry in node_ids:
+            node_identifier = entry
+            graph_identifier = None
+            if isinstance(entry, dict):
+                node_identifier = entry.get("node_id")
+                graph_identifier = entry.get("graph_id")
+
+            if node_identifier is None:
+                errors.append(
+                    {
+                        "node_id": node_identifier,
+                        "graph_id": graph_identifier,
+                        "success": False,
+                        "error": "Missing node_id parameter",
+                    }
+                )
+                continue
+
+            try:
+                parsed_node_id = int(node_identifier)
+            except (TypeError, ValueError):
+                parsed_node_id = node_identifier
+
+            target: dict[str, Any] = {"id": parsed_node_id}
+            if graph_identifier is not None:
+                target["graph_id"] = str(graph_identifier)
+            targets.append(target)
+
+        return targets, errors
+
+    async def send_image_to_workflow(self, request: web.Request) -> web.Response:
+        """Materialize an image and set it on one or more ComfyUI image nodes."""
+        if self._standalone_mode:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Standalone Mode Active",
+                    "message": "Cannot interact with ComfyUI in standalone mode.",
+                },
+                status=503,
+            )
+
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+
+        if not isinstance(data, dict):
+            return web.json_response(
+                {"success": False, "error": "Request body must be an object"},
+                status=400,
+            )
+
+        node_ids = data.get("node_ids")
+        if not isinstance(node_ids, list) or not node_ids:
+            return web.json_response(
+                {"success": False, "error": "node_ids must be a non-empty list"},
+                status=400,
+            )
+
+        targets, target_errors = self._normalize_image_targets(node_ids)
+        if not targets:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "No valid target nodes",
+                    "results": target_errors,
+                },
+                status=400,
+            )
+
+        try:
+            image_bytes, source_name, source_path = await self._resolve_image_source(
+                data.get("source")
+            )
+            extension = await asyncio.to_thread(
+                self._detect_image_extension, image_bytes
+            )
+            value = await asyncio.to_thread(
+                self._save_image_to_input,
+                image_bytes,
+                source_name,
+                extension,
+                source_path,
+            )
+
+            results = list(target_errors)
+            for target in targets:
+                payload: dict[str, Any] = {
+                    "id": target["id"],
+                    "action": "set_image",
+                    "value": value,
+                }
+                if "graph_id" in target:
+                    payload["graph_id"] = target["graph_id"]
+
+                try:
+                    self._prompt_server.instance.send_sync(
+                        "lm_widget_update", payload
+                    )
+                    results.append(
+                        {
+                            "node_id": target["id"],
+                            "graph_id": target.get("graph_id"),
+                            "success": True,
+                        }
+                    )
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logger.error(
+                        "Error sending image to node %s (graph %s): %s",
+                        target["id"],
+                        target.get("graph_id"),
+                        exc,
+                    )
+                    results.append(
+                        {
+                            "node_id": target["id"],
+                            "graph_id": target.get("graph_id"),
+                            "success": False,
+                            "error": str(exc),
+                        }
+                    )
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "value": value,
+                    "name": source_name,
+                    "results": results,
+                }
+            )
+        except ValueError as exc:
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(
+                "Failed to send image to workflow: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
+
 
 class SidecarMigrationHandler:
     """Migrate sidecar metadata and previews between storage layouts."""
@@ -4957,6 +5373,7 @@ class MiscHandlerSet:
             "register_nodes": self.node_registry.register_nodes,
             "update_node_widget": self.node_registry.update_node_widget,
             "get_update_node_widget": self.node_registry.get_update_node_widget,
+            "send_image_to_workflow": self.node_registry.send_image_to_workflow,
             "get_registry": self.node_registry.get_registry,
             "check_model_exists": self.model_library.check_model_exists,
             "check_models_exist": self.model_library.check_models_exist,

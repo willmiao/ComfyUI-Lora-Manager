@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "Copiar sintaxis de receta",
             "sendToWorkflowAppend": "Enviar al workflow (Añadir)",
             "sendToWorkflowReplace": "Enviar al workflow (Reemplazar)",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "Abrir carpeta de ejemplos",
             "downloadExamples": "Descargar imágenes de ejemplo",
             "downloadMissingExamples": "Descargar faltantes",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "No se puede enviar la receta: Falta ID de receta",
                 "failed": "Error al enviar receta al workflow"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "No se pueden ver LoRAs: Falta ID de receta",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "Contenido clasificación X",
                 "nsfwXxx": "Contenido clasificación XXX",
                 "layoutGallery": "Vista de galería",
-                "layoutList": "Vista de lista"
+                "layoutList": "Vista de lista",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "Versiones del modelo",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "Error al añadir el embedding",
             "promptSent": "Prompt enviado al workflow",
             "promptFailed": "Error al enviar el prompt",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "Tipo de nodo \"{type}\" excluido de los destinos de envío"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "Prompt",
+            "image": "[TODO: Translate] Image",
             "replace": "Reemplazar",
             "append": "Añadir",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "Seleccionar nodo de destino",
             "sendToAll": "Enviar a todos",
             "excludeNodeType": "No volver a sugerir este tipo de nodo"

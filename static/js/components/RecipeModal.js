@@ -213,7 +213,12 @@ class RecipeModal {
                     if (url) {
                         openMediaViewer(url, {
                             type: isVideo ? 'video' : 'image',
-                            title: document.getElementById('recipeModalTitle')?.textContent || ''
+                            title: document.getElementById('recipeModalTitle')?.textContent || '',
+                            source: this.currentRecipe?.file_path
+                                ? { path: this.currentRecipe.file_path }
+                                : (this.currentRecipe?.file_url
+                                    ? { url: this.currentRecipe.file_url }
+                                    : { url }),
                         });
                     }
                     return;

@@ -1144,6 +1144,7 @@
       "copyRecipeSyntax": "Copy Recipe Syntax",
       "sendToWorkflowAppend": "Send to Workflow (Append)",
       "sendToWorkflowReplace": "Send to Workflow (Replace)",
+      "sendImageToWorkflow": "Send Image to Workflow",
       "openExamples": "Open Examples Folder",
       "downloadExamples": "Download Example Images",
       "downloadMissingExamples": "Download Missing",
@@ -1411,6 +1412,9 @@
       "sendRecipe": {
         "missingId": "Cannot send recipe: Missing recipe ID",
         "failed": "Failed to send recipe to workflow"
+      },
+      "sendImage": {
+        "missingImage": "Cannot send image: This recipe has no preview image"
       },
       "viewLoras": {
         "missingId": "Cannot view LoRAs: Missing recipe ID",
@@ -2377,7 +2381,8 @@
         "nsfwX": "X-rated Content",
         "nsfwXxx": "XXX-rated Content",
         "layoutGallery": "Gallery view",
-        "layoutList": "List view"
+        "layoutList": "List view",
+        "sendImage": "Send image to workflow"
       },
       "versions": {
         "heading": "Model versions",
@@ -2657,6 +2662,12 @@
       "embeddingFailed": "Failed to add embedding",
       "promptSent": "Prompt sent to workflow",
       "promptFailed": "Failed to send prompt",
+      "imageSourceMissing": "No image source provided",
+      "noImageTargets": "No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+      "imageSent": "Image sent to workflow",
+      "imageSendFailed": "Failed to send image to workflow: {message}",
+      "imageSending": "Sending image to workflow...",
+      "imageDownloading": "Downloading image and sending to workflow...",
       "nodeTypeExcluded": "Node type \"{type}\" excluded from send targets"
     },
     "nodeSelector": {
@@ -2664,8 +2675,10 @@
       "lora": "LoRA",
       "embedding": "Embedding",
       "prompt": "Prompt",
+      "image": "Image",
       "replace": "Replace",
       "append": "Append",
+      "send": "Send",
       "selectTargetNode": "Select target node",
       "sendToAll": "Send to All",
       "excludeNodeType": "Never suggest this node type"

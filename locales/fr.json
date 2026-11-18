@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "Copier la syntaxe de la recipe",
             "sendToWorkflowAppend": "Envoyer vers le workflow (Ajouter)",
             "sendToWorkflowReplace": "Envoyer vers le workflow (Remplacer)",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "Ouvrir le dossier d'exemples",
             "downloadExamples": "Télécharger les images d'exemple",
             "downloadMissingExamples": "Télécharger les manquantes",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "Impossible d'envoyer la recipe : ID de recipe manquant",
                 "failed": "Échec de l'envoi de la recipe vers le workflow"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "Impossible de voir les LoRAs : ID de recipe manquant",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "Contenu classé X",
                 "nsfwXxx": "Contenu classé XXX",
                 "layoutGallery": "Vue galerie",
-                "layoutList": "Vue liste"
+                "layoutList": "Vue liste",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "Versions du modèle",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "Échec de l'ajout de l'embedding",
             "promptSent": "Prompt envoyé au workflow",
             "promptFailed": "Échec de l'envoi du prompt",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "Type de nœud \"{type}\" exclu des cibles d'envoi"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "Prompt",
+            "image": "[TODO: Translate] Image",
             "replace": "Remplacer",
             "append": "Ajouter",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "Sélectionner le nœud cible",
             "sendToAll": "Envoyer à tous",
             "excludeNodeType": "Ne plus suggérer ce type de nœud"

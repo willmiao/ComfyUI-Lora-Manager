@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "레시피 문법 복사",
             "sendToWorkflowAppend": "워크플로로 전송 (추가)",
             "sendToWorkflowReplace": "워크플로로 전송 (교체)",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "예시 폴더 열기",
             "downloadExamples": "예시 이미지 다운로드",
             "downloadMissingExamples": "누락된 것만 다운로드",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "레시피를 전송할 수 없습니다: 레시피 ID 누락",
                 "failed": "레시피를 워크플로로 전송하는데 실패했습니다"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "LoRA를 볼 수 없습니다: 레시피 ID 누락",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "X등급 콘텐츠",
                 "nsfwXxx": "XXX등급 콘텐츠",
                 "layoutGallery": "갤러리 보기",
-                "layoutList": "목록 보기"
+                "layoutList": "목록 보기",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "모델 버전",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "Embedding 추가 실패",
             "promptSent": "프롬프트를 워크플로에 보냈습니다",
             "promptFailed": "프롬프트 보내기 실패",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "노드 유형 \"{type}\"을(를) 전송 대상에서 제외했습니다"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "프롬프트",
+            "image": "[TODO: Translate] Image",
             "replace": "교체",
             "append": "추가",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "대상 노드 선택",
             "sendToAll": "모두에게 전송",
             "excludeNodeType": "이 노드 유형을 다시 제안하지 않음"

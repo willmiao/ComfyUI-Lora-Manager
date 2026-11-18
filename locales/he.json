@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "העתק תחביר מתכון",
             "sendToWorkflowAppend": "שלח ל-Workflow (הוסף)",
             "sendToWorkflowReplace": "שלח ל-Workflow (החלף)",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "פתח תיקיית דוגמאות",
             "downloadExamples": "הורד תמונות דוגמה",
             "downloadMissingExamples": "הורדת חסרים",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "לא ניתן לשלוח מתכון: חסר מזהה מתכון",
                 "failed": "שליחת המתכון ל-workflow נכשלה"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "לא ניתן להציג LoRAs: חסר מזהה מתכון",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "תוכן בדירוג X",
                 "nsfwXxx": "תוכן בדירוג XXX",
                 "layoutGallery": "תצוגת גלריה",
-                "layoutList": "תצוגת רשימה"
+                "layoutList": "תצוגת רשימה",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "גרסאות המודל",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "הוספת Embedding נכשלה",
             "promptSent": "פרומפט נשלחה ל-workflow",
             "promptFailed": "שליחת הפרומפט נכשלה",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "סוג הצומת \"{type}\" הוחרג מיעדי השליחה"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "פרומפט",
+            "image": "[TODO: Translate] Image",
             "replace": "החלף",
             "append": "הוסף",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "בחר צומת יעד",
             "sendToAll": "שלח לכל",
             "excludeNodeType": "לא להציע שוב סוג צומת זה"

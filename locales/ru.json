@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
             "sendToWorkflowAppend": "Отправить в Workflow (Добавить)",
             "sendToWorkflowReplace": "Отправить в Workflow (Заменить)",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "Открыть папку примеров",
             "downloadExamples": "Загрузить примеры изображений",
             "downloadMissingExamples": "Скачать недостающие",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "Невозможно отправить рецепт: отсутствует ID рецепта",
                 "failed": "Не удалось отправить рецепт в workflow"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "Невозможно просмотреть LoRAs: отсутствует ID рецепта",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "Контент с рейтингом X",
                 "nsfwXxx": "Контент с рейтингом XXX",
                 "layoutGallery": "Галерея",
-                "layoutList": "Список"
+                "layoutList": "Список",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "Версии модели",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "Не удалось добавить embedding",
             "promptSent": "Промпт отправлен в workflow",
             "promptFailed": "Не удалось отправить промпт",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "Тип узла \"{type}\" исключён из целей отправки"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "Промпт",
+            "image": "[TODO: Translate] Image",
             "replace": "Заменить",
             "append": "Добавить",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "Выберите целевой узел",
             "sendToAll": "Отправить во все",
             "excludeNodeType": "Больше не предлагать этот тип узла"

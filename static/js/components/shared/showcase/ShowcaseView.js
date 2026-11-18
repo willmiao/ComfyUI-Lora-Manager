@@ -473,7 +473,10 @@ function buildViewerItems() {
             originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
         return {
             url: localFile?.path || getShowcaseUrl(originalRemoteUrl, isVideo ? 'video' : 'image'),
-            type: isVideo ? 'video' : 'image'
+            type: isVideo ? 'video' : 'image',
+            source: localFile?.path
+                ? { url: localFile.path }
+                : (originalRemoteUrl ? { url: originalRemoteUrl } : null),
         };
     });
 }

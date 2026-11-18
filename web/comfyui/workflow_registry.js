@@ -196,17 +196,155 @@ function resolveTextWidget(node) {
  * @returns {boolean}
  */
 function isPromptWidgetConnected(node) {
-    if (!node || !Array.isArray(node.inputs)) {
-        return false;
-    }
-
     const targetWidget = resolveTextWidget(node);
     if (!targetWidget?.name) {
         return false;
     }
 
-    const slotIndex = findInputSlotForWidget(node, targetWidget.name);
+    return isWidgetInputConnected(node, targetWidget.name);
+}
+
+/**
+ * True when a widget is backed by a connected input. ComfyUI execution reads
+ * the linked input, so updating the widget would be a silent no-op.
+ *
+ * @param {Object} node - LiteGraph node instance
+ * @param {string} widgetName - widget / input name
+ * @returns {boolean}
+ */
+function isWidgetInputConnected(node, widgetName) {
+    if (!node || !Array.isArray(node.inputs) || !widgetName) {
+        return false;
+    }
+
+    const slotIndex = findInputSlotForWidget(node, widgetName);
     return slotIndex >= 0 && node.inputs[slotIndex]?.link != null;
+}
+
+/**
+ * Read the node definition input specs. ComfyUI core's uploadImage extension
+ * adds a synthetic ``upload`` input whose options carry the real image widget
+ * name (``imageInputName``), so this is the reliable capability signal.
+ *
+ * @param {Object} node - LiteGraph node instance
+ * @returns {Array<{name: string, options: Object}>}
+ */
+function getNodeInputSpecs(node) {
+    const nodeDef = node?.nodeData ?? node?.constructor?.nodeData;
+    const input = nodeDef?.input;
+    if (!input || typeof input !== "object") {
+        return [];
+    }
+
+    const specs = [];
+    for (const section of ["required", "optional"]) {
+        const entries = input[section];
+        if (!entries || typeof entries !== "object") {
+            continue;
+        }
+        for (const [name, spec] of Object.entries(entries)) {
+            if (!Array.isArray(spec)) {
+                continue;
+            }
+            const options = spec[1];
+            if (!options || typeof options !== "object") {
+                continue;
+            }
+            specs.push({ name, options });
+        }
+    }
+    return specs;
+}
+
+const IMAGE_FILE_EXTENSION_RE = /\.(png|jpe?g|webp|gif|bmp|tiff?)$/i;
+
+/**
+ * Resolve a node's image input, if it has one.
+ *
+ * @param {Object} node - LiteGraph node instance
+ * @returns {{widgetName: string, folder: string, fallback?: boolean}|null}
+ */
+function resolveImageInput(node) {
+    for (const { name, options } of getNodeInputSpecs(node)) {
+        const hasImageUpload =
+            options.image_upload === true || options.animated_image_upload === true;
+        if (!hasImageUpload || options.video_upload === true) {
+            continue;
+        }
+
+        const widgetName =
+            typeof options.imageInputName === "string" && options.imageInputName
+                ? options.imageInputName
+                : name;
+        return {
+            widgetName,
+            folder:
+                typeof options.image_folder === "string" && options.image_folder
+                    ? options.image_folder
+                    : "input",
+        };
+    }
+
+    // Fallback for node definitions that do not expose the synthetic upload
+    // input (older frontends / custom nodes).
+    if (node?.comfyClass === "LoadImageOutput") {
+        return { widgetName: "image", folder: "output", fallback: true };
+    }
+
+    const widgets = Array.isArray(node?.widgets) ? node.widgets : [];
+    for (const name of ["image", "image_path"]) {
+        const widget = widgets.find((candidate) => candidate?.name === name);
+        if (widget) {
+            return { widgetName: name, folder: "input", fallback: true };
+        }
+    }
+
+    const fileWidget = widgets.find((candidate) => {
+        if (!["filename", "file"].includes(candidate?.name)) {
+            return false;
+        }
+        const values = candidate?.options?.values;
+        return Array.isArray(values)
+            && values.some((value) => IMAGE_FILE_EXTENSION_RE.test(String(value)));
+    });
+    return fileWidget
+        ? { widgetName: fileWidget.name, folder: "input", fallback: true }
+        : null;
+}
+
+/**
+ * Resolve the image combo widget that a send-image update should write.
+ *
+ * @param {Object} node - LiteGraph node instance
+ * @returns {{widget: Object, input: {widgetName: string, folder: string}}|null}
+ */
+function resolveImageWidget(node) {
+    if (!node || !Array.isArray(node.widgets)) {
+        return null;
+    }
+
+    const input = resolveImageInput(node);
+    if (!input) {
+        return null;
+    }
+
+    const widget = node.widgets.find((candidate) => candidate?.name === input.widgetName);
+    return widget ? { widget, input } : null;
+}
+
+/**
+ * Add a value to a combo widget's options list. LoadImage lists input files
+ * when the node is created; a newly materialized file must be added client
+ * side or the Vue select renders an empty value.
+ */
+function ensureComboValue(widget, value) {
+    const values = widget?.options?.values;
+    if (!Array.isArray(values) || typeof value !== "string" || !value) {
+        return;
+    }
+    if (!values.includes(value)) {
+        values.push(value);
+    }
 }
 
 app.registerExtension({
@@ -382,6 +520,8 @@ app.registerExtension({
                     LORA_NODE_CLASSES.has(node.comfyClass) || hasLoraNodeAdapter(node);
                 const hasTargetWidget = widgetNames.some((name) => TARGET_WIDGET_NAMES.has(name));
                 const hasTextWidget = TEXT_CAPABLE_CLASSES.has(node.comfyClass);
+                const imageInput = resolveImageInput(node);
+                const hasImageWidget = Boolean(imageInput);
                 const markerRole = node.properties?.lm_marker_role ?? null;
                 const excludeSend = node.properties?.lm_exclude_send === true;
 
@@ -392,8 +532,17 @@ app.registerExtension({
                     hasTextWidget || markerRole === "send_prompt_target"
                         ? isPromptWidgetConnected(node)
                         : false;
+                const imageWidgetConnected = hasImageWidget
+                    ? isWidgetInputConnected(node, imageInput.widgetName)
+                    : false;
 
-                if (!supportsLora && !hasTargetWidget && !hasTextWidget && !markerRole) {
+                if (
+                    !supportsLora &&
+                    !hasTargetWidget &&
+                    !hasTextWidget &&
+                    !hasImageWidget &&
+                    !markerRole
+                ) {
                     continue;
                 }
 
@@ -422,6 +571,10 @@ app.registerExtension({
                         supports_lora: supportsLora,
                         has_text_widget: hasTextWidget && !textWidgetConnected,
                         text_widget_connected: textWidgetConnected,
+                        has_image_widget: hasImageWidget,
+                        image_input_name: imageInput?.widgetName ?? null,
+                        image_folder: imageInput?.folder ?? null,
+                        image_widget_connected: imageWidgetConnected,
                         widget_names: widgetNames,
                     },
                 });
@@ -432,10 +585,11 @@ app.registerExtension({
             // Content-based dedup: skip POST if identical to last sent payload,
             // unless forced (e.g. responding to a lora_registry_refresh WS message
             // where the backend explicitly requests a re-registration).
-            // text_widget_connected is part of the fingerprint so that link
-            // connect/disconnect changes re-register the affected nodes.
+            // text_widget_connected / image_widget_connected are part of the
+            // fingerprint so that link connect/disconnect changes re-register
+            // the affected nodes.
             const fingerprint = JSON.stringify(
-                workflowNodes.map(n => `${n.graph_id}:${n.node_id}|${n.marker_role ?? ""}|${n.exclude_send ? 1 : 0}|${n.mode ?? 0}|${n.capabilities.text_widget_connected}`).sort()
+                workflowNodes.map(n => `${n.graph_id}:${n.node_id}|${n.marker_role ?? ""}|${n.exclude_send ? 1 : 0}|${n.mode ?? 0}|${n.capabilities.text_widget_connected}|${n.capabilities.has_image_widget ? 1 : 0}|${n.capabilities.image_input_name ?? ""}|${n.capabilities.image_widget_connected ? 1 : 0}`).sort()
             );
             if (!force && fingerprint === this._lastFingerprint) {
                 return;
@@ -597,6 +751,38 @@ app.registerExtension({
                 this.refreshRegistry(true);
                 return;
             }
+        } else if (action === "set_image") {
+            if (typeof value !== "string" || !value) {
+                console.warn("LoRA Manager: set_image requires a non-empty value", message);
+                return;
+            }
+
+            const resolved = resolveImageWidget(node);
+            if (!resolved) {
+                console.warn(
+                    "LoRA Manager: no image widget found on node",
+                    node.id,
+                    node.comfyClass
+                );
+                return;
+            }
+            targetWidget = resolved.widget;
+
+            // A connected input overrides the widget during execution.
+            if (isWidgetInputConnected(node, resolved.input.widgetName)) {
+                console.warn(
+                    "LoRA Manager: image widget '%s' on node %d is connected to an input; widget value cannot be changed",
+                    resolved.input.widgetName,
+                    node.id
+                );
+                this.refreshRegistry(true);
+                return;
+            }
+
+            // LoadImage built its combo values before the backend copied the
+            // file into ComfyUI's input folder. Add it so the Vue select
+            // renders the selected file.
+            ensureComboValue(targetWidget, value);
         } else if (widgetName) {
             // Legacy: find widget by name
             targetWidget = node.widgets.find((w) => w?.name === widgetName);
@@ -669,9 +855,10 @@ app.registerExtension({
 
         // ---- Update widget value ----
         const widgetIndex = node.widgets.indexOf(targetWidget);
+        const oldValue = targetWidget.value;
         let newValue = value;
 
-        if (mode === "append") {
+        if (action !== "set_image" && mode === "append") {
             const separator =
                 targetWidget.value && targetWidget.value.length > 0 ? " " : "";
             newValue = targetWidget.value + separator + value;
@@ -692,6 +879,25 @@ app.registerExtension({
                 targetWidget.callback(newValue);
             } catch (callbackError) {
                 console.error("LoRA Manager: widget callback failed", callbackError);
+            }
+        }
+
+        // Image uploads normally go through node.onWidgetChanged; mirror it so
+        // the node and workflow dirty state stay consistent for programmatic
+        // image selection too.
+        if (action === "set_image" && typeof node.onWidgetChanged === "function") {
+            try {
+                node.onWidgetChanged(
+                    targetWidget.name,
+                    newValue,
+                    oldValue,
+                    targetWidget
+                );
+            } catch (changedError) {
+                console.error(
+                    "LoRA Manager: node.onWidgetChanged failed for image widget",
+                    changedError
+                );
             }
         }
 

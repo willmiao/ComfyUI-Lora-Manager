@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "レシピ構文をコピー",
             "sendToWorkflowAppend": "ワークフローに送信（追加）",
             "sendToWorkflowReplace": "ワークフローに送信（置換）",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "例画像フォルダを開く",
             "downloadExamples": "例画像をダウンロード",
             "downloadMissingExamples": "不足分をダウンロード",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "レシピを送信できません：レシピIDがありません",
                 "failed": "レシピのワークフローへの送信に失敗しました"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "LoRAを表示できません：レシピIDがありません",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "X指定コンテンツ",
                 "nsfwXxx": "XXX指定コンテンツ",
                 "layoutGallery": "ギャラリー表示",
-                "layoutList": "リスト表示"
+                "layoutList": "リスト表示",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "モデルバージョン",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "Embeddingの追加に失敗しました",
             "promptSent": "プロンプトをワークフローに送信しました",
             "promptFailed": "プロンプトの送信に失敗しました",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "ノードタイプ \"{type}\" を送信ターゲットから除外しました"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "プロンプト",
+            "image": "[TODO: Translate] Image",
             "replace": "置換",
             "append": "追加",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "ターゲットノードを選択",
             "sendToAll": "すべてに送信",
             "excludeNodeType": "このノードタイプを今後提案しない"

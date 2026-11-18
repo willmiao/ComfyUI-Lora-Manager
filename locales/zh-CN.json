@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "复制配方语法",
             "sendToWorkflowAppend": "发送到工作流（追加）",
             "sendToWorkflowReplace": "发送到工作流（替换）",
+            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
             "openExamples": "打开示例文件夹",
             "downloadExamples": "下载示例图片",
             "downloadMissingExamples": "下载缺失的",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "无法发送配方：缺少配方 ID",
                 "failed": "发送配方到工作流失败"
+            },
+            "sendImage": {
+                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
             },
             "viewLoras": {
                 "missingId": "无法查看 LoRA：缺少配方 ID",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "X 级内容",
                 "nsfwXxx": "XXX 级内容",
                 "layoutGallery": "画廊视图",
-                "layoutList": "列表视图"
+                "layoutList": "列表视图",
+                "sendImage": "[TODO: Translate] Send image to workflow"
             },
             "versions": {
                 "heading": "模型版本",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "添加 Embedding 失败",
             "promptSent": "提示词已发送到工作流",
             "promptFailed": "提示词发送失败",
+            "imageSourceMissing": "[TODO: Translate] No image source provided",
+            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
+            "imageSent": "[TODO: Translate] Image sent to workflow",
+            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
+            "imageSending": "[TODO: Translate] Sending image to workflow...",
+            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
             "nodeTypeExcluded": "节点类型 \"{type}\" 已从发送目标中排除"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "提示词",
+            "image": "[TODO: Translate] Image",
             "replace": "替换",
             "append": "追加",
+            "send": "[TODO: Translate] Send",
             "selectTargetNode": "选择目标节点",
             "sendToAll": "全部发送",
             "excludeNodeType": "不再建议此节点类型"
