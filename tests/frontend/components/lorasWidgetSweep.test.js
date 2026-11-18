@@ -6,6 +6,11 @@
  * rows that are switched off and leaves everything else — strengths, order,
  * selection — alone. The clear (x) in a node's text box is deliberately not
  * touched: it keeps clearing the text, LoRAs included.
+ *
+ * The widget mount mirrors ComfyUI's real addDOMWidget: `value` is wired to
+ * options.getValue/setValue, and setValue() re-renders the list. The header is
+ * therefore rebuilt after every toggle, which is what keeps the sweep button's
+ * count and disabled state current.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -56,8 +61,15 @@ const mountWidget = async (entries) => {
   const node = {
     id: 1,
     comfyClass: 'Lora Stacker (LoraManager)',
-    addDOMWidget(name, type, container) {
-      const widget = { value: undefined };
+    addDOMWidget(name, type, container, options) {
+      const widget = {
+        get value() {
+          return options.getValue();
+        },
+        set value(nextValue) {
+          options.setValue(nextValue);
+        },
+      };
       node.container = container;
       node.widget = widget;
       return widget;
@@ -70,11 +82,21 @@ const mountWidget = async (entries) => {
   return node;
 };
 
-const entry = (name, active, strength = '1.00') => ({ name, strength, active });
+const entry = (name, active, strength = '1.00', extra = {}) => ({
+  name,
+  strength,
+  active,
+  ...extra,
+});
 const rows = (node) => [...node.container.querySelectorAll('.lm-lora-entry')];
 const rowNames = (node) => rows(node).map((row) => row.dataset.loraName);
 const sweepButton = (node) => node.container.querySelector('.lm-lora-sweep-button');
 const addButton = (node) => node.container.querySelector('.lm-lora-add-button');
+const headerLabel = (node) => node.container.querySelector('.lm-toggle-label');
+const selectedNames = (node) =>
+  rows(node)
+    .filter((row) => row.dataset.selected === 'true')
+    .map((row) => row.dataset.loraName);
 
 describe('addLorasWidget sweep button', () => {
   beforeEach(() => {
@@ -102,7 +124,7 @@ describe('addLorasWidget sweep button', () => {
   it('removes the turned-off rows and keeps the enabled ones', async () => {
     respondWith();
     const node = await mountWidget([
-      entry('keep_one', true, '0.80'),
+      entry('keep_one', true, '0.80', { clipStrength: '0.70', expanded: true }),
       entry('drop_one', false, '1.20'),
       entry('keep_two', true, '1.00'),
       entry('drop_two', false, '0.50'),
@@ -115,8 +137,12 @@ describe('addLorasWidget sweep button', () => {
     sweepButton(node).click();
 
     expect(node.widget.value.map((lora) => lora.name)).toEqual(['keep_one', 'keep_two']);
-    // The enabled rows keep their strengths and their order
+    // The enabled rows keep their strengths, clip strength, expansion and order
     expect(node.widget.value.map((lora) => lora.strength)).toEqual(['0.80', '1.00']);
+    expect(node.widget.value[0]).toMatchObject({
+      clipStrength: '0.70',
+      expanded: true,
+    });
     // The list callback runs once, with the swept value
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback.mock.calls[0][0].map((lora) => lora.name)).toEqual(['keep_one', 'keep_two']);
@@ -138,7 +164,7 @@ describe('addLorasWidget sweep button', () => {
 
     sweepButton(node).click();
 
-    // One row left, nothing off: the button turns itself off
+    // One row left, nothing off: the button is rebuilt in its disabled state
     expect(rowNames(node)).toEqual(['a']);
     expect(sweepButton(node).disabled).toBe(true);
     expect(sweepButton(node).title).toBe('No turned-off LoRAs to remove');
@@ -166,47 +192,84 @@ describe('addLorasWidget sweep button', () => {
     expect(rowNames(node)).toEqual(['a', 'b']);
   });
 
-  it('treats a row with no active flag as enabled', async () => {
+  it('treats a row with no active flag as off, like the row and the node do', async () => {
     respondWith();
     const node = await mountWidget([
       { name: 'legacy_entry', strength: '1.00' },
       entry('off_one', false),
     ]);
 
-    expect(sweepButton(node).title).toBe('Remove 1 turned-off LoRA');
+    // The row toggle and the header counter already treat it as off, and the
+    // Python nodes skip it because active is missing.
+    expect(node.widget.value.find((lora) => lora.name === 'legacy_entry').active).toBeUndefined();
+    expect(headerLabel(node).textContent).toBe('0/2 on');
+    expect(sweepButton(node).title).toBe('Remove 2 turned-off LoRAs');
+
     sweepButton(node).click();
 
-    expect(node.widget.value.map((lora) => lora.name)).toEqual(['legacy_entry']);
+    expect(node.widget.value).toEqual([]);
+    expect(node.container.querySelector('.lm-lora-empty-state')).toBeTruthy();
   });
 
-  it('leaves the row selection on a surviving row and drops it with a removed one', async () => {
+  it('leaves the row selection on a surviving row', async () => {
     respondWith();
     const node = await mountWidget([entry('keep', true), entry('drop', false)]);
 
-    const selectedNames = () =>
-      rows(node)
-        .filter((row) => row.dataset.selected === 'true')
-        .map((row) => row.dataset.loraName);
-
-    // Select the way a user does: a click on the row
     rows(node).find((row) => row.dataset.loraName === 'keep').click();
-    expect(selectedNames()).toEqual(['keep']);
+    expect(selectedNames(node)).toEqual(['keep']);
 
     sweepButton(node).click();
 
-    expect(selectedNames()).toEqual(['keep']);
+    expect(selectedNames(node)).toEqual(['keep']);
   });
 
-  it('re-reads the count when the pointer reaches it', async () => {
+  it('clears the selection when the selected row is removed', async () => {
+    respondWith();
+    const node = await mountWidget([entry('keep', true), entry('drop', false)]);
+
+    rows(node).find((row) => row.dataset.loraName === 'drop').click();
+    expect(selectedNames(node)).toEqual(['drop']);
+
+    sweepButton(node).click();
+
+    expect(rowNames(node)).toEqual(['keep']);
+    expect(selectedNames(node)).toEqual([]);
+  });
+
+  it('updates after a row toggle without any hover', async () => {
+    respondWith();
+    const node = await mountWidget([entry('a', true), entry('b', true), entry('c', true)]);
+    expect(headerLabel(node).textContent).toBe('3/3 on');
+    expect(sweepButton(node).disabled).toBe(true);
+
+    // Switching a row off goes through widget.value -> setValue -> render, so
+    // this header is rebuilt and the sweep state is fresh.
+    rows(node)
+      .find((row) => row.dataset.loraName === 'b')
+      .querySelector('.lm-lora-toggle')
+      .click();
+
+    expect(node.widget.value.find((lora) => lora.name === 'b').active).toBe(false);
+    expect(headerLabel(node).textContent).toBe('2/3 on');
+    expect(sweepButton(node).disabled).toBe(false);
+    expect(sweepButton(node).title).toBe('Remove 1 turned-off LoRA');
+
+    sweepButton(node).click();
+
+    expect(rowNames(node)).toEqual(['a', 'c']);
+    expect(headerLabel(node).textContent).toBe('2/2 on');
+    expect(sweepButton(node).disabled).toBe(true);
+  });
+
+  it('updates after toggle-all off and empties the list in one click', async () => {
     respondWith();
     const node = await mountWidget([entry('a', true), entry('b', true)]);
     expect(sweepButton(node).disabled).toBe(true);
 
-    // Toggling all off changes the value without re-rendering this header, so
-    // the button must resolve the count on hover rather than trust the render.
-    node.widget.value = node.widget.value.map((lora) => ({ ...lora, active: false }));
-    sweepButton(node).dispatchEvent(new Event('pointerenter'));
+    node.container.querySelector('.lm-toggle-container .lm-lora-toggle').click();
 
+    expect(node.widget.value.every((lora) => !lora.active)).toBe(true);
+    expect(headerLabel(node).textContent).toBe('0/2 on');
     expect(sweepButton(node).disabled).toBe(false);
     expect(sweepButton(node).title).toBe('Remove 2 turned-off LoRAs');
 
@@ -214,5 +277,16 @@ describe('addLorasWidget sweep button', () => {
 
     expect(node.widget.value).toEqual([]);
     expect(node.container.querySelector('.lm-lora-empty-state')).toBeTruthy();
+  });
+
+  it('stays available but disabled in the empty state', async () => {
+    respondWith();
+    const node = await mountWidget([]);
+
+    expect(sweepButton(node)).toBeTruthy();
+    expect(sweepButton(node).disabled).toBe(true);
+    expect(sweepButton(node).title).toBe('No turned-off LoRAs to remove');
+    expect(addButton(node)).toBeTruthy();
+    expect(node.container.querySelector('.lm-lora-strength-drag-handle')).toBeNull();
   });
 });

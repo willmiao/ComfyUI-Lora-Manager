@@ -81,14 +81,16 @@ export function createAddLoraButton(onClick) {
  * Header button that drops the rows which are switched off.
  *
  * Same 24px chrome as the add button and the strength drag handle, so the three
- * header actions read as one group; the mark is a list whose last row is being
- * removed.
+ * header actions read as one group. The mark is a broom — "clean up the list" —
+ * rather than a struck-through list row, which read as "delete the last row".
+ *
+ * Glyph: Lucide "broom" (ISC).
  */
 export function createSweepButton(onClick) {
   const button = document.createElement("button");
   button.className = "lm-lora-sweep-button";
   button.type = "button";
-  button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h7"/><path d="m16 16 5 5"/><path d="m21 16-5 5"/></svg>`;
+  button.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 10.5 22 2"/><path d="M14.734 13.841a2 2 0 0 0-.314-2.42L12.58 9.58a2 2 0 0 0-2.421-.314l-7.657 4.461A1 1 0 0 0 2.3 15.3l6.403 6.403a1 1 0 0 0 1.571-.204z"/><path d="m5 18 2-2"/><path d="m7.699 10.7 5.602 5.601"/></svg>`;
   button.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -100,9 +102,9 @@ export function createSweepButton(onClick) {
 /**
  * Reflect how many rows a sweep would remove.
  *
- * The count comes from the widget value, not from the render that created the
- * button: toggling all off changes the value without re-rendering the header,
- * so the caller re-applies it when the pointer reaches the button.
+ * Pure DOM update: the caller passes the count derived from the current widget
+ * value. The header is rebuilt by setValue() whenever the value changes, so the
+ * count is fresh at render time and needs no hover re-read.
  */
 export function updateSweepButtonState(button, offCount) {
   const count = Number.isFinite(offCount) && offCount > 0 ? offCount : 0;

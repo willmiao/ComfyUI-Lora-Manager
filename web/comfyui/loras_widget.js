@@ -319,24 +319,22 @@ export function addLorasWidget(node, name, opts, callback) {
     }
 
     // Sweep: drop the rows that are switched off and keep the rest, strengths
-    // and order untouched. The count is re-read on hover because toggling all
-    // off updates the value without re-rendering this header.
+    // and order untouched. Missing `active` counts as off, matching the row
+    // toggle, the header counter and the Python nodes. Assigning the widget
+    // value rebuilds this header through setValue(), so the button state is
+    // fresh after every toggle and needs no hover re-read.
     const countOffLoras = () =>
-      parseLoraValue(widget.value).filter((lora) => lora.active === false).length;
+      parseLoraValue(widget.value).filter((lora) => !lora.active).length;
     const sweepButton = createSweepButton(() => {
       const lorasData = parseLoraValue(widget.value);
-      const kept = lorasData.filter((lora) => lora.active !== false);
+      const kept = lorasData.filter((lora) => lora.active);
       if (kept.length === lorasData.length) {
         return;
       }
       previewTooltip.hide();
       updateWidgetValue(formatLoraValue(kept));
-      renderLoras(widget.value, widget);
     });
     updateSweepButtonState(sweepButton, countOffLoras());
-    sweepButton.addEventListener("pointerenter", () =>
-      updateSweepButtonState(sweepButton, countOffLoras())
-    );
     headerActions.appendChild(sweepButton);
 
     headerActions.appendChild(createAddLoraButton(() => {
