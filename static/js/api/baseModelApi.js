@@ -2625,8 +2625,7 @@ export class BaseModelApiClient {
                 } else if (result.failures === 0) {
                     if (scoped) {
                         showToast('toast.loras.filenameTemplateScopedSuccess', {
-                            count: result.success,
-                            scope: scopeLabel
+                            count: result.success
                         }, 'success');
                     } else {
                         showToast('toast.loras.filenameTemplateSuccess', {

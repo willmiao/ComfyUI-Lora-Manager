@@ -336,6 +336,16 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (terminology in §2, "Unsorted fallback folder feature"), so no
 > `[TODO: Translate]` placeholder remains.
 
+> **Status (2026-11, scoped filename template apply):** the Filename Templates
+> feature can now be applied to a bulk selection or to a sidebar folder (recursively),
+> after a backend dry run reports the real counts; the bulk menu label, the folder
+> context-menu entry and the confirm dialog added 18 keys across
+> `loras.bulkOperations.applyFilenameTemplate` / `.filenameTemplateScope.*`,
+> `modals.filenameTemplateConfirm.*`, `sidebar.applyFilenameTemplate` /
+> `.applyFilenameTemplateResult.*` and `toast.loras.filenameTemplateScopedSuccess` /
+> `.filenameTemplateNothingToRename`. All 9 locales are translated (renderings in §2,
+> "Filename Templates feature"), so no placeholder remains from this feature.
+
 > **Status (2026-11, auto-organize preview):** the bulk auto-organize flow gained a dry-run
 > preview dialog (`modals.autoOrganizePreview.*`, 44 keys: the scope line, three stat cards,
 > the Moves / Skipped / Issues tabs with search and pagination, the organization-rule line,
@@ -834,6 +844,14 @@ the locale's "moved" verb swapped for its "renamed" verb, and the toasts mirror 
 | Apply to Library Now (button) | zh-CN 立即应用到库 · zh-TW 立即套用至模型庫 · ja ライブラリに今すぐ適用 · ko 지금 라이브러리에 적용 · fr Appliquer à la bibliothèque maintenant · de Jetzt auf Bibliothek anwenden · es Aplicar a la biblioteca ahora · ru Применить к библиотеке сейчас · he החל על הספרייה כעת |
 | Restore original filenames (modal title / button) | zh-CN 恢复原始文件名？/ 恢复原始文件名 · zh-TW 要還原原始檔案名稱嗎？/ 還原原始檔案名稱 · ja 元のファイル名を復元しますか？/ 元のファイル名を復元 · ko 원본 파일명을 복원하시겠습니까? / 원본 파일명 복원 · fr Restaurer les noms de fichier d'origine ? / Restaurer les noms de fichier d'origine · de Ursprüngliche Dateinamen wiederherstellen? / Ursprüngliche Dateinamen wiederherstellen · es ¿Restaurar los nombres de archivo originales? / Restaurar nombres de archivo originales · ru Восстановить исходные имена файлов? / Восстановить исходные имена файлов · he לשחזר שמות קבצים מקוריים? / שחזר שמות קבצים מקוריים |
 | "renamed" (progress/toast counter) | zh-CN 已重命名 · zh-TW 已重新命名 · ja リネーム · ko 이름 변경 · fr renommés · de umbenannt · es renombrados · ru переименовано · he שונו שמותם |
+| the selection (scoped apply scope) | zh-CN 所选模型 · zh-TW 所選模型 · ja 選択中のモデル · ko 선택한 모델 · fr la sélection · de die Auswahl · es la selección · ru выбранным моделям · he הבחירה |
+| this folder (scoped apply scope) | zh-CN 此文件夹 · zh-TW 此資料夾 · ja このフォルダ · ko 이 폴더 · fr ce dossier · de diesen Ordner · es esta carpeta · ru этой папке · he התיקייה הזו |
+
+The two scope strings slot into the progress sentence `Applying filename template to {type}...`
+(ru `к {type}`, de `auf {type}`), so ru/de use the case that fits that preposition
+(выбранным моделям / этой папке, die Auswahl / diesen Ordner); the success toast
+(`toast.loras.filenameTemplateScopedSuccess`) deliberately carries only `{count}` so the
+scope never needs a second grammatical case.
 
 ### Chip reordering (model tags / trigger words)
 

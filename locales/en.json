@@ -1090,7 +1090,7 @@
       "autoOrganize": "Auto-Organize Selected",
       "applyFilenameTemplate": "Apply Filename Template to Selected",
       "filenameTemplateScope": {
-        "selected": "the selected models",
+        "selected": "the selection",
         "folder": "this folder"
       },
       "skipMetadataRefresh": "Skip Metadata Refresh for Selected",
@@ -2896,7 +2896,7 @@
       "autoOrganizeProgressUnavailable": "Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
       "autoOrganizeFailed": "Auto-organize failed: {error}",
       "filenameTemplateSuccess": "Filename template applied successfully for {count} {type}",
-      "filenameTemplateScopedSuccess": "Renamed {count} files in {scope}",
+      "filenameTemplateScopedSuccess": "Renamed {count} files",
       "filenameTemplateNothingToRename": "Nothing to rename: every file in scope already matches, or has no recorded original filename",
       "filenameTemplatePartialSuccess": "Filename template applied with {success} renamed, {failures} failed out of {total} models",
       "filenameTemplateFailed": "Applying filename template failed: {error}",

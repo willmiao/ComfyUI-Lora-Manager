@@ -1088,10 +1088,10 @@
             "checkUpdates": "检查所选更新",
             "moveAll": "移动所选中到文件夹",
             "autoOrganize": "自动整理所选模型",
-            "applyFilenameTemplate": "[TODO: Translate] Apply Filename Template to Selected",
+            "applyFilenameTemplate": "将文件名模板应用到所选模型",
             "filenameTemplateScope": {
-                "selected": "[TODO: Translate] the selected models",
-                "folder": "[TODO: Translate] this folder"
+                "selected": "所选模型",
+                "folder": "此文件夹"
             },
             "skipMetadataRefresh": "跳过所选模型的元数据刷新",
             "resumeMetadataRefresh": "恢复所选模型的元数据刷新",
@@ -1715,10 +1715,10 @@
         "scanFolderResult": {
             "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。"
         },
-        "applyFilenameTemplate": "[TODO: Translate] Apply filename template to this folder",
+        "applyFilenameTemplate": "将文件名模板应用到此文件夹",
         "applyFilenameTemplateResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again.",
-            "unsupported": "[TODO: Translate] Filename templates are not available on this page."
+            "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
+            "unsupported": "此页面不支持文件名模板。"
         }
     },
     "statistics": {
@@ -2023,16 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "将文件名模板应用到库？",
             "titleRevert": "恢复原始文件名？",
-            "titleApplySelected": "[TODO: Translate] Rename selected files?",
-            "titleApplyFolder": "[TODO: Translate] Rename files in this folder?",
-            "titleRevertSelected": "[TODO: Translate] Restore original filenames for the selection?",
-            "titleRevertFolder": "[TODO: Translate] Restore original filenames in this folder?",
-            "messageApplySelected": "[TODO: Translate] {success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageApplyFolder": "[TODO: Translate] {success} of {total} files in this folder will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageRevertSelected": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "messageRevertFolder": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "renameCountButton": "[TODO: Translate] Rename {count} Files",
-            "restoreCountButton": "[TODO: Translate] Restore {count} Filenames",
+            "titleApplySelected": "重命名所选文件？",
+            "titleApplyFolder": "重命名此文件夹中的文件？",
+            "titleRevertSelected": "恢复所选文件的原始文件名？",
+            "titleRevertFolder": "恢复此文件夹中的原始文件名？",
+            "messageApplySelected": "{total} 个所选文件中有 {success} 个将按文件名模板重命名。{skipped} 个已符合或会被跳过；{failures} 个无法重命名。这会改变 ComfyUI 读取的相对路径；原始文件名会保留在每个模型的元数据中。",
+            "messageApplyFolder": "此文件夹（含子文件夹）中的 {total} 个文件里有 {success} 个将按文件名模板重命名。{skipped} 个已符合或会被跳过；{failures} 个无法重命名。这会改变 ComfyUI 读取的相对路径；原始文件名会保留在每个模型的元数据中。",
+            "messageRevertSelected": "未设置文件名模板，因此将改为恢复已记录的原始文件名。{total} 个所选文件中有 {success} 个将恢复原名；{skipped} 个没有原始记录或已符合；{failures} 个无法重命名。",
+            "messageRevertFolder": "未设置文件名模板，因此将改为恢复已记录的原始文件名。此文件夹（含子文件夹）中的 {total} 个文件里有 {success} 个将恢复原名；{skipped} 个没有原始记录或已符合；{failures} 个无法重命名。",
+            "renameCountButton": "重命名 {count} 个文件",
+            "restoreCountButton": "恢复 {count} 个文件名",
             "revertButton": "恢复原始文件名"
         },
         "sidecarMigrationConfirm": {
@@ -2896,8 +2896,8 @@
             "autoOrganizeProgressUnavailable": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型；实时进度不可用",
             "autoOrganizeFailed": "自动整理失败：{error}",
             "filenameTemplateSuccess": "文件名模板已成功应用，共 {count} 个 {type}",
-            "filenameTemplateScopedSuccess": "[TODO: Translate] Renamed {count} files in {scope}",
-            "filenameTemplateNothingToRename": "[TODO: Translate] Nothing to rename: every file in scope already matches, or has no recorded original filename",
+            "filenameTemplateScopedSuccess": "已重命名 {count} 个文件",
+            "filenameTemplateNothingToRename": "没有可重命名的文件：范围内的文件都已符合模板，或没有可恢复的原始文件名",
             "filenameTemplatePartialSuccess": "文件名模板应用完成：已重命名 {success} 个，{failures} 个失败，共 {total} 个模型",
             "filenameTemplateFailed": "应用文件名模板失败：{error}",
             "noModelsSelected": "未选中模型"

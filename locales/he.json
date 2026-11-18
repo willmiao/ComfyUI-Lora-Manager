@@ -1088,10 +1088,10 @@
             "checkUpdates": "בדוק עדכונים לבחירה",
             "moveAll": "העבר הכל לתיקייה",
             "autoOrganize": "ארגן אוטומטית נבחרים",
-            "applyFilenameTemplate": "[TODO: Translate] Apply Filename Template to Selected",
+            "applyFilenameTemplate": "החל תבנית שם קובץ על הנבחרים",
             "filenameTemplateScope": {
-                "selected": "[TODO: Translate] the selected models",
-                "folder": "[TODO: Translate] this folder"
+                "selected": "הבחירה",
+                "folder": "התיקייה הזו"
             },
             "skipMetadataRefresh": "דילוג על רענון מטא-נתונים לנבחרים",
             "resumeMetadataRefresh": "המשך רענון מטא-נתונים לנבחרים",
@@ -1715,10 +1715,10 @@
         "scanFolderResult": {
             "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב."
         },
-        "applyFilenameTemplate": "[TODO: Translate] Apply filename template to this folder",
+        "applyFilenameTemplate": "החל תבנית שם קובץ על תיקייה זו",
         "applyFilenameTemplateResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again.",
-            "unsupported": "[TODO: Translate] Filename templates are not available on this page."
+            "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
+            "unsupported": "תבניות שמות קבצים אינן זמינות בעמוד זה."
         }
     },
     "statistics": {
@@ -2023,16 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "להחיל תבנית שם קובץ על הספרייה?",
             "titleRevert": "לשחזר שמות קבצים מקוריים?",
-            "titleApplySelected": "[TODO: Translate] Rename selected files?",
-            "titleApplyFolder": "[TODO: Translate] Rename files in this folder?",
-            "titleRevertSelected": "[TODO: Translate] Restore original filenames for the selection?",
-            "titleRevertFolder": "[TODO: Translate] Restore original filenames in this folder?",
-            "messageApplySelected": "[TODO: Translate] {success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageApplyFolder": "[TODO: Translate] {success} of {total} files in this folder will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageRevertSelected": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "messageRevertFolder": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "renameCountButton": "[TODO: Translate] Rename {count} Files",
-            "restoreCountButton": "[TODO: Translate] Restore {count} Filenames",
+            "titleApplySelected": "לשנות את שמות הקבצים הנבחרים?",
+            "titleApplyFolder": "לשנות את שמות הקבצים בתיקייה זו?",
+            "titleRevertSelected": "לשחזר את שמות הקבצים המקוריים של הבחירה?",
+            "titleRevertFolder": "לשחזר את שמות הקבצים המקוריים בתיקייה זו?",
+            "messageApplySelected": "מתוך {total} קבצים נבחרים, {success} יקבלו שם חדש לפי תבנית שם הקובץ. {skipped} כבר תואמים או מדולגים; {failures} לא ניתן לשנות את שמם. הנתיב היחסי ש-ComfyUI רואה ישתנה; השם המקורי של כל מודל נשמר במטא-נתונים.",
+            "messageApplyFolder": "מתוך {total} קבצים בתיקייה זו (כולל תת-תיקיות), {success} יקבלו שם חדש לפי תבנית שם הקובץ. {skipped} כבר תואמים או מדולגים; {failures} לא ניתן לשנות את שמם. הנתיב היחסי ש-ComfyUI רואה ישתנה; השם המקורי של כל מודל נשמר במטא-נתונים.",
+            "messageRevertSelected": "לא הוגדרה תבנית שם קובץ, ולכן יוחזרו שמות הקבצים המקוריים שנרשמו. מתוך {total} קבצים נבחרים, {success} יחזרו לשם המקורי; {skipped} אינם כוללים שם מקורי רשום או שכבר תואמים; {failures} לא ניתן לשנות את שמם.",
+            "messageRevertFolder": "לא הוגדרה תבנית שם קובץ, ולכן יוחזרו שמות הקבצים המקוריים שנרשמו. מתוך {total} קבצים בתיקייה זו (כולל תת-תיקיות), {success} יחזרו לשם המקורי; {skipped} אינם כוללים שם מקורי רשום או שכבר תואמים; {failures} לא ניתן לשנות את שמם.",
+            "renameCountButton": "שינוי שם של {count} קבצים",
+            "restoreCountButton": "שחזור {count} שמות קבצים",
             "revertButton": "שחזר שמות קבצים מקוריים"
         },
         "sidecarMigrationConfirm": {
@@ -2896,8 +2896,8 @@
             "autoOrganizeProgressUnavailable": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים; התקדמות בזמן אמת לא הייתה זמינה",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
             "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
-            "filenameTemplateScopedSuccess": "[TODO: Translate] Renamed {count} files in {scope}",
-            "filenameTemplateNothingToRename": "[TODO: Translate] Nothing to rename: every file in scope already matches, or has no recorded original filename",
+            "filenameTemplateScopedSuccess": "שונו שמותיהם של {count} קבצים",
+            "filenameTemplateNothingToRename": "אין קבצים לשינוי שם: הקבצים בטווח כבר תואמים, או שאין להם שם מקורי רשום",
             "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",
             "filenameTemplateFailed": "החלת תבנית שם הקובץ נכשלה: {error}",
             "noModelsSelected": "לא נבחרו מודלים"

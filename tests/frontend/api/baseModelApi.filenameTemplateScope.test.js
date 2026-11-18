@@ -232,7 +232,7 @@ describe('BaseModelApiClient.applyFilenameTemplate scoped apply', () => {
     expect(setStatusMock).toHaveBeenCalledWith('Applying filename template to this folder...');
     expect(showToastMock).toHaveBeenCalledWith(
       'toast.loras.filenameTemplateScopedSuccess',
-      { count: 2, scope: 'this folder' },
+      { count: 2 },
       'success'
     );
   });
@@ -250,7 +250,7 @@ describe('BaseModelApiClient.applyFilenameTemplate scoped apply', () => {
     );
     expect(showToastMock).toHaveBeenCalledWith(
       'toast.loras.filenameTemplateScopedSuccess',
-      { count: 2, scope: 'the selected models' },
+      { count: 2 },
       'success'
     );
   });

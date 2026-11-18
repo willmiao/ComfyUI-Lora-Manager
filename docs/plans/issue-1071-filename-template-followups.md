@@ -106,6 +106,17 @@ limitation as the existing bulk auto-organize flow in
 page's state listens to, or accept the limitation (the other page reloads
 its cache on next visit). Low priority.
 
+**Decision (2026-11-18): accepted, not implemented.** The manager UI is a
+multi-page app (each page is its own document load, `templates/loras.html`
+etc.), so visiting the other page refetches its models; the only stale window
+is a back/forward-cache restore, where a manual refresh fixes it. The
+`models_changed` WebSocket broadcast already exists but is consumed only by
+the ComfyUI graph-page widget (`web/comfyui/loras_widget_utils.js`), not by
+the manager UI. Wiring a cross-page refresh therefore means adding a new
+broadcast consumer to every page's state for a cosmetic, self-healing case —
+not worth the regression surface. Scoped applies are unaffected because they
+run on the page whose models they rename.
+
 ## Follow-up 4 — Folder/selection-scoped apply (implemented 2026-11-18)
 
 **Problem:** the only way to apply the filename template was the library-wide
@@ -152,10 +163,14 @@ Verification: backend unit tests for folder scope (recursive, prefix-sharing
 sibling excluded), outside-root rejection, empty-scope rejection and dry-run
 plan; route tests for POST/GET `folder_paths`, `dry_run` (no progress/no
 broadcast) and 400 mapping; frontend tests for the API client (preview body,
-scoped apply bodies, scope-labelled toasts), the bulk flow (preview → confirm →
-apply, cancel, nothing-to-rename) and the folder flow (multi-candidate
-resolution, cancel, gating). Full pytest (4645 passed) and the full JS suite (2223 tests) pass.
+scoped apply bodies, the `{count}`-only success toast), the bulk flow (preview →
+confirm → apply, cancel, nothing-to-rename) and the folder flow (multi-candidate
+resolution, cancel, gating). Full pytest (4645 passed) and the full JS suite
+(2223 tests) pass. All 18 new keys are translated in the 9 non-English locales;
+the two scope strings are only used in the "Applying ... to {type}" progress
+sentence, which is why ru/de use the case that fits that preposition.
 
 Caveats: the recursive folder scope can still rename a large subtree if the
 user points at a library root; the dry-run counts are what makes that visible.
-Follow-up 3 (cross-page refresh) still applies to these scoped paths.
+Follow-up 3 does not affect these scoped paths: both entry points run on the
+page of the model type they rename, so the page refreshes itself.

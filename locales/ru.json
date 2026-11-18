@@ -1088,10 +1088,10 @@
             "checkUpdates": "Проверить обновления для выбранных",
             "moveAll": "Переместить все в папку",
             "autoOrganize": "Автоматически организовать выбранные",
-            "applyFilenameTemplate": "[TODO: Translate] Apply Filename Template to Selected",
+            "applyFilenameTemplate": "Применить шаблон имён файлов к выбранным моделям",
             "filenameTemplateScope": {
-                "selected": "[TODO: Translate] the selected models",
-                "folder": "[TODO: Translate] this folder"
+                "selected": "выбранным моделям",
+                "folder": "этой папке"
             },
             "skipMetadataRefresh": "Пропустить обновление метаданных для выбранных",
             "resumeMetadataRefresh": "Возобновить обновление метаданных для выбранных",
@@ -1715,10 +1715,10 @@
         "scanFolderResult": {
             "missing": "Эта папка больше не существует на диске. Обновите боковую панель и повторите попытку."
         },
-        "applyFilenameTemplate": "[TODO: Translate] Apply filename template to this folder",
+        "applyFilenameTemplate": "Применить шаблон имён файлов к этой папке",
         "applyFilenameTemplateResult": {
-            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again.",
-            "unsupported": "[TODO: Translate] Filename templates are not available on this page."
+            "missing": "Эта папка больше не существует на диске. Обновите боковую панель и повторите попытку.",
+            "unsupported": "Шаблоны имён файлов недоступны на этой странице."
         }
     },
     "statistics": {
@@ -2023,16 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "Применить шаблон имён файлов к библиотеке?",
             "titleRevert": "Восстановить исходные имена файлов?",
-            "titleApplySelected": "[TODO: Translate] Rename selected files?",
-            "titleApplyFolder": "[TODO: Translate] Rename files in this folder?",
-            "titleRevertSelected": "[TODO: Translate] Restore original filenames for the selection?",
-            "titleRevertFolder": "[TODO: Translate] Restore original filenames in this folder?",
-            "messageApplySelected": "[TODO: Translate] {success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageApplyFolder": "[TODO: Translate] {success} of {total} files in this folder will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
-            "messageRevertSelected": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "messageRevertFolder": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
-            "renameCountButton": "[TODO: Translate] Rename {count} Files",
-            "restoreCountButton": "[TODO: Translate] Restore {count} Filenames",
+            "titleApplySelected": "Переименовать выбранные файлы?",
+            "titleApplyFolder": "Переименовать файлы в этой папке?",
+            "titleRevertSelected": "Восстановить исходные имена файлов выбранных моделей?",
+            "titleRevertFolder": "Восстановить исходные имена файлов в этой папке?",
+            "messageApplySelected": "Из {total} выбранных файлов {success} будут переименованы по шаблону имён файлов. {skipped} уже соответствуют или пропускаются; {failures} переименовать нельзя. Изменится относительный путь, который видит ComfyUI; исходное имя каждого файла сохраняется в метаданных модели.",
+            "messageApplyFolder": "Из {total} файлов в этой папке (включая подпапки) {success} будут переименованы по шаблону имён файлов. {skipped} уже соответствуют или пропускаются; {failures} переименовать нельзя. Изменится относительный путь, который видит ComfyUI; исходное имя каждого файла сохраняется в метаданных модели.",
+            "messageRevertSelected": "Шаблон имён файлов не настроен, поэтому вместо него будут восстановлены записанные исходные имена. Из {total} выбранных файлов {success} вернут исходное имя; {skipped} не имеют записанного исходного имени или уже совпадают; {failures} переименовать нельзя.",
+            "messageRevertFolder": "Шаблон имён файлов не настроен, поэтому вместо него будут восстановлены записанные исходные имена. Из {total} файлов в этой папке (включая подпапки) {success} вернут исходное имя; {skipped} не имеют записанного исходного имени или уже совпадают; {failures} переименовать нельзя.",
+            "renameCountButton": "Переименовать файлы ({count})",
+            "restoreCountButton": "Восстановить имена файлов ({count})",
             "revertButton": "Восстановить исходные имена файлов"
         },
         "sidecarMigrationConfirm": {
@@ -2896,8 +2896,8 @@
             "autoOrganizeProgressUnavailable": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей; прогресс в реальном времени был недоступен",
             "autoOrganizeFailed": "Ошибка автоматической организации: {error}",
             "filenameTemplateSuccess": "Шаблон имён файлов успешно применён для {count} {type}",
-            "filenameTemplateScopedSuccess": "[TODO: Translate] Renamed {count} files in {scope}",
-            "filenameTemplateNothingToRename": "[TODO: Translate] Nothing to rename: every file in scope already matches, or has no recorded original filename",
+            "filenameTemplateScopedSuccess": "Переименовано файлов: {count}",
+            "filenameTemplateNothingToRename": "Переименовывать нечего: файлы в выбранной области уже соответствуют шаблону или не имеют записанного исходного имени",
             "filenameTemplatePartialSuccess": "Шаблон имён файлов применён: переименовано {success}, не удалось {failures} из {total} моделей",
             "filenameTemplateFailed": "Не удалось применить шаблон имён файлов: {error}",
             "noModelsSelected": "Модели не выбраны"
