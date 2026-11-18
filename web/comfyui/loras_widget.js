@@ -332,7 +332,15 @@ export function addLorasWidget(node, name, opts, callback) {
         return;
       }
       previewTooltip.hide();
-      updateWidgetValue(formatLoraValue(kept));
+      // One explicit undo transaction. The global change tracker captures on
+      // mouseup, before the click that changes the value, so without this the
+      // sweep would only enter the undo stack on a later interaction.
+      app.canvas?.emitBeforeChange?.();
+      try {
+        updateWidgetValue(formatLoraValue(kept));
+      } finally {
+        app.canvas?.emitAfterChange?.();
+      }
     });
     updateSweepButtonState(sweepButton, countOffLoras());
     headerActions.appendChild(sweepButton);

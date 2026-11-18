@@ -20,10 +20,16 @@ const { APP_MODULE, API_MODULE } = vi.hoisted(() => ({
   API_MODULE: new URL('../../../scripts/api.js', import.meta.url).pathname,
 }));
 
+const canvasMocks = vi.hoisted(() => ({
+  emitBeforeChange: vi.fn(),
+  emitAfterChange: vi.fn(),
+}));
+
 vi.mock(APP_MODULE, () => ({
   app: {
     registerExtension: vi.fn(),
     graph: {},
+    canvas: { ds: { scale: 1 }, ...canvasMocks },
     ui: { settings: { settingsById: {} } },
     extensionManager: {
       setting: { get: () => undefined, set: vi.fn() },
@@ -102,6 +108,8 @@ describe('addLorasWidget sweep button', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     fetchApiMock.mockReset();
+    canvasMocks.emitBeforeChange.mockReset();
+    canvasMocks.emitAfterChange.mockReset();
     resetAvailableLorasCache();
     Element.prototype.scrollIntoView = vi.fn();
   });
@@ -177,6 +185,20 @@ describe('addLorasWidget sweep button', () => {
     expect(sweepButton(node).title).toBe('Remove 1 turned-off LoRA');
   });
 
+  it('records the sweep as one undo transaction', async () => {
+    respondWith();
+    const node = await mountWidget([entry('a', true), entry('b', false)]);
+
+    sweepButton(node).click();
+
+    expect(canvasMocks.emitBeforeChange).toHaveBeenCalledTimes(1);
+    expect(canvasMocks.emitAfterChange).toHaveBeenCalledTimes(1);
+    expect(
+      canvasMocks.emitBeforeChange.mock.invocationCallOrder[0]
+    ).toBeLessThan(canvasMocks.emitAfterChange.mock.invocationCallOrder[0]);
+    expect(rowNames(node)).toEqual(['a']);
+  });
+
   it('is disabled and inert when nothing is turned off', async () => {
     respondWith();
     const node = await mountWidget([entry('a', true), entry('b', true)]);
@@ -189,6 +211,8 @@ describe('addLorasWidget sweep button', () => {
 
     expect(JSON.stringify(node.widget.value)).toBe(before);
     expect(callback).not.toHaveBeenCalled();
+    expect(canvasMocks.emitBeforeChange).not.toHaveBeenCalled();
+    expect(canvasMocks.emitAfterChange).not.toHaveBeenCalled();
     expect(rowNames(node)).toEqual(['a', 'b']);
   });
 
