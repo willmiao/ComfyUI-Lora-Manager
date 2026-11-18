@@ -1088,6 +1088,11 @@
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
+            "applyFilenameTemplate": "[TODO: Translate] Apply Filename Template to Selected",
+            "filenameTemplateScope": {
+                "selected": "[TODO: Translate] the selected models",
+                "folder": "[TODO: Translate] this folder"
+            },
             "skipMetadataRefresh": "선택한 모델의 메타데이터 새로고침 건너뛰기",
             "resumeMetadataRefresh": "선택한 모델의 메타데이터 새로고침 재개",
             "setFavorite": "즐겨찾기로 설정",
@@ -1709,6 +1714,11 @@
         "scanFolder": "이 폴더 스캔",
         "scanFolderResult": {
             "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요."
+        },
+        "applyFilenameTemplate": "[TODO: Translate] Apply filename template to this folder",
+        "applyFilenameTemplateResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again.",
+            "unsupported": "[TODO: Translate] Filename templates are not available on this page."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "라이브러리에 파일명 템플릿을 적용하시겠습니까?",
             "titleRevert": "원본 파일명을 복원하시겠습니까?",
+            "titleApplySelected": "[TODO: Translate] Rename selected files?",
+            "titleApplyFolder": "[TODO: Translate] Rename files in this folder?",
+            "titleRevertSelected": "[TODO: Translate] Restore original filenames for the selection?",
+            "titleRevertFolder": "[TODO: Translate] Restore original filenames in this folder?",
+            "messageApplySelected": "[TODO: Translate] {success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+            "messageApplyFolder": "[TODO: Translate] {success} of {total} files in this folder will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+            "messageRevertSelected": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+            "messageRevertFolder": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+            "renameCountButton": "[TODO: Translate] Rename {count} Files",
+            "restoreCountButton": "[TODO: Translate] Restore {count} Filenames",
             "revertButton": "원본 파일명 복원"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패. 실시간 진행률을 사용할 수 없었습니다",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
             "filenameTemplateSuccess": "{count}개의 {type}에 파일명 템플릿이 성공적으로 적용되었습니다",
+            "filenameTemplateScopedSuccess": "[TODO: Translate] Renamed {count} files in {scope}",
+            "filenameTemplateNothingToRename": "[TODO: Translate] Nothing to rename: every file in scope already matches, or has no recorded original filename",
             "filenameTemplatePartialSuccess": "파일명 템플릿 적용 완료: 전체 {total}개 중 {success}개 이름 변경, {failures}개 실패",
             "filenameTemplateFailed": "파일명 템플릿 적용 실패: {error}",
             "noModelsSelected": "선택된 모델이 없습니다"

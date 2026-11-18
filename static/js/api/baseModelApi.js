@@ -2480,12 +2480,52 @@ export class BaseModelApiClient {
     }
 
     /**
+     * Preview the filename template rename targets for a scope without changing
+     * anything on disk. Used to show counts before a scoped apply.
+     * @param {Object} options
+     * @param {Array<string>|null} options.filePaths - Selected model files.
+     * @param {Array<string>|null} options.folderPaths - Absolute folders (recursive).
+     * @returns {Promise<Object>} - Dry-run payload (summary, planned_moves).
+     */
+    async previewFilenameTemplate({ filePaths = null, folderPaths = null } = {}) {
+        const requestBody = { dry_run: true };
+        if (filePaths && filePaths.length) {
+            requestBody.file_paths = filePaths;
+        }
+        if (folderPaths && folderPaths.length) {
+            requestBody.folder_paths = folderPaths;
+        }
+
+        const response = await fetch(this.apiConfig.endpoints.applyFilenameTemplate, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.error || 'Failed to preview filename template apply');
+        }
+        return payload;
+    }
+
+    /**
      * Apply the configured download filename template to models, renaming their files
      * @param {Array} filePaths - Optional array of file paths to rename. If not provided, applies to all models.
+     * @param {Object} options
+     * @param {Array<string>|null} options.folderPaths - Optional absolute folders
+     *   (recursive) to rename instead of every model of this type.
      * @returns {Promise} - Promise that resolves when the operation is complete
      */
-    async applyFilenameTemplate(filePaths = null) {
+    async applyFilenameTemplate(filePaths = null, { folderPaths = null } = {}) {
         let ws = null;
+        const scopedToFolder = Boolean(folderPaths && folderPaths.length);
+        const scoped = scopedToFolder || Boolean(filePaths && filePaths.length);
+        const scopeLabel = scopedToFolder
+            ? translate('loras.bulkOperations.filenameTemplateScope.folder', {}, 'this folder')
+            : (scoped
+                ? translate('loras.bulkOperations.filenameTemplateScope.selected', {}, 'the selected models')
+                : 'all models');
 
         await state.loadingManager.showWithProgress(async (loading) => {
             loading.showCancelButton(() => this.cancelTask());
@@ -2503,8 +2543,7 @@ export class BaseModelApiClient {
                         switch (data.status) {
                             case 'started':
                                 loading.setProgress(0);
-                                const operationType = data.operation_type === 'bulk' ? 'selected models' : 'all models';
-                                loading.setStatus(translate('loras.bulkOperations.filenameTemplateProgress.starting', { type: operationType }, `Applying filename template to ${operationType}...`));
+                                loading.setStatus(translate('loras.bulkOperations.filenameTemplateProgress.starting', { type: scopeLabel }, `Applying filename template to ${scopeLabel}...`));
                                 break;
 
                             case 'processing':
@@ -2559,8 +2598,11 @@ export class BaseModelApiClient {
                 const endpoint = this.apiConfig.endpoints.applyFilenameTemplate;
 
                 const requestBody = {};
-                if (filePaths) {
+                if (filePaths && filePaths.length) {
                     requestBody.file_paths = filePaths;
+                }
+                if (scopedToFolder) {
+                    requestBody.folder_paths = folderPaths;
                 }
 
                 const response = await fetch(endpoint, {
@@ -2581,10 +2623,17 @@ export class BaseModelApiClient {
                 if (result.status === 'cancelled') {
                     showToast('toast.api.operationCancelledPartial', { success: result.success, total: result.total }, 'info');
                 } else if (result.failures === 0) {
-                    showToast('toast.loras.filenameTemplateSuccess', {
-                        count: result.success,
-                        type: result.operation_type === 'bulk' ? 'selected models' : 'all models'
-                    }, 'success');
+                    if (scoped) {
+                        showToast('toast.loras.filenameTemplateScopedSuccess', {
+                            count: result.success,
+                            scope: scopeLabel
+                        }, 'success');
+                    } else {
+                        showToast('toast.loras.filenameTemplateSuccess', {
+                            count: result.success,
+                            type: 'all models'
+                        }, 'success');
+                    }
                 } else {
                     showToast('toast.loras.filenameTemplatePartialSuccess', {
                         success: result.success,

@@ -3125,12 +3125,37 @@ class ModelFilenameTemplateHandler:
         self._logger = logger
 
     async def apply_filename_template(self, request: web.Request) -> web.Response:
+        # ``file_paths`` scopes a bulk-selection apply, ``folder_paths`` scopes
+        # it to one or more absolute directories (recursive), and ``dry_run``
+        # returns the rename plan without touching the disk. All three may come
+        # from the POST body or the query string (the browser extension is
+        # GET-only); a body value wins when both are present.
+        file_paths = None
+        folder_paths = None
+        dry_run = False
         try:
-            file_paths = None
+            dry_run = _is_truthy(request.query.get("dry_run"))
+            raw_query_folder_paths = [
+                path.strip()
+                for value in request.query.getall("folder_paths", [])
+                for path in value.split(",")
+                if path.strip()
+            ]
+            folder_paths = raw_query_folder_paths or None
             if request.method == "POST":
                 try:
                     data = await request.json()
                     file_paths = data.get("file_paths")
+                    body_folder_paths = data.get("folder_paths")
+                    if isinstance(body_folder_paths, str):
+                        body_folder_paths = [body_folder_paths]
+                    if isinstance(body_folder_paths, (list, tuple)):
+                        folder_paths = [
+                            path
+                            for path in body_folder_paths
+                            if isinstance(path, str) and path.strip()
+                        ]
+                    dry_run = dry_run or _is_truthy(data.get("dry_run"))
                 except Exception:  # pragma: no cover - permissive path
                     pass
             else:
@@ -3146,9 +3171,12 @@ class ModelFilenameTemplateHandler:
 
             result = await self._use_case.execute(
                 file_paths=file_paths,
-                progress_callback=self._progress_callback,
+                folder_paths=folder_paths,
+                dry_run=dry_run,
+                progress_callback=None if dry_run else self._progress_callback,
             )
-            _broadcast_models_changed()
+            if not dry_run:
+                _broadcast_models_changed()
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(
@@ -3158,20 +3186,26 @@ class ModelFilenameTemplateHandler:
                 },
                 status=409,
             )
+        except ValueError as exc:
+            # A folder outside the configured library roots is a request error,
+            # not a server failure: report it without a progress toast.
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
             self._logger.error(
                 "Error in apply_filename_template: %s", exc, exc_info=True
             )
-            try:
-                await self._progress_callback.on_progress(
-                    {
-                        "type": "filename_template_progress",
-                        "status": "error",
-                        "error": str(exc),
-                    }
-                )
-            except Exception:  # pragma: no cover - defensive reporting
-                pass
+            # A dry run never reports progress, so its failure must not either.
+            if not dry_run:
+                try:
+                    await self._progress_callback.on_progress(
+                        {
+                            "type": "filename_template_progress",
+                            "status": "error",
+                            "error": str(exc),
+                        }
+                    )
+                except Exception:  # pragma: no cover - defensive reporting
+                    pass
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 

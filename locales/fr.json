@@ -1088,6 +1088,11 @@
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
             "autoOrganize": "Auto-organiser la sélection",
+            "applyFilenameTemplate": "[TODO: Translate] Apply Filename Template to Selected",
+            "filenameTemplateScope": {
+                "selected": "[TODO: Translate] the selected models",
+                "folder": "[TODO: Translate] this folder"
+            },
             "skipMetadataRefresh": "Ignorer l'actualisation des métadonnées pour la sélection",
             "resumeMetadataRefresh": "Reprendre l'actualisation des métadonnées pour la sélection",
             "setFavorite": "Définir comme favori",
@@ -1709,6 +1714,11 @@
         "scanFolder": "Analyser ce dossier",
         "scanFolderResult": {
             "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez."
+        },
+        "applyFilenameTemplate": "[TODO: Translate] Apply filename template to this folder",
+        "applyFilenameTemplateResult": {
+            "missing": "[TODO: Translate] This folder no longer exists on disk. Refresh the sidebar and try again.",
+            "unsupported": "[TODO: Translate] Filename templates are not available on this page."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "Appliquer le modèle de nom de fichier à la bibliothèque ?",
             "titleRevert": "Restaurer les noms de fichier d'origine ?",
+            "titleApplySelected": "[TODO: Translate] Rename selected files?",
+            "titleApplyFolder": "[TODO: Translate] Rename files in this folder?",
+            "titleRevertSelected": "[TODO: Translate] Restore original filenames for the selection?",
+            "titleRevertFolder": "[TODO: Translate] Restore original filenames in this folder?",
+            "messageApplySelected": "[TODO: Translate] {success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+            "messageApplyFolder": "[TODO: Translate] {success} of {total} files in this folder will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+            "messageRevertSelected": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+            "messageRevertFolder": "[TODO: Translate] No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+            "renameCountButton": "[TODO: Translate] Rename {count} Files",
+            "restoreCountButton": "[TODO: Translate] Restore {count} Filenames",
             "revertButton": "Restaurer les noms de fichier d'origine"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles ; la progression en direct n'était pas disponible",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
             "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
+            "filenameTemplateScopedSuccess": "[TODO: Translate] Renamed {count} files in {scope}",
+            "filenameTemplateNothingToRename": "[TODO: Translate] Nothing to rename: every file in scope already matches, or has no recorded original filename",
             "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",
             "filenameTemplateFailed": "Échec de l'application du modèle de nom de fichier : {error}",
             "noModelsSelected": "Aucun modèle sélectionné"

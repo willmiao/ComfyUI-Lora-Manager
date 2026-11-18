@@ -1071,7 +1071,9 @@ def test_auto_organize_conflict_when_running(mock_service):
 def test_apply_filename_template_route_emits_progress(
     mock_service, monkeypatch: pytest.MonkeyPatch
 ):
-    async def fake_execute(self, file_paths=None, progress_callback=None):
+    async def fake_execute(
+        self, file_paths=None, folder_paths=None, dry_run=False, progress_callback=None
+    ):
         result = AutoOrganizeResult()
         result.total = 1
         result.processed = 1
@@ -1117,7 +1119,9 @@ def test_apply_filename_template_get_parses_query_file_paths(
 ):
     captured = {}
 
-    async def fake_execute(self, file_paths=None, progress_callback=None):
+    async def fake_execute(
+        self, file_paths=None, folder_paths=None, dry_run=False, progress_callback=None
+    ):
         captured["file_paths"] = file_paths
         result = AutoOrganizeResult()
         result.operation_type = "filename_template"
@@ -1140,6 +1144,159 @@ def test_apply_filename_template_get_parses_query_file_paths(
                 "/tmp/a.safetensors",
                 "/tmp/b.safetensors",
             ]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("request_kwargs", "expected_folder_paths"),
+    [
+        (
+            {
+                "method": "post",
+                "json": {"dry_run": True, "folder_paths": ["/library/foo"]},
+            },
+            ["/library/foo"],
+        ),
+        (
+            {
+                "method": "get",
+                "params": {
+                    "dry_run": "true",
+                    "folder_paths": "/library/foo, /library/bar",
+                },
+            },
+            ["/library/foo", "/library/bar"],
+        ),
+    ],
+)
+def test_apply_filename_template_dry_run_reports_plan_without_progress(
+    mock_service,
+    monkeypatch: pytest.MonkeyPatch,
+    request_kwargs,
+    expected_folder_paths,
+):
+    calls = []
+
+    async def fake_execute(
+        self, file_paths=None, folder_paths=None, dry_run=False, progress_callback=None
+    ):
+        calls.append(
+            {
+                "file_paths": file_paths,
+                "folder_paths": folder_paths,
+                "dry_run": dry_run,
+                "progress_callback": progress_callback,
+            }
+        )
+        result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        result.operation_type = "filename_template"
+        result.total = 1
+        result.success_count = 1
+        result.planned_moves = [
+            {
+                "model": "m",
+                "from": "/library/foo/abc123.safetensors",
+                "to": "/library/foo/Model.safetensors",
+            }
+        ]
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            kwargs = dict(request_kwargs)
+            method = kwargs.pop("method")
+            response = await getattr(client, method)(
+                "/api/lm/test-models/apply-filename-template", **kwargs
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["dry_run"] is True
+            assert payload["planned_moves"][0]["to"] == "/library/foo/Model.safetensors"
+            assert calls == [
+                {
+                    "file_paths": None,
+                    "folder_paths": expected_folder_paths,
+                    "dry_run": True,
+                    "progress_callback": None,
+                }
+            ]
+            assert ws_manager.get_filename_template_progress() is None
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_dry_run_does_not_broadcast_models_changed(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    from py.routes.handlers import model_handlers
+
+    broadcasts = []
+    monkeypatch.setattr(
+        model_handlers, "_broadcast_models_changed", lambda: broadcasts.append(1)
+    )
+
+    async def fake_execute(self, dry_run=False, **_kwargs):
+        result = AutoOrganizeResult()
+        result.dry_run = dry_run
+        result.operation_type = "filename_template"
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/apply-filename-template", json={"dry_run": True}
+            )
+            assert response.status == 200
+            assert broadcasts == []
+
+            response = await client.post(
+                "/api/lm/test-models/apply-filename-template",
+                json={"file_paths": ["/tmp/a.safetensors"]},
+            )
+            assert response.status == 200
+            assert broadcasts == [1]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_rejects_folder_outside_roots(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    async def failing_execute(self, **_kwargs):
+        raise ValueError("Folder path '/elsewhere' is outside configured library directories")
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", failing_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/apply-filename-template",
+                json={"folder_paths": ["/elsewhere"]},
+            )
+            payload = await response.json()
+
+            assert response.status == 400
+            assert payload == {
+                "success": False,
+                "error": "Folder path '/elsewhere' is outside configured library directories",
+            }
+            assert ws_manager.get_filename_template_progress() is None
         finally:
             await client.close()
 

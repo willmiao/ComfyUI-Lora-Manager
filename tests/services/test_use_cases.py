@@ -783,6 +783,107 @@ async def test_filename_template_use_case_filters_file_paths() -> None:
     ]
 
 
+async def test_filename_template_use_case_filters_folder_paths_recursively() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/foo/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/foo/nested/beta.safetensors", "Beta"),
+        # Prefix-sharing sibling must stay out of the scope.
+        _filename_template_model("/library/foobar/gamma.safetensors", "Gamma"),
+        _filename_template_model("/library/delta.safetensors", "Delta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(
+        folder_paths=["/library/foo"], progress_callback=None
+    )
+
+    assert result.total == 2
+    assert lifecycle.renames == [
+        {"file_path": "/library/foo/alpha.safetensors", "new_file_name": "Alpha-abcdef0123"},
+        {
+            "file_path": "/library/foo/nested/beta.safetensors",
+            "new_file_name": "Beta-abcdef0123",
+        },
+    ]
+
+
+async def test_filename_template_use_case_rejects_folder_outside_library_roots() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache())
+    scanner.get_model_roots = lambda: ["/library"]  # type: ignore[attr-defined]
+    use_case = _make_filename_template_use_case(scanner, StubLifecycleService())
+
+    with pytest.raises(ValueError, match="outside configured library directories"):
+        await use_case.execute(folder_paths=["/elsewhere"], progress_callback=None)
+
+
+async def test_filename_template_use_case_rejects_empty_folder_scope() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    with pytest.raises(ValueError, match="No valid folder paths"):
+        await use_case.execute(folder_paths=[], progress_callback=None)
+
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_dry_run_returns_plan_without_renaming() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    progress = ProgressCollector()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(dry_run=True, progress_callback=progress)
+
+    assert result.dry_run is True
+    assert result.total == 2
+    assert result.success_count == 2
+    assert lifecycle.renames == []
+    assert result.planned_moves == [
+        {
+            "model": "Alpha",
+            "from": "/library/alpha.safetensors",
+            "to": "/library/Alpha-abcdef0123.safetensors",
+        },
+        {
+            "model": "Beta",
+            "from": "/library/beta.safetensors",
+            "to": "/library/Beta-abcdef0123.safetensors",
+        },
+    ]
+    assert progress.events == []
+    payload = result.to_dict()
+    assert payload["dry_run"] is True
+    assert payload["message"].startswith("Filename template dry run:")
+
+
+async def test_filename_template_use_case_dry_run_counts_skips() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/Alpha-abcdef0123.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(dry_run=True, progress_callback=None)
+
+    assert result.success_count == 1
+    assert result.skipped_count == 1
+    assert len(result.planned_moves) == 1
+    assert lifecycle.renames == []
+
+
 async def test_filename_template_use_case_rejects_when_lock_held() -> None:
     _set_filename_template("{model_name}")
     scanner = MockScanner(cache=MockCache())

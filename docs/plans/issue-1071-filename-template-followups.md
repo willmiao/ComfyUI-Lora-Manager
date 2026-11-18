@@ -105,3 +105,57 @@ limitation as the existing bulk auto-organize flow in
 **Fix options:** broadcast a generic "library changed" event that every
 page's state listens to, or accept the limitation (the other page reloads
 its cache on next visit). Low priority.
+
+## Follow-up 4 — Folder/selection-scoped apply (implemented 2026-11-18)
+
+**Problem:** the only way to apply the filename template was the library-wide
+"Apply to Library Now" per model type. Users with a handful of random
+alphanumeric filenames had to rename the whole library (or rename files one by
+one from the edit modal) to fix a few files.
+
+**Design:** reuse the auto-organize scoping pattern — the same `file_paths`
+narrowing plus a new `folder_paths` narrowing, with a dry run so the
+confirmation quotes real counts.
+
+Backend (`apply-filename-template`, POST body or GET query for the extension):
+
+- `file_paths`: selected model files (existing).
+- `folder_paths`: absolute directories, recursive, validated with
+  `_require_path_in_library_roots` (business-path space, abspath not realpath).
+  The UI passes every directory that a merged sidebar folder resolves to, so a
+  folder that exists under several roots is covered. An explicitly empty list
+  raises instead of silently widening to the whole library; a folder outside
+  the roots returns 400.
+- `dry_run`: computes the same targets without renaming, no progress events and
+  no `models-changed` broadcast. The plan lands in `planned_moves`
+  (`{model, from, to}`), and `AutoOrganizeResult.to_dict()` labels it
+  "Filename template dry run".
+- Both scopes may be combined (intersection); no scope keeps the old
+  library-wide behaviour.
+
+Frontend entry points, both sharing `buildFilenameTemplateConfirmation()`
+(`static/js/utils/filenameTemplateScope.js`) and the generic
+`showConfirmationModal()`:
+
+- Bulk selection: Organize section → "Apply Filename Template to Selected"
+  (`BulkManager.applyFilenameTemplateToSelectedModels`), enabled only for
+  loras/checkpoints/embeddings — the model types with a template editor.
+- Sidebar folder context menu: "Apply filename template to this folder"
+  (`SidebarManager.applyFilenameTemplateToFolder`), recursive over the folder
+  and its subfolders. Hidden on pages without a template (recipes,
+  other, workflows).
+- Both dry-run first, show totals (`success`/`skipped`/`failures`), and adapt
+  the wording when the template is empty (scoped apply would restore recorded
+  original filenames).
+
+Verification: backend unit tests for folder scope (recursive, prefix-sharing
+sibling excluded), outside-root rejection, empty-scope rejection and dry-run
+plan; route tests for POST/GET `folder_paths`, `dry_run` (no progress/no
+broadcast) and 400 mapping; frontend tests for the API client (preview body,
+scoped apply bodies, scope-labelled toasts), the bulk flow (preview → confirm →
+apply, cancel, nothing-to-rename) and the folder flow (multi-candidate
+resolution, cancel, gating). Full pytest (4645 passed) and the full JS suite (2223 tests) pass.
+
+Caveats: the recursive folder scope can still rename a large subtree if the
+user points at a library root; the dry-run counts are what makes that visible.
+Follow-up 3 (cross-page refresh) still applies to these scoped paths.
