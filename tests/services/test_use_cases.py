@@ -849,16 +849,18 @@ async def test_filename_template_use_case_dry_run_returns_plan_without_renaming(
     assert result.total == 2
     assert result.success_count == 2
     assert lifecycle.renames == []
+    # os.path.join below: the use case joins the target stem onto the cached
+    # directory, so the plan carries the platform separator (Windows CI).
     assert result.planned_moves == [
         {
             "model": "Alpha",
             "from": "/library/alpha.safetensors",
-            "to": "/library/Alpha-abcdef0123.safetensors",
+            "to": os.path.join("/library", "Alpha-abcdef0123.safetensors"),
         },
         {
             "model": "Beta",
             "from": "/library/beta.safetensors",
-            "to": "/library/Beta-abcdef0123.safetensors",
+            "to": os.path.join("/library", "Beta-abcdef0123.safetensors"),
         },
     ]
     assert progress.events == []
