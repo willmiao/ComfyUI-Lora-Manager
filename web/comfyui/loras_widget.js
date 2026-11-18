@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState, createAddLoraButton, createStrengthDragHandle } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState, createAddLoraButton, createStrengthDragHandle, createSweepButton, updateSweepButtonState } from "./loras_widget_components.js";
 import { openLoraQuickPanel } from "./lora_quick_panel.js";
 import { 
   parseLoraValue, 
@@ -317,6 +317,33 @@ export function addLorasWidget(node, name, opts, callback) {
       headerActions.appendChild(strengthDragHandle);
       initHeaderDrag(strengthDragHandle, widget, renderLoras);
     }
+
+    // Sweep: drop the rows that are switched off and keep the rest, strengths
+    // and order untouched. Missing `active` counts as off, matching the row
+    // toggle, the header counter and the Python nodes. Assigning the widget
+    // value rebuilds this header through setValue(), so the button state is
+    // fresh after every toggle and needs no hover re-read.
+    const countOffLoras = () =>
+      parseLoraValue(widget.value).filter((lora) => !lora.active).length;
+    const sweepButton = createSweepButton(() => {
+      const lorasData = parseLoraValue(widget.value);
+      const kept = lorasData.filter((lora) => lora.active);
+      if (kept.length === lorasData.length) {
+        return;
+      }
+      previewTooltip.hide();
+      // One explicit undo transaction. The global change tracker captures on
+      // mouseup, before the click that changes the value, so without this the
+      // sweep would only enter the undo stack on a later interaction.
+      app.canvas?.emitBeforeChange?.();
+      try {
+        updateWidgetValue(formatLoraValue(kept));
+      } finally {
+        app.canvas?.emitAfterChange?.();
+      }
+    });
+    updateSweepButtonState(sweepButton, countOffLoras());
+    headerActions.appendChild(sweepButton);
 
     headerActions.appendChild(createAddLoraButton(() => {
       previewTooltip.hide();
