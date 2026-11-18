@@ -32,12 +32,7 @@ def update_supporters():
     lines.extend([f'## Supporters ({total_count})', ''])
     if all_supporters:
         lines.extend([
-            '<details>',
-            '<summary>View all supporters</summary>',
-            '',
             ', '.join(all_supporters),
-            '',
-            '</details>',
             '',
         ])
     else:
