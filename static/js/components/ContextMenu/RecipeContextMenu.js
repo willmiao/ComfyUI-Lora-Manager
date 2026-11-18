@@ -1,6 +1,7 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow } from '../../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendImageToWorkflow } from '../../utils/uiHelpers.js';
+import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { isModelWeightFile } from '../../utils/modelFileTypes.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
@@ -47,6 +48,15 @@ export class RecipeContextMenu extends BaseContextMenu {
                 missingLorasItem.style.display = 'none';
             }
         }
+
+        const sendImageItem = this.menu.querySelector('[data-action="sendimage"]');
+        if (sendImageItem) {
+            const imagePath = card.dataset.filepath || '';
+            const canSend = Boolean(imagePath)
+                && !isVideoPreviewUrl(imagePath)
+                && !state?.global?.settings?.standalone_mode;
+            sendImageItem.style.display = canSend ? 'flex' : 'none';
+        }
     }
 
     handleMenuAction(action) {
@@ -74,6 +84,9 @@ export class RecipeContextMenu extends BaseContextMenu {
             case 'sendreplace':
                 // Send recipe to workflow (replace mode)
                 this.sendRecipeToWorkflow(true);
+                break;
+            case 'sendimage':
+                this.sendRecipeImageToWorkflow();
                 break;
             case 'share':
                 // Share recipe
@@ -148,6 +161,17 @@ export class RecipeContextMenu extends BaseContextMenu {
                 console.error('Failed to send recipe to workflow: ', err);
                 showToast('recipes.contextMenu.sendRecipe.failed', {}, 'error');
             });
+    }
+
+    // Send the recipe's preview image to a ComfyUI image input node
+    sendRecipeImageToWorkflow() {
+        const imagePath = this.currentCard?.dataset.filepath;
+        if (!imagePath) {
+            showToast('recipes.contextMenu.sendImage.missingImage', {}, 'error');
+            return;
+        }
+
+        sendImageToWorkflow({ path: imagePath });
     }
 
     // View all LoRAs in the recipe

@@ -1,4 +1,22 @@
+import { sendImageToWorkflow } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
+import { state } from '../../state/index.js';
+
 let activeViewer = null;
+
+function getItemSource(item) {
+    const source = item?.source;
+    if (!source) {
+        return null;
+    }
+    if (typeof source === 'string') {
+        return source ? { url: source } : null;
+    }
+    if (typeof source === 'object' && (source.url || source.path)) {
+        return source;
+    }
+    return null;
+}
 
 function createMediaElement(item) {
     const { url, type = 'image' } = item;
@@ -39,7 +57,11 @@ export function openMediaViewer(arg1, arg2, arg3) {
         currentIndex = typeof arg2 === 'number' ? arg2 : 0;
         title = (arg3 && arg3.title) || '';
     } else {
-        items = [{ url: arg1, type: (arg2 && arg2.type) || 'image' }];
+        items = [{
+            url: arg1,
+            type: (arg2 && arg2.type) || 'image',
+            source: arg2 && arg2.source,
+        }];
         currentIndex = 0;
         title = (arg2 && arg2.title) || '';
     }
@@ -58,6 +80,43 @@ export function openMediaViewer(arg1, arg2, arg3) {
     closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         closeMediaViewer();
+    });
+
+    const sendBtn = document.createElement('button');
+    sendBtn.className = 'media-viewer-send';
+    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    sendBtn.title = translate(
+        'modals.model.showcase.sendImage',
+        {},
+        'Send image to workflow'
+    );
+
+    const updateSendButton = () => {
+        const item = items[currentIndex];
+        const source = getItemSource(item);
+        const canSend = item?.type !== 'video'
+            && Boolean(source)
+            && !state?.global?.settings?.standalone_mode;
+        sendBtn.style.display = canSend ? 'inline-flex' : 'none';
+        sendBtn.disabled = false;
+    };
+
+    sendBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const source = getItemSource(items[currentIndex]);
+        if (!source) {
+            return;
+        }
+
+        sendBtn.disabled = true;
+        const originalHtml = sendBtn.innerHTML;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try {
+            await sendImageToWorkflow(source);
+        } finally {
+            sendBtn.innerHTML = originalHtml;
+            sendBtn.disabled = false;
+        }
     });
 
     const contentContainer = document.createElement('div');
@@ -108,6 +167,7 @@ export function openMediaViewer(arg1, arg2, arg3) {
             mediaElement = newMedia;
 
             counter.textContent = `${currentIndex + 1} / ${items.length}`;
+            updateSendButton();
             preloadAdjacent(items, currentIndex);
         };
 
@@ -119,7 +179,9 @@ export function openMediaViewer(arg1, arg2, arg3) {
     }
 
     overlay.appendChild(closeBtn);
+    overlay.appendChild(sendBtn);
     overlay.appendChild(contentContainer);
+    updateSendButton();
     document.body.appendChild(overlay);
 
     requestAnimationFrame(() => {

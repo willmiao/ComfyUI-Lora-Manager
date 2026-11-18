@@ -155,7 +155,8 @@ function createToastElement(message, type) {
  * Attach a toast to the shared container, position it, and schedule its
  * dismissal (internal — not exported).
  * @param {HTMLElement} toast - The toast element to display
- * @param {number} durationMs - How long the toast stays visible
+ * @param {number} durationMs - How long the toast stays visible; <= 0 keeps it
+ *   until the returned dismiss function is called
  * @param {Function} [onDismiss] - Optional callback fired once when dismissal begins
  * @returns {Function} Manual dismiss function (idempotent)
  */
@@ -209,7 +210,9 @@ function appendToast(toast, durationMs, onDismiss = null) {
 
   requestAnimationFrame(() => {
     toast.classList.add('show');
-    setTimeout(dismiss, durationMs);
+    if (durationMs > 0) {
+      setTimeout(dismiss, durationMs);
+    }
   });
 
   return dismiss;
@@ -229,6 +232,23 @@ export function showToast(key, params = {}, type = 'info', fallback = null) {
   }
 
   appendToast(toast, duration);
+}
+
+/**
+ * Show a persistent toast with a spinner until the returned dismiss function
+ * is called. Used for operations whose backend work can take several seconds
+ * (e.g. downloading a remote image before setting a LoadImage widget).
+ *
+ * @param {string} message - Already-resolved status text
+ * @returns {Function} Idempotent dismiss function
+ */
+export function showLoadingToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-loading';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.textContent = message || 'Loading...';
+  return appendToast(toast, 0);
 }
 
 /**
@@ -1299,6 +1319,199 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
     actionType,
     actionMode: translate('uiHelpers.nodeSelector.replace', {}, 'Replace'),
     onSend: handleSend,
+  });
+  return true;
+}
+
+let imageSendInFlight = false;
+
+/**
+ * Send an image to ComfyUI image-input nodes (LoadImage and friends).
+ *
+ * The backend materializes the image into ComfyUI's input directory and
+ * broadcasts a widget update over the existing lm_widget_update channel.
+ *
+ * `source` is either a LoRA Manager URL (example image / preview endpoint) or
+ * a remote CivitAI CDN URL. Recipe images may pass an absolute path instead.
+ *
+ * Marked nodes ("Mark as → Send Image Target") take precedence over
+ * auto-detected image nodes, so a workflow with several LoadImage nodes sends
+ * deterministically to the marked one.
+ *
+ * @param {{url?: string, path?: string}|string} source - Image source
+ * @param {Object} [options] - Optional message overrides
+ * @returns {Promise<boolean>} Whether the send request succeeded
+ */
+export async function sendImageToWorkflow(source, options = {}) {
+  const imageSource = typeof source === 'string' ? { url: source } : source;
+
+  if (!imageSource || (!imageSource.url && !imageSource.path)) {
+    showToast(
+      options.missingSourceMessage
+        || translate('uiHelpers.workflow.imageSourceMissing', {}, 'No image source provided'),
+      {},
+      'warning',
+    );
+    return false;
+  }
+
+  if (state?.global?.settings?.standalone_mode) {
+    showToast('toast.general.cannotInteractStandalone', {}, 'warning');
+    return false;
+  }
+
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
+    return false;
+  }
+
+  const registryNodes =
+    registry.nodes && typeof registry.nodes === 'object' ? registry.nodes : {};
+  const imageNodes = filterRegistryNodes(registryNodes, isNodeEnabled);
+  const isTargetableImageNode = (node) => {
+    if (node.capabilities?.has_image_widget !== true) {
+      return false;
+    }
+    // v1 materializes files into ComfyUI's input folder only. Output/temp
+    // image nodes need an annotated widget value and are a follow-up.
+    if (
+      node.capabilities?.image_folder
+      && node.capabilities.image_folder !== 'input'
+    ) {
+      return false;
+    }
+    // A connected image input overrides the widget during execution.
+    return node.capabilities?.image_widget_connected !== true;
+  };
+
+  const imageKeys = Object.keys(imageNodes);
+  const markedKeys = Object.keys(registryNodes).filter(
+    (key) => registryNodes[key]?.marker_role === 'send_image_target',
+  );
+  const autoKeys = imageKeys.filter((key) => isTargetableImageNode(imageNodes[key]));
+
+  // A marked target is an explicit user choice: never fall back to another
+  // image node when the marked one is unusable. Report no targets instead.
+  const targetKeys = markedKeys.length > 0
+    ? markedKeys.filter(
+        (key) => imageNodes[key] && isTargetableImageNode(imageNodes[key]),
+      )
+    : autoKeys;
+
+  if (targetKeys.length === 0) {
+    const defaultHint = translate(
+      'uiHelpers.workflow.noImageTargets',
+      {},
+      'No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target',
+    );
+    showToast(options.missingNodesMessage || defaultHint, {}, 'warning');
+    return false;
+  }
+
+  const sendToTargets = async (selectedKeys) => {
+    const selected = Array.isArray(selectedKeys) ? selectedKeys : [];
+    const references = selected
+      .map((nodeKey) => resolveNodeReference(nodeKey, imageNodes))
+      .filter((reference) => reference && reference.node_id !== undefined);
+
+    if (references.length === 0) {
+      showToast(
+        options.missingTargetMessage
+          || translate('uiHelpers.workflow.noTargetNodeSelected', {}, 'No target node selected'),
+        {},
+        'warning',
+      );
+      return false;
+    }
+
+    // A remote image has to be downloaded by the backend before the widget can
+    // be updated; that can take several seconds. Keep a persistent spinner
+    // toast visible and reject duplicate submissions from other entry points.
+    if (imageSendInFlight) {
+      return false;
+    }
+    imageSendInFlight = true;
+
+    let dismissLoading = () => {};
+
+    try {
+      const isRemoteImage =
+        typeof imageSource.url === 'string' && /^https?:\/\//i.test(imageSource.url);
+      const loadingMessage = translate(
+        isRemoteImage
+          ? 'uiHelpers.workflow.imageDownloading'
+          : 'uiHelpers.workflow.imageSending',
+        {},
+        isRemoteImage
+          ? 'Downloading image and sending to workflow...'
+          : 'Sending image to workflow...',
+      );
+      dismissLoading = showLoadingToast(loadingMessage);
+      const response = await fetch('/api/lm/send-image-to-workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          source: imageSource,
+          node_ids: references,
+        }),
+      });
+
+      let result = null;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.warn('LoRA Manager: invalid send-image response', parseError);
+      }
+
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.error || response.statusText || 'Failed to send image');
+      }
+
+      dismissLoading();
+      showToast(
+        options.successMessage
+          || translate(
+            'uiHelpers.workflow.imageSent',
+            { count: references.length },
+            'Image sent to workflow',
+          ),
+        {},
+        'success',
+      );
+      return true;
+    } catch (error) {
+      console.error('Failed to send image to workflow:', error);
+      dismissLoading();
+      showToast(
+        options.failureMessage
+          || translate(
+            'uiHelpers.workflow.imageSendFailed',
+            { message: error.message },
+            'Failed to send image to workflow',
+          ),
+        {},
+        'error',
+      );
+      return false;
+    } finally {
+      imageSendInFlight = false;
+      dismissLoading();
+    }
+  };
+
+  if (targetKeys.length === 1) {
+    return await sendToTargets(targetKeys);
+  }
+
+  const selectorNodes = Object.fromEntries(
+    targetKeys.map((key) => [key, imageNodes[key]]),
+  );
+  showNodeSelector(selectorNodes, {
+    actionType: translate('uiHelpers.nodeSelector.image', {}, 'Image'),
+    actionMode: translate('uiHelpers.nodeSelector.send', {}, 'Send'),
+    onSend: sendToTargets,
   });
   return true;
 }

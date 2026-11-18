@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "复制配方语法",
             "sendToWorkflowAppend": "发送到工作流（追加）",
             "sendToWorkflowReplace": "发送到工作流（替换）",
+            "sendImageToWorkflow": "发送图片到工作流",
             "openExamples": "打开示例文件夹",
             "downloadExamples": "下载示例图片",
             "downloadMissingExamples": "下载缺失的",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "无法发送配方：缺少配方 ID",
                 "failed": "发送配方到工作流失败"
+            },
+            "sendImage": {
+                "missingImage": "无法发送图片：此配方没有预览图"
             },
             "viewLoras": {
                 "missingId": "无法查看 LoRA：缺少配方 ID",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "X 级内容",
                 "nsfwXxx": "XXX 级内容",
                 "layoutGallery": "画廊视图",
-                "layoutList": "列表视图"
+                "layoutList": "列表视图",
+                "sendImage": "发送图片到工作流"
             },
             "versions": {
                 "heading": "模型版本",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "添加 Embedding 失败",
             "promptSent": "提示词已发送到工作流",
             "promptFailed": "提示词发送失败",
+            "imageSourceMissing": "未提供图片来源",
+            "noImageTargets": "工作流中没有兼容的图片目标节点。\n在 ComfyUI 中右键 Load Image 节点 → Mark as → Send Image Target",
+            "imageSent": "图片已发送到工作流",
+            "imageSendFailed": "发送图片到工作流失败：{message}",
+            "imageSending": "正在发送图片到工作流...",
+            "imageDownloading": "正在下载图片并发送到工作流...",
             "nodeTypeExcluded": "节点类型 \"{type}\" 已从发送目标中排除"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "提示词",
+            "image": "图片",
             "replace": "替换",
             "append": "追加",
+            "send": "发送",
             "selectTargetNode": "选择目标节点",
             "sendToAll": "全部发送",
             "excludeNodeType": "不再建议此节点类型"
@@ -2688,20 +2701,20 @@
         "title": "帮助与教程",
         "tabs": {
             "gettingStarted": "新手入门",
-            "updates": "[TODO: Translate] Updates",
+            "updates": "更新",
             "documentation": "文档",
             "shortcuts": "快捷键"
         },
         "gettingStarted": {
             "title": "LoRA 管理器新手入门",
-            "stepsTitle": "[TODO: Translate] First steps",
+            "stepsTitle": "第一步",
             "steps": {
-                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
-                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
-                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
-                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+                "configure": "配置你的模型文件夹；如果计划下载模型，请添加 CivitAI API 密钥。",
+                "find": "通过浏览文件夹或搜索名称、标签和触发词来查找模型。",
+                "send": "使用“发送到 ComfyUI”，或将 LoRA 语法复制到兼容的 LoRA Manager 节点。",
+                "refresh": "在 LoRA Manager 之外更改文件后使用“刷新”；仅在缓存不一致时重建缓存。"
             },
-            "readGuide": "[TODO: Translate] Open the Getting Started guide",
+            "readGuide": "打开新手入门指南",
             "replayTutorial": "重播教程"
         },
         "shortcuts": {
@@ -2748,25 +2761,25 @@
             "watchOnYouTube": "在 YouTube 上观看",
             "playlistTitle": "LoRA 管理器更新播放列表",
             "playlistDescription": "观看所有更新视频，了解最新功能和改进。",
-            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
+            "releaseNotes": "在 GitHub 上阅读发布说明"
         },
         "documentation": {
             "title": "文档",
-            "startSupport": "[TODO: Translate] Start & Support",
-            "workingWithAssets": "[TODO: Translate] Working with Assets",
-            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
-            "gettingStarted": "[TODO: Translate] Getting Started",
-            "faq": "[TODO: Translate] FAQ",
+            "startSupport": "开始与支持",
+            "workingWithAssets": "使用资源",
+            "integrationConfiguration": "集成与配置",
+            "gettingStarted": "新手入门",
+            "faq": "常见问题",
             "troubleshooting": "故障排查",
-            "modelLibrary": "[TODO: Translate] Model Library",
-            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
+            "modelLibrary": "模型库",
+            "downloadsOrganization": "下载与整理模型",
             "recipes": "配方",
-            "workflowLibrary": "[TODO: Translate] Workflow Library",
-            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
-            "configuration": "[TODO: Translate] Configuration",
-            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
-            "browserExtension": "[TODO: Translate] LM Civitai Extension",
-            "browseAll": "[TODO: Translate] Browse all documentation"
+            "workflowLibrary": "工作流库",
+            "comfyuiIntegration": "ComfyUI 集成",
+            "configuration": "配置",
+            "loraSyntax": "LoRA 语法与重复文件名",
+            "browserExtension": "LM Civitai 扩展",
+            "browseAll": "浏览所有文档"
         },
         "newContentBadge": "新"
     },

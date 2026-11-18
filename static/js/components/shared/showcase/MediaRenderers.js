@@ -8,6 +8,7 @@ import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { getDisplayUrl, getShowcaseUrl } from '../../../utils/civitaiUtils.js';
 import { findLocalFile } from './exampleMediaResolver.js';
+import { escapeAttribute } from '../utils.js';
 
 /**
  * Generate video wrapper HTML. The wrapper fills its container (the gallery's
@@ -185,9 +186,23 @@ export function renderShowcaseMediaItem(img, index, exampleFiles, { heightPercen
 
     const hasGenMeta = img.hasMeta || (img.meta && (img.meta.prompt || img.meta.seed || img.meta.resources));
 
+    // Local files win over remote URLs; remote entries still work because the
+    // backend downloads allow-listed CivitAI hosts into ComfyUI's input dir.
+    const sendImageSource = localUrl || img.url || remoteUrl;
+    const canSendImage = !isVideo
+        && Boolean(sendImageSource)
+        && !state?.global?.settings?.standalone_mode;
+
     // Create the media control buttons HTML
     const mediaControlsHtml = `
         <div class="media-controls">
+            ${canSendImage ? `
+            <button class="media-control-btn send-image-btn"
+                    title="${translate('modals.model.showcase.sendImage', {}, 'Send image to workflow')}"
+                    data-source-url="${escapeAttribute(sendImageSource)}">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+            ` : ''}
             <button class="media-control-btn set-preview-btn" title="Set as preview">
                 <i class="fas fa-image"></i>
             </button>

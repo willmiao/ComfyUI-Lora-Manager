@@ -45,6 +45,38 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+.media-viewer-send {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  font-size: 17px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10001;
+  transition: background 0.2s ease;
+}
+
+.media-viewer-overlay.active .media-viewer-send {
+  opacity: 1;
+}
+
+.media-viewer-send:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.media-viewer-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .media-viewer-content-container {
   display: flex;
   flex-direction: column;

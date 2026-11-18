@@ -1144,6 +1144,7 @@
             "copyRecipeSyntax": "העתק תחביר מתכון",
             "sendToWorkflowAppend": "שלח ל-Workflow (הוסף)",
             "sendToWorkflowReplace": "שלח ל-Workflow (החלף)",
+            "sendImageToWorkflow": "שלח תמונה אל workflow",
             "openExamples": "פתח תיקיית דוגמאות",
             "downloadExamples": "הורד תמונות דוגמה",
             "downloadMissingExamples": "הורדת חסרים",
@@ -1411,6 +1412,9 @@
             "sendRecipe": {
                 "missingId": "לא ניתן לשלוח מתכון: חסר מזהה מתכון",
                 "failed": "שליחת המתכון ל-workflow נכשלה"
+            },
+            "sendImage": {
+                "missingImage": "לא ניתן לשלוח את התמונה: למתכון הזה אין תמונת תצוגה מקדימה"
             },
             "viewLoras": {
                 "missingId": "לא ניתן להציג LoRAs: חסר מזהה מתכון",
@@ -2377,7 +2381,8 @@
                 "nsfwX": "תוכן בדירוג X",
                 "nsfwXxx": "תוכן בדירוג XXX",
                 "layoutGallery": "תצוגת גלריה",
-                "layoutList": "תצוגת רשימה"
+                "layoutList": "תצוגת רשימה",
+                "sendImage": "שלח תמונה אל workflow"
             },
             "versions": {
                 "heading": "גרסאות המודל",
@@ -2657,6 +2662,12 @@
             "embeddingFailed": "הוספת Embedding נכשלה",
             "promptSent": "פרומפט נשלחה ל-workflow",
             "promptFailed": "שליחת הפרומפט נכשלה",
+            "imageSourceMissing": "לא סופק מקור תמונה",
+            "noImageTargets": "אין יעדי תמונה תואמים ב-workflow.\nלחץ לחיצה ימנית על צומת Load Image ב-ComfyUI → Mark as → Send Image Target",
+            "imageSent": "התמונה נשלחה אל workflow",
+            "imageSendFailed": "שליחת התמונה אל workflow נכשלה: {message}",
+            "imageSending": "שולח את התמונה אל workflow...",
+            "imageDownloading": "מוריד את התמונה ושולח אותה אל workflow...",
             "nodeTypeExcluded": "סוג הצומת \"{type}\" הוחרג מיעדי השליחה"
         },
         "nodeSelector": {
@@ -2664,8 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "פרומפט",
+            "image": "תמונה",
             "replace": "החלף",
             "append": "הוסף",
+            "send": "שלח",
             "selectTargetNode": "בחר צומת יעד",
             "sendToAll": "שלח לכל",
             "excludeNodeType": "לא להציע שוב סוג צומת זה"
@@ -2688,20 +2701,20 @@
         "title": "עזרה ומדריכים",
         "tabs": {
             "gettingStarted": "תחילת עבודה",
-            "updates": "[TODO: Translate] Updates",
+            "updates": "עדכונים",
             "documentation": "תיעוד",
             "shortcuts": "קיצורי דרך"
         },
         "gettingStarted": {
             "title": "תחילת עבודה עם מנהל LoRA",
-            "stepsTitle": "[TODO: Translate] First steps",
+            "stepsTitle": "צעדים ראשונים",
             "steps": {
-                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
-                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
-                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
-                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+                "configure": "הגדר את תיקיות המודלים והוסף מפתח API של CivitAI אם בכוונתך להוריד מודלים.",
+                "find": "מצא מודל על ידי עיון בתיקיות או חיפוש לפי שם, תגיות ומילות טריגר.",
+                "send": "השתמש באפשרות שלח ל-ComfyUI או העתק את תחביר LoRA אל צומת LoRA Manager תואם.",
+                "refresh": "השתמש באפשרות רענן לאחר שינוי קבצים מחוץ ל-LoRA Manager; בנה מחדש את המטמון רק כאשר יש אי-התאמות."
             },
-            "readGuide": "[TODO: Translate] Open the Getting Started guide",
+            "readGuide": "פתח את מדריך תחילת העבודה",
             "replayTutorial": "הפעל את המדריך מחדש"
         },
         "shortcuts": {
@@ -2748,25 +2761,25 @@
             "watchOnYouTube": "צפה ביוטיוב",
             "playlistTitle": "פלייליסט עדכוני מנהל LoRA",
             "playlistDescription": "צפה בכל סרטוני העדכונים המציגים את התכונות והשיפורים האחרונים.",
-            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
+            "releaseNotes": "קרא את הערות השחרור ב-GitHub"
         },
         "documentation": {
             "title": "תיעוד",
-            "startSupport": "[TODO: Translate] Start & Support",
-            "workingWithAssets": "[TODO: Translate] Working with Assets",
-            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
-            "gettingStarted": "[TODO: Translate] Getting Started",
-            "faq": "[TODO: Translate] FAQ",
+            "startSupport": "התחלה ותמיכה",
+            "workingWithAssets": "עבודה עם נכסים",
+            "integrationConfiguration": "שילוב ותצורה",
+            "gettingStarted": "תחילת עבודה",
+            "faq": "שאלות נפוצות",
             "troubleshooting": "פתרון בעיות",
-            "modelLibrary": "[TODO: Translate] Model Library",
-            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
+            "modelLibrary": "ספריית מודלים",
+            "downloadsOrganization": "הורדה וארגון מודלים",
             "recipes": "מתכונים",
-            "workflowLibrary": "[TODO: Translate] Workflow Library",
-            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
-            "configuration": "[TODO: Translate] Configuration",
-            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
-            "browserExtension": "[TODO: Translate] LM Civitai Extension",
-            "browseAll": "[TODO: Translate] Browse all documentation"
+            "workflowLibrary": "ספריית workflow",
+            "comfyuiIntegration": "שילוב ComfyUI",
+            "configuration": "תצורה",
+            "loraSyntax": "תחביר LoRA ושמות קבצים כפולים",
+            "browserExtension": "תוסף LM Civitai",
+            "browseAll": "עיין בכל התיעוד"
         },
         "newContentBadge": "חדש"
     },

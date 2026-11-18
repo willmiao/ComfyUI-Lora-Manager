@@ -29,6 +29,10 @@ const SEND_ROLES = {
     label: "Send Gen Params Target",
     emoji: "\uD83D\uDD27",
   },
+  send_image_target: {
+    label: "Send Image Target",
+    emoji: "\uD83D\uDDBC\uFE0F",
+  },
 };
 
 const META_ROLES = {
@@ -84,7 +88,7 @@ function clearMarker(node) {
   // Restore original title: prefer stripping emoji from current title
   // (captures user renames after marking), fall back to saved original.
   const cleaned = node.title?.replace(
-    /^(\u2709\uFE0F?|\u2699\uFE0F?|\uD83D\uDCDD|\uD83C\uDF9B\uFE0F?|\uD83D\uDD27|\uD83D\uDCA1)\s*/,
+    /^(\u2709\uFE0F?|\u2699\uFE0F?|\uD83D\uDCDD|\uD83C\uDF9B\uFE0F?|\uD83D\uDD27|\uD83D\uDDBC\uFE0F?|\uD83D\uDCA1)\s*/,
     ''
   );
   if (cleaned && cleaned !== node.title) {

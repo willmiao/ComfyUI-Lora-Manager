@@ -3,7 +3,7 @@
  * Media-specific utility functions for showcase components
  * (Moved from uiHelpers.js to better organize code)
  */
-import { showToast, copyToClipboard, getNSFWLevelName, sendPromptToWorkflow, stripLoraTags, sendGenParamsToWorkflow } from '../../../utils/uiHelpers.js';
+import { showToast, copyToClipboard, getNSFWLevelName, sendPromptToWorkflow, stripLoraTags, sendGenParamsToWorkflow, sendImageToWorkflow } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
 import { getModelApiClient } from '../../../api/modelApiFactory.js';
 import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js';
@@ -631,6 +631,29 @@ export function initMediaControlHandlers(container) {
     
     // Initialize set preview buttons
     initSetPreviewHandlers(container);
+
+    // Send image buttons (showcase hover controls)
+    const sendImageButtons = container.querySelectorAll('.send-image-btn');
+    sendImageButtons.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.stopPropagation();
+
+            const sourceUrl = this.dataset.sourceUrl;
+            if (!sourceUrl) {
+                return;
+            }
+
+            this.disabled = true;
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                await sendImageToWorkflow({ url: sourceUrl });
+            } finally {
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+        });
+    });
 
     // Initialize NSFW level buttons
     initSetNsfwHandlers(container);

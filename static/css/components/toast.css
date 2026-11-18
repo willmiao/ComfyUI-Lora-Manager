@@ -76,6 +76,35 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232196f3'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
 }
 
+/* Persistent loading toast: spinner replaces the type icon. */
+.toast.toast-loading {
+    border-left: 4px solid var(--lora-accent);
+    pointer-events: none;
+}
+
+.toast.toast-loading::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color, rgba(255, 255, 255, 0.25));
+    border-top-color: var(--lora-accent);
+    border-radius: 50%;
+    background-image: none;
+    animation: toast-loading-spin 0.8s linear infinite;
+}
+
+@keyframes toast-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast.toast-loading::before {
+        animation-duration: 2s;
+    }
+}
+
 /* Stacked toast spacing */
 .toast + .toast {
     margin-top: 10px;
@@ -171,7 +200,9 @@
     position: fixed;
     top: var(--header-height, 48px); /* Start right below the fixed header */
     right: 0;
-    z-index: var(--z-toast);
+    /* The media viewer overlay uses z-index 10000; toasts (including the
+       send-image loading toast opened from that viewer) must stay above it. */
+    z-index: 10002;
     display: flex;
     flex-direction: column;
     /* No align-items (defaults to stretch) so every toast shares one equal width */
