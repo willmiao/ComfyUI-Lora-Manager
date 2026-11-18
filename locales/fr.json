@@ -1088,6 +1088,11 @@
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
             "autoOrganize": "Auto-organiser la sélection",
+            "applyFilenameTemplate": "Appliquer le modèle de nom de fichier à la sélection",
+            "filenameTemplateScope": {
+                "selected": "la sélection",
+                "folder": "ce dossier"
+            },
             "skipMetadataRefresh": "Ignorer l'actualisation des métadonnées pour la sélection",
             "resumeMetadataRefresh": "Reprendre l'actualisation des métadonnées pour la sélection",
             "setFavorite": "Définir comme favori",
@@ -1709,6 +1714,11 @@
         "scanFolder": "Analyser ce dossier",
         "scanFolderResult": {
             "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez."
+        },
+        "applyFilenameTemplate": "Appliquer le modèle de nom de fichier à ce dossier",
+        "applyFilenameTemplateResult": {
+            "missing": "Ce dossier n’existe plus sur le disque. Actualisez la barre latérale et réessayez.",
+            "unsupported": "Les modèles de nom de fichier ne sont pas disponibles sur cette page."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "Appliquer le modèle de nom de fichier à la bibliothèque ?",
             "titleRevert": "Restaurer les noms de fichier d'origine ?",
+            "titleApplySelected": "Renommer les fichiers sélectionnés ?",
+            "titleApplyFolder": "Renommer les fichiers de ce dossier ?",
+            "titleRevertSelected": "Restaurer les noms de fichier d’origine de la sélection ?",
+            "titleRevertFolder": "Restaurer les noms de fichier d’origine dans ce dossier ?",
+            "messageApplySelected": "Sur les {total} fichiers sélectionnés, {success} seront renommés selon le modèle de nom de fichier. {skipped} correspondent déjà ou sont ignorés ; {failures} ne peuvent pas être renommés. Cela modifie le chemin relatif vu par ComfyUI ; chaque modèle conserve son nom de fichier d’origine dans les métadonnées.",
+            "messageApplyFolder": "Sur les {total} fichiers de ce dossier (et de ses sous-dossiers), {success} seront renommés selon le modèle de nom de fichier. {skipped} correspondent déjà ou sont ignorés ; {failures} ne peuvent pas être renommés. Cela modifie le chemin relatif vu par ComfyUI ; chaque modèle conserve son nom de fichier d’origine dans les métadonnées.",
+            "messageRevertSelected": "Aucun modèle de nom de fichier n’est configuré : les noms de fichier d’origine enregistrés seront donc restaurés. Sur les {total} fichiers sélectionnés, {success} retrouveront leur nom d’origine ; {skipped} n’ont pas d’original enregistré ou correspondent déjà ; {failures} ne peuvent pas être renommés.",
+            "messageRevertFolder": "Aucun modèle de nom de fichier n’est configuré : les noms de fichier d’origine enregistrés seront donc restaurés. Sur les {total} fichiers de ce dossier (et de ses sous-dossiers), {success} retrouveront leur nom d’origine ; {skipped} n’ont pas d’original enregistré ou correspondent déjà ; {failures} ne peuvent pas être renommés.",
+            "renameCountButton": "Renommer {count} fichiers",
+            "restoreCountButton": "Restaurer {count} noms de fichier",
             "revertButton": "Restaurer les noms de fichier d'origine"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles ; la progression en direct n'était pas disponible",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
             "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
+            "filenameTemplateScopedSuccess": "{count} fichiers renommés",
+            "filenameTemplateNothingToRename": "Aucun fichier à renommer : les fichiers concernés correspondent déjà ou n’ont pas de nom d’origine enregistré",
             "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",
             "filenameTemplateFailed": "Échec de l'application du modèle de nom de fichier : {error}",
             "noModelsSelected": "Aucun modèle sélectionné"

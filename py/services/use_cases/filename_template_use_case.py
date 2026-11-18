@@ -1,7 +1,15 @@
 """Filename template use case: bulk-rename library models per the configured template.
 
+The caller may narrow the run to explicit ``file_paths`` (bulk selection) or to
+one or more absolute ``folder_paths`` (recursive), so users can rename only the
+part of the library that actually needs it. Without either scope the whole
+library of the model type is processed.
+
 An empty template reverts previously renamed models to the original filename
 recorded in their ``.metadata.json`` sidecar (``original_file_name``).
+
+``dry_run`` computes the same targets without touching the disk and returns the
+plan, which the UI uses to show counts before applying.
 """
 
 from __future__ import annotations
@@ -15,7 +23,11 @@ from ...utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ...utils.sidecar_paths import get_metadata_path
 from ...utils.utils import calculate_filename_for_model, fit_stem_to_path_budget
 from ..model_file_service import AutoOrganizeResult, ProgressCallback
-from ..model_lifecycle_service import ModelLifecycleService, load_local_metadata
+from ..model_lifecycle_service import (
+    ModelLifecycleService,
+    _require_path_in_library_roots,
+    load_local_metadata,
+)
 from ..settings_manager import get_settings_manager
 from .auto_organize_use_case import (
     AutoOrganizeInProgressError,
@@ -57,9 +69,21 @@ class FilenameTemplateUseCase:
         self,
         *,
         file_paths: Optional[Sequence[str]] = None,
+        folder_paths: Optional[Sequence[str]] = None,
+        dry_run: bool = False,
         progress_callback: Optional[ProgressCallback] = None,
     ) -> AutoOrganizeResult:
-        """Run the bulk rename guarded by the shared library-operation lock."""
+        """Run the bulk rename guarded by the shared library-operation lock.
+
+        Args:
+            file_paths: Rename only these model files (bulk selection).
+            folder_paths: Rename models under these absolute directories,
+                recursively. Each directory is validated against the configured
+                library roots; both roots that hold the same relative folder are
+                passed by the UI so the merged sidebar namespace is covered.
+            dry_run: Compute and return the plan without renaming anything.
+            progress_callback: WebSocket progress sink (unused for dry runs).
+        """
 
         is_running = getattr(self._lock_provider, "is_filename_template_running", None)
         if callable(is_running) and is_running():
@@ -77,17 +101,23 @@ class FilenameTemplateUseCase:
 
         async with lock:
             return await self._run(
-                file_paths=file_paths, progress_callback=progress_callback
+                file_paths=file_paths,
+                folder_paths=folder_paths,
+                dry_run=dry_run,
+                progress_callback=progress_callback,
             )
 
     async def _run(
         self,
         *,
         file_paths: Optional[Sequence[str]],
+        folder_paths: Optional[Sequence[str]],
+        dry_run: bool,
         progress_callback: Optional[ProgressCallback],
     ) -> AutoOrganizeResult:
         result = AutoOrganizeResult()
         result.operation_type = "filename_template"
+        result.dry_run = dry_run
 
         self._scanner.reset_cancellation()
 
@@ -96,15 +126,21 @@ class FilenameTemplateUseCase:
                 self._model_type
             )
 
-            cache = await self._scanner.get_cached_data()
-            models = list(cache.raw_data)
-            if file_paths:
-                wanted = set(file_paths)
-                models = [
-                    model for model in models if model.get("file_path") in wanted
-                ]
-
+            models = await self._scoped_models(file_paths, folder_paths)
             result.total = len(models)
+
+            if dry_run:
+                # Read-only preview: same target computation as the apply path,
+                # no cache mutation and no progress events.
+                for model in models:
+                    if self._scanner.is_cancelled():
+                        result.status = "cancelled"
+                        return result
+                    await self._process_model(
+                        model, template, result, bulk_context=None, dry_run=True
+                    )
+                    result.processed += 1
+                return result
 
             await self._emit_progress(progress_callback, result, "started")
 
@@ -137,7 +173,7 @@ class FilenameTemplateUseCase:
 
         except Exception as exc:
             logger.error("Error in filename template apply: %s", exc, exc_info=True)
-            if progress_callback:
+            if progress_callback and not dry_run:
                 await progress_callback.on_progress(
                     {
                         "type": _PROGRESS_TYPE,
@@ -148,12 +184,69 @@ class FilenameTemplateUseCase:
                 )
             raise
 
+    async def _scoped_models(
+        self,
+        file_paths: Optional[Sequence[str]],
+        folder_paths: Optional[Sequence[str]],
+    ) -> List[Dict[str, Any]]:
+        """Return cache entries narrowed by the requested scope.
+
+        Both scopes may be supplied; they then intersect. An explicitly empty
+        ``folder_paths`` list is rejected instead of silently widening the run
+        to the whole library.
+        """
+        cache = await self._scanner.get_cached_data()
+        models = list(cache.raw_data)
+
+        if file_paths:
+            wanted = set(file_paths)
+            models = [
+                model for model in models if model.get("file_path") in wanted
+            ]
+
+        if folder_paths is not None:
+            scopes = self._normalize_folder_scopes(folder_paths)
+            if not scopes:
+                raise ValueError("No valid folder paths provided")
+            models = [
+                model
+                for model in models
+                if self._path_in_scopes(model.get("file_path"), scopes)
+            ]
+
+        return models
+
+    def _normalize_folder_scopes(self, folder_paths: Sequence[str]) -> List[str]:
+        """Normalize and validate folder scopes in business-path space."""
+        scopes: List[str] = []
+        for folder_path in folder_paths:
+            if not isinstance(folder_path, str) or not folder_path.strip():
+                continue
+            _require_path_in_library_roots(
+                folder_path, self._scanner, label="Folder path"
+            )
+            scopes.append(
+                os.path.normcase(os.path.normpath(os.path.abspath(folder_path)))
+            )
+        return scopes
+
+    @staticmethod
+    def _path_in_scopes(file_path: Any, scopes: Sequence[str]) -> bool:
+        if not isinstance(file_path, str) or not file_path:
+            return False
+        candidate = os.path.normcase(os.path.normpath(os.path.abspath(file_path)))
+        for scope in scopes:
+            if candidate == scope or candidate.startswith(scope + os.sep):
+                return True
+        return False
+
     async def _process_model(
         self,
         model: Dict[str, Any],
         template: str,
         result: AutoOrganizeResult,
         bulk_context: Any = None,
+        dry_run: bool = False,
     ) -> None:
         model_name = model.get("model_name", "Unknown")
         try:
@@ -198,6 +291,20 @@ class FilenameTemplateUseCase:
                 new_stem
             ) == os.path.normcase(current_stem):
                 result.skipped_count += 1
+                return
+
+            if dry_run:
+                extension = os.path.splitext(file_path)[1]
+                result.success_count += 1
+                result.planned_moves.append(
+                    {
+                        "model": model_name,
+                        "from": file_path,
+                        "to": os.path.join(
+                            os.path.dirname(file_path), new_stem + extension
+                        ),
+                    }
+                )
                 return
 
             await self._lifecycle_service.rename_model(

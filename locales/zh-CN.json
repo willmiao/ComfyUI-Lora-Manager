@@ -1088,6 +1088,11 @@
             "checkUpdates": "检查所选更新",
             "moveAll": "移动所选中到文件夹",
             "autoOrganize": "自动整理所选模型",
+            "applyFilenameTemplate": "将文件名模板应用到所选模型",
+            "filenameTemplateScope": {
+                "selected": "所选模型",
+                "folder": "此文件夹"
+            },
             "skipMetadataRefresh": "跳过所选模型的元数据刷新",
             "resumeMetadataRefresh": "恢复所选模型的元数据刷新",
             "setFavorite": "设为收藏",
@@ -1709,6 +1714,11 @@
         "scanFolder": "扫描此文件夹",
         "scanFolderResult": {
             "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。"
+        },
+        "applyFilenameTemplate": "将文件名模板应用到此文件夹",
+        "applyFilenameTemplateResult": {
+            "missing": "该文件夹在磁盘上已不存在，请刷新侧边栏后重试。",
+            "unsupported": "此页面不支持文件名模板。"
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "将文件名模板应用到库？",
             "titleRevert": "恢复原始文件名？",
+            "titleApplySelected": "重命名所选文件？",
+            "titleApplyFolder": "重命名此文件夹中的文件？",
+            "titleRevertSelected": "恢复所选文件的原始文件名？",
+            "titleRevertFolder": "恢复此文件夹中的原始文件名？",
+            "messageApplySelected": "{total} 个所选文件中有 {success} 个将按文件名模板重命名。{skipped} 个已符合或会被跳过；{failures} 个无法重命名。这会改变 ComfyUI 读取的相对路径；原始文件名会保留在每个模型的元数据中。",
+            "messageApplyFolder": "此文件夹（含子文件夹）中的 {total} 个文件里有 {success} 个将按文件名模板重命名。{skipped} 个已符合或会被跳过；{failures} 个无法重命名。这会改变 ComfyUI 读取的相对路径；原始文件名会保留在每个模型的元数据中。",
+            "messageRevertSelected": "未设置文件名模板，因此将改为恢复已记录的原始文件名。{total} 个所选文件中有 {success} 个将恢复原名；{skipped} 个没有原始记录或已符合；{failures} 个无法重命名。",
+            "messageRevertFolder": "未设置文件名模板，因此将改为恢复已记录的原始文件名。此文件夹（含子文件夹）中的 {total} 个文件里有 {success} 个将恢复原名；{skipped} 个没有原始记录或已符合；{failures} 个无法重命名。",
+            "renameCountButton": "重命名 {count} 个文件",
+            "restoreCountButton": "恢复 {count} 个文件名",
             "revertButton": "恢复原始文件名"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型；实时进度不可用",
             "autoOrganizeFailed": "自动整理失败：{error}",
             "filenameTemplateSuccess": "文件名模板已成功应用，共 {count} 个 {type}",
+            "filenameTemplateScopedSuccess": "已重命名 {count} 个文件",
+            "filenameTemplateNothingToRename": "没有可重命名的文件：范围内的文件都已符合模板，或没有可恢复的原始文件名",
             "filenameTemplatePartialSuccess": "文件名模板应用完成：已重命名 {success} 个，{failures} 个失败，共 {total} 个模型",
             "filenameTemplateFailed": "应用文件名模板失败：{error}",
             "noModelsSelected": "未选中模型"

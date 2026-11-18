@@ -12,6 +12,8 @@ import { createBaseModelPicker, inferBaseModelsFromFilepaths } from '../componen
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
 import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { showConfirmationModal } from '../utils/modalUtils.js';
+import { buildFilenameTemplateConfirmation, filenameTemplateSettingKey } from '../utils/filenameTemplateScope.js';
 import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../utils/extensionReimportBridge.js';
 import { getNsfwLevelSelector } from '../components/shared/NsfwLevelSelector.js';
 import { AutoOrganizePreviewModal } from '../components/AutoOrganizePreviewModal.js';
@@ -60,6 +62,7 @@ export class BulkManager {
                 checkUpdates: true,
                 moveAll: true,
                 autoOrganize: true,
+                filenameTemplate: true,
                 deleteAll: true,
                 setContentRating: true,
                 skipMetadataRefresh: true,
@@ -74,6 +77,7 @@ export class BulkManager {
                 checkUpdates: true,
                 moveAll: true,
                 autoOrganize: true,
+                filenameTemplate: true,
                 deleteAll: true,
                 setContentRating: false,
                 skipMetadataRefresh: true,
@@ -88,6 +92,7 @@ export class BulkManager {
                 checkUpdates: true,
                 moveAll: false,
                 autoOrganize: true,
+                filenameTemplate: true,
                 deleteAll: true,
                 setContentRating: true,
                 skipMetadataRefresh: true,
@@ -2018,6 +2023,63 @@ export class BulkManager {
         } catch (error) {
             console.error('Error previewing bulk auto-organize:', error);
             previewModal.showError(error);
+        }
+    }
+
+    /**
+     * Rename only the selected models according to the configured filename
+     * template.
+     *
+     * The counterpart to the library-wide "Apply to Library Now" button in
+     * Settings: users whose library is mostly fine point this at the files that
+     * are not. A dry run first reports how many files would actually change, so
+     * the confirmation can quote real counts instead of the whole selection.
+     */
+    async applyFilenameTemplateToSelectedModels() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.loras.noModelsSelected', {}, 'error');
+            return;
+        }
+
+        const settingKey = filenameTemplateSettingKey(state.currentPageType);
+        if (!settingKey) {
+            return;
+        }
+
+        const apiClient = getModelApiClient();
+        if (typeof apiClient.previewFilenameTemplate !== 'function') {
+            return;
+        }
+
+        const filePaths = Array.from(state.selectedModels);
+        let preview;
+        try {
+            preview = await apiClient.previewFilenameTemplate({ filePaths });
+        } catch (error) {
+            console.error('Error previewing filename template apply:', error);
+            showToast('toast.loras.filenameTemplateFailed', { error: error.message }, 'error');
+            return;
+        }
+
+        if (!preview?.summary?.success) {
+            showToast('toast.loras.filenameTemplateNothingToRename', {}, 'info');
+            return;
+        }
+
+        const confirmed = await showConfirmationModal(
+            buildFilenameTemplateConfirmation(preview, 'selected', state.currentPageType)
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await apiClient.applyFilenameTemplate(filePaths);
+            if (state.bulkMode) this.toggleBulkMode();
+            resetAndReload(true);
+        } catch (error) {
+            // The API client already surfaced a toast with the failure reason.
+            console.error('Error applying filename template to selected models:', error);
         }
     }
 

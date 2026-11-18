@@ -1088,6 +1088,11 @@
       "checkUpdates": "Check Updates for Selected",
       "moveAll": "Move Selected to Folder",
       "autoOrganize": "Auto-Organize Selected",
+      "applyFilenameTemplate": "Apply Filename Template to Selected",
+      "filenameTemplateScope": {
+        "selected": "the selection",
+        "folder": "this folder"
+      },
       "skipMetadataRefresh": "Skip Metadata Refresh for Selected",
       "resumeMetadataRefresh": "Resume Metadata Refresh for Selected",
       "setFavorite": "Set as Favorite",
@@ -1709,6 +1714,11 @@
     "scanFolder": "Scan this folder",
     "scanFolderResult": {
       "missing": "This folder no longer exists on disk. Refresh the sidebar and try again."
+    },
+    "applyFilenameTemplate": "Apply filename template to this folder",
+    "applyFilenameTemplateResult": {
+      "missing": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "unsupported": "Filename templates are not available on this page."
     }
   },
   "statistics": {
@@ -2013,6 +2023,16 @@
     "filenameTemplateConfirm": {
       "titleApply": "Apply filename template to library?",
       "titleRevert": "Restore original filenames?",
+      "titleApplySelected": "Rename selected files?",
+      "titleApplyFolder": "Rename files in this folder?",
+      "titleRevertSelected": "Restore original filenames for the selection?",
+      "titleRevertFolder": "Restore original filenames in this folder?",
+      "messageApplySelected": "{success} of {total} selected files will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+      "messageApplyFolder": "{success} of {total} files in this folder (and its subfolders) will be renamed according to the filename template. {skipped} already match or are skipped; {failures} cannot be renamed. This changes the relative path ComfyUI sees; each model keeps its original filename in metadata.",
+      "messageRevertSelected": "No filename template is configured, so this restores recorded original filenames instead. {success} of {total} selected files will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+      "messageRevertFolder": "No filename template is configured, so this restores recorded original filenames instead. {success} of {total} files in this folder (and its subfolders) will get their original name back; {skipped} have no recorded original or already match; {failures} cannot be renamed.",
+      "renameCountButton": "Rename {count} Files",
+      "restoreCountButton": "Restore {count} Filenames",
       "revertButton": "Restore Original Filenames"
     },
     "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
       "autoOrganizeProgressUnavailable": "Auto-organize completed with {success} moved, {failures} failed out of {total} models; live progress was unavailable",
       "autoOrganizeFailed": "Auto-organize failed: {error}",
       "filenameTemplateSuccess": "Filename template applied successfully for {count} {type}",
+      "filenameTemplateScopedSuccess": "Renamed {count} files",
+      "filenameTemplateNothingToRename": "Nothing to rename: every file in scope already matches, or has no recorded original filename",
       "filenameTemplatePartialSuccess": "Filename template applied with {success} renamed, {failures} failed out of {total} models",
       "filenameTemplateFailed": "Applying filename template failed: {error}",
       "noModelsSelected": "No models selected"

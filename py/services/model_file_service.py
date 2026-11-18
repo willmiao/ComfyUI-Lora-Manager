@@ -119,12 +119,20 @@ class AutoOrganizeResult:
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
         if self.dry_run:
-            message = (
-                f'Auto-organize dry run ({self.operation_type}): '
-                f'{self.success_count} would move, '
-                f'{self.skipped_count} would be skipped, '
-                f'{self.failure_count} would fail out of {self.total} total'
-            )
+            if self.operation_type == 'filename_template':
+                message = (
+                    f'Filename template dry run: '
+                    f'{self.success_count} would be renamed, '
+                    f'{self.skipped_count} would be skipped, '
+                    f'{self.failure_count} would fail out of {self.total} total'
+                )
+            else:
+                message = (
+                    f'Auto-organize dry run ({self.operation_type}): '
+                    f'{self.success_count} would move, '
+                    f'{self.skipped_count} would be skipped, '
+                    f'{self.failure_count} would fail out of {self.total} total'
+                )
         elif self.operation_type == 'filename_template':
             message = (
                 f'Filename template applied: {self.success_count} renamed, '

@@ -1088,6 +1088,11 @@
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
+            "applyFilenameTemplate": "선택한 모델에 파일명 템플릿 적용",
+            "filenameTemplateScope": {
+                "selected": "선택한 모델",
+                "folder": "이 폴더"
+            },
             "skipMetadataRefresh": "선택한 모델의 메타데이터 새로고침 건너뛰기",
             "resumeMetadataRefresh": "선택한 모델의 메타데이터 새로고침 재개",
             "setFavorite": "즐겨찾기로 설정",
@@ -1709,6 +1714,11 @@
         "scanFolder": "이 폴더 스캔",
         "scanFolderResult": {
             "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요."
+        },
+        "applyFilenameTemplate": "이 폴더에 파일명 템플릿 적용",
+        "applyFilenameTemplateResult": {
+            "missing": "이 폴더는 디스크에 더 이상 존재하지 않습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
+            "unsupported": "이 페이지에서는 파일명 템플릿을 사용할 수 없습니다."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "라이브러리에 파일명 템플릿을 적용하시겠습니까?",
             "titleRevert": "원본 파일명을 복원하시겠습니까?",
+            "titleApplySelected": "선택한 파일의 이름을 변경하시겠습니까?",
+            "titleApplyFolder": "이 폴더의 파일 이름을 변경하시겠습니까?",
+            "titleRevertSelected": "선택한 파일의 원본 파일명을 복원하시겠습니까?",
+            "titleRevertFolder": "이 폴더에 있는 파일의 원본 파일명을 복원하시겠습니까?",
+            "messageApplySelected": "선택한 파일 {total}개 중 {success}개의 이름을 파일명 템플릿에 따라 변경합니다. {skipped}개는 이미 일치하거나 건너뜁니다. {failures}개는 이름을 변경할 수 없습니다. ComfyUI가 인식하는 상대 경로가 바뀌며, 원본 파일명은 각 모델의 메타데이터에 보관됩니다.",
+            "messageApplyFolder": "이 폴더(하위 폴더 포함)의 파일 {total}개 중 {success}개의 이름을 파일명 템플릿에 따라 변경합니다. {skipped}개는 이미 일치하거나 건너뜁니다. {failures}개는 이름을 변경할 수 없습니다. ComfyUI가 인식하는 상대 경로가 바뀌며, 원본 파일명은 각 모델의 메타데이터에 보관됩니다.",
+            "messageRevertSelected": "파일명 템플릿이 설정되어 있지 않아 대신 기록된 원본 파일명을 복원합니다. 선택한 파일 {total}개 중 {success}개가 원래 이름으로 돌아갑니다. {skipped}개는 기록이 없거나 이미 일치합니다. {failures}개는 이름을 변경할 수 없습니다.",
+            "messageRevertFolder": "파일명 템플릿이 설정되어 있지 않아 대신 기록된 원본 파일명을 복원합니다. 이 폴더(하위 폴더 포함)의 파일 {total}개 중 {success}개가 원래 이름으로 돌아갑니다. {skipped}개는 기록이 없거나 이미 일치합니다. {failures}개는 이름을 변경할 수 없습니다.",
+            "renameCountButton": "파일 {count}개 이름 변경",
+            "restoreCountButton": "파일명 {count}개 복원",
             "revertButton": "원본 파일명 복원"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패. 실시간 진행률을 사용할 수 없었습니다",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
             "filenameTemplateSuccess": "{count}개의 {type}에 파일명 템플릿이 성공적으로 적용되었습니다",
+            "filenameTemplateScopedSuccess": "파일 {count}개의 이름을 변경했습니다",
+            "filenameTemplateNothingToRename": "이름을 변경할 파일이 없습니다: 범위 내 파일이 이미 일치하거나 복원할 원본 파일명 기록이 없습니다",
             "filenameTemplatePartialSuccess": "파일명 템플릿 적용 완료: 전체 {total}개 중 {success}개 이름 변경, {failures}개 실패",
             "filenameTemplateFailed": "파일명 템플릿 적용 실패: {error}",
             "noModelsSelected": "선택된 모델이 없습니다"

@@ -13,6 +13,7 @@ import { escapeHtml, escapeAttribute } from './shared/utils.js';
 import { positionFixedMenu } from '../utils/menuPosition.js';
 import { closeContextMenus, registerContextMenuCloser } from '../utils/contextMenuCoordinator.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
+import { buildFilenameTemplateConfirmation, filenameTemplateSettingKey } from '../utils/filenameTemplateScope.js';
 
 // Sidebar menu elements. They are also the ids used to keep these menus
 // mutually exclusive with the page-side context menus.
@@ -2963,6 +2964,18 @@ export class SidebarManager {
                 item.style.display = supportsFolderManagement ? '' : 'none';
             }
         }
+
+        // Scoped filename-template apply only exists for model types that have
+        // a template editor in Settings; recipes/other/workflows have none and
+        // keep the menu item hidden rather than offering a no-op.
+        const applyFilenameTemplateItem = menu.querySelector(
+            '[data-action="apply-filename-template"]'
+        );
+        if (applyFilenameTemplateItem) {
+            const hasTemplate = Boolean(filenameTemplateSettingKey(this.pageType));
+            applyFilenameTemplateItem.style.display =
+                supportsFolderManagement && hasTemplate ? '' : 'none';
+        }
         this._updateContextMenuSeparators(menu);
 
         // Place against the viewport: the tree continues to the bottom edge, so
@@ -3057,6 +3070,9 @@ export class SidebarManager {
             case 'scan-folder':
                 await this.scanFolder(path);
                 break;
+            case 'apply-filename-template':
+                await this.applyFilenameTemplateToFolder(path);
+                break;
             case 'check-folder-updates':
                 try {
                     await performFolderUpdateCheck(path);
@@ -3092,6 +3108,74 @@ export class SidebarManager {
         }
 
         await controls.refreshModels(false, { folder: relativePath });
+    }
+
+    /**
+     * Rename the models under the clicked folder according to the configured
+     * filename template.
+     *
+     * The tree is a merged relative-path namespace, so the folder is resolved
+     * to its absolute candidate directories first and all of them are passed as
+     * folder scopes; the backend renames only models whose business path sits
+     * under one of them. A dry run reports the real count before the
+     * confirmation, because the folder itself does not carry a model count.
+     */
+    async applyFilenameTemplateToFolder(relativePath) {
+        const settingKey = filenameTemplateSettingKey(this.pageType);
+        if (!settingKey || !relativePath) {
+            return;
+        }
+
+        const resolution = await this._resolveFolderCandidatesSafe(relativePath);
+        const folderPaths = (resolution?.candidates || [])
+            .map((candidate) => candidate.folder_path)
+            .filter(Boolean);
+        if (folderPaths.length === 0) {
+            showToast('sidebar.applyFilenameTemplateResult.missing', {}, 'warning');
+            return;
+        }
+
+        const apiClient = this.apiClient;
+        if (!apiClient || typeof apiClient.previewFilenameTemplate !== 'function') {
+            showToast('sidebar.applyFilenameTemplateResult.unsupported', {}, 'error');
+            return;
+        }
+
+        let preview;
+        try {
+            preview = await apiClient.previewFilenameTemplate({ folderPaths });
+        } catch (error) {
+            console.error('Error previewing folder filename template apply:', error);
+            showToast('toast.loras.filenameTemplateFailed', { error: error.message }, 'error');
+            return;
+        }
+
+        if (!preview?.summary?.success) {
+            showToast('toast.loras.filenameTemplateNothingToRename', {}, 'info');
+            return;
+        }
+
+        // Loaded lazily: modalUtils pulls in the delete/exclude dialogs (and the
+        // model API factory), which the sidebar's folder-only pages don't need.
+        const { showConfirmationModal } = await import('../utils/modalUtils.js');
+        const confirmed = await showConfirmationModal(
+            buildFilenameTemplateConfirmation(preview, 'folder', this.pageType)
+        );
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            await apiClient.applyFilenameTemplate(null, { folderPaths });
+            // Same refresh the bulk path uses: reload the current page's models
+            // and folder tree so the new filenames show up immediately.
+            if (typeof apiClient.loadMoreWithVirtualScroll === 'function') {
+                await apiClient.loadMoreWithVirtualScroll(true);
+            }
+        } catch (error) {
+            // The API client already surfaced a toast with the failure reason.
+            console.error('Error applying filename template to folder:', error);
+        }
     }
 
     handleBreadcrumbClick(event) {

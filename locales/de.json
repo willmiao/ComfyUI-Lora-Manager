@@ -1088,6 +1088,11 @@
             "checkUpdates": "Auswahl auf Updates prüfen",
             "moveAll": "Alle in Ordner verschieben",
             "autoOrganize": "Automatisch organisieren",
+            "applyFilenameTemplate": "Dateinamen-Vorlage auf Auswahl anwenden",
+            "filenameTemplateScope": {
+                "selected": "die Auswahl",
+                "folder": "diesen Ordner"
+            },
             "skipMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle überspringen",
             "resumeMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle fortsetzen",
             "setFavorite": "Als Favorit setzen",
@@ -1709,6 +1714,11 @@
         "scanFolder": "Diesen Ordner scannen",
         "scanFolderResult": {
             "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
+        },
+        "applyFilenameTemplate": "Dateinamen-Vorlage auf diesen Ordner anwenden",
+        "applyFilenameTemplateResult": {
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "unsupported": "Dateinamen-Vorlagen sind auf dieser Seite nicht verfügbar."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "Dateinamen-Vorlage auf Bibliothek anwenden?",
             "titleRevert": "Ursprüngliche Dateinamen wiederherstellen?",
+            "titleApplySelected": "Ausgewählte Dateien umbenennen?",
+            "titleApplyFolder": "Dateien in diesem Ordner umbenennen?",
+            "titleRevertSelected": "Ursprüngliche Dateinamen der Auswahl wiederherstellen?",
+            "titleRevertFolder": "Ursprüngliche Dateinamen in diesem Ordner wiederherstellen?",
+            "messageApplySelected": "Von {total} ausgewählten Dateien werden {success} nach der Dateinamen-Vorlage umbenannt. {skipped} stimmen bereits überein oder werden übersprungen; {failures} können nicht umbenannt werden. Der relative Pfad, den ComfyUI sieht, ändert sich; jedes Modell behält seinen ursprünglichen Dateinamen in den Metadaten.",
+            "messageApplyFolder": "Von {total} Dateien in diesem Ordner (einschließlich Unterordnern) werden {success} nach der Dateinamen-Vorlage umbenannt. {skipped} stimmen bereits überein oder werden übersprungen; {failures} können nicht umbenannt werden. Der relative Pfad, den ComfyUI sieht, ändert sich; jedes Modell behält seinen ursprünglichen Dateinamen in den Metadaten.",
+            "messageRevertSelected": "Es ist keine Dateinamen-Vorlage konfiguriert, daher werden stattdessen die gespeicherten ursprünglichen Dateinamen wiederhergestellt. Von {total} ausgewählten Dateien erhalten {success} ihren ursprünglichen Namen zurück; {skipped} haben keinen gespeicherten Originalnamen oder stimmen bereits überein; {failures} können nicht umbenannt werden.",
+            "messageRevertFolder": "Es ist keine Dateinamen-Vorlage konfiguriert, daher werden stattdessen die gespeicherten ursprünglichen Dateinamen wiederhergestellt. Von {total} Dateien in diesem Ordner (einschließlich Unterordnern) erhalten {success} ihren ursprünglichen Namen zurück; {skipped} haben keinen gespeicherten Originalnamen oder stimmen bereits überein; {failures} können nicht umbenannt werden.",
+            "renameCountButton": "{count} Dateien umbenennen",
+            "restoreCountButton": "{count} Dateinamen wiederherstellen",
             "revertButton": "Ursprüngliche Dateinamen wiederherstellen"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "Automatische Organisation abgeschlossen: {success} verschoben, {failures} fehlgeschlagen von insgesamt {total} Modellen; der Live-Fortschritt war nicht verfügbar",
             "autoOrganizeFailed": "Automatische Organisation fehlgeschlagen: {error}",
             "filenameTemplateSuccess": "Dateinamen-Vorlage erfolgreich für {count} {type} angewendet",
+            "filenameTemplateScopedSuccess": "{count} Dateien umbenannt",
+            "filenameTemplateNothingToRename": "Keine Dateien umzubenennen: Die betroffenen Dateien stimmen bereits überein oder haben keinen gespeicherten Originalnamen",
             "filenameTemplatePartialSuccess": "Dateinamen-Vorlage angewendet: {success} umbenannt, {failures} von {total} Modellen fehlgeschlagen",
             "filenameTemplateFailed": "Anwendung der Dateinamen-Vorlage fehlgeschlagen: {error}",
             "noModelsSelected": "Keine Modelle ausgewählt"

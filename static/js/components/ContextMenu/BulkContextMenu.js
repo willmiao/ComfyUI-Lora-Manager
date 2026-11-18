@@ -39,6 +39,7 @@ export class BulkContextMenu extends BaseContextMenu {
         const checkUpdatesItem = this.menu.querySelector('[data-action="check-updates"]');
         const moveAllItem = this.menu.querySelector('[data-action="move-all"]');
         const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
+        const applyFilenameTemplateItem = this.menu.querySelector('[data-action="apply-filename-template"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
         const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
@@ -91,6 +92,9 @@ export class BulkContextMenu extends BaseContextMenu {
         }
         if (autoOrganizeItem) {
             autoOrganizeItem.style.display = config.autoOrganize ? 'flex' : 'none';
+        }
+        if (applyFilenameTemplateItem) {
+            applyFilenameTemplateItem.style.display = config.filenameTemplate ? 'flex' : 'none';
         }
         if (deleteAllItem) {
             deleteAllItem.style.display = config.deleteAll ? 'flex' : 'none';
@@ -266,6 +270,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'auto-organize':
                 bulkManager.autoOrganizeSelectedModels();
+                break;
+            case 'apply-filename-template':
+                bulkManager.applyFilenameTemplateToSelectedModels();
                 break;
             case 'skip-metadata-refresh':
                 bulkManager.setSkipMetadataRefresh(true);

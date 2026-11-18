@@ -1088,6 +1088,11 @@
             "checkUpdates": "Comprobar actualizaciones para la selección",
             "moveAll": "Mover todos a carpeta",
             "autoOrganize": "Auto-organizar seleccionados",
+            "applyFilenameTemplate": "Aplicar la plantilla de nombres de archivo a la selección",
+            "filenameTemplateScope": {
+                "selected": "la selección",
+                "folder": "esta carpeta"
+            },
             "skipMetadataRefresh": "Omitir actualización de metadatos para seleccionados",
             "resumeMetadataRefresh": "Reanudar actualización de metadatos para seleccionados",
             "setFavorite": "Marcar como favorito",
@@ -1709,6 +1714,11 @@
         "scanFolder": "Escanear esta carpeta",
         "scanFolderResult": {
             "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo."
+        },
+        "applyFilenameTemplate": "Aplicar la plantilla de nombres de archivo a esta carpeta",
+        "applyFilenameTemplateResult": {
+            "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
+            "unsupported": "Las plantillas de nombres de archivo no están disponibles en esta página."
         }
     },
     "statistics": {
@@ -2013,6 +2023,16 @@
         "filenameTemplateConfirm": {
             "titleApply": "¿Aplicar la plantilla de nombres de archivo a la biblioteca?",
             "titleRevert": "¿Restaurar los nombres de archivo originales?",
+            "titleApplySelected": "¿Renombrar los archivos seleccionados?",
+            "titleApplyFolder": "¿Renombrar los archivos de esta carpeta?",
+            "titleRevertSelected": "¿Restaurar los nombres de archivo originales de la selección?",
+            "titleRevertFolder": "¿Restaurar los nombres de archivo originales en esta carpeta?",
+            "messageApplySelected": "De los {total} archivos seleccionados, {success} se renombrarán según la plantilla de nombres de archivo. {skipped} ya coinciden o se omiten; {failures} no se pueden renombrar. Esto cambia la ruta relativa que ve ComfyUI; cada modelo conserva su nombre de archivo original en los metadatos.",
+            "messageApplyFolder": "De los {total} archivos de esta carpeta (y sus subcarpetas), {success} se renombrarán según la plantilla de nombres de archivo. {skipped} ya coinciden o se omiten; {failures} no se pueden renombrar. Esto cambia la ruta relativa que ve ComfyUI; cada modelo conserva su nombre de archivo original en los metadatos.",
+            "messageRevertSelected": "No hay una plantilla de nombres de archivo configurada, así que se restaurarán los nombres originales registrados. De los {total} archivos seleccionados, {success} recuperarán su nombre original; {skipped} no tienen original registrado o ya coinciden; {failures} no se pueden renombrar.",
+            "messageRevertFolder": "No hay una plantilla de nombres de archivo configurada, así que se restaurarán los nombres originales registrados. De los {total} archivos de esta carpeta (y sus subcarpetas), {success} recuperarán su nombre original; {skipped} no tienen original registrado o ya coinciden; {failures} no se pueden renombrar.",
+            "renameCountButton": "Renombrar {count} archivos",
+            "restoreCountButton": "Restaurar {count} nombres de archivo",
             "revertButton": "Restaurar nombres de archivo originales"
         },
         "sidecarMigrationConfirm": {
@@ -2876,6 +2896,8 @@
             "autoOrganizeProgressUnavailable": "Auto-organización completada con {success} movidos, {failures} fallidos de un total de {total} modelos; el progreso en vivo no estuvo disponible",
             "autoOrganizeFailed": "Auto-organización fallida: {error}",
             "filenameTemplateSuccess": "Plantilla de nombres de archivo aplicada exitosamente para {count} {type}",
+            "filenameTemplateScopedSuccess": "{count} archivos renombrados",
+            "filenameTemplateNothingToRename": "No hay archivos que renombrar: los archivos afectados ya coinciden o no tienen un nombre original registrado",
             "filenameTemplatePartialSuccess": "Plantilla de nombres de archivo aplicada con {success} renombrados, {failures} fallidos de un total de {total} modelos",
             "filenameTemplateFailed": "Aplicación de la plantilla de nombres de archivo fallida: {error}",
             "noModelsSelected": "No hay modelos seleccionados"
