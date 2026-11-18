@@ -111,18 +111,16 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
     loras_root = tmp_path / "loras"
     loras_root.mkdir()
-    (loras_root / "model.ckpt.bak").write_text("stale")
-    nested = loras_root / "nested"
-    nested.mkdir()
-    (nested / "nested_model.ckpt.bak").write_text("stale")
+    # Startup used to sweep these away. It no longer does: a ".bak" is the
+    # user's own file, and nothing in the app creates one.
+    kept_bak = loras_root / "model.ckpt.bak"
+    kept_bak.write_text("kept")
 
     checkpoints_root = tmp_path / "checkpoints"
     checkpoints_root.mkdir()
-    (checkpoints_root / "checkpoint.safetensors.bak").write_text("old")
 
     embeddings_root = tmp_path / "embeddings"
     embeddings_root.mkdir()
-    (embeddings_root / "embedding.pt.bak").write_text("old")
 
     monkeypatch.setattr(lora_manager.config, "loras_roots", [str(loras_root)])
     monkeypatch.setattr(lora_manager.config, "base_models_roots", [str(checkpoints_root)])
@@ -226,7 +224,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         await asyncio.gather(*pending)
 
     task_names = {task.get_name() for task in scheduled_tasks}
-    assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "other_cache_init", "recipe_cache_init", "post_init_tasks", "cleanup_bak_files"}.issubset(task_names)
+    assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "other_cache_init", "recipe_cache_init", "post_init_tasks"}.issubset(task_names)
 
     # Startup sweep: an expired pending-delete purge task is spawned during
     # service initialization (covers both plugin and standalone modes).
@@ -241,8 +239,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
     assert migration_calls == [True]
 
-    for root in (loras_root, checkpoints_root, embeddings_root):
-        assert not any(path.suffix == ".bak" for path in root.rglob("*")), f"Backup files remain in {root}"
+    assert kept_bak.exists(), "startup must leave the user's .bak file alone"
 
     assert {"civitai_client", "download_manager", "websocket_manager", "lora_scanner", "checkpoint_scanner", "embedding_scanner", "other_scanner", "recipe_scanner"}.issubset(registry_calls)
 
