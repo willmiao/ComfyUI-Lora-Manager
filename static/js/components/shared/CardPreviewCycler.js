@@ -33,6 +33,11 @@ import { resolveExampleMedia } from './showcase/exampleMediaResolver.js';
 // delay can stay short. The first example frame is preloaded while the
 // timer runs, so it swaps in the moment the mode activates.
 const CYCLE_MODE_DELAY_MS = 800;
+// Short intent window before the network requests start. A pointer sweeping
+// across the grid usually leaves a card well inside this window, so drive-by
+// hovers cost no requests; a deliberate hover still warms the first frame
+// long before the 800ms activation timer fires.
+const PREFETCH_DELAY_MS = 200;
 const DEFAULT_CYCLE_INTERVAL_SECONDS = 2;
 // The crossfade must stay short relative to the interval: at a rapid 0.5s
 // interval a full-length fade would keep the card permanently mid-transition.
@@ -54,7 +59,8 @@ function fetchLocalExampleFiles(sha256) {
     if (!sha256) return Promise.resolve([]);
     const params = new URLSearchParams({ model_hash: sha256 });
     return fetch(`/api/lm/example-image-files?${params}`)
-        // A model without an example folder answers 404 with `files: []`.
+        // A model without an example folder answers 200 with an empty
+        // `files` list; other failures degrade to no local examples too.
         .then(response => (response.ok ? response.json() : null))
         .then(data => (data?.success ? data.files || [] : []))
         .catch(() => []);
@@ -196,6 +202,7 @@ export function attachCardPreviewCycler(card, model) {
     let hovered = false;
     let pointerInChrome = false;
     let hoverDelayTimer = null;
+    let prefetchTimer = null;
     let cycleTimer = null;
     let buffers = null;
     let frames = [];
@@ -243,11 +250,18 @@ export function attachCardPreviewCycler(card, model) {
         setTimeout(() => stale.forEach(img => img.remove()), getFadeDurationMs() + 50);
     };
 
+    const cancelPrefetch = () => {
+        if (!prefetchTimer) return;
+        clearTimeout(prefetchTimer);
+        prefetchTimer = null;
+    };
+
     const cleanup = () => {
         if (hoverDelayTimer) {
             clearTimeout(hoverDelayTimer);
             hoverDelayTimer = null;
         }
+        cancelPrefetch();
         if (cycleTimer) {
             clearInterval(cycleTimer);
             cycleTimer = null;
@@ -292,9 +306,11 @@ export function attachCardPreviewCycler(card, model) {
         ensurePreloaded(frames[(currentIndex + 1) % frames.length]);
     };
 
-    // Data loading starts on first hover, not when the mode activates: the
-    // delay only gates the visual mode switch, and the first frame is
-    // preloaded during it so it can fade in instantly on activation.
+    // Data loading starts after a short intent window, not when the mode
+    // activates: the activation delay only gates the visual mode switch, and
+    // the first frame is preloaded during it so it can fade in instantly.
+    // Chrome hovers never call this, so action buttons and tooltips cannot
+    // trigger network work by themselves.
     const startPrefetch = () => {
         if (pendingImages) return;
         pendingImages = getCycleImages(model).then(({ frames: frameList, anchorIndex }) => {
@@ -305,8 +321,20 @@ export function attachCardPreviewCycler(card, model) {
         });
     };
 
+    const armPrefetch = () => {
+        if (pendingImages || prefetchTimer) return;
+        prefetchTimer = setTimeout(() => {
+            prefetchTimer = null;
+            startPrefetch();
+        }, PREFETCH_DELAY_MS);
+    };
+
     const activate = async () => {
         hoverDelayTimer = null;
+        // The intent window normally started the fetch long ago; this covers
+        // a pending timer that was re-armed right before activation.
+        cancelPrefetch();
+        startPrefetch();
         const cycleData = await pendingImages;
         const frameList = cycleData?.frames || [];
         // A single example is the cover image itself — nothing new to show.
@@ -332,23 +360,26 @@ export function attachCardPreviewCycler(card, model) {
         // NSFW-blurred cards stay static until the user explicitly unblurs.
         if (cardPreview.classList.contains('blurred')) return;
 
-        if (!hovered) {
-            hovered = true;
-            startPrefetch();
-        }
+        hovered = true;
         if (cycleTimer) return;
 
         // The card chrome (header/footer with action icons and tooltips) is
-        // a child of .card-preview; only the bare preview area arms the
-        // activation timer, and moving into the chrome disarms it again.
+        // a child of .card-preview; only the bare preview area counts as
+        // hover intent. Entering the chrome also disarms the activation timer
+        // and cancels a pending prefetch, so drive-by interactions with the
+        // action buttons never reach the network.
         pointerInChrome = Boolean(event.target.closest?.('.card-header, .card-footer'));
         if (pointerInChrome) {
+            cancelPrefetch();
             if (hoverDelayTimer) {
                 clearTimeout(hoverDelayTimer);
                 hoverDelayTimer = null;
             }
-        } else if (!hoverDelayTimer) {
-            hoverDelayTimer = setTimeout(activate, CYCLE_MODE_DELAY_MS);
+        } else {
+            armPrefetch();
+            if (!hoverDelayTimer) {
+                hoverDelayTimer = setTimeout(activate, CYCLE_MODE_DELAY_MS);
+            }
         }
     };
 

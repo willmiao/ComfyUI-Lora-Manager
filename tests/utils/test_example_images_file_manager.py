@@ -198,6 +198,25 @@ async def test_get_files_lists_supported_media(tmp_path) -> None:
     assert names == {"image.png", "video.webm"}
 
 
+async def test_get_files_missing_folder_returns_empty_list(tmp_path) -> None:
+    """No example folder is a normal empty result, not a 404.
+
+    The card hover cycler requests the listing for every model it previews;
+    a 404 would be logged by the browser for each hovered card even though the
+    UI handles it as "nothing to cycle".
+    """
+
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+
+    request = JsonRequest({}, {"model_hash": "d" * 64})
+    response = await ExampleImagesFileManager.get_files(request)
+    body = _parse_json(response)
+
+    assert response.status == 200
+    assert body == {"success": True, "files": []}
+
+
 async def test_has_images_reports_presence(tmp_path) -> None:
     settings_manager = get_settings_manager()
     settings_manager.settings["example_images_path"] = str(tmp_path)

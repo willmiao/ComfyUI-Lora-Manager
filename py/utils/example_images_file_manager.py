@@ -210,13 +210,15 @@ class ExampleImagesFileManager:
                     'error': 'Failed to resolve example images folder for this model'
                 }, status=500)
 
-            # Check if folder exists
+            # Check if folder exists. An absent folder is a normal "no local
+            # examples" result, not an error: the card hover cycler asks for
+            # every model, and browsers log each 4xx at the fetch call site,
+            # which floods the console for models that simply have no download.
             if not os.path.exists(model_folder):
                 return web.json_response({
-                    'success': False, 
-                    'error': 'No example images found for this model',
+                    'success': True,
                     'files': []
-                }, status=404)
+                })
             
             # Get list of files in the folder
             files = []

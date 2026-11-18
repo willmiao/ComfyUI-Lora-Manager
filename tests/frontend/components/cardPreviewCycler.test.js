@@ -125,18 +125,23 @@ describe('CardPreviewCycler', () => {
     return preview;
   }
 
-  it('starts loading on hover and shows the first frame when the mode activates', async () => {
+  it('waits for hover intent, then loads ahead of the visual mode switch', async () => {
     const card = createCard();
     attachCardPreviewCycler(card, MODEL);
     const preview = hover(card);
 
-    // Prefetch begins at hover time, ahead of the visual intent delay.
+    // A drive-by sweep should not reach the network; the intent window is
+    // still far shorter than the activation delay below.
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+    await advance(199);
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+    await advance(1);
     expect(fetchModelMetadataMock).toHaveBeenCalledWith(MODEL.file_path);
     expect(card.classList.contains('cycling')).toBe(false);
 
     // Ordinary hover interactions (action icons, tooltips) keep working:
     // the chrome stays visible until the mode delay elapses.
-    await advance(400);
+    await advance(200);
     expect(card.classList.contains('cycling')).toBe(false);
 
     await advance(400);
@@ -156,6 +161,25 @@ describe('CardPreviewCycler', () => {
     // Anchor preview is untouched underneath.
     const anchor = preview.querySelector('img:not(.card-preview-cycle-img)');
     expect(anchor.src).toContain('/anchor.jpg');
+  });
+
+  it('does not fetch when a drive-by hover leaves before the intent window', async () => {
+    const card = createCard();
+    attachCardPreviewCycler(card, MODEL);
+    const preview = hover(card);
+
+    await advance(100);
+    preview.dispatchEvent(new Event('mouseleave'));
+    await advance(5000);
+
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+    expect(fetchLocalFilesMock).not.toHaveBeenCalled();
+    expect(card.classList.contains('cycling')).toBe(false);
+
+    // A later deliberate hover still starts normally.
+    hover(card);
+    await advance(200);
+    expect(fetchModelMetadataMock).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the cover image in the rotation, just not as the first frame', async () => {
@@ -214,6 +238,23 @@ describe('CardPreviewCycler', () => {
     await advance(5000);
     expect(card.classList.contains('cycling')).toBe(false);
     expect(card.querySelectorAll('.card-preview-cycle-img')).toHaveLength(0);
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+    expect(fetchLocalFilesMock).not.toHaveBeenCalled();
+  });
+
+  it('starts loading once the pointer moves from the chrome to the preview', async () => {
+    const card = createCardWithChrome();
+    attachCardPreviewCycler(card, MODEL);
+    card.querySelector('.card-header').dispatchEvent(new Event('mouseover', { bubbles: true }));
+
+    await advance(5000);
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+
+    card.querySelector('img').dispatchEvent(new Event('mouseover', { bubbles: true }));
+    await advance(199);
+    expect(fetchModelMetadataMock).not.toHaveBeenCalled();
+    await advance(1);
+    expect(fetchModelMetadataMock).toHaveBeenCalledWith(MODEL.file_path);
   });
 
   it('disarms the timer in the chrome and re-arms it back on the preview', async () => {
@@ -389,11 +430,12 @@ describe('CardPreviewCycler', () => {
 
     // The local listing is requested even though every entry has a remote
     // URL: that is what tells a downloaded model apart from a remote-only one.
+    await advance(200);
     expect(fetchLocalFilesMock).toHaveBeenCalledWith(
       expect.stringContaining('model_hash=hash123')
     );
 
-    await advance(800);
+    await advance(600);
     await advance(1);
     // Local files are already downloaded at display size, so they are used
     // as-is; frame 0 is the cover, which matches the anchor preview.
