@@ -180,18 +180,80 @@ async def test_send_image_resolves_example_static_url(
 
 
 @pytest.mark.asyncio
-async def test_send_image_rejects_untrusted_remote_host(handler):
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://127.0.0.1:8188/image.png",
+        "http://localhost/image.png",
+        "http://10.0.0.5/image.png",
+        "http://192.168.1.20/image.png",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://[::1]/image.png",
+        "http://[::ffff:127.0.0.1]/image.png",
+        "http://metadata.google.internal/image.png",
+    ],
+)
+async def test_send_image_rejects_private_remote_host(handler, url):
     response = await handler.send_image_to_workflow(
         FakeRequest(  # pyright: ignore[reportArgumentType]
             json_data={
-                "source": {"url": "https://example.com/image.png"},
+                "source": {"url": url},
                 "node_ids": [{"node_id": 1, "graph_id": "root"}],
             }
         )
     )
 
     assert response.status == 400
-    assert "CivitAI" in _json_payload(response)["error"]
+    assert "private network" in _json_payload(response)["error"]
+
+
+class _FakeDownloader:
+    def __init__(self, content):
+        self._content = content
+        self.requested = []
+
+    async def download_to_memory(
+        self, url, use_auth=False, return_headers=False
+    ):
+        self.requested.append(url)
+        return True, self._content, {"content-type": "image/png"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "url",
+    [
+        # Example images come from whatever host the model metadata points at:
+        # CivitAI, Hugging Face, ModelScope, or an arbitrary README image host.
+        "https://huggingface.co/ntc-ai/repo/resolve/main/images/example.png",
+        "https://modelscope.cn/models/owner/repo/resolve/master/example.png",
+        "https://example.com/image.png",
+    ],
+)
+async def test_send_image_downloads_public_remote_image(
+    handler, tmp_path, monkeypatch, url
+):
+    downloader = _FakeDownloader(_png_bytes())
+
+    async def _get_downloader():
+        return downloader
+
+    monkeypatch.setattr(misc_handlers, "get_downloader", _get_downloader)
+
+    response = await handler.send_image_to_workflow(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            json_data={
+                "source": {"url": url},
+                "node_ids": [{"node_id": 5, "graph_id": "root"}],
+            }
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert downloader.requested == [url]
+    assert (tmp_path / "input" / payload["value"]).is_file()
 
 
 @pytest.mark.asyncio

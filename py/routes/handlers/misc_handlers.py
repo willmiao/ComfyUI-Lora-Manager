@@ -12,6 +12,7 @@ import asyncio
 import contextlib
 import hashlib
 import io
+import ipaddress
 import json
 import logging
 import time
@@ -4387,7 +4388,17 @@ class WildcardsHandler:
 class NodeRegistryHandler:
     _IMAGE_SEND_MAX_BYTES = 64 * 1024 * 1024
     _IMAGE_SEND_TIMEOUT_SECONDS = 30.0
-    _IMAGE_SEND_HOST_SUFFIXES = ("civitai.com", "civitai.red", "genur.art")
+    # Example-image URLs come from the model metadata, and the gallery can show
+    # entries from any host LM imports (CivitAI, Hugging Face, ModelScope, ...).
+    # The client supplies the URL, so only obviously internal destinations are
+    # refused; everything else is downloaded and validated as an image.
+    _IMAGE_SEND_BLOCKED_HOST_SUFFIXES = (
+        "localhost",
+        "localdomain",
+        "local",
+        "internal",
+        "home.arpa",
+    )
     _IMAGE_FORMAT_EXTENSIONS = {
         "JPEG": ".jpg",
         "MPO": ".jpg",
@@ -4946,13 +4957,41 @@ class NodeRegistryHandler:
         except OSError as exc:
             raise ValueError("Unable to read the image file") from exc
 
-    async def _download_remote_image(self, url: str) -> bytes:
-        host = (urlparse(url).hostname or "").lower()
-        if not any(
+    @classmethod
+    def _is_blocked_remote_host(cls, hostname: str) -> bool:
+        """Return True for local, private, or otherwise non-public hosts.
+
+        This keeps the client-supplied source URL from turning the endpoint
+        into a fetcher for the host's own network. It is not a complete SSRF
+        defense: host names are not resolved here, so a public name that
+        resolves to a private address still passes.
+        """
+        host = (hostname or "").strip().strip("[]").lower().rstrip(".")
+        if not host:
+            return True
+        if any(
             host == suffix or host.endswith("." + suffix)
-            for suffix in self._IMAGE_SEND_HOST_SUFFIXES
+            for suffix in cls._IMAGE_SEND_BLOCKED_HOST_SUFFIXES
         ):
-            raise ValueError("Only CivitAI image URLs can be sent to the workflow")
+            return True
+
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            return False
+        if address.version == 6 and address.ipv4_mapped is not None:
+            address = address.ipv4_mapped
+        return not address.is_global
+
+    async def _download_remote_image(self, url: str) -> bytes:
+        hostname = urlparse(url).hostname or ""
+        if not hostname:
+            raise ValueError("Image URL is missing a host")
+        if self._is_blocked_remote_host(hostname):
+            raise ValueError(
+                "Image URLs on local or private network addresses cannot be "
+                "sent to the workflow"
+            )
 
         downloader = await get_downloader()
         try:

@@ -44,8 +44,10 @@ The backend resolves three source forms:
   on demand
 
 Local files are limited to LoRA Manager library roots, the example-images root,
-the recipes root, and ComfyUI's input directory. Remote URLs are limited to
-CivitAI media hosts.
+the recipes root, and ComfyUI's input directory. Remote images are downloaded
+from whatever host the gallery entry points at (CivitAI, Hugging Face,
+ModelScope, or any other host in the model metadata); URLs that point at the
+local machine or a private network are refused.
 
 ## Image materialization
 
