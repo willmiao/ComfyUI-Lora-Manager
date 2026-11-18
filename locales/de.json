@@ -1144,7 +1144,7 @@
             "copyRecipeSyntax": "Rezept-Syntax kopieren",
             "sendToWorkflowAppend": "An Workflow senden (Anhängen)",
             "sendToWorkflowReplace": "An Workflow senden (Ersetzen)",
-            "sendImageToWorkflow": "[TODO: Translate] Send Image to Workflow",
+            "sendImageToWorkflow": "Bild an den Workflow senden",
             "openExamples": "Beispiele-Ordner öffnen",
             "downloadExamples": "Beispielbilder herunterladen",
             "downloadMissingExamples": "Fehlende herunterladen",
@@ -1414,7 +1414,7 @@
                 "failed": "Fehler beim Senden des Rezepts an Workflow"
             },
             "sendImage": {
-                "missingImage": "[TODO: Translate] Cannot send image: This recipe has no preview image"
+                "missingImage": "Bild kann nicht gesendet werden: Dieses Rezept hat kein Vorschaubild"
             },
             "viewLoras": {
                 "missingId": "Kann LoRAs nicht anzeigen: Fehlende Rezept-ID",
@@ -2382,7 +2382,7 @@
                 "nsfwXxx": "Inhalte mit XXX-Einstufung",
                 "layoutGallery": "Galerieansicht",
                 "layoutList": "Listenansicht",
-                "sendImage": "[TODO: Translate] Send image to workflow"
+                "sendImage": "Bild an den Workflow senden"
             },
             "versions": {
                 "heading": "Modellversionen",
@@ -2662,12 +2662,12 @@
             "embeddingFailed": "Fehler beim Hinzufügen des Embeddings",
             "promptSent": "Prompt an Workflow gesendet",
             "promptFailed": "Fehler beim Senden des Prompts",
-            "imageSourceMissing": "[TODO: Translate] No image source provided",
-            "noImageTargets": "[TODO: Translate] No compatible image targets in the workflow.\nRight-click a Load Image node in ComfyUI → Mark as → Send Image Target",
-            "imageSent": "[TODO: Translate] Image sent to workflow",
-            "imageSendFailed": "[TODO: Translate] Failed to send image to workflow: {message}",
-            "imageSending": "[TODO: Translate] Sending image to workflow...",
-            "imageDownloading": "[TODO: Translate] Downloading image and sending to workflow...",
+            "imageSourceMissing": "Keine Bildquelle angegeben",
+            "noImageTargets": "Keine kompatiblen Bildziele im Workflow.\nKlicken Sie in ComfyUI mit der rechten Maustaste auf einen Load Image-Knoten → Mark as → Send Image Target",
+            "imageSent": "Bild an Workflow gesendet",
+            "imageSendFailed": "Bild konnte nicht an den Workflow gesendet werden: {message}",
+            "imageSending": "Bild wird an den Workflow gesendet...",
+            "imageDownloading": "Bild wird heruntergeladen und an den Workflow gesendet...",
             "nodeTypeExcluded": "Knotentyp \"{type}\" von den Sendezielen ausgeschlossen"
         },
         "nodeSelector": {
@@ -2675,10 +2675,10 @@
             "lora": "LoRA",
             "embedding": "Embedding",
             "prompt": "Prompt",
-            "image": "[TODO: Translate] Image",
+            "image": "Bild",
             "replace": "Ersetzen",
             "append": "Anhängen",
-            "send": "[TODO: Translate] Send",
+            "send": "Senden",
             "selectTargetNode": "Zielknoten auswählen",
             "sendToAll": "An alle senden",
             "excludeNodeType": "Diesen Knotentyp nie vorschlagen"
@@ -2701,20 +2701,20 @@
         "title": "Hilfe & Tutorials",
         "tabs": {
             "gettingStarted": "Erste Schritte",
-            "updates": "[TODO: Translate] Updates",
+            "updates": "Updates",
             "documentation": "Dokumentation",
             "shortcuts": "Tastenkürzel"
         },
         "gettingStarted": {
             "title": "Erste Schritte mit LoRA Manager",
-            "stepsTitle": "[TODO: Translate] First steps",
+            "stepsTitle": "Erste Schritte",
             "steps": {
-                "configure": "[TODO: Translate] Configure your model folders and add a CivitAI API key if you plan to download models.",
-                "find": "[TODO: Translate] Find a model by browsing folders or searching names, tags, and trigger words.",
-                "send": "[TODO: Translate] Use Send to ComfyUI or copy LoRA syntax into a compatible LoRA Manager node.",
-                "refresh": "[TODO: Translate] Use Refresh after changing files outside LoRA Manager; rebuild the cache only for cache inconsistencies."
+                "configure": "Konfigurieren Sie Ihre Modellordner und fügen Sie einen CivitAI API Key hinzu, wenn Sie Modelle herunterladen möchten.",
+                "find": "Finden Sie ein Modell, indem Sie Ordner durchsuchen oder nach Namen, Tags und Triggerwörtern suchen.",
+                "send": "Verwenden Sie „An ComfyUI senden“ oder kopieren Sie die LoRA-Syntax in einen kompatiblen LoRA Manager-Knoten.",
+                "refresh": "Verwenden Sie „Aktualisieren“, nachdem Sie Dateien außerhalb von LoRA Manager geändert haben; bauen Sie den Cache nur bei Inkonsistenzen neu auf."
             },
-            "readGuide": "[TODO: Translate] Open the Getting Started guide",
+            "readGuide": "Erste-Schritte-Anleitung öffnen",
             "replayTutorial": "Tutorial erneut abspielen"
         },
         "shortcuts": {
@@ -2761,25 +2761,25 @@
             "watchOnYouTube": "Auf YouTube ansehen",
             "playlistTitle": "LoRA Manager-Update-Playlist",
             "playlistDescription": "Sehen Sie alle Update-Videos mit den neuesten Funktionen und Verbesserungen.",
-            "releaseNotes": "[TODO: Translate] Read release notes on GitHub"
+            "releaseNotes": "Versionshinweise auf GitHub lesen"
         },
         "documentation": {
             "title": "Dokumentation",
-            "startSupport": "[TODO: Translate] Start & Support",
-            "workingWithAssets": "[TODO: Translate] Working with Assets",
-            "integrationConfiguration": "[TODO: Translate] Integration & Configuration",
-            "gettingStarted": "[TODO: Translate] Getting Started",
-            "faq": "[TODO: Translate] FAQ",
+            "startSupport": "Erste Schritte & Support",
+            "workingWithAssets": "Mit Assets arbeiten",
+            "integrationConfiguration": "Integration & Konfiguration",
+            "gettingStarted": "Erste Schritte",
+            "faq": "FAQ",
             "troubleshooting": "Fehlerbehebung",
-            "modelLibrary": "[TODO: Translate] Model Library",
-            "downloadsOrganization": "[TODO: Translate] Downloading and Organizing Models",
+            "modelLibrary": "Modellbibliothek",
+            "downloadsOrganization": "Modelle herunterladen und organisieren",
             "recipes": "Rezepte",
-            "workflowLibrary": "[TODO: Translate] Workflow Library",
-            "comfyuiIntegration": "[TODO: Translate] ComfyUI Integration",
-            "configuration": "[TODO: Translate] Configuration",
-            "loraSyntax": "[TODO: Translate] LoRA Syntax and Duplicate Filenames",
-            "browserExtension": "[TODO: Translate] LM Civitai Extension",
-            "browseAll": "[TODO: Translate] Browse all documentation"
+            "workflowLibrary": "Workflow-Bibliothek",
+            "comfyuiIntegration": "ComfyUI-Integration",
+            "configuration": "Konfiguration",
+            "loraSyntax": "LoRA-Syntax und doppelte Dateinamen",
+            "browserExtension": "LM Civitai-Erweiterung",
+            "browseAll": "Alle Dokumentation durchsuchen"
         },
         "newContentBadge": "NEU"
     },
