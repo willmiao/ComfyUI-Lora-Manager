@@ -101,6 +101,12 @@ export function applyQuickLoraSelection(node, selection, replaceName = "") {
     widget.callback?.(next);
     node.setDirtyCanvas?.(true, true);
     app.graph?.setDirtyCanvas?.(true, true);
+    // Pure visual confirmation on the list: a new row fades in, an enabled or
+    // replaced row is ringed. The panel never changes the row selection.
+    widget.flashLoraEntry?.(
+      selection?.name,
+      next.length > current.length ? "added" : "enabled",
+    );
   }
   return { changed, loras: next };
 }
@@ -121,6 +127,8 @@ export function applyQuickLoraSet(node, entries, mode = "append") {
     widget.callback?.(result.loras);
     node.setDirtyCanvas?.(true, true);
     app.graph?.setDirtyCanvas?.(true, true);
+    // No row flash here on purpose: a recipe can add or enable many rows at
+    // once, and a list flashing as a whole is noise rather than feedback.
   }
   return result;
 }

@@ -309,6 +309,46 @@
   color: var(--lm-danger-text);
 }
 
+/* Transient "this row just changed" cue for a LoRA added or enabled from a
+   surface other than the list itself (prompt autocomplete, quick picker).
+   Purely visual: the selection state is never touched, so a flashing row is
+   not a selected row. `added` fades the new row in, `enabled` only rings the
+   row that was switched on; both fade the outline back out. The classes are
+   removed by the widget after the animation. */
+.lm-lora-entry--flash-added,
+.lm-lora-entry--flash-enabled {
+  outline: 2px solid transparent;
+  outline-offset: -1px;
+}
+
+.lm-lora-entry--flash-added {
+  animation:
+    lm-lora-row-fade-in 160ms ease-out,
+    lm-lora-row-ring 1100ms ease-out;
+}
+
+.lm-lora-entry--flash-enabled {
+  animation: lm-lora-row-ring 900ms ease-out;
+}
+
+@keyframes lm-lora-row-fade-in {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+@keyframes lm-lora-row-ring {
+  from { outline-color: var(--lm-accent-border); }
+  to { outline-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-lora-entry--flash-added,
+  .lm-lora-entry--flash-enabled {
+    animation: none;
+    outline-color: var(--lm-accent-border);
+  }
+}
+
 .lm-lora-name {
   margin-left: 4px;
   flex: 1;

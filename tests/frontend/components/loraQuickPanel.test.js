@@ -68,6 +68,7 @@ function makeNode() {
     lorasWidget: {
       value: [],
       callback: vi.fn(),
+      flashLoraEntry: vi.fn(),
     },
     setDirtyCanvas: vi.fn(),
   };
@@ -134,6 +135,35 @@ describe('LoRA Quick Panel', () => {
     expect(result.changed).toBe(true);
     expect(node.lorasWidget.value).toHaveLength(1);
     expect(node.lorasWidget.value[0]).toMatchObject({ strength: '0.40', active: true });
+  });
+
+  it('flashes the row it touched without selecting it', async () => {
+    const { applyQuickLoraSelection } = await import(QUICK_PANEL_MODULE);
+    const node = makeNode();
+    node.lorasWidget.value = [{ name: 'characters/kept', strength: '1.00', active: true }];
+
+    applyQuickLoraSelection(node, { name: 'characters/astral.safetensors', strength: 0.7 });
+
+    // A new row materialises, so it gets the "added" cue; the selection stays
+    // where it was because the feedback never touches it.
+    expect(node.lorasWidget.flashLoraEntry).toHaveBeenCalledWith('characters/astral.safetensors', 'added');
+    expect(node.lorasWidget.value.some((lora) => lora.selected === true)).toBe(false);
+  });
+
+  it('uses the enabled cue for an enabled row and stays quiet for a no-op', async () => {
+    const { applyQuickLoraSelection } = await import(QUICK_PANEL_MODULE);
+    const node = makeNode();
+    node.lorasWidget.value = [
+      { name: 'characters/astral', strength: '0.40', clipStrength: '0.40', active: false },
+    ];
+
+    applyQuickLoraSelection(node, { name: 'characters/astral.safetensors', strength: 0.7 });
+    expect(node.lorasWidget.flashLoraEntry).toHaveBeenCalledWith('characters/astral.safetensors', 'enabled');
+
+    // Already active: no value, no callback, and no row cue to misreport.
+    node.lorasWidget.flashLoraEntry.mockClear();
+    applyQuickLoraSelection(node, { name: 'characters/astral.safetensors', strength: 0.7 });
+    expect(node.lorasWidget.flashLoraEntry).not.toHaveBeenCalled();
   });
 
   it('replaces only the requested row', async () => {

@@ -2143,4 +2143,88 @@ describe('AutoComplete widget interactions', () => {
       expect(autoComplete2.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
     });
   });
+
+  it('flashes the appended row on the node list after a pick', async () => {
+    fetchApiMock.mockImplementation((url) => {
+      if (url.includes('/lm/loras/usage-tips-by-path')) {
+        return Promise.resolve({
+          json: () => Promise.resolve({
+            success: true,
+            usage_tips: JSON.stringify({ strength: '1.5', clip_strength: '0.9' }),
+          }),
+        });
+      }
+      return Promise.resolve({
+        json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+      });
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const node = {
+      lorasWidget: { value: [], callback: vi.fn(), flashLoraEntry: vi.fn() },
+    };
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      showPreview: false,
+      node,
+    });
+
+    await autoComplete.insertSelection('models/example.safetensors');
+
+    expect(node.lorasWidget.flashLoraEntry).toHaveBeenCalledWith(
+      'models/example.safetensors',
+      'added',
+    );
+  });
+
+  it('flashes an enabled row and stays quiet when the LoRA is already active', async () => {
+    const node = {
+      lorasWidget: {
+        value: [{ name: 'models/example', strength: '0.80', clipStrength: '0.80', active: false }],
+        callback: vi.fn(),
+        flashLoraEntry: vi.fn(),
+      },
+    };
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      showPreview: false,
+      node,
+    });
+    // The render pass that builds the dropdown records which entries are on
+    // the node; seed it directly to reach the "already listed" branch.
+    autoComplete.addedLoraStatesForRender = new Map([['models/example', false]]);
+
+    await autoComplete.insertSelection('models/example.safetensors');
+
+    expect(node.lorasWidget.value[0].active).toBe(true);
+    expect(node.lorasWidget.flashLoraEntry).toHaveBeenCalledWith(
+      'models/example.safetensors',
+      'enabled',
+    );
+
+    // Already active: nothing changed, so there is nothing to confirm.
+    node.lorasWidget.flashLoraEntry.mockClear();
+    autoComplete.addedLoraStatesForRender = new Map([['models/example', true]]);
+
+    await autoComplete.insertSelection('models/example.safetensors');
+
+    expect(node.lorasWidget.flashLoraEntry).not.toHaveBeenCalled();
+  });
 });

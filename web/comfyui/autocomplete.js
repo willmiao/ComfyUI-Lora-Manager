@@ -1509,6 +1509,10 @@ class AutoComplete {
             // The callback is what propagates the active set to trigger words,
             // downstream loaders and the textarea syntax.
             lorasWidget.callback?.(loras);
+            // Pure visual confirmation that the row was switched on. Selection
+            // state is deliberately left alone: the user keeps whatever row
+            // they were inspecting.
+            lorasWidget.flashLoraEntry?.(relativePath, 'enabled');
         }
         return true;
     }
@@ -3104,6 +3108,13 @@ class AutoComplete {
         // Trigger input event to notify about the change
         const event = new Event('input', { bubbles: true });
         this.inputElement.dispatchEvent(event);
+
+        // The node's own text callback appends the LoRA to its list
+        // synchronously (through mergeLoras), so confirm the new row where it
+        // landed instead of leaving the change silent. Visual only.
+        if (this.modelType === 'loras') {
+            this.options.node?.lorasWidget?.flashLoraEntry?.(relativePath, 'added');
+        }
 
         this.hide();
 
