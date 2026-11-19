@@ -24,6 +24,7 @@ import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
 import { openLoraInfoCard, closeLoraInfoCardFor } from "./lora_info_card.js";
+import { hasActiveLbw } from "./lora_block_weight.js";
 
 // CSS-escape a LoRA name for use in a [data-lora-name="..."] selector. Module
 // scope so both the row rendering and the transient row feedback can use it.
@@ -696,8 +697,9 @@ export function addLorasWidget(node, name, opts, callback) {
       const infoButton = document.createElement("button");
       infoButton.type = "button";
       infoButton.className = "lm-lora-info-button";
+      infoButton.classList.toggle("lm-lora-info-button--lbw", hasActiveLbw(loraData.lbw));
       infoButton.textContent = "i";
-      infoButton.title = `LoRA info: ${displayName}`;
+      infoButton.title = `LoRA info${hasActiveLbw(loraData.lbw) ? " (block weights enabled)" : ""}: ${displayName}`;
       infoButton.setAttribute("aria-label", `LoRA info: ${displayName}`);
       infoButton.addEventListener("click", (event) => {
         event.preventDefault();

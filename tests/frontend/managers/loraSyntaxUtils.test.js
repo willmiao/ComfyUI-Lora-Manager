@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { applyLoraValuesToText, debounce, __testables } from "../../../web/comfyui/lora_syntax_utils.js";
+import { mergeLoras } from "../../../web/comfyui/utils.js";
+import { parseLbwSyntax } from "../../../web/comfyui/lora_block_weight.js";
 
 const { normalizeStrengthValue, shouldIncludeClipStrength, cleanupLoraSyntax } = __testables();
 
@@ -48,6 +50,45 @@ describe("applyLoraValuesToText", () => {
     ]);
 
     expect(result).toBe("<lora:test -  0021:0.50>");
+  });
+
+  it("serializes active block weights without changing ordinary syntax", () => {
+    const result = applyLoraValuesToText("", [
+      {
+        name: "BlockTest",
+        strength: 0.8,
+        clipStrength: 0.6,
+        lbw: { enabled: true, weights: { IN: 0.5, OUT03: 0 } },
+      },
+    ]);
+
+    expect(result).toBe("<lora:BlockTest:0.80:0.60:LBW=IN=0.5;OUT03=0>");
+  });
+
+  it("removes block syntax when the saved configuration is disabled", () => {
+    const result = applyLoraValuesToText(
+      "<lora:BlockTest:0.80:LBW=IN=0.5>",
+      [{ name: "BlockTest", strength: 0.8, lbw: { enabled: false, weights: { IN: 0.5 } } }],
+    );
+
+    expect(result).toBe("<lora:BlockTest:0.80>");
+  });
+
+  it("keeps block configuration through text merges and parses new entries", () => {
+    const existing = mergeLoras("<lora:BlockTest:0.80>", [{
+      name: "BlockTest",
+      strength: 0.8,
+      active: true,
+      lbw: { enabled: true, weights: { IN04: 0.25 } },
+    }]);
+    expect(existing[0].lbw.weights).toEqual({ IN04: 0.25 });
+
+    const added = mergeLoras("<lora:Added:1:LBW=D00=0;SINGLE=0.5>", []);
+    expect(added[0].lbw).toEqual({
+      enabled: true,
+      weights: { D00: 0, SINGLE: 0.5 },
+    });
+    expect(parseLbwSyntax("LBW=D00=0;SINGLE=0.5")).toEqual(added[0].lbw);
   });
 });
 

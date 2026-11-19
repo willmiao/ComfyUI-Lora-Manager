@@ -283,3 +283,56 @@ def test_stack_entry_keeps_resolved_absolute_path(monkeypatch):
     assert seen == ["/models/b/same.safetensors"]
     assert result[0]["absolute_path"] == "/models/b/same.safetensors"
     assert result[0]["clip_strength"] == .3
+
+
+def test_lbw_entry_uses_block_loader_and_serializes_config(monkeypatch):
+    loader = LoraLoaderLM()
+    model = _Model(object())
+    monkeypatch.setattr(
+        "py.nodes.lora_loader.get_lora_info_absolute",
+        lambda name: (f"/abs/{name}.safetensors", []),
+    )
+    monkeypatch.setattr("comfy.utils.load_torch_file", lambda path, safe_load=True: {})
+    monkeypatch.setattr("py.nodes.lora_loader.get_anima_lora_remap_enabled", lambda: False)
+    calls = []
+
+    def load_blocks(model_arg, clip_arg, lora_arg, model_strength, clip_strength, config):
+        calls.append((model_strength, clip_strength, config))
+        return model_arg, clip_arg
+
+    monkeypatch.setattr("py.nodes.lora_loader.load_lora_with_block_weights", load_blocks)
+    monkeypatch.setattr(
+        "comfy.sd.load_lora_for_models",
+        lambda *_args: pytest.fail("active LBW must not use the ordinary loader"),
+    )
+    config = {"enabled": True, "weights": {"IN04": 0.5}}
+
+    _, _, _, loaded_loras = loader.load_loras(
+        model,
+        "",
+        loras=[{"active": True, "name": "demo", "strength": 0.8, "lbw": config}],
+    )
+
+    assert calls == [(0.8, 0.8, config)]
+    assert loaded_loras == "<lora:demo:0.8:LBW=IN04=0.5>"
+
+
+def test_nunchaku_flux_rejects_active_lbw(monkeypatch):
+    flux_model = _Model(type("ComfyFluxWrapper", (), {})())
+    loader = LoraLoaderLM()
+    monkeypatch.setattr(
+        "py.nodes.lora_loader.get_lora_info_absolute",
+        lambda name: (f"/abs/{name}.safetensors", []),
+    )
+
+    with pytest.raises(ValueError, match="not supported with Nunchaku FLUX"):
+        loader.load_loras(
+            flux_model,
+            "",
+            loras=[{
+                "active": True,
+                "name": "demo",
+                "strength": 1,
+                "lbw": {"enabled": True, "weights": {"D00": 0}},
+            }],
+        )

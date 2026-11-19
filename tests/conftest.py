@@ -78,12 +78,16 @@ setattr(comfy_mock, "utils", MockModule("comfy.utils"))
 setattr(comfy_mock.utils, "load_torch_file", mock.MagicMock(return_value={}))
 setattr(comfy_mock, "sd", MockModule("comfy.sd"))
 setattr(comfy_mock.sd, "load_lora_for_models", mock.MagicMock(return_value=(None, None)))
+setattr(comfy_mock, "lora", MockModule("comfy.lora"))
+setattr(comfy_mock, "lora_convert", MockModule("comfy.lora_convert"))
 setattr(comfy_mock, "model_management", MockModule("comfy.model_management"))
 setattr(comfy_mock, "comfy_types", MockModule("comfy.comfy_types"))
 setattr(comfy_mock.comfy_types, "IO", mock.MagicMock())
 sys.modules['comfy'] = comfy_mock
 sys.modules['comfy.utils'] = comfy_mock.utils
 sys.modules['comfy.sd'] = comfy_mock.sd
+sys.modules['comfy.lora'] = comfy_mock.lora
+sys.modules['comfy.lora_convert'] = comfy_mock.lora_convert
 sys.modules['comfy.model_management'] = comfy_mock.model_management
 sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
 sys.modules['comfy.hooks'] = MockModule("comfy.hooks")

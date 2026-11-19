@@ -288,3 +288,33 @@ async def test_get_lora_details_merges_full_sidecar_descriptions(routes):
     assert payload["metadata"]["description"] == "Version description"
     assert payload["metadata"]["modelDescription"] == "Model description"
     assert payload["metadata"]["civitai"]["model"]["description"] == "Model description"
+
+
+async def test_get_lora_block_weight_schema(monkeypatch, routes):
+    routes.service.details["demo"] = {"file_path": "/models/demo.safetensors"}
+
+    class StubLoraFile:
+        def keys(self):
+            return [
+                "lora_unet_double_blocks_0_img_attn_qkv.lora_down.weight",
+                "lora_unet_single_blocks_1_linear1.lora_down.weight",
+            ]
+
+    class StubSafeOpen:
+        def __enter__(self):
+            return StubLoraFile()
+
+        def __exit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(
+        "py.routes.lora_routes.safe_open",
+        lambda path, framework, device: StubSafeOpen(),
+    )
+    response = await routes.get_lora_block_weight_schema(
+        DummyRequest(query={"name": "demo"})
+    )
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["schema"]["kind"] == "flux"
+    assert [block["id"] for block in payload["schema"]["blocks"]] == ["D00", "S01"]

@@ -120,3 +120,16 @@ describe('applyLoraSet (recipe apply)', () => {
     expect(result.loras[0]).toMatchObject({ name: 'characters/astral', strength: '0.70' });
   });
 });
+
+
+describe('applyLoraSet block weights', () => {
+  it('applies recipe block weights to newly added entries', () => {
+    const lbw = { enabled: true, weights: { IN04: 0.25 } };
+    const result = applyLoraSet([], [
+      { file_name: 'characters/astral.safetensors', strength: 0.7, inLibrary: true, lbw },
+    ], { mode: 'replace' });
+
+    expect(result.loras[0].lbw).toEqual(lbw);
+    expect(result.changed).toBe(true);
+  });
+});

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from aiohttp import web
+from safetensors import safe_open
 from typing import Any, Dict
 from server import PromptServer  # pyright: ignore[reportMissingImports]
 
@@ -10,6 +11,7 @@ from ..config import config
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
+from ..utils.lora_block_weight import get_lbw_schema_from_keys
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -98,6 +100,12 @@ class LoraRoutes(BaseModelRoutes):
             "/api/lm/{prefix}/details",
             prefix,
             self.get_lora_details,
+        )
+        registrar.add_prefixed_route(
+            "GET",
+            "/api/lm/{prefix}/block-weight-schema",
+            prefix,
+            self.get_lora_block_weight_schema,
         )
         registrar.add_prefixed_route(
             "GET",
@@ -237,6 +245,26 @@ class LoraRoutes(BaseModelRoutes):
             return web.json_response(response_payload)
         except Exception as e:
             logger.error(f"Error getting cached lora details: {e}", exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def get_lora_block_weight_schema(self, request: web.Request) -> web.Response:
+        """Inspect a LoRA header to expose only the blocks present in the file."""
+        try:
+            lora_name = request.query.get("name")
+            if not lora_name:
+                return web.Response(text="Lora file name is required", status=400)
+            metadata = await self.service.get_model_info_by_name(lora_name)
+            file_path = metadata.get("file_path") if metadata else None
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "LoRA not found in the local library"},
+                    status=404,
+                )
+            with safe_open(file_path, framework="pt", device="cpu") as lora_file:
+                schema = get_lbw_schema_from_keys(lora_file.keys())
+            return web.json_response({"success": True, "schema": schema})
+        except Exception as e:
+            logger.error(f"Error inspecting LoRA block layout: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def get_lora_folder_index(self, request: web.Request) -> web.Response:

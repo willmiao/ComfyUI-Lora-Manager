@@ -12,6 +12,7 @@ from ..metadata_collector import get_metadata
 from ..utils.constants import CARD_PREVIEW_WIDTH
 from ..utils.exif_utils import ExifUtils
 from ..utils.utils import calculate_recipe_fingerprint, sanitize_folder_name
+from .utils import parse_lora_syntax
 from PIL import Image, PngImagePlugin
 import piexif  # pyright: ignore[reportMissingTypeStubs]
 import logging
@@ -429,16 +430,10 @@ class SaveImageLM:
         loras_text = metadata_dict.get("loras", "")
         clip_skip = metadata_dict.get("clip_skip")
 
-        # Parse LoRA entries from <lora:name:strength> format
         lora_entries: list[tuple[str, float]] = []
         if loras_text:
-            for match in re.findall(r"<lora:([^:]+):([^>]+)>", loras_text):
-                lora_name, strength_str = match
-                try:
-                    strength = float(strength_str)
-                except (ValueError, TypeError):
-                    strength = 1.0
-                lora_entries.append((lora_name, strength))
+            for entry in parse_lora_syntax(loras_text):
+                lora_entries.append((entry["name"], entry["model_strength"]))
 
         # Resolve checkpoint hash and Civitai data from local cache
         ckpt_hash, ckpt_civitai, ckpt_base_model = "", {}, ""
@@ -720,30 +715,32 @@ class SaveImageLM:
         return None
 
     def _build_recipe_loras(self, recipe_scanner, lora_stack):
-        lora_matches = re.findall(r"<lora:([^:]+):([^>]+)>", lora_stack or "")
+        parsed_entries = parse_lora_syntax(lora_stack or "")
+        lora_matches = [
+            (entry["name"], entry["model_strength"])
+            for entry in parsed_entries
+        ]
         lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
         loras_data = []
         base_model_counts = {}
 
-        for name, strength in lora_matches:
+        for entry in parsed_entries:
+            name = entry["name"]
             lora_info = self._get_cached_model_by_name(lora_scanner, name)
             civitai = (lora_info or {}).get("civitai") or {}
             civitai_model = civitai.get("model") or {}
-            try:
-                parsed_strength = float(strength)
-            except (TypeError, ValueError):
-                parsed_strength = 1.0
 
             loras_data.append(
                 {
                     "file_name": name,
-                    "strength": parsed_strength,
+                    "strength": entry["model_strength"],
                     "hash": ((lora_info or {}).get("sha256") or "").lower(),
                     "modelVersionId": civitai.get("id", 0),
                     "modelName": civitai_model.get("name", name) if lora_info else "",
                     "modelVersionName": civitai.get("name", "") if lora_info else "",
                     "isDeleted": False,
                     "exclude": False,
+                    **({"lbw": entry["lbw"]} if entry.get("lbw") else {}),
                 }
             )
 

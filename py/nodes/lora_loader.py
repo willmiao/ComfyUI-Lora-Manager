@@ -5,6 +5,11 @@ import os
 import comfy.sd  # pyright: ignore[reportMissingImports]
 import comfy.utils  # pyright: ignore[reportMissingImports]
 
+from ..utils.lora_block_weight import (
+    format_lbw_syntax,
+    has_active_lbw,
+    load_lora_with_block_weights,
+)
 from ..utils.lora_compat import LoraCompatibilityError, prepare_lora
 from ..utils.utils import get_lora_info_absolute
 from .utils import (
@@ -49,6 +54,7 @@ def _collect_stack_entries(lora_stack):
             "input_path": lora_path,
             "model_strength": float(model_strength),
             "clip_strength": float(clip_strength),
+            "lbw": None,
             "trigger_words": trigger_words,
         })
     return entries
@@ -69,6 +75,7 @@ def _collect_widget_entries(loras):
             "input_path": lora_path,
             "model_strength": model_strength,
             "clip_strength": clip_strength,
+            "lbw": lora.get("lbw"),
             "trigger_words": trigger_words,
         })
     return entries
@@ -77,12 +84,16 @@ def _collect_widget_entries(loras):
 def _format_loaded_loras(loaded_loras):
     formatted_loras = []
     for item in loaded_loras:
-        if item["include_clip_strength"]:
-            formatted_loras.append(
-                f"<lora:{item['name']}:{item['model_strength']}:{item['clip_strength']}>"
-            )
-        else:
-            formatted_loras.append(f"<lora:{item['name']}:{item['model_strength']}>")
+        clip_part = (
+            f":{item['clip_strength']}"
+            if item["include_clip_strength"]
+            else ""
+        )
+        lbw_syntax = format_lbw_syntax(item.get("lbw"))
+        lbw_part = f":{lbw_syntax}" if lbw_syntax else ""
+        formatted_loras.append(
+            f"<lora:{item['name']}:{item['model_strength']}{clip_part}{lbw_part}>"
+        )
     return " ".join(formatted_loras)
 
 
@@ -140,6 +151,8 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
     all_trigger_words = []
 
     if nunchaku_model_kind == "qwen_image":
+        if any(has_active_lbw(entry.get("lbw")) for entry in lora_entries):
+            raise ValueError("LBW is not supported with Nunchaku Qwen-Image models")
         nunchaku_load_qwen_loras = _get_nunchaku_load_qwen_loras()
         qwen_lora_configs = []
         for entry in lora_entries:
@@ -149,6 +162,7 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
                 "model_strength": entry["model_strength"],
                 "clip_strength": entry["model_strength"],
                 "include_clip_strength": False,
+                "lbw": entry.get("lbw"),
             })
             all_trigger_words.extend(entry["trigger_words"])
         if qwen_lora_configs:
@@ -158,19 +172,32 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
     anima_remap_enabled = get_anima_lora_remap_enabled()
 
     for entry in lora_entries:
+        lbw_enabled = has_active_lbw(entry.get("lbw"))
         if nunchaku_model_kind == "flux":
+            if lbw_enabled:
+                raise ValueError("LBW is not supported with Nunchaku FLUX models")
             model = nunchaku_load_lora(model, entry["input_path"], entry["model_strength"])
         else:
             lora = comfy.utils.load_torch_file(entry["absolute_path"], safe_load=True)
             if anima_remap_enabled:
                 lora = _prepare_lora(lora, model, entry["name"])
-            model, clip = comfy.sd.load_lora_for_models(
-                model,
-                clip,
-                lora,
-                entry["model_strength"],
-                entry["clip_strength"],
-            )
+            if lbw_enabled:
+                model, clip = load_lora_with_block_weights(
+                    model,
+                    clip,
+                    lora,
+                    entry["model_strength"],
+                    entry["clip_strength"],
+                    entry["lbw"],
+                )
+            else:
+                model, clip = comfy.sd.load_lora_for_models(
+                    model,
+                    clip,
+                    lora,
+                    entry["model_strength"],
+                    entry["clip_strength"],
+                )
 
         include_clip_strength = nunchaku_model_kind is None and abs(entry["model_strength"] - entry["clip_strength"]) > 0.001
         loaded_loras.append({
@@ -178,6 +205,7 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             "model_strength": entry["model_strength"],
             "clip_strength": entry["clip_strength"],
             "include_clip_strength": include_clip_strength,
+            "lbw": entry.get("lbw"),
         })
         all_trigger_words.extend(entry["trigger_words"])
 
@@ -265,6 +293,7 @@ class LoraTextLoaderLM:
                 "input_path": lora_path,
                 "model_strength": lora["model_strength"],
                 "clip_strength": lora["clip_strength"],
+                "lbw": lora.get("lbw"),
                 "trigger_words": trigger_words,
             })
 

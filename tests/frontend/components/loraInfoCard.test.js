@@ -24,6 +24,7 @@ const { appMock, apiMocks, quickMock, loraUtilsMock } = vi.hoisted(() => ({
   appMock: { registerExtension: vi.fn(), canvas: {} },
   apiMocks: {
     fetchLoraDetails: vi.fn(),
+    fetchLoraBlockWeightSchema: vi.fn(),
     formatUsageTips: vi.fn(() => 'Strength 0.7'),
     openLoraManager: vi.fn(),
     refreshLoraMetadata: vi.fn(),
@@ -110,6 +111,15 @@ describe('LoRA info card', () => {
       modelDescription: 'Model description',
       usage_tips: { strength: 0.7 },
       civitai: { trainedWords: ['astral', 'cinematic'] },
+    });
+    apiMocks.fetchLoraBlockWeightSchema.mockResolvedValue({
+      kind: 'unet',
+      groups: ['IN', 'MID', 'OUT'],
+      blocks: [
+        { id: 'IN04', group: 'IN', index: 4 },
+        { id: 'MID01', group: 'MID', index: 1 },
+        { id: 'OUT03', group: 'OUT', index: 3 },
+      ],
     });
     apiMocks.saveLoraNotes.mockResolvedValue({ success: true });
     apiMocks.saveLoraFavorite.mockResolvedValue({ success: true });
@@ -563,6 +573,137 @@ describe('LoRA info card', () => {
     expect(card.statusElement.getAttribute('role')).toBe('status');
     card.setStatus('Notes saved');
     expect(card.statusElement.textContent).toBe('Notes saved');
+    card.close();
+  });
+});
+
+
+describe('LoRA info card block weights', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    vi.clearAllMocks();
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      base_model: 'SDXL',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+    });
+    apiMocks.fetchLoraBlockWeightSchema.mockResolvedValue({
+      kind: 'unet',
+      groups: ['IN', 'MID', 'OUT'],
+      blocks: [
+        { id: 'IN04', group: 'IN', index: 4 },
+        { id: 'MID01', group: 'MID', index: 1 },
+        { id: 'OUT03', group: 'OUT', index: 3 },
+      ],
+    });
+  });
+
+  it('edits block weights through the current widget entry', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const widget = makeWidget();
+    const card = new LoraInfoCard({
+      node: { id: 1, comfyClass: 'Lora Loader (LoraManager)' },
+      widget,
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.tabButtons.blocks).toBeDefined();
+    card.tabButtons.blocks.click();
+    await flush();
+    await flush();
+
+    const enable = card.tabContent.querySelector('input[aria-label="Enable block weights"]');
+    enable.checked = true;
+    enable.dispatchEvent(new Event('change'));
+    expect(widget.value[0].lbw.enabled).toBe(true);
+
+    const groupInput = card.tabContent.querySelector('input[data-block-id="IN"]');
+    groupInput.value = '0.50';
+    groupInput.dispatchEvent(new Event('change'));
+    expect(widget.value[0].lbw.weights.IN).toBe(0.5);
+
+    const blockInput = card.tabContent.querySelector('input[data-block-id="IN04"]');
+    blockInput.value = '0.25';
+    blockInput.dispatchEvent(new Event('change'));
+    expect(widget.value[0].lbw.weights).toEqual({ IN: 0.5, IN04: 0.25 });
+    expect(widget.callback).toHaveBeenCalledTimes(3);
+    card.close();
+  });
+
+  it('does not expose block editing on stack-only nodes', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const card = new LoraInfoCard({
+      node: { id: 1, comfyClass: 'Lora Stacker (LoraManager)' },
+      widget: makeWidget(),
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+
+    expect(card.tabButtons.blocks).toBeUndefined();
+    expect(card.supportsBlockWeights()).toBe(false);
+    card.close();
+  });
+});
+
+
+describe('LoRA info card block-weight dragging', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    vi.clearAllMocks();
+    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    apiMocks.fetchLoraDetails.mockResolvedValue({
+      model_name: 'Astral Portrait',
+      base_model: 'SDXL',
+      file_name: 'astral.safetensors',
+      file_path: '/models/astral.safetensors',
+    });
+    apiMocks.fetchLoraBlockWeightSchema.mockResolvedValue({
+      kind: 'unet',
+      groups: ['IN', 'MID', 'OUT'],
+      blocks: [{ id: 'IN04', group: 'IN', index: 4 }],
+    });
+  });
+
+  it('updates a block group during drag and commits once on release', async () => {
+    const { LoraInfoCard } = await import(INFO_CARD_MODULE);
+    const widget = makeWidget({
+      lbw: { enabled: true, weights: { IN: 1 } },
+    });
+    const card = new LoraInfoCard({
+      node: { id: 1, comfyClass: 'Lora Loader (LoraManager)' },
+      widget,
+      loraName: 'astral',
+      anchorElement: makeAnchor(),
+    }).open();
+    await card.loadDetails();
+    card.tabButtons.blocks.click();
+    await flush();
+    await flush();
+
+    const input = card.tabContent.querySelector('input[data-block-id="IN"]');
+    const row = input.closest('.lm-info-card__lbw-weight');
+    row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0, pointerId: 21 }));
+    row.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: -100, pointerId: 21 }));
+
+    expect(widget.value[0].lbw.weights.IN).toBe(0.8);
+    expect(input.value).toBe('0.80');
+    expect(widget.callback).not.toHaveBeenCalled();
+    expect(widget.__dragActive).toBe(true);
+    expect(row.classList.contains('is-dragging')).toBe(true);
+
+    row.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: -100, pointerId: 21 }));
+
+    expect(widget.callback).toHaveBeenCalledOnce();
+    expect(widget.__dragActive).toBe(false);
+    expect(card.statusElement.textContent).toBe('Updated Input blocks block weight');
+    expect(card.tabContent.querySelector('input[data-block-id="IN"]').value).toBe('0.80');
     card.close();
   });
 });

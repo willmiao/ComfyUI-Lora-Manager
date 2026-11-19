@@ -3,6 +3,7 @@ import { app } from "../../scripts/app.js";
 import { AutoComplete } from "./autocomplete.js";
 import { lmUrl } from "./base_path.js";
 import { getLoraNodeAdapter } from "./lora_node_adapter_registry.js";
+import { parseLbwSyntax } from "./lora_block_weight.js";
 
 const ROOT_GRAPH_ID = "root";
 
@@ -369,8 +370,8 @@ export function hideWidgetForGood(node, widget, suffix = "") {
   }
 }
 
-// Update pattern to match both formats: <lora:name:model_strength> or <lora:name:model_strength:clip_strength>
-export const LORA_PATTERN = /<lora:([^:]+):([-\d\.]+)(?::([-\d\.]+))?>/g;
+// Match model/CLIP strengths with an optional Lora Manager block-weight field.
+export const LORA_PATTERN = /<lora:([^:]+):([-\d\.]+)(?::([-\d\.]+))?(?::(LBW=[^>]+))?>/g;
 
 function isLoraStackInput(input) {
     return input?.type === "LORA_STACK";
@@ -598,7 +599,7 @@ export function mergeLoras(lorasText, lorasArr) {
     const name = match[1];
     const modelStrength = Number(match[2]);
     const clipStrength = match[3] ? Number(match[3]) : modelStrength;
-    parsedLoras[name] = { strength: modelStrength, clipStrength };
+    parsedLoras[name] = { strength: modelStrength, clipStrength, lbw: parseLbwSyntax(match[4]) };
   }
 
   // Build result array in the order of lorasArr
@@ -615,6 +616,7 @@ export function mergeLoras(lorasText, lorasArr) {
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
         selected: !!lora.selected,
         locked: lora.locked !== undefined ? lora.locked : false,
+        ...(lora.lbw !== undefined ? { lbw: lora.lbw } : {}),
       });
       usedNames.add(lora.name);
     }
@@ -629,6 +631,7 @@ export function mergeLoras(lorasText, lorasArr) {
         active: true,
         clipStrength: parsedLoras[name].clipStrength,
         selected: false,
+        ...(parsedLoras[name].lbw ? { lbw: parsedLoras[name].lbw } : {}),
       });
     }
   }
