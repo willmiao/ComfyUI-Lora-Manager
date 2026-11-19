@@ -6,7 +6,6 @@ import comfy.sd  # pyright: ignore[reportMissingImports]
 import comfy.utils  # pyright: ignore[reportMissingImports]
 
 from ..utils.lora_block_weight import (
-    format_lbw_syntax,
     has_active_lbw,
     load_lora_with_block_weights,
 )
@@ -84,16 +83,12 @@ def _collect_widget_entries(loras):
 def _format_loaded_loras(loaded_loras):
     formatted_loras = []
     for item in loaded_loras:
-        clip_part = (
-            f":{item['clip_strength']}"
-            if item["include_clip_strength"]
-            else ""
-        )
-        lbw_syntax = format_lbw_syntax(item.get("lbw"))
-        lbw_part = f":{lbw_syntax}" if lbw_syntax else ""
-        formatted_loras.append(
-            f"<lora:{item['name']}:{item['model_strength']}{clip_part}{lbw_part}>"
-        )
+        if item["include_clip_strength"]:
+            formatted_loras.append(
+                f"<lora:{item['name']}:{item['model_strength']}:{item['clip_strength']}>"
+            )
+        else:
+            formatted_loras.append(f"<lora:{item['name']}:{item['model_strength']}>")
     return " ".join(formatted_loras)
 
 
@@ -162,7 +157,6 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
                 "model_strength": entry["model_strength"],
                 "clip_strength": entry["model_strength"],
                 "include_clip_strength": False,
-                "lbw": entry.get("lbw"),
             })
             all_trigger_words.extend(entry["trigger_words"])
         if qwen_lora_configs:
@@ -205,7 +199,6 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             "model_strength": entry["model_strength"],
             "clip_strength": entry["clip_strength"],
             "include_clip_strength": include_clip_strength,
-            "lbw": entry.get("lbw"),
         })
         all_trigger_words.extend(entry["trigger_words"])
 

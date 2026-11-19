@@ -740,7 +740,6 @@ class SaveImageLM:
                     "modelVersionName": civitai.get("name", "") if lora_info else "",
                     "isDeleted": False,
                     "exclude": False,
-                    **({"lbw": entry["lbw"]} if entry.get("lbw") else {}),
                 }
             )
 

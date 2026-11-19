@@ -876,7 +876,7 @@ def test_png_does_not_pass_webp_method_or_jpeg_subsampling(monkeypatch, tmp_path
     assert "subsampling" not in captured
 
 
-def test_recipe_builder_preserves_lbw():
+def test_recipe_builder_excludes_lbw():
     from types import SimpleNamespace
 
     holder = SimpleNamespace(_get_cached_model_by_name=lambda _scanner, _name: None)
@@ -889,4 +889,4 @@ def test_recipe_builder_preserves_lbw():
 
     assert matches == [("demo", 0.8)]
     assert loras[0]["strength"] == 0.8
-    assert loras[0]["lbw"] == {"enabled": True, "weights": {"IN04": 0.5}}
+    assert "lbw" not in loras[0]
