@@ -115,6 +115,7 @@ class SidecarMigrationUseCase:
                 ("checkpoint", ServiceRegistry.get_checkpoint_scanner),
                 ("embedding", ServiceRegistry.get_embedding_scanner),
                 ("other", ServiceRegistry.get_other_scanner),
+                ("wildcard", ServiceRegistry.get_wildcard_scanner),
             )
         )
         self._logger = logger or logging.getLogger(__name__)
@@ -375,11 +376,14 @@ class SidecarMigrationUseCase:
         }
 
     def _active_scanner_factories(self) -> Tuple[Tuple[str, ScannerFactory], ...]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
+        """Drop opt-in resource scanners while their features are disabled."""
 
-        if self._settings.is_other_models_enabled():
-            return self._scanner_factories
-        return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
+        factories = self._scanner_factories
+        if not self._settings.is_other_models_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "other")
+        if not self._settings.is_wildcards_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "wildcard")
+        return factories
 
     async def _collect_model_paths(
         self, errors: List[Dict[str, str]]

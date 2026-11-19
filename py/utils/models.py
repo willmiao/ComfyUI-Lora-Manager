@@ -546,3 +546,41 @@ class WorkflowMetadata(BaseModelMetadata):
             tags=tags,
             modelDescription=description,
         )
+
+
+@dataclass
+class WildcardMetadata(BaseModelMetadata):
+    """A Civitai Wildcards artifact with a parsed wildcard-key index."""
+
+    sub_type: str = "wildcard"
+    wildcard_format: str = ""
+    files: List[str] = field(default_factory=list)
+    entries: List[Dict[str, Any]] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+    unsupported_files: List[str] = field(default_factory=list)
+    entry_count: int = 0
+    value_count: int = 0
+
+    @classmethod
+    def from_civitai_info(
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
+    ) -> "WildcardMetadata":
+        file_name = file_info.get("name", "")
+        base_name = os.path.splitext(file_name)[0]
+        model_data = version_info.get("model") or {}
+        return cls(
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
+            file_path=save_path.replace(os.sep, "/"),
+            size=file_info.get("sizeKB", 0) * 1024,
+            modified=datetime.now().timestamp(),
+            sha256=(file_info.get("hashes") or {}).get("SHA256", "").lower(),
+            base_model=determine_base_model(version_info.get("baseModel", "")),
+            preview_url="",
+            preview_nsfw_level=0,
+            from_civitai=True,
+            civitai=version_info,
+            tags=model_data.get("tags") or [],
+            modelDescription=model_data.get("description") or "",
+            wildcard_format=os.path.splitext(file_name)[1].lower().lstrip("."),
+        )

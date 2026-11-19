@@ -579,6 +579,10 @@ export function createModelCard(model, modelType) {
     if (model.skip_metadata_refresh) {
         card.classList.add('skip-refresh');
     }
+    if (modelType === MODEL_TYPES.WILDCARD) {
+        card.dataset.active = String(model.active === true);
+        card.classList.toggle('wildcard-active', model.active === true);
+    }
     if (model.exclude) {
         card.classList.add('excluded-model');
     }
@@ -665,7 +669,7 @@ export function createModelCard(model, modelType) {
     const updateBadgeLabel = translate('modelCard.badges.update', {}, 'Update');
     const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
     // Standalone has no running ComfyUI graph to push a workflow into.
-    const hideSendIcon = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
+    const hideSendIcon = (modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode) || modelType === MODEL_TYPES.WILDCARD;
     const sendIcon = hideSendIcon ? '' : `
         <i class="fas fa-paper-plane"
            title="${sendTitle}">
@@ -722,6 +726,11 @@ export function createModelCard(model, modelType) {
                     ${hasUpdateAvailable ? `
                         <span class="model-update-badge" title="${updateBadgeTooltip}">
                             <i class="fas fa-arrow-up"></i>
+                        </span>
+                    ` : ''}
+                    ${modelType === MODEL_TYPES.WILDCARD && model.active ? `
+                        <span class="model-update-badge wildcard-active-badge" title="${translate('wildcards.library.active', {}, 'Active')}">
+                            <i class="fas fa-bolt"></i>
                         </span>
                     ` : ''}
                     ${model.skip_metadata_refresh ? `

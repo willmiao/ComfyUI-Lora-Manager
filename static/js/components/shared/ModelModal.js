@@ -667,7 +667,7 @@ export async function showModelModal(model, modelType) {
 
     // Add send to ComfyUI button for all model types. Workflows hide it in
     // standalone mode: there is no running ComfyUI graph to push into.
-    const hideSendButton = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
+    const hideSendButton = (modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode) || modelType === MODEL_TYPES.WILDCARD;
     if (!hideSendButton) {
         // Workflows load a whole graph document, so the action reads "Open";
         // model types that insert into the current graph keep "Send".

@@ -378,6 +378,20 @@ class ServiceRegistry:
             return scanner
 
     @classmethod
+    async def get_wildcard_scanner(cls):
+        service_name = "wildcard_scanner"
+        if service_name in cls._services:
+            return cls._services[service_name]
+        async with cls._get_lock(service_name):
+            if service_name in cls._services:
+                return cls._services[service_name]
+            from .wildcard_scanner import WildcardScanner
+
+            scanner = await WildcardScanner.get_instance()
+            cls._services[service_name] = scanner
+            return scanner
+
+    @classmethod
     def clear_services(cls):
         """Clear all registered services - mainly for testing"""
         cls._services.clear()

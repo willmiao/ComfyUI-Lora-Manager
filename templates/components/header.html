@@ -9,6 +9,8 @@
 {% set current_page = 'other' %}
 {% elif current_path.startswith('/workflows') %}
 {% set current_page = 'workflows' %}
+{% elif current_path.startswith('/wildcards') %}
+{% set current_page = 'wildcards' %}
 {% elif current_path.startswith('/statistics') %}
 {% set current_page = 'statistics' %}
 {% else %}
@@ -20,7 +22,7 @@
 {% set page_title_key = 'header.navigation.' ~ current_page %}
 {# The filter panel lists the page's own items: recipes and workflows are not
    models, so their titles name the page's collection instead. #}
-{% set filter_title_key = {'recipes': 'recipes.filter.title', 'workflows': 'workflows.filter.title'}.get(current_page, 'header.filter.title') %}
+{% set filter_title_key = {'recipes': 'recipes.filter.title', 'workflows': 'workflows.filter.title', 'wildcards': 'wildcards.filter.title'}.get(current_page, 'header.filter.title') %}
 <header class="app-header">
   <div class="header-container">
     <!-- Left section: Logo + page name + Navigation -->
@@ -56,6 +58,10 @@
         <a href="{{ rel_prefix }}workflows" class="nav-item{% if current_path.startswith('/workflows') %} active{% endif %}{% if not settings.get('enable_workflows') %} nav-item--hidden{% endif %}"
           id="workflowsNavItem" title="{{ t('header.navigation.workflows') }}" aria-label="{{ t('header.navigation.workflows') }}"{% if current_path.startswith('/workflows') %} aria-current="page"{% endif %}>
           <i class="fas fa-diagram-project" aria-hidden="true"></i> <span>{{ t('header.navigation.workflows') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}wildcards" class="nav-item{% if current_path.startswith('/wildcards') %} active{% endif %}{% if not settings.get('enable_wildcards') %} nav-item--hidden{% endif %}"
+          id="wildcardsNavItem" title="{{ t('header.navigation.wildcards') }}" aria-label="{{ t('header.navigation.wildcards') }}"{% if current_path.startswith('/wildcards') %} aria-current="page"{% endif %}>
+          <i class="fas fa-random" aria-hidden="true"></i> <span>{{ t('header.navigation.wildcards') }}</span>
         </a>
         <a href="{{ rel_prefix }}statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
           id="statisticsNavItem" title="{{ t('header.navigation.statistics') }}" aria-label="{{ t('header.navigation.statistics') }}"{% if current_path.startswith('/statistics') %} aria-current="page"{% endif %}>
@@ -151,6 +157,11 @@
           data-nav-key="workflows"{% if not settings.get('enable_workflows') %} hidden{% endif %}{% if current_path.startswith('/workflows') %} aria-current="page"{% endif %}>
           <i class="fas fa-diagram-project" aria-hidden="true"></i>
           <span>{{ t('header.navigation.workflows') }}</span>
+        </a>
+        <a href="{{ rel_prefix }}wildcards" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/wildcards') %} active{% endif %}"
+          data-nav-key="wildcards"{% if not settings.get('enable_wildcards') %} hidden{% endif %}{% if current_path.startswith('/wildcards') %} aria-current="page"{% endif %}>
+          <i class="fas fa-random" aria-hidden="true"></i>
+          <span>{{ t('header.navigation.wildcards') }}</span>
         </a>
         <a href="{{ rel_prefix }}statistics" class="dropdown-item hamburger-nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
           data-nav-key="statistics"{% if current_path.startswith('/statistics') %} aria-current="page"{% endif %}>

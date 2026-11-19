@@ -124,8 +124,11 @@ class WildcardService:
         if getattr(self, "_initialized", False):
             return
         self._initialized = True
-        self._cached_signature: tuple[tuple[str, int, int], ...] | None = None
+        self._cached_signature: tuple[Any, ...] | None = None
         self._wildcard_dict: dict[str, list[str]] = {}
+        self._manual_cached_signature: tuple[tuple[str, int, int], ...] | None = None
+        self._manual_wildcard_dict: dict[str, list[str]] = {}
+        self._runtime_conflicts: list[dict[str, Any]] = []
 
     @classmethod
     def get_instance(cls) -> "WildcardService":
@@ -177,11 +180,46 @@ class WildcardService:
         return current
 
     def get_wildcard_dict(self) -> dict[str, list[str]]:
-        signature = self._build_signature()
+        manual = self.get_manual_wildcard_dict()
+        try:
+            from .wildcard_activation_service import get_wildcard_activation_service
+
+            managed, managed_signature, managed_conflicts = (
+                get_wildcard_activation_service().get_active_runtime()
+            )
+        except Exception:
+            logger.error("Failed to load activated wildcard resources", exc_info=True)
+            managed, managed_signature, managed_conflicts = {}, (), []
+        signature = (self._manual_cached_signature, managed_signature)
         if signature != self._cached_signature:
-            self._wildcard_dict = self._scan_wildcard_dict()
+            combined = dict(manual)
+            conflicts = list(managed_conflicts)
+            for key, values in managed.items():
+                if key in combined:
+                    conflicts.append(
+                        {
+                            "key": key,
+                            "owners": ["manual", "managed"],
+                            "kept": "manual",
+                        }
+                    )
+                    continue
+                combined[key] = values
+            self._wildcard_dict = combined
+            self._runtime_conflicts = conflicts
             self._cached_signature = signature
         return self._wildcard_dict
+
+    def get_manual_wildcard_dict(self) -> dict[str, list[str]]:
+        signature = self._build_signature()
+        if signature != self._manual_cached_signature:
+            self._manual_wildcard_dict = self._scan_wildcard_dict()
+            self._manual_cached_signature = signature
+        return self._manual_wildcard_dict
+
+    def get_runtime_conflicts(self) -> list[dict[str, Any]]:
+        self.get_wildcard_dict()
+        return list(self._runtime_conflicts)
 
     def get_entries(self) -> list[WildcardEntry]:
         return [

@@ -124,11 +124,13 @@ def register_default_model_types():
     from ..services.embedding_service import EmbeddingService
     from ..services.other_model_service import OtherModelService
     from ..services.workflow_service import WorkflowService
+    from ..services.wildcard_model_service import WildcardModelService
     from ..routes.lora_routes import LoraRoutes
     from ..routes.checkpoint_routes import CheckpointRoutes
     from ..routes.embedding_routes import EmbeddingRoutes
     from ..routes.other_routes import OtherRoutes
     from ..routes.workflow_routes import WorkflowRoutes
+    from ..routes.wildcard_routes import WildcardRoutes
 
     # Register LoRA model type
     ModelServiceFactory.register_model_type('lora', LoraService, LoraRoutes)
@@ -144,3 +146,5 @@ def register_default_model_types():
 
     # Register Workflow model type (ComfyUI workflow JSON; opt-in feature)
     ModelServiceFactory.register_model_type('workflow', WorkflowService, WorkflowRoutes)
+
+    ModelServiceFactory.register_model_type('wildcard', WildcardModelService, WildcardRoutes)

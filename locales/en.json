@@ -247,6 +247,7 @@
       "embeddings": "Embeddings",
       "other": "Other",
       "workflows": "Workflows",
+      "wildcards": "Wildcards",
       "statistics": "Stats"
     },
     "search": {
@@ -674,6 +675,11 @@
       "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP vision / ControlNet folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
       "enableWorkflows": "Workflow Management",
       "enableWorkflowsHelp": "When off, the workflow library folder is not scanned, the Workflows page stays disabled, and CivitAI Workflow resources cannot be linked or downloaded.",
+      "enableWildcards": "Wildcard Resource Management",
+      "enableWildcardsHelp": "When off, the wildcard library folder is not scanned and the Wildcards page stays disabled. Existing manual wildcards and activated resources keep working.",
+      "wildcardFolder": "Wildcard Library Folder",
+      "wildcardFolderHelp": "The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
+      "wildcardFolderPlaceholder": "/path/to/wildcards-library",
       "workflowFolder": "Workflow Library Folder",
       "workflowFolderHelp": "The single folder scanned for ComfyUI workflow JSON files. Managed by LoRA Manager only (not shared with ComfyUI); changes apply immediately.",
       "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1530,6 +1536,94 @@
       "openSettings": "Open Settings",
       "openModelPaths": "Configure Model Folders",
       "openSettingsFolder": "Open Settings Folder"
+    }
+  },
+  "wildcards": {
+    "title": "Wildcards",
+    "loading": "Loading wildcard resources...",
+    "filter": {
+      "title": "Filter Wildcards"
+    },
+    "bulk": {
+      "noSelection": "No wildcards selected"
+    },
+    "modals": {
+      "bulkDelete": {
+        "title": "Delete Wildcards",
+        "message": "Are you sure you want to delete {count} selected wildcards?",
+        "countMessage": "wildcards will be permanently deleted."
+      }
+    },
+    "standaloneNotice": "Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+    "disabled": {
+      "title": "Wildcard resource management is disabled",
+      "description": "Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
+      "enableButton": "Enable Wildcard Management",
+      "hint": "Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
+      "enableFailed": "Failed to enable wildcard management: {message}"
+    },
+    "noPaths": {
+      "title": "No wildcard library folder configured",
+      "description": "Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
+      "openSettings": "Open Settings"
+    },
+    "add": {
+      "civitaiLabel": "Add from Civitai",
+      "civitaiPlaceholder": "Civitai model URL or model ID",
+      "download": "Download",
+      "localLabel": "Import local files",
+      "import": "Import"
+    },
+    "library": {
+      "title": "Resource Library",
+      "summary": "{total} resources · {active} active · {manual} manual keys",
+      "searchPlaceholder": "Search resources or wildcard keys",
+      "all": "All resources",
+      "active": "Active",
+      "inactive": "Inactive",
+      "emptyTitle": "No wildcard resources yet",
+      "emptyDescription": "Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
+      "noMatches": "No resources match the current filters"
+    },
+    "card": {
+      "keys": "{count} keys",
+      "values": "{count} values"
+    },
+    "actions": {
+      "details": "Details",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "delete": "Delete"
+    },
+    "details": {
+      "keys": "Wildcard keys",
+      "filterKeys": "Filter keys",
+      "preview": "Content preview",
+      "selectKey": "Select a key to preview its values.",
+      "sourceFile": "Source file",
+      "viewCivitai": "View on Civitai"
+    },
+    "activation": {
+      "title": "Activate wildcard resource",
+      "namespace": "Namespace prefix (optional)",
+      "namespacePlaceholder": "e.g. characters/fantasy",
+      "namespaceHelp": "The prefix is applied to every key in this resource. Leave it empty to preserve the downloaded paths.",
+      "alias": "Active wildcard key",
+      "aliasHelp": "This changes the key used by ComfyUI without modifying the downloaded file.",
+      "confirm": "Activate resource"
+    },
+    "messages": {
+      "loading": "Loading wildcard resources...",
+      "runtimeConflicts": "{count} runtime key conflicts were skipped; check activation names.",
+      "activated": "Resource activated.",
+      "deactivated": "Resource deactivated.",
+      "deleted": "Resource deleted.",
+      "deleteConfirm": "Delete {name}? This removes the downloaded artifact and its activation.",
+      "downloading": "Downloading and parsing resource...",
+      "downloaded": "Resource added to the library. It is not active yet.",
+      "importing": "Importing and parsing files...",
+      "imported": "Files added to the library. They are not active yet.",
+      "shortWarnings": "Short-key warnings: {keys}"
     }
   },
   "workflows": {

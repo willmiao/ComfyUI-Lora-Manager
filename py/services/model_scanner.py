@@ -104,6 +104,7 @@ PAGE_TYPE_MAP = {
     'embedding': 'embeddings',
     'other': 'other',
     'workflow': 'workflows',
+    'wildcard': 'wildcards',
 }
 
 # Case-insensitive cache matching is a Windows-only safety net (NTFS treats

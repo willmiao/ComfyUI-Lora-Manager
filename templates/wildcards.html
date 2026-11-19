@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('wildcards.title') }}{% endblock %}
+{% block page_id %}wildcards{% endblock %}
+{% block init_title %}{{ t('wildcards.title') }}{% endblock %}
+{% block init_message %}{{ t('wildcards.loading') }}{% endblock %}
+{% block init_check_url %}/api/lm/wildcards/list?page=1&page_size=1{% endblock %}
+
+{% block page_css %}<link rel="stylesheet" href="{{ rel_prefix }}loras_static/css/wildcards.css?v={{ version }}">{% endblock %}
+
+{% block additional_components %}
+<div id="wildcardContextMenu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" data-action="wildcard-details"><i class="fas fa-random"></i> {{ t('wildcards.actions.details') }}</div>
+    <div class="context-menu-item" data-action="toggle-active"><i class="fas fa-bolt"></i> <span data-active-label></span></div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <div class="context-menu-item" data-action="refresh-metadata"><i class="fas fa-sync"></i> {{ t('loras.contextMenu.refreshMetadata') }}</div>
+    <div class="context-menu-item" data-action="relink-civitai"><i class="fas fa-external-link-alt"></i> {{ t('loras.contextMenu.linkCivitai') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <div class="context-menu-item" data-action="replace-preview"><i class="fas fa-image"></i> {{ t('loras.contextMenu.replacePreview') }}</div>
+    <div class="context-menu-item" data-action="set-nsfw"><i class="fas fa-exclamation-triangle"></i> {{ t('loras.contextMenu.setContentRating') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <div class="context-menu-item" data-action="move"><i class="fas fa-folder-open"></i> {{ t('loras.contextMenu.moveToFolder') }}</div>
+    <div class="context-menu-item" data-action="exclude"><i class="fas fa-eye-slash"></i> {{ t('loras.contextMenu.excludeModel') }}</div>
+    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{ t('common.actions.delete') }}</div>
+</div>
+
+<div id="wildcardActivationModal" class="modal">
+    <div class="modal-content wildcard-activation-content">
+        <div class="modal-header">
+            <h2 id="wildcardActivationTitle"></h2>
+            <button class="close-modal" type="button"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p id="wildcardActivationSubtitle" class="text-secondary"></p>
+            <div id="wildcardActivationFields">
+                <label for="wildcardNamespaceInput">{{ t('wildcards.activation.namespace') }}</label>
+                <input id="wildcardNamespaceInput" type="text" placeholder="{{ t('wildcards.activation.namespacePlaceholder') }}">
+                <p class="text-secondary">{{ t('wildcards.activation.namespaceHelp') }}</p>
+                <div id="wildcardAliasGroup">
+                    <label for="wildcardAliasInput">{{ t('wildcards.activation.alias') }}</label>
+                    <input id="wildcardAliasInput" type="text">
+                </div>
+            </div>
+            <div id="wildcardActivationErrors" class="wildcard-activation-errors" hidden></div>
+            <div class="wildcard-key-layout">
+                <div>
+                    <input id="wildcardKeyFilter" type="search" placeholder="{{ t('wildcards.details.filterKeys') }}">
+                    <div id="wildcardKeyList" class="wildcard-key-list"></div>
+                </div>
+                <pre id="wildcardContentPreview" class="wildcard-content-preview"></pre>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="wildcardActivateBtn" class="btn btn-primary" type="button">{{ t('wildcards.activation.confirm') }}</button>
+            <button class="btn btn-secondary close-modal" type="button">{{ t('common.actions.close') }}</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if wildcards_disabled %}
+<div class="workflows-disabled">
+    <i class="fas fa-random"></i>
+    <h2>{{ t('wildcards.disabled.title') }}</h2>
+    <p>{{ t('wildcards.disabled.description') }}</p>
+    <button id="enableWildcardsBtn" type="button"><i class="fas fa-toggle-on"></i> {{ t('wildcards.disabled.enableButton') }}</button>
+    <p class="workflows-disabled-hint">{{ t('wildcards.disabled.hint') }}</p>
+</div>
+{% elif wildcards_no_paths %}
+<div class="workflows-disabled">
+    <i class="fas fa-folder-open"></i>
+    <h2>{{ t('wildcards.noPaths.title') }}</h2>
+    <p>{{ t('wildcards.noPaths.description') }}</p>
+    <button id="openWildcardsSettingsBtn" type="button"><i class="fas fa-cog"></i> {{ t('wildcards.noPaths.openSettings') }}</button>
+</div>
+{% else %}
+<div class="sticky-topbar">
+    {% include 'components/controls.html' %}
+    {% include 'components/breadcrumb.html' %}
+</div>
+{% include 'components/duplicates_banner.html' %}
+{% include 'components/folder_sidebar.html' %}
+<div class="card-grid" id="modelGrid"></div>
+{% endif %}
+{% endblock %}
+
+{% block overlay %}<div class="bulk-mode-overlay"></div>{% endblock %}
+{% block main_script %}<script type="module" src="{{ rel_prefix }}loras_static/js/wildcards.js?v={{ version }}"></script>{% endblock %}

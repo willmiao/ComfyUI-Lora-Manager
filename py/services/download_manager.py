@@ -23,6 +23,7 @@ from ..utils.models import (
     EmbeddingMetadata,
     OtherModelMetadata,
     WorkflowMetadata,
+    WildcardMetadata,
 )
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
@@ -120,6 +121,14 @@ def _workflows_disabled_response() -> Dict[str, Any]:
             "Settings > Library before downloading workflow files."
         ),
         "reason": "workflows_disabled",
+    }
+
+
+def _wildcards_disabled_response() -> Dict[str, Any]:
+    return {
+        "success": False,
+        "error": "Wildcard management is disabled. Enable it in Settings > Library before downloading wildcards.",
+        "reason": "wildcards_disabled",
     }
 
 
@@ -454,6 +463,8 @@ class DownloadManager:
             return await ServiceRegistry.get_other_scanner()
         if model_type == "workflow":
             return await ServiceRegistry.get_workflow_scanner()
+        if model_type == "wildcard":
+            return await ServiceRegistry.get_wildcard_scanner()
         if model_type == "lora":
             return await self._get_lora_scanner()
         raise ValueError(f'Unknown model type "{model_type}"')
@@ -549,6 +560,8 @@ class DownloadManager:
         file_info = self._resolve_target_file(files, file_params) if file_params else None
         if not file_info and model_type == "workflow":
             file_info = self._select_workflow_download_file(files)
+        if not file_info and model_type == "wildcard":
+            file_info = self._select_wildcard_download_file(files)
         if file_info:
             return file_info
 
@@ -601,7 +614,11 @@ class DownloadManager:
         resolved_version_id = model_version_id or version_info.get("id")
         resolved_model_id = model_id or version_info.get("modelId") or (version_info.get("model") or {}).get("id")
         model_type = str((version_info.get("model") or {}).get("type") or "").lower()
-        selection_type = "workflow" if model_type in WORKFLOW_CIVITAI_TYPES else "model"
+        selection_type = (
+            "workflow"
+            if model_type in WORKFLOW_CIVITAI_TYPES
+            else "wildcard" if model_type == "wildcards" else "model"
+        )
         file_info = self._select_download_file(
             version_info.get("files") or [], file_params or None, selection_type
         )
@@ -658,6 +675,21 @@ class DownloadManager:
             key=lambda f: (not bool(f.get("primary")), rank(f), f.get("id") or 0)
         )
         return candidates[0]
+
+    @staticmethod
+    def _select_wildcard_download_file(files: Any) -> Optional[Dict[str, Any]]:
+        candidates = [
+            item
+            for item in files or []
+            if isinstance(item, dict)
+            and str(item.get("name") or "").lower().endswith(
+                (".zip", ".txt", ".yaml", ".yml", ".json")
+            )
+        ]
+        candidates.sort(
+            key=lambda item: (not bool(item.get("primary")), item.get("id") or 0)
+        )
+        return candidates[0] if candidates else None
 
     async def _find_local_file_entry(
         self,
@@ -1371,6 +1403,8 @@ class DownloadManager:
             return OtherModelMetadata.from_civitai_info(version_info, file_info, save_path)
         if model_type == "workflow":
             return WorkflowMetadata.from_civitai_info(version_info, file_info, save_path)
+        if model_type == "wildcard":
+            return WildcardMetadata.from_civitai_info(version_info, file_info, save_path)
         return LoraMetadata.from_civitai_info(version_info, file_info, save_path)
 
     def _resolve_save_path_from_persisted_record(self, record: Dict[str, Any]) -> Optional[str]:
@@ -1894,6 +1928,15 @@ class DownloadManager:
                             "error": "Model version already exists in workflow library",
                         }
 
+                # Check wildcard scanner (opt-in feature)
+                if get_settings_manager().is_wildcards_enabled():
+                    wildcard_scanner = await ServiceRegistry.get_wildcard_scanner()
+                    if await wildcard_scanner.check_model_version_exists(model_version_id):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in wildcard library",
+                        }
+
             # Use CivArchive provider directly when source is 'civarchive'
             # This prioritizes CivArchive metadata (with mirror availability info) over Civitai
             if source == "civarchive":
@@ -2020,6 +2063,10 @@ class DownloadManager:
                 if not get_settings_manager().is_other_models_enabled():
                     return _other_models_disabled_response()
                 model_type = "other"
+            elif model_type_from_info == "wildcards":
+                if not get_settings_manager().is_wildcards_enabled():
+                    return _wildcards_disabled_response()
+                model_type = "wildcard"
             elif model_type_from_info in WORKFLOW_CIVITAI_TYPES:
                 if not get_settings_manager().is_workflows_enabled():
                     return _workflows_disabled_response()
@@ -2203,6 +2250,13 @@ class DownloadManager:
                             "success": False,
                             "error": "Model version already exists in other library",
                         }
+                elif model_type == "wildcard":
+                    wildcard_scanner = await ServiceRegistry.get_wildcard_scanner()
+                    if await wildcard_scanner.check_model_version_exists(version_id):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in wildcard library",
+                        }
                 elif model_type == "workflow":
                     workflow_scanner = await ServiceRegistry.get_workflow_scanner()
                     if await workflow_scanner.check_model_version_exists(version_id):
@@ -2311,6 +2365,16 @@ class DownloadManager:
                                 "reason": reason,
                             }
                         save_dir = default_path
+                    elif model_type == "wildcard":
+                        wildcard_scanner = await ServiceRegistry.get_wildcard_scanner()
+                        wildcard_roots = wildcard_scanner.get_model_roots()
+                        if not wildcard_roots:
+                            return {
+                                "success": False,
+                                "error": "No wildcard folder configured. Add one in Settings > Library before downloading wildcards.",
+                                "reason": "wildcards_no_paths",
+                            }
+                        save_dir = wildcard_roots[0]
                     elif model_type == "workflow":
                         # Workflows have no default-root setting: the first
                         # configured workflow root is the download target.
@@ -2496,6 +2560,11 @@ class DownloadManager:
                     version_info, file_info, save_path
                 )
                 logger.info(f"Creating OtherModelMetadata for {file_name}")
+            elif model_type == "wildcard":
+                metadata = WildcardMetadata.from_civitai_info(
+                    version_info, file_info, save_path
+                )
+                logger.info(f"Creating WildcardMetadata for {file_name}")
             elif model_type == "workflow":
                 metadata = WorkflowMetadata.from_civitai_info(
                     version_info, file_info, save_path
@@ -2719,6 +2788,8 @@ class DownloadManager:
                 scanner = await ServiceRegistry.get_embedding_scanner()
             elif model_type == "other":
                 scanner = await ServiceRegistry.get_other_scanner()
+            elif model_type == "wildcard":
+                scanner = await ServiceRegistry.get_wildcard_scanner()
             elif model_type == "workflow":
                 scanner = await ServiceRegistry.get_workflow_scanner()
         except Exception as exc:
@@ -3182,11 +3253,10 @@ class DownloadManager:
 
             # 4. Handle archive extraction and prepare per-file metadata
             actual_file_paths = [save_path]
-            # Workflow downloads never extract archives: the zip IS the
-            # artifact, kept byte-identical so its SHA256 stays the CivitAI
-            # identity; the workflow document is materialized into a derived
-            # sidecar by the scanner instead.
-            if model_type != "workflow" and zipfile.is_zipfile(save_path):
+            # Workflow and wildcard downloads never extract archives: the zip IS
+            # the artifact, kept byte-identical so its SHA256 stays the CivitAI
+            # identity. Their scanners derive documents or key indexes instead.
+            if model_type not in ("workflow", "wildcard") and zipfile.is_zipfile(save_path):
                 supported_extensions = self._get_supported_extensions_for_type(
                     model_type
                 )
@@ -3250,6 +3320,9 @@ class DownloadManager:
             elif model_type == "other":
                 scanner = await ServiceRegistry.get_other_scanner()
                 logger.info(f"Updating other-model cache for {actual_file_paths[0]}")
+            elif model_type == "wildcard":
+                scanner = await ServiceRegistry.get_wildcard_scanner()
+                logger.info(f"Updating wildcard cache for {actual_file_paths[0]}")
             elif model_type == "workflow":
                 scanner = await ServiceRegistry.get_workflow_scanner()
                 logger.info(f"Updating workflow cache for {actual_file_paths[0]}")

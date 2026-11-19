@@ -163,6 +163,7 @@ class FirstRunManager:
             "embeddings": ServiceRegistry.get_embedding_scanner,
             "other": ServiceRegistry.get_other_scanner,
             "workflows": ServiceRegistry.get_workflow_scanner,
+            "wildcards": ServiceRegistry.get_wildcard_scanner,
         }
 
     def _active_scanner_getters(self) -> Dict[str, Callable[[], Awaitable[Any]]]:
@@ -172,6 +173,8 @@ class FirstRunManager:
             getters.pop("other")
         if "workflows" in getters and not self._settings.is_workflows_enabled():
             getters.pop("workflows")
+        if "wildcards" in getters and not self._settings.is_wildcards_enabled():
+            getters.pop("wildcards")
         return getters
 
     # ------------------------------------------------------------------

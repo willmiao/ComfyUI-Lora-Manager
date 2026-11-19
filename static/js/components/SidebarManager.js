@@ -3695,7 +3695,7 @@ export class SidebarManager {
     _migrateOldSettings() {
         if (getStorageItem('_sidebar_migration_done')) return;
 
-        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other', 'workflows'];
+        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other', 'workflows', 'wildcards'];
 
         // 1. Migrate global hide setting to per-page
         if (state?.global?.settings?.show_folder_sidebar === false) {

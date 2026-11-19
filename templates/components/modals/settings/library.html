@@ -76,6 +76,10 @@
         {% endfor %}
 
         {{ sm.setting_toggle('enableWorkflows', 'enable_workflows', 'settings.folderSettings.enableWorkflows', 'settings.folderSettings.enableWorkflowsHelp') }}
+        {{ sm.setting_toggle('enableWildcards', 'enable_wildcards', 'settings.folderSettings.enableWildcards', 'settings.folderSettings.enableWildcardsHelp') }}
+        <div id="wildcardPathSetting">
+            {{ sm.setting_input('wildcardPath', 'wildcard_path', 'settings.folderSettings.wildcardFolder', 'settings.folderSettings.wildcardFolderPlaceholder', 'settings.folderSettings.wildcardFolderHelp') }}
+        </div>
 
         <div id="workflowPathSetting">
             {{ sm.setting_input('workflowPath', 'workflow_path', 'settings.folderSettings.workflowFolder', 'settings.folderSettings.workflowFolderPlaceholder', 'settings.folderSettings.workflowFolderHelp') }}

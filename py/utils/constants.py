@@ -226,6 +226,7 @@ CIVITAI_USER_MODEL_TYPES = [
     *VALID_LORA_TYPES,
     "textualinversion",
     "checkpoint",
+    "wildcards",
     *sorted(VALID_OTHER_CIVITAI_TYPES),
 ]
 
@@ -322,6 +323,7 @@ DEFAULT_DOWNLOAD_PATH_TEMPLATES: Dict[str, str] = {
     "checkpoint": "{base_model}/{first_tag}",
     "embedding": "{base_model}/{first_tag}",
     "workflow": "{base_model}",
+    "wildcard": "",
     "other": "",
 }
 

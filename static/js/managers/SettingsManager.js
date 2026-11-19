@@ -1408,6 +1408,7 @@ export class SettingsManager {
 
         // Reflect the opt-in Workflow management toggle
         this.updateWorkflowsControls();
+        this.updateWildcardsControls();
 
         // Load extra folder paths
         this.loadExtraFolderPaths();
@@ -1438,6 +1439,9 @@ export class SettingsManager {
         });
         this.attachPathField('workflowPath', {
             onAfterSelect: () => this.saveInputSetting('workflowPath', 'workflow_path'),
+        });
+        this.attachPathField('wildcardPath', {
+            onAfterSelect: () => this.saveInputSetting('wildcardPath', 'wildcard_path'),
         });
         this.attachPathField('exampleImagesPath', {
             onAfterSelect: (pickedPath) => {
@@ -3194,6 +3198,11 @@ export class SettingsManager {
                 this.updateWorkflowsNavVisibility(value);
             }
 
+            if (settingKey === 'enable_wildcards') {
+                this.updateWildcardsControls();
+                this.setNavEntryVisible('wildcards', value);
+            }
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
             // Apply frontend settings immediately
@@ -3304,6 +3313,16 @@ export class SettingsManager {
         }
     }
 
+    updateWildcardsControls() {
+        const enabled = !!state.global.settings.enable_wildcards;
+        const toggle = document.getElementById('enableWildcards');
+        if (toggle) toggle.checked = enabled;
+        const group = document.getElementById('wildcardPathSetting');
+        if (group) group.style.display = enabled ? '' : 'none';
+        const input = document.getElementById('wildcardPath');
+        if (input) input.value = state.global.settings.wildcard_path || '';
+    }
+
     /**
      * Reflect the opt-in Workflow management state in the settings UI: the
      * master toggle gates the single workflow library folder input
@@ -3319,7 +3338,6 @@ export class SettingsManager {
         if (toggle) {
             toggle.checked = enabled;
         }
-
         const group = document.getElementById('workflowPathSetting');
         if (group) {
             group.style.display = enabled ? '' : 'none';

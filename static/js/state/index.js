@@ -31,6 +31,8 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     enable_other_models: false,
     enable_workflows: false,
     workflow_path: '',
+    enable_wildcards: false,
+    wildcard_path: '',
     enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},
@@ -112,6 +114,7 @@ const checkpointPreviewVersions = getMapFromStorage('checkpoints_preview_version
 const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions');
 const otherPreviewVersions = getMapFromStorage('other_preview_versions');
 const workflowPreviewVersions = getMapFromStorage('workflows_preview_versions');
+const wildcardPreviewVersions = getMapFromStorage('wildcards_preview_versions');
 
 export const state = {
     // Global state
@@ -338,6 +341,40 @@ export const state = {
                 sortBy: 'name:asc',
                 search: '',
             },
+            activeViewSnapshot: null,
+        },
+
+        [MODEL_TYPES.WILDCARD]: {
+            currentPage: 1,
+            isLoading: false,
+            hasMore: true,
+            sortBy: 'name',
+            activeFolder: getStorageItem(`${MODEL_TYPES.WILDCARD}_activeFolder`),
+            previewVersions: wildcardPreviewVersions,
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.WILDCARD}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
+            },
+            bulkMode: false,
+            selectedModels: new Set(),
+            metadataCache: new Map(),
+            showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
+            duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: { sortBy: 'name:asc', search: '' },
             activeViewSnapshot: null,
         }
     },

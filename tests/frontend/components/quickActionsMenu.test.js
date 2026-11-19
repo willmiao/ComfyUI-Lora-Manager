@@ -5,10 +5,12 @@ const {
   STYLES_MODULE,
   CANVAS_API_MODULE,
   QUICK_PANEL_MODULE,
+  WILDCARD_PANEL_MODULE,
   SETTINGS_DIALOG_MODULE,
   appMock,
   toggleQuickPanelMock,
   toggleRecipePanelMock,
+  toggleWildcardPanelMock,
   openManagerMock,
   openComfyUISettingsMock,
 } = vi.hoisted(() => ({
@@ -16,10 +18,12 @@ const {
   STYLES_MODULE: new URL('../../../web/comfyui/lm_styles_loader.js', import.meta.url).pathname,
   CANVAS_API_MODULE: new URL('../../../web/comfyui/lora_canvas_api.js', import.meta.url).pathname,
   QUICK_PANEL_MODULE: new URL('../../../web/comfyui/lora_quick_panel.js', import.meta.url).pathname,
+  WILDCARD_PANEL_MODULE: new URL('../../../web/comfyui/wildcard_quick_panel.js', import.meta.url).pathname,
   SETTINGS_DIALOG_MODULE: new URL('../../../web/comfyui/comfy_settings_dialog.js', import.meta.url).pathname,
   appMock: { extensionManager: undefined },
   toggleQuickPanelMock: vi.fn(),
   toggleRecipePanelMock: vi.fn(),
+  toggleWildcardPanelMock: vi.fn(),
   openManagerMock: vi.fn(),
   openComfyUISettingsMock: vi.fn(),
 }));
@@ -30,6 +34,9 @@ vi.mock(CANVAS_API_MODULE, () => ({ openLoraManagerHome: openManagerMock }));
 vi.mock(QUICK_PANEL_MODULE, () => ({
   toggleLoraQuickPanel: toggleQuickPanelMock,
   toggleRecipeQuickPanel: toggleRecipePanelMock,
+}));
+vi.mock(WILDCARD_PANEL_MODULE, () => ({
+  toggleWildcardQuickPanel: toggleWildcardPanelMock,
 }));
 vi.mock(SETTINGS_DIALOG_MODULE, () => ({
   openComfyUISettingsDialog: openComfyUISettingsMock,
@@ -77,6 +84,7 @@ describe('LoRA Manager Quick Actions menu', () => {
     expect([...menu.querySelectorAll('kbd')].map((badge) => badge.textContent)).toEqual([
       'Alt+L',
       'Alt+R',
+      'Alt+W',
     ]);
     expect(anchor.getAttribute('aria-expanded')).toBe('true');
 
@@ -96,6 +104,17 @@ describe('LoRA Manager Quick Actions menu', () => {
 
     expect(toggleRecipePanelMock).toHaveBeenCalledOnce();
     expect(toggleQuickPanelMock).not.toHaveBeenCalled();
+  });
+
+  it('opens the global wildcards panel from its own menu item', async () => {
+    const { toggleQuickActionsMenu } = await import('../../../web/comfyui/quick_actions_menu.js');
+    toggleQuickActionsMenu(createAnchor());
+
+    document.querySelectorAll('[role="menuitem"]')[2].click();
+
+    expect(toggleWildcardPanelMock).toHaveBeenCalledOnce();
+    expect(toggleQuickPanelMock).not.toHaveBeenCalled();
+    expect(toggleRecipePanelMock).not.toHaveBeenCalled();
   });
 
   it('shows the user-remapped shortcut instead of the default', async () => {
