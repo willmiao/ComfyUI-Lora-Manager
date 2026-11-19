@@ -44,6 +44,14 @@ export async function fetchLoraDetails(name) {
   return { ...metadata, use_new_license_icons: data.use_new_license_icons };
 }
 
+export async function fetchLoraBlockWeightSchema(name) {
+  const data = await readJson(
+    await api.fetchApi(`/lm/loras/block-weight-schema?name=${encodeURIComponent(name)}`),
+    "Failed to inspect the LoRA block layout",
+  );
+  return data.schema || { kind: "unsupported", groups: [], blocks: [] };
+}
+
 export async function fetchLoraFolderIndex({ useActiveFilters = false } = {}) {
   const query = useActiveFilters ? "?use_active_filters=true" : "";
   const data = await readJson(

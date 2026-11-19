@@ -47,6 +47,8 @@ import sys
 import asyncio
 import folder_paths  # pyright: ignore[reportMissingImports]
 
+from ..utils.lora_block_weight import parse_lbw_syntax
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,10 +93,10 @@ def extract_lora_name(lora_path):
 def parse_lora_syntax(text: str) -> list[dict[str, Any]]:
     """Parse <lora:name:strength> syntax from text input into a list of dicts.
 
-    Each entry contains: name, model_strength, clip_strength.
-    Supports both ``<lora:name:strength>`` and ``<lora:name:model_strength:clip_strength>``.
+    Each entry contains: name, model_strength, clip_strength, and optional LBW.
+    Supports model/CLIP strengths followed by an optional ``LBW=...`` field.
     """
-    pattern = r"<lora:([^:>]+):([^:>]+)(?::([^:>]+))?>"
+    pattern = r"<lora:([^:>]+):([^:>]+)(?::([-\d.]+))?(?::(LBW=[^>]+))?>"
     matches = re.findall(pattern, text, re.IGNORECASE)
     loras = []
     for match in matches:
@@ -103,6 +105,7 @@ def parse_lora_syntax(text: str) -> list[dict[str, Any]]:
             "name": match[0],
             "model_strength": model_strength,
             "clip_strength": float(match[2]) if match[2] else model_strength,
+            "lbw": parse_lbw_syntax(match[3]),
         })
     return loras
 

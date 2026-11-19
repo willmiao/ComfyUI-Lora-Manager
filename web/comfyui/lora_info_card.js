@@ -21,10 +21,11 @@ import {
   parseLicenseFlags,
 } from "./license_icons.js";
 import { openLoraQuickPanel } from "./lora_quick_panel.js";
+import { LoraInfoCardBlocks } from "./lora_info_card_blocks.js";
 
 const PANEL_GAP = 10;
 const ACTIVE_TAB_KEY = "lm:info-card:active-tab";
-const VALID_TABS = new Set(["overview", "notes", "description"]);
+const VALID_TABS = new Set(["overview", "blocks", "notes", "description"]);
 let activeInfoCard = null;
 
 function el(tag, className, text) {
@@ -121,6 +122,11 @@ export class LoraInfoCard {
     this.originalNotes = "";
     this.savingNotes = false;
     this.savingFavorite = false;
+    this.blocksEditor = new LoraInfoCardBlocks(this);
+  }
+
+  supportsBlockWeights() {
+    return this.node?.comfyClass === "Lora Loader (LoraManager)" && !!this.currentEntry();
   }
 
   open() {
@@ -237,7 +243,11 @@ export class LoraInfoCard {
     const tabs = el("nav", "lm-info-card__tabs");
     tabs.setAttribute("aria-label", "LoRA information sections");
     this.tabButtons = {};
-    for (const [id, label] of [["overview", "Overview"], ["notes", "Notes"], ["description", "Description"]]) {
+    const availableTabs = [["overview", "Overview"]];
+    if (this.supportsBlockWeights()) availableTabs.push(["blocks", "Blocks"]);
+    availableTabs.push(["notes", "Notes"], ["description", "Description"]);
+    if (!availableTabs.some(([id]) => id === this.activeTab)) this.activeTab = "overview";
+    for (const [id, label] of availableTabs) {
       const button = el("button", "lm-info-card__tab", label);
       button.type = "button";
       button.classList.toggle("is-active", this.activeTab === id);
@@ -258,7 +268,7 @@ export class LoraInfoCard {
   }
 
   setActiveTab(tab) {
-    if (!VALID_TABS.has(tab)) return;
+    if (!VALID_TABS.has(tab) || (tab === "blocks" && !this.supportsBlockWeights())) return;
     this.activeTab = tab;
     try { localStorage.setItem(ACTIVE_TAB_KEY, tab); } catch { /* cosmetic only */ }
     for (const [id, button] of Object.entries(this.tabButtons)) {
@@ -275,6 +285,7 @@ export class LoraInfoCard {
     // the save button stays anchored above the footer.
     this.tabContent.classList.toggle("lm-info-card__tab-content--notes", isNotes);
     if (isNotes) this.renderNotes();
+    else if (this.activeTab === "blocks") this.blocksEditor.render(this.tabContent);
     else if (this.activeTab === "description") this.renderDescription();
     else this.renderOverview();
   }
@@ -518,6 +529,20 @@ export class LoraInfoCard {
    * the widget callback committed once on release.
    */
   bindStrengthDrag(row, input, field, label) {
+    this.bindValueDrag(row, input, {
+      readValue: () => this.currentEntry()?.[field] ?? null,
+      updateValue: (value, commit) => updateLoraStrength(
+        this.widget,
+        this.loraName,
+        field,
+        value,
+        { commit },
+      ),
+      status: `Updated ${label.toLowerCase()}`,
+    });
+  }
+
+  bindValueDrag(row, input, { readValue, updateValue, status, onCommitted }) {
     const SENSITIVITY = 0.001;
     const DRAG_THRESHOLD = 3;
     const MIN_STRENGTH = -10;
@@ -538,13 +563,11 @@ export class LoraInfoCard {
       document.body.classList.remove("lm-lora-strength-dragging");
       try {
         if (wasMoved) {
-          // Flush the final value once the drag is over: re-enabling the widget
-          // render lets it repaint its own row, and the callback lets the node
-          // persist the change.
           this.widget.__dragActive = false;
           this.widget.value = this.widget.value;
           this.widget.callback?.(this.widget.value);
-          this.setStatus(`Updated ${label.toLowerCase()}`);
+          this.setStatus(status);
+          onCommitted?.();
         }
       } finally {
         this.widget.__dragActive = false;
@@ -553,12 +576,12 @@ export class LoraInfoCard {
 
     row.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || event.target.closest("input")) return;
-      const entry = this.currentEntry();
-      if (!entry) {
+      const rawValue = readValue();
+      if (rawValue === null || rawValue === undefined) {
         this.setStatus("The LoRA row no longer exists");
         return;
       }
-      const currentValue = Number(entry[field] ?? 1);
+      const currentValue = Number(rawValue);
       if (!Number.isFinite(currentValue)) return;
       pointerId = event.pointerId;
       startX = event.clientX;
@@ -583,7 +606,7 @@ export class LoraInfoCard {
         MIN_STRENGTH,
         Math.min(MAX_STRENGTH, Number((startValue + deltaX * SENSITIVITY).toFixed(2)))
       );
-      if (!updateLoraStrength(this.widget, this.loraName, field, nextValue, { commit: false })) {
+      if (!updateValue(nextValue, false)) {
         reset();
         return;
       }

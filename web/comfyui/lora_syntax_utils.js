@@ -1,4 +1,5 @@
 import { LORA_PATTERN } from "./utils.js";
+import { formatLbwSyntax } from "./lora_block_weight.js";
 
 const DEFAULT_DECIMALS = 2;
 const DEFAULT_DEBOUNCE_MS = 80;
@@ -100,11 +101,10 @@ export function applyLoraValuesToText(originalText, loras) {
 
       const includeClip = shouldIncludeClipStrength(lora, clipStrength);
 
-      if (includeClip) {
-        return `<lora:${name}:${formattedStrength}:${formattedClip}>`;
-      }
-
-      return `<lora:${name}:${formattedStrength}>`;
+      const clipPart = includeClip ? `:${formattedClip}` : "";
+      const lbwSyntax = formatLbwSyntax(lora.lbw);
+      const lbwPart = lbwSyntax ? `:${lbwSyntax}` : "";
+      return `<lora:${name}:${formattedStrength}${clipPart}${lbwPart}>`;
     }
   );
 
@@ -128,11 +128,10 @@ export function applyLoraValuesToText(originalText, loras) {
     );
     const includeClip = shouldIncludeClipStrength(lora, null);
 
-    const syntax = includeClip
-      ? `<lora:${name}:${formattedStrength}:${formattedClip}>`
-      : `<lora:${name}:${formattedStrength}>`;
-
-    missingEntries.push(syntax);
+    const clipPart = includeClip ? `:${formattedClip}` : "";
+    const lbwSyntax = formatLbwSyntax(lora.lbw);
+    const lbwPart = lbwSyntax ? `:${lbwSyntax}` : "";
+    missingEntries.push(`<lora:${name}:${formattedStrength}${clipPart}${lbwPart}>`);
   });
 
   if (missingEntries.length === 0) {
