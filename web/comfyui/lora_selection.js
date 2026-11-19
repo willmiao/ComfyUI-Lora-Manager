@@ -124,7 +124,6 @@ export function applyLoraSelection(currentLoras, selection) {
         expanded: false,
         selected: false,
         locked: false,
-        ...(selection?.lbw ? { lbw: selection.lbw } : {}),
       },
     ],
     changed: true,
@@ -177,7 +176,6 @@ function normalizeSetEntry(entry) {
   return {
     name,
     strength: Number.isFinite(numeric) ? numeric : undefined,
-    ...(entry.lbw ? { lbw: entry.lbw } : {}),
   };
 }
 
@@ -231,7 +229,6 @@ export function applyLoraSet(currentLoras, entries, { mode = "append" } = {}) {
       next = applyLoraSelection(next, {
         name: entry.name,
         strength: entry.strength,
-        lbw: entry.lbw,
       }).loras;
     }
     return {
@@ -248,7 +245,6 @@ export function applyLoraSet(currentLoras, entries, { mode = "append" } = {}) {
     const result = applyLoraSelection(next, {
       name: entry.name,
       strength: entry.strength,
-      lbw: entry.lbw,
     });
     if (result.changed) {
       next = result.loras;

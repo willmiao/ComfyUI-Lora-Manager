@@ -81,6 +81,10 @@ def test_metadata_processor_extracts_generation_params(populated_registry, monke
     positive_node = MetadataProcessor.trace_node_input(prompt, "cfg_guider", "positive", target_class="CLIPTextEncode")
     assert positive_node == "encode_pos"
 
+    metadata[LORAS]["loader"]["lora_list"][0]["lbw"] = {
+        "enabled": True,
+        "weights": {"IN04": 0.5},
+    }
     params = MetadataProcessor.extract_generation_params(metadata)
     assert params["prompt"] == "A castle on a hill"
     assert params["negative_prompt"] == "low quality"

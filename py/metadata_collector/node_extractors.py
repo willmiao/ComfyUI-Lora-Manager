@@ -1151,8 +1151,7 @@ class LoraLoaderManagerExtractor(NodeMetadataExtractor):
                 if isinstance(lora, dict) and lora.get("active", True) and not lora.get("_isDummy", False):
                     active_loras.append({
                         "name": lora.get("name", ""),
-                        "strength": float(lora.get("strength", 1.0)),
-                        **({"lbw": lora["lbw"]} if lora.get("lbw") else {}),
+                        "strength": float(lora.get("strength", 1.0))
                     })
         
         if active_loras:
@@ -1196,8 +1195,7 @@ class LoraTextLoaderManagerExtractor(NodeMetadataExtractor):
                 for entry in parse_lora_syntax(lora_syntax):
                     active_loras.append({
                         "name": entry["name"],
-                        "strength": round(entry["model_strength"], 2),
-                        **({"lbw": entry["lbw"]} if entry.get("lbw") else {}),
+                        "strength": round(entry["model_strength"], 2)
                     })
 
         if active_loras:

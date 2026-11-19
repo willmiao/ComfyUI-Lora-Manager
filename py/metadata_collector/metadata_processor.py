@@ -8,7 +8,6 @@ standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.en
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER, OVERWRITE
 from .node_extractors import NODE_EXTRACTORS, _get_variable_name
-from ..utils.lora_block_weight import format_lbw_syntax
 
 logger = logging.getLogger(__name__)
 
@@ -741,9 +740,7 @@ class MetadataProcessor:
             for lora in lora_list:
                 name = lora.get("name", "unknown")
                 strength = lora.get("strength", 1.0)
-                lbw_syntax = format_lbw_syntax(lora.get("lbw"))
-                lbw_part = f":{lbw_syntax}" if lbw_syntax else ""
-                lora_parts.append(f"<lora:{name}:{strength}{lbw_part}>")
+                lora_parts.append(f"<lora:{name}:{strength}>")
         
         params["loras"] = " ".join(lora_parts)
         

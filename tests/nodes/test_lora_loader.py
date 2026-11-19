@@ -285,7 +285,7 @@ def test_stack_entry_keeps_resolved_absolute_path(monkeypatch):
     assert result[0]["clip_strength"] == .3
 
 
-def test_lbw_entry_uses_block_loader_and_serializes_config(monkeypatch):
+def test_lbw_entry_uses_block_loader_without_changing_loaded_loras_syntax(monkeypatch):
     loader = LoraLoaderLM()
     model = _Model(object())
     monkeypatch.setattr(
@@ -314,7 +314,7 @@ def test_lbw_entry_uses_block_loader_and_serializes_config(monkeypatch):
     )
 
     assert calls == [(0.8, 0.8, config)]
-    assert loaded_loras == "<lora:demo:0.8:LBW=IN04=0.5>"
+    assert loaded_loras == "<lora:demo:0.8>"
 
 
 def test_nunchaku_flux_rejects_active_lbw(monkeypatch):

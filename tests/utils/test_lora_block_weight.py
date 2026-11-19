@@ -142,7 +142,7 @@ def test_unsupported_layout_fails_instead_of_loading_normally(monkeypatch):
         )
 
 
-def test_metadata_extractors_preserve_lbw():
+def test_metadata_extractors_exclude_lbw():
     config = {"enabled": True, "weights": {"IN04": 0.5}}
     metadata = {"loras": {}}
     LoraLoaderManagerExtractor.extract(
@@ -151,7 +151,9 @@ def test_metadata_extractors_preserve_lbw():
         None,
         metadata,
     )
-    assert metadata["loras"]["loader"]["lora_list"][0]["lbw"] == config
+    assert metadata["loras"]["loader"]["lora_list"] == [
+        {"name": "demo", "strength": 0.8}
+    ]
 
     text_metadata = {"loras": {}}
     LoraTextLoaderManagerExtractor.extract(
@@ -160,4 +162,6 @@ def test_metadata_extractors_preserve_lbw():
         None,
         text_metadata,
     )
-    assert text_metadata["loras"]["text"]["lora_list"][0]["lbw"] == config
+    assert text_metadata["loras"]["text"]["lora_list"] == [
+        {"name": "demo", "strength": 0.8}
+    ]
