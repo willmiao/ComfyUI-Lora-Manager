@@ -24,9 +24,9 @@ export class WildcardContextMenu extends BaseContextMenu {
         const label = this.menu?.querySelector('[data-active-label]');
         if (label) {
             label.textContent = translate(
-                active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
+                active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activateWithOptions',
                 {},
-                active ? 'Deactivate' : 'Activate',
+                active ? 'Deactivate' : 'Activate…',
             );
         }
     }

@@ -1592,6 +1592,7 @@
     "actions": {
       "details": "Details",
       "activate": "Activate",
+      "activateWithOptions": "Activate…",
       "deactivate": "Deactivate",
       "delete": "Delete"
     },

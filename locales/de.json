@@ -1592,6 +1592,7 @@
         "actions": {
             "details": "[TODO: Translate] Details",
             "activate": "[TODO: Translate] Activate",
+            "activateWithOptions": "[TODO: Translate] Activate…",
             "deactivate": "[TODO: Translate] Deactivate",
             "delete": "[TODO: Translate] Delete"
         },

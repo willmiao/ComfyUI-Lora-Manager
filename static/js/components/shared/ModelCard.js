@@ -278,6 +278,74 @@ function handleReplacePreview(filePath, modelType) {
     apiClient.replaceModelPreview(filePath);
 }
 
+/**
+ * Toggle a wildcard resource from its card chip.
+ *
+ * Activation uses the default (or previously saved) namespace and aliases;
+ * a key conflict opens the manager's Wildcards tab so the user can resolve it.
+ */
+async function handleWildcardToggle(card) {
+    const filePath = card.dataset.filepath;
+    const wasActive = card.dataset.active === 'true';
+    const toggle = card.querySelector('[data-wildcard-toggle]');
+    if (!filePath || toggle?.disabled) return;
+    if (toggle) toggle.disabled = true;
+    try {
+        const wildcardApi = getModelApiClient('wildcards');
+        if (wasActive) {
+            await wildcardApi.deactivate(filePath);
+        } else {
+            await wildcardApi.activate(filePath);
+        }
+        updateWildcardCardActive(card, !wasActive);
+        showToast(
+            wasActive ? 'wildcards.messages.deactivated' : 'wildcards.messages.activated',
+            {},
+            'success',
+        );
+    } catch (error) {
+        const conflicts = error.payload?.conflicts || [];
+        if (conflicts.length) {
+            const keys = conflicts.slice(0, 3).map((item) => item.key).join(', ');
+            showToast(`Activation blocked by a key conflict: ${keys}`, {}, 'error');
+            const { openWildcardModel } = await import('../../utils/wildcardActions.js');
+            await openWildcardModel(filePath, { openWildcardsTab: true });
+        } else {
+            showToast(error.message || 'Wildcard activation failed', {}, 'error');
+        }
+    } finally {
+        if (toggle) toggle.disabled = false;
+    }
+}
+
+function updateWildcardCardActive(card, active) {
+    card.dataset.active = String(active);
+    card.classList.toggle('wildcard-active', active);
+    // The virtual scroller recreates cards from its item objects when rows
+    // scroll back into view, so keep that copy in sync with the DOM.
+    const scrollerItem = state.virtualScroller?.items?.find(
+        (item) => item.file_path === card.dataset.filepath,
+    );
+    if (scrollerItem) scrollerItem.active = active;
+    const toggle = card.querySelector('[data-wildcard-toggle]');
+    if (!toggle) return;
+    toggle.classList.toggle('is-active', active);
+    toggle.setAttribute('aria-pressed', String(active));
+    toggle.title = translate(
+        active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
+        {},
+        active ? 'Deactivate' : 'Activate',
+    );
+    const label = toggle.querySelector('span');
+    if (label) {
+        label.textContent = translate(
+            active ? 'wildcards.library.active' : 'wildcards.actions.activate',
+            {},
+            active ? 'Active' : 'Activate',
+        );
+    }
+}
+
 async function handleExampleImagesAccess(card, modelType) {
     const modelHash = card.dataset.sha256;
 
@@ -674,6 +742,27 @@ export function createModelCard(model, modelType) {
         <i class="fas fa-paper-plane"
            title="${sendTitle}">
         </i>`;
+    // Wildcards have no single prompt syntax to copy, so the copy action is
+    // dropped. Activation gets its own chip outside .card-actions so bulk mode
+    // keeps the state visible.
+    const copyIcon = modelType === MODEL_TYPES.WILDCARD ? '' : `
+        <i class="fas fa-copy"
+           title="${copyTitle}">
+        </i>`;
+    const wildcardActive = modelType === MODEL_TYPES.WILDCARD && model.active === true;
+    const wildcardToggle = modelType === MODEL_TYPES.WILDCARD ? `
+        <button type="button"
+                class="wildcard-card-toggle${wildcardActive ? ' is-active' : ''}"
+                data-wildcard-toggle="true"
+                aria-pressed="${wildcardActive ? 'true' : 'false'}"
+                title="${wildcardActive
+            ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
+            : translate('wildcards.actions.activate', {}, 'Activate')}">
+            <i class="fas fa-bolt" aria-hidden="true"></i>
+            <span>${wildcardActive
+            ? translate('wildcards.library.active', {}, 'Active')
+            : translate('wildcards.actions.activate', {}, 'Activate')}</span>
+        </button>` : '';
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
@@ -681,10 +770,7 @@ export function createModelCard(model, modelType) {
         <i class="fas fa-globe" 
            title="${globeTitle}"
            ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
-        </i>${sendIcon}
-        <i class="fas fa-copy" 
-           title="${copyTitle}">
-        </i>`;
+        </i>${sendIcon}${copyIcon}`;
 
     // Generate UI text with i18n support
     const toggleBlurTitle = translate('modelCard.actions.toggleBlur', {}, 'Toggle blur');
@@ -728,11 +814,6 @@ export function createModelCard(model, modelType) {
                             <i class="fas fa-arrow-up"></i>
                         </span>
                     ` : ''}
-                    ${modelType === MODEL_TYPES.WILDCARD && model.active ? `
-                        <span class="model-update-badge wildcard-active-badge" title="${translate('wildcards.library.active', {}, 'Active')}">
-                            <i class="fas fa-bolt"></i>
-                        </span>
-                    ` : ''}
                     ${model.skip_metadata_refresh ? `
                         <span class="model-skip-refresh-badge" title="${translate('modelCard.badges.skipRefresh', {}, 'Metadata refresh skipped')}">
                             <i class="fas fa-ban"></i>
@@ -744,6 +825,7 @@ export function createModelCard(model, modelType) {
                         </span>
                     ` : ''}
                 </div>
+                ${wildcardToggle}
                 <div class="card-actions">
                     ${actionIcons}
                 </div>
@@ -860,6 +942,15 @@ export function createModelCard(model, modelType) {
 
         // uploadPreview handles loading state, card refresh and error toasts internally.
         getModelApiClient().uploadPreview(filePath, file);
+    });
+
+    // The chip lives outside .card-actions so bulk mode keeps showing the
+    // activation state; its own listener stops the click from opening the modal.
+    const wildcardToggleButton = card.querySelector('[data-wildcard-toggle]');
+    wildcardToggleButton?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        handleWildcardToggle(card);
     });
 
     return card;
