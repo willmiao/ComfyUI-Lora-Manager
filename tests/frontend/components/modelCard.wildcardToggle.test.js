@@ -141,15 +141,18 @@ describe('wildcard card activation action', () => {
     expect(inactiveToggle).not.toBeNull();
     expect(inactiveToggle.closest('.card-actions')).not.toBeNull();
     expect(inactiveToggle.previousElementSibling.classList.contains('fa-globe')).toBe(true);
-    expect(inactiveToggle.classList.contains('fa-toggle-off')).toBe(true);
+    expect(inactiveToggle.classList.contains('fa-bolt')).toBe(true);
+    expect(inactiveToggle.classList.contains('wildcard-toggle-idle')).toBe(true);
+    expect(inactiveToggle.classList.contains('wildcard-toggle-active')).toBe(false);
     expect(inactiveToggle.title).toBe('Activate');
     expect(inactive.classList.contains('wildcard-active')).toBe(false);
 
     const active = createModelCard(wildcardModel({ active: true }), 'wildcards');
     const activeToggle = active.querySelector('[data-wildcard-toggle]');
     expect(active.querySelector('.fa-copy')).toBeNull();
-    expect(activeToggle.classList.contains('fa-toggle-on')).toBe(true);
+    expect(activeToggle.classList.contains('fa-bolt')).toBe(true);
     expect(activeToggle.classList.contains('wildcard-toggle-active')).toBe(true);
+    expect(activeToggle.classList.contains('wildcard-toggle-idle')).toBe(false);
     expect(activeToggle.title).toBe('Deactivate');
     expect(active.classList.contains('wildcard-active')).toBe(true);
   });
@@ -166,7 +169,7 @@ describe('wildcard card activation action', () => {
       expect(API_CLIENTS.wildcards.activate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
     });
     await vi.waitFor(() => {
-      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-on')).toBe(true);
+      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('wildcard-toggle-active')).toBe(true);
     });
     expect(card.dataset.active).toBe('true');
     expect(card.classList.contains('wildcard-active')).toBe(true);
@@ -185,7 +188,7 @@ describe('wildcard card activation action', () => {
       expect(API_CLIENTS.wildcards.deactivate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
     });
     await vi.waitFor(() => {
-      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-off')).toBe(true);
+      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('wildcard-toggle-idle')).toBe(true);
     });
     expect(card.dataset.active).toBe('false');
     expect(card.classList.contains('wildcard-active')).toBe(false);
@@ -210,7 +213,7 @@ describe('wildcard card activation action', () => {
       );
     });
     expect(card.dataset.active).toBe('false');
-    expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-off')).toBe(true);
+    expect(card.querySelector('[data-wildcard-toggle]').classList.contains('wildcard-toggle-idle')).toBe(true);
     expect(showToastMock).toHaveBeenCalledWith(
       expect.stringContaining('key conflict'),
       {},

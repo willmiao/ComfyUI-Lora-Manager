@@ -149,8 +149,9 @@ The `/wildcards` page uses `WildcardScanner`, `WildcardModelService`, and
 
 Wildcard-specific additions are intentionally small:
 
-- an activation toggle beside the card's Civitai globe that activates with the
-  saved namespace/aliases or deactivates in place;
+- an activation bolt beside the card's Civitai globe that activates with the
+  saved namespace/aliases or deactivates in place; the icon uses the accent
+  color when active and stays muted when idle;
 - Activate…/Deactivate in the card context menu; Activate… opens the Wildcards
   tab so a namespace and alias can be set before activation;
 - a **Wildcards** tab in the standard model modal for activation state,

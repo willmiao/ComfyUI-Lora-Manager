@@ -28,12 +28,22 @@
 }
 
 .wildcard-active {
-    border-color: var(--primary-color, #4a7dff);
+    border-color: var(--lora-accent);
 }
 
-/* Activation toggle on the standard model card, next to the Civitai globe. */
+/* Activation toggle on the standard model card, next to the Civitai globe.
+   Mirrors the canvas panel's bolt marker: accent when active, muted when idle. */
+.card-actions i.wildcard-toggle-idle {
+    color: rgba(255, 255, 255, 0.58);
+}
+
+.card-actions i.wildcard-toggle-idle:hover {
+    color: #fff;
+}
+
 .card-actions i.wildcard-toggle-active {
-    color: var(--primary-color, #4a7dff);
+    color: var(--lora-accent);
+    text-shadow: 0 0 6px var(--lora-accent-transparent);
 }
 
 .wildcard-activation-content {
@@ -140,7 +150,7 @@
 
 .wildcard-tab__badge.is-active {
     color: #fff;
-    background: var(--primary-color, #4a7dff);
+    background: var(--lora-accent);
 }
 
 .wildcard-tab__namespace {
@@ -208,7 +218,7 @@
     font-weight: 600;
     border: 0;
     border-radius: 6px;
-    background: var(--primary-color, #4a7dff);
+    background: var(--lora-accent);
     cursor: pointer;
 }
 

@@ -335,9 +335,8 @@ function updateWildcardCardActive(card, active) {
     if (scrollerItem) scrollerItem.active = active;
     const toggle = card.querySelector('[data-wildcard-toggle]');
     if (!toggle) return;
-    toggle.classList.toggle('fa-toggle-on', active);
-    toggle.classList.toggle('fa-toggle-off', !active);
     toggle.classList.toggle('wildcard-toggle-active', active);
+    toggle.classList.toggle('wildcard-toggle-idle', !active);
     toggle.title = translate(
         active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
         {},
@@ -749,9 +748,7 @@ export function createModelCard(model, modelType) {
         </i>`;
     const wildcardActive = modelType === MODEL_TYPES.WILDCARD && model.active === true;
     const wildcardToggleIcon = modelType === MODEL_TYPES.WILDCARD ? `
-        <i class="${wildcardActive
-            ? 'fas fa-toggle-on wildcard-toggle-active'
-            : 'fas fa-toggle-off'}"
+        <i class="fas fa-bolt${wildcardActive ? ' wildcard-toggle-active' : ' wildcard-toggle-idle'}"
            data-wildcard-toggle="true"
            title="${wildcardActive
             ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
