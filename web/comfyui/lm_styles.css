@@ -2395,6 +2395,15 @@ body.lm-lora-reordering * {
   background: var(--lm-accent-soft);
 }
 
+.lm-wildcard-key.is-unreferenceable {
+  color: var(--lm-warning);
+  cursor: not-allowed;
+}
+
+.lm-wildcard-key.is-unreferenceable:hover {
+  background: transparent;
+}
+
 .lm-wildcard-key-name {
   flex: 1;
   min-width: 0;

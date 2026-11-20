@@ -78,6 +78,14 @@ Default key rules are:
 - YAML/JSON: nested object keys joined with `/`; the artifact filename is not
   included.
 
+Keys are addressed as `__key__`, so the token syntax itself rules out a few
+names: a key containing `__`, a line break, or a complete `{...}` option group
+can be indexed and aliased but never resolved as written. Parsing reports them
+through `reference_problem` on each entry and the artifact-level
+`unreferenceable` list; activation previews return them as
+`unreferenceable_keys`, and the manager flags them instead of offering a copy
+action.
+
 Parsing uses safe YAML loading, UTF-8 text handling, archive member validation,
 duplicate-key reporting, and limits for artifact size, archive members, member
 size, and expanded text size. Source content and values are read on demand;
@@ -103,6 +111,11 @@ The namespace is optional and applies to the whole resource. A single-entry
 resource can also override its key directly. This works uniformly for TXT, YAML,
 JSON, and ZIP members because the mapping is applied after parsing rather than
 by renaming files.
+
+Namespace and alias values are validated against the same reference rule, not a
+word-character allow-list, so names may keep punctuation such as `!` or `&`.
+Control characters, empty or `.`/`..` segments, `__`, and `{...}` groups are
+rejected because they would produce unreferenceable runtime keys.
 
 ### Conflicts
 

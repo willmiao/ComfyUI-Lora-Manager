@@ -9,6 +9,7 @@ from py.services.wildcard_parser import (
     WildcardParseError,
     parse_wildcard_artifact,
     read_wildcard_source,
+    wildcard_reference_problem,
 )
 
 
@@ -48,6 +49,30 @@ def test_parse_zip_reports_duplicate_keys_and_unsafe_members(tmp_path):
     assert parsed.entries[0].values == ("red",)
     assert any("Duplicate wildcard key 'color'" in error for error in parsed.errors)
     assert any("Unsafe archive member" in error for error in parsed.errors)
+
+
+def test_parse_flags_keys_that_cannot_be_referenced(tmp_path):
+    artifact = tmp_path / "edge.zip"
+    with zipfile.ZipFile(artifact, "w") as archive:
+        archive.writestr("anime/bang_dream!.txt", "punctuated is fine\n")
+        archive.writestr("broken__key.txt", "value\n")
+        archive.writestr("option{s}.txt", "value\n")
+
+    parsed = parse_wildcard_artifact(str(artifact))
+
+    summaries = {entry.key: entry.summary() for entry in parsed.entries}
+    assert summaries["anime/bang_dream!"]["reference_problem"] is None
+    assert "closes the token" in summaries["broken__key"]["reference_problem"]
+    assert "option group" in summaries["option{s}"]["reference_problem"]
+    assert {item["key"] for item in parsed.unreferenceable} == {
+        "broken__key",
+        "option{s}",
+    }
+
+
+def test_reference_problem_rejects_line_breaks():
+    assert "line break" in wildcard_reference_problem("a\nb")
+    assert wildcard_reference_problem("anime/bang_dream!") is None
 
 
 def test_parse_rejects_artifacts_without_wildcard_entries(tmp_path):

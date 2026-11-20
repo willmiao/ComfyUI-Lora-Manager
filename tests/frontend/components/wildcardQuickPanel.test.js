@@ -143,6 +143,50 @@ describe('WildcardQuickPanel', () => {
         expect(panel.detailElement.textContent).toContain('Copy __example__');
     });
 
+    it('disables copying for keys that cannot be referenced', () => {
+        const container = document.createElement('div');
+        const panel = createPanel();
+        const resource = activeResource();
+        resource.entries = [
+            { key: 'ok', effective_key: 'ok', values_count: 1 },
+            {
+                key: 'a__b',
+                effective_key: 'a__b',
+                values_count: 2,
+                reference_problem: "contains '__', which closes the token early",
+            },
+        ];
+
+        panel.renderKeyRows(container, resource);
+
+        const rows = container.querySelectorAll('.lm-wildcard-key');
+        expect(rows[0].disabled).toBe(false);
+        expect(rows[1].disabled).toBe(true);
+        expect(rows[1].classList.contains('is-unreferenceable')).toBe(true);
+        expect(rows[1].title).toContain('closes the token early');
+    });
+
+    it('disables copying an unreferenceable manual key', () => {
+        const panel = createPanel();
+        panel.items = [activeResource()];
+        panel.manual = [
+            {
+                ...manualEntry(),
+                key: 'a__b',
+                reference_problem: "contains '__', which closes the token early",
+            },
+        ];
+        panel.render();
+
+        panel.resultsElement.querySelector('[data-kind="manual"]').click();
+
+        const copy = [...panel.detailElement.querySelectorAll('button')].find((button) =>
+            button.textContent.startsWith('Copy'),
+        );
+        expect(copy.disabled).toBe(true);
+        expect(panel.detailElement.textContent).toContain('Cannot be referenced');
+    });
+
     it('keeps the clicked row focused so Escape reaches the panel', () => {
         const panel = createPanel();
         document.body.appendChild(panel.resultsElement);

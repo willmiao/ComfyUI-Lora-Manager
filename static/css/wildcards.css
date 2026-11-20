@@ -58,6 +58,13 @@
     white-space: pre-wrap;
 }
 
+.wildcard-tab__warning {
+    margin: 12px 0;
+    padding: 10px;
+    color: #e6c07b;
+    background: rgba(200, 150, 60, 0.12);
+}
+
 .wildcard-key-layout {
     display: grid;
     grid-template-columns: minmax(240px, 1fr) minmax(280px, 1fr);
@@ -81,6 +88,10 @@
     background: transparent;
     border: 0;
     border-bottom: 1px solid var(--border-color, rgba(127, 127, 127, 0.15));
+}
+
+.wildcard-key-row.is-unreferenceable {
+    color: #e6c07b;
 }
 
 .wildcard-content-preview {

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from py.services import wildcard_service as runtime_module
 from py.services.wildcard_activation_service import (
     WildcardActivationService,
     WildcardConflictError,
+    WildcardLibraryError,
 )
 from py.services.wildcard_parser import parse_wildcard_artifact
 from py.services.wildcard_service import WildcardService
@@ -80,6 +83,55 @@ def test_conflicts_include_manual_and_other_active_resources(activation_state):
     with pytest.raises(WildcardConflictError) as caught:
         service.activate(resource, aliases={"nested/color": "color"})
     assert caught.value.conflicts[0]["key"] == "color"
+
+
+def _nested_anime_resource(root):
+    artifact = root / "anime.json"
+    artifact.write_text(
+        json.dumps({"anime": {"bang_dream": ["ichigaya arisa"]}}), encoding="utf-8"
+    )
+    return resource_for(artifact)
+
+
+def test_alias_may_contain_punctuation(activation_state):
+    service, runtime, _manual, root = activation_state
+    resource = _nested_anime_resource(root)
+
+    result = service.activate(resource, aliases={"anime/bang_dream": "bang_dream!"})
+
+    assert result["keys"] == ["bang_dream!"]
+    assert runtime.expand_text("__bang_dream!__", seed=0) == "ichigaya arisa"
+
+
+def test_alias_rejects_names_that_break_the_token_syntax(activation_state):
+    service, _runtime, _manual, root = activation_state
+    resource = _nested_anime_resource(root)
+
+    for alias in ("a__b", "{a|b}", "line\nbreak"):
+        with pytest.raises(WildcardLibraryError):
+            service.preview_activation(resource, aliases={"anime/bang_dream": alias})
+
+
+def test_unreferenceable_keys_are_reported_and_alias_rescues_them(activation_state):
+    service, _runtime, _manual, root = activation_state
+    artifact = root / "edge.txt"
+    artifact.write_text("value\n", encoding="utf-8")
+    resource = resource_for(artifact)
+    resource["entries"][0]["key"] = "a__b"
+
+    preview = service.preview_activation(resource)
+    assert preview["unreferenceable_keys"] == [
+        {"key": "a__b", "reason": "contains '__', which closes the token early"}
+    ]
+    assert service.decorate(resource)["entries"][0]["reference_problem"]
+
+    preview = service.preview_activation(resource, aliases={"a__b": "a_b"})
+    assert preview["unreferenceable_keys"] == []
+
+    service.activate(resource, aliases={"a__b": "a_b"})
+    decorated = service.decorate(resource)["entries"][0]
+    assert decorated["effective_key"] == "a_b"
+    assert decorated["reference_problem"] is None
 
 
 def test_activation_state_persists(activation_state):

@@ -1600,6 +1600,7 @@
       "filterKeys": "Filter keys",
       "preview": "Content preview",
       "selectKey": "Select a key to preview its values.",
+      "unreferenceableKey": "Cannot be referenced: {reason}",
       "sourceFile": "Source file",
       "viewCivitai": "View on Civitai"
     },
@@ -1623,7 +1624,8 @@
       "downloaded": "Resource added to the library. It is not active yet.",
       "importing": "Importing and parsing files...",
       "imported": "Files added to the library. They are not active yet.",
-      "shortWarnings": "Short-key warnings: {keys}"
+      "shortWarnings": "Short-key warnings: {keys}",
+      "unreferenceableKeys": "Some keys ({count}) cannot be referenced with __key__ syntax."
     }
   },
   "workflows": {

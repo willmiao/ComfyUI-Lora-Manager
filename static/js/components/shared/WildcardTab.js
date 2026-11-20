@@ -78,6 +78,17 @@ export function renderWildcardTab(model) {
     ? `<div class="wildcard-activation-errors">${escapeHtml(model.errors.join(' · '))}</div>`
     : '';
 
+  const unreferenceable = entries.filter((entry) => entry.reference_problem);
+  const warningMarkup = unreferenceable.length
+    ? `<div class="wildcard-tab__warning">${escapeHtml(
+        translate(
+          'wildcards.messages.unreferenceableKeys',
+          { count: unreferenceable.length },
+          `Some keys (${unreferenceable.length}) cannot be referenced with __key__ syntax.`,
+        ),
+      )}</div>`
+    : '';
+
   return `
     <div class="wildcard-tab" data-file-path="${escapeAttribute(model.file_path || '')}">
       <div class="wildcard-tab__status">
@@ -88,6 +99,7 @@ export function renderWildcardTab(model) {
           : ''}
       </div>
       ${errorMarkup}
+      ${warningMarkup}
       <div class="wildcard-tab__fields">
         <label class="wildcard-tab__field">
           <span>${escapeHtml(namespaceLabel)}</span>
@@ -170,8 +182,21 @@ export function setupWildcardTab({ model, modalId = 'modelModal', onRefresh } = 
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'wildcard-key-row';
-      row.textContent = `${displayKey(entry, active)} · ${entry.values_count ?? 0}`;
-      if (entry.source_path) row.title = entry.source_path;
+      const problem = entry.reference_problem;
+      row.textContent = `${problem ? '⚠ ' : ''}${displayKey(entry, active)} · ${entry.values_count ?? 0}`;
+      const titleParts = [];
+      if (entry.source_path) titleParts.push(entry.source_path);
+      if (problem) {
+        row.classList.add('is-unreferenceable');
+        titleParts.push(
+          translate(
+            'wildcards.details.unreferenceableKey',
+            { reason: problem },
+            `Cannot be referenced: ${problem}`,
+          ),
+        );
+      }
+      if (titleParts.length) row.title = titleParts.join('\n');
       row.addEventListener('click', () => loadEntryValues(entry));
       keyList.appendChild(row);
     });

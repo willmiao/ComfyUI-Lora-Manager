@@ -17,11 +17,15 @@ from .wildcard_parser import (
     normalize_wildcard_key,
     parse_wildcard_artifact,
     read_wildcard_source,
+    wildcard_reference_problem,
 )
 
 logger = logging.getLogger(__name__)
 
-_SAFE_KEY_SEGMENT = re.compile(r"^[\w .\-+]+$", re.UNICODE)
+# Namespace and alias values end up as runtime keys, so they only need to be
+# resolvable through ``__key__`` syntax, not restricted to a word-character
+# allow-list. Control characters break the token/serialization contract.
+_KEY_CONTROL_PATTERN = re.compile(r"[\x00-\x1f\x7f]")
 
 
 class WildcardLibraryError(ValueError):
@@ -68,8 +72,13 @@ def _validate_key_mapping(value: Any, *, allow_empty: bool) -> str:
         raise WildcardLibraryError("A wildcard alias cannot be empty")
     if len(value) > 240:
         raise WildcardLibraryError("Wildcard names are limited to 240 characters")
+    if _KEY_CONTROL_PATTERN.search(value):
+        raise WildcardLibraryError("Wildcard names cannot contain control characters")
+    problem = wildcard_reference_problem(value)
+    if problem is not None:
+        raise WildcardLibraryError(f"Invalid wildcard name: it {problem}")
     for segment in value.split("/"):
-        if segment in (".", "..") or not _SAFE_KEY_SEGMENT.match(segment):
+        if segment in (".", "..") or not segment:
             raise WildcardLibraryError(f"Invalid wildcard name segment: {segment}")
     return normalize_wildcard_key(value)
 
@@ -165,9 +174,13 @@ class WildcardActivationService:
         result["activation_aliases"] = (record or {}).get("aliases") or {}
         result["activated_at"] = (record or {}).get("activated_at")
         for entry in result.get("entries", []):
-            entry["effective_key"] = self._effective_key(
+            effective_key = self._effective_key(
                 entry["key"], record if active else None
             )
+            entry["effective_key"] = effective_key
+            # An alias can rename an unreferenceable source key into a usable
+            # one, so report the problem for the key that would actually run.
+            entry["reference_problem"] = wildcard_reference_problem(effective_key)
         return result
 
     @staticmethod
@@ -202,6 +215,11 @@ class WildcardActivationService:
         proposed_keys = [
             self._effective_key(entry["key"], activation) for entry in source_entries
         ]
+        unreferenceable_keys: list[dict[str, str]] = []
+        for key in proposed_keys:
+            problem = wildcard_reference_problem(key)
+            if problem is not None:
+                unreferenceable_keys.append({"key": key, "reason": problem})
         owners: dict[str, list[dict[str, str]]] = {}
         for entry in source_entries:
             effective = self._effective_key(entry["key"], activation)
@@ -252,6 +270,7 @@ class WildcardActivationService:
             "namespace": namespace,
             "aliases": clean_aliases,
             "keys": proposed_keys,
+            "unreferenceable_keys": unreferenceable_keys,
             "conflicts": conflicts,
             "short_key_warnings": warnings,
         }

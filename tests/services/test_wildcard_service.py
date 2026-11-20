@@ -290,6 +290,19 @@ def test_pick_weighted_or_plain_glob_aggregation(monkeypatch, tmp_path):
         assert 0.65 < tabby_pct < 0.85, f"tabby proportion out of range: {tabby_pct:.3f}"
 
 
+def test_get_manual_entries_flags_unreferenceable_keys(monkeypatch, tmp_path):
+    service, wildcards_dir = _make_service(monkeypatch, tmp_path)
+    wildcards_dir.mkdir()
+
+    (wildcards_dir / "fine!.txt").write_text("value\n", encoding="utf-8")
+    (wildcards_dir / "broken__key.txt").write_text("value\n", encoding="utf-8")
+
+    entries = {entry["key"]: entry for entry in service.get_manual_entries()}
+
+    assert entries["fine!"]["reference_problem"] is None
+    assert "closes the token" in entries["broken__key"]["reference_problem"]
+
+
 def test_get_manual_entries_reports_source_and_samples(monkeypatch, tmp_path):
     service, wildcards_dir = _make_service(monkeypatch, tmp_path)
     wildcards_dir.mkdir()

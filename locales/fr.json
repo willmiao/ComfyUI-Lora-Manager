@@ -1600,6 +1600,7 @@
             "filterKeys": "[TODO: Translate] Filter keys",
             "preview": "[TODO: Translate] Content preview",
             "selectKey": "[TODO: Translate] Select a key to preview its values.",
+            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}",
             "sourceFile": "[TODO: Translate] Source file",
             "viewCivitai": "[TODO: Translate] View on Civitai"
         },
@@ -1623,7 +1624,8 @@
             "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
             "importing": "[TODO: Translate] Importing and parsing files...",
             "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}"
+            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
+            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
         }
     },
     "workflows": {

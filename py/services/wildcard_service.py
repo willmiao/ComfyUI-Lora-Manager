@@ -13,6 +13,7 @@ from typing import Any, Optional
 import yaml
 
 from ..utils.settings_paths import get_settings_dir
+from .wildcard_parser import wildcard_reference_problem
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +241,7 @@ class WildcardService:
                     "values_count": len(values),
                     "source_path": self._manual_sources.get(key, ""),
                     "sample_values": list(values[:sample_limit]),
+                    "reference_problem": wildcard_reference_problem(key),
                 }
             )
         return result

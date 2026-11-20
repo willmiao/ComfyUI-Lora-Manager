@@ -71,6 +71,15 @@ class WildcardScanner(ModelScanner):
         metadata.value_count = parsed.value_count
         metadata.errors = parsed.errors
         metadata.unsupported_files = parsed.unsupported_files
+        if parsed.unreferenceable:
+            keys = ", ".join(item["key"] for item in parsed.unreferenceable[:5])
+            logger.warning(
+                "Wildcard artifact %s has %d key(s) that cannot be referenced "
+                "through __key__ syntax: %s",
+                file_path,
+                len(parsed.unreferenceable),
+                keys,
+            )
         return metadata
 
     def adjust_metadata(self, metadata, file_path, root_path):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
@@ -25,6 +26,27 @@ class WildcardParseError(ValueError):
     """Raised when an artifact exceeds safety limits or has no usable entries."""
 
 
+_REFERENCE_OPTION_PATTERN = re.compile(r"\{[^{}]*\}")
+
+
+def wildcard_reference_problem(key: str) -> str | None:
+    """Return why ``__key__`` cannot resolve this key, or ``None`` when it can.
+
+    A token ends at the next ``__`` and cannot span a line break. Option groups
+    are expanded before wildcards, so a complete ``{...}`` inside the key is
+    consumed first. Keys containing any of those constructs can still be listed
+    and aliased, but cannot be referenced as written.
+    """
+
+    if "__" in key:
+        return "contains '__', which closes the token early"
+    if "\n" in key or "\r" in key:
+        return "contains a line break, which a token cannot span"
+    if _REFERENCE_OPTION_PATTERN.search(key):
+        return "contains a {...} option group, which expands before wildcards"
+    return None
+
+
 @dataclass(frozen=True)
 class ParsedWildcardEntry:
     key: str
@@ -36,6 +58,7 @@ class ParsedWildcardEntry:
             "key": self.key,
             "source_path": self.source_path,
             "values_count": len(self.values),
+            "reference_problem": wildcard_reference_problem(self.key),
         }
 
 
@@ -49,6 +72,19 @@ class ParsedWildcardArtifact:
     @property
     def value_count(self) -> int:
         return sum(len(entry.values) for entry in self.entries)
+
+    @property
+    def unreferenceable(self) -> list[dict[str, str]]:
+        """Entries whose keys can never be resolved through ``__key__`` syntax."""
+
+        unreferenceable: list[dict[str, str]] = []
+        for entry in self.entries:
+            problem = wildcard_reference_problem(entry.key)
+            if problem is not None:
+                unreferenceable.append(
+                    {"key": entry.key, "source_path": entry.source_path, "reason": problem}
+                )
+        return unreferenceable
 
 
 def normalize_wildcard_key(value: str) -> str:
@@ -221,4 +257,5 @@ __all__ = [
     "normalize_wildcard_key",
     "parse_wildcard_artifact",
     "read_wildcard_source",
+    "wildcard_reference_problem",
 ]

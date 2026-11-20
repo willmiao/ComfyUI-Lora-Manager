@@ -98,4 +98,29 @@ describe('WildcardTab', () => {
     });
     expect(apiMock.loadMoreWithVirtualScroll).toHaveBeenCalledWith(true, false);
   });
+
+  it('flags keys that cannot be referenced through __key__ syntax', async () => {
+    const { renderWildcardTab, setupWildcardTab } = await import('../../../static/js/components/shared/WildcardTab.js');
+    const broken = model({
+      entries: [
+        { key: 'anime/warm', effective_key: 'anime/warm', values_count: 3 },
+        {
+          key: 'anime/a__b',
+          effective_key: 'anime/a__b',
+          values_count: 1,
+          reference_problem: "contains '__', which closes the token early",
+        },
+      ],
+    });
+    document.getElementById('modelModal').innerHTML = renderWildcardTab(broken);
+    setupWildcardTab({ model: broken, modalId: 'modelModal' });
+
+    expect(document.querySelector('.wildcard-tab__warning').textContent).toContain('Some keys (1)');
+
+    const rows = document.querySelectorAll('.wildcard-key-row');
+    expect(rows[0].classList.contains('is-unreferenceable')).toBe(false);
+    expect(rows[1].classList.contains('is-unreferenceable')).toBe(true);
+    expect(rows[1].textContent).toContain('⚠');
+    expect(rows[1].title).toContain('closes the token early');
+  });
 });

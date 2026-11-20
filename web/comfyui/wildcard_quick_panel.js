@@ -754,10 +754,19 @@ export class WildcardQuickPanel {
         ? entry.effective_key || entry.key || ""
         : entry.key || "";
       if (!keyText) return;
+      const problem = entry.reference_problem;
       const row = el("button", "lm-wildcard-key");
       row.type = "button";
-      row.title = `Copy __${keyText}__`;
-      row.setAttribute("aria-label", `Copy __${keyText}__`);
+      if (problem) {
+        row.classList.add("is-unreferenceable");
+        row.disabled = true;
+        row.title = `Cannot be referenced: ${problem}`;
+        row.setAttribute("aria-label", `Cannot be referenced: ${problem}`);
+      } else {
+        row.title = `Copy __${keyText}__`;
+        row.setAttribute("aria-label", `Copy __${keyText}__`);
+        row.addEventListener("click", () => this.copyKey(keyText, row));
+      }
       row.appendChild(el("span", "lm-wildcard-key-name", keyText));
       row.appendChild(
         el(
@@ -766,8 +775,11 @@ export class WildcardQuickPanel {
           formatCount(entry.values_count),
         ),
       );
-      row.appendChild(copyIcon());
-      row.addEventListener("click", () => this.copyKey(keyText, row));
+      row.appendChild(
+        problem
+          ? el("span", "lm-wildcard-key-copy", "⚠")
+          : copyIcon(),
+      );
       container.appendChild(row);
     });
     if (visible.length > MAX_RENDERED_KEYS) {
@@ -864,15 +876,26 @@ export class WildcardQuickPanel {
     }
 
     const actions = el("div", "lm-quick__actions");
+    const problem = entry.reference_problem;
     const copy = el("button", "lm-quick__primary", `Copy __${entry.key}__`);
     copy.type = "button";
-    copy.addEventListener("click", () => this.copyKey(entry.key, copy));
+    if (problem) {
+      copy.disabled = true;
+      copy.title = `Cannot be referenced: ${problem}`;
+    } else {
+      copy.addEventListener("click", () => this.copyKey(entry.key, copy));
+    }
     const folder = el("button", "lm-quick__secondary", "Open folder");
     folder.type = "button";
     folder.title = "Open wildcards folder";
     folder.addEventListener("click", () => this.openFolder());
     actions.append(copy, folder);
     this.detailElement.appendChild(actions);
+    if (problem) {
+      this.detailElement.appendChild(
+        el("p", "lm-wildcard-note", `Cannot be referenced: ${problem}`),
+      );
+    }
   }
 
   async copyKey(key, button) {
