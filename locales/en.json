@@ -1545,7 +1545,15 @@
       "title": "Filter Wildcards"
     },
     "bulk": {
-      "noSelection": "No wildcards selected"
+      "noSelection": "No wildcards selected",
+      "activationSection": "Activation",
+      "activateAll": "Activate selected",
+      "deactivateAll": "Deactivate selected",
+      "updating": "Updating {count} wildcard resources...",
+      "activated": "Activated {count} wildcard resources.",
+      "deactivated": "Deactivated {count} wildcard resources.",
+      "partial": "Updated {succeeded} resources; {failed} failed. {message}",
+      "failed": "Wildcard activation update failed: {message}"
     },
     "modals": {
       "bulkDelete": {

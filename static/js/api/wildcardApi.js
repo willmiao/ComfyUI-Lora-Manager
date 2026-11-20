@@ -9,6 +9,14 @@ export class WildcardApiClient extends BaseModelApiClient {
         return this._activationRequest('deactivate', { file_path: filePath });
     }
 
+    async bulkActivate(filePaths) {
+        return this._activationRequest('bulkActivate', { file_paths: filePaths });
+    }
+
+    async bulkDeactivate(filePaths) {
+        return this._activationRequest('bulkDeactivate', { file_paths: filePaths });
+    }
+
     async _activationRequest(action, body) {
         const response = await fetch(this.apiConfig.endpoints.specific[action], {
             method: 'POST',

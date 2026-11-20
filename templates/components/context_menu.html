@@ -130,6 +130,15 @@
             </div>
         </div>
     </div>
+    <div class="context-menu-section" data-section="activation">
+        <div class="context-menu-section-header">{{ t('wildcards.bulk.activationSection') }}</div>
+        <div class="context-menu-item" data-action="activate-all">
+            <i class="fas fa-bolt"></i> <span>{{ t('wildcards.bulk.activateAll') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="deactivate-all">
+            <i class="fas fa-power-off"></i> <span>{{ t('wildcards.bulk.deactivateAll') }}</span>
+        </div>
+    </div>
     <div class="context-menu-section" data-section="attributes">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.attributes') }}</div>
         <div class="context-menu-item" data-action="add-tags">

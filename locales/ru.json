@@ -1545,7 +1545,15 @@
             "title": "[TODO: Translate] Filter Wildcards"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected"
+            "noSelection": "[TODO: Translate] No wildcards selected",
+            "activationSection": "[TODO: Translate] Activation",
+            "activateAll": "[TODO: Translate] Activate selected",
+            "deactivateAll": "[TODO: Translate] Deactivate selected",
+            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
+            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
+            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
+            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
+            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
         },
         "modals": {
             "bulkDelete": {

@@ -56,6 +56,8 @@ class WildcardRoutes(BaseModelRoutes):
             ("GET", "/active", self.get_active),
             ("POST", "/activate", self.activate),
             ("POST", "/deactivate", self.deactivate),
+            ("POST", "/bulk-activate", self.bulk_activate),
+            ("POST", "/bulk-deactivate", self.bulk_deactivate),
             ("POST", "/import", self.import_files),
         ):
             registrar.add_prefixed_route(
@@ -246,6 +248,69 @@ class WildcardRoutes(BaseModelRoutes):
             return web.json_response(
                 {"success": True, "resource": await self._formatted_resource(file_path)}
             )
+        except Exception as exc:
+            return self._error(exc)
+
+    async def bulk_activate(self, request: web.Request) -> web.Response:
+        return await self._bulk_set_activation(request, True)
+
+    async def bulk_deactivate(self, request: web.Request) -> web.Response:
+        return await self._bulk_set_activation(request, False)
+
+    async def _bulk_set_activation(self, request: web.Request, active: bool) -> web.Response:
+        try:
+            payload = await self._json_body(request)
+            raw_paths = payload.get("file_paths")
+            if not isinstance(raw_paths, list) or not raw_paths:
+                raise WildcardLibraryError("file_paths must be a non-empty array")
+            file_paths: list[str] = []
+            seen: set[str] = set()
+            for value in raw_paths:
+                if not isinstance(value, str) or not value.strip():
+                    raise WildcardLibraryError("Every file path must be a non-empty string")
+                normalized = os.path.normcase(os.path.abspath(value))
+                if normalized in seen:
+                    continue
+                seen.add(normalized)
+                file_paths.append(value)
+
+            results: list[dict[str, Any]] = []
+            for file_path in file_paths:
+                try:
+                    resource = await self._resource(file_path)
+                    current = self.activation_service.activation_for(file_path)
+                    if (current is not None) == active:
+                        results.append({"file_path": file_path, "success": True, "active": active})
+                        continue
+                    if active:
+                        await asyncio.to_thread(self.activation_service.activate, resource)
+                    else:
+                        await asyncio.to_thread(self.activation_service.deactivate, file_path)
+                    await self._broadcast_changed(file_path, active)
+                    results.append({"file_path": file_path, "success": True, "active": active})
+                except WildcardConflictError as exc:
+                    results.append({
+                        "file_path": file_path,
+                        "success": False,
+                        "error": str(exc),
+                        "conflicts": exc.conflicts,
+                    })
+                except Exception as exc:
+                    results.append({
+                        "file_path": file_path,
+                        "success": False,
+                        "error": str(exc) or "Wildcard resource not found",
+                    })
+
+            success_count = sum(1 for result in results if result["success"])
+            return web.json_response({
+                "success": True,
+                "action": "activate" if active else "deactivate",
+                "total": len(results),
+                "success_count": success_count,
+                "failure_count": len(results) - success_count,
+                "results": results,
+            })
         except Exception as exc:
             return self._error(exc)
 

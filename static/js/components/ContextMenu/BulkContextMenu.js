@@ -44,7 +44,15 @@ export class BulkContextMenu extends BaseContextMenu {
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
         const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
         const rematchMetadataItem = this.menu.querySelector('[data-action="rematch-metadata"]');
+        const activateAllItem = this.menu.querySelector('[data-action="activate-all"]');
+        const deactivateAllItem = this.menu.querySelector('[data-action="deactivate-all"]');
 
+        if (activateAllItem) {
+            activateAllItem.style.display = config.activateAll ? 'flex' : 'none';
+        }
+        if (deactivateAllItem) {
+            deactivateAllItem.style.display = config.deactivateAll ? 'flex' : 'none';
+        }
         if (reimportMetadataItem) {
             reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
         }
@@ -264,6 +272,12 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'check-updates':
                 bulkManager.checkUpdatesForSelectedModels();
+                break;
+            case 'activate-all':
+                bulkManager.activateSelectedWildcards();
+                break;
+            case 'deactivate-all':
+                bulkManager.deactivateSelectedWildcards();
                 break;
             case 'move-all':
                 window.moveManager.showMoveModal('bulk');

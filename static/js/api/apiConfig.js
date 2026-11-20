@@ -209,6 +209,8 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         active: `/api/lm/${MODEL_TYPES.WILDCARD}/active`,
         activate: `/api/lm/${MODEL_TYPES.WILDCARD}/activate`,
         deactivate: `/api/lm/${MODEL_TYPES.WILDCARD}/deactivate`,
+        bulkActivate: `/api/lm/${MODEL_TYPES.WILDCARD}/bulk-activate`,
+        bulkDeactivate: `/api/lm/${MODEL_TYPES.WILDCARD}/bulk-deactivate`,
     }
 };
 

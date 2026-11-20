@@ -175,6 +175,11 @@ Wildcard-specific additions are intentionally small:
   expanded state, filter, and selected key survive activation refreshes.
   Activation state and toggles stay on the card and modal header rather than
   being duplicated here;
+- bulk Activate selected / Deactivate selected actions in the standard bulk
+  context menu. Activation reuses each resource's saved namespace/aliases and
+  already-correct states are idempotent. Per-resource failures (including key
+  conflicts and missing files) do not block the remaining selection; the API
+  returns every result and the UI summarizes counts and the first conflict;
 - Active state included in the normal formatted model response.
 
 The manager is also where complex conflict resolution belongs. The canvas panel
@@ -294,8 +299,6 @@ Implemented and verified:
 
 Known boundaries and follow-up candidates:
 
-- Standard bulk operations are available, but there is no dedicated bulk
-  Activate/Deactivate action yet.
 - The quick panel does not edit namespaces/aliases and does not download from
   Civitai; use the manager for those operations.
 - Activation is global only. Per-workflow or per-node profiles are not currently
@@ -307,8 +310,8 @@ Known boundaries and follow-up candidates:
 
 The final automated regression results were:
 
-- Backend: **4718 passed, 8 skipped, 15 deselected**.
-- Frontend JavaScript: **228 test files, 2296 tests passed**.
+- Backend: **4719 passed, 8 skipped, 15 deselected**.
+- Frontend JavaScript: **230 test files, 2302 tests passed**.
 - Wildcard parser, scanner, activation, route, node, and i18n tests included.
 - Sidecar tests cover centralized path resolution, bidirectional wildcard
   migration, and full metadata loading after migration.
