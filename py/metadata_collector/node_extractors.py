@@ -40,6 +40,9 @@ class GenericNodeExtractor(NodeMetadataExtractor):
 
     * ``MODEL`` output: common input fields (ckpt_name, unet_name, etc.)
       are checked for a model file name and stored as checkpoint metadata.
+      The output type must be exactly ``MODEL`` so auxiliary model types
+      (``UPSCALE_MODEL``, ``MODEL_PATCH``, ...) are not mistaken for the
+      diffusion model.
     * ``CONDITIONING`` output: common text input fields are checked for
       prompt text, and conditioning inputs are tracked through transforms.
     """
@@ -58,13 +61,35 @@ class GenericNodeExtractor(NodeMetadataExtractor):
     # Input field names that may carry prompt text in encoder-style nodes.
     _TEXT_FIELDS = ("text", "clip_l", "t5xxl", "prompt", "positive", "negative")
 
+    # Output type a diffusion-model loader declares. Matching by substring
+    # instead also accepted UPSCALE_MODEL, MODEL_PATCH, STYLE_MODEL and
+    # LORA_MODEL: "Load Upscale Model" (model_name + .pth/.safetensors) was
+    # recorded as a checkpoint, so when the primary-model trace dead-ended,
+    # find_primary_checkpoint's first-entry fallback put the upscaler's name
+    # into %model% and the "Model:" metadata field.
+    _MODEL_OUTPUT_TYPE = "MODEL"
+
+    @staticmethod
+    def _output_types(return_types):
+        """Normalize RETURN_TYPES to a tuple of strings, tolerating odd values."""
+        if not return_types:
+            return ()
+        if isinstance(return_types, str):
+            return (return_types,)
+        try:
+            return tuple(str(t) for t in return_types)
+        except TypeError:
+            return ()
+
     @staticmethod
     def extract(node_id, inputs, outputs, metadata, return_types=None):
         if return_types is None:
             return
 
+        output_types = GenericNodeExtractor._output_types(return_types)
+
         # — MODEL loader detection (checkpoint / UNET / GGUF) —
-        if "MODEL" in return_types or any("MODEL" in str(t) for t in return_types):
+        if GenericNodeExtractor._MODEL_OUTPUT_TYPE in output_types:
             for field in GenericNodeExtractor._MODEL_NAME_FIELDS:
                 val = inputs.get(field)
                 if val and isinstance(val, str) and val.strip():
@@ -75,7 +100,7 @@ class GenericNodeExtractor(NodeMetadataExtractor):
                     return
 
         # — CONDITIONING encoder / transform detection —
-        if "CONDITIONING" in return_types or any("CONDITIONING" in str(t) for t in return_types):
+        if any("CONDITIONING" in t for t in output_types):
             text = None
             for field in GenericNodeExtractor._TEXT_FIELDS:
                 val = inputs.get(field)
@@ -95,8 +120,9 @@ class GenericNodeExtractor(NodeMetadataExtractor):
     def update(node_id, outputs, metadata, return_types=None):
         if return_types is None:
             return
-        if "CONDITIONING" not in return_types and not any(
-            "CONDITIONING" in str(t) for t in return_types
+        if not any(
+            "CONDITIONING" in t
+            for t in GenericNodeExtractor._output_types(return_types)
         ):
             return
         if node_id not in metadata.get(PROMPTS, {}):
@@ -1484,6 +1510,7 @@ NODE_EXTRACTORS = {
     "CheckpointLoaderLM": CheckpointLoaderExtractor,  # LoRA Manager
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
+    "UNETLoaderUnified": UNETLoaderExtractor,  # Smart Model Loader MXD (bundles its own GGUF loader)
     "UNETLoaderLM": UNETLoaderExtractor,  # LoRA Manager
     "LoraLoader": LoraLoaderExtractor,
     "LoraLoaderLM": LoraLoaderManagerExtractor,

@@ -461,6 +461,12 @@ class MetadataProcessor:
         # In most simple workflows, there's only one checkpoint, so we can just take the first one
         for node_id, model_info in metadata.get(MODELS, {}).items():
             if model_info.get("type") == "checkpoint":
+                logger.debug(
+                    "Primary model trace failed; using the first recorded model "
+                    "%s (node %s) as a fallback",
+                    model_info.get("name"),
+                    node_id,
+                )
                 return model_info.get("name")
                 
         return None

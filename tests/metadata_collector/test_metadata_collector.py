@@ -1398,6 +1398,103 @@ def test_lora_manager_checkpoint_and_unet_loaders_extract_models(metadata_regist
     }
 
 
+def test_generic_extractor_ignores_auxiliary_model_output_types(metadata_registry):
+    """An upscale model loader outputs UPSCALE_MODEL, not MODEL.
+
+    Substring matching used to accept every "*_MODEL" output type, which
+    recorded the upscaler as a checkpoint and let it leak into %model% /
+    "Model:" whenever the primary-model trace dead-ended.
+    """
+    metadata_registry.start_collection("prompt-upscale")
+    metadata_registry.set_current_prompt(SimpleNamespace(original_prompt={}))
+
+    metadata_registry.record_node_execution(
+        "upscale_node",
+        "UpscaleModelLoader",
+        {"model_name": ["4x-UltraSharp.pth"]},
+        None,
+        return_types=("UPSCALE_MODEL",),
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-upscale")
+    assert "upscale_node" not in metadata[MODELS]
+
+
+def test_smart_model_loader_mxd_unet_is_extracted(metadata_registry):
+    """UNETLoaderUnified (Smart Model Loader MXD) records its diffusion model."""
+    metadata_registry.start_collection("prompt-mxd")
+
+    metadata_registry.record_node_execution(
+        "mxd_node",
+        "UNETLoaderUnified",
+        {"unet_name": ["flux1-dev-Q8_0.gguf"]},
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-mxd")
+    assert metadata[MODELS]["mxd_node"] == {
+        "name": "flux1-dev-Q8_0.gguf",
+        "type": "checkpoint",
+        "node_id": "mxd_node",
+    }
+
+
+def test_dead_end_trace_falls_back_to_diffusion_model_not_upscaler(metadata_registry):
+    """When the model chain cannot be traced, the first-recorded entry wins.
+
+    In a post-upscale workflow "Load Upscale Model" executes before the
+    diffusion-model loader, so a misclassified upscaler became the fallback
+    primary model (issue #1218). It must not enter MODELS at all.
+    """
+    graph = {
+        "7": {"class_type": "UpscaleModelLoader", "inputs": {"model_name": "4x-UltraSharp.pth"}},
+        "1": {"class_type": "UNETLoaderUnified", "inputs": {"unet_name": "flux1-dev-Q8_0.gguf"}},
+        # A model-path node the tracer cannot follow (no "model" input).
+        "2": {"class_type": "ModelMergeSimple", "inputs": {"model1": ["1", 0], "model2": ["1", 0]}},
+        "3": {
+            "class_type": "KSampler",
+            "inputs": {
+                "model": ["2", 0],
+                "seed": 1,
+                "steps": 20,
+                "cfg": 7.0,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "denoise": 1.0,
+            },
+        },
+        "4": {"class_type": "VAEDecode", "inputs": {"samples": ["3", 0]}},
+        "5": {"class_type": "SaveImageLM", "inputs": {"images": ["4", 0]}},
+    }
+    metadata_registry.start_collection("prompt-fallback")
+    metadata_registry.set_current_prompt(SimpleNamespace(original_prompt=graph))
+
+    metadata_registry.record_node_execution(
+        "7", "UpscaleModelLoader", {"model_name": ["4x-UltraSharp.pth"]}, None,
+        return_types=("UPSCALE_MODEL",),
+    )
+    metadata_registry.record_node_execution(
+        "1", "UNETLoaderUnified", {"unet_name": ["flux1-dev-Q8_0.gguf"]}, None,
+    )
+    metadata_registry.record_node_execution(
+        "3", "KSampler", {
+            "model": ["2", 0], "seed": 1, "steps": 20, "cfg": 7.0,
+            "sampler_name": "euler", "scheduler": "normal", "denoise": 1.0,
+        }, None,
+    )
+    metadata_registry.record_node_execution(
+        "4", "VAEDecode", {"samples": ["3", 0]}, None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-fallback")
+
+    assert MetadataProcessor.trace_model_path(
+        metadata, metadata["current_prompt"], "3"
+    ) is None
+    params = MetadataProcessor.extract_generation_params(metadata, "5")
+    assert params["checkpoint"] == "flux1-dev-Q8_0.gguf"
+
+
 # ---------------------------------------------------------------------------
 # MetadataOverwriteExtractor & overwrite merge tests
 # ---------------------------------------------------------------------------
