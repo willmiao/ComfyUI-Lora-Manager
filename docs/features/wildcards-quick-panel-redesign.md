@@ -7,7 +7,7 @@ scope, manual entries as first-class rows with source paths and a three-value
 preview, click-to-copy keys, no double-click activation, retained
 namespace/alias settings across deactivate → reactivate, and the existing
 `Global Wildcards` title. The implementation also uses a compact 110 px preview
-and a sticky, two-button action row so the key list and actions stay usable with
+and a sticky action row so the key list and actions stay usable with
 long CivitAI names.
 
 The mockup and screenshots below remain the visual reference; small layout
@@ -195,13 +195,19 @@ needed.
   Clicking a key copies `__key__` and shows `Copied __key__` in the footer.
 - Actions:
   - Primary **Activate**.
+  - A low-emphasis settings icon beside the namespace status opens Activation
+    settings with an optional key prefix, a live `__key__` preview, and an alias
+    field for single-entry resources. **Save & Activate** applies the mapping
+    and activates the resource. The footer keeps only the primary activation
+    action and **Open in manager**.
   - Secondary **Open in manager**: reuses the named `lm-lora-manager` tab
     and deep-links to `#model=<file_path>`, where the wildcards page opens
-    the same shared model modal a card click uses, with the **Wildcards**
-    tab (rendered last) selected.
+    the same shared model modal a card click uses, with the **Wildcard keys**
+    section expanded and scrolled into view.
 - If activation returns 409, show the conflicting keys and both owners in an
-  inline error; keep the resource inactive; the secondary action becomes
-  **Resolve in Manager**.
+  inline error; keep the resource inactive. The error can be corrected in the
+  settings dialog, while **Resolve in Manager** remains available for complex
+  multi-key mappings.
 
 ### 5.2 Managed resource (active)
 
@@ -211,6 +217,10 @@ needed.
   - Key rows show the **effective** key (namespace/alias already applied).
 - Actions:
   - Primary **Deactivate**.
+  - The same low-emphasis settings icon beside the namespace status edits the
+    prefix and, for single-entry resources, the alias. **Save settings** updates
+    the active runtime mapping in place; existing aliases on multi-entry
+    resources are preserved.
   - Secondary **Open in manager** (same named-tab deep link).
 - Note: `Global activation affects autocomplete and every subsequent execution.`
 - Deactivation/reactivation must not silently drop the namespace/alias (see
@@ -354,7 +364,9 @@ Option 1 is implemented: deactivating keeps the record with `active: false`,
 the runtime skips it, and the next activation reuses its stored namespace and
 aliases (stale aliases whose source keys disappeared are dropped).
 
-`POST /activate` and `POST /deactivate` keep their current request shape.
+`POST /activate` accepts `file_path` plus optional `namespace` and `aliases`;
+the settings dialog uses these fields to update both inactive and active
+resources. `POST /deactivate` keeps its `file_path`-only request shape.
 
 ## 9. Frontend structure
 
@@ -391,7 +403,7 @@ implementation:
   `.lm-quick__section-head`, `.lm-quick__section-toggle`, `.lm-wildcard-state`,
   `.lm-wildcard-status`, `.lm-wildcard-counts`, `.lm-wildcard-keys`,
   `.lm-wildcard-key`, `.lm-wildcard-note`, `.lm-wildcard-error`. The wildcard
-  detail uses a compact preview and a sticky, horizontal two-button action row
+  detail uses a compact preview and a sticky, horizontal action row
   so the key list stays reachable with long names.
 - Badge colors reuse the `.lm-lora-added.is-active` recipe (status green mixed
   with surface), so the two pickers read as one family.
@@ -407,7 +419,7 @@ implementation:
 3. **Panel rewrite** — sectioned list, badges, `All | Active` scope, search,
    right-pane overview, key filter/copy, activation actions, manual detail,
    hover preview, keyboard navigation.
-4. **Visual polish** — compact preview and sticky two-button action row keep
+4. **Visual polish** — compact preview and sticky action row keep
    the key list reachable with long names.
 5. **Tests** — wildcard service/activation/route tests and the quick-panel JS
    tests were extended; the full suites pass.
@@ -426,6 +438,9 @@ implementation:
 - Activate/deactivate updates badge, section membership, and footer without
   closing the panel.
 - Conflict response keeps the resource inactive and shows the inline error.
+- Activation settings previews normalized prefix/alias changes, saves and
+  activates single-entry resources, preserves aliases on multi-entry resources,
+  and keeps save conflicts inside the dialog.
 - Clicking a key copies `__key__` and updates the status.
 - Hover preview only starts for rows with `preview_url` and respects the
   400 ms delay / results-column boundary.

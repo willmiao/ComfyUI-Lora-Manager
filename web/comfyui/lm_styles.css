@@ -2414,15 +2414,53 @@ body.lm-lora-reordering * {
 
 .lm-wildcard-status {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   margin: 8px 0 2px;
 }
 
 .lm-wildcard-status-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
   color: var(--lm-fg-muted);
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lm-wildcard-settings-trigger {
+  display: inline-flex;
+  flex: 0 0 26px;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  padding: 0;
+  color: var(--lm-fg-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.lm-wildcard-settings-trigger svg {
+  display: block;
+}
+
+.lm-wildcard-settings-trigger:hover,
+.lm-wildcard-settings-trigger:focus-visible {
+  color: var(--lm-accent-text);
+  background: var(--lm-accent-soft);
+  border-color: var(--lm-accent);
+  outline: none;
+}
+
+.lm-wildcard-settings-trigger:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 .lm-wildcard-counts {
@@ -2630,13 +2668,15 @@ body.lm-lora-reordering * {
   max-height: none;
 }
 
-/* Two action buttons fit on one row and leave more height for the key list. */
+/* Detail actions share one row and leave more height for the key list. */
 .lm-wildcard-quick-panel .lm-quick__actions {
   flex-direction: row;
 }
 
 .lm-wildcard-quick-panel .lm-quick__actions > button {
   flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 /* Manual value samples are a fixed preview list, not a flexible pane. */
@@ -2649,6 +2689,148 @@ body.lm-lora-reordering * {
 .lm-quick__empty--inline .lm-quick__secondary {
   margin-top: 0;
   margin-left: 8px;
+}
+
+.lm-wildcard-settings {
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 16px;
+  overflow-y: auto;
+  color: var(--lm-fg);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
+  border-radius: 8px;
+  box-shadow: var(--lm-shadow-lg);
+  font: inherit;
+}
+
+.lm-wildcard-settings::backdrop {
+  background: var(--lm-scrim);
+  backdrop-filter: blur(2px);
+}
+
+.lm-wildcard-settings__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.lm-wildcard-settings__header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.lm-wildcard-settings__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--lm-fg-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.lm-wildcard-settings__close:hover,
+.lm-wildcard-settings__close:focus-visible {
+  color: var(--lm-accent-text);
+  background: var(--lm-accent-soft);
+  outline: none;
+}
+
+.lm-wildcard-settings__description,
+.lm-wildcard-settings__help {
+  color: var(--lm-fg-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.lm-wildcard-settings__description {
+  margin: 0 0 16px;
+}
+
+.lm-wildcard-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lm-wildcard-settings__field[hidden],
+.lm-wildcard-settings__help[hidden],
+.lm-wildcard-settings__error[hidden] {
+  display: none;
+}
+
+.lm-wildcard-settings__field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 9px;
+  color: var(--lm-fg);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.lm-wildcard-settings__field input:focus {
+  border-color: var(--lm-accent);
+  outline: 2px solid var(--lm-accent-soft);
+  outline-offset: 1px;
+}
+
+.lm-wildcard-settings__help {
+  margin: 5px 0 0;
+}
+
+.lm-wildcard-settings__example {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 10px;
+  background: var(--lm-surface-raised);
+  border: 1px solid var(--lm-border-soft);
+  border-radius: 6px;
+}
+
+.lm-wildcard-settings__example span {
+  color: var(--lm-fg-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.lm-wildcard-settings__example code {
+  color: var(--lm-accent-text);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.lm-wildcard-settings__error {
+  margin-top: 12px;
+}
+
+.lm-wildcard-settings__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.lm-wildcard-settings__actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 /* The generic quick-panel breakpoint hides the detail column; the wildcard

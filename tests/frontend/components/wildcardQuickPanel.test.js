@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { CANVAS_API_MODULE, setActiveMock, searchMock } = vi.hoisted(() => ({
     CANVAS_API_MODULE: new URL('../../../web/comfyui/wildcard_canvas_api.js', import.meta.url).pathname,
@@ -76,6 +76,8 @@ function createPanel() {
         loadError: '',
         activationError: null,
         activationInFlight: null,
+        settingsDialog: null,
+        settingsInFlight: false,
         resultsElement: document.createElement('div'),
         detailElement: document.createElement('aside'),
         statusElement: document.createElement('span'),
@@ -93,6 +95,10 @@ let WildcardPanel;
 beforeEach(async () => {
     vi.clearAllMocks();
     ({ WildcardQuickPanel: WildcardPanel } = await import('../../../web/comfyui/wildcard_quick_panel.js'));
+});
+
+afterEach(() => {
+    document.body.innerHTML = '';
 });
 
 describe('WildcardQuickPanel', () => {
@@ -230,5 +236,103 @@ describe('WildcardQuickPanel', () => {
             displayName: 'Active Pack',
         });
         expect(panel.resolveRowPreview('/inactive.zip')).toBeNull();
+    });
+});
+
+
+describe('WildcardQuickPanel activation settings', () => {
+    it('previews and saves a prefix and alias for a single-key resource', async () => {
+        const panel = createPanel();
+        const resource = inactiveResource();
+        resource.activation_namespace = 'characters';
+        resource.activation_aliases = { c: 'hero' };
+        panel.items = [resource];
+        panel.selected = { kind: 'resource', filePath: resource.file_path };
+        panel.load = vi.fn().mockResolvedValue(undefined);
+        setActiveMock.mockResolvedValue({ success: true });
+
+        panel.render();
+        const trigger = panel.detailElement.querySelector('.lm-wildcard-settings-trigger');
+        expect(trigger.title).toBe('Activation settings');
+        expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+        const footerButtons = [...panel.detailElement.querySelectorAll('.lm-quick__actions > button')];
+        expect(footerButtons.map((button) => button.textContent)).toEqual(['Activate', 'Open in manager']);
+
+        trigger.click();
+        const dialog = document.querySelector('.lm-wildcard-settings');
+        const inputs = dialog.querySelectorAll('.lm-wildcard-settings__field input');
+        expect(inputs[0].value).toBe('characters');
+        expect(inputs[1].value).toBe('hero');
+
+        inputs[0].value = 'New/Namespace';
+        inputs[1].value = 'akame';
+        inputs[0].dispatchEvent(new Event('input'));
+        inputs[1].dispatchEvent(new Event('input'));
+        expect(dialog.querySelector('code').textContent).toBe('__new/namespace/akame__');
+
+        inputs[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await vi.waitFor(() => {
+            expect(setActiveMock).toHaveBeenCalledWith('/inactive.zip', true, {
+                namespace: 'New/Namespace',
+                aliases: { c: 'akame' },
+            });
+            expect(panel.load).toHaveBeenCalledOnce();
+        });
+        expect(document.querySelector('.lm-wildcard-settings')).toBeNull();
+        expect(panel.statusElement.textContent).toBe('Activated Inactive Pack');
+    });
+
+    it('edits only the prefix for multi-key resources and preserves stored aliases', async () => {
+        const panel = createPanel();
+        const resource = activeResource();
+        resource.activation_aliases = { a: 'alpha', b: 'beta' };
+        panel.items = [resource];
+        panel.selected = { kind: 'resource', filePath: resource.file_path };
+        panel.load = vi.fn().mockResolvedValue(undefined);
+        setActiveMock.mockResolvedValue({ success: true });
+
+        panel.openActivationSettings(resource);
+        const dialog = document.querySelector('.lm-wildcard-settings');
+        const fields = dialog.querySelectorAll('.lm-wildcard-settings__field');
+        expect(fields[1].hidden).toBe(true);
+        expect(dialog.querySelector('.lm-quick__primary').textContent).toBe('Save settings');
+
+        const namespace = fields[0].querySelector('input');
+        namespace.value = 'updated';
+        dialog.querySelector('.lm-quick__primary').click();
+
+        await vi.waitFor(() => {
+            expect(setActiveMock).toHaveBeenCalledWith('/active.zip', true, {
+                namespace: 'updated',
+                aliases: { a: 'alpha', b: 'beta' },
+            });
+            expect(panel.load).toHaveBeenCalledOnce();
+        });
+        expect(panel.statusElement.textContent).toBe('Saved activation settings for Active Pack');
+    });
+
+    it('keeps conflicts inside the settings dialog without reloading', async () => {
+        const panel = createPanel();
+        const resource = inactiveResource();
+        panel.items = [resource];
+        panel.selected = { kind: 'resource', filePath: resource.file_path };
+        panel.load = vi.fn().mockResolvedValue(undefined);
+        const conflict = new Error('Activation would replace an existing wildcard key');
+        conflict.payload = {
+            conflicts: [{ key: 'shared/color', owners: [{ resource_id: '/other.txt' }] }],
+        };
+        setActiveMock.mockRejectedValue(conflict);
+
+        panel.openActivationSettings(resource);
+        const dialog = document.querySelector('.lm-wildcard-settings');
+        dialog.querySelector('.lm-quick__primary').click();
+
+        await vi.waitFor(() => {
+            expect(dialog.querySelector('.lm-wildcard-settings__error').hidden).toBe(false);
+        });
+        expect(dialog.textContent).toContain('shared/color');
+        expect(dialog.textContent).toContain('/other.txt');
+        expect(panel.load).not.toHaveBeenCalled();
+        expect(document.querySelector('.lm-wildcard-settings')).not.toBeNull();
     });
 });

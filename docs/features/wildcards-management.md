@@ -182,8 +182,10 @@ Wildcard-specific additions are intentionally small:
   returns every result and the UI summarizes counts and the first conflict;
 - Active state included in the normal formatted model response.
 
-The manager is also where complex conflict resolution belongs. The canvas panel
-can report a conflict, but namespace and alias editing stays in the manager.
+The manager remains where complex multi-key alias and conflict resolution
+belongs. The canvas panel handles lightweight activation settings directly:
+namespace/prefix editing for every resource and alias editing for single-entry
+resources.
 
 ## ComfyUI Global Wildcards panel
 
@@ -203,6 +205,10 @@ The panel provides:
   key/value counts, effective-key inspection, and one-click `__key__` copying;
 - activation/deactivation for managed resources, with conflict details and a
   direct route to the full Wildcards Manager;
+- an Activation settings dialog with a live `__key__` preview. Every resource
+  can edit its optional key prefix; single-entry resources can also edit their
+  alias. Active resources update the mapping in place, inactive resources save
+  and activate, and conflicts remain inline for correction;
 - a three-value preview and source path for manual keys, without activation
   controls;
 - delayed image preview when hovering a resource row;
@@ -299,8 +305,9 @@ Implemented and verified:
 
 Known boundaries and follow-up candidates:
 
-- The quick panel does not edit namespaces/aliases and does not download from
-  Civitai; use the manager for those operations.
+- The quick panel edits prefixes and single-entry aliases, but not individual
+  aliases in multi-entry resources; use the manager for those and for Civitai
+  downloads.
 - Activation is global only. Per-workflow or per-node profiles are not currently
   supported.
 - Manual-directory entries are visible as a count but are not independently
@@ -311,7 +318,7 @@ Known boundaries and follow-up candidates:
 The final automated regression results were:
 
 - Backend: **4719 passed, 8 skipped, 15 deselected**.
-- Frontend JavaScript: **230 test files, 2302 tests passed**.
+- Frontend JavaScript: **230 test files, 2305 tests passed**.
 - Wildcard parser, scanner, activation, route, node, and i18n tests included.
 - Sidecar tests cover centralized path resolution, bidirectional wildcard
   migration, and full metadata loading after migration.

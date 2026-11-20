@@ -19,6 +19,13 @@ const COPY_ICON =
   '<rect x="5.5" y="5.5" width="8" height="8" rx="1.2"></rect>' +
   '<path d="M10.5 3.5V2.7A1.2 1.2 0 0 0 9.3 1.5H2.7A1.2 1.2 0 0 0 1.5 2.7v6.6a1.2 1.2 0 0 0 1.2 1.2h.8"></path>' +
   "</svg>";
+const SETTINGS_ICON =
+  '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">' +
+  '<path d="M2 4h12M2 8h12M2 12h12"></path>' +
+  '<circle cx="5" cy="4" r="1.5" fill="var(--lm-surface)"></circle>' +
+  '<circle cx="10" cy="8" r="1.5" fill="var(--lm-surface)"></circle>' +
+  '<circle cx="6" cy="12" r="1.5" fill="var(--lm-surface)"></circle>' +
+  "</svg>";
 
 let activePanel = null;
 
@@ -53,6 +60,10 @@ function formatCount(value) {
   return Number(value || 0).toLocaleString();
 }
 
+function normalizeKeyPreview(value) {
+  return String(value || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").toLowerCase();
+}
+
 function copyIcon() {
   const span = el("span", "lm-wildcard-key-copy");
   span.setAttribute("aria-hidden", "true");
@@ -74,6 +85,8 @@ export class WildcardQuickPanel {
     this.loadError = "";
     this.activationError = null;
     this.activationInFlight = null;
+    this.settingsDialog = null;
+    this.settingsInFlight = false;
     this.panel = null;
     this.searchInput = null;
     this.resultsElement = null;
@@ -102,6 +115,7 @@ export class WildcardQuickPanel {
       minHeight: 380,
       onClose: () => {
         clearTimeout(this.debounceTimer);
+        this.closeActivationSettings(true);
         this.teardownPreview();
         if (activePanel === this) activePanel = null;
       },
@@ -284,6 +298,7 @@ export class WildcardQuickPanel {
   }
 
   async load({ preserveSelection = true } = {}) {
+    this.closeActivationSettings();
     const sequence = ++this.searchSequence;
     if (!preserveSelection) this.selected = null;
     this.loadError = "";
@@ -656,6 +671,15 @@ export class WildcardQuickPanel {
       statusText = "Not active";
     }
     status.appendChild(el("span", "lm-wildcard-status-text", statusText));
+    const settings = el("button", "lm-wildcard-settings-trigger");
+    settings.type = "button";
+    settings.disabled = this.activationInFlight === item.file_path;
+    settings.title = "Activation settings";
+    settings.setAttribute("aria-label", "Activation settings");
+    settings.setAttribute("aria-haspopup", "dialog");
+    settings.innerHTML = SETTINGS_ICON;
+    settings.addEventListener("click", () => this.openActivationSettings(item));
+    status.appendChild(settings);
     this.detailElement.appendChild(status);
     this.detailElement.appendChild(
       el("div", "lm-wildcard-counts", `${plural(entryCount, "key")} · ${valueCount} values`),
@@ -911,6 +935,193 @@ export class WildcardQuickPanel {
     }
   }
 
+  closeActivationSettings(force = false) {
+    const dialog = this.settingsDialog;
+    if (!dialog || (this.settingsInFlight && !force)) return;
+    this.settingsDialog = null;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    dialog.remove();
+  }
+
+  openActivationSettings(item) {
+    if (!item || this.settingsInFlight) return;
+    this.closeActivationSettings();
+    const entries = Array.isArray(item.entries) ? item.entries : [];
+    const single = entries.length === 1;
+    const sourceKey = single ? entries[0].key : "";
+    const storedAliases = item.activation_aliases || {};
+    const dialog = el("dialog", "lm-wildcard-settings");
+    dialog.setAttribute("aria-labelledby", "lm-wildcard-settings-title");
+    this.settingsDialog = dialog;
+
+    const header = el("div", "lm-wildcard-settings__header");
+    const title = el("h2", "", "Activation settings");
+    title.id = "lm-wildcard-settings-title";
+    const close = el("button", "lm-wildcard-settings__close", "×");
+    close.type = "button";
+    close.setAttribute("aria-label", "Close activation settings");
+    header.append(title, close);
+
+    const description = el(
+      "p",
+      "lm-wildcard-settings__description",
+      "Configure the keys used by ComfyUI. Source files are not modified.",
+    );
+    const namespaceField = el("label", "lm-wildcard-settings__field");
+    namespaceField.appendChild(el("span", "", "Key prefix (optional)"));
+    const namespaceInput = el("input");
+    namespaceInput.type = "text";
+    namespaceInput.value = item.activation_namespace || "";
+    namespaceInput.placeholder = "e.g. characters/fantasy";
+    namespaceField.appendChild(namespaceInput);
+    const namespaceHelp = el(
+      "p",
+      "lm-wildcard-settings__help",
+      "Added to every wildcard key when active. Leave empty to keep the original keys.",
+    );
+
+    const aliasField = el("label", "lm-wildcard-settings__field");
+    aliasField.appendChild(el("span", "", "Wildcard key"));
+    const aliasInput = el("input");
+    aliasInput.type = "text";
+    aliasInput.value = single ? storedAliases[sourceKey] || sourceKey : "";
+    aliasField.appendChild(aliasInput);
+    const aliasHelp = el(
+      "p",
+      "lm-wildcard-settings__help",
+      "This changes the key used by ComfyUI without modifying the downloaded file.",
+    );
+
+    const example = el("div", "lm-wildcard-settings__example");
+    example.appendChild(el("span", "", "Reference preview"));
+    const exampleKey = el("code");
+    example.appendChild(exampleKey);
+    const errorBox = el("div", "lm-wildcard-error lm-wildcard-settings__error");
+    errorBox.setAttribute("role", "alert");
+    errorBox.hidden = true;
+
+    const actions = el("div", "lm-wildcard-settings__actions");
+    const cancel = el("button", "lm-quick__secondary", "Cancel");
+    cancel.type = "button";
+    const save = el(
+      "button",
+      "lm-quick__primary",
+      item.active ? "Save settings" : "Save & Activate",
+    );
+    save.type = "button";
+    actions.append(cancel, save);
+    dialog.append(
+      header,
+      description,
+      namespaceField,
+      namespaceHelp,
+      aliasField,
+      aliasHelp,
+      example,
+      errorBox,
+      actions,
+    );
+    if (!single) {
+      aliasField.hidden = true;
+      aliasHelp.hidden = true;
+    }
+
+    const updatePreview = () => {
+      if (!entries.length) {
+        exampleKey.textContent = "—";
+        return;
+      }
+      const namespace = normalizeKeyPreview(namespaceInput.value.trim());
+      const originalKey = single ? sourceKey : entries[0].key;
+      const alias = single
+        ? normalizeKeyPreview(aliasInput.value.trim())
+        : normalizeKeyPreview(storedAliases[originalKey] || originalKey);
+      const key = single && !alias
+        ? ""
+        : [namespace, alias || originalKey].filter(Boolean).join("/");
+      exampleKey.textContent = key ? `__${key}__` : "—";
+    };
+    namespaceInput.addEventListener("input", updatePreview);
+    aliasInput.addEventListener("input", updatePreview);
+    close.addEventListener("click", () => this.closeActivationSettings());
+    cancel.addEventListener("click", () => this.closeActivationSettings());
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      this.closeActivationSettings();
+    });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeActivationSettings();
+      } else if (event.key === "Enter" && !event.isComposing && event.target.matches("input")) {
+        event.preventDefault();
+        event.stopPropagation();
+        save.click();
+      }
+    });
+
+    save.addEventListener("click", async () => {
+      if (this.settingsInFlight) return;
+      this.settingsInFlight = true;
+      save.disabled = true;
+      cancel.disabled = true;
+      close.disabled = true;
+      save.setAttribute("aria-busy", "true");
+      errorBox.hidden = true;
+      errorBox.replaceChildren();
+      try {
+        const aliases = single
+          ? { [sourceKey]: aliasInput.value.trim() }
+          : { ...storedAliases };
+        await setWildcardActive(item.file_path, true, {
+          namespace: namespaceInput.value.trim(),
+          aliases,
+        });
+        const name = item.model_name || item.file_name || "wildcard";
+        this.settingsInFlight = false;
+        this.closeActivationSettings();
+        await this.load();
+        this.setStatus(
+          item.active ? `Saved activation settings for ${name}` : `Activated ${name}`,
+        );
+      } catch (error) {
+        errorBox.appendChild(el("strong", "", "Activation blocked"));
+        errorBox.appendChild(el("p", "", error.message || "Unable to save activation settings"));
+        for (const conflict of (error.payload?.conflicts || []).slice(0, 6)) {
+          const owners = (conflict.owners || [])
+            .map((owner) => owner.resource_id)
+            .join(", ");
+          errorBox.appendChild(
+            el(
+              "div",
+              "lm-wildcard-error__conflict",
+              `${conflict.key}: ${owners || "another resource"}`,
+            ),
+          );
+        }
+        errorBox.hidden = false;
+        this.setStatus(
+          error.payload?.conflicts?.length
+            ? "Activation blocked by a key conflict"
+            : error.message || "Unable to save activation settings",
+        );
+      } finally {
+        this.settingsInFlight = false;
+        save.disabled = false;
+        cancel.disabled = false;
+        close.disabled = false;
+        save.removeAttribute("aria-busy");
+      }
+    });
+
+    document.body.appendChild(dialog);
+    updatePreview();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    namespaceInput.focus();
+  }
+
   async toggleActivation(item) {
     if (!item || this.activationInFlight) return;
     const wasActive = item.active === true;
@@ -1007,6 +1218,14 @@ export class WildcardQuickPanel {
   }
 
   onKeyDown(event) {
+    if (this.settingsDialog) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeActivationSettings();
+      }
+      return;
+    }
     if (event.key === "Escape") {
       if (this.searchInput?.value) {
         event.preventDefault();

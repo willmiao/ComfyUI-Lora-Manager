@@ -17,11 +17,16 @@ export function searchWildcardLibrary(search = "") {
   return request(`/lm/wildcards/active?${query}`);
 }
 
-export function setWildcardActive(filePath, active) {
+export function setWildcardActive(filePath, active, { namespace = "", aliases = {} } = {}) {
+  const body = { file_path: filePath };
+  if (active) {
+    body.namespace = namespace;
+    body.aliases = aliases;
+  }
   return request(`/lm/wildcards/${active ? "activate" : "deactivate"}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ file_path: filePath }),
+    body: JSON.stringify(body),
   });
 }
 
