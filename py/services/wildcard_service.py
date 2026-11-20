@@ -128,6 +128,7 @@ class WildcardService:
         self._wildcard_dict: dict[str, list[str]] = {}
         self._manual_cached_signature: tuple[tuple[str, int, int], ...] | None = None
         self._manual_wildcard_dict: dict[str, list[str]] = {}
+        self._manual_sources: dict[str, str] = {}
         self._runtime_conflicts: list[dict[str, Any]] = []
 
     @classmethod
@@ -217,6 +218,29 @@ class WildcardService:
             self._manual_cached_signature = signature
         return self._manual_wildcard_dict
 
+    def get_manual_entries(self, sample_limit: int = 3) -> list[dict[str, Any]]:
+        """Return manual keys with their source file and a short value sample.
+
+        The quick panel lists manual entries individually; the source path
+        lets it show where a key comes from and the samples give the detail
+        pane something useful without a second request.
+        """
+
+        sample_limit = max(0, min(int(sample_limit), 10))
+        entries = self.get_manual_wildcard_dict()
+        result: list[dict[str, Any]] = []
+        for key in sorted(entries):
+            values = entries[key]
+            result.append(
+                {
+                    "key": key,
+                    "values_count": len(values),
+                    "source_path": self._manual_sources.get(key, ""),
+                    "sample_values": list(values[:sample_limit]),
+                }
+            )
+        return result
+
     def get_runtime_conflicts(self) -> list[dict[str, Any]]:
         self.get_wildcard_dict()
         return list(self._runtime_conflicts)
@@ -256,11 +280,26 @@ class WildcardService:
         return tuple(signature)
 
     def _scan_wildcard_dict(self) -> dict[str, list[str]]:
+        entries, sources = self._scan_manual_entries()
+        self._manual_sources = sources
+        return entries
+
+    def _scan_manual_entries(
+        self,
+    ) -> tuple[dict[str, list[str]], dict[str, str]]:
+        """Walk the manual wildcard directory once.
+
+        Returns the key -> values dictionary plus the winning source file for
+        each key. Duplicate keys keep the last file in walk order, matching the
+        runtime dictionary's previous behavior.
+        """
+
         root = get_wildcards_dir(create=False)
         if not os.path.isdir(root):
-            return {}
+            return {}, {}
 
         collected: dict[str, list[str]] = {}
+        sources: dict[str, str] = {}
         for current_root, _dirs, files in os.walk(root, followlinks=True):
             for file_name in sorted(files):
                 file_path = os.path.join(current_root, file_name)
@@ -272,16 +311,21 @@ class WildcardService:
                         values = self._read_txt(file_path)
                         if values:
                             collected[key] = values
+                            sources[key] = file_path
                     elif lower_name.endswith((".yaml", ".yml")):
                         payload = self._read_yaml(file_path)
-                        self._merge_nested_entries(collected, payload)
+                        for key, values in self._flatten_payload(payload):
+                            collected[key] = values
+                            sources[key] = file_path
                     elif lower_name.endswith(".json"):
                         payload = self._read_json(file_path)
-                        self._merge_nested_entries(collected, payload)
+                        for key, values in self._flatten_payload(payload):
+                            collected[key] = values
+                            sources[key] = file_path
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.warning("Failed to load wildcard file %s: %s", file_path, exc)
 
-        return collected
+        return collected, sources
 
     def _read_txt(self, file_path: str) -> list[str]:
         try:
@@ -298,12 +342,6 @@ class WildcardService:
     def _read_json(self, file_path: str) -> Any:
         with open(file_path, "r", encoding="utf-8") as handle:
             return json.load(handle)
-
-    def _merge_nested_entries(
-        self, collected: dict[str, list[str]], payload: Any
-    ) -> None:
-        for key, values in self._flatten_payload(payload):
-            collected[key] = values
 
     def _flatten_payload(
         self, payload: Any, prefix: str = ""

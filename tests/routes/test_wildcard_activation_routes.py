@@ -22,6 +22,8 @@ async def test_activation_endpoints_use_shared_resource_and_runtime(tmp_path, mo
         "file_path": str(artifact),
         "file_name": "colors",
         "model_name": "Colors",
+        "wildcard_format": "txt",
+        "folder": "",
         "entries": [entry.summary() for entry in parsed.entries],
         "entry_count": 1,
         "value_count": 2,
@@ -49,7 +51,10 @@ async def test_activation_endpoints_use_shared_resource_and_runtime(tmp_path, mo
     app.router.add_get("/api/lm/wildcards/active", routes.get_active)
     app.router.add_post("/api/lm/wildcards/activate", routes.activate)
     app.router.add_post("/api/lm/wildcards/deactivate", routes.deactivate)
-    monkeypatch.setattr(runtime_module, "get_wildcards_dir", lambda create=False: str(tmp_path / "manual"))
+    manual_dir = tmp_path / "manual"
+    manual_dir.mkdir()
+    (manual_dir / "example.txt").write_text("one\ntwo\nthree\nfour\n", encoding="utf-8")
+    monkeypatch.setattr(runtime_module, "get_wildcards_dir", lambda create=False: str(manual_dir))
     monkeypatch.setattr(
         "py.services.wildcard_activation_service.get_wildcard_activation_service",
         lambda: activation,
@@ -71,9 +76,36 @@ async def test_activation_endpoints_use_shared_resource_and_runtime(tmp_path, mo
         payload = await response.json()
         assert payload["resources"][0]["active"] is True
         assert payload["resources"][0]["entries"][0]["effective_key"] == "palette/colors"
+        assert payload["resources"][0]["wildcard_format"] == "txt"
+        assert "activation_aliases" in payload["resources"][0]
+        manual_entry = payload["manual"]["entries"][0]
+        assert manual_entry["key"] == "example"
+        assert manual_entry["values_count"] == 4
+        assert manual_entry["source_path"].endswith("example.txt")
+        assert manual_entry["sample_values"] == ["one", "two", "three"]
 
         response = await client.post(
             "/api/lm/wildcards/deactivate", json={"file_path": str(artifact)}
         )
         assert response.status == 200
-        assert runtime.get_wildcard_dict() == {}
+        wildcards = runtime.get_wildcard_dict()
+        assert "palette/colors" not in wildcards
+        assert wildcards["example"] == ["one", "two", "three", "four"]
+
+        # Deactivation keeps the activation settings for a later reactivation.
+        response = await client.get("/api/lm/wildcards/active")
+        payload = await response.json()
+        assert payload["resources"][0]["active"] is False
+        assert payload["resources"][0]["activation_namespace"] == "palette"
+
+        response = await client.post(
+            "/api/lm/wildcards/activate", json={"file_path": str(artifact)}
+        )
+        assert response.status == 200
+        reactivated = (await response.json())["resource"]
+        assert reactivated["active"] is True
+        assert reactivated["activation_namespace"] == "palette"
+
+        await client.post(
+            "/api/lm/wildcards/deactivate", json={"file_path": str(artifact)}
+        )

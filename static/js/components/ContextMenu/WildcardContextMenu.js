@@ -3,7 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
-import { deactivateWildcard, openWildcardDetails } from '../../utils/wildcardActions.js';
+import { deactivateWildcard, openWildcardModel } from '../../utils/wildcardActions.js';
 import { translate } from '../../utils/i18nHelpers.js';
 
 export class WildcardContextMenu extends BaseContextMenu {
@@ -37,11 +37,11 @@ export class WildcardContextMenu extends BaseContextMenu {
         const apiClient = getModelApiClient();
         switch (action) {
             case 'wildcard-details':
-                openWildcardDetails(filePath);
+                openWildcardModel(filePath, { openWildcardsTab: true });
                 break;
             case 'toggle-active':
                 if (this.currentCard.dataset.active === 'true') deactivateWildcard(filePath);
-                else openWildcardDetails(filePath, true);
+                else openWildcardModel(filePath, { openWildcardsTab: true });
                 break;
             case 'replace-preview':
                 apiClient.replaceModelPreview(filePath);

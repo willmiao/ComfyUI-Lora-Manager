@@ -98,3 +98,165 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Wildcards tab inside the shared model modal */
+.wildcard-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 4px;
+}
+
+.wildcard-tab__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.wildcard-tab__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-color);
+    background: rgba(127, 127, 127, 0.14);
+}
+
+.wildcard-tab__badge.is-active {
+    color: #fff;
+    background: var(--primary-color, #4a7dff);
+}
+
+.wildcard-tab__namespace {
+    color: var(--text-color);
+    opacity: 0.8;
+    overflow-wrap: anywhere;
+}
+
+.wildcard-tab__hint {
+    color: var(--text-color);
+    opacity: 0.55;
+    font-size: 0.9em;
+}
+
+.wildcard-tab__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.wildcard-tab__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-color);
+}
+
+.wildcard-tab__field[hidden] {
+    display: none;
+}
+
+.wildcard-tab__field input,
+.wildcard-tab__keys-head input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    color: var(--text-color);
+    background: var(--input-bg-color, rgba(127, 127, 127, 0.08));
+    border: 1px solid var(--border-color, rgba(127, 127, 127, 0.3));
+    border-radius: 5px;
+}
+
+.wildcard-tab__field input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.wildcard-tab__help {
+    margin: -4px 0 0;
+    color: var(--text-color);
+    opacity: 0.65;
+    font-size: 0.9em;
+}
+
+.wildcard-tab__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.wildcard-tab__toggle {
+    padding: 8px 16px;
+    color: #fff;
+    font-weight: 600;
+    border: 0;
+    border-radius: 6px;
+    background: var(--primary-color, #4a7dff);
+    cursor: pointer;
+}
+
+.wildcard-tab__toggle.is-deactivate {
+    background: var(--lora-error, #c44d4d);
+}
+
+.wildcard-tab__toggle:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.wildcard-tab__error {
+    padding: 10px;
+    color: #ef9f9f;
+    background: rgba(200, 60, 60, 0.1);
+    white-space: pre-wrap;
+}
+
+.wildcard-tab__keys-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.wildcard-tab__keys-head span {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.wildcard-tab__keys-head input {
+    flex: 0 1 220px;
+    max-width: 220px;
+}
+
+.wildcard-tab__preview-head {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.wildcard-tab__empty {
+    padding: 14px 10px;
+    color: var(--text-color);
+    opacity: 0.65;
+    font-size: 0.9em;
+}
+
+@media (max-width: 700px) {
+    .wildcard-tab__fields {
+        grid-template-columns: 1fr;
+    }
+
+    .wildcard-tab__keys-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .wildcard-tab__keys-head input {
+        max-width: none;
+    }
+}

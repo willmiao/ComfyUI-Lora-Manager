@@ -24,38 +24,6 @@
     <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{ t('common.actions.delete') }}</div>
 </div>
 
-<div id="wildcardActivationModal" class="modal">
-    <div class="modal-content wildcard-activation-content">
-        <div class="modal-header">
-            <h2 id="wildcardActivationTitle"></h2>
-            <button class="close-modal" type="button"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="modal-body">
-            <p id="wildcardActivationSubtitle" class="text-secondary"></p>
-            <div id="wildcardActivationFields">
-                <label for="wildcardNamespaceInput">{{ t('wildcards.activation.namespace') }}</label>
-                <input id="wildcardNamespaceInput" type="text" placeholder="{{ t('wildcards.activation.namespacePlaceholder') }}">
-                <p class="text-secondary">{{ t('wildcards.activation.namespaceHelp') }}</p>
-                <div id="wildcardAliasGroup">
-                    <label for="wildcardAliasInput">{{ t('wildcards.activation.alias') }}</label>
-                    <input id="wildcardAliasInput" type="text">
-                </div>
-            </div>
-            <div id="wildcardActivationErrors" class="wildcard-activation-errors" hidden></div>
-            <div class="wildcard-key-layout">
-                <div>
-                    <input id="wildcardKeyFilter" type="search" placeholder="{{ t('wildcards.details.filterKeys') }}">
-                    <div id="wildcardKeyList" class="wildcard-key-list"></div>
-                </div>
-                <pre id="wildcardContentPreview" class="wildcard-content-preview"></pre>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button id="wildcardActivateBtn" class="btn btn-primary" type="button">{{ t('wildcards.activation.confirm') }}</button>
-            <button class="btn btn-secondary close-modal" type="button">{{ t('common.actions.close') }}</button>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block content %}

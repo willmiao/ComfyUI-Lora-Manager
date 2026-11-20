@@ -7,6 +7,7 @@ import {
     loadExampleImages
 } from './showcase/ShowcaseView.js';
 import { setupTabSwitching } from './ModelDescription.js';
+import { renderWildcardTab, setupWildcardTab } from './WildcardTab.js';
 import {
     setupModelNameEditing,
     setupBaseModelEditing,
@@ -485,7 +486,7 @@ async function handleCalculateHash(entry) {
  * @param {Object} model - Model data object
  * @param {string} modelType - Type of model ('lora' or 'checkpoint')
  */
-export async function showModelModal(model, modelType) {
+export async function showModelModal(model, modelType, options = {}) {
     const modalId = 'modelModal';
     const modalTitle = model.model_name;
     cleanupNavigationShortcuts();
@@ -501,23 +502,59 @@ export async function showModelModal(model, modelType) {
     // merge instead of replacing: a partial payload must never drop fields the
     // list response already carried (creator, ids, trigger words).
     let completeCivitaiData = model.civitai || {};
+    let fullMetadata = {};
     let metadataPartial = false;
     let metadataOffline = false;
     if (model.file_path) {
         try {
-            const result = await getModelApiClient().fetchModelMetadataWithStatus(model.file_path);
+            const result = await getModelApiClient(modelType).fetchModelMetadataWithStatus(model.file_path);
             metadataPartial = Boolean(result?.partial);
             metadataOffline = Boolean(result?.offline);
-            completeCivitaiData = { ...(model.civitai || {}), ...(result?.metadata || {}) };
+            fullMetadata = result?.metadata || {};
+            completeCivitaiData = { ...(model.civitai || {}), ...fullMetadata };
         } catch (error) {
             console.warn('Failed to fetch complete metadata, using existing data:', error);
             // Continue with existing data if fetch fails
         }
     }
 
+    // The wildcard page opens the same model modal as a card click. Hydrate the
+    // parsed key index and activation state so the Wildcards tab is complete
+    // even when the card only supplied list-level data.
+    let wildcardResource = null;
+    if (
+        modelType === 'wildcards' &&
+        model.file_path &&
+        (model.active === undefined || !Array.isArray(model.entries))
+    ) {
+        try {
+            const response = await fetch('/api/lm/wildcards/active');
+            const data = await response.json().catch(() => ({}));
+            wildcardResource = (data.resources || []).find(
+                (item) => item.file_path === model.file_path,
+            ) || null;
+        } catch (error) {
+            console.warn('Failed to fetch wildcard details:', error);
+        }
+    }
+    const wildcardData = modelType === 'wildcards'
+        ? {
+            active: wildcardResource?.active ?? model.active ?? false,
+            activation_namespace: wildcardResource?.activation_namespace ?? model.activation_namespace ?? '',
+            activation_aliases: wildcardResource?.activation_aliases ?? model.activation_aliases ?? {},
+            entries: wildcardResource?.entries ?? model.entries ?? fullMetadata.entries ?? [],
+            entry_count: wildcardResource?.entry_count ?? model.entry_count ?? fullMetadata.entry_count ?? 0,
+            value_count: wildcardResource?.value_count ?? model.value_count ?? fullMetadata.value_count ?? 0,
+            wildcard_format: wildcardResource?.wildcard_format ?? model.wildcard_format ?? fullMetadata.wildcard_format ?? '',
+            files: wildcardResource?.files ?? model.files ?? fullMetadata.files ?? [],
+            errors: wildcardResource?.errors ?? model.errors ?? fullMetadata.errors ?? [],
+        }
+        : {};
+
     // Update model with complete civitai data
     const modelWithFullData = {
         ...model,
+        ...wildcardData,
         civitai: completeCivitaiData
     };
     // A model on a switched-off drive keeps its cached metadata, but nothing on
@@ -748,13 +785,25 @@ export async function showModelModal(model, modelType) {
             </button>`.trim();
 
     const supportsRecipesTab = modelType === 'loras' || modelType === 'checkpoints';
+    const isWildcard = modelType === 'wildcards';
+    // Card clicks keep the conventional first tab (Examples). Only explicit
+    // wildcard entry points (Open in manager, Details/Activate) switch to the
+    // Wildcards tab; the tab itself is always rendered last.
+    const openWildcardsTab = isWildcard && Boolean(options.openWildcardsTab);
+    const wildcardsTabText = translate('wildcards.title', {}, 'Wildcards');
+    const wildcardTabButton = `<button class="tab-btn${openWildcardsTab ? ' active' : ''}" data-tab="wildcards">${wildcardsTabText}</button>`;
 
     const tabsContent = supportsRecipesTab ?
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}
             <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
-        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+        isWildcard ?
+            `<button class="tab-btn${openWildcardsTab ? '' : ' active'}" data-tab="showcase">${examplesText}</button>
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>
+            ${versionsTabButton}
+            ${wildcardTabButton}` :
+            `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}`;
 
@@ -786,6 +835,10 @@ export async function showModelModal(model, modelType) {
                     </button>
                 </div>`.trim();
 
+    const wildcardPane = isWildcard
+        ? `<div id="wildcards-tab" class="tab-pane${openWildcardsTab ? ' active' : ''}">${renderWildcardTab(modelWithFullData)}</div>`
+        : '';
+
     const tabPanesContent = supportsRecipesTab ?
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
@@ -816,7 +869,7 @@ export async function showModelModal(model, modelType) {
                 <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
         </div>` :
-        `<div id="showcase-tab" class="tab-pane active">
+        `<div id="showcase-tab" class="tab-pane${openWildcardsTab ? '' : ' active'}">
             <div class="recipes-loading">
                 <i class="fas fa-spinner fa-spin"></i> ${loadingExamplesText}
             </div>
@@ -838,7 +891,7 @@ export async function showModelModal(model, modelType) {
                     <i class="fas fa-spinner fa-spin"></i> ${loadingVersionsText}
                 </div>
             </div>
-        </div>`;
+        </div>${wildcardPane}`;
 
     const content = `
         <div class="modal-content">
@@ -1086,6 +1139,13 @@ export async function showModelModal(model, modelType) {
             }
         },
     });
+    if (modelType === 'wildcards') {
+        setupWildcardTab({
+            model: modelWithFullData,
+            modalId,
+            onRefresh: (updated) => showModelModal(updated, 'wildcards', { openWildcardsTab: true }),
+        });
+    }
     versionsTabController.load({ eager: true });
     setupTagTooltip();
     setupTagEditMode(modelType);
@@ -1595,7 +1655,10 @@ async function handleDirectionalNavigation(direction, modelType) {
         }
 
         navigationModelType = modelType || navigationModelType;
-        await showModelModal(adjacent.item, navigationModelType || modelType);
+        const openWildcardsTab = Boolean(
+            modalElement.querySelector('.showcase-tabs .tab-btn[data-tab="wildcards"]')?.classList.contains('active')
+        );
+        await showModelModal(adjacent.item, navigationModelType || modelType, { openWildcardsTab });
     } finally {
         navigationInProgress = false;
         updateNavigationControls();

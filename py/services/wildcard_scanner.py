@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -76,6 +77,76 @@ class WildcardScanner(ModelScanner):
         if isinstance(metadata, WildcardMetadata) and not metadata.entries and not metadata.errors:
             return self._apply_parsed_index(metadata, file_path)
         return metadata
+
+    async def initialize_in_background(self, reconcile: bool = False) -> None:
+        await super().initialize_in_background(reconcile=reconcile)
+        await self._backfill_parsed_index()
+
+    async def _backfill_parsed_index(self) -> None:
+        """Fill wildcard fields for entries hydrated from an older cache.
+
+        Cache rows persisted before the wildcard columns existed carry no key
+        index, so the manager page and canvas panel would show the resource
+        with zero keys until a full rescan. The sidecar written by the scanner
+        is the authoritative index; parse the artifact only when the sidecar
+        is missing or has no entries.
+        """
+        cache = self._cache
+        if cache is None or not cache.raw_data:
+            return
+        updated = False
+        for entry in cache.raw_data:
+            # A present entry_count marks an entry that already went through
+            # the parsed-index projection, even when the artifact has no keys.
+            if entry.get("entries") or "entry_count" in entry:
+                continue
+            file_path = entry.get("file_path") or ""
+            if not file_path:
+                continue
+            fields = await self._load_indexed_fields(file_path)
+            if not fields:
+                continue
+            entry.update(fields)
+            updated = True
+        if updated:
+            await self._persist_current_cache()
+
+    async def _load_indexed_fields(self, file_path: str) -> dict:
+        payload: dict = {}
+        try:
+            payload = await MetadataManager.load_metadata_payload(file_path)
+        except Exception:
+            logger.debug(
+                "Unable to read wildcard sidecar for %s", file_path, exc_info=True
+            )
+        if not payload.get("entries"):
+            try:
+                parsed = await asyncio.to_thread(parse_wildcard_artifact, file_path)
+            except Exception:
+                logger.debug(
+                    "Unable to parse wildcard artifact %s", file_path, exc_info=True
+                )
+                return {}
+            return {
+                "wildcard_format": os.path.splitext(file_path)[1].lower().lstrip("."),
+                "files": parsed.files,
+                "entries": [entry.summary() for entry in parsed.entries],
+                "errors": parsed.errors,
+                "unsupported_files": parsed.unsupported_files,
+                "entry_count": len(parsed.entries),
+                "value_count": parsed.value_count,
+            }
+        entries = payload.get("entries") or []
+        return {
+            "wildcard_format": payload.get("wildcard_format")
+            or os.path.splitext(file_path)[1].lower().lstrip("."),
+            "files": payload.get("files") or [],
+            "entries": entries,
+            "errors": payload.get("errors") or [],
+            "unsupported_files": payload.get("unsupported_files") or [],
+            "entry_count": payload.get("entry_count", len(entries)),
+            "value_count": payload.get("value_count", 0),
+        }
 
     async def _create_default_metadata(
         self,

@@ -196,23 +196,21 @@ class WildcardRoutes(BaseModelRoutes):
                         key: formatted.get(key)
                         for key in (
                             "file_path", "model_name", "file_name", "preview_url", "active",
-                            "activation_namespace", "entries", "entry_count", "value_count",
+                            "activation_namespace", "activation_aliases", "activated_at",
+                            "wildcard_format", "base_model", "folder",
+                            "entries", "entry_count", "value_count",
                             "civitai", "errors",
                         )
                     }
                 )
             resources.sort(key=lambda item: (not item["active"], item["model_name"].lower()))
             runtime = get_wildcard_service()
-            manual = runtime.get_manual_wildcard_dict()
             return web.json_response(
                 {
                     "success": True,
                     "resources": resources[:200],
                     "manual": {
-                        "entries": [
-                            {"key": key, "values_count": len(values)}
-                            for key, values in sorted(manual.items())
-                        ]
+                        "entries": runtime.get_manual_entries(sample_limit=3)
                     },
                     "runtime_conflicts": runtime.get_runtime_conflicts(),
                 }

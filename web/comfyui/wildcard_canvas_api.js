@@ -27,5 +27,12 @@ export function setWildcardActive(filePath, active) {
 
 export function openWildcardManager(filePath = "") {
   const hash = filePath ? `#model=${encodeURIComponent(filePath)}` : "";
-  window.location.href = `${window.location.origin}${lmUrl("/wildcards")}${hash}`;
+  const url = `${window.location.origin}${lmUrl("/wildcards")}${hash}`;
+  // Reuse the existing LoRA Manager tab (the recipe picker uses the same named
+  // window) and let the wildcard page open the linked resource's modal.
+  window.open(url, "lm-lora-manager");
+}
+
+export function openWildcardsFolder() {
+  return request(`/lm/wildcards/open-location`, { method: "POST" });
 }

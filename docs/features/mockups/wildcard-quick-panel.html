@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en" class="dark-theme">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Global Wildcards — quick panel design mockup</title>
+  <link rel="stylesheet" href="../../../web/comfyui/lm_theme.css">
+  <link rel="stylesheet" href="../../../web/comfyui/lm_styles.css">
+  <style>
+    :root {
+      --comfy-input-bg: #222;
+      --comfy-menu-bg: #1a1a1a;
+      --comfy-menu-secondary-bg: #292929;
+      --input-text: #ddd;
+      --descrip-text: #999;
+      --border-color: #4e4e4e;
+      --fg-color: #fff;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 34px 24px 64px;
+      box-sizing: border-box;
+      color: #ddd;
+      background:
+        radial-gradient(circle at 18% 0%, rgb(66 153 225 / 0.12), transparent 32rem),
+        #101012;
+      font: 12px/1.45 "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    .mock-note {
+      width: 880px;
+      margin: 0 auto 14px;
+      color: #8f939c;
+      font-size: 12px;
+    }
+
+    .mock-note strong {
+      color: #d9dde5;
+    }
+
+    /* The production panel is position: fixed; the mockup sits in the page. */
+    .mock-shell {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      width: 880px;
+      height: 570px;
+      margin: 0 auto;
+    }
+
+    /* ---------- New pieces proposed by this design ---------- */
+
+    .lm-quick__section {
+      padding: 8px 6px 2px;
+    }
+
+    .lm-quick__section + .lm-quick__section {
+      border-top: 1px solid var(--lm-border-soft);
+      margin-top: 4px;
+    }
+
+    .lm-quick__section-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 22px;
+      padding: 0 6px 5px;
+      color: var(--lm-fg-muted);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .lm-quick__section-head .lm-quick__section-count {
+      color: var(--lm-fg-subtle);
+      font-weight: 500;
+      letter-spacing: normal;
+    }
+
+    .lm-quick__section-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      color: var(--lm-fg-muted);
+      background: transparent;
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+      transition: transform 120ms ease;
+    }
+
+    .lm-quick__section-toggle:hover {
+      color: var(--lm-fg);
+      background: var(--lm-surface-hover);
+    }
+
+    .lm-quick__section.is-collapsed .lm-quick__section-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .lm-quick__section.is-collapsed .lm-quick__section-body {
+      display: none;
+    }
+
+    .lm-quick__row--manual .lm-quick__row-name {
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 11px;
+    }
+
+    .lm-wildcard-state {
+      display: inline-flex;
+      flex: none;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 7px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .lm-wildcard-state.is-active {
+      color: color-mix(in oklab, var(--lm-ok) 65%, var(--lm-fg));
+      background: color-mix(in oklab, var(--lm-ok) 18%, var(--lm-surface));
+      border-color: color-mix(in oklab, var(--lm-ok) 38%, transparent);
+    }
+
+    .lm-wildcard-state.is-inactive {
+      color: var(--lm-fg-muted);
+      background: transparent;
+      border-color: var(--lm-border-soft);
+    }
+
+    .lm-wildcard-state.is-manual {
+      color: var(--lm-fg-muted);
+      background: var(--lm-surface-raised);
+      border-color: var(--lm-border-soft);
+    }
+
+    .lm-wildcard-status {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 2px;
+    }
+
+    .lm-wildcard-status-text {
+      color: var(--lm-fg-muted);
+      font-size: 11px;
+    }
+
+    .lm-wildcard-counts {
+      margin: 6px 0 12px;
+      color: var(--lm-fg-muted);
+      font-size: 11px;
+    }
+
+    .lm-wildcard-keys-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 12px 0 6px;
+      color: var(--lm-fg-muted);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .lm-wildcard-keys-head input {
+      width: 130px;
+      box-sizing: border-box;
+      padding: 4px 7px;
+      color: var(--lm-fg);
+      background: var(--lm-surface);
+      border: 1px solid var(--lm-border);
+      border-radius: 5px;
+      font: inherit;
+      font-size: 10px;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    .lm-wildcard-keys {
+      max-height: 208px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid var(--lm-border-soft);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--lm-surface) 92%, #000);
+    }
+
+    .lm-wildcard-key {
+      display: flex;
+      width: 100%;
+      box-sizing: border-box;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      color: var(--lm-fg);
+      text-align: left;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .lm-wildcard-key + .lm-wildcard-key {
+      border-top: 1px solid var(--lm-border-soft);
+    }
+
+    .lm-wildcard-key:hover {
+      background: var(--lm-surface-hover);
+    }
+
+    .lm-wildcard-key.is-copied {
+      background: var(--lm-accent-soft);
+    }
+
+    .lm-wildcard-key-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lm-wildcard-key-count {
+      flex: none;
+      color: var(--lm-fg-muted);
+      font-size: 10px;
+    }
+
+    .lm-wildcard-key-copy {
+      flex: none;
+      color: var(--lm-fg-muted);
+      font-size: 12px;
+      line-height: 1;
+      opacity: 0.55;
+    }
+
+    .lm-wildcard-key:hover .lm-wildcard-key-copy,
+    .lm-wildcard-key.is-copied .lm-wildcard-key-copy {
+      color: var(--lm-accent-text);
+      opacity: 1;
+    }
+
+    .lm-wildcard-values .lm-wildcard-key {
+      cursor: default;
+    }
+
+    .lm-wildcard-values .lm-wildcard-key-name {
+      font-family: inherit;
+      font-size: 11px;
+    }
+
+    .lm-wildcard-note {
+      margin: 10px 0 0;
+      color: var(--lm-fg-muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .lm-wildcard-empty {
+      padding: 12px 8px;
+      color: var(--lm-fg-muted);
+      font-size: 11px;
+    }
+
+    .mock-preview {
+      display: grid;
+      place-items: center;
+      height: 190px;
+      color: rgb(255 255 255 / 0.65);
+      background:
+        radial-gradient(circle at 72% 28%, rgb(255 255 255 / 0.18), transparent 30%),
+        radial-gradient(circle at 30% 76%, rgb(255 255 255 / 0.12), transparent 34%),
+        linear-gradient(135deg, #2a3550 0%, #5f466f 48%, #b86155 100%);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mock-tooltip {
+      position: fixed;
+      z-index: 10030;
+      display: none;
+      width: 260px;
+      overflow: hidden;
+      color: #fff;
+      background: rgb(0 0 0 / 0.88);
+      border-radius: 6px;
+      box-shadow: 0 8px 22px rgb(0 0 0 / 0.5);
+      pointer-events: none;
+    }
+
+    .mock-tooltip__media {
+      height: 170px;
+      background:
+        radial-gradient(circle at 72% 28%, rgb(255 255 255 / 0.2), transparent 30%),
+        radial-gradient(circle at 30% 76%, rgb(255 255 255 / 0.12), transparent 34%),
+        linear-gradient(135deg, #2a3550 0%, #5f466f 48%, #b86155 100%);
+    }
+
+    .mock-tooltip__label {
+      padding: 8px;
+      font-size: 12px;
+      text-align: center;
+      background: linear-gradient(transparent, rgb(0 0 0 / 0.82));
+      margin-top: -34px;
+      padding-top: 24px;
+    }
+
+    .mock-legend {
+      width: 880px;
+      margin: 14px auto 0;
+      color: #7d818b;
+      font-size: 11px;
+    }
+
+    .mock-legend code {
+      color: #b9c2d0;
+    }
+  </style>
+</head>
+<body>
+  <p class="mock-note">
+    <strong>Design mockup — not wired to the app.</strong>
+    Proposed Global Wildcards quick panel. The left column only lists entries; the right column owns the
+    overview, key list, and actions. Hover a resource row to preview its art. Switch <em>All / Active</em>,
+    click a manual key, or click a resource to inspect the states.
+  </p>
+
+  <section class="lm-popover lm-floating-panel lm-quick-panel lm-wildcard-quick-panel mock-shell"
+           role="dialog" aria-label="Global Wildcards">
+    <header class="lm-floating-panel__header">
+      <div class="lm-floating-panel__heading">
+        <strong>Global Wildcards</strong>
+        <span class="lm-floating-panel__context">Activation affects autocomplete and subsequent executions</span>
+      </div>
+      <button class="lm-floating-panel__close" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </header>
+
+    <div class="lm-floating-panel__body">
+      <div class="lm-quick__toolbar">
+        <input class="lm-quick__search" id="search" type="search"
+               placeholder="Search resources or wildcard keys…" aria-label="Search wildcards">
+        <div class="lm-quick__view-switch" role="group" aria-label="Scope">
+          <button class="lm-quick__view-button is-active" type="button" data-scope="all"
+                  aria-pressed="true">All</button>
+          <button class="lm-quick__view-button" type="button" data-scope="active"
+                  aria-pressed="false">Active</button>
+        </div>
+      </div>
+
+      <div class="lm-quick__content">
+        <div class="lm-quick__results" id="results" role="listbox" aria-label="Wildcard resources and manual keys"></div>
+        <aside class="lm-quick__detail" id="detail" aria-live="polite"></aside>
+      </div>
+    </div>
+
+    <footer class="lm-floating-panel__footer">
+      <span class="lm-quick__status" id="status">1 active · 3 library · 8 manual keys</span>
+      <span class="lm-quick__hints" id="hints">↑↓ Navigate · Enter Activate · Esc Close</span>
+    </footer>
+    <div class="lm-floating-panel__resize" aria-hidden="true"></div>
+  </section>
+
+  <p class="mock-legend">
+    Notes: section headers are not focusable; <code>Enter</code> toggles the selected resource or copies a
+    manual key; the manual group is always present (it is collapsed only by the user) and is never filtered
+    out by the <em>Active</em> scope.
+  </p>
+
+  <div class="mock-tooltip" id="tooltip" aria-hidden="true">
+    <div class="mock-tooltip__media"></div>
+    <div class="mock-tooltip__label" id="tooltip-label"></div>
+  </div>
+
+  <script>
+    const resources = {
+      jp: {
+        id: "jp",
+        name: "jpGirlsOnly v4",
+        file: "jpGirlsOnly_v4.zip",
+        format: "ZIP",
+        base: "Illustrious",
+        active: true,
+        namespace: "",
+        entryCount: 190,
+        valueCount: 3649,
+        preview: true,
+        keys: [
+          ["jpgirlsonly_v4/anime/akame_ga_kill!", 2],
+          ["jpgirlsonly_v4/anime/bang_dream!", 34],
+          ["jpgirlsonly_v4/anime/bayonetta_series", 1],
+          ["jpgirlsonly_v4/anime/black_rock_shooter", 18],
+          ["jpgirlsonly_v4/anime/danganronpa", 46],
+          ["jpgirlsonly_v4/anime/fate_series", 112],
+          ["jpgirlsonly_v4/anime/genshin_impact", 88],
+          ["jpgirlsonly_v4/game/nikke", 41],
+          ["jpgirlsonly_v4/vtuber/hololive", 73],
+        ],
+      },
+      style: {
+        id: "style",
+        name: "Style Pack",
+        file: "style_pack.zip",
+        format: "ZIP",
+        base: "SDXL 1.0",
+        active: false,
+        namespace: "",
+        entryCount: 24,
+        valueCount: 132,
+        preview: true,
+        keys: [
+          ["style/watercolor", 12],
+          ["style/oil_painting", 9],
+          ["style/anime_lineart", 18],
+          ["style/retro_film", 7],
+        ],
+      },
+      creature: {
+        id: "creature",
+        name: "Creature Names",
+        file: "creature_names.txt",
+        format: "TXT",
+        base: "Unknown",
+        active: false,
+        namespace: "",
+        entryCount: 8,
+        valueCount: 96,
+        preview: false,
+        keys: [
+          ["creature_names", 96],
+        ],
+      },
+      anime: {
+        id: "anime",
+        name: "Anime Characters",
+        file: "anime_characters.yaml",
+        format: "YAML",
+        base: "Illustrious",
+        active: false,
+        namespace: "",
+        entryCount: 42,
+        valueCount: 780,
+        preview: true,
+        keys: [
+          ["characters/anime/genshin", 120],
+          ["characters/anime/hololive", 96],
+          ["characters/anime/fate", 84],
+          ["characters/anime/touhou", 62],
+        ],
+      },
+    };
+
+    const manualEntries = [
+      { key: "example", values: 10, samples: ["a serene mountain lake", "a neon-lit alley", "a quiet library"] },
+      { key: "flower", values: 9, samples: ["rose", "tulip", "sunflower"] },
+      { key: "jewel", values: 9, samples: ["ruby", "sapphire", "emerald"] },
+      { key: "flavor/all_one", values: 3, samples: ["vanilla", "chocolate"] },
+      { key: "flavor/favorite", values: 3, samples: ["strawberry", "matcha"] },
+      { key: "test_weighted",  values: 6, samples: ["1::alpha", "2::beta"] },
+      { key: "test_weighted_creatures", values: 5, samples: ["dragon", "phoenix"] },
+      { key: "flower_colors", values: 7, samples: ["red", "blue"] },
+    ];
+
+    const state = {
+      scope: "all",
+      selected: { kind: "resource", id: "jp" },
+      manualCollapsed: false,
+      search: "",
+    };
+
+    const els = {
+      results: document.getElementById("results"),
+      detail: document.getElementById("detail"),
+      status: document.getElementById("status"),
+      hints: document.getElementById("hints"),
+      search: document.getElementById("search"),
+      tooltip: document.getElementById("tooltip"),
+      tooltipLabel: document.getElementById("tooltip-label"),
+    };
+
+    function esc(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function stateBadge(resource) {
+      return resource.active
+        ? '<span class="lm-wildcard-state is-active"><span aria-hidden="true">⚡</span>Active</span>'
+        : "";
+    }
+
+    function matches(resource, query) {
+      if (!query) return true;
+      const haystack = [resource.name, resource.file, ...resource.keys.map(([key]) => key)].join(" ").toLowerCase();
+      return haystack.includes(query);
+    }
+
+    function manualMatches(entry, query) {
+      if (!query) return true;
+      return `${entry.key} ${entry.samples.join(" ")}`.toLowerCase().includes(query);
+    }
+
+    function visibleResources() {
+      return Object.values(resources).filter((resource) => {
+        if (state.scope === "active" && !resource.active) return false;
+        return matches(resource, state.search);
+      });
+    }
+
+    function renderResourceRow(resource, selected) {
+      return `
+        <button class="lm-quick__row${selected ? " is-selected" : ""}" type="button" role="option"
+                aria-selected="${selected}" data-kind="resource" data-id="${resource.id}"
+                data-preview="${resource.preview}">
+          <span class="lm-quick__row-head">
+            <span class="lm-quick__row-name">${esc(resource.name)}</span>
+            ${stateBadge(resource)}
+          </span>
+          <span class="lm-quick__row-path">${esc(resource.file)} · ${resource.entryCount} keys · ${resource.valueCount.toLocaleString()} values</span>
+        </button>`;
+    }
+
+    function renderManualRow(entry) {
+      const selected = state.selected.kind === "manual" && state.selected.key === entry.key;
+      return `
+        <button class="lm-quick__row lm-quick__row--manual${selected ? " is-selected" : ""}" type="button"
+                role="option" aria-selected="${selected}" data-kind="manual" data-key="${esc(entry.key)}">
+          <span class="lm-quick__row-head">
+            <span class="lm-quick__row-name">${esc(entry.key)}</span>
+            <span class="lm-wildcard-state is-manual">Manual</span>
+          </span>
+          <span class="lm-quick__row-path">${entry.values} values · manual wildcard</span>
+        </button>`;
+    }
+
+    function section(title, count, body, extraClass = "") {
+      return `
+        <section class="lm-quick__section ${extraClass}" data-section="${extraClass}">
+          <div class="lm-quick__section-head">${title} <span class="lm-quick__section-count">${count}</span></div>
+          <div class="lm-quick__section-body">${body}</div>
+        </section>`;
+    }
+
+    function renderList() {
+      const resourcesVisible = visibleResources();
+      const active = resourcesVisible.filter((resource) => resource.active);
+      const inactive = resourcesVisible.filter((resource) => !resource.active);
+      const manualVisible = manualEntries.filter((entry) => manualMatches(entry, state.search));
+
+      let html = "";
+      if (active.length) {
+        html += section(
+          "Active",
+          active.length,
+          active.map((resource) => renderResourceRow(
+            resource,
+            state.selected.kind === "resource" && state.selected.id === resource.id,
+          )).join(""),
+          "section-active",
+        );
+      }
+      if (inactive.length) {
+        html += section(
+          "Library",
+          inactive.length,
+          inactive.map((resource) => renderResourceRow(
+            resource,
+            state.selected.kind === "resource" && state.selected.id === resource.id,
+          )).join(""),
+          "section-library",
+        );
+      }
+      if (manualVisible.length) {
+        html += `
+          <section class="lm-quick__section section-manual${state.manualCollapsed ? " is-collapsed" : ""}" data-section="section-manual">
+            <div class="lm-quick__section-head">
+              <button class="lm-quick__section-toggle" type="button" aria-expanded="${!state.manualCollapsed}"
+                      aria-label="Toggle manual wildcards">▾</button>
+              Manual <span class="lm-quick__section-count">${manualVisible.length} keys</span>
+            </div>
+            <div class="lm-quick__section-body">
+              ${manualVisible.map(renderManualRow).join("")}
+            </div>
+          </section>`;
+      }
+
+      if (!html) {
+        html = `<div class="lm-quick__empty">No resources or keys match “${esc(state.search)}”.</div>`;
+      }
+      els.results.innerHTML = html;
+      bindRows();
+      renderStatus(active.length, inactive.length, manualVisible.length);
+    }
+
+    function renderStatus(activeCount, inactiveCount, manualCount) {
+      const parts = [`${activeCount} active`];
+      if (state.scope === "all") parts.push(`${inactiveCount} library`);
+      parts.push(`${manualCount} manual key${manualCount === 1 ? "" : "s"}`);
+      els.status.textContent = parts.join(" · ");
+    }
+
+    function renderDetail() {
+      if (state.selected.kind === "manual") {
+        renderManualDetail(state.selected.key);
+      } else {
+        renderResourceDetail(resources[state.selected.id]);
+      }
+    }
+
+    function renderResourceDetail(resource) {
+      if (!resource) return;
+      const selectedKeyCopied = "";
+      const keys = resource.keys.map(([key, count]) => `
+        <button class="lm-wildcard-key" type="button" data-copy="__${esc(key)}__" title="Copy __${esc(key)}__">
+          <span class="lm-wildcard-key-name">${esc(key)}</span>
+          <span class="lm-wildcard-key-count">${count}</span>
+          <span class="lm-wildcard-key-copy" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="5.5" y="5.5" width="8" height="8" rx="1.2"></rect>
+              <path d="M10.5 3.5V2.7A1.2 1.2 0 0 0 9.3 1.5H2.7A1.2 1.2 0 0 0 1.5 2.7v6.6a1.2 1.2 0 0 0 1.2 1.2h.8"></path>
+            </svg>
+          </span>
+        </button>`).join("");
+
+      els.detail.innerHTML = `
+        ${resource.preview ? '<div class="lm-quick__preview mock-preview">preview</div>' : ""}
+        <h2 class="lm-quick__name">${esc(resource.name)}</h2>
+        <div class="lm-quick__meta">${esc(resource.file)} · ${esc(resource.format)} · ${esc(resource.base)}</div>
+        <div class="lm-wildcard-status">
+          ${resource.active
+            ? '<span class="lm-wildcard-state is-active"><span aria-hidden="true">⚡</span>Active</span>'
+            : '<span class="lm-wildcard-state is-inactive">Inactive</span>'}
+          <span class="lm-wildcard-status-text">${resource.active
+            ? `Namespace: ${esc(resource.namespace || "(none)")}`
+            : "Not active"}</span>
+        </div>
+        <div class="lm-wildcard-counts">${resource.entryCount} keys · ${resource.valueCount.toLocaleString()} values</div>
+        <div class="lm-wildcard-keys-head">
+          <span>Keys (${resource.entryCount})</span>
+          <input type="search" placeholder="Filter keys…" aria-label="Filter keys">
+        </div>
+        <div class="lm-wildcard-keys">${keys}</div>
+        <div class="lm-quick__actions">
+          <button class="lm-quick__primary" type="button" data-action="toggle">
+            ${resource.active ? "Deactivate" : "Activate"}
+          </button>
+          <button class="lm-quick__secondary" type="button" data-action="manager">Open Manager</button>
+        </div>
+        ${resource.active
+          ? '<p class="lm-wildcard-note">Global activation affects autocomplete and every subsequent execution.</p>'
+          : ""}
+      `;
+      bindDetailActions();
+    }
+
+    function renderManualDetail(key) {
+      const entry = manualEntries.find((item) => item.key === key);
+      if (!entry) return;
+      els.detail.innerHTML = `
+        <h2 class="lm-quick__name">${esc(entry.key)}</h2>
+        <div class="lm-quick__meta">Manual wildcard · ${entry.values} values</div>
+        <div class="lm-wildcard-status">
+          <span class="lm-wildcard-state is-manual">Manual</span>
+          <span class="lm-wildcard-status-text">Always active · not toggleable</span>
+        </div>
+        <p class="lm-wildcard-note">Loaded from the settings <code>wildcards</code> folder. Edit the source file to change the values.</p>
+        <div class="lm-wildcard-keys-head"><span>Value preview (${entry.values})</span></div>
+        <div class="lm-wildcard-keys lm-wildcard-values">
+          ${entry.samples.map((value) => `
+            <div class="lm-wildcard-key">
+              <span class="lm-wildcard-key-name">${esc(value)}</span>
+            </div>`).join("")}
+        </div>
+        <div class="lm-quick__actions">
+          <button class="lm-quick__primary" type="button" data-copy="__${esc(entry.key)}__">Copy __${esc(entry.key)}__</button>
+          <button class="lm-quick__secondary" type="button" data-action="folder">Open wildcards folder</button>
+        </div>
+      `;
+      els.hints.textContent = "↑↓ Navigate · Enter Copy · Esc Close";
+      bindDetailActions();
+    }
+
+    function bindDetailActions() {
+      els.detail.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const value = button.dataset.copy;
+          try { await navigator.clipboard?.writeText(value); } catch { /* mockup */ }
+          button.classList.add("is-copied");
+          els.status.textContent = `Copied ${value}`;
+          setTimeout(() => button.classList.remove("is-copied"), 900);
+        });
+      });
+      els.detail.querySelector("[data-action='toggle']")?.addEventListener("click", (event) => {
+        const resource = resources[state.selected.id];
+        if (!resource) return;
+        resource.active = !resource.active;
+        if (!resource.active) state.selected = { kind: "resource", id: "jp" };
+        renderList();
+        renderDetail();
+        els.status.textContent = resource.active ? `Activated ${resource.name}` : `Deactivated ${resource.name}`;
+      });
+      els.detail.querySelector("[data-action='manager']")?.addEventListener("click", () => {
+        els.status.textContent = "Open Manager → /wildcards (mockup)";
+      });
+      els.detail.querySelector("[data-action='folder']")?.addEventListener("click", () => {
+        els.status.textContent = "Open settings wildcards folder (mockup)";
+      });
+      els.detail.querySelector(".lm-wildcard-keys-head input")?.addEventListener("input", (event) => {
+        const query = event.target.value.toLowerCase();
+        els.detail.querySelectorAll(".lm-wildcard-keys .lm-wildcard-key").forEach((row) => {
+          row.hidden = !row.textContent.toLowerCase().includes(query);
+        });
+      });
+    }
+
+    function selectRow(row) {
+      els.results.querySelectorAll(".lm-quick__row").forEach((other) => {
+        other.classList.toggle("is-selected", other === row);
+        other.setAttribute("aria-selected", String(other === row));
+      });
+      if (row.dataset.kind === "manual") {
+        state.selected = { kind: "manual", key: row.dataset.key };
+        els.hints.textContent = "↑↓ Navigate · Enter Copy · Esc Close";
+      } else {
+        state.selected = { kind: "resource", id: row.dataset.id };
+        els.hints.textContent = "↑↓ Navigate · Enter Activate · Esc Close";
+      }
+      renderDetail();
+    }
+
+    function bindRows() {
+      els.results.querySelectorAll(".lm-quick__row").forEach((row) => {
+        row.addEventListener("click", () => selectRow(row));
+      });
+      els.results.querySelector(".lm-quick__section-toggle")?.addEventListener("click", () => {
+        state.manualCollapsed = !state.manualCollapsed;
+        renderList();
+      });
+    }
+
+    // Hover preview tooltip, mirroring the LoRA quick picker's delayed tooltip.
+    let tooltipTimer = null;
+    let tooltipRow = null;
+
+    function clearTooltip() {
+      clearTimeout(tooltipTimer);
+      tooltipTimer = null;
+      tooltipRow = null;
+      els.tooltip.style.display = "none";
+    }
+
+    function showTooltip(row) {
+      const resource = resources[row.dataset.id];
+      if (!resource?.preview) return;
+      const rect = row.getBoundingClientRect();
+      const resultsRect = els.results.getBoundingClientRect();
+      els.tooltipLabel.textContent = resource.name;
+      els.tooltip.style.display = "block";
+      const width = 260;
+      // Mirror the production rule: keep the tooltip over the results column
+      // instead of letting it cover the detail pane and its action buttons.
+      let left = rect.right + 12;
+      if (left + width > resultsRect.right - 4) left = rect.left - width - 12;
+      if (left < resultsRect.left + 4) left = resultsRect.right - width - 4;
+      const top = Math.min(rect.top - 12, window.innerHeight - 240);
+      els.tooltip.style.left = `${Math.max(12, left)}px`;
+      els.tooltip.style.top = `${Math.max(12, top)}px`;
+    }
+
+    els.results.addEventListener("mouseover", (event) => {
+      const row = event.target.closest(".lm-quick__row[data-kind='resource']");
+      if (!row || row === tooltipRow) return;
+      clearTooltip();
+      tooltipRow = row;
+      tooltipTimer = setTimeout(() => {
+        tooltipTimer = null;
+        showTooltip(row);
+      }, 350);
+    });
+
+    els.results.addEventListener("mouseout", (event) => {
+      const row = event.target.closest(".lm-quick__row[data-kind='resource']");
+      if (!row || row !== tooltipRow) return;
+      if (event.relatedTarget && row.contains(event.relatedTarget)) return;
+      clearTooltip();
+    });
+
+    els.results.addEventListener("scroll", clearTooltip, true);
+
+    // Scope switch
+    document.querySelectorAll("[data-scope]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.scope = button.dataset.scope;
+        document.querySelectorAll("[data-scope]").forEach((other) => {
+          const active = other === button;
+          other.classList.toggle("is-active", active);
+          other.setAttribute("aria-pressed", String(active));
+        });
+        renderList();
+        // Keep the detail in sync with the filtered list; a visible manual
+        // selection must survive a scope switch too.
+        const resourcesVisible = visibleResources();
+        const selectedVisible = state.selected.kind === "manual"
+          ? manualEntries.some((entry) => entry.key === state.selected.key && manualMatches(entry, state.search))
+          : resourcesVisible.some((resource) => resource.id === state.selected.id);
+        if (!selectedVisible) {
+          const first = resourcesVisible[0];
+          state.selected = first ? { kind: "resource", id: first.id } : { kind: "manual", key: manualEntries[0].key };
+          renderDetail();
+        }
+      });
+    });
+
+    // Search
+    els.search.addEventListener("input", () => {
+      state.search = els.search.value.trim().toLowerCase();
+      if (state.search) state.manualCollapsed = false;
+      renderList();
+    });
+
+    // Keyboard navigation: rows are the only tab stops that matter here.
+    document.addEventListener("keydown", (event) => {
+      if (event.target === els.search && event.key === "Escape" && els.search.value) {
+        els.search.value = "";
+        state.search = "";
+        renderList();
+        return;
+      }
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (event.target.tagName === "INPUT") return;
+      const rows = [...els.results.querySelectorAll(".lm-quick__row")];
+      if (!rows.length) return;
+      event.preventDefault();
+      const current = rows.findIndex((row) => row.classList.contains("is-selected"));
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      const next = Math.max(0, Math.min(rows.length - 1, (current < 0 ? 0 : current + direction)));
+      selectRow(rows[next]);
+      rows[next].scrollIntoView({ block: "nearest" });
+    });
+
+    renderList();
+    renderDetail();
+  </script>
+</body>
+</html>

@@ -90,3 +90,82 @@ def test_activation_state_persists(activation_state):
 
     reloaded = WildcardActivationService(service.activations_path)
     assert reloaded.get_active_runtime()[0] == {"animals": ["cat", "dog"]}
+
+
+def test_deactivation_keeps_settings_for_reactivation(activation_state):
+    service, runtime, _manual, root = activation_state
+    artifact = root / "palette.yaml"
+    artifact.write_text("warm:\n  - red\n  - orange\n", encoding="utf-8")
+    resource = resource_for(artifact)
+
+    service.activate(resource, "Design", {"warm": "Warm Colors"})
+    service.deactivate(str(artifact))
+
+    saved = service.activation_for(str(artifact), include_inactive=True)
+    assert saved["active"] is False
+    assert saved["namespace"] == "design"
+    assert saved["aliases"] == {"warm": "warm colors"}
+    assert service.activation_for(str(artifact)) is None
+    assert runtime.get_wildcard_dict() == {}
+
+    decorated = service.decorate(resource)
+    assert decorated["active"] is False
+    assert decorated["activation_namespace"] == "design"
+    assert decorated["activation_aliases"] == {"warm": "warm colors"}
+    assert decorated["entries"][0]["effective_key"] == "warm"
+
+    result = service.activate(resource)
+    assert result["namespace"] == "design"
+    assert result["keys"] == ["design/warm colors"]
+    assert runtime.get_wildcard_dict() == {"design/warm colors": ["red", "orange"]}
+
+
+def test_inactive_resource_is_skipped_in_conflict_check(activation_state):
+    service, _runtime, _manual, root = activation_state
+    first = root / "first.txt"
+    first.write_text("red\n", encoding="utf-8")
+    second = root / "second.txt"
+    second.write_text("blue\n", encoding="utf-8")
+
+    first_resource = resource_for(first)
+    first_resource["entries"][0]["key"] = "color"
+    second_resource = resource_for(second)
+    second_resource["entries"][0]["key"] = "color"
+
+    service.activate(first_resource)
+    service.deactivate(str(first))
+    service.activate(second_resource)
+
+    assert service.activation_for(str(second))["active"] is True
+
+
+def test_legacy_activation_record_without_active_flag_is_active(activation_state):
+    service, _runtime, _manual, root = activation_state
+    artifact = root / "animals.txt"
+    artifact.write_text("cat\ndog\n", encoding="utf-8")
+    resource = resource_for(artifact)
+
+    import json
+
+    payload = {
+        "version": 1,
+        "resources": {
+            str(artifact): {
+                "file_path": str(artifact),
+                "namespace": "",
+                "aliases": {},
+                "entries": resource["entries"],
+                "activated_at": "2026-01-01T00:00:00+00:00",
+            }
+        },
+    }
+    with open(service.activations_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle)
+
+    loaded = WildcardActivationService(service.activations_path)
+    assert loaded.activation_for(str(artifact))["active"] is True
+    assert loaded.get_active_runtime()[0] == {"animals": ["cat", "dog"]}
+
+    loaded.deactivate(str(artifact))
+    assert loaded.get_active_runtime()[0] == {}
+    assert loaded.activation_for(str(artifact), include_inactive=True)["active"] is False

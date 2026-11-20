@@ -258,3 +258,24 @@ def test_pick_weighted_or_plain_glob_aggregation(monkeypatch, tmp_path):
     if cat_total > 0:
         tabby_pct = results["tabby"] / cat_total
         assert 0.65 < tabby_pct < 0.85, f"tabby proportion out of range: {tabby_pct:.3f}"
+
+
+def test_get_manual_entries_reports_source_and_samples(monkeypatch, tmp_path):
+    service, wildcards_dir = _make_service(monkeypatch, tmp_path)
+    wildcards_dir.mkdir()
+
+    (wildcards_dir / "colors.txt").write_text(
+        "red\nblue\ngreen\nyellow\n", encoding="utf-8"
+    )
+    (wildcards_dir / "nested").mkdir()
+    (wildcards_dir / "nested" / "palette.yaml").write_text(
+        "warm:\n  - orange\n  - amber\n", encoding="utf-8"
+    )
+
+    entries = {entry["key"]: entry for entry in service.get_manual_entries(sample_limit=2)}
+
+    assert entries["colors"]["values_count"] == 4
+    assert entries["colors"]["source_path"].endswith("colors.txt")
+    assert entries["colors"]["sample_values"] == ["red", "blue"]
+    assert entries["warm"]["source_path"].endswith("palette.yaml")
+    assert entries["warm"]["sample_values"] == ["orange", "amber"]

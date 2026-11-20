@@ -4,7 +4,6 @@ import { createPageControls } from './components/controls/index.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
 import { initActiveFiltersSync } from './utils/activeFiltersSync.js';
-import { initializeWildcardDetails } from './utils/wildcardActions.js';
 import { showToast } from './utils/uiHelpers.js';
 
 class WildcardsPageManager {
@@ -21,7 +20,6 @@ class WildcardsPageManager {
     async initialize() {
         appCore.initializePageFeatures();
         initActiveFiltersSync(MODEL_TYPES.WILDCARD);
-        initializeWildcardDetails();
     }
 }
 
@@ -45,6 +43,24 @@ function openWildcardsSettings() {
     setTimeout(() => document.getElementById('wildcardPath')?.scrollIntoView({ block: 'center' }), 100);
 }
 
+export async function openLinkedWildcardModel() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const filePath = params.get('model');
+    if (!filePath) return;
+    try {
+        // Open the same shared model modal a wildcard card click uses; the
+        // Wildcards tab owns activation, keys and the source preview.
+        const { openWildcardModel } = await import('./utils/wildcardActions.js');
+        await openWildcardModel(filePath, { openWildcardsTab: true });
+    } catch (error) {
+        console.warn('Failed to open the linked wildcard:', error);
+    } finally {
+        if (window.location.hash) {
+            history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        }
+    }
+}
+
 async function initializeWildcardsPage() {
     await appCore.initialize();
     document.getElementById('enableWildcardsBtn')?.addEventListener('click', enableWildcards);
@@ -52,9 +68,11 @@ async function initializeWildcardsPage() {
     if (!document.getElementById('modelGrid')) return;
     const manager = new WildcardsPageManager();
     await manager.initialize();
+    await openLinkedWildcardModel();
     return manager;
 }
 
+window.addEventListener('hashchange', openLinkedWildcardModel);
 document.addEventListener('DOMContentLoaded', initializeWildcardsPage);
 
 export { WildcardsPageManager, initializeWildcardsPage };

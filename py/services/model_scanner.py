@@ -1243,6 +1243,23 @@ class ModelScanner:
             if value is not None:
                 entry[key] = value
 
+        # Wildcard parsed-index fields (wildcards only): copied through whenever
+        # the source carries them so the cache and API expose the key/value
+        # index after a scan, import, or restart; other model types never
+        # define these keys.
+        for key in (
+            'wildcard_format',
+            'files',
+            'entries',
+            'errors',
+            'unsupported_files',
+            'entry_count',
+            'value_count',
+        ):
+            value = get_value(key, None)
+            if value is not None:
+                entry[key] = value
+
         return entry
 
     def _ensure_license_flags(self, entry: Dict[str, Any]) -> None:

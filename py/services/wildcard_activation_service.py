@@ -38,6 +38,18 @@ def _path_key(value: str) -> str:
     return os.path.normcase(os.path.abspath(value)).replace(os.sep, "/")
 
 
+def _is_active_record(record: dict[str, Any] | None) -> bool:
+    """Return whether an activation record is currently active.
+
+    Records written before activation state was retained have no ``active``
+    key; they were active by definition.
+    """
+
+    if not record:
+        return False
+    return record.get("active", True) is not False
+
+
 def _file_signature(path: str) -> tuple[int, int] | None:
     try:
         stat = os.stat(path)
@@ -89,7 +101,17 @@ class WildcardActivationService:
             with open(self.activations_path, "r", encoding="utf-8") as handle:
                 payload = json.load(handle)
             resources = payload.get("resources", {})
-            return resources if isinstance(resources, dict) else {}
+            if not isinstance(resources, dict):
+                return {}
+            valid: dict[str, dict[str, Any]] = {}
+            for key, record in resources.items():
+                if not isinstance(record, dict):
+                    continue
+                # Older files predate retained activation state; they were
+                # active by definition.
+                record.setdefault("active", True)
+                valid[str(key)] = record
+            return valid
         except FileNotFoundError:
             return {}
         except Exception:
@@ -112,22 +134,40 @@ class WildcardActivationService:
     def _effective_key(original_key: str, activation: dict[str, Any] | None) -> str:
         if not activation:
             return original_key
-        alias = activation.get("aliases", {}).get(original_key, original_key)
-        namespace = activation.get("namespace", "")
+        aliases = activation.get("aliases")
+        if not isinstance(aliases, dict):
+            aliases = {}
+        alias = aliases.get(original_key, original_key)
+        namespace = activation.get("namespace") or ""
         return normalize_wildcard_key(f"{namespace}/{alias}" if namespace else alias)
 
-    def activation_for(self, file_path: str) -> dict[str, Any] | None:
-        return self._load().get(_path_key(file_path))
+    def activation_for(
+        self, file_path: str, *, include_inactive: bool = False
+    ) -> dict[str, Any] | None:
+        record = self._load().get(_path_key(file_path))
+        if record is None:
+            return None
+        if not include_inactive and not _is_active_record(record):
+            return None
+        return record
 
     def decorate(self, resource: dict[str, Any]) -> dict[str, Any]:
         result = copy.deepcopy(resource)
-        activation = self.activation_for(resource.get("file_path", ""))
-        result["active"] = activation is not None
-        result["activation_namespace"] = (activation or {}).get("namespace", "")
-        result["activation_aliases"] = (activation or {}).get("aliases", {})
-        result["activated_at"] = (activation or {}).get("activated_at")
+        record = self.activation_for(
+            resource.get("file_path", ""), include_inactive=True
+        )
+        active = _is_active_record(record)
+        # Keep the last namespace/alias on an inactive record so a later
+        # reactivation can restore them, but effective keys only exist while
+        # the resource is active.
+        result["active"] = active
+        result["activation_namespace"] = (record or {}).get("namespace") or ""
+        result["activation_aliases"] = (record or {}).get("aliases") or {}
+        result["activated_at"] = (record or {}).get("activated_at")
         for entry in result.get("entries", []):
-            entry["effective_key"] = self._effective_key(entry["key"], activation)
+            entry["effective_key"] = self._effective_key(
+                entry["key"], record if active else None
+            )
         return result
 
     @staticmethod
@@ -172,6 +212,8 @@ class WildcardActivationService:
         other_key_sets: list[set[str]] = []
         for other_key, other_activation in activations.items():
             if other_key == resource_key:
+                continue
+            if not _is_active_record(other_activation):
                 continue
             other_entries = other_activation.get("entries") or []
             other_keys = {
@@ -220,30 +262,58 @@ class WildcardActivationService:
         namespace: str = "",
         aliases: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        preview = self.preview_activation(resource, namespace, aliases)
-        if preview["conflicts"]:
-            raise WildcardConflictError(preview["conflicts"])
         entries = resource.get("entries") or [
             entry.summary() for entry in parse_wildcard_artifact(resource["file_path"]).entries
         ]
+        # Deactivation keeps the record so namespace/aliases survive a later
+        # reactivation. Only reuse them when the caller did not supply a new
+        # value; stale aliases for source keys that disappeared are dropped.
+        existing = self.activation_for(
+            resource["file_path"], include_inactive=True
+        )
+        if existing is not None and not _is_active_record(existing):
+            if not namespace:
+                namespace = existing.get("namespace") or ""
+            stored_aliases = existing.get("aliases")
+            if not aliases and isinstance(stored_aliases, dict):
+                source_keys = {entry.get("key") for entry in entries if entry.get("key")}
+                aliases = {
+                    key: value
+                    for key, value in stored_aliases.items()
+                    if key in source_keys
+                }
+        preview = self.preview_activation(resource, namespace, aliases)
+        if preview["conflicts"]:
+            raise WildcardConflictError(preview["conflicts"])
         with self._lock:
             activations = self._load()
-            activations[_path_key(resource["file_path"])] = {
+            record = {
                 "file_path": resource["file_path"],
                 "sha256": resource.get("sha256", ""),
                 "name": resource.get("model_name") or resource.get("file_name") or "",
                 "namespace": preview["namespace"],
                 "aliases": preview["aliases"],
                 "entries": entries,
+                "active": True,
                 "activated_at": datetime.now(timezone.utc).isoformat(),
             }
+            activations[_path_key(resource["file_path"])] = record
             self._save(activations)
         return preview
 
     def deactivate(self, file_path: str) -> None:
         with self._lock:
             activations = self._load()
-            activations.pop(_path_key(file_path), None)
+            key = _path_key(file_path)
+            record = activations.get(key)
+            if record is None:
+                return
+            # Keep the record (and therefore namespace/aliases) so the next
+            # activation can restore it; the runtime ignores inactive records.
+            updated = dict(record)
+            updated["active"] = False
+            updated["deactivated_at"] = datetime.now(timezone.utc).isoformat()
+            activations[key] = updated
             self._save(activations)
 
     def read_source(self, file_path: str, source_path: str) -> dict[str, Any]:
@@ -285,6 +355,8 @@ class WildcardActivationService:
             collected: dict[str, list[str]] = {}
             conflicts: list[dict[str, Any]] = []
             for key, activation in sorted(activations.items()):
+                if not _is_active_record(activation):
+                    continue
                 file_path = activation.get("file_path", "")
                 if not os.path.isfile(file_path):
                     continue

@@ -153,6 +153,21 @@ LoRA-node context menu, so its target comes from the panel's target select
 query (a query tuned for LoRA names rarely fits recipes) and keeps the target
 node.
 
+## Global Wildcards
+
+The **Global Wildcards** panel uses the same floating-panel shell and Quick
+Actions entry point, but it manages activation rather than applying an asset to
+one node. It opens on the full local library (`All` scope; inactive resources
+are still worth managing) and its `Active` scope narrows the list to globally
+active resources. The sectioned list separates active resources, inactive
+library resources, and manual keys; manual entries carry a value preview and
+source path but are not toggleable. Both scopes support resource/key search,
+effective-key inspection, and copying `__key__` syntax.
+`Alt+W` is the default binding and can be remapped like the other pickers.
+Conflict repair or Civitai downloads continue in the full manager. See
+[wildcard-resource-management](wildcards-management.md) for the resource model,
+activation API, runtime semantics, and sidecar compatibility.
+
 ## Growth strategy
 
 Do not add one top-bar button per picker. Top-bar space is shared with ComfyUI
