@@ -32,7 +32,7 @@
     <i class="fas fa-random"></i>
     <h2>{{ t('wildcards.disabled.title') }}</h2>
     <p>{{ t('wildcards.disabled.description') }}</p>
-    <button id="enableWildcardsBtn" type="button"><i class="fas fa-toggle-on"></i> {{ t('wildcards.disabled.enableButton') }}</button>
+    <button id="enableWildcardsBtn" type="button" class="primary-btn"><i class="fas fa-toggle-on"></i> {{ t('wildcards.disabled.enableButton') }}</button>
     <p class="workflows-disabled-hint">{{ t('wildcards.disabled.hint') }}</p>
 </div>
 {% elif wildcards_no_paths %}
@@ -40,7 +40,7 @@
     <i class="fas fa-folder-open"></i>
     <h2>{{ t('wildcards.noPaths.title') }}</h2>
     <p>{{ t('wildcards.noPaths.description') }}</p>
-    <button id="openWildcardsSettingsBtn" type="button"><i class="fas fa-cog"></i> {{ t('wildcards.noPaths.openSettings') }}</button>
+    <button id="openWildcardsSettingsBtn" type="button" class="primary-btn"><i class="fas fa-cog"></i> {{ t('wildcards.noPaths.openSettings') }}</button>
 </div>
 {% else %}
 <div class="sticky-topbar">

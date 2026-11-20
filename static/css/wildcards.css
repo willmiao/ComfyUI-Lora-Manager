@@ -19,14 +19,6 @@
     margin: 0;
 }
 
-.workflows-disabled button {
-    padding: 10px 20px;
-    color: #fff;
-    background: var(--primary-color, #4a7dff);
-    border: 0;
-    border-radius: 6px;
-}
-
 .wildcard-active {
     border-color: var(--lora-accent);
 }
