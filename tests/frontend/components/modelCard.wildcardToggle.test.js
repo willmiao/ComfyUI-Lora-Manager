@@ -115,82 +115,82 @@ function wildcardModel(overrides = {}) {
   };
 }
 
-describe('wildcard card activation chip', () => {
+async function mountWildcardCard(overrides = {}) {
+  const { createModelCard, setupModelCardEventDelegation } = await import(MODEL_CARD_MODULE);
+  setupModelCardEventDelegation('wildcards');
+  const card = createModelCard(wildcardModel(overrides), 'wildcards');
+  document.getElementById('modelGrid').append(card);
+  return card;
+}
+
+describe('wildcard card activation action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    document.body.innerHTML = '<div id="modelGrid"></div>';
     state.virtualScroller = null;
     API_CLIENTS.wildcards.activate.mockResolvedValue({ success: true });
     API_CLIENTS.wildcards.deactivate.mockResolvedValue({ success: true });
   });
 
-  it('replaces the copy action with a stateful activation chip', async () => {
+  it('replaces the copy action with a toggle next to the Civitai globe', async () => {
     const { createModelCard } = await import(MODEL_CARD_MODULE);
 
     const inactive = createModelCard(wildcardModel(), 'wildcards');
     const inactiveToggle = inactive.querySelector('[data-wildcard-toggle]');
     expect(inactive.querySelector('.fa-copy')).toBeNull();
     expect(inactiveToggle).not.toBeNull();
-    expect(inactiveToggle.textContent).toContain('Activate');
-    expect(inactiveToggle.getAttribute('aria-pressed')).toBe('false');
+    expect(inactiveToggle.closest('.card-actions')).not.toBeNull();
+    expect(inactiveToggle.previousElementSibling.classList.contains('fa-globe')).toBe(true);
+    expect(inactiveToggle.classList.contains('fa-toggle-off')).toBe(true);
+    expect(inactiveToggle.title).toBe('Activate');
     expect(inactive.classList.contains('wildcard-active')).toBe(false);
 
     const active = createModelCard(wildcardModel({ active: true }), 'wildcards');
     const activeToggle = active.querySelector('[data-wildcard-toggle]');
     expect(active.querySelector('.fa-copy')).toBeNull();
-    expect(activeToggle.textContent).toContain('Active');
-    expect(activeToggle.classList.contains('is-active')).toBe(true);
-    expect(activeToggle.getAttribute('aria-pressed')).toBe('true');
+    expect(activeToggle.classList.contains('fa-toggle-on')).toBe(true);
+    expect(activeToggle.classList.contains('wildcard-toggle-active')).toBe(true);
+    expect(activeToggle.title).toBe('Deactivate');
     expect(active.classList.contains('wildcard-active')).toBe(true);
   });
 
-  it('activates from the chip and updates the card in place', async () => {
-    const { createModelCard } = await import(MODEL_CARD_MODULE);
-    const card = createModelCard(wildcardModel(), 'wildcards');
-    document.body.append(card);
+  it('activates from the toggle and updates the card in place', async () => {
+    const card = await mountWildcardCard();
     state.virtualScroller = {
       items: [{ file_path: '/models/wildcards/pack.zip', active: false }],
     };
 
-    try {
-      card.querySelector('[data-wildcard-toggle]').click();
+    card.querySelector('[data-wildcard-toggle]').click();
 
-      await vi.waitFor(() => {
-        expect(API_CLIENTS.wildcards.activate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
-      });
-      await vi.waitFor(() => {
-        expect(card.querySelector('[data-wildcard-toggle]').textContent).toContain('Active');
-      });
-      expect(card.dataset.active).toBe('true');
-      expect(card.classList.contains('wildcard-active')).toBe(true);
-      expect(card.querySelector('[data-wildcard-toggle]').getAttribute('aria-pressed')).toBe('true');
-      expect(state.virtualScroller.items[0].active).toBe(true);
-      expect(showToastMock).toHaveBeenCalledWith('wildcards.messages.activated', {}, 'success');
-      expect(WILDCARD_ACTIONS.openWildcardModel).not.toHaveBeenCalled();
-    } finally {
-      card.remove();
-    }
+    await vi.waitFor(() => {
+      expect(API_CLIENTS.wildcards.activate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
+    });
+    await vi.waitFor(() => {
+      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-on')).toBe(true);
+    });
+    expect(card.dataset.active).toBe('true');
+    expect(card.classList.contains('wildcard-active')).toBe(true);
+    expect(card.querySelector('[data-wildcard-toggle]').title).toBe('Deactivate');
+    expect(state.virtualScroller.items[0].active).toBe(true);
+    expect(showToastMock).toHaveBeenCalledWith('wildcards.messages.activated', {}, 'success');
+    expect(WILDCARD_ACTIONS.openWildcardModel).not.toHaveBeenCalled();
   });
 
-  it('deactivates an active card from the chip', async () => {
-    const { createModelCard } = await import(MODEL_CARD_MODULE);
-    const card = createModelCard(wildcardModel({ active: true }), 'wildcards');
-    document.body.append(card);
+  it('deactivates an active card from the toggle', async () => {
+    const card = await mountWildcardCard({ active: true });
 
-    try {
-      card.querySelector('[data-wildcard-toggle]').click();
+    card.querySelector('[data-wildcard-toggle]').click();
 
-      await vi.waitFor(() => {
-        expect(API_CLIENTS.wildcards.deactivate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
-      });
-      await vi.waitFor(() => {
-        expect(card.querySelector('[data-wildcard-toggle]').textContent).toContain('Activate');
-      });
-      expect(card.dataset.active).toBe('false');
-      expect(card.classList.contains('wildcard-active')).toBe(false);
-      expect(showToastMock).toHaveBeenCalledWith('wildcards.messages.deactivated', {}, 'success');
-    } finally {
-      card.remove();
-    }
+    await vi.waitFor(() => {
+      expect(API_CLIENTS.wildcards.deactivate).toHaveBeenCalledWith('/models/wildcards/pack.zip');
+    });
+    await vi.waitFor(() => {
+      expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-off')).toBe(true);
+    });
+    expect(card.dataset.active).toBe('false');
+    expect(card.classList.contains('wildcard-active')).toBe(false);
+    expect(card.querySelector('[data-wildcard-toggle]').title).toBe('Activate');
+    expect(showToastMock).toHaveBeenCalledWith('wildcards.messages.deactivated', {}, 'success');
   });
 
   it('keeps the card inactive and opens the manager on a key conflict', async () => {
@@ -199,29 +199,22 @@ describe('wildcard card activation chip', () => {
       { payload: { success: false, conflicts: [{ key: 'anime/bang_dream' }] } },
     );
     API_CLIENTS.wildcards.activate.mockRejectedValueOnce(conflict);
+    const card = await mountWildcardCard();
 
-    const { createModelCard } = await import(MODEL_CARD_MODULE);
-    const card = createModelCard(wildcardModel(), 'wildcards');
-    document.body.append(card);
+    card.querySelector('[data-wildcard-toggle]').click();
 
-    try {
-      card.querySelector('[data-wildcard-toggle]').click();
-
-      await vi.waitFor(() => {
-        expect(WILDCARD_ACTIONS.openWildcardModel).toHaveBeenCalledWith(
-          '/models/wildcards/pack.zip',
-          { openWildcardsTab: true },
-        );
-      });
-      expect(card.dataset.active).toBe('false');
-      expect(card.querySelector('[data-wildcard-toggle]').textContent).toContain('Activate');
-      expect(showToastMock).toHaveBeenCalledWith(
-        expect.stringContaining('key conflict'),
-        {},
-        'error',
+    await vi.waitFor(() => {
+      expect(WILDCARD_ACTIONS.openWildcardModel).toHaveBeenCalledWith(
+        '/models/wildcards/pack.zip',
+        { openWildcardsTab: true },
       );
-    } finally {
-      card.remove();
-    }
+    });
+    expect(card.dataset.active).toBe('false');
+    expect(card.querySelector('[data-wildcard-toggle]').classList.contains('fa-toggle-off')).toBe(true);
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.stringContaining('key conflict'),
+      {},
+      'error',
+    );
   });
 });

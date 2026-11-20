@@ -60,6 +60,12 @@ function handleModelCardEvent_internal(event, modelType) {
         return true; // Stop propagation
     }
 
+    if (event.target.closest('[data-wildcard-toggle]')) {
+        event.stopPropagation();
+        handleWildcardToggle(card);
+        return true; // Stop propagation
+    }
+
     if (event.target.closest('.fa-star')) {
         event.stopPropagation();
         toggleFavorite(card);
@@ -329,21 +335,14 @@ function updateWildcardCardActive(card, active) {
     if (scrollerItem) scrollerItem.active = active;
     const toggle = card.querySelector('[data-wildcard-toggle]');
     if (!toggle) return;
-    toggle.classList.toggle('is-active', active);
-    toggle.setAttribute('aria-pressed', String(active));
+    toggle.classList.toggle('fa-toggle-on', active);
+    toggle.classList.toggle('fa-toggle-off', !active);
+    toggle.classList.toggle('wildcard-toggle-active', active);
     toggle.title = translate(
         active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
         {},
         active ? 'Deactivate' : 'Activate',
     );
-    const label = toggle.querySelector('span');
-    if (label) {
-        label.textContent = translate(
-            active ? 'wildcards.library.active' : 'wildcards.actions.activate',
-            {},
-            active ? 'Active' : 'Activate',
-        );
-    }
 }
 
 async function handleExampleImagesAccess(card, modelType) {
@@ -743,26 +742,21 @@ export function createModelCard(model, modelType) {
            title="${sendTitle}">
         </i>`;
     // Wildcards have no single prompt syntax to copy, so the copy action is
-    // dropped. Activation gets its own chip outside .card-actions so bulk mode
-    // keeps the state visible.
+    // dropped and an activation toggle takes the slot after the Civitai globe.
     const copyIcon = modelType === MODEL_TYPES.WILDCARD ? '' : `
         <i class="fas fa-copy"
            title="${copyTitle}">
         </i>`;
     const wildcardActive = modelType === MODEL_TYPES.WILDCARD && model.active === true;
-    const wildcardToggle = modelType === MODEL_TYPES.WILDCARD ? `
-        <button type="button"
-                class="wildcard-card-toggle${wildcardActive ? ' is-active' : ''}"
-                data-wildcard-toggle="true"
-                aria-pressed="${wildcardActive ? 'true' : 'false'}"
-                title="${wildcardActive
+    const wildcardToggleIcon = modelType === MODEL_TYPES.WILDCARD ? `
+        <i class="${wildcardActive
+            ? 'fas fa-toggle-on wildcard-toggle-active'
+            : 'fas fa-toggle-off'}"
+           data-wildcard-toggle="true"
+           title="${wildcardActive
             ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
             : translate('wildcards.actions.activate', {}, 'Activate')}">
-            <i class="fas fa-bolt" aria-hidden="true"></i>
-            <span>${wildcardActive
-            ? translate('wildcards.library.active', {}, 'Active')
-            : translate('wildcards.actions.activate', {}, 'Activate')}</span>
-        </button>` : '';
+        </i>` : '';
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
@@ -770,7 +764,7 @@ export function createModelCard(model, modelType) {
         <i class="fas fa-globe" 
            title="${globeTitle}"
            ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
-        </i>${sendIcon}${copyIcon}`;
+        </i>${wildcardToggleIcon}${sendIcon}${copyIcon}`;
 
     // Generate UI text with i18n support
     const toggleBlurTitle = translate('modelCard.actions.toggleBlur', {}, 'Toggle blur');
@@ -825,7 +819,6 @@ export function createModelCard(model, modelType) {
                         </span>
                     ` : ''}
                 </div>
-                ${wildcardToggle}
                 <div class="card-actions">
                     ${actionIcons}
                 </div>
@@ -942,15 +935,6 @@ export function createModelCard(model, modelType) {
 
         // uploadPreview handles loading state, card refresh and error toasts internally.
         getModelApiClient().uploadPreview(filePath, file);
-    });
-
-    // The chip lives outside .card-actions so bulk mode keeps showing the
-    // activation state; its own listener stops the click from opening the modal.
-    const wildcardToggleButton = card.querySelector('[data-wildcard-toggle]');
-    wildcardToggleButton?.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        handleWildcardToggle(card);
     });
 
     return card;

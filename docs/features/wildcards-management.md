@@ -149,9 +149,8 @@ The `/wildcards` page uses `WildcardScanner`, `WildcardModelService`, and
 
 Wildcard-specific additions are intentionally small:
 
-- an activation chip on the standard card that reads `Activate` or `Active`,
-  toggles the resource in place (using the saved namespace/aliases), and stays
-  visible in bulk mode;
+- an activation toggle beside the card's Civitai globe that activates with the
+  saved namespace/aliases or deactivates in place;
 - Activate…/Deactivate in the card context menu; Activate… opens the Wildcards
   tab so a namespace and alias can be set before activation;
 - a **Wildcards** tab in the standard model modal for activation state,

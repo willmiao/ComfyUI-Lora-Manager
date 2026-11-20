@@ -31,47 +31,9 @@
     border-color: var(--primary-color, #4a7dff);
 }
 
-/* Activation chip on the standard model card: state and toggle in one control.
-   It sits outside .card-actions so bulk mode keeps showing activation state. */
-.wildcard-card-toggle {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    align-self: center;
-    gap: 4px;
-    margin-right: 6px;
-    padding: 2px 8px;
-    color: rgba(255, 255, 255, 0.92);
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-radius: 999px;
-    font: inherit;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 14px;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.wildcard-card-toggle:hover,
-.wildcard-card-toggle:focus-visible {
-    background: rgba(0, 0, 0, 0.6);
-    border-color: #fff;
-}
-
-.wildcard-card-toggle.is-active {
-    color: #fff;
-    background: var(--primary-color, #4a7dff);
-    border-color: transparent;
-}
-
-.wildcard-card-toggle i {
-    font-size: 10px;
-}
-
-body.bulk-mode .wildcard-card-toggle {
-    pointer-events: none;
-    opacity: 0.7;
+/* Activation toggle on the standard model card, next to the Civitai globe. */
+.card-actions i.wildcard-toggle-active {
+    color: var(--primary-color, #4a7dff);
 }
 
 .wildcard-activation-content {
