@@ -5,14 +5,12 @@ const {
   STATE_MODULE,
   UI_HELPERS_MODULE,
   I18N_MODULE,
-  API_CONFIG_MODULE,
   API_FACTORY_MODULE,
 } = vi.hoisted(() => ({
   MODEL_CARD_MODULE: new URL('../../../static/js/components/shared/ModelCard.js', import.meta.url).pathname,
   STATE_MODULE: new URL('../../../static/js/state/index.js', import.meta.url).pathname,
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
   I18N_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
-  API_CONFIG_MODULE: new URL('../../../static/js/api/apiConfig.js', import.meta.url).pathname,
   API_FACTORY_MODULE: new URL('../../../static/js/api/modelApiFactory.js', import.meta.url).pathname,
 }));
 
@@ -63,20 +61,16 @@ vi.mock(I18N_MODULE, () => ({
   translate: vi.fn((key, params, fallback) => (typeof fallback === 'string' ? fallback : key)),
 }));
 
-vi.mock(API_CONFIG_MODULE, () => ({
-  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings', OTHER: 'other' },
-}));
-
 vi.mock(API_FACTORY_MODULE, () => ({
   getModelApiClient: vi.fn(() => ({})),
 }));
 
-function createOtherModel(overrides = {}) {
+function createModel(overrides = {}) {
   return {
     sha256: 'abc123',
     file_path: '/models/vae/test_vae.safetensors',
-    model_name: 'Test VAE',
-    file_name: 'test_vae',
+    model_name: 'Test Model',
+    file_name: 'test_model',
     folder: 'vae',
     modified: 1234567890,
     file_size: 1024,
@@ -84,7 +78,6 @@ function createOtherModel(overrides = {}) {
     base_model: '',
     favorite: false,
     exclude: false,
-    hf_url: '',
     update_available: false,
     skip_metadata_refresh: false,
     preview_url: '',
@@ -96,7 +89,7 @@ function createOtherModel(overrides = {}) {
   };
 }
 
-describe('ModelCard sub-type badges for other model types', () => {
+describe('ModelCard sub-type badges on pages that mix sub-types', () => {
   let createModelCard;
 
   beforeEach(async () => {
@@ -110,7 +103,7 @@ describe('ModelCard sub-type badges for other model types', () => {
     ['clip_vision', 'CV', 'CLIP Vision'],
     ['controlnet', 'CN', 'ControlNet'],
   ])('renders the %s badge abbreviation and tooltip', (subType, abbreviation, displayName) => {
-    const card = createModelCard(createOtherModel({ sub_type: subType }), 'other');
+    const card = createModelCard(createModel({ sub_type: subType }), 'other');
 
     const badge = card.querySelector('.model-sub-type');
     expect(badge).not.toBeNull();
@@ -120,9 +113,70 @@ describe('ModelCard sub-type badges for other model types', () => {
     expect(label.getAttribute('title')).toContain(displayName);
   });
 
+  it('keeps the sub-type token on the LoRAs page, where sub-types vary', () => {
+    const card = createModelCard(
+      createModel({ sub_type: 'locon', base_model: 'SDXL 1.0' }),
+      'loras',
+    );
+
+    expect(card.querySelector('.model-sub-type').textContent).toBe('LyCO');
+    expect(card.querySelector('.model-base-type').textContent).toBe('XL');
+    expect(card.querySelector('.model-separator')).not.toBeNull();
+    expect(card.querySelector('.base-model-label').getAttribute('title')).toBe('LyCORIS | SDXL 1.0');
+  });
+
+  it('keeps the sub-type token on the checkpoints page, where sub-types vary', () => {
+    const card = createModelCard(
+      createModel({ sub_type: 'diffusion_model', base_model: 'Flux.1 D' }),
+      'checkpoints',
+    );
+
+    expect(card.querySelector('.model-sub-type').textContent).toBe('DM');
+    expect(card.querySelector('.base-model-label').getAttribute('title')).toBe('Diffusion Model | Flux.1 D');
+  });
+
+  it('keeps the token for page types that are not registered in MODEL_CONFIG', () => {
+    const card = createModelCard(createModel({ sub_type: 'vae' }), 'unregistered-page');
+
+    expect(card.querySelector('.model-sub-type')).not.toBeNull();
+  });
+
   it('stores sub_type on the card dataset', () => {
-    const card = createModelCard(createOtherModel({ sub_type: 'text_encoder' }), 'other');
+    const card = createModelCard(createModel({ sub_type: 'text_encoder' }), 'other');
 
     expect(card.dataset.sub_type).toBe('text_encoder');
+  });
+});
+
+describe('ModelCard sub-type badges on single-sub-type pages', () => {
+  let createModelCard;
+
+  beforeEach(async () => {
+    ({ createModelCard } = await import(MODEL_CARD_MODULE));
+  });
+
+  it.each([
+    ['embeddings', 'embedding', 'SDXL 1.0', 'XL'],
+    ['workflows', 'workflow', 'Flux.1 D', 'F1D'],
+    ['wildcards', 'wildcard', 'Illustrious', 'IL'],
+  ])('drops the redundant token on %s cards', (pageType, subType, baseModel, baseAbbreviation) => {
+    const card = createModelCard(createModel({ sub_type: subType, base_model: baseModel }), pageType);
+
+    expect(card.querySelector('.model-sub-type')).toBeNull();
+    expect(card.querySelector('.model-separator')).toBeNull();
+    expect(card.querySelector('.model-base-type').textContent).toBe(baseAbbreviation);
+
+    // The tooltip still names the full base model, without repeating the page type.
+    const label = card.querySelector('.base-model-label');
+    expect(label.getAttribute('title')).toBe(baseModel);
+  });
+
+  it('keeps the wildcard sub-type available on the card dataset for other consumers', () => {
+    const card = createModelCard(
+      createModel({ sub_type: 'wildcard', base_model: 'Illustrious' }),
+      'wildcards',
+    );
+
+    expect(card.dataset.sub_type).toBe('wildcard');
   });
 });

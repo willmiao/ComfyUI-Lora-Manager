@@ -19,6 +19,10 @@ export const MODEL_TYPES = {
 export const MODEL_CONFIG = {
     [MODEL_TYPES.LORA]: {
         displayName: 'LoRA',
+        // The card's top-left pill prefixes the base model with this page's
+        // sub-type. Pages that can show more than one sub-type keep it; a
+        // single-sub-type page would repeat the same constant on every card.
+        showsSubTypeBadge: true,
         singularName: 'lora',
         defaultPageSize: 100,
         supportsLetterFilter: true,
@@ -29,6 +33,7 @@ export const MODEL_CONFIG = {
     },
     [MODEL_TYPES.CHECKPOINT]: {
         displayName: 'Checkpoint',
+        showsSubTypeBadge: true,
         singularName: 'checkpoint',
         defaultPageSize: 100,
         supportsLetterFilter: false,
@@ -39,6 +44,7 @@ export const MODEL_CONFIG = {
     },
     [MODEL_TYPES.EMBEDDING]: {
         displayName: 'Embedding',
+        showsSubTypeBadge: false,
         singularName: 'embedding',
         defaultPageSize: 100,
         supportsLetterFilter: true,
@@ -49,6 +55,7 @@ export const MODEL_CONFIG = {
     },
     [MODEL_TYPES.OTHER]: {
         displayName: 'Other Model',
+        showsSubTypeBadge: true,
         singularName: 'other',
         defaultPageSize: 100,
         supportsLetterFilter: false,
@@ -59,6 +66,7 @@ export const MODEL_CONFIG = {
     },
     [MODEL_TYPES.WORKFLOW]: {
         displayName: 'Workflow',
+        showsSubTypeBadge: false,
         singularName: 'workflow',
         defaultPageSize: 100,
         supportsLetterFilter: false,
@@ -69,6 +77,7 @@ export const MODEL_CONFIG = {
     },
     [MODEL_TYPES.WILDCARD]: {
         displayName: 'Wildcard',
+        showsSubTypeBadge: false,
         singularName: 'wildcard',
         defaultPageSize: 100,
         supportsLetterFilter: false,

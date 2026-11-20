@@ -134,7 +134,9 @@ export const MODEL_SUBTYPE_ABBREVIATIONS = {
     clip_vision: "CV",
     controlnet: "CN",
     workflow: "WF",
-    wildcard: "WC",
+    // "WC" is widely read as "water closet" (and as a profanity shorthand in
+    // Chinese), so use an unambiguous shortening instead.
+    wildcard: "WLD",
 };
 
 export function getSubTypeAbbreviation(subType) {

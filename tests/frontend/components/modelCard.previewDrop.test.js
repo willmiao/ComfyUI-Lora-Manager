@@ -6,14 +6,12 @@ const {
   STATE_MODULE,
   UI_HELPERS_MODULE,
   I18N_MODULE,
-  API_CONFIG_MODULE,
   API_FACTORY_MODULE,
 } = vi.hoisted(() => ({
   MODEL_CARD_MODULE: new URL('../../../static/js/components/shared/ModelCard.js', import.meta.url).pathname,
   STATE_MODULE: new URL('../../../static/js/state/index.js', import.meta.url).pathname,
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
   I18N_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
-  API_CONFIG_MODULE: new URL('../../../static/js/api/apiConfig.js', import.meta.url).pathname,
   API_FACTORY_MODULE: new URL('../../../static/js/api/modelApiFactory.js', import.meta.url).pathname,
 }));
 
@@ -64,10 +62,6 @@ vi.mock(UI_HELPERS_MODULE, () => ({
 
 vi.mock(I18N_MODULE, () => ({
   translate: vi.fn((key) => key),
-}));
-
-vi.mock(API_CONFIG_MODULE, () => ({
-  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings' },
 }));
 
 vi.mock(API_FACTORY_MODULE, () => ({

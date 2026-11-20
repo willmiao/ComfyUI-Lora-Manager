@@ -7,7 +7,7 @@ import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
-import { MODEL_TYPES } from '../../api/apiConfig.js';
+import { MODEL_CONFIG, MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
 import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workflowActions.js';
@@ -760,8 +760,12 @@ export function createModelCard(model, modelType) {
 
     // Sub-type display (e.g., LoRA, LyCO, DoRA, CKPT, DM, EMB)
     const subType = model.sub_type || '';
-    const subTypeAbbreviation = getSubTypeAbbreviation(subType);
     const fullSubTypeName = MODEL_SUBTYPE_DISPLAY_NAMES[subType?.toLowerCase()] || subType || '';
+    // A page whose cards share one sub-type would print the same abbreviation
+    // on every card, so it drops the token and keeps only the base model.
+    // Unregistered page types keep it, so opting out stays an explicit choice.
+    const showsSubTypeBadge = MODEL_CONFIG?.[modelType]?.showsSubTypeBadge !== false;
+    const subTypeBadgeText = showsSubTypeBadge ? getSubTypeAbbreviation(subType) : '';
 
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
@@ -776,9 +780,9 @@ export function createModelCard(model, modelType) {
                   </button>` : ''}
                 <div class="card-header-info">
                     <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}"
-                          title="${fullSubTypeName ? fullSubTypeName + ' | ' : ''}${baseModelLabel}">
-                        ${subTypeAbbreviation ? `<span class="model-sub-type">${subTypeAbbreviation}</span>` : ''}
-                        ${subTypeAbbreviation ? `<span class="model-separator"></span>` : ''}
+                          title="${subTypeBadgeText && fullSubTypeName ? fullSubTypeName + ' | ' : ''}${baseModelLabel}">
+                        ${subTypeBadgeText ? `<span class="model-sub-type">${subTypeBadgeText}</span>` : ''}
+                        ${subTypeBadgeText ? `<span class="model-separator"></span>` : ''}
                         <span class="model-base-type">${baseModelAbbreviation}</span>
                     </span>
                     ${hasUpdateAvailable ? `
