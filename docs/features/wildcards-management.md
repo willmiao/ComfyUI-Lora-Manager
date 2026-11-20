@@ -154,6 +154,8 @@ Wildcard-specific additions are intentionally small:
   color when active and stays muted when idle;
 - Activate…/Deactivate in the card context menu; Activate… opens the Wildcards
   tab so a namespace and alias can be set before activation;
+- a quick Activate/Deactivate action that leads the model modal's header actions,
+  toggling in place and refreshing the Wildcards tab and the card behind it;
 - a **Wildcards** tab in the standard model modal for activation state,
   namespace/single-key alias editing, effective-key browsing, source content,
   and candidate-value previews. It stays last so the normal card click keeps

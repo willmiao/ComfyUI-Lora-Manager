@@ -38,6 +38,18 @@
     text-shadow: 0 0 6px var(--lora-accent-transparent);
 }
 
+/* Quick activation action in the wildcard modal header. */
+.modal-send-btn.wildcard-toggle-btn.is-active {
+    background: var(--lora-accent);
+    border-color: var(--lora-accent);
+    color: var(--text-on-accent);
+}
+
+.modal-send-btn.wildcard-toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 .wildcard-activation-content {
     width: min(900px, calc(100vw - 40px));
 }

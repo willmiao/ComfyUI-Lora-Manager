@@ -14,6 +14,7 @@ import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workfl
 import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 import { attachCardPreviewCycler } from './CardPreviewCycler.js';
+import { syncWildcardCardState } from '../../utils/wildcardCardState.js';
 
 // Helper function to get display name based on settings
 function getDisplayName(model) {
@@ -303,7 +304,7 @@ async function handleWildcardToggle(card) {
         } else {
             await wildcardApi.activate(filePath);
         }
-        updateWildcardCardActive(card, !wasActive);
+        syncWildcardCardState(card.dataset.filepath, !wasActive);
         showToast(
             wasActive ? 'wildcards.messages.deactivated' : 'wildcards.messages.activated',
             {},
@@ -322,26 +323,6 @@ async function handleWildcardToggle(card) {
     } finally {
         if (toggle) toggle.disabled = false;
     }
-}
-
-function updateWildcardCardActive(card, active) {
-    card.dataset.active = String(active);
-    card.classList.toggle('wildcard-active', active);
-    // The virtual scroller recreates cards from its item objects when rows
-    // scroll back into view, so keep that copy in sync with the DOM.
-    const scrollerItem = state.virtualScroller?.items?.find(
-        (item) => item.file_path === card.dataset.filepath,
-    );
-    if (scrollerItem) scrollerItem.active = active;
-    const toggle = card.querySelector('[data-wildcard-toggle]');
-    if (!toggle) return;
-    toggle.classList.toggle('wildcard-toggle-active', active);
-    toggle.classList.toggle('wildcard-toggle-idle', !active);
-    toggle.title = translate(
-        active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
-        {},
-        active ? 'Deactivate' : 'Activate',
-    );
 }
 
 async function handleExampleImagesAccess(card, modelType) {

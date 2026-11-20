@@ -123,18 +123,29 @@ async function getTabs() {
 
 describe('Model modal wildcard tab placement', () => {
   let getModelApiClient;
+  let apiClient;
 
   beforeEach(async () => {
     document.body.innerHTML = '';
+    setupWildcardTabMock.mockClear();
     ({ getModelApiClient } = await import(API_FACTORY));
     getModelApiClient.mockReset();
-    getModelApiClient.mockReturnValue({
+    apiClient = {
       fetchModelMetadataWithStatus: vi.fn().mockResolvedValue({
         metadata: {},
         partial: false,
         offline: false,
       }),
-    });
+      activate: vi.fn().mockResolvedValue({
+        success: true,
+        resource: { ...MODEL, active: true, entries: [] },
+      }),
+      deactivate: vi.fn().mockResolvedValue({
+        success: true,
+        resource: { ...MODEL, active: false, entries: [] },
+      }),
+    };
+    getModelApiClient.mockReturnValue(apiClient);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       json: async () => ({ resources: [{ ...MODEL, active: true, entries: [] }] }),
     }));
@@ -157,6 +168,35 @@ describe('Model modal wildcard tab placement', () => {
     ]);
     expect((await getTabs())[0].active).toBe(true);
     expect((await getTabs())[3].active).toBe(false);
+  });
+
+  it('leads the header actions with the wildcard activation toggle', async () => {
+    const { showModelModal } = await import(MODAL_MODULE);
+    await showModelModal({ ...MODEL, active: false, entries: [] }, 'wildcards');
+
+    const firstAction = document.querySelector('#modelModal .modal-header-actions').firstElementChild;
+    expect(firstAction.dataset.action).toBe('toggle-wildcard');
+    expect(firstAction.dataset.active).toBe('false');
+    expect(firstAction.textContent).toContain('Activate');
+  });
+
+  it('activates from the header toggle and refreshes the Wildcards pane', async () => {
+    const { showModelModal } = await import(MODAL_MODULE);
+    await showModelModal({ ...MODEL, active: false, entries: [] }, 'wildcards');
+    const button = document.querySelector('#modelModal [data-action="toggle-wildcard"]');
+    const setupCallsBefore = setupWildcardTabMock.mock.calls.length;
+
+    button.click();
+
+    await vi.waitFor(() => {
+      expect(apiClient.activate).toHaveBeenCalledWith('/models/wild.zip');
+    });
+    await vi.waitFor(() => {
+      expect(button.textContent).toContain('Deactivate');
+    });
+    expect(button.dataset.active).toBe('true');
+    expect(button.classList.contains('is-active')).toBe(true);
+    expect(setupWildcardTabMock.mock.calls.length).toBe(setupCallsBefore + 1);
   });
 
   it('activates the last Wildcards tab when an explicit entry point requests it', async () => {

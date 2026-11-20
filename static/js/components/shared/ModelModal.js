@@ -23,6 +23,7 @@ import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForModel } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { syncWildcardCardState } from '../../utils/wildcardCardState.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
 import { sendWorkflowToComfy } from '../../utils/workflowActions.js';
 import { state } from '../../state/index.js';
@@ -702,6 +703,25 @@ export async function showModelModal(model, modelType, options = {}) {
         : '';
     const headerActionItems = [];
 
+    // Wildcard activation is the primary action for this resource type, so it
+    // leads the header row; the label doubles as the state indicator.
+    if (modelType === MODEL_TYPES.WILDCARD) {
+        const wildcardActive = modelWithFullData.active === true;
+        const wildcardActionLabel = wildcardActive
+            ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
+            : translate('wildcards.actions.activate', {}, 'Activate');
+        const wildcardToggleButton = `
+        <button class="modal-send-btn wildcard-toggle-btn${wildcardActive ? ' is-active' : ''}"
+                data-action="toggle-wildcard"
+                data-active="${wildcardActive ? 'true' : 'false'}"
+                title="${wildcardActionLabel}">
+            <i class="fas fa-bolt"></i>
+            <span>${wildcardActionLabel}</span>
+        </button>
+    `.trim();
+        headerActionItems.push(indentMarkup(wildcardToggleButton, 20));
+    }
+
     // Add send to ComfyUI button for all model types. Workflows hide it in
     // standalone mode: there is no running ComfyUI graph to push into.
     const hideSendButton = (modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode) || modelType === MODEL_TYPES.WILDCARD;
@@ -1096,6 +1116,7 @@ export async function showModelModal(model, modelType, options = {}) {
     const activeModalElement = document.getElementById(modalId);
     if (activeModalElement) {
         activeModalElement.dataset.filePath = modelWithFullData.file_path || '';
+        activeModalElement._modelData = modelWithFullData;
         // Metadata provenance: the description tab reads this to explain why the
         // text is unavailable instead of showing a generic "failed to load".
         activeModalElement.dataset.metadataPartial = metadataPartial ? 'true' : 'false';
@@ -1143,7 +1164,10 @@ export async function showModelModal(model, modelType, options = {}) {
         setupWildcardTab({
             model: modelWithFullData,
             modalId,
-            onRefresh: (updated) => showModelModal(updated, 'wildcards', { openWildcardsTab: true }),
+            onRefresh: (updated) => {
+                syncWildcardCardState(updated?.file_path, updated?.active === true);
+                showModelModal(updated, 'wildcards', { openWildcardsTab: true });
+            },
         });
     }
     versionsTabController.load({ eager: true });
@@ -1300,6 +1324,9 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'send-to-workflow':
                 handleSendToWorkflow(target, modelType);
+                break;
+            case 'toggle-wildcard':
+                handleWildcardHeaderToggle(target);
                 break;
             case 'delete-model':
                 handleDeleteModel();
@@ -1618,6 +1645,88 @@ function setupNavigationShortcuts(modelType) {
     };
 
     document.addEventListener('keydown', navigationKeyHandler);
+}
+
+/**
+ * Quick activation action in the wildcard modal header.
+ *
+ * The endpoint returns the decorated resource, so the header button and the
+ * Wildcards pane can be refreshed in place without losing the active tab.
+ */
+async function handleWildcardHeaderToggle(button) {
+    const modalElement = document.getElementById('modelModal');
+    const modelData = modalElement?._modelData;
+    const filePath = modelData?.file_path || getModalFilePath();
+    if (!filePath || button.disabled) return;
+
+    const wasActive = button.dataset.active === 'true';
+    button.disabled = true;
+    try {
+        const apiClient = getModelApiClient('wildcards');
+        const result = wasActive
+            ? await apiClient.deactivate(filePath)
+            : await apiClient.activate(filePath);
+        const updated = {
+            ...(modelData || {}),
+            ...(result?.resource || {}),
+        };
+        updated.active = result?.resource?.active ?? !wasActive;
+        if (modalElement) modalElement._modelData = updated;
+
+        updateWildcardHeaderToggle(button, updated.active);
+        refreshWildcardTab(updated);
+        syncWildcardCardState(filePath, updated.active);
+        showToast(
+            wasActive ? 'wildcards.messages.deactivated' : 'wildcards.messages.activated',
+            {},
+            'success',
+        );
+    } catch (error) {
+        const conflicts = error.payload?.conflicts || [];
+        if (conflicts.length) {
+            const keys = conflicts.slice(0, 3).map((item) => item.key).join(', ');
+            showToast(`Activation blocked by a key conflict: ${keys}`, {}, 'error');
+            modalElement
+                ?.querySelector('.showcase-tabs .tab-btn[data-tab="wildcards"]')
+                ?.click();
+        } else {
+            showToast(error.message || 'Wildcard activation failed', {}, 'error');
+        }
+    } finally {
+        button.disabled = false;
+    }
+}
+
+function updateWildcardHeaderToggle(button, active) {
+    button.dataset.active = String(active);
+    button.classList.toggle('is-active', active);
+    button.title = translate(
+        active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
+        {},
+        active ? 'Deactivate' : 'Activate',
+    );
+    const label = button.querySelector('span');
+    if (label) {
+        label.textContent = translate(
+            active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
+            {},
+            active ? 'Deactivate' : 'Activate',
+        );
+    }
+}
+
+function refreshWildcardTab(updated) {
+    const pane = document.getElementById('wildcards-tab');
+    if (!pane) return;
+    pane.innerHTML = renderWildcardTab(updated);
+    setupWildcardTab({
+        model: updated,
+        modalId: 'modelModal',
+        onRefresh: (next) => {
+            syncWildcardCardState(next?.file_path, next?.active === true);
+            showModelModal(next, 'wildcards', { openWildcardsTab: true });
+        },
+    });
 }
 
 /**
