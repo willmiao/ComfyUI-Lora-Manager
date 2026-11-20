@@ -197,20 +197,14 @@ def test_legacy_activation_record_without_active_flag_is_active(activation_state
     artifact.write_text("cat\ndog\n", encoding="utf-8")
     resource = resource_for(artifact)
 
-    import json
-
-    payload = {
-        "version": 1,
-        "resources": {
-            str(artifact): {
-                "file_path": str(artifact),
-                "namespace": "",
-                "aliases": {},
-                "entries": resource["entries"],
-                "activated_at": "2026-01-01T00:00:00+00:00",
-            }
-        },
-    }
+    # A file written before deactivation kept records carried no explicit
+    # state: presence meant active. Derive it from the service's own output so
+    # the stored path keys keep the platform-correct form.
+    service.activate(resource)
+    with open(service.activations_path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    for record in payload["resources"].values():
+        record.pop("active", None)
     with open(service.activations_path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle)
 

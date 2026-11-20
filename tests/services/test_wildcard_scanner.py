@@ -166,7 +166,9 @@ async def test_folder_rename_rebinds_nested_activation_paths(tmp_path, monkeypat
     )
 
     assert changed is True
-    assert activation.moves == {old_path: str(new_dir / "nested" / "colors.txt")}
+    # Rebound paths are normalized to forward slashes (the form the cache and
+    # activation registry store), so the expectation must be normalized too.
+    assert activation.moves == {old_path: f"{new_dir.as_posix()}/nested/colors.txt"}
 
 
 @pytest.mark.asyncio
