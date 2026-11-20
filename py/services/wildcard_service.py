@@ -16,7 +16,10 @@ from ..utils.settings_paths import get_settings_dir
 
 logger = logging.getLogger(__name__)
 
-_WILDCARD_PATTERN = re.compile(r"__([\w\s.\-+/*\\]+?)__")
+# Keys are derived from artifact file names (ZIP members, TXT paths) and YAML/JSON
+# object keys, so they may contain punctuation such as ``!`` or ``&``. Capture any
+# non-newline run; a captured reference that resolves to no key is left untouched.
+_WILDCARD_PATTERN = re.compile(r"__(.+?)__")
 _OPTION_PATTERN = re.compile(r"{([^{}]*?)}")
 # Dynamic trigger slots are named ``trigger_words1..n``. The bare
 # ``trigger_words`` name is the original (pre-``trigger_words1``) slot name and
@@ -517,7 +520,9 @@ class WildcardService:
             return self._pick_weighted_or_plain(wildcard_dict[keyword], rng)
 
         if "*" in keyword:
-            regex_pattern = keyword.replace("*", ".*").replace("+", r"\+")
+            # The captured text comes from the prompt, so escape it before
+            # turning the wildcard ``*`` into a regex wildcard.
+            regex_pattern = re.escape(keyword).replace(r"\*", ".*")
             compiled = re.compile(f"^{regex_pattern}$")
             aggregated: list[str] = []
             for key, values in wildcard_dict.items():

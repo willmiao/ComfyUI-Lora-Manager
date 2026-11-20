@@ -2227,4 +2227,22 @@ describe('AutoComplete widget interactions', () => {
 
     expect(node.lorasWidget.flashLoraEntry).not.toHaveBeenCalled();
   });
+
+  it('treats a wildcard token with punctuation as a completed literal', async () => {
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+    });
+
+    const rawText = '__jpgirlsonly_v4/anime/bang_dream!__';
+    const tokenRange = autoComplete._getPromptTokenRange(rawText, 0, rawText.length);
+
+    expect(tokenRange.tokenType).toBe('wildcard_literal');
+    expect(tokenRange.rawText).toBe(rawText);
+    expect(tokenRange.text).toBe('');
+  });
 });

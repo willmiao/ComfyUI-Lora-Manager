@@ -97,6 +97,12 @@ def test_text_lm_is_changed_forces_rerun_without_seed_when_text_is_dynamic():
     assert result != result
 
 
+def test_text_lm_is_changed_forces_rerun_for_punctuated_wildcard():
+    result = TextLM.IS_CHANGED("__anime/bang_dream!__", seed=None)
+
+    assert result != result
+
+
 def test_text_lm_is_changed_keeps_cache_for_seeded_or_static_text():
     assert TextLM.IS_CHANGED("__flower__", seed=7) is False
     assert TextLM.IS_CHANGED("plain text", seed=None) is False

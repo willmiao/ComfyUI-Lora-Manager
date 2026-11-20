@@ -1027,7 +1027,7 @@ class AutoComplete {
             };
         }
 
-        const wildcardMatch = trimmedText.match(/(?:^|\s)(__[\w\s.\-+/*\\]+?__)$/);
+        const wildcardMatch = trimmedText.match(/(?:^|\s)(__.+?__)$/);
         if (wildcardMatch) {
             const wildcardText = wildcardMatch[1];
             const wildcardOffset = trimmedText.lastIndexOf(wildcardText);

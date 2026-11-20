@@ -115,6 +115,34 @@ def test_expand_text_resolves_wildcard_glob(monkeypatch, tmp_path):
     assert expanded in {"tabby", "retriever"}
 
 
+def test_expand_text_resolves_keys_with_punctuation(monkeypatch, tmp_path):
+    service, wildcards_dir = _make_service(monkeypatch, tmp_path)
+    wildcards_dir.mkdir()
+
+    (wildcards_dir / "anime").mkdir()
+    (wildcards_dir / "anime" / "bang_dream!.txt").write_text(
+        "ichigaya arisa\n", encoding="utf-8"
+    )
+    (wildcards_dir / "anime" / "panty_&_stocking.txt").write_text(
+        "stocking\n", encoding="utf-8"
+    )
+
+    assert service.expand_text("__anime/bang_dream!__", seed=1) == "ichigaya arisa"
+    assert service.expand_text("__anime/panty_&_stocking__", seed=1) == "stocking"
+
+
+def test_expand_text_glob_treats_regex_metacharacters_literally(monkeypatch, tmp_path):
+    service, wildcards_dir = _make_service(monkeypatch, tmp_path)
+    wildcards_dir.mkdir()
+
+    (wildcards_dir / "flowers").mkdir()
+    (wildcards_dir / "flowers" / "rose!.txt").write_text("red rose\n", encoding="utf-8")
+
+    assert service.expand_text("__flowers/*!__", seed=1) == "red rose"
+    # A stray "(" in the prompt must not be compiled as a regex group.
+    assert service.expand_text("__a*(b__", seed=1) == "__a*(b__"
+
+
 def test_expand_text_is_deterministic_with_seed(monkeypatch, tmp_path):
     service, wildcards_dir = _make_service(monkeypatch, tmp_path)
     wildcards_dir.mkdir()
@@ -137,6 +165,8 @@ def test_expand_text_leaves_unresolved_reference_visible(monkeypatch, tmp_path):
 def test_contains_dynamic_syntax_detects_wildcards_and_options():
     assert contains_dynamic_syntax("plain text") is False
     assert contains_dynamic_syntax("__flower__") is True
+    assert contains_dynamic_syntax("__anime/bang_dream!__") is True
+    assert contains_dynamic_syntax("__panty_&_stocking__") is True
     assert contains_dynamic_syntax("{red|blue}") is True
     assert contains_dynamic_syntax("{2$$, $$red|blue|green}") is True
 
