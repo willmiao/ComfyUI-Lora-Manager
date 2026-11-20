@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { API_FACTORY, UI_HELPERS, I18N_HELPERS, apiMock, copyToClipboardMock, showToastMock } = vi.hoisted(() => {
@@ -74,6 +76,7 @@ describe('WildcardSection', () => {
 
   afterEach(() => {
     document.body.innerHTML = '';
+    document.head.innerHTML = '';
   });
 
   it('renders a key browser without duplicated activation state or controls', async () => {
@@ -159,6 +162,31 @@ describe('WildcardSection', () => {
     await vi.waitFor(() => {
       expect(copyToClipboardMock).toHaveBeenCalledWith('__anime/cool__', 'Wildcard reference copied');
     });
+  });
+
+  it('keeps the values header and reference visible with a long value list', async () => {
+    apiMock.fetchEntryValues.mockResolvedValue({
+      values: Array.from({ length: 676 }, (_, index) => `value ${index + 1}`),
+    });
+    const style = document.createElement('style');
+    style.textContent = readFileSync(
+      path.resolve(__dirname, '../../../static/css/wildcards.css'),
+      'utf8',
+    );
+    document.head.appendChild(style);
+    await renderSection(model({
+      entries: [{ key: 'poses', effective_key: 'poses', values_count: 676 }],
+      entry_count: 1,
+    }));
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-wildcard-preview]').textContent).toContain('value 676');
+    });
+    expect(getComputedStyle(document.querySelector('.wildcard-value-panel__header')).flexShrink).toBe('0');
+    const reference = document.querySelector('[data-wildcard-reference]');
+    expect(getComputedStyle(reference).flexShrink).toBe('0');
+    expect(reference.textContent).toBe('__poses__');
+    expect(getComputedStyle(document.querySelector('[data-wildcard-preview]')).overflow).toBe('auto');
   });
 
   it('supports keyboard navigation and uses effective keys while active', async () => {

@@ -331,6 +331,7 @@
 
 .wildcard-value-panel__header {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: space-between;
     min-height: 30px;
@@ -370,6 +371,7 @@
 
 .wildcard-reference {
     display: block;
+    flex: 0 0 auto;
     box-sizing: border-box;
     width: 100%;
     margin-bottom: 6px;
