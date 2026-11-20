@@ -177,7 +177,9 @@ describe('Model modal wildcard tab placement', () => {
     const firstAction = document.querySelector('#modelModal .modal-header-actions').firstElementChild;
     expect(firstAction.dataset.action).toBe('toggle-wildcard');
     expect(firstAction.dataset.active).toBe('false');
-    expect(firstAction.textContent).toContain('Activate');
+    expect(firstAction.getAttribute('aria-label')).toBe('Activate');
+    // Both labels stay in the DOM so the button reserves the wider one.
+    expect(firstAction.querySelectorAll('.wildcard-toggle-label > span')).toHaveLength(2);
   });
 
   it('activates from the header toggle and refreshes the Wildcards pane', async () => {
@@ -192,9 +194,10 @@ describe('Model modal wildcard tab placement', () => {
       expect(apiClient.activate).toHaveBeenCalledWith('/models/wild.zip');
     });
     await vi.waitFor(() => {
-      expect(button.textContent).toContain('Deactivate');
+      expect(button.getAttribute('aria-label')).toBe('Deactivate');
     });
     expect(button.dataset.active).toBe('true');
+    expect(button.title).toBe('Deactivate');
     expect(button.classList.contains('is-active')).toBe(true);
     expect(setupWildcardTabMock.mock.calls.length).toBe(setupCallsBefore + 1);
   });

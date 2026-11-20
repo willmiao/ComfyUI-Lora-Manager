@@ -707,16 +707,20 @@ export async function showModelModal(model, modelType, options = {}) {
     // leads the header row; the label doubles as the state indicator.
     if (modelType === MODEL_TYPES.WILDCARD) {
         const wildcardActive = modelWithFullData.active === true;
-        const wildcardActionLabel = wildcardActive
-            ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
-            : translate('wildcards.actions.activate', {}, 'Activate');
+        const activateLabel = translate('wildcards.actions.activate', {}, 'Activate');
+        const deactivateLabel = translate('wildcards.actions.deactivate', {}, 'Deactivate');
+        const wildcardActionLabel = wildcardActive ? deactivateLabel : activateLabel;
         const wildcardToggleButton = `
         <button class="modal-send-btn wildcard-toggle-btn${wildcardActive ? ' is-active' : ''}"
                 data-action="toggle-wildcard"
                 data-active="${wildcardActive ? 'true' : 'false'}"
-                title="${wildcardActionLabel}">
+                title="${wildcardActionLabel}"
+                aria-label="${wildcardActionLabel}">
             <i class="fas fa-bolt"></i>
-            <span>${wildcardActionLabel}</span>
+            <span class="wildcard-toggle-label">
+                <span>${activateLabel}</span>
+                <span>${deactivateLabel}</span>
+            </span>
         </button>
     `.trim();
         headerActionItems.push(indentMarkup(wildcardToggleButton, 20));
@@ -1700,19 +1704,13 @@ async function handleWildcardHeaderToggle(button) {
 function updateWildcardHeaderToggle(button, active) {
     button.dataset.active = String(active);
     button.classList.toggle('is-active', active);
-    button.title = translate(
+    const label = translate(
         active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
         {},
         active ? 'Deactivate' : 'Activate',
     );
-    const label = button.querySelector('span');
-    if (label) {
-        label.textContent = translate(
-            active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activate',
-            {},
-            active ? 'Deactivate' : 'Activate',
-        );
-    }
+    button.title = label;
+    button.setAttribute('aria-label', label);
 }
 
 function refreshWildcardTab(updated) {

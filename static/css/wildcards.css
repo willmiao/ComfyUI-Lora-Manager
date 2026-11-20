@@ -38,7 +38,23 @@
     text-shadow: 0 0 6px var(--lora-accent-transparent);
 }
 
-/* Quick activation action in the wildcard modal header. */
+/* Quick activation action in the wildcard modal header. Both labels share one
+   grid cell, so the button reserves the wider label and does not shift width
+   when Activate and Deactivate swap. */
+.wildcard-toggle-btn .wildcard-toggle-label {
+    display: inline-grid;
+}
+
+.wildcard-toggle-label > span {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+}
+
+.wildcard-toggle-btn.is-active .wildcard-toggle-label > span:first-child,
+.wildcard-toggle-btn:not(.is-active) .wildcard-toggle-label > span:last-child {
+    visibility: hidden;
+}
+
 .modal-send-btn.wildcard-toggle-btn.is-active {
     background: var(--lora-accent);
     border-color: var(--lora-accent);
