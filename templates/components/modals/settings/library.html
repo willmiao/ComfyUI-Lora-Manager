@@ -75,14 +75,16 @@
         </div>
         {% endfor %}
 
+        {# Each feature toggle stays directly above the folder it gates, so the
+           two optional libraries never interleave in the list. #}
         {{ sm.setting_toggle('enableWorkflows', 'enable_workflows', 'settings.folderSettings.enableWorkflows', 'settings.folderSettings.enableWorkflowsHelp') }}
+        <div id="workflowPathSetting">
+            {{ sm.setting_input('workflowPath', 'workflow_path', 'settings.folderSettings.workflowFolder', 'settings.folderSettings.workflowFolderPlaceholder', 'settings.folderSettings.workflowFolderHelp') }}
+        </div>
+
         {{ sm.setting_toggle('enableWildcards', 'enable_wildcards', 'settings.folderSettings.enableWildcards', 'settings.folderSettings.enableWildcardsHelp') }}
         <div id="wildcardPathSetting">
             {{ sm.setting_input('wildcardPath', 'wildcard_path', 'settings.folderSettings.wildcardFolder', 'settings.folderSettings.wildcardFolderPlaceholder', 'settings.folderSettings.wildcardFolderHelp') }}
-        </div>
-
-        <div id="workflowPathSetting">
-            {{ sm.setting_input('workflowPath', 'workflow_path', 'settings.folderSettings.workflowFolder', 'settings.folderSettings.workflowFolderPlaceholder', 'settings.folderSettings.workflowFolderHelp') }}
         </div>
     </div>
 
