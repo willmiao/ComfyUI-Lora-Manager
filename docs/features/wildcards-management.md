@@ -101,6 +101,15 @@ runtime skips inactive records, and a later reactivation restores the stored
 namespace and aliases. This keeps the canvas panel's one-click toggle from
 silently discarding a configured namespace or alias.
 
+Application-driven renames, moves, bulk moves, and folder renames atomically
+rebind the activation record to the new path without changing its effective
+keys. Destination records are never overwritten. After a scan, an external move
+is recovered only when the old path is missing and its recorded SHA-256 matches
+exactly one missing activation record and one scanned resource; ambiguous hashes
+or occupied destinations remain unchanged for manual resolution. Successful
+rebinds invalidate the runtime naturally through the registry signature and emit
+the same wildcard-change notifications used by activation toggles.
+
 For every source key, the effective runtime key is:
 
 ```text
@@ -285,10 +294,6 @@ Implemented and verified:
 
 Known boundaries and follow-up candidates:
 
-- Activation records are path-based. Moving or renaming an activated artifact
-  can leave a stale record; the runtime skips the missing path and the resource
-  should be reactivated at its new path. Stable identity rebinding is a future
-  improvement.
 - Standard bulk operations are available, but there is no dedicated bulk
   Activate/Deactivate action yet.
 - The quick panel does not edit namespaces/aliases and does not download from
@@ -302,7 +307,7 @@ Known boundaries and follow-up candidates:
 
 The final automated regression results were:
 
-- Backend: **4683 passed, 8 skipped**.
+- Backend: **4718 passed, 8 skipped, 15 deselected**.
 - Frontend JavaScript: **228 test files, 2296 tests passed**.
 - Wildcard parser, scanner, activation, route, node, and i18n tests included.
 - Sidecar tests cover centralized path resolution, bidirectional wildcard

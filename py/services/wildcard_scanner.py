@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from ..config import config
 from ..utils.file_utils import calculate_sha256, find_preview_file, normalize_path
@@ -15,6 +15,8 @@ from ..utils.models import WildcardMetadata
 from ..utils.sidecar_paths import get_preview_dir, get_sidecar_base_name
 from .model_hash_index import ModelHashIndex
 from .model_scanner import ModelScanner
+from .websocket_manager import ws_manager
+from .wildcard_activation_service import get_wildcard_activation_service
 from .wildcard_parser import (
     SUPPORTED_ARTIFACT_EXTENSIONS,
     WildcardParseError,
@@ -28,13 +30,14 @@ class WildcardScanner(ModelScanner):
     supports_quantization = False
     verify_hashes_on_scan = True
 
-    def __init__(self):
+    def __init__(self, activation_service=None):
         super().__init__(
             model_type="wildcard",
             model_class=WildcardMetadata,
             file_extensions=set(SUPPORTED_ARTIFACT_EXTENSIONS),
             hash_index=ModelHashIndex(),
         )
+        self.activation_service = activation_service or get_wildcard_activation_service()
 
     def get_model_roots(self) -> List[str]:
         try:
@@ -89,7 +92,103 @@ class WildcardScanner(ModelScanner):
 
     async def initialize_in_background(self, reconcile: bool = False) -> None:
         await super().initialize_in_background(reconcile=reconcile)
+        if self._cache is not None:
+            try:
+                rebound = await asyncio.to_thread(
+                    self.activation_service.reconcile_resources,
+                    self._cache.raw_data,
+                )
+            except Exception:
+                logger.warning("Unable to reconcile wildcard activation paths", exc_info=True)
+            else:
+                await self._notify_activation_rebindings(rebound)
         await self._backfill_parsed_index()
+
+    async def update_single_model_cache(
+        self,
+        original_path: str,
+        new_path: str,
+        metadata: Optional[Dict[str, Any]],
+    ):
+        result = await super().update_single_model_cache(
+            original_path,
+            new_path,
+            metadata,
+        )
+        if result and self._path_key(original_path) != self._path_key(new_path):
+            await self._rebind_activation_paths({original_path: new_path})
+        return result
+
+    async def rename_known_folder(
+        self,
+        previous_folder: str,
+        new_folder: str,
+        *,
+        previous_path: str,
+        new_path: str,
+    ) -> bool:
+        moves: Dict[str, str] = {}
+        old_prefix = self._path_prefix(previous_path)
+        new_prefix = self._path_prefix(new_path)
+        if self._cache is not None:
+            for item in self._cache.raw_data:
+                file_path = str(item.get("file_path") or "")
+                normalized = file_path.replace("\\", "/")
+                if normalized.startswith(old_prefix):
+                    moves[file_path] = new_prefix + normalized[len(old_prefix):]
+
+        changed = await super().rename_known_folder(
+            previous_folder,
+            new_folder,
+            previous_path=previous_path,
+            new_path=new_path,
+        )
+        if changed and moves:
+            await self._rebind_activation_paths(moves)
+        return changed
+
+    @staticmethod
+    def _path_key(file_path: str) -> str:
+        return os.path.normcase(os.path.abspath(file_path)).replace(os.sep, "/")
+
+    @staticmethod
+    def _path_prefix(file_path: str) -> str:
+        return file_path.replace("\\", "/").rstrip("/") + "/"
+
+    async def _rebind_activation_paths(self, moves: Mapping[str, str]) -> None:
+        try:
+            rebound = await asyncio.to_thread(self.activation_service.rebind_paths, moves)
+        except Exception:
+            logger.warning("Unable to rebind wildcard activation records", exc_info=True)
+            return
+        await self._notify_activation_rebindings(rebound)
+
+    async def _notify_activation_rebindings(
+        self,
+        rebound: Mapping[str, Dict[str, Any]],
+    ) -> None:
+        for previous_path, record in rebound.items():
+            file_path = str(record.get("file_path") or "")
+            active = record.get("active", True) is not False
+            payload = {
+                "file_path": file_path,
+                "previous_file_path": previous_path,
+                "active": active,
+            }
+            try:
+                await ws_manager.broadcast({
+                    "type": "wildcard_activation_changed",
+                    **payload,
+                })
+            except Exception:
+                logger.debug("Unable to broadcast wildcard path rebind", exc_info=True)
+            if os.environ.get("LORA_MANAGER_STANDALONE", "0") != "1":
+                try:
+                    from server import PromptServer
+
+                    PromptServer.instance.send_sync("lm_wildcards_changed", payload)
+                except Exception:
+                    logger.debug("Unable to notify ComfyUI wildcard panels", exc_info=True)
 
     async def _backfill_parsed_index(self) -> None:
         """Fill wildcard fields for entries hydrated from an older cache.

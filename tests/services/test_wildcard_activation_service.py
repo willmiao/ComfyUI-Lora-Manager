@@ -221,3 +221,144 @@ def test_legacy_activation_record_without_active_flag_is_active(activation_state
     loaded.deactivate(str(artifact))
     assert loaded.get_active_runtime()[0] == {}
     assert loaded.activation_for(str(artifact), include_inactive=True)["active"] is False
+
+
+def test_rebind_path_preserves_activation_configuration_and_runtime(activation_state):
+    service, runtime, _manual, root = activation_state
+    artifact = root / "palette.yaml"
+    artifact.write_text("warm:\n  - red\n  - orange\n", encoding="utf-8")
+    resource = resource_for(artifact)
+    service.activate(resource, "Design", {"warm": "Warm Colors"})
+    target = root / "nested" / "renamed.yaml"
+    target.parent.mkdir()
+    artifact.rename(target)
+
+    rebound = service.rebind_path(str(artifact), str(target))
+
+    assert rebound["active"] is True
+    assert rebound["namespace"] == "design"
+    assert rebound["aliases"] == {"warm": "warm colors"}
+    assert service.activation_for(str(artifact), include_inactive=True) is None
+    restored = service.activation_for(str(target))
+    assert restored["file_path"] == str(target)
+    assert restored["activated_at"] == rebound["activated_at"]
+    assert runtime.get_wildcard_dict() == {"design/warm colors": ["red", "orange"]}
+
+
+def test_rebind_paths_handles_active_and_inactive_records(activation_state):
+    service, _runtime, _manual, root = activation_state
+    active = root / "active.txt"
+    inactive = root / "inactive.txt"
+    active.write_text("red\n", encoding="utf-8")
+    inactive.write_text("blue\n", encoding="utf-8")
+    service.activate(resource_for(active), "active", {"active": "active"})
+    service.activate(resource_for(inactive), "inactive", {"inactive": "Inactive Colors"})
+    service.deactivate(str(inactive))
+    active_target = root / "moved" / "active.txt"
+    inactive_target = root / "moved" / "inactive.txt"
+    active_target.parent.mkdir()
+    active.rename(active_target)
+    inactive.rename(inactive_target)
+
+    rebound = service.rebind_paths({
+        str(active): str(active_target),
+        str(inactive): str(inactive_target),
+        str(root / "untracked.txt"): str(root / "moved" / "untracked.txt"),
+    })
+
+    assert set(rebound) == {str(active), str(inactive)}
+    assert service.activation_for(str(active_target))["active"] is True
+    restored_inactive = service.activation_for(str(inactive_target), include_inactive=True)
+    assert restored_inactive["active"] is False
+    assert restored_inactive["namespace"] == "inactive"
+    assert restored_inactive["aliases"] == {"inactive": "inactive colors"}
+
+
+def test_rebind_paths_does_not_overwrite_destination_settings(activation_state):
+    service, _runtime, _manual, root = activation_state
+    source = root / "source.txt"
+    destination = root / "destination.txt"
+    source.write_text("red\n", encoding="utf-8")
+    destination.write_text("blue\n", encoding="utf-8")
+    service.activate(resource_for(source), "source", {"source": "source"})
+    service.activate(resource_for(destination), "destination", {"destination": "destination"})
+    source.rename(root / "source-moved.txt")
+
+    with pytest.raises(WildcardLibraryError):
+        service.rebind_path(str(source), str(destination))
+
+    assert service.activation_for(str(source), include_inactive=True) is not None
+    assert service.activation_for(str(destination))["namespace"] == "destination"
+
+
+def test_reconcile_resources_recovers_unique_external_move(activation_state):
+    service, runtime, _manual, root = activation_state
+    artifact = root / "colors.txt"
+    artifact.write_text("red\nblue\n", encoding="utf-8")
+    resource = resource_for(artifact)
+    service.activate(resource, "palette", {"colors": "colors"})
+    target = root / "external" / "colors.txt"
+    target.parent.mkdir()
+    artifact.rename(target)
+    moved_resource = resource_for(target)
+
+    rebound = service.reconcile_resources([moved_resource])
+
+    assert list(rebound) == [str(artifact)]
+    assert service.activation_for(str(target))["namespace"] == "palette"
+    assert runtime.get_wildcard_dict() == {"palette/colors": ["red", "blue"]}
+
+
+def test_reconcile_resources_skips_duplicate_hash_matches(activation_state):
+    service, runtime, _manual, root = activation_state
+    artifact = root / "colors.txt"
+    artifact.write_text("red\nblue\n", encoding="utf-8")
+    resource = resource_for(artifact)
+    service.activate(resource)
+    first = root / "first.txt"
+    second = root / "second.txt"
+    artifact.rename(first)
+    second.write_text("red\nblue\n", encoding="utf-8")
+
+    rebound = service.reconcile_resources([resource_for(first), resource_for(second)])
+
+    assert rebound == {}
+    assert service.activation_for(str(artifact), include_inactive=True) is not None
+    assert runtime.get_wildcard_dict() == {}
+
+
+def test_reconcile_resources_skips_hash_shared_by_missing_records(activation_state):
+    service, runtime, _manual, root = activation_state
+    first = root / "first.txt"
+    second = root / "second.txt"
+    first.write_text("red\n", encoding="utf-8")
+    second.write_text("blue\n", encoding="utf-8")
+    service.activate(resource_for(first), "first", {"first": "first"})
+    service.activate(resource_for(second), "second", {"second": "second"})
+    target = root / "target.txt"
+    first.rename(root / "first-moved.txt")
+    second.rename(root / "second-moved.txt")
+    target.write_text("red\n", encoding="utf-8")
+
+    rebound = service.reconcile_resources([resource_for(target)])
+
+    assert rebound == {}
+    assert service.activation_for(str(first), include_inactive=True) is not None
+    assert service.activation_for(str(second), include_inactive=True) is not None
+    assert runtime.get_wildcard_dict() == {}
+
+
+def test_reconcile_resources_ignores_candidates_missing_from_disk(activation_state):
+    service, _runtime, _manual, root = activation_state
+    artifact = root / "colors.txt"
+    artifact.write_text("red\nblue\n", encoding="utf-8")
+    service.activate(resource_for(artifact))
+    target = root / "target.txt"
+    artifact.rename(target)
+    stale_resource = resource_for(target)
+    target.unlink()
+
+    rebound = service.reconcile_resources([stale_resource])
+
+    assert rebound == {}
+    assert service.activation_for(str(artifact), include_inactive=True) is not None

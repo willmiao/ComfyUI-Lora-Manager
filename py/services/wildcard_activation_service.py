@@ -10,7 +10,7 @@ import re
 import threading
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Iterable, Mapping
 
 from ..utils.settings_paths import get_settings_dir
 from .wildcard_parser import (
@@ -334,6 +334,123 @@ class WildcardActivationService:
             updated["deactivated_at"] = datetime.now(timezone.utc).isoformat()
             activations[key] = updated
             self._save(activations)
+
+    def rebind_path(self, file_path: str, new_file_path: str) -> dict[str, Any] | None:
+        """Move one activation record without changing its runtime mapping."""
+
+        return self.rebind_paths({file_path: new_file_path}).get(file_path)
+
+    def rebind_paths(self, moves: Mapping[str, str]) -> dict[str, dict[str, Any]]:
+        """Atomically re-key activation records after filesystem moves.
+
+        Existing settings at a destination are never overwritten. The whole
+        batch is validated before it is written, so a collision cannot leave a
+        partially rebound registry.
+        """
+
+        with self._lock:
+            activations = self._load()
+            staged = dict(activations)
+            rebound: dict[str, dict[str, Any]] = {}
+            for file_path, new_file_path in moves.items():
+                if not file_path or not new_file_path:
+                    continue
+                source_key = _path_key(file_path)
+                target_key = _path_key(new_file_path)
+                if source_key == target_key:
+                    continue
+                record = staged.get(source_key)
+                if record is None:
+                    continue
+                if target_key in staged:
+                    raise WildcardLibraryError(
+                        f"Cannot rebind wildcard activation to {new_file_path}: "
+                        "the destination already has activation settings"
+                    )
+                updated = dict(record)
+                updated["file_path"] = new_file_path
+                del staged[source_key]
+                staged[target_key] = updated
+                rebound[file_path] = copy.deepcopy(updated)
+            if rebound:
+                self._save(staged)
+            return rebound
+
+    def reconcile_resources(
+        self, resources: Iterable[dict[str, Any]]
+    ) -> dict[str, dict[str, Any]]:
+        """Recover records whose artifacts moved outside the application.
+
+        A missing source path is rebound only when its recorded SHA-256 matches
+        exactly one scanned resource. Ambiguous hashes and occupied activation
+        destinations are left untouched for manual resolution.
+        """
+
+        resources_by_path: dict[str, dict[str, Any]] = {}
+        resources_by_hash: dict[str, dict[str, dict[str, Any]]] = {}
+        for resource in resources:
+            if not isinstance(resource, dict):
+                continue
+            file_path = str(resource.get("file_path") or "")
+            if not file_path or not os.path.isfile(file_path):
+                continue
+            resources_by_path[_path_key(file_path)] = resource
+            sha256 = str(resource.get("sha256") or "").strip().lower()
+            if sha256:
+                resources_by_hash.setdefault(sha256, {})[_path_key(file_path)] = resource
+
+        records = list(self._load().items())
+        missing_hash_counts: dict[str, int] = {}
+        for source_key, record in records:
+            file_path = str(record.get("file_path") or source_key)
+            if _path_key(file_path) in resources_by_path or os.path.isfile(file_path):
+                continue
+            sha256 = str(record.get("sha256") or "").strip().lower()
+            if sha256:
+                missing_hash_counts[sha256] = missing_hash_counts.get(sha256, 0) + 1
+
+        rebound: dict[str, dict[str, Any]] = {}
+        for source_key, record in records:
+            file_path = str(record.get("file_path") or source_key)
+            if _path_key(file_path) in resources_by_path or os.path.isfile(file_path):
+                continue
+            sha256 = str(record.get("sha256") or "").strip().lower()
+            if not sha256:
+                continue
+            if missing_hash_counts.get(sha256) != 1:
+                logger.warning(
+                    "Skipping wildcard activation recovery for %s: SHA-256 %s "
+                    "is shared by %d missing activation records",
+                    file_path,
+                    sha256,
+                    missing_hash_counts[sha256],
+                )
+                continue
+            candidates = list(resources_by_hash.get(sha256, {}).values())
+            if len(candidates) != 1:
+                if len(candidates) > 1:
+                    logger.warning(
+                        "Skipping wildcard activation recovery for %s: SHA-256 %s "
+                        "matches %d resources",
+                        file_path,
+                        sha256,
+                        len(candidates),
+                    )
+                continue
+            new_file_path = str(candidates[0]["file_path"])
+            try:
+                updated = self.rebind_path(file_path, new_file_path)
+            except WildcardLibraryError as exc:
+                logger.warning("Skipping wildcard activation recovery: %s", exc)
+                continue
+            if updated is not None:
+                rebound[file_path] = updated
+                logger.info(
+                    "Rebound wildcard activation after external move: %s -> %s",
+                    file_path,
+                    new_file_path,
+                )
+        return rebound
 
     def read_source(self, file_path: str, source_path: str) -> dict[str, Any]:
         return read_wildcard_source(file_path, source_path)
