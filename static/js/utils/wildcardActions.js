@@ -8,10 +8,9 @@ async function fetchActiveResource(filePath) {
 }
 
 /**
- * Open the same shared model modal a wildcard card click uses. The modal
- * carries the Wildcards tab with activation, keys and the source preview.
+ * Open the shared model modal, optionally scrolling to its wildcard browser.
  */
-export async function openWildcardModel(filePath, { openWildcardsTab = false } = {}) {
+export async function openWildcardModel(filePath, { openWildcardsSection = false } = {}) {
     try {
         const { showModelModal } = await import('../components/shared/ModelModal.js');
         let model = null;
@@ -31,7 +30,7 @@ export async function openWildcardModel(filePath, { openWildcardsTab = false } =
                 entries: Array.isArray(metadata.entries) ? metadata.entries : [],
             };
         }
-        await showModelModal(model, 'wildcards', { openWildcardsTab });
+        await showModelModal(model, 'wildcards', { openWildcardsSection });
     } catch (error) {
         console.warn('Failed to open wildcard model:', error);
         showToast(`Failed to open wildcard: ${error.message}`, {}, 'error');

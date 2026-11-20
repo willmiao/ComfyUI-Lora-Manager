@@ -209,7 +209,7 @@ describe('wildcard card activation action', () => {
     await vi.waitFor(() => {
       expect(WILDCARD_ACTIONS.openWildcardModel).toHaveBeenCalledWith(
         '/models/wildcards/pack.zip',
-        { openWildcardsTab: true },
+        { openWildcardsSection: true },
       );
     });
     expect(card.dataset.active).toBe('false');

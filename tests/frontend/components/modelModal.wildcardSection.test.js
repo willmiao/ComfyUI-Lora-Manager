@@ -13,8 +13,10 @@ const {
   MODEL_VERSIONS_MODULE,
   RECIPE_TAB_MODULE,
   I18N_HELPERS_MODULE,
-  WILDCARD_TAB_MODULE,
-  setupWildcardTabMock,
+  WILDCARD_SECTION_MODULE,
+  renderWildcardSectionMock,
+  setupWildcardSectionMock,
+  openWildcardSettingsMock,
 } = vi.hoisted(() => ({
   MODAL_MODULE: new URL('../../../static/js/components/shared/ModelModal.js', import.meta.url).pathname,
   API_FACTORY: new URL('../../../static/js/api/modelApiFactory.js', import.meta.url).pathname,
@@ -28,8 +30,10 @@ const {
   MODEL_VERSIONS_MODULE: new URL('../../../static/js/components/shared/ModelVersionsTab.js', import.meta.url).pathname,
   RECIPE_TAB_MODULE: new URL('../../../static/js/components/shared/RecipeTab.js', import.meta.url).pathname,
   I18N_HELPERS_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
-  WILDCARD_TAB_MODULE: new URL('../../../static/js/components/shared/WildcardTab.js', import.meta.url).pathname,
-  setupWildcardTabMock: vi.fn(),
+  WILDCARD_SECTION_MODULE: new URL('../../../static/js/components/shared/WildcardSection.js', import.meta.url).pathname,
+  renderWildcardSectionMock: vi.fn(() => '<div class="wildcard-section">Wildcard section</div>'),
+  setupWildcardSectionMock: vi.fn(),
+  openWildcardSettingsMock: vi.fn(),
 }));
 
 vi.mock(UI_HELPERS_MODULE, () => ({
@@ -89,9 +93,10 @@ vi.mock(I18N_HELPERS_MODULE, () => ({
   translate: vi.fn((_, __, fallback) => fallback || ''),
 }));
 
-vi.mock(WILDCARD_TAB_MODULE, () => ({
-  renderWildcardTab: vi.fn(() => '<div class="wildcard-tab">Wildcard tab</div>'),
-  setupWildcardTab: setupWildcardTabMock,
+vi.mock(WILDCARD_SECTION_MODULE, () => ({
+  renderWildcardSection: renderWildcardSectionMock,
+  setupWildcardSection: setupWildcardSectionMock,
+  openWildcardActivationSettings: openWildcardSettingsMock,
 }));
 
 vi.mock(API_FACTORY, () => ({
@@ -121,13 +126,15 @@ async function getTabs() {
   }));
 }
 
-describe('Model modal wildcard tab placement', () => {
+describe('Model modal wildcard section', () => {
   let getModelApiClient;
   let apiClient;
 
   beforeEach(async () => {
     document.body.innerHTML = '';
-    setupWildcardTabMock.mockClear();
+    renderWildcardSectionMock.mockClear();
+    setupWildcardSectionMock.mockClear();
+    openWildcardSettingsMock.mockClear();
     ({ getModelApiClient } = await import(API_FACTORY));
     getModelApiClient.mockReset();
     apiClient = {
@@ -138,11 +145,11 @@ describe('Model modal wildcard tab placement', () => {
       }),
       activate: vi.fn().mockResolvedValue({
         success: true,
-        resource: { ...MODEL, active: true, entries: [] },
+        resource: { ...MODEL, active: true, activated_at: '2026-01-01T00:00:00Z', entries: [] },
       }),
       deactivate: vi.fn().mockResolvedValue({
         success: true,
-        resource: { ...MODEL, active: false, entries: [] },
+        resource: { ...MODEL, active: false, activated_at: '2026-01-01T00:00:00Z', entries: [] },
       }),
     };
     getModelApiClient.mockReturnValue(apiClient);
@@ -156,7 +163,7 @@ describe('Model modal wildcard tab placement', () => {
     document.body.innerHTML = '';
   });
 
-  it('keeps Wildcards last and leaves the first tab active for a card click', async () => {
+  it('renders the key browser in the main info grid and removes the Wildcards tab', async () => {
     const { showModelModal } = await import(MODAL_MODULE);
     await showModelModal(MODEL, 'wildcards');
 
@@ -164,51 +171,74 @@ describe('Model modal wildcard tab placement', () => {
       'showcase',
       'description',
       'versions',
-      'wildcards',
     ]);
     expect((await getTabs())[0].active).toBe(true);
-    expect((await getTabs())[3].active).toBe(false);
+    expect(document.querySelector('#modelModal .info-grid > .wildcard-section')).not.toBeNull();
+    expect(document.querySelector('#wildcards-tab')).toBeNull();
+    expect(setupWildcardSectionMock).toHaveBeenCalled();
   });
 
-  it('leads the header actions with the wildcard activation toggle', async () => {
+  it('auto-expands the section only for explicit wildcard entry points', async () => {
+    const { showModelModal } = await import(MODAL_MODULE);
+    await showModelModal(MODEL, 'wildcards');
+    expect(renderWildcardSectionMock).toHaveBeenLastCalledWith(expect.anything(), { expanded: false });
+
+    await showModelModal(MODEL, 'wildcards', { openWildcardsSection: true });
+    expect(renderWildcardSectionMock).toHaveBeenLastCalledWith(expect.anything(), { expanded: true });
+  });
+
+  it('keeps activation first and adds a separate settings action in the header', async () => {
     const { showModelModal } = await import(MODAL_MODULE);
     await showModelModal({ ...MODEL, active: false, entries: [] }, 'wildcards');
 
-    const firstAction = document.querySelector('#modelModal .modal-header-actions').firstElementChild;
-    expect(firstAction.dataset.action).toBe('toggle-wildcard');
-    expect(firstAction.dataset.active).toBe('false');
-    expect(firstAction.getAttribute('aria-label')).toBe('Activate');
-    // Both labels stay in the DOM so the button reserves the wider one.
-    expect(firstAction.querySelectorAll('.wildcard-toggle-label > span')).toHaveLength(2);
+    const actions = document.querySelectorAll('#modelModal .modal-header-actions > button');
+    expect(actions[0].dataset.action).toBe('toggle-wildcard');
+    expect(actions[0].dataset.active).toBe('false');
+    expect(actions[0].getAttribute('aria-label')).toBe('Activate');
+    expect(actions[0].querySelectorAll('.wildcard-toggle-label > span')).toHaveLength(2);
+    expect(actions[1].dataset.action).toBe('wildcard-settings');
+    expect(actions[1].getAttribute('aria-label')).toBe('Activation settings');
   });
 
-  it('activates from the header toggle and refreshes the Wildcards pane', async () => {
+  it('opens settings for first-time activation instead of activating with unchecked defaults', async () => {
     const { showModelModal } = await import(MODAL_MODULE);
-    await showModelModal({ ...MODEL, active: false, entries: [] }, 'wildcards');
+    await showModelModal({ ...MODEL, active: false, activated_at: null, entries: [] }, 'wildcards');
+
+    document.querySelector('#modelModal [data-action="toggle-wildcard"]').click();
+
+    expect(openWildcardSettingsMock).toHaveBeenCalledWith('modelModal');
+    expect(apiClient.activate).not.toHaveBeenCalled();
+  });
+
+  it('reuses saved settings on later activation and refreshes the section in place', async () => {
+    const { showModelModal } = await import(MODAL_MODULE);
+    await showModelModal({
+      ...MODEL,
+      active: false,
+      activated_at: '2026-01-01T00:00:00Z',
+      entries: [],
+    }, 'wildcards');
     const button = document.querySelector('#modelModal [data-action="toggle-wildcard"]');
-    const setupCallsBefore = setupWildcardTabMock.mock.calls.length;
+    const setupCallsBefore = setupWildcardSectionMock.mock.calls.length;
 
     button.click();
 
     await vi.waitFor(() => {
       expect(apiClient.activate).toHaveBeenCalledWith('/models/wild.zip');
-    });
-    await vi.waitFor(() => {
       expect(button.getAttribute('aria-label')).toBe('Deactivate');
     });
     expect(button.dataset.active).toBe('true');
-    expect(button.title).toBe('Deactivate');
     expect(button.classList.contains('is-active')).toBe(true);
-    expect(setupWildcardTabMock.mock.calls.length).toBe(setupCallsBefore + 1);
+    expect(setupWildcardSectionMock.mock.calls.length).toBe(setupCallsBefore + 1);
   });
 
-  it('activates the last Wildcards tab when an explicit entry point requests it', async () => {
+  it('opens activation settings from the header action', async () => {
     const { showModelModal } = await import(MODAL_MODULE);
-    await showModelModal(MODEL, 'wildcards', { openWildcardsTab: true });
+    await showModelModal({ ...MODEL, active: true, entries: [] }, 'wildcards');
 
-    const tabs = await getTabs();
-    expect(tabs[3]).toEqual({ tab: 'wildcards', active: true });
-    expect(tabs[0].active).toBe(false);
-    expect(setupWildcardTabMock).toHaveBeenCalled();
+    document.querySelector('#modelModal [data-action="wildcard-settings"]').click();
+
+    expect(openWildcardSettingsMock).toHaveBeenCalledWith('modelModal');
+    expect(apiClient.deactivate).not.toHaveBeenCalled();
   });
 });

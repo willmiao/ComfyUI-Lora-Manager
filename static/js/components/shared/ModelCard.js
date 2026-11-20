@@ -289,7 +289,7 @@ function handleReplacePreview(filePath, modelType) {
  * Toggle a wildcard resource from its card chip.
  *
  * Activation uses the default (or previously saved) namespace and aliases;
- * a key conflict opens the manager's Wildcards tab so the user can resolve it.
+ * a key conflict opens the manager's wildcard details so the user can resolve it.
  */
 async function handleWildcardToggle(card) {
     const filePath = card.dataset.filepath;
@@ -316,7 +316,7 @@ async function handleWildcardToggle(card) {
             const keys = conflicts.slice(0, 3).map((item) => item.key).join(', ');
             showToast(`Activation blocked by a key conflict: ${keys}`, {}, 'error');
             const { openWildcardModel } = await import('../../utils/wildcardActions.js');
-            await openWildcardModel(filePath, { openWildcardsTab: true });
+            await openWildcardModel(filePath, { openWildcardsSection: true });
         } else {
             showToast(error.message || 'Wildcard activation failed', {}, 'error');
         }

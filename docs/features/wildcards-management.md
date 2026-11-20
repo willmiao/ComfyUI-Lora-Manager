@@ -32,8 +32,8 @@ The main consequences for the design are:
   the source of truth.
 - Filename-only activation aliases are insufficient for YAML/JSON because their
   keys come from nested content rather than the filename.
-- Activation needs a resource namespace and, for a single-entry resource, a key
-  alias. Full archive paths should remain intact by default.
+- Activation supports an optional resource namespace and, for a single-entry
+  resource, a key alias. Full archive paths remain intact by default.
 - Exact key conflicts are real, but blindly flattening paths creates additional
   short-key collisions. Autocomplete should insert the complete effective key.
 
@@ -152,15 +152,20 @@ Wildcard-specific additions are intentionally small:
 - an activation bolt beside the card's Civitai globe that activates with the
   saved namespace/aliases or deactivates in place; the icon uses the accent
   color when active and stays muted when idle;
-- Activate…/Deactivate in the card context menu; Activate… opens the Wildcards
-  tab so a namespace and alias can be set before activation;
+- Activate…/Deactivate in the card context menu; Activate… opens the wildcard
+  section so a namespace and alias can be set before activation;
 - a quick Activate/Deactivate action that leads the model modal's header actions,
-  toggling in place and refreshing the Wildcards tab and the card behind it;
-- a **Wildcards** tab in the standard model modal for activation state,
-  namespace/single-key alias editing, effective-key browsing, source content,
-  and candidate-value previews. It stays last so the normal card click keeps
-  the conventional first tab; explicit wildcard entry points (`Open in
-  manager`, Details/Activate) switch to it;
+  plus a separate activation-settings action. First-time activation opens the
+  settings dialog; later toggles reuse the saved mapping and refresh the section
+  and card in place;
+- a **Wildcard keys** section in the standard model modal's main information
+  grid for effective-key browsing, filtering, keyboard selection, `__key__`
+  copying, and candidate-value previews. It stays collapsed on ordinary card
+  clicks and loads values only after expansion. Explicit wildcard entry points
+  (`Open in manager`, Details/Activate) expand and scroll to the section. The
+  expanded state, filter, and selected key survive activation refreshes.
+  Activation state and toggles stay on the card and modal header rather than
+  being duplicated here;
 - Active state included in the normal formatted model response.
 
 The manager is also where complex conflict resolution belongs. The canvas panel
@@ -193,7 +198,8 @@ Activating from the panel means activating an existing local resource, never
 downloading from Civitai. The panel's **Open in manager** action reuses the
 named `lm-lora-manager` tab (the same tab the recipe picker uses) and
 deep-links to `#model=<file_path>`; the wildcards page opens the same shared
-model modal a card click uses, with the Wildcards tab selected. Manual files
+model modal a card click uses, with the Wildcard keys section expanded and scrolled
+into view. Manual files
 are listed individually but remain read-only and non-toggleable. The panel and
 manager call the same activation endpoints. A
 `lm_wildcards_changed` websocket event refreshes an open panel after a change.
@@ -270,7 +276,7 @@ per artifact, and read/check operations triggered the warning as well as writes.
 Implemented and verified:
 
 - first-class scanner, metadata, service, routes, settings, and download support;
-- standard manager page and Wildcards tab in the shared model modal;
+- standard manager page and Wildcard keys section in the shared model modal;
 - global activation registry and runtime merging;
 - Global Wildcards quick panel with websocket refresh;
 - safe parsing and activation conflict handling;
@@ -297,7 +303,7 @@ Known boundaries and follow-up candidates:
 The final automated regression results were:
 
 - Backend: **4683 passed, 8 skipped**.
-- Frontend JavaScript: **227 test files, 2268 tests passed**.
+- Frontend JavaScript: **228 test files, 2296 tests passed**.
 - Wildcard parser, scanner, activation, route, node, and i18n tests included.
 - Sidecar tests cover centralized path resolution, bidirectional wildcard
   migration, and full metadata loading after migration.
@@ -340,9 +346,9 @@ npm run test:js -- \
 - `static/js/components/ContextMenu/WildcardContextMenu.js` and
   `static/js/utils/wildcardActions.js` — card/context-menu modal and activation
   interactions.
-- `static/js/components/shared/WildcardTab.js` and the `wildcards` tab in
-  `static/js/components/shared/ModelModal.js` — activation, keys and source
-  preview inside the shared model modal.
+- `static/js/components/shared/WildcardSection.js` and the wildcard integration
+  in `static/js/components/shared/ModelModal.js` — activation settings, key
+  browsing, reference copying, and value previews inside the shared model modal.
 - `web/comfyui/wildcard_quick_panel.js` — global canvas panel.
 - `web/comfyui/wildcard_quick_panel_extension.js` — ComfyUI command and event
   registration.

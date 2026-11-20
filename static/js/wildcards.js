@@ -48,10 +48,9 @@ export async function openLinkedWildcardModel() {
     const filePath = params.get('model');
     if (!filePath) return;
     try {
-        // Open the same shared model modal a wildcard card click uses; the
-        // Wildcards tab owns activation, keys and the source preview.
+        // Open the wildcard key browser in the shared model modal.
         const { openWildcardModel } = await import('./utils/wildcardActions.js');
-        await openWildcardModel(filePath, { openWildcardsTab: true });
+        await openWildcardModel(filePath, { openWildcardsSection: true });
     } catch (error) {
         console.warn('Failed to open the linked wildcard:', error);
     } finally {

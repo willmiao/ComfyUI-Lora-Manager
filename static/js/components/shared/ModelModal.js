@@ -7,7 +7,7 @@ import {
     loadExampleImages
 } from './showcase/ShowcaseView.js';
 import { setupTabSwitching } from './ModelDescription.js';
-import { renderWildcardTab, setupWildcardTab } from './WildcardTab.js';
+import { openWildcardActivationSettings, renderWildcardSection, setupWildcardSection } from './WildcardSection.js';
 import {
     setupModelNameEditing,
     setupBaseModelEditing,
@@ -520,7 +520,7 @@ export async function showModelModal(model, modelType, options = {}) {
     }
 
     // The wildcard page opens the same model modal as a card click. Hydrate the
-    // parsed key index and activation state so the Wildcards tab is complete
+    // parsed key index and activation state so the wildcard section is complete
     // even when the card only supplied list-level data.
     let wildcardResource = null;
     if (
@@ -543,6 +543,7 @@ export async function showModelModal(model, modelType, options = {}) {
             active: wildcardResource?.active ?? model.active ?? false,
             activation_namespace: wildcardResource?.activation_namespace ?? model.activation_namespace ?? '',
             activation_aliases: wildcardResource?.activation_aliases ?? model.activation_aliases ?? {},
+            activated_at: wildcardResource?.activated_at ?? model.activated_at ?? fullMetadata.activated_at ?? null,
             entries: wildcardResource?.entries ?? model.entries ?? fullMetadata.entries ?? [],
             entry_count: wildcardResource?.entry_count ?? model.entry_count ?? fullMetadata.entry_count ?? 0,
             value_count: wildcardResource?.value_count ?? model.value_count ?? fullMetadata.value_count ?? 0,
@@ -710,6 +711,7 @@ export async function showModelModal(model, modelType, options = {}) {
         const activateLabel = translate('wildcards.actions.activate', {}, 'Activate');
         const deactivateLabel = translate('wildcards.actions.deactivate', {}, 'Deactivate');
         const wildcardActionLabel = wildcardActive ? deactivateLabel : activateLabel;
+        const settingsLabel = translate('wildcards.activation.settingsTitle', {}, 'Activation settings');
         const wildcardToggleButton = `
         <button class="modal-send-btn wildcard-toggle-btn${wildcardActive ? ' is-active' : ''}"
                 data-action="toggle-wildcard"
@@ -721,6 +723,10 @@ export async function showModelModal(model, modelType, options = {}) {
                 <span>${activateLabel}</span>
                 <span>${deactivateLabel}</span>
             </span>
+        </button>
+        <button class="modal-send-btn wildcard-settings-btn" data-action="wildcard-settings"
+                title="${settingsLabel}" aria-label="${settingsLabel}" aria-haspopup="dialog">
+            <i class="fas fa-sliders-h" aria-hidden="true"></i>
         </button>
     `.trim();
         headerActionItems.push(indentMarkup(wildcardToggleButton, 20));
@@ -786,6 +792,10 @@ export async function showModelModal(model, modelType, options = {}) {
         typeSpecificContent = renderLoraSpecificContent(modelWithFullData, escapedWords);
     } else if (modelType === 'embeddings') {
         typeSpecificContent = renderEmbeddingSpecificContent(modelWithFullData, escapedWords);
+    } else if (modelType === 'wildcards') {
+        typeSpecificContent = renderWildcardSection(modelWithFullData, {
+            expanded: options.openWildcardsSection === true,
+        });
     } else {
         typeSpecificContent = '';
     }
@@ -809,25 +819,13 @@ export async function showModelModal(model, modelType, options = {}) {
             </button>`.trim();
 
     const supportsRecipesTab = modelType === 'loras' || modelType === 'checkpoints';
-    const isWildcard = modelType === 'wildcards';
-    // Card clicks keep the conventional first tab (Examples). Only explicit
-    // wildcard entry points (Open in manager, Details/Activate) switch to the
-    // Wildcards tab; the tab itself is always rendered last.
-    const openWildcardsTab = isWildcard && Boolean(options.openWildcardsTab);
-    const wildcardsTabText = translate('wildcards.title', {}, 'Wildcards');
-    const wildcardTabButton = `<button class="tab-btn${openWildcardsTab ? ' active' : ''}" data-tab="wildcards">${wildcardsTabText}</button>`;
 
     const tabsContent = supportsRecipesTab ?
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}
             <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
-        isWildcard ?
-            `<button class="tab-btn${openWildcardsTab ? '' : ' active'}" data-tab="showcase">${examplesText}</button>
-            <button class="tab-btn" data-tab="description">${descriptionText}</button>
-            ${versionsTabButton}
-            ${wildcardTabButton}` :
-            `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}`;
 
@@ -859,10 +857,6 @@ export async function showModelModal(model, modelType, options = {}) {
                     </button>
                 </div>`.trim();
 
-    const wildcardPane = isWildcard
-        ? `<div id="wildcards-tab" class="tab-pane${openWildcardsTab ? ' active' : ''}">${renderWildcardTab(modelWithFullData)}</div>`
-        : '';
-
     const tabPanesContent = supportsRecipesTab ?
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
@@ -893,7 +887,7 @@ export async function showModelModal(model, modelType, options = {}) {
                 <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
         </div>` :
-        `<div id="showcase-tab" class="tab-pane${openWildcardsTab ? '' : ' active'}">
+        `<div id="showcase-tab" class="tab-pane active">
             <div class="recipes-loading">
                 <i class="fas fa-spinner fa-spin"></i> ${loadingExamplesText}
             </div>
@@ -915,7 +909,7 @@ export async function showModelModal(model, modelType, options = {}) {
                     <i class="fas fa-spinner fa-spin"></i> ${loadingVersionsText}
                 </div>
             </div>
-        </div>${wildcardPane}`;
+        </div>`;
 
     const content = `
         <div class="modal-content">
@@ -1165,14 +1159,15 @@ export async function showModelModal(model, modelType, options = {}) {
         },
     });
     if (modelType === 'wildcards') {
-        setupWildcardTab({
+        setupWildcardSection({
             model: modelWithFullData,
             modalId,
-            onRefresh: (updated) => {
-                syncWildcardCardState(updated?.file_path, updated?.active === true);
-                showModelModal(updated, 'wildcards', { openWildcardsTab: true });
-            },
+            onRefresh: applyWildcardModelUpdate,
         });
+        if (options.openWildcardsSection) {
+            const section = activeModalElement?.querySelector('.wildcard-section');
+            section?.scrollIntoView?.({ block: 'start' });
+        }
     }
     versionsTabController.load({ eager: true });
     setupTagTooltip();
@@ -1331,6 +1326,9 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'toggle-wildcard':
                 handleWildcardHeaderToggle(target);
+                break;
+            case 'wildcard-settings':
+                openWildcardActivationSettings('modelModal');
                 break;
             case 'delete-model':
                 handleDeleteModel();
@@ -1634,7 +1632,7 @@ function setupNavigationShortcuts(modelType) {
     navigationModelType = modelType;
 
     navigationKeyHandler = (event) => {
-        if (shouldIgnoreNavigationKey(event)) return;
+        if (shouldIgnoreNavigationKey(event) || modalElement.querySelector('dialog[open]')) return;
 
         if (event.key === 'ArrowLeft') {
             event.preventDefault();
@@ -1652,10 +1650,8 @@ function setupNavigationShortcuts(modelType) {
 }
 
 /**
- * Quick activation action in the wildcard modal header.
- *
- * The endpoint returns the decorated resource, so the header button and the
- * Wildcards pane can be refreshed in place without losing the active tab.
+ * Quick activation action in the wildcard modal header. First-time activation
+ * collects reference settings; later activations reuse the saved mapping.
  */
 async function handleWildcardHeaderToggle(button) {
     const modalElement = document.getElementById('modelModal');
@@ -1664,6 +1660,11 @@ async function handleWildcardHeaderToggle(button) {
     if (!filePath || button.disabled) return;
 
     const wasActive = button.dataset.active === 'true';
+    if (!wasActive && !modelData?.activated_at) {
+        openWildcardActivationSettings('modelModal');
+        return;
+    }
+
     button.disabled = true;
     try {
         const apiClient = getModelApiClient('wildcards');
@@ -1673,32 +1674,37 @@ async function handleWildcardHeaderToggle(button) {
         const updated = {
             ...(modelData || {}),
             ...(result?.resource || {}),
+            active: result?.resource?.active ?? !wasActive,
         };
-        updated.active = result?.resource?.active ?? !wasActive;
-        if (modalElement) modalElement._modelData = updated;
-
-        updateWildcardHeaderToggle(button, updated.active);
-        refreshWildcardTab(updated);
-        syncWildcardCardState(filePath, updated.active);
+        applyWildcardModelUpdate(updated);
         showToast(
             wasActive ? 'wildcards.messages.deactivated' : 'wildcards.messages.activated',
             {},
             'success',
         );
     } catch (error) {
-        const conflicts = error.payload?.conflicts || [];
-        if (conflicts.length) {
-            const keys = conflicts.slice(0, 3).map((item) => item.key).join(', ');
-            showToast(`Activation blocked by a key conflict: ${keys}`, {}, 'error');
-            modalElement
-                ?.querySelector('.showcase-tabs .tab-btn[data-tab="wildcards"]')
-                ?.click();
+        if (error.payload?.conflicts?.length) {
+            openWildcardActivationSettings('modelModal', error);
         } else {
             showToast(error.message || 'Wildcard activation failed', {}, 'error');
         }
     } finally {
         button.disabled = false;
     }
+}
+
+function applyWildcardModelUpdate(updated) {
+    const modalElement = document.getElementById('modelModal');
+    if (!modalElement || !updated) return;
+    const next = {
+        ...(modalElement._modelData || {}),
+        ...updated,
+    };
+    modalElement._modelData = next;
+    const toggle = modalElement.querySelector('[data-action="toggle-wildcard"]');
+    if (toggle) updateWildcardHeaderToggle(toggle, next.active === true);
+    syncWildcardCardState(next.file_path, next.active === true);
+    refreshWildcardSection(next);
 }
 
 function updateWildcardHeaderToggle(button, active) {
@@ -1713,17 +1719,18 @@ function updateWildcardHeaderToggle(button, active) {
     button.setAttribute('aria-label', label);
 }
 
-function refreshWildcardTab(updated) {
-    const pane = document.getElementById('wildcards-tab');
-    if (!pane) return;
-    pane.innerHTML = renderWildcardTab(updated);
-    setupWildcardTab({
+function refreshWildcardSection(updated) {
+    const section = document.querySelector('#modelModal .wildcard-section');
+    if (!section) return;
+    const viewState = section._wildcardViewState || {
+        expanded: section.classList.contains('is-expanded'),
+    };
+    section.outerHTML = renderWildcardSection(updated, { expanded: viewState.expanded });
+    setupWildcardSection({
         model: updated,
         modalId: 'modelModal',
-        onRefresh: (next) => {
-            syncWildcardCardState(next?.file_path, next?.active === true);
-            showModelModal(next, 'wildcards', { openWildcardsTab: true });
-        },
+        onRefresh: applyWildcardModelUpdate,
+        viewState,
     });
 }
 
@@ -1762,10 +1769,7 @@ async function handleDirectionalNavigation(direction, modelType) {
         }
 
         navigationModelType = modelType || navigationModelType;
-        const openWildcardsTab = Boolean(
-            modalElement.querySelector('.showcase-tabs .tab-btn[data-tab="wildcards"]')?.classList.contains('active')
-        );
-        await showModelModal(adjacent.item, navigationModelType || modelType, { openWildcardsTab });
+        await showModelModal(adjacent.item, navigationModelType || modelType);
     } finally {
         navigationInProgress = false;
         updateNavigationControls();

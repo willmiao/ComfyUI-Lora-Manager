@@ -37,11 +37,11 @@ export class WildcardContextMenu extends BaseContextMenu {
         const apiClient = getModelApiClient();
         switch (action) {
             case 'wildcard-details':
-                openWildcardModel(filePath, { openWildcardsTab: true });
+                openWildcardModel(filePath, { openWildcardsSection: true });
                 break;
             case 'toggle-active':
                 if (this.currentCard.dataset.active === 'true') deactivateWildcard(filePath);
-                else openWildcardModel(filePath, { openWildcardsTab: true });
+                else openWildcardModel(filePath, { openWildcardsSection: true });
                 break;
             case 'replace-preview':
                 apiClient.replaceModelPreview(filePath);
