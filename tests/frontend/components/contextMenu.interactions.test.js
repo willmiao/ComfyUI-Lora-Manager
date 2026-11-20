@@ -174,6 +174,7 @@ describe('Interaction-level regression coverage', () => {
     updateRecipeMetadataMock.mockResolvedValue({ success: true });
     fetchRecipeDetailsMock.mockResolvedValue(null);
     resetAndReloadMock.mockResolvedValue(undefined);
+    stateStub.virtualScroller.updateSingleItem.mockReset();
     getCompleteApiConfigMock.mockReturnValue({
       config: { displayName: 'LoRA' },
       endpoints: {
@@ -2783,6 +2784,216 @@ describe('Interaction-level regression coverage', () => {
       }),
     });
     expect(showToastMock).toHaveBeenCalledWith('toast.contextMenu.relinkSuccess', {}, 'success');
+  });
+
+  it('patches the re-linked card in place instead of reloading the grid', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    const updatedEntry = {
+      file_path: '/models/test.safetensors',
+      model_name: 'Relinked Model',
+      base_model: 'Illustrious',
+      civitai: { id: 777, modelId: 65423, name: 'Relinked Model' },
+    };
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true, metadata: updatedEntry }),
+    }));
+    stateStub.virtualScroller.updateSingleItem.mockReturnValue(true);
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423?modelVersionId=777';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(stateStub.virtualScroller.updateSingleItem).toHaveBeenCalledWith(
+      '/models/test.safetensors',
+      updatedEntry
+    );
+    // A reload would scroll back to the top and drop the loaded pages.
+    expect(resetAndReloadMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a grid reload when the re-linked card is not in the list', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        metadata: { file_path: '/models/test.safetensors', model_name: 'Relinked Model' },
+      }),
+    }));
+    stateStub.virtualScroller.updateSingleItem.mockReturnValue(false);
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423?modelVersionId=777';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(stateStub.virtualScroller.updateSingleItem).toHaveBeenCalled();
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reloads when patching the re-linked card throws', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        metadata: { file_path: '/models/test.safetensors', model_name: 'Relinked Model' },
+      }),
+    }));
+    stateStub.virtualScroller.updateSingleItem.mockImplementation(() => {
+      throw new Error('card is gone');
+    });
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    // The re-link itself succeeded, so no failure toast may be raised.
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.contextMenu.relinkFailed',
+      expect.anything(),
+      'error'
+    );
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reloads when a re-link returns no card entry', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    }));
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(stateStub.virtualScroller.updateSingleItem).not.toHaveBeenCalled();
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('links an external model source without reloading the grid', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="linkHfModal" class="modal">
+        <input type="text" id="hfModelUrl" />
+        <div class="input-error" id="hfModelUrlError"></div>
+        <button class="confirm-btn" id="confirmLinkHfBtn"></button>
+        <div id="hfSupportedSources"></div>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        source_url: 'https://huggingface.co/owner/repo',
+        source_platform: 'huggingface',
+        hf_url: 'https://huggingface.co/owner/repo',
+      }),
+    }));
+    stateStub.virtualScroller.updateSingleItem.mockReturnValue(true);
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showLinkHfModal();
+
+    document.getElementById('hfModelUrl').value = 'https://huggingface.co/owner/repo';
+    await contextMenu._boundLinkHfHandler();
+    await flushAsyncTasks();
+
+    expect(stateStub.virtualScroller.updateSingleItem).toHaveBeenCalledWith(
+      '/models/test.safetensors',
+      {
+        source_url: 'https://huggingface.co/owner/repo',
+        source_platform: 'huggingface',
+        hf_url: 'https://huggingface.co/owner/repo',
+      }
+    );
+    expect(resetAndReloadMock).not.toHaveBeenCalled();
   });
 
   it('derives relink endpoint prefixes for all model types', async () => {

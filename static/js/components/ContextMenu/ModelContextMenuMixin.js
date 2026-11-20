@@ -130,6 +130,42 @@ export const ModelContextMenuMixin = {
         return isValidModelType(this.modelType) ? this.modelType : 'loras';
     },
 
+    /**
+     * Reflect a finished re-link/link on the card that triggered it.
+     *
+     * Both link flows used to end in resetAndReload(), which re-fetches page 1
+     * and scrolls the grid to the top: a user who re-linked a card deep in the
+     * library lost their place and every page loaded below it. The card can be
+     * rebuilt from the updated fields instead, so only fall back to a reload
+     * when the card is not part of the current list (e.g. it was filtered away
+     * by the new metadata, or no scroller is active).
+     *
+     * @param {string} filePath - File path of the card that was linked.
+     * @param {Object} [updatedItem] - Refreshed fields for that card.
+     */
+    async applyLinkedCardUpdate(filePath, updatedItem) {
+        if (updatedItem) {
+            try {
+                const scroller = state.virtualScroller;
+                if (
+                    typeof scroller?.updateSingleItem === 'function'
+                    && scroller.updateSingleItem(filePath, updatedItem)
+                ) {
+                    return;
+                }
+            } catch (error) {
+                // A failed patch must not report the (already persisted) link
+                // as failed; fall through to the reload below.
+                console.error('Error updating linked model card:', error);
+            }
+        }
+
+        const resetFn = this.resetAndReload || resetAndReload;
+        if (typeof resetFn === 'function') {
+            await resetFn(false);
+        }
+    },
+
     showRelinkCivitaiModal() {
         const filePath = this.currentCard.dataset.filepath;
         if (!filePath) return;
@@ -196,8 +232,10 @@ export const ModelContextMenuMixin = {
                         ? (isWorkflow ? 'workflows.relink.civArchiveSuccess' : 'toast.contextMenu.linkCivArchSuccess')
                         : (isWorkflow ? 'workflows.relink.success' : 'toast.contextMenu.relinkSuccess');
                     showToast(successKey, {}, 'success');
-                    // Reload the current view to show updated data
-                    await this.resetAndReload();
+                    // Patch the card the user acted on instead of reloading the
+                    // whole grid, which would scroll back to the top and drop
+                    // every page loaded below it.
+                    await this.applyLinkedCardUpdate(filePath, data.metadata);
                 } else {
                     throw new Error(data.error || 'Failed to re-link');
                 }
@@ -279,7 +317,11 @@ export const ModelContextMenuMixin = {
                 const data = await response.json();
                 if (data.success) {
                     showToast('toast.contextMenu.linkHfSuccess', {}, 'success');
-                    await this.resetAndReload();
+                    await this.applyLinkedCardUpdate(filePath, {
+                        source_url: data.source_url,
+                        source_platform: data.source_platform,
+                        hf_url: data.hf_url,
+                    });
                 } else {
                     throw new Error(data.error || 'Failed to link model');
                 }

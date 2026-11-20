@@ -1244,6 +1244,99 @@ async def test_relink_civitai_surfaces_provider_unavailable_without_500():
     assert "CivitArchive" in payload["error"]
 
 
+@pytest.mark.asyncio
+async def test_relink_civitai_returns_formatted_entry_for_the_linked_card():
+    """The response carries the reformatted card so the grid patches one card.
+
+    Re-fetching the listing after a re-link resets the scroll position to the
+    top of page 1, so the frontend updates the affected card in place from this
+    payload instead.
+    """
+    relinked_payload = {"model_name": "Relinked", "sha256": "abc"}
+    cache_entry = {"file_path": "/tmp/model.safetensors", "model_name": "Relinked"}
+    formatted_entry = {
+        "file_path": "/tmp/model.safetensors",
+        "model_name": "Relinked",
+        "civitai": {"id": 456, "modelId": 123},
+    }
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(return_value=relinked_payload),
+    )
+    service = SimpleNamespace(
+        scanner=SimpleNamespace(
+            update_single_model_cache=AsyncMock(return_value=cache_entry)
+        ),
+        format_response=AsyncMock(return_value=formatted_entry),
+    )
+    handler = ModelManagementHandler(
+        service=service,
+        logger=logging.getLogger(__name__),
+        metadata_sync=metadata_sync,
+        preview_service=SimpleNamespace(),
+        tag_update_service=SimpleNamespace(),
+        lifecycle_service=SimpleNamespace(),
+    )
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["metadata"] == formatted_entry
+    service.format_response.assert_awaited_once_with(cache_entry)
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_still_succeeds_when_entry_formatting_fails():
+    """A formatting fault must not report the persisted re-link as a failure."""
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(
+            return_value={"model_name": "Relinked", "sha256": "abc"}
+        ),
+    )
+    service = SimpleNamespace(
+        scanner=SimpleNamespace(
+            update_single_model_cache=AsyncMock(return_value={"file_path": "/tmp/model.safetensors"})
+        ),
+        format_response=AsyncMock(side_effect=RuntimeError("boom")),
+    )
+    handler = ModelManagementHandler(
+        service=service,
+        logger=logging.getLogger(__name__),
+        metadata_sync=metadata_sync,
+        preview_service=SimpleNamespace(),
+        tag_update_service=SimpleNamespace(),
+        lifecycle_service=SimpleNamespace(),
+    )
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert "metadata" not in payload
+
+
 def test_every_common_route_definition_resolves_to_a_handler():
     """Guard the declarative route table against a missing mapping entry.
 

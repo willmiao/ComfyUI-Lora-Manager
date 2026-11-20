@@ -736,7 +736,7 @@ class ModelManagementHandler:
                 **relink_kwargs
             )
 
-            await self._service.scanner.update_single_model_cache(
+            cache_entry = await self._service.scanner.update_single_model_cache(
                 file_path, file_path, updated_metadata
             )
 
@@ -750,13 +750,27 @@ class ModelManagementHandler:
                     f"Model successfully re-linked to Civitai model {model_id}"
                     + (f" version {model_version_id}" if model_version_id else "")
                 )
-            return web.json_response(
-                {
-                    "success": True,
-                    "message": message,
-                    "hash": updated_metadata.get("sha256", ""),
-                }
-            )
+            response_payload: Dict[str, Any] = {
+                "success": True,
+                "message": message,
+                "hash": updated_metadata.get("sha256", ""),
+            }
+            # Hand the reformatted cache entry back so the grid can patch the
+            # one re-linked card in place. Without it the frontend has to
+            # re-fetch the listing, which drops a user who re-links a card far
+            # down the library back to the top of page 1. Formatting failures
+            # must not fail the request: the re-link is already persisted.
+            if isinstance(cache_entry, dict):
+                try:
+                    formatted = await self._service.format_response(cache_entry)
+                except Exception as exc:
+                    self._logger.warning(
+                        "Unable to format re-linked entry for %s: %s", file_path, exc
+                    )
+                    formatted = None
+                if formatted is not None:
+                    response_payload["metadata"] = formatted
+            return web.json_response(response_payload)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
