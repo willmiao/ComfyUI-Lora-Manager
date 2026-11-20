@@ -79,6 +79,7 @@ def model_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         ("base_models_roots", [str(checkpoints)]),
         ("embeddings_roots", []),
         ("other_roots", []),
+        ("wildcards_roots", []),
         ("extra_loras_roots", []),
         ("extra_checkpoints_roots", []),
         ("extra_unet_roots", []),
@@ -190,6 +191,27 @@ class TestCentralizedMode:
         assert metadata_path == expected
         assert get_preview_dir(str(model)) == os.path.dirname(expected)
         assert is_centralized()
+
+    def test_wildcard_root_uses_centralized_storage(
+        self,
+        model_roots: dict,
+        centralized: Path,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        from py.config import config
+
+        wildcard_root = tmp_path / "wildcards"
+        wildcard_root.mkdir()
+        monkeypatch.setattr(
+            config, "wildcards_roots", [str(wildcard_root)], raising=False
+        )
+        model = wildcard_root / "pack.zip"
+        component = root_mirror_component(str(wildcard_root))
+
+        expected = os.path.join(str(centralized), component, "pack" + METADATA_SUFFIX)
+        assert get_metadata_path(str(model)) == expected
+        assert get_preview_dir(str(model)) == os.path.dirname(expected)
 
     def test_same_basename_roots_get_distinct_mirrors(
         self, model_roots: dict, centralized: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

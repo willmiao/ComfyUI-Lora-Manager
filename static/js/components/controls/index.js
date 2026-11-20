@@ -5,9 +5,10 @@ import { CheckpointsControls } from './CheckpointsControls.js';
 import { EmbeddingsControls } from './EmbeddingsControls.js';
 import { OtherControls } from './OtherControls.js';
 import { WorkflowControls } from './WorkflowControls.js';
+import { WildcardControls } from './WildcardControls.js';
 
 // Export the classes
-export { PageControls, LorasControls, CheckpointsControls, EmbeddingsControls, OtherControls, WorkflowControls };
+export { PageControls, LorasControls, CheckpointsControls, EmbeddingsControls, OtherControls, WorkflowControls, WildcardControls };
 
 /**
  * Factory function to create the appropriate controls based on page type
@@ -25,6 +26,8 @@ export function createPageControls(pageType) {
         return new OtherControls();
     } else if (pageType === 'workflows') {
         return new WorkflowControls();
+    } else if (pageType === 'wildcards') {
+        return new WildcardControls();
     } else {
         console.error(`Unknown page type: ${pageType}`);
         return null;

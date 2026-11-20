@@ -1,0 +1,303 @@
+.workflows-disabled {
+    display: flex;
+    min-height: 360px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.workflows-disabled > i {
+    font-size: 48px;
+    opacity: 0.6;
+}
+
+.workflows-disabled h2,
+.workflows-disabled p {
+    margin: 0;
+}
+
+.wildcard-active {
+    border-color: var(--lora-accent);
+}
+
+/* Activation toggle on the standard model card, next to the Civitai globe.
+   Mirrors the canvas panel's bolt marker: accent when active, muted when idle. */
+.card-actions i.wildcard-toggle-idle {
+    color: rgba(255, 255, 255, 0.58);
+}
+
+.card-actions i.wildcard-toggle-idle:hover {
+    color: #fff;
+}
+
+.card-actions i.wildcard-toggle-active {
+    color: var(--lora-accent);
+    text-shadow: 0 0 6px var(--lora-accent-transparent);
+}
+
+/* Quick activation action in the wildcard modal header. Both labels share one
+   grid cell, so the button reserves the wider label and does not shift width
+   when Activate and Deactivate swap. */
+.wildcard-toggle-btn .wildcard-toggle-label {
+    display: inline-grid;
+}
+
+.wildcard-toggle-label > span {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+}
+
+.wildcard-toggle-btn.is-active .wildcard-toggle-label > span:first-child,
+.wildcard-toggle-btn:not(.is-active) .wildcard-toggle-label > span:last-child {
+    visibility: hidden;
+}
+
+.modal-send-btn.wildcard-toggle-btn.is-active {
+    background: var(--lora-accent);
+    border-color: var(--lora-accent);
+    color: var(--text-on-accent);
+}
+
+.modal-send-btn.wildcard-toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.wildcard-activation-content {
+    width: min(900px, calc(100vw - 40px));
+}
+
+.wildcard-activation-content input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    color: var(--text-color);
+    background: var(--input-bg-color, rgba(127, 127, 127, 0.08));
+    border: 1px solid var(--border-color, rgba(127, 127, 127, 0.3));
+    border-radius: 5px;
+}
+
+.wildcard-activation-errors {
+    margin: 12px 0;
+    padding: 10px;
+    color: #ef9f9f;
+    background: rgba(200, 60, 60, 0.1);
+    white-space: pre-wrap;
+}
+
+.wildcard-tab__warning {
+    margin: 12px 0;
+    padding: 10px;
+    color: #e6c07b;
+    background: rgba(200, 150, 60, 0.12);
+}
+
+.wildcard-key-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(280px, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.wildcard-key-list {
+    max-height: 360px;
+    margin-top: 8px;
+    overflow: auto;
+    border: 1px solid var(--border-color, rgba(127, 127, 127, 0.25));
+}
+
+.wildcard-key-row {
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    color: var(--text-color);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border-color, rgba(127, 127, 127, 0.15));
+}
+
+.wildcard-key-row.is-unreferenceable {
+    color: #e6c07b;
+}
+
+.wildcard-content-preview {
+    max-height: 390px;
+    margin: 0;
+    padding: 10px;
+    overflow: auto;
+    background: rgba(127, 127, 127, 0.08);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+    .wildcard-key-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Wildcards tab inside the shared model modal */
+.wildcard-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 4px;
+}
+
+.wildcard-tab__status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.wildcard-tab__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-color);
+    background: rgba(127, 127, 127, 0.14);
+}
+
+.wildcard-tab__badge.is-active {
+    color: #fff;
+    background: var(--lora-accent);
+}
+
+.wildcard-tab__namespace {
+    color: var(--text-color);
+    opacity: 0.8;
+    overflow-wrap: anywhere;
+}
+
+.wildcard-tab__hint {
+    color: var(--text-color);
+    opacity: 0.55;
+    font-size: 0.9em;
+}
+
+.wildcard-tab__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.wildcard-tab__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--text-color);
+}
+
+.wildcard-tab__field[hidden] {
+    display: none;
+}
+
+.wildcard-tab__field input,
+.wildcard-tab__keys-head input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    color: var(--text-color);
+    background: var(--input-bg-color, rgba(127, 127, 127, 0.08));
+    border: 1px solid var(--border-color, rgba(127, 127, 127, 0.3));
+    border-radius: 5px;
+}
+
+.wildcard-tab__field input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.wildcard-tab__help {
+    margin: -4px 0 0;
+    color: var(--text-color);
+    opacity: 0.65;
+    font-size: 0.9em;
+}
+
+.wildcard-tab__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.wildcard-tab__toggle {
+    padding: 8px 16px;
+    color: #fff;
+    font-weight: 600;
+    border: 0;
+    border-radius: 6px;
+    background: var(--lora-accent);
+    cursor: pointer;
+}
+
+.wildcard-tab__toggle.is-deactivate {
+    background: var(--lora-error, #c44d4d);
+}
+
+.wildcard-tab__toggle:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.wildcard-tab__error {
+    padding: 10px;
+    color: #ef9f9f;
+    background: rgba(200, 60, 60, 0.1);
+    white-space: pre-wrap;
+}
+
+.wildcard-tab__keys-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.wildcard-tab__keys-head span {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.wildcard-tab__keys-head input {
+    flex: 0 1 220px;
+    max-width: 220px;
+}
+
+.wildcard-tab__preview-head {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.wildcard-tab__empty {
+    padding: 14px 10px;
+    color: var(--text-color);
+    opacity: 0.65;
+    font-size: 0.9em;
+}
+
+@media (max-width: 700px) {
+    .wildcard-tab__fields {
+        grid-template-columns: 1fr;
+    }
+
+    .wildcard-tab__keys-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .wildcard-tab__keys-head input {
+        max-width: none;
+    }
+}

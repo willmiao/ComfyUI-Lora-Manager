@@ -4,6 +4,7 @@ export { CheckpointContextMenu } from './CheckpointContextMenu.js';
 export { EmbeddingContextMenu } from './EmbeddingContextMenu.js';
 export { OtherContextMenu } from './OtherContextMenu.js';
 export { WorkflowContextMenu } from './WorkflowContextMenu.js';
+export { WildcardContextMenu } from './WildcardContextMenu.js';
 export { GlobalContextMenu } from './GlobalContextMenu.js';
 export { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 
@@ -13,6 +14,7 @@ import { CheckpointContextMenu } from './CheckpointContextMenu.js';
 import { EmbeddingContextMenu } from './EmbeddingContextMenu.js';
 import { OtherContextMenu } from './OtherContextMenu.js';
 import { WorkflowContextMenu } from './WorkflowContextMenu.js';
+import { WildcardContextMenu } from './WildcardContextMenu.js';
 import { GlobalContextMenu } from './GlobalContextMenu.js';
 
 // Factory method to create page-specific context menu instances
@@ -30,6 +32,8 @@ export function createPageContextMenu(pageType) {
             return new OtherContextMenu();
         case 'workflows':
             return new WorkflowContextMenu();
+        case 'wildcards':
+            return new WildcardContextMenu();
         default:
             return null;
     }

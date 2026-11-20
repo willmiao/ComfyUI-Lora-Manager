@@ -14,6 +14,7 @@ import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workfl
 import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 import { attachCardPreviewCycler } from './CardPreviewCycler.js';
+import { syncWildcardCardState } from '../../utils/wildcardCardState.js';
 
 // Helper function to get display name based on settings
 function getDisplayName(model) {
@@ -57,6 +58,12 @@ function handleModelCardEvent_internal(event, modelType) {
     if (event.target.closest('.show-content-btn')) {
         event.stopPropagation();
         showBlurredContent(card);
+        return true; // Stop propagation
+    }
+
+    if (event.target.closest('[data-wildcard-toggle]')) {
+        event.stopPropagation();
+        handleWildcardToggle(card);
         return true; // Stop propagation
     }
 
@@ -276,6 +283,46 @@ function handleCopyAction(card, modelType) {
 
 function handleReplacePreview(filePath, modelType) {
     apiClient.replaceModelPreview(filePath);
+}
+
+/**
+ * Toggle a wildcard resource from its card chip.
+ *
+ * Activation uses the default (or previously saved) namespace and aliases;
+ * a key conflict opens the manager's Wildcards tab so the user can resolve it.
+ */
+async function handleWildcardToggle(card) {
+    const filePath = card.dataset.filepath;
+    const wasActive = card.dataset.active === 'true';
+    const toggle = card.querySelector('[data-wildcard-toggle]');
+    if (!filePath || toggle?.disabled) return;
+    if (toggle) toggle.disabled = true;
+    try {
+        const wildcardApi = getModelApiClient('wildcards');
+        if (wasActive) {
+            await wildcardApi.deactivate(filePath);
+        } else {
+            await wildcardApi.activate(filePath);
+        }
+        syncWildcardCardState(card.dataset.filepath, !wasActive);
+        showToast(
+            wasActive ? 'wildcards.messages.deactivated' : 'wildcards.messages.activated',
+            {},
+            'success',
+        );
+    } catch (error) {
+        const conflicts = error.payload?.conflicts || [];
+        if (conflicts.length) {
+            const keys = conflicts.slice(0, 3).map((item) => item.key).join(', ');
+            showToast(`Activation blocked by a key conflict: ${keys}`, {}, 'error');
+            const { openWildcardModel } = await import('../../utils/wildcardActions.js');
+            await openWildcardModel(filePath, { openWildcardsTab: true });
+        } else {
+            showToast(error.message || 'Wildcard activation failed', {}, 'error');
+        }
+    } finally {
+        if (toggle) toggle.disabled = false;
+    }
 }
 
 async function handleExampleImagesAccess(card, modelType) {
@@ -579,6 +626,10 @@ export function createModelCard(model, modelType) {
     if (model.skip_metadata_refresh) {
         card.classList.add('skip-refresh');
     }
+    if (modelType === MODEL_TYPES.WILDCARD) {
+        card.dataset.active = String(model.active === true);
+        card.classList.toggle('wildcard-active', model.active === true);
+    }
     if (model.exclude) {
         card.classList.add('excluded-model');
     }
@@ -665,11 +716,25 @@ export function createModelCard(model, modelType) {
     const updateBadgeLabel = translate('modelCard.badges.update', {}, 'Update');
     const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
     // Standalone has no running ComfyUI graph to push a workflow into.
-    const hideSendIcon = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
+    const hideSendIcon = (modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode) || modelType === MODEL_TYPES.WILDCARD;
     const sendIcon = hideSendIcon ? '' : `
         <i class="fas fa-paper-plane"
            title="${sendTitle}">
         </i>`;
+    // Wildcards have no single prompt syntax to copy, so the copy action is
+    // dropped and an activation toggle takes the slot after the Civitai globe.
+    const copyIcon = modelType === MODEL_TYPES.WILDCARD ? '' : `
+        <i class="fas fa-copy"
+           title="${copyTitle}">
+        </i>`;
+    const wildcardActive = modelType === MODEL_TYPES.WILDCARD && model.active === true;
+    const wildcardToggleIcon = modelType === MODEL_TYPES.WILDCARD ? `
+        <i class="fas fa-bolt${wildcardActive ? ' wildcard-toggle-active' : ' wildcard-toggle-idle'}"
+           data-wildcard-toggle="true"
+           title="${wildcardActive
+            ? translate('wildcards.actions.deactivate', {}, 'Deactivate')
+            : translate('wildcards.actions.activate', {}, 'Activate')}">
+        </i>` : '';
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
@@ -677,10 +742,7 @@ export function createModelCard(model, modelType) {
         <i class="fas fa-globe" 
            title="${globeTitle}"
            ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
-        </i>${sendIcon}
-        <i class="fas fa-copy" 
-           title="${copyTitle}">
-        </i>`;
+        </i>${wildcardToggleIcon}${sendIcon}${copyIcon}`;
 
     // Generate UI text with i18n support
     const toggleBlurTitle = translate('modelCard.actions.toggleBlur', {}, 'Toggle blur');

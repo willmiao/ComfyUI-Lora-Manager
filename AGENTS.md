@@ -8,6 +8,26 @@ ComfyUI LoRA Manager is a comprehensive LoRA management system for ComfyUI that 
 
 ## Development Commands
 
+### Worktrees
+
+Place feature worktrees beside the main repository under `custom_nodes`, using
+`../ComfyUI-Lora-Manager-<feature>` (for example,
+`../ComfyUI-Lora-Manager-wildcards`). This keeps the worktree visible to
+ComfyUI for plugin integration testing instead of hiding it under the main
+repository's `.worktrees/` directory.
+
+After the feature branch has been merged and the worktree is no longer needed,
+commit or discard any remaining work, then clean up from the main worktree:
+
+```bash
+git worktree remove ../ComfyUI-Lora-Manager-wildcards
+git branch -d feature/wildcards-management
+```
+
+Use the actual worktree and branch names for other features. `git branch -d`
+intentionally refuses to delete an unmerged branch; do not replace it with `-D`
+unless the unmerged work is deliberately being discarded.
+
 ### Backend Development
 
 ```bash

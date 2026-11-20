@@ -147,6 +147,22 @@ export class BulkManager {
                 // Metadata re-import/rematch are model-source concepts.
                 reimportMetadata: false,
                 rematchMetadata: false
+            },
+            [MODEL_TYPES.WILDCARD]: {
+                addTags: true,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: true,
+                checkUpdates: true,
+                moveAll: true,
+                autoOrganize: true,
+                deleteAll: true,
+                setContentRating: true,
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true,
+                reimportMetadata: false,
+                rematchMetadata: false
             }
         };
 
@@ -204,6 +220,7 @@ export class BulkManager {
      */
     _noSelectionKey() {
         if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.bulk.noSelection';
+        if (state.currentPageType === MODEL_TYPES.WILDCARD) return 'wildcards.bulk.noSelection';
         if (state.currentPageType === 'recipes') return 'recipes.bulk.noSelection';
         return 'toast.models.noModelsSelected';
     }
@@ -741,10 +758,10 @@ export class BulkManager {
 
         const count = state.selectedModels.size;
         const isRecipes = state.currentPageType === 'recipes';
-        const isWorkflows = state.currentPageType === MODEL_TYPES.WORKFLOW;
+        const isWorkflows = state.currentPageType === MODEL_TYPES.WORKFLOW || state.currentPageType === MODEL_TYPES.WILDCARD;
         const keyPrefix = isRecipes
             ? 'modals.bulkDeleteRecipes'
-            : (isWorkflows ? 'workflows.modals.bulkDelete' : 'modals.bulkDelete');
+            : (state.currentPageType === MODEL_TYPES.WILDCARD ? 'wildcards.modals.bulkDelete' : (isWorkflows ? 'workflows.modals.bulkDelete' : 'modals.bulkDelete'));
 
         const titleEl = document.querySelector('#bulkDeleteModal h2');
         if (titleEl) {

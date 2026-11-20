@@ -159,6 +159,8 @@ class Config:
         # category — sourced from LoRA Manager's own settings in both modes.
         self.workflows_roots: List[str] = []
         self.workflows_roots = self._init_workflow_paths()
+        self.wildcards_roots: List[str] = []
+        self.wildcards_roots = self._init_wildcard_paths()
         # Extra paths (only for LoRA Manager, not shared with ComfyUI)
         self.extra_loras_roots: List[str] = []
         self.extra_checkpoints_roots: List[str] = []
@@ -909,6 +911,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.workflows_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        for root in getattr(self, "wildcards_roots", []) or []:
+            preview_roots.update(self._expand_preview_root(root))
         # Include extra paths for preview access
         for root in self.extra_loras_roots or []:
             preview_roots.update(self._expand_preview_root(root))
@@ -1402,6 +1406,7 @@ class Config:
             if workflows_enabled and normalized_workflow_path
             else []
         )
+        self.wildcards_roots = self._init_wildcard_paths()
 
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
         extra_paths = extra_folder_paths or {}
@@ -1659,6 +1664,32 @@ class Config:
         scanner immediately reflects the new folder without a restart.
         """
         self.workflows_roots = self._init_workflow_paths()
+        self._rebuild_preview_roots()
+
+    def _get_configured_wildcard_paths(self) -> List[str]:
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            path = get_settings_manager().get_wildcard_path()
+        except Exception:
+            return []
+        return [path] if path else []
+
+    def _init_wildcard_paths(self) -> List[str]:
+        try:
+            raw_paths = self._get_configured_wildcard_paths()
+            self._remember_configured_paths("wildcard", raw_paths)
+            from .services.settings_manager import get_settings_manager
+
+            if not get_settings_manager().is_wildcards_enabled():
+                return []
+            return self._prepare_lora_paths(raw_paths)
+        except Exception as exc:
+            logger.warning(f"Error initializing wildcard paths: {exc}")
+            return []
+
+    def refresh_wildcard_roots(self) -> None:
+        self.wildcards_roots = self._init_wildcard_paths()
         self._rebuild_preview_roots()
 
     def _remember_configured_paths(

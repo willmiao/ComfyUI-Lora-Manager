@@ -13,10 +13,14 @@ from typing import Any, Optional
 import yaml
 
 from ..utils.settings_paths import get_settings_dir
+from .wildcard_parser import wildcard_reference_problem
 
 logger = logging.getLogger(__name__)
 
-_WILDCARD_PATTERN = re.compile(r"__([\w\s.\-+/*\\]+?)__")
+# Keys are derived from artifact file names (ZIP members, TXT paths) and YAML/JSON
+# object keys, so they may contain punctuation such as ``!`` or ``&``. Capture any
+# non-newline run; a captured reference that resolves to no key is left untouched.
+_WILDCARD_PATTERN = re.compile(r"__(.+?)__")
 _OPTION_PATTERN = re.compile(r"{([^{}]*?)}")
 # Dynamic trigger slots are named ``trigger_words1..n``. The bare
 # ``trigger_words`` name is the original (pre-``trigger_words1``) slot name and
@@ -124,8 +128,12 @@ class WildcardService:
         if getattr(self, "_initialized", False):
             return
         self._initialized = True
-        self._cached_signature: tuple[tuple[str, int, int], ...] | None = None
+        self._cached_signature: tuple[Any, ...] | None = None
         self._wildcard_dict: dict[str, list[str]] = {}
+        self._manual_cached_signature: tuple[tuple[str, int, int], ...] | None = None
+        self._manual_wildcard_dict: dict[str, list[str]] = {}
+        self._manual_sources: dict[str, str] = {}
+        self._runtime_conflicts: list[dict[str, Any]] = []
 
     @classmethod
     def get_instance(cls) -> "WildcardService":
@@ -177,11 +185,70 @@ class WildcardService:
         return current
 
     def get_wildcard_dict(self) -> dict[str, list[str]]:
-        signature = self._build_signature()
+        manual = self.get_manual_wildcard_dict()
+        try:
+            from .wildcard_activation_service import get_wildcard_activation_service
+
+            managed, managed_signature, managed_conflicts = (
+                get_wildcard_activation_service().get_active_runtime()
+            )
+        except Exception:
+            logger.error("Failed to load activated wildcard resources", exc_info=True)
+            managed, managed_signature, managed_conflicts = {}, (), []
+        signature = (self._manual_cached_signature, managed_signature)
         if signature != self._cached_signature:
-            self._wildcard_dict = self._scan_wildcard_dict()
+            combined = dict(manual)
+            conflicts = list(managed_conflicts)
+            for key, values in managed.items():
+                if key in combined:
+                    conflicts.append(
+                        {
+                            "key": key,
+                            "owners": ["manual", "managed"],
+                            "kept": "manual",
+                        }
+                    )
+                    continue
+                combined[key] = values
+            self._wildcard_dict = combined
+            self._runtime_conflicts = conflicts
             self._cached_signature = signature
         return self._wildcard_dict
+
+    def get_manual_wildcard_dict(self) -> dict[str, list[str]]:
+        signature = self._build_signature()
+        if signature != self._manual_cached_signature:
+            self._manual_wildcard_dict = self._scan_wildcard_dict()
+            self._manual_cached_signature = signature
+        return self._manual_wildcard_dict
+
+    def get_manual_entries(self, sample_limit: int = 3) -> list[dict[str, Any]]:
+        """Return manual keys with their source file and a short value sample.
+
+        The quick panel lists manual entries individually; the source path
+        lets it show where a key comes from and the samples give the detail
+        pane something useful without a second request.
+        """
+
+        sample_limit = max(0, min(int(sample_limit), 10))
+        entries = self.get_manual_wildcard_dict()
+        result: list[dict[str, Any]] = []
+        for key in sorted(entries):
+            values = entries[key]
+            result.append(
+                {
+                    "key": key,
+                    "values_count": len(values),
+                    "source_path": self._manual_sources.get(key, ""),
+                    "sample_values": list(values[:sample_limit]),
+                    "reference_problem": wildcard_reference_problem(key),
+                }
+            )
+        return result
+
+    def get_runtime_conflicts(self) -> list[dict[str, Any]]:
+        self.get_wildcard_dict()
+        return list(self._runtime_conflicts)
 
     def get_entries(self) -> list[WildcardEntry]:
         return [
@@ -218,11 +285,26 @@ class WildcardService:
         return tuple(signature)
 
     def _scan_wildcard_dict(self) -> dict[str, list[str]]:
+        entries, sources = self._scan_manual_entries()
+        self._manual_sources = sources
+        return entries
+
+    def _scan_manual_entries(
+        self,
+    ) -> tuple[dict[str, list[str]], dict[str, str]]:
+        """Walk the manual wildcard directory once.
+
+        Returns the key -> values dictionary plus the winning source file for
+        each key. Duplicate keys keep the last file in walk order, matching the
+        runtime dictionary's previous behavior.
+        """
+
         root = get_wildcards_dir(create=False)
         if not os.path.isdir(root):
-            return {}
+            return {}, {}
 
         collected: dict[str, list[str]] = {}
+        sources: dict[str, str] = {}
         for current_root, _dirs, files in os.walk(root, followlinks=True):
             for file_name in sorted(files):
                 file_path = os.path.join(current_root, file_name)
@@ -234,16 +316,21 @@ class WildcardService:
                         values = self._read_txt(file_path)
                         if values:
                             collected[key] = values
+                            sources[key] = file_path
                     elif lower_name.endswith((".yaml", ".yml")):
                         payload = self._read_yaml(file_path)
-                        self._merge_nested_entries(collected, payload)
+                        for key, values in self._flatten_payload(payload):
+                            collected[key] = values
+                            sources[key] = file_path
                     elif lower_name.endswith(".json"):
                         payload = self._read_json(file_path)
-                        self._merge_nested_entries(collected, payload)
+                        for key, values in self._flatten_payload(payload):
+                            collected[key] = values
+                            sources[key] = file_path
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.warning("Failed to load wildcard file %s: %s", file_path, exc)
 
-        return collected
+        return collected, sources
 
     def _read_txt(self, file_path: str) -> list[str]:
         try:
@@ -260,12 +347,6 @@ class WildcardService:
     def _read_json(self, file_path: str) -> Any:
         with open(file_path, "r", encoding="utf-8") as handle:
             return json.load(handle)
-
-    def _merge_nested_entries(
-        self, collected: dict[str, list[str]], payload: Any
-    ) -> None:
-        for key, values in self._flatten_payload(payload):
-            collected[key] = values
 
     def _flatten_payload(
         self, payload: Any, prefix: str = ""
@@ -441,7 +522,9 @@ class WildcardService:
             return self._pick_weighted_or_plain(wildcard_dict[keyword], rng)
 
         if "*" in keyword:
-            regex_pattern = keyword.replace("*", ".*").replace("+", r"\+")
+            # The captured text comes from the prompt, so escape it before
+            # turning the wildcard ``*`` into a regex wildcard.
+            regex_pattern = re.escape(keyword).replace(r"\*", ".*")
             compiled = re.compile(f"^{regex_pattern}$")
             aggregated: list[str] = []
             for key, values in wildcard_dict.items():

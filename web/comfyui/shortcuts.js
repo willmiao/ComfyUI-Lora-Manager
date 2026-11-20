@@ -7,6 +7,7 @@ import { app } from "../../scripts/app.js";
 export const COMMAND_IDS = {
   quickLoraPicker: "LoraManager.ToggleQuickPanel",
   quickRecipePicker: "LoraManager.ToggleRecipeQuickPanel",
+  quickWildcardPicker: "LoraManager.ToggleWildcardQuickPanel",
 };
 
 // Default combos live beside the command ids so the registered default and the
@@ -15,6 +16,7 @@ export const COMMAND_IDS = {
 export const DEFAULT_KEYBINDINGS = {
   [COMMAND_IDS.quickLoraPicker]: { key: "l", alt: true },
   [COMMAND_IDS.quickRecipePicker]: { key: "r", alt: true },
+  [COMMAND_IDS.quickWildcardPicker]: { key: "w", alt: true },
 };
 
 function formatKeyCombo(combo) {

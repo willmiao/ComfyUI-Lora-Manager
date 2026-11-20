@@ -118,6 +118,13 @@ class PersistentModelCache:
         "node_classes",
         "model_refs",
         "civitai_refs",
+        "wildcard_format",
+        "files",
+        "entries",
+        "errors",
+        "unsupported_files",
+        "entry_count",
+        "value_count",
     )
     _MODEL_UPDATE_COLUMNS: Tuple[str, ...] = _MODEL_COLUMNS[2:]
     _instances: Dict[str, "PersistentModelCache"] = {}
@@ -277,6 +284,16 @@ class PersistentModelCache:
                 item["node_classes"] = _json_list_from_row(row["node_classes"])
                 item["model_refs"] = _json_list_from_row(row["model_refs"])
                 item["civitai_refs"] = _json_list_from_row(row["civitai_refs"])
+            if model_type == "wildcard":
+                item["wildcard_format"] = row["wildcard_format"] or ""
+                item["files"] = _json_list_from_row(row["files"])
+                item["entries"] = _json_list_from_row(row["entries"])
+                item["errors"] = _json_list_from_row(row["errors"])
+                item["unsupported_files"] = _json_list_from_row(
+                    row["unsupported_files"]
+                )
+                item["entry_count"] = row["entry_count"] or 0
+                item["value_count"] = row["value_count"] or 0
             # Legacy rows only carry `hf_url`; derive the canonical pair so
             # every consumer sees the same shape.
             normalize_metadata_source(item)
@@ -707,6 +724,13 @@ class PersistentModelCache:
                             node_classes TEXT,
                             model_refs TEXT,
                             civitai_refs TEXT,
+                            wildcard_format TEXT DEFAULT '',
+                            files TEXT,
+                            entries TEXT,
+                            errors TEXT,
+                            unsupported_files TEXT,
+                            entry_count INTEGER DEFAULT 0,
+                            value_count INTEGER DEFAULT 0,
                             PRIMARY KEY (model_type, file_path)
                         );
 
@@ -787,6 +811,15 @@ class PersistentModelCache:
             "node_classes": "TEXT",
             "model_refs": "TEXT",
             "civitai_refs": "TEXT",
+            # Wildcard-specific parsed index fields (JSON lists for the key,
+            # source-file, and error collections).
+            "wildcard_format": "TEXT DEFAULT ''",
+            "files": "TEXT",
+            "entries": "TEXT",
+            "errors": "TEXT",
+            "unsupported_files": "TEXT",
+            "entry_count": "INTEGER DEFAULT 0",
+            "value_count": "INTEGER DEFAULT 0",
         }
 
         for column, definition in required_columns.items():
@@ -892,6 +925,13 @@ class PersistentModelCache:
             _json_list_or_none(item.get("node_classes")),
             _json_list_or_none(item.get("model_refs")),
             _json_list_or_none(item.get("civitai_refs")),
+            item.get("wildcard_format") or "",
+            _json_list_or_none(item.get("files")),
+            _json_list_or_none(item.get("entries")),
+            _json_list_or_none(item.get("errors")),
+            _json_list_or_none(item.get("unsupported_files")),
+            int(item.get("entry_count") or 0),
+            int(item.get("value_count") or 0),
         )
 
     def _insert_model_sql(self) -> str:

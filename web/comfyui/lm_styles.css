@@ -2314,3 +2314,358 @@ body.lm-lora-reordering * {
   margin: 5px 4px;
   background: var(--lm-border-soft);
 }
+
+/* ---- Wildcard quick panel ---- */
+/* The left column lists entries in sections; the right column owns the
+   overview, key list, and all actions. */
+.lm-quick__section {
+  padding: 8px 6px 2px;
+}
+
+.lm-quick__section + .lm-quick__section {
+  border-top: 1px solid var(--lm-border-soft);
+  margin-top: 4px;
+}
+
+.lm-quick__section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 6px 5px;
+  color: var(--lm-fg-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lm-quick__section-count {
+  color: var(--lm-fg-subtle);
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.lm-quick__section-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--lm-fg-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: transform 120ms ease;
+}
+
+.lm-quick__section-toggle:hover {
+  color: var(--lm-fg);
+  background: var(--lm-surface-hover);
+}
+
+.lm-quick__section.is-collapsed .lm-quick__section-toggle {
+  transform: rotate(-90deg);
+}
+
+.lm-quick__section.is-collapsed .lm-quick__section-body {
+  display: none;
+}
+
+.lm-quick__row--manual .lm-quick__row-name {
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 11px;
+}
+
+.lm-wildcard-state {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.lm-wildcard-state.is-active {
+  color: color-mix(in oklab, var(--lm-ok) 65%, var(--lm-fg));
+  background: color-mix(in oklab, var(--lm-ok) 18%, var(--lm-surface));
+  border-color: color-mix(in oklab, var(--lm-ok) 38%, transparent);
+}
+
+.lm-wildcard-state.is-inactive {
+  color: var(--lm-fg-muted);
+  background: transparent;
+  border-color: var(--lm-border-soft);
+}
+
+.lm-wildcard-state.is-manual {
+  color: var(--lm-fg-muted);
+  background: var(--lm-surface-raised);
+  border-color: var(--lm-border-soft);
+}
+
+.lm-wildcard-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
+
+.lm-wildcard-status-text {
+  color: var(--lm-fg-muted);
+  font-size: 11px;
+}
+
+.lm-wildcard-counts {
+  margin: 6px 0 12px;
+  color: var(--lm-fg-muted);
+  font-size: 11px;
+}
+
+.lm-wildcard-keys-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0 6px;
+  color: var(--lm-fg-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lm-wildcard-keys-head input {
+  width: 130px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  color: var(--lm-fg);
+  background: var(--lm-surface);
+  border: 1px solid var(--lm-border);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.lm-wildcard-keys {
+  max-height: 208px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--lm-border-soft);
+  border-radius: 6px;
+  background: var(--lm-surface);
+}
+
+.lm-wildcard-key {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  color: var(--lm-fg);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.lm-wildcard-key + .lm-wildcard-key {
+  border-top: 1px solid var(--lm-border-soft);
+}
+
+.lm-wildcard-key:hover {
+  background: var(--lm-surface-hover);
+}
+
+.lm-wildcard-key.is-copied {
+  background: var(--lm-accent-soft);
+}
+
+.lm-wildcard-key.is-unreferenceable {
+  color: var(--lm-warning);
+  cursor: not-allowed;
+}
+
+.lm-wildcard-key.is-unreferenceable:hover {
+  background: transparent;
+}
+
+.lm-wildcard-key-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lm-wildcard-key-count {
+  flex: none;
+  color: var(--lm-fg-muted);
+  font-size: 10px;
+}
+
+.lm-wildcard-key-copy {
+  display: inline-flex;
+  flex: none;
+  color: var(--lm-fg-muted);
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.lm-wildcard-key:hover .lm-wildcard-key-copy,
+.lm-wildcard-key.is-copied .lm-wildcard-key-copy {
+  color: var(--lm-accent-text);
+  opacity: 1;
+}
+
+.lm-wildcard-values .lm-wildcard-key {
+  cursor: default;
+}
+
+.lm-wildcard-values .lm-wildcard-key-name {
+  font-family: inherit;
+  font-size: 11px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.lm-wildcard-note {
+  margin: 10px 0 0;
+  color: var(--lm-fg-muted);
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.lm-wildcard-note--error {
+  color: var(--lm-danger-text);
+}
+
+.lm-wildcard-empty {
+  padding: 12px 8px;
+  color: var(--lm-fg-muted);
+  font-size: 11px;
+}
+
+.lm-quick__empty--inline {
+  padding: 8px 12px 2px;
+  font-size: 11px;
+}
+
+.lm-quick__empty .lm-quick__secondary,
+.lm-wildcard-error .lm-quick__secondary {
+  margin-top: 8px;
+}
+
+.lm-wildcard-error {
+  margin-top: 12px;
+  padding: 9px 10px;
+  color: var(--lm-danger-text);
+  background: var(--lm-danger-soft);
+  border: 1px solid var(--lm-danger-border);
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lm-wildcard-error p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.lm-wildcard-error__conflict {
+  color: var(--lm-fg);
+  font-family: "Consolas", "Monaco", monospace;
+  overflow-wrap: anywhere;
+}
+
+
+/* Keep the wildcard activation actions reachable while the overview scrolls:
+   CivitAI names and the key list can push the buttons below the fold. */
+.lm-wildcard-quick-panel .lm-quick__detail .lm-quick__actions {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  margin-top: 14px;
+  padding: 8px 0 4px;
+  background: var(--lm-surface);
+  border-top: 1px solid var(--lm-border-soft);
+}
+
+/* Wildcard detail needs more room for the key list than a LoRA trigger-chip
+   block: keep the preview compact and let the keys take the remaining space. */
+.lm-wildcard-quick-panel .lm-quick__detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.lm-wildcard-quick-panel .lm-quick__preview {
+  flex: none;
+  max-height: 110px;
+}
+
+.lm-wildcard-quick-panel .lm-quick__name {
+  flex: none;
+  font-size: 14px;
+}
+
+.lm-wildcard-quick-panel .lm-wildcard-keys {
+  flex: 1 1 auto;
+  min-height: 96px;
+  max-height: none;
+}
+
+/* Two action buttons fit on one row and leave more height for the key list. */
+.lm-wildcard-quick-panel .lm-quick__actions {
+  flex-direction: row;
+}
+
+.lm-wildcard-quick-panel .lm-quick__actions > button {
+  flex: 1 1 0;
+}
+
+/* Manual value samples are a fixed preview list, not a flexible pane. */
+.lm-wildcard-quick-panel .lm-wildcard-values {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 208px;
+}
+
+.lm-quick__empty--inline .lm-quick__secondary {
+  margin-top: 0;
+  margin-left: 8px;
+}
+
+/* The generic quick-panel breakpoint hides the detail column; the wildcard
+   panel cannot, because its activation actions live there. Stack the panes
+   instead so the actions stay reachable on narrow screens. */
+@media (max-width: 760px) {
+  .lm-wildcard-quick-panel .lm-quick__content {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .lm-wildcard-quick-panel .lm-quick__detail {
+    display: flex;
+    border-top: 1px solid var(--lm-border-soft);
+  }
+
+  .lm-wildcard-quick-panel .lm-quick__results {
+    border-right: 0;
+  }
+}

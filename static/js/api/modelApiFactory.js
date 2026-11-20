@@ -3,6 +3,7 @@ import { CheckpointApiClient } from './checkpointApi.js';
 import { EmbeddingApiClient } from './embeddingApi.js';
 import { OtherApiClient } from './otherApi.js';
 import { WorkflowApiClient } from './workflowApi.js';
+import { WildcardApiClient } from './wildcardApi.js';
 import { MODEL_TYPES, isValidModelType } from './apiConfig.js';
 import { state } from '../state/index.js';
 
@@ -18,6 +19,8 @@ export function createModelApiClient(modelType) {
             return new OtherApiClient(MODEL_TYPES.OTHER);
         case MODEL_TYPES.WORKFLOW:
             return new WorkflowApiClient(MODEL_TYPES.WORKFLOW);
+        case MODEL_TYPES.WILDCARD:
+            return new WildcardApiClient(MODEL_TYPES.WILDCARD);
         default:
             throw new Error(`Unsupported model type: ${modelType}`);
     }

@@ -11,7 +11,8 @@ export const MODEL_TYPES = {
     CHECKPOINT: 'checkpoints',
     EMBEDDING: 'embeddings',
     OTHER: 'other',
-    WORKFLOW: 'workflows'
+    WORKFLOW: 'workflows',
+    WILDCARD: 'wildcards'
 };
 
 // Base API configuration for each model type
@@ -65,6 +66,16 @@ export const MODEL_CONFIG = {
         supportsMove: true,
         supportsFolderManagement: true,
         templateName: 'workflows.html'
+    },
+    [MODEL_TYPES.WILDCARD]: {
+        displayName: 'Wildcard',
+        singularName: 'wildcard',
+        defaultPageSize: 100,
+        supportsLetterFilter: false,
+        supportsBulkOperations: true,
+        supportsMove: true,
+        supportsFolderManagement: true,
+        templateName: 'wildcards.html'
     }
 };
 
@@ -190,6 +201,14 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         comfyuiState: `/api/lm/${MODEL_TYPES.WORKFLOW}/comfyui-state`,
         updateFromComfy: `/api/lm/${MODEL_TYPES.WORKFLOW}/update-from-comfy`,
         restore: `/api/lm/${MODEL_TYPES.WORKFLOW}/restore`,
+    },
+    [MODEL_TYPES.WILDCARD]: {
+        metadata: `/api/lm/${MODEL_TYPES.WILDCARD}/metadata`,
+        content: `/api/lm/${MODEL_TYPES.WILDCARD}/content`,
+        entries: `/api/lm/${MODEL_TYPES.WILDCARD}/entries`,
+        active: `/api/lm/${MODEL_TYPES.WILDCARD}/active`,
+        activate: `/api/lm/${MODEL_TYPES.WILDCARD}/activate`,
+        deactivate: `/api/lm/${MODEL_TYPES.WILDCARD}/deactivate`,
     }
 };
 

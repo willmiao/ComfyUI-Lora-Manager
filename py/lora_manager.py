@@ -280,6 +280,7 @@ class LoraManager:
         # screen forever (even the "feature disabled" empty state needs the
         # scanner past the initializing check).
         workflow_scanner = await ServiceRegistry.get_workflow_scanner()
+        wildcard_scanner = await ServiceRegistry.get_wildcard_scanner()
 
         # Initialize recipe scanner if needed
         recipe_scanner = await ServiceRegistry.get_recipe_scanner()
@@ -304,6 +305,10 @@ class LoraManager:
             asyncio.create_task(
                 workflow_scanner.initialize_in_background(),
                 name="workflow_cache_init",
+            ),
+            asyncio.create_task(
+                wildcard_scanner.initialize_in_background(),
+                name="wildcard_cache_init",
             ),
             asyncio.create_task(
                 recipe_scanner.initialize_in_background(), name="recipe_cache_init"

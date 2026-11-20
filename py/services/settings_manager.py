@@ -136,6 +136,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     # The library lives in a single configured folder, like recipes_path.
     "enable_workflows": False,
     "workflow_path": "",
+    "enable_wildcards": False,
+    "wildcard_path": "",
     "recipes_path": "",
     "sidecar_storage_mode": "alongside",
     "sidecar_storage_path": "",
@@ -572,6 +574,7 @@ class SettingsManager:
                 default_embedding_root=data.get("default_embedding_root"),
                 default_other_roots=data.get("default_other_roots"),
                 workflow_path=data.get("workflow_path"),
+                wildcard_path=data.get("wildcard_path"),
                 recipes_path=data.get("recipes_path"),
                 metadata=data.get("metadata"),
                 base=data,
@@ -741,6 +744,9 @@ class SettingsManager:
         self.settings["workflow_path"] = self._normalize_workflow_path(
             library.get("workflow_path", "")
         )
+        self.settings["wildcard_path"] = self._normalize_workflow_path(
+            library.get("wildcard_path", "")
+        )
         self.settings["recipes_path"] = library.get("recipes_path", "")
 
     def _current_timestamp(self) -> str:
@@ -757,6 +763,7 @@ class SettingsManager:
         default_embedding_root: Optional[str] = None,
         default_other_roots: Optional[Mapping[str, str]] = None,
         workflow_path: Optional[str] = None,
+        wildcard_path: Optional[str] = None,
         recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         base: Optional[Mapping[str, Any]] = None,
@@ -810,6 +817,13 @@ class SettingsManager:
         else:
             payload["workflow_path"] = self._normalize_workflow_path(
                 payload.get("workflow_path", "")
+            )
+
+        if wildcard_path is not None:
+            payload["wildcard_path"] = self._normalize_workflow_path(wildcard_path)
+        else:
+            payload["wildcard_path"] = self._normalize_workflow_path(
+                payload.get("wildcard_path", "")
             )
 
         if recipes_path is not None:
@@ -884,6 +898,13 @@ class SettingsManager:
         """Return True when the opt-in Workflow management is enabled."""
         return bool(self.settings.get("enable_workflows", False))
 
+    def is_wildcards_enabled(self) -> bool:
+        """Return True when wildcard resource management is enabled."""
+        return bool(self.settings.get("enable_wildcards", False))
+
+    def get_wildcard_path(self) -> str:
+        return self._normalize_workflow_path(self.settings.get("wildcard_path", ""))
+
     def get_workflow_path(self) -> str:
         """Return the configured workflow library folder (empty when unset).
 
@@ -948,6 +969,22 @@ class SettingsManager:
             logger.debug(
                 "Failed to refresh workflow scanner after settings change: %s", exc
             )
+
+    def _apply_wildcard_settings_change(self) -> None:
+        try:
+            from ..config import config
+
+            config.refresh_wildcard_roots()
+        except Exception as exc:
+            logger.debug("Failed to refresh wildcard roots: %s", exc)
+        try:
+            from .service_registry import ServiceRegistry
+
+            scanner = ServiceRegistry.get_service_sync("wildcard_scanner")
+            if scanner is not None and hasattr(scanner, "on_library_changed"):
+                scanner.on_library_changed(reconcile=True)
+        except Exception as exc:
+            logger.debug("Failed to refresh wildcard scanner after settings change: %s", exc)
 
     def _has_configured_paths(self, folder_paths: Any) -> bool:
         if not isinstance(folder_paths, Mapping):
@@ -2035,6 +2072,10 @@ class SettingsManager:
             value = bool(value)
         elif key == "enable_workflows":
             value = bool(value)
+        elif key == "enable_wildcards":
+            value = bool(value)
+        elif key == "wildcard_path":
+            value = self._normalize_workflow_path(value)
         elif key == "workflow_path":
             value = self._normalize_workflow_path(value)
         elif key == "recipes_path":
@@ -2065,6 +2106,8 @@ class SettingsManager:
             self._apply_other_model_settings_change()
         if key in ("enable_workflows", "workflow_path"):
             self._apply_workflow_settings_change()
+        if key in ("enable_wildcards", "wildcard_path"):
+            self._apply_wildcard_settings_change()
         if portable_switch_pending:
             self._finalize_portable_switch()
 

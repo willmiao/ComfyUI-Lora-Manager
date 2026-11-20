@@ -13,6 +13,8 @@ import pytest
 from py.config import config
 from py.services.settings_manager import get_settings_manager
 from py.services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
+from py.services.wildcard_model_service import WildcardModelService
+from py.utils.models import WildcardMetadata
 from py.utils.sidecar_paths import (
     get_metadata_path,
     reset_root_map_cache,
@@ -45,6 +47,7 @@ def library_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("checkpoints_roots", []),
         ("embeddings_roots", []),
         ("other_roots", []),
+        ("wildcards_roots", []),
         ("extra_loras_roots", []),
         ("extra_checkpoints_roots", []),
         ("extra_unet_roots", []),
@@ -239,6 +242,93 @@ async def test_migrate_to_alongside_reverses_layout(
         library_root / "sub" / "model.preview.webp"
     )
     assert use_case._test_scanner.persist_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_wildcards_are_registered_and_migrate_bidirectionally(
+    library_root: Path,
+    sidecar_root: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    settings = get_settings_manager()
+    settings.set("enable_wildcards", True)
+    wildcard_root = tmp_path / "wildcards"
+    wildcard_root.mkdir()
+    monkeypatch.setattr(
+        config, "wildcards_roots", [str(wildcard_root)], raising=False
+    )
+
+    default_use_case = SidecarMigrationUseCase(settings_service=settings)
+    assert "wildcard" in {
+        model_type for model_type, _factory in default_use_case._scanner_factories
+    }
+
+    model = wildcard_root / "pack.zip"
+    model.write_bytes(b"zip")
+    preview = wildcard_root / "pack.webp"
+    preview.write_bytes(b"preview")
+    metadata = WildcardMetadata(
+        file_name="pack",
+        model_name="Pack",
+        file_path=_normalize(model),
+        size=model.stat().st_size,
+        modified=model.stat().st_mtime,
+        sha256="abc",
+        base_model="Other",
+        preview_url=_normalize(preview),
+        civitai={"id": 20, "modelId": 10, "name": "v1"},
+    )
+    sidecar = wildcard_root / "pack.metadata.json"
+    sidecar.write_text(json.dumps(metadata.to_dict()), encoding="utf-8")
+    scanner = _FakeScanner([metadata.to_dict()])
+
+    async def sync_cache_from_metadata(_file_path, _metadata):
+        return None
+
+    scanner.sync_cache_from_metadata = sync_cache_from_metadata
+
+    async def scanner_factory():
+        return scanner
+
+    use_case = SidecarMigrationUseCase(
+        scanner_factories=(("wildcard", scanner_factory),),
+        settings_service=settings,
+    )
+    _set_mode("centralized")
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is True
+    assert summary["models_total"] == 1
+    assert summary["moved"] == 2
+    mirror = _mirror_dir(wildcard_root, sidecar_root)
+    centralized_sidecar = mirror / "pack.metadata.json"
+    centralized_preview = mirror / "pack.webp"
+    assert centralized_sidecar.exists()
+    assert centralized_preview.exists()
+    assert not sidecar.exists()
+    assert not preview.exists()
+
+    service = WildcardModelService(scanner)
+    complete, partial, offline = await service.get_model_metadata_with_fallback(
+        str(model)
+    )
+    assert complete["id"] == 20
+    assert partial is False
+    assert offline is False
+
+    _set_mode("alongside")
+    summary = await use_case.migrate_to_alongside(force=True)
+
+    assert summary["success"] is True
+    assert summary["moved"] == 2
+    assert sidecar.exists()
+    assert preview.exists()
+    assert not centralized_sidecar.exists()
+    assert not centralized_preview.exists()
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["preview_url"] == _normalize(
+        preview
+    )
 
 
 @pytest.mark.asyncio

@@ -2,6 +2,7 @@ import { ensureLmStyles } from "./lm_styles_loader.js";
 import { openComfyUISettingsDialog } from "./comfy_settings_dialog.js";
 import { openLoraManagerHome } from "./lora_canvas_api.js";
 import { toggleLoraQuickPanel, toggleRecipeQuickPanel } from "./lora_quick_panel.js";
+import { toggleWildcardQuickPanel } from "./wildcard_quick_panel.js";
 import { COMMAND_IDS, getCommandShortcutLabel } from "./shortcuts.js";
 
 let activeMenu = null;
@@ -68,6 +69,11 @@ export function toggleQuickActionsMenu(anchor) {
     "Quick Recipe Picker",
     getCommandShortcutLabel(COMMAND_IDS.quickRecipePicker),
     toggleRecipeQuickPanel,
+  ));
+  element.appendChild(createMenuItem(
+    "Global Wildcards",
+    getCommandShortcutLabel(COMMAND_IDS.quickWildcardPicker),
+    toggleWildcardQuickPanel,
   ));
   element.appendChild(createDivider());
   element.appendChild(createMenuItem("Open LoRA Manager", "", () => openLoraManagerHome()));

@@ -115,6 +115,51 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
     assert persisted.excluded_models == excluded
 
 
+def test_persistent_cache_roundtrips_wildcard_index(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    store = PersistentModelCache(db_path=str(tmp_path / 'cache.sqlite'))
+    file_path = (tmp_path / 'colors.txt').as_posix()
+
+    entries = [
+        {
+            'key': 'colors',
+            'source_path': 'colors.txt',
+            'values_count': 2,
+        }
+    ]
+    store.save_cache(
+        'wildcard',
+        [
+            {
+                'file_path': file_path,
+                'file_name': 'colors',
+                'model_name': 'Colors',
+                'sha256': 'hash-colors',
+                'wildcard_format': 'txt',
+                'files': ['colors.txt'],
+                'entries': entries,
+                'errors': ['duplicate key ignored'],
+                'unsupported_files': ['notes.md'],
+                'entry_count': 1,
+                'value_count': 2,
+            }
+        ],
+        {'hash-colors': [file_path]},
+        [],
+    )
+
+    persisted = store.load_cache('wildcard')
+    assert persisted is not None
+    item = persisted.raw_data[0]
+    assert item['wildcard_format'] == 'txt'
+    assert item['files'] == ['colors.txt']
+    assert item['entries'] == entries
+    assert item['errors'] == ['duplicate key ignored']
+    assert item['unsupported_files'] == ['notes.md']
+    assert item['entry_count'] == 1
+    assert item['value_count'] == 2
+
+
 def test_incremental_updates_only_touch_changed_rows(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
     db_path = tmp_path / 'cache.sqlite'
