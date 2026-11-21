@@ -1,7 +1,11 @@
 import json
-import re
-from .utils import FlexibleOptionalInputType, any_type
 import logging
+import re
+from collections import defaultdict, deque
+from collections.abc import Iterator
+from typing import Any
+
+from .utils import FlexibleOptionalInputType, any_type
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +80,52 @@ class TriggerWordToggleLM:
         # Filter out empty strings and return as set
         return set(word for word in words if word)
 
+    def _split_individual_triggers(self, text: str) -> Iterator[str]:
+        # Match the widget's comma handling, including weighted phrases.
+        depth = 0
+        start = 0
+        for index, char in enumerate(text):
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth = max(0, depth - 1)
+            elif char == "," and depth == 0:
+                word = text[start:index].strip()
+                if word:
+                    yield word
+                start = index + 1
+        word = text[start:].strip()
+        if word:
+            yield word
+
+    def _resolve_individual_triggers(
+        self,
+        runtime_words: str,
+        saved_items: list[dict[str, Any]],
+        default_active: bool,
+        allow_strength_adjustment: bool,
+    ) -> str:
+        states: defaultdict[str, deque[dict[str, Any]]] = defaultdict(deque)
+        for item in saved_items:
+            parsed = self._parse_trigger_item(item, allow_strength_adjustment)
+            states[parsed["text"]].append(parsed)
+
+        filtered = []
+        for word in self._split_individual_triggers(runtime_words):
+            parsed = self._parse_trigger_item(
+                {"text": word, "active": default_active}, allow_strength_adjustment
+            )
+            saved = states[parsed["text"]]
+            if saved:
+                parsed = saved.popleft()
+            if parsed["active"]:
+                filtered.append(
+                    self._format_word_output(
+                        parsed["text"], parsed["strength"], allow_strength_adjustment
+                    )
+                )
+        return ", ".join(filtered)
+
     def _group_has_child_items(self, item):
         return isinstance(item, dict) and isinstance(item.get("items"), list)
 
@@ -98,7 +148,8 @@ class TriggerWordToggleLM:
         # Check if trigger_words is provided and different from orinalMessage
         trigger_words_override = self._get_toggle_data(kwargs, "trigger_words")
         if (
-            trigger_words_override
+            group_mode
+            and trigger_words_override
             and isinstance(trigger_words_override, str)
             and self._normalize_trigger_words(trigger_words_override) != self._normalize_trigger_words(trigger_words)
         ):
@@ -107,6 +158,22 @@ class TriggerWordToggleLM:
 
         # Get toggle data with support for both formats
         trigger_data = self._get_toggle_data(kwargs, "toggle_trigger_words")
+        if not group_mode and isinstance(trigger_words_override, str):
+            try:
+                if isinstance(trigger_data, str):
+                    trigger_data = json.loads(trigger_data)
+                saved_items = trigger_data if isinstance(trigger_data, list) else []
+                return (
+                    self._resolve_individual_triggers(
+                        trigger_words_override,
+                        saved_items,
+                        default_active,
+                        allow_strength_adjustment,
+                    ),
+                )
+            except (AttributeError, TypeError, ValueError):
+                logger.exception("Error processing individual trigger words")
+
         if trigger_data:
             try:
                 # Convert to list if it's a JSON string

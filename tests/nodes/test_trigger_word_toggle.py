@@ -267,3 +267,49 @@ def test_trigger_words_override_empty_toggle_data():
     )
 
     assert filtered == "custom trigger words"
+
+
+def test_individual_toggle_filters_runtime_cycler_triggers() -> None:
+    (filtered,) = TriggerWordToggleLM().process_trigger_words(
+        id="node",
+        group_mode=False,
+        default_active=True,
+        allow_strength_adjustment=True,
+        orinalMessage={"__value__": "keep,, skip,, duplicate,, duplicate,, stale"},
+        toggle_trigger_words={"__value__": [
+            {"text": "keep", "active": True},
+            {"text": "skip", "active": False},
+            {"text": "duplicate", "active": False},
+            {"text": "(duplicate:1.25)", "active": True},
+            {"text": "stale", "active": True},
+        ]},
+        trigger_words="cycler,, (weighted, phrase:0.70),, keep,,, skip,, duplicate,, duplicate,",
+    )
+
+    assert filtered == "cycler, (weighted, phrase:0.70), keep, (duplicate:1.25)"
+
+
+def test_individual_toggle_uses_default_for_new_runtime_triggers() -> None:
+    (filtered,) = TriggerWordToggleLM().process_trigger_words(
+        id="node",
+        group_mode=False,
+        default_active=False,
+        orinalMessage="keep",
+        toggle_trigger_words=[{"text": "keep", "active": True}],
+        trigger_words="cycler,, keep",
+    )
+
+    assert filtered == "keep"
+
+
+def test_individual_toggle_drops_stale_triggers_when_runtime_input_is_empty() -> None:
+    (filtered,) = TriggerWordToggleLM().process_trigger_words(
+        id="node",
+        group_mode=False,
+        default_active=True,
+        orinalMessage="stale",
+        toggle_trigger_words=[{"text": "stale", "active": True}],
+        trigger_words="",
+    )
+
+    assert filtered == ""
