@@ -1020,7 +1020,13 @@ function ensureVideoLazyObserver() {
     videoLazyObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
+                delete entry.target.dataset.offscreen;
+                resumeVideoOnScreen(entry.target);
                 enqueueVideoElement(entry.target);
+            } else {
+                entry.target.dataset.offscreen = 'true';
+                dequeueVideoElement(entry.target);
+                pauseVideoOffscreen(entry.target);
             }
         });
     }, {
@@ -1030,6 +1036,59 @@ function ensureVideoLazyObserver() {
     });
 
     return videoLazyObserver;
+}
+
+/**
+ * Pause a preview that scrolled out of view.
+ *
+ * The grid keeps every card it has rendered, and a video keeps decoding and
+ * compositing for as long as it plays, so without this one pass down a large
+ * library leaves every preview looping at once. The `resumeOnEnter` flag
+ * records that the pause was ours, so a video the user paused by hand is not
+ * restarted when the card scrolls back in.
+ */
+function pauseVideoOffscreen(videoElement) {
+    if (!videoElement || videoElement.paused || videoElement.ended) {
+        return;
+    }
+
+    videoElement.dataset.resumeOnEnter = 'true';
+
+    try {
+        videoElement.pause();
+    } catch (error) {
+        // Ignore pause errors (e.g., the element was detached mid-scroll)
+    }
+}
+
+/**
+ * Resume a preview that scrolled back into view.
+ *
+ * Only cards in always-play mode (autoplay on hover disabled) resume on their
+ * own; hover-driven playback waits for the pointer to come back. The hover
+ * check covers a pointer that never left the card while the grid scrolled
+ * under it, which would not produce another mouseenter.
+ */
+function resumeVideoOnScreen(videoElement) {
+    if (!videoElement) {
+        return;
+    }
+
+    const shouldResume = videoElement.dataset.resumeOnEnter === 'true';
+    delete videoElement.dataset.resumeOnEnter;
+
+    if (!shouldResume || videoElement.dataset.loaded !== 'true') {
+        return;
+    }
+
+    if (videoElement.dataset.autoplay === 'true') {
+        requestSafePlay(videoElement);
+        return;
+    }
+
+    if (videoElement._hoverHandlers?.cardPreview?.matches('.card-preview:hover')) {
+        requestSafePlay(videoElement);
+    }
 }
 
 function cleanupHoverHandlers(videoElement) {
@@ -1057,14 +1116,8 @@ function loadVideoSource(videoElement) {
         return false;
     }
 
-    if (videoLazyObserver) {
-        try {
-            videoLazyObserver.unobserve(videoElement);
-        } catch (error) {
-            // Ignore observer errors (e.g., element already unobserved)
-        }
-    }
-
+    // The element stays observed after it loads: the observer also tracks
+    // visibility, so playback can pause off-screen and resume on return.
     if (videoElement.dataset.loaded === 'true' || !videoElement.isConnected) {
         return false;
     }
@@ -1089,7 +1142,14 @@ function loadVideoSource(videoElement) {
 
     if (videoElement.dataset.autoplay === 'true') {
         videoElement.setAttribute('autoplay', '');
-        requestSafePlay(videoElement);
+        // The card may have scrolled away while this load waited in the
+        // queue; starting playback there would leave an off-screen decoder.
+        // Defer it to the observer's next intersecting entry instead.
+        if (videoElement.dataset.offscreen === 'true') {
+            videoElement.dataset.resumeOnEnter = 'true';
+        } else {
+            requestSafePlay(videoElement);
+        }
     }
 
     return true;
@@ -1121,6 +1181,9 @@ export function configureModelCardVideo(videoElement, autoplayOnHover) {
     videoElement.setAttribute('controls', '');
     videoElement.dataset.loaded = 'false';
     delete videoElement.dataset.loading;
+    // Visibility flags are re-established by the observer's next entry.
+    delete videoElement.dataset.offscreen;
+    delete videoElement.dataset.resumeOnEnter;
 
     if (sourceElement) {
         sourceElement.removeAttribute('src');
