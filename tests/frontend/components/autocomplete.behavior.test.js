@@ -1228,6 +1228,7 @@ describe('AutoComplete widget interactions', () => {
       json: () => Promise.resolve({
         success: true,
         words: ['animals/cat'],
+        entries: [{ key: 'animals/cat', values_count: 1234 }],
         meta: {
           has_wildcards: true,
           wildcards_dir: '/tmp/settings/wildcards',
@@ -1259,6 +1260,41 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/wildcards/search?search=cat&limit=100');
     expect(autoComplete.searchType).toBe('wildcards');
     expect(autoComplete.items).toEqual(['animals/cat']);
+    const count = autoComplete.dropdown.querySelector('.lm-autocomplete-count');
+    expect(count.textContent).toBe('1.2K');
+    expect(count.title).toBe(`${(1234).toLocaleString()} values`);
+    expect(count.getAttribute('aria-label')).toBe(count.title);
+  });
+
+  it('formats wildcard value counts and hides counts when metadata is unavailable', async () => {
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      showPreview: false,
+      minChars: 1,
+    });
+    autoComplete.searchType = 'wildcards';
+    autoComplete.items = ['small', 'single', 'thousand', 'million', 'empty', 'unknown'];
+    autoComplete.wildcardValueCounts = new Map([
+      ['small', 999],
+      ['single', 1],
+      ['thousand', 1000],
+      ['million', 1000000],
+      ['empty', 0],
+    ]);
+
+    autoComplete.render();
+
+    const rows = autoComplete.dropdown.querySelectorAll('.comfy-autocomplete-item');
+    expect(rows[0].querySelector('.lm-autocomplete-count').textContent).toBe('999');
+    expect(rows[1].querySelector('.lm-autocomplete-count').textContent).toBe('1');
+    expect(rows[1].querySelector('.lm-autocomplete-count').title).toBe('1 value');
+    expect(rows[2].querySelector('.lm-autocomplete-count').textContent).toBe('1K');
+    expect(rows[3].querySelector('.lm-autocomplete-count').textContent).toBe('1M');
+    expect(rows[4].querySelector('.lm-autocomplete-count').textContent).toBe('0');
+    expect(rows[5].querySelector('.lm-autocomplete-count')).toBeNull();
   });
 
   it('shows wildcard onboarding when /wildcard is used before any files exist', async () => {

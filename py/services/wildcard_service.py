@@ -144,20 +144,32 @@ class WildcardService:
     ) -> list[str]:
         """Search wildcard keys for autocomplete."""
 
+        return [
+            entry.key
+            for entry in self.search_entries(search_term, limit=limit, offset=offset)
+        ]
+
+    def search_entries(
+        self, search_term: str, limit: int = 20, offset: int = 0
+    ) -> list[WildcardEntry]:
         normalized_term = _normalize_wildcard_key(search_term).strip()
         if not normalized_term:
             return []
 
+        wildcard_dict = self.get_wildcard_dict()
         ranked: list[tuple[int, str]] = []
         compact_term = normalized_term.replace("/", "")
-        for key in self.get_wildcard_dict().keys():
+        for key in wildcard_dict:
             score = self._score_entry(key, normalized_term, compact_term)
             if score is not None:
                 ranked.append((score, key))
 
         ranked.sort(key=lambda item: (-item[0], item[1]))
         keys = [key for _, key in ranked]
-        return keys[offset : offset + limit]
+        return [
+            WildcardEntry(key=key, values_count=len(wildcard_dict[key]))
+            for key in keys[offset : offset + limit]
+        ]
 
     def expand_text(self, text: str, seed: int | None = None) -> str:
         """Expand wildcard and dynamic prompt syntax for a text value."""

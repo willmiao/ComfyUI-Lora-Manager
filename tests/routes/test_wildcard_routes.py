@@ -24,11 +24,11 @@ async def test_search_wildcards_returns_results():
                 supported_formats=(".txt", ".yaml", ".yml", ".json"),
             )
 
-        def search_keys(self, search_term, limit, offset):
+        def search_entries(self, search_term, limit, offset):
             assert search_term == "cat"
             assert limit == 25
             assert offset == 2
-            return ["animals/cat"]
+            return [SimpleNamespace(key="animals/cat", values_count=3)]
 
     handler = WildcardsHandler(service=StubService())
     response = await handler.search_wildcards(
@@ -42,6 +42,7 @@ async def test_search_wildcards_returns_results():
     assert payload == {
         "success": True,
         "words": ["animals/cat"],
+        "entries": [{"key": "animals/cat", "values_count": 3}],
         "meta": {
             "has_wildcards": True,
             "wildcards_dir": "/tmp/settings/wildcards",
@@ -60,7 +61,7 @@ async def test_search_wildcards_handles_errors():
                 supported_formats=(".txt",),
             )
 
-        def search_keys(self, search_term, limit, offset):
+        def search_entries(self, search_term, limit, offset):
             raise RuntimeError("boom")
 
     handler = WildcardsHandler(service=StubService())
@@ -91,7 +92,7 @@ async def test_search_wildcards_empty_state_includes_library_activation_counts()
                 supported_formats=(".txt",),
             )
 
-        def search_keys(self, search_term, limit, offset):
+        def search_entries(self, search_term, limit, offset):
             return []
 
     class StubSettings:
@@ -144,7 +145,7 @@ async def test_search_wildcards_empty_state_does_not_scan_disabled_library():
                 supported_formats=(".txt",),
             )
 
-        def search_keys(self, search_term, limit, offset):
+        def search_entries(self, search_term, limit, offset):
             return []
 
     class StubSettings:

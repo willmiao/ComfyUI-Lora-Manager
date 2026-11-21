@@ -42,6 +42,8 @@ def test_search_keys_loads_txt_yaml_and_json(monkeypatch, tmp_path):
     assert service.search_keys("cat") == ["animals/cat"]
     assert service.search_keys("warm") == ["palette/warm"]
     assert service.search_keys("digital") == ["illustrators/digital"]
+    entries = service.search_entries("cat")
+    assert [(entry.key, entry.values_count) for entry in entries] == [("animals/cat", 2)]
 
 
 def test_search_keys_prefers_exact_and_prefix_matches(monkeypatch, tmp_path):

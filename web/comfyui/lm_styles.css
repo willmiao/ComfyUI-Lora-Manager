@@ -815,8 +815,11 @@ body.lm-lora-reordering * {
 }
 
 .lm-autocomplete-count {
+  flex-shrink: 0;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--lm-fg-subtle);
+  white-space: nowrap;
 }
 
 /* Category badges: one hue per category, mixed against the popover surface

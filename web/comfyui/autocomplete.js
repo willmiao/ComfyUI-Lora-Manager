@@ -105,8 +105,8 @@ const CATEGORY_INFO = {
     15: { label: 'Lore', slug: 'lore' },
 };
 
-// Format post count with K/M suffix
-function formatPostCount(count) {
+// Format result counts with K/M suffix
+function formatCompactCount(count) {
     if (count >= 1000000) {
         return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     } else if (count >= 1000) {
@@ -608,6 +608,7 @@ class AutoComplete {
         this.isVisible = false;
         this.currentSearchTerm = '';
         this.wildcardMeta = null;
+        this.wildcardValueCounts = new Map();
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
         this.searchType = null;
@@ -1546,6 +1547,7 @@ class AutoComplete {
             // when switching from command mode to regular tag search
             this.items = [];
             this.wildcardMeta = null;
+            this.wildcardValueCounts = new Map();
 
             if (!endpoint) {
                 endpoint = `/lm/${this.modelType}/relative-paths`;
@@ -1589,10 +1591,20 @@ class AutoComplete {
                             }
                         }
                     }
+                    const valueCounts = new Map();
+                    if (Array.isArray(data.entries)) {
+                        for (const entry of data.entries) {
+                            const count = Number(entry?.values_count);
+                            if (typeof entry?.key === 'string' && Number.isFinite(count) && count >= 0) {
+                                valueCounts.set(entry.key, count);
+                            }
+                        }
+                    }
                     return {
                         items: data.success ? (data.relative_paths || data.words || []) : [],
                         meta: data?.meta || null,
                         names,
+                        valueCounts,
                     };
                 } catch (error) {
                     console.warn(`Search query failed for "${query}":`, error);
@@ -1626,6 +1638,12 @@ class AutoComplete {
                 if (result?.names instanceof Map) {
                     for (const [relativePath, modelName] of result.names) {
                         this.itemModelNames.set(relativePath, modelName);
+                    }
+                }
+
+                if (result?.valueCounts instanceof Map) {
+                    for (const [key, count] of result.valueCounts) {
+                        this.wildcardValueCounts.set(key, count);
                     }
                 }
 
@@ -2141,7 +2159,7 @@ class AutoComplete {
         if (itemData.post_count > 0) {
             const countSpan = document.createElement('span');
             countSpan.className = 'lm-autocomplete-count';
-            countSpan.textContent = formatPostCount(itemData.post_count);
+            countSpan.textContent = formatCompactCount(itemData.post_count);
             metaSpan.appendChild(countSpan);
         }
 
@@ -2155,6 +2173,33 @@ class AutoComplete {
         }
 
         itemEl.appendChild(nameSpan);
+        itemEl.appendChild(metaSpan);
+    }
+
+    _renderWildcardItem(itemEl, key, valuesCount, searchTerm) {
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'lm-autocomplete-name';
+        nameSpan.innerHTML = this.highlightMatch(this._escapeHtml(key), searchTerm);
+        nameSpan.style.cssText = `
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+        itemEl.appendChild(nameSpan);
+
+        if (!Number.isFinite(valuesCount)) {
+            return;
+        }
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'lm-autocomplete-meta';
+        const countSpan = document.createElement('span');
+        countSpan.className = 'lm-autocomplete-count';
+        countSpan.textContent = formatCompactCount(valuesCount);
+        const exactLabel = `${valuesCount.toLocaleString()} ${valuesCount === 1 ? 'value' : 'values'}`;
+        countSpan.title = exactLabel;
+        countSpan.setAttribute('aria-label', exactLabel);
+        metaSpan.appendChild(countSpan);
         itemEl.appendChild(metaSpan);
     }
 
@@ -2730,6 +2775,13 @@ class AutoComplete {
             item.appendChild(cmdSpan);
             item.appendChild(labelSpan);
             item.style.gap = '12px';
+        } else if (this.searchType === 'wildcards' && typeof itemData === 'string') {
+            this._renderWildcardItem(
+                item,
+                itemData,
+                this.wildcardValueCounts.get(itemData),
+                this.currentSearchTerm,
+            );
         } else if (isEnriched) {
             this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
         } else {
@@ -2904,6 +2956,7 @@ class AutoComplete {
         // when autocomplete is shown again
         this.items = [];
         this.wildcardMeta = null;
+        this.wildcardValueCounts = new Map();
         
         // Clear content container to prevent stale items from showing
         if (this.contentContainer) {

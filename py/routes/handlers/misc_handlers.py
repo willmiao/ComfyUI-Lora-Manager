@@ -4404,7 +4404,14 @@ class WildcardsHandler:
             limit = min(int(request.query.get("limit", "20")), 100)
             offset = max(0, int(request.query.get("offset", "0")))
             metadata = self._service.get_metadata(create_dir=True)
-            results = self._service.search_keys(search_term, limit=limit, offset=offset)
+            result_entries = self._service.search_entries(
+                search_term, limit=limit, offset=offset
+            )
+            results = [entry.key for entry in result_entries]
+            entries = [
+                {"key": entry.key, "values_count": entry.values_count}
+                for entry in result_entries
+            ]
             response_metadata = {
                 "has_wildcards": metadata.has_wildcards,
                 "wildcards_dir": metadata.wildcards_dir,
@@ -4416,6 +4423,7 @@ class WildcardsHandler:
                 {
                     "success": True,
                     "words": results,
+                    "entries": entries,
                     "meta": response_metadata,
                 }
             )
