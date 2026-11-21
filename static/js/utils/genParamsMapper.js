@@ -139,6 +139,7 @@ const PARAM_TO_WIDGET_CANDIDATES = {
     cfg:       ['cfg'],
     sampler:   ['sampler_name', 'sampler'],
     scheduler: ['scheduler'],
+    clip_skip: ['clip_skip', 'stop_at_clip_layer'],
 };
 
 // ---------------------------------------------------------------------------
@@ -282,6 +283,7 @@ function findMatchingWidgets(nodeWidgetNames, resolvedParams, nodeType) {
         { key: 'seed', value: resolvedParams.seed },
         { key: 'steps', value: resolvedParams.steps },
         { key: 'cfg', value: resolvedParams.cfg },
+        { key: 'clip_skip', value: resolvedParams.clip_skip },
     ];
     for (const { key, value } of simpleParams) {
         if (value === undefined || value === null || value === '') continue;
