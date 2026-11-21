@@ -4353,12 +4353,48 @@ class CustomWordsHandler:
 class WildcardsHandler:
     """Handler for wildcard autocomplete search."""
 
-    def __init__(self, *, service=None) -> None:
+    def __init__(
+        self,
+        *,
+        service=None,
+        settings=None,
+        scanner_provider=None,
+        activation_service=None,
+    ) -> None:
         if service is None:
             from ...services.wildcard_service import get_wildcard_service
 
             service = get_wildcard_service()
         self._service = service
+        self._settings = settings
+        self._scanner_provider = scanner_provider
+        self._activation_service = activation_service
+
+    async def _get_empty_state_metadata(self) -> dict[str, Any]:
+        settings = self._settings or get_settings_manager()
+        management_enabled = settings.is_wildcards_enabled()
+        library_configured = bool(settings.get_wildcard_path())
+        metadata = {
+            "management_enabled": management_enabled,
+            "library_configured": library_configured,
+            "library_resource_count": 0,
+            "active_resource_count": 0,
+        }
+        if not management_enabled or not library_configured:
+            return metadata
+
+        scanner_provider = self._scanner_provider or ServiceRegistry.get_wildcard_scanner
+        scanner = await scanner_provider()
+        cache = await scanner.get_cached_data()
+        resources = [resource for resource in cache.raw_data if not resource.get("exclude")]
+        activation_service = self._activation_service
+        if activation_service is None:
+            from ...services.wildcard_activation_service import get_wildcard_activation_service
+
+            activation_service = get_wildcard_activation_service()
+        metadata["library_resource_count"] = len(resources)
+        metadata["active_resource_count"] = activation_service.count_active_resources(resources)
+        return metadata
 
     async def search_wildcards(self, request: web.Request) -> web.Response:
         """Search managed wildcard keys for autocomplete."""
@@ -4369,15 +4405,18 @@ class WildcardsHandler:
             offset = max(0, int(request.query.get("offset", "0")))
             metadata = self._service.get_metadata(create_dir=True)
             results = self._service.search_keys(search_term, limit=limit, offset=offset)
+            response_metadata = {
+                "has_wildcards": metadata.has_wildcards,
+                "wildcards_dir": metadata.wildcards_dir,
+                "supported_formats": list(metadata.supported_formats),
+            }
+            if not metadata.has_wildcards:
+                response_metadata.update(await self._get_empty_state_metadata())
             return web.json_response(
                 {
                     "success": True,
                     "words": results,
-                    "meta": {
-                        "has_wildcards": metadata.has_wildcards,
-                        "wildcards_dir": metadata.wildcards_dir,
-                        "supported_formats": list(metadata.supported_formats),
-                    },
+                    "meta": response_metadata,
                 }
             )
         except Exception as exc:

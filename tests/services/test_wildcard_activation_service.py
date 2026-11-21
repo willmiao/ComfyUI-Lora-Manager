@@ -189,6 +189,7 @@ def test_inactive_resource_is_skipped_in_conflict_check(activation_state):
     service.activate(second_resource)
 
     assert service.activation_for(str(second))["active"] is True
+    assert service.count_active_resources([first_resource, second_resource]) == 1
 
 
 def test_legacy_activation_record_without_active_flag_is_active(activation_state):

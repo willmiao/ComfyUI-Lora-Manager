@@ -160,6 +160,15 @@ class WildcardActivationService:
             return None
         return record
 
+    def count_active_resources(self, resources: Iterable[dict[str, Any]]) -> int:
+        activations = self._load()
+        count = 0
+        for resource in resources:
+            file_path = str(resource.get("file_path") or "")
+            if file_path and _is_active_record(activations.get(_path_key(file_path))):
+                count += 1
+        return count
+
     def decorate(self, resource: dict[str, Any]) -> dict[str, Any]:
         result = copy.deepcopy(resource)
         record = self.activation_for(

@@ -32,10 +32,35 @@ export function isWildcardInfoItem(item) {
 }
 
 export function createWildcardEmptyStateItem(meta = {}) {
+    const resourceCount = Math.max(0, Number(meta.library_resource_count) || 0);
+    const activeResourceCount = Math.min(
+        resourceCount,
+        Math.max(0, Number(meta.active_resource_count) || 0),
+    );
+    const hasInactiveResources = resourceCount > activeResourceCount;
+    const hasOnlyEmptyActiveResources = resourceCount > 0 && !hasInactiveResources;
+    const resourceLabel = resourceCount === 1 ? 'collection' : 'collections';
+
+    let title = 'No wildcards yet';
+    let description = 'Download or import a wildcard collection, then activate it to make its keys available here.';
+    let primaryAction = 'open-manager';
+    if (hasInactiveResources) {
+        title = 'No active wildcards';
+        description = `You have ${resourceCount} wildcard ${resourceLabel} in your library. Activate one to make its keys available in ComfyUI.`;
+        primaryAction = 'open-quick-panel';
+    } else if (hasOnlyEmptyActiveResources) {
+        title = 'No usable wildcard keys';
+        description = 'Your active wildcard collections do not provide any usable keys. Check them in the Wildcards Manager.';
+    }
+
     return {
         type: WILDCARD_INFO_ITEM_TYPES.EMPTY_STATE,
-        title: 'No wildcards found yet',
-        description: 'Create wildcard files in your wildcards folder, then use /wildcard to search and insert keys.',
+        title,
+        description,
+        primaryAction,
+        showGlobalNote: hasInactiveResources,
+        libraryResourceCount: resourceCount,
+        activeResourceCount,
         wildcardsDir: meta.wildcards_dir || '',
         supportedFormats: Array.isArray(meta.supported_formats) ? meta.supported_formats : [],
     };
@@ -46,8 +71,8 @@ export function createWildcardNoMatchesItem(searchTerm = '', meta = {}) {
         type: WILDCARD_INFO_ITEM_TYPES.NO_MATCHES,
         title: 'No wildcard matches',
         description: searchTerm
-            ? `No wildcard keys matched "${searchTerm}".`
-            : 'No wildcard keys matched your search.',
+            ? `No wildcard keys match "${searchTerm}". Try another search, or browse all wildcards.`
+            : 'No wildcard keys match your search. Try another search, or browse all wildcards.',
         wildcardsDir: meta.wildcards_dir || '',
         supportedFormats: Array.isArray(meta.supported_formats) ? meta.supported_formats : [],
     };

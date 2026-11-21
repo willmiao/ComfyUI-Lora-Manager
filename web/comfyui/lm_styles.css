@@ -1011,9 +1011,47 @@ body.lm-lora-reordering * {
   color: var(--lm-fg-muted);
 }
 
-/* Wildcards info item: path block + usage examples + action buttons */
-.lm-autocomplete-info-path {
+/* Wildcards info item: actions + compact usage + manual-file disclosure */
+.lm-autocomplete-info-usage {
   margin-top: 10px;
+  color: var(--lm-fg-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.lm-autocomplete-info-usage code {
+  color: var(--lm-accent-text);
+}
+
+.lm-autocomplete-manual-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--lm-fg-subtle);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.lm-autocomplete-manual-toggle::after {
+  content: "›";
+  display: inline-block;
+  transition: transform 120ms ease;
+}
+
+.lm-autocomplete-manual-toggle.is-expanded::after {
+  transform: rotate(90deg);
+}
+
+.lm-autocomplete-manual-toggle:hover {
+  color: var(--lm-fg);
+}
+
+.lm-autocomplete-info-path {
+  margin-top: 6px;
   padding: 8px 10px;
   border-radius: 6px;
   background: var(--lm-surface-raised);
@@ -1029,27 +1067,18 @@ body.lm-lora-reordering * {
 }
 
 .lm-autocomplete-info-path code {
+  display: block;
+  overflow: hidden;
   color: var(--lm-accent-text);
-  word-break: break-all;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lm-autocomplete-info-note {
   margin-top: 6px;
   color: var(--lm-fg-subtle);
-}
-
-.lm-autocomplete-info-examples {
-  margin-top: 10px;
   font-size: 11px;
-  line-height: 1.55;
-  color: var(--lm-fg-muted);
-}
-
-.lm-autocomplete-info-examples strong {
-  display: block;
-  color: var(--lm-fg);
-  font-weight: 600;
-  margin-bottom: 4px;
+  line-height: 1.45;
 }
 
 .lm-autocomplete-info-actions {

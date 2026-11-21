@@ -137,7 +137,7 @@ class MiscRoutes:
             metadata_provider_factory=self._metadata_provider_factory,
         )
         custom_words = CustomWordsHandler()
-        wildcards = WildcardsHandler()
+        wildcards = WildcardsHandler(settings=self._settings)
         supporters = SupportersHandler()
         doctor = DoctorHandler(settings_service=self._settings)
         example_workflows = ExampleWorkflowsHandler()
