@@ -260,6 +260,16 @@ export function addLorasWidget(node, name, opts, callback) {
   
   // Function to render loras from data
   const renderLoras = (value, widget) => {
+    // The rebuild below drops every row, including the control the user just
+    // clicked. Removing the focused element makes the browser re-target focus
+    // synchronously, and that focus fixup flushes layout while the list is
+    // empty: the scroll container has nothing left to scroll, so its scrollTop
+    // is clamped to 0. Rebuilding the rows does not bring the offset back, so
+    // the list would jump to the top after a toggle near the bottom. Capture
+    // the offset first and restore it once the rows are back in place.
+    const previousScrollTop = container.scrollTop;
+    const previousScrollLeft = container.scrollLeft;
+
     // Clear existing content
     while (container.firstChild) {
       container.removeChild(container.firstChild);
@@ -878,6 +888,17 @@ export function addLorasWidget(node, name, opts, callback) {
       selectLora(null);
     } else if (selectedLora) {
       emitSelectionChange(buildSelectionPayload(selectedLora));
+    }
+
+    // Rows are back in place, so the clamp applied while the list was empty no
+    // longer holds: put the list back where the user left it. A following
+    // keyboard pick scrolls its own input into view from a rAF, which runs
+    // after this and therefore still wins.
+    if (container.scrollTop !== previousScrollTop) {
+      container.scrollTop = previousScrollTop;
+    }
+    if (container.scrollLeft !== previousScrollLeft) {
+      container.scrollLeft = previousScrollLeft;
     }
 
     if (pendingFocusTarget) {
