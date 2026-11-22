@@ -166,3 +166,81 @@ describe("updateConnectedTriggerWords", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("syncTriggerWordsForChain", () => {
+  let syncTriggerWordsForChain;
+  let installTriggerWordConnectionSync;
+  let fetchMock;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+
+    ({ syncTriggerWordsForChain, installTriggerWordConnectionSync } = await import(
+      UTILS_MODULE
+    ));
+
+    fetchMock = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("pushes the chained LoRAs to the loader's toggle", async () => {
+    const { loader, cycler } = createCyclerGraph();
+    cycler.widgets[0].value = {
+      current_lora_filename: "Illustrious/realistic/114558v4df2fsdf5",
+      current_lora_name: "Illustrious/realistic/114558v4df2fsdf5",
+    };
+
+    syncTriggerWordsForChain(loader);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/lm/loras/get_trigger_words");
+    expect(JSON.parse(init.body)).toEqual({
+      lora_names: ["Illustrious/realistic/114558v4df2fsdf5"],
+      node_ids: [{ node_id: 55, graph_id: "root" }],
+    });
+  });
+
+  it("resyncs when a connection changes, installing one hook per class", async () => {
+    const { loader, cycler } = createCyclerGraph();
+    cycler.widgets[0].value = {
+      current_lora_filename: "Illustrious/realistic/114558v4df2fsdf5",
+      current_lora_name: "Illustrious/realistic/114558v4df2fsdf5",
+    };
+
+    const nodeType = { prototype: {} };
+    installTriggerWordConnectionSync(nodeType);
+    installTriggerWordConnectionSync(nodeType);
+    expect(typeof nodeType.prototype.onConnectionsChange).toBe("function");
+
+    const node = Object.create(nodeType.prototype);
+    Object.assign(node, loader);
+
+    node.onConnectionsChange(1, 0, true, {});
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).node_ids).toEqual([
+      { node_id: 55, graph_id: "root" },
+    ]);
+  });
+
+  it("leaves an existing onConnectionsChange handler in place", () => {
+    const original = vi.fn();
+    const nodeType = { prototype: { onConnectionsChange: original } };
+    installTriggerWordConnectionSync(nodeType);
+
+    const node = Object.create(nodeType.prototype);
+    node.onConnectionsChange(2, 1, false, {});
+
+    expect(original).toHaveBeenCalledTimes(1);
+    expect(original.mock.calls[0].slice(0, 3)).toEqual([2, 1, false]);
+  });
+});

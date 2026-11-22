@@ -63,12 +63,14 @@ describe('LoraRandomizerWidget deferred execution updates', () => {
       value: createDefaultConfig()
     }
     const api = createApiMock()
+    const syncTriggerWords = vi.fn()
 
     const wrapper = shallowMount(LoraRandomizerWidget, {
       props: {
         widget,
         node,
-        api
+        api,
+        syncTriggerWords
       }
     })
 
@@ -92,5 +94,9 @@ describe('LoraRandomizerWidget deferred execution updates', () => {
 
     expect(lorasWidget.value).toEqual(deferredLoras)
     expect(settingsView.props('lastUsed')).toEqual(deferredLoras)
+    // The roll shown now is the one the next run loads, so downstream toggles
+    // must be refreshed at the same moment.
+    expect(syncTriggerWords).toHaveBeenCalledTimes(1)
+    expect(syncTriggerWords).toHaveBeenCalledWith(node)
   })
 })

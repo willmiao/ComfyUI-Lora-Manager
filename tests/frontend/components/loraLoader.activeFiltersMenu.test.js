@@ -37,6 +37,7 @@ const showToastMock = vi.fn();
 vi.mock(UTILS_MODULE, () => ({
   collectActiveLorasFromChain: vi.fn(),
   updateConnectedTriggerWords: vi.fn(),
+  installTriggerWordConnectionSync: vi.fn(),
   mergeLoras: vi.fn(),
   chainCallback: (proto, property, callback) => {
     proto[property] = callback;

@@ -1085,3 +1085,48 @@ export function updateDownstreamLoaders(startNode, visited = new Set()) {
     }
   }
 }
+
+/**
+ * Push a chain node's current trigger words to the TriggerWord Toggle nodes
+ * that depend on it: toggles wired straight to the node, and toggles behind the
+ * Lora Loader it feeds.
+ *
+ * Call this whenever the chain can have changed at execution time: link edits,
+ * a cycler/randomizer picking its next LoRA, or a restored widget value. The
+ * fetch is coalesced per target node, so repeated calls are cheap.
+ */
+export function syncTriggerWordsForChain(node) {
+  if (!node?.graph) {
+    return;
+  }
+
+  updateConnectedTriggerWords(node, collectActiveLorasFromChain(node));
+  updateDownstreamLoaders(node);
+}
+
+/**
+ * Install a connection-change hook that refreshes downstream TriggerWord Toggle
+ * nodes.
+ *
+ * Connecting an upstream stack changes the trigger words a Lora Loader emits at
+ * execution time, but nothing else tells the toggle, so its list would keep
+ * showing the previous set until some widget changes. The hook covers both the
+ * link made into a chain node and the link made out of it to a toggle.
+ *
+ * Idempotent: several extensions target the same node class, and the first
+ * install wins.
+ */
+export function installTriggerWordConnectionSync(nodeType) {
+  const prototype = nodeType?.prototype;
+  if (!prototype || prototype.__lmTriggerWordConnectionSync) {
+    return;
+  }
+  prototype.__lmTriggerWordConnectionSync = true;
+
+  const original = prototype.onConnectionsChange;
+  prototype.onConnectionsChange = function (...args) {
+    const result = original?.apply(this, args);
+    syncTriggerWordsForChain(this);
+    return result;
+  };
+}

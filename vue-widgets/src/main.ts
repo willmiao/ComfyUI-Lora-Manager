@@ -48,7 +48,7 @@ import { app } from '../../../scripts/app.js'
 // @ts-ignore - ComfyUI external module
 import { api } from '../../../scripts/api.js'
 // @ts-ignore
-import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
+import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders, syncTriggerWordsForChain, installTriggerWordConnectionSync } from '../../web/comfyui/utils.js'
 // @ts-ignore
 import { stripAutocompleteMetadataFromPromptResult } from '../../web/comfyui/autocomplete.js'
 // @ts-ignore
@@ -283,7 +283,8 @@ function createLoraRandomizerWidget(node) {
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
     node,
-    api
+    api,
+    syncTriggerWords: syncTriggerWordsForChain
   })
 
   vueApp.use(PrimeVue, {
@@ -377,7 +378,10 @@ function createLoraCyclerWidget(node) {
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
     node,
-    api
+    api,
+    // The widget caches the next LoRA after an execution; push that pick to the
+    // downstream TriggerWord Toggle nodes once the display has moved.
+    syncTriggerWords: syncTriggerWordsForChain
   })
 
   vueApp.use(PrimeVue, {
@@ -1020,6 +1024,8 @@ app.registerExtension({
 
     // Register mode change handlers for LORA_STACK chain nodes
     if (LORA_CHAIN_NODE_TYPES.includes(comfyClass)) {
+      installTriggerWordConnectionSync(nodeType);
+
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated
 
       nodeType.prototype.onNodeCreated = function () {

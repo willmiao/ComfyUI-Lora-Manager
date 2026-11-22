@@ -52,6 +52,8 @@ const props = defineProps<{
   widget: RandomizerWidget
   node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
   api?: any
+  /** Push the refreshed LoRA set to downstream TriggerWord Toggle nodes. */
+  syncTriggerWords?: (node: any) => void
 }>()
 
 // State management
@@ -326,6 +328,9 @@ onMounted(async () => {
           lorasWidget.value = pending.loras
         }
         currentLoras.value = pending.loras
+        // The roll shown now is the one the next run will load; refresh the
+        // downstream toggles so their word list matches it.
+        props.syncTriggerWords?.(props.node)
       }
     }
 

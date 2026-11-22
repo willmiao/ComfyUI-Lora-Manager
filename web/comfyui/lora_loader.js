@@ -16,6 +16,7 @@ import {
   getNodeFromGraph,
   getWidgetByName,
   getWidgetSerializedValue,
+  installTriggerWordConnectionSync,
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
 import { enableListedLorasFromCode } from "./lora_selection.js";
@@ -229,6 +230,8 @@ app.registerExtension({
     }
 
     if (nodeType.comfyClass == "Lora Loader (LoraManager)") {
+      installTriggerWordConnectionSync(nodeType);
+
       chainCallback(nodeType.prototype, "onNodeCreated", function () {
         // Enable widget serialization
         this.serialize_widgets = true;

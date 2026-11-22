@@ -1579,7 +1579,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-54f2f3a9] {
+.lora-randomizer-widget[data-v-27f9092f] {
   padding: 6px;
   /* Let the node surface show through; only inner controls are painted. */
   background: transparent;
@@ -2080,7 +2080,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-cycler-widget[data-v-39cb48c3] {
+.lora-cycler-widget[data-v-790ea7da] {
   padding: 6px;
   /* Let the node surface show through; only inner controls are painted. */
   background: transparent;
@@ -13633,7 +13633,8 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   props: {
     widget: {},
     node: {},
-    api: {}
+    api: {},
+    syncTriggerWords: { type: Function }
   },
   setup(__props) {
     const props = __props;
@@ -13798,7 +13799,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
       };
       if (props.api) {
         const handleExecutionComplete = () => {
-          var _a3;
+          var _a3, _b2;
           if (pendingExecutions.length === 0) {
             return;
           }
@@ -13812,6 +13813,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
               lorasWidget2.value = pending.loras;
             }
             currentLoras.value = pending.loras;
+            (_b2 = props.syncTriggerWords) == null ? void 0 : _b2.call(props, props.node);
           }
         };
         props.api.addEventListener("execution_success", handleExecutionComplete);
@@ -13874,7 +13876,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-54f2f3a9"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-27f9092f"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$4 = { class: "setting-section progress-section" };
 const _hoisted_3$3 = { class: "progress-label" };
@@ -14667,7 +14669,8 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   props: {
     widget: {},
     node: {},
-    api: {}
+    api: {},
+    syncTriggerWords: { type: Function }
   },
   setup(__props) {
     const props = __props;
@@ -14936,6 +14939,12 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
             state.isWorkflowExecuting.value = false;
             state.executingRepeatStep.value = 0;
           }
+          if (pending.output) {
+            nextTick(() => {
+              var _a3;
+              return (_a3 = props.syncTriggerWords) == null ? void 0 : _a3.call(props, props.node);
+            });
+          }
         };
         props.api.addEventListener("execution_success", handleExecutionComplete);
         props.api.addEventListener("execution_error", handleExecutionComplete);
@@ -15007,7 +15016,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-39cb48c3"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-790ea7da"]]);
 const _hoisted_1$2 = { class: "json-display-widget" };
 const _hoisted_2$2 = {
   class: "json-content",
@@ -15758,6 +15767,57 @@ function getComfyUIBasePath() {
 function lmUrl(path) {
   return `${getComfyUIBasePath()}${path}`;
 }
+const STYLE_ID = "lm-lora-shared-styles";
+const THEME_STYLE_ID = "lm-lora-theme-tokens";
+let stylePromise = null;
+function injectStyles(cssText) {
+  let styleEl = document.getElementById(STYLE_ID);
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = STYLE_ID;
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = cssText;
+}
+function injectTheme(cssText) {
+  let styleEl = document.getElementById(THEME_STYLE_ID);
+  if (!styleEl) {
+    styleEl = document.createElement("style");
+    styleEl.id = THEME_STYLE_ID;
+    document.head.insertBefore(styleEl, document.head.firstChild);
+  }
+  styleEl.textContent = cssText;
+}
+function stylesBaseUrl() {
+  const moduleUrl = new URL(import.meta.url);
+  const bundleDir = "/vue-widgets/";
+  if (moduleUrl.pathname.includes(bundleDir)) {
+    return new URL("../", moduleUrl);
+  }
+  return new URL("./", moduleUrl);
+}
+async function loadCssText(fileName) {
+  const cssUrl = new URL(fileName, stylesBaseUrl());
+  const response = await fetch(cssUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to load ${cssUrl}`);
+  }
+  return await response.text();
+}
+function ensureLmStyles() {
+  if (!stylePromise) {
+    stylePromise = Promise.all([loadCssText("lm_theme.css"), loadCssText("lm_styles.css")]).then(([themeCss, stylesCss]) => {
+      injectTheme(themeCss);
+      injectStyles(stylesCss);
+      return true;
+    }).catch((error) => {
+      console.warn("Failed to load LoRA Manager styles", error);
+      stylePromise = null;
+      return false;
+    });
+  }
+  return stylePromise;
+}
 let _loraSyntaxFormatCache = null;
 let _loraSyntaxFormatRefreshPromise = null;
 async function _fetchLoraSyntaxFormat() {
@@ -16219,6 +16279,26 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
     }
   }
 }
+function syncTriggerWordsForChain(node) {
+  if (!(node == null ? void 0 : node.graph)) {
+    return;
+  }
+  updateConnectedTriggerWords(node, collectActiveLorasFromChain(node));
+  updateDownstreamLoaders(node);
+}
+function installTriggerWordConnectionSync(nodeType) {
+  const prototype = nodeType == null ? void 0 : nodeType.prototype;
+  if (!prototype || prototype.__lmTriggerWordConnectionSync) {
+    return;
+  }
+  prototype.__lmTriggerWordConnectionSync = true;
+  const original = prototype.onConnectionsChange;
+  prototype.onConnectionsChange = function(...args) {
+    const result = original == null ? void 0 : original.apply(this, args);
+    syncTriggerWordsForChain(this);
+    return result;
+  };
+}
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -16282,57 +16362,6 @@ function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCa
     }
     updateDownstreamLoaders2(node);
   };
-}
-const STYLE_ID = "lm-lora-shared-styles";
-const THEME_STYLE_ID = "lm-lora-theme-tokens";
-let stylePromise = null;
-function injectStyles(cssText) {
-  let styleEl = document.getElementById(STYLE_ID);
-  if (!styleEl) {
-    styleEl = document.createElement("style");
-    styleEl.id = STYLE_ID;
-    document.head.appendChild(styleEl);
-  }
-  styleEl.textContent = cssText;
-}
-function injectTheme(cssText) {
-  let styleEl = document.getElementById(THEME_STYLE_ID);
-  if (!styleEl) {
-    styleEl = document.createElement("style");
-    styleEl.id = THEME_STYLE_ID;
-    document.head.insertBefore(styleEl, document.head.firstChild);
-  }
-  styleEl.textContent = cssText;
-}
-function stylesBaseUrl() {
-  const moduleUrl = new URL(import.meta.url);
-  const bundleDir = "/vue-widgets/";
-  if (moduleUrl.pathname.includes(bundleDir)) {
-    return new URL("../", moduleUrl);
-  }
-  return new URL("./", moduleUrl);
-}
-async function loadCssText(fileName) {
-  const cssUrl = new URL(fileName, stylesBaseUrl());
-  const response = await fetch(cssUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to load ${cssUrl}`);
-  }
-  return await response.text();
-}
-function ensureLmStyles() {
-  if (!stylePromise) {
-    stylePromise = Promise.all([loadCssText("lm_theme.css"), loadCssText("lm_styles.css")]).then(([themeCss, stylesCss]) => {
-      injectTheme(themeCss);
-      injectStyles(stylesCss);
-      return true;
-    }).catch((error) => {
-      console.warn("Failed to load LoRA Manager styles", error);
-      stylePromise = null;
-      return false;
-    });
-  }
-  return stylePromise;
 }
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
 const LORA_POOL_WIDGET_MIN_HEIGHT = 520;
@@ -16523,7 +16552,8 @@ function createLoraRandomizerWidget(node) {
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
     node,
-    api
+    api,
+    syncTriggerWords: syncTriggerWordsForChain
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -16600,7 +16630,10 @@ function createLoraCyclerWidget(node) {
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
     node,
-    api
+    api,
+    // The widget caches the next LoRA after an execution; push that pick to the
+    // downstream TriggerWord Toggle nodes once the display has moved.
+    syncTriggerWords: syncTriggerWordsForChain
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -17088,6 +17121,7 @@ app.registerExtension({
       };
     }
     if (LORA_CHAIN_NODE_TYPES.includes(comfyClass)) {
+      installTriggerWordConnectionSync(nodeType);
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);

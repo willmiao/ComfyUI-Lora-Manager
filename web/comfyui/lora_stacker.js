@@ -3,6 +3,7 @@ import {
   getActiveLorasFromNode,
   updateConnectedTriggerWords,
   updateDownstreamLoaders,
+  installTriggerWordConnectionSync,
   chainCallback,
   mergeLoras,
   getWidgetByName,
@@ -15,6 +16,8 @@ app.registerExtension({
 
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     if (nodeType.comfyClass === "Lora Stacker (LoraManager)") {
+      installTriggerWordConnectionSync(nodeType);
+
       chainCallback(nodeType.prototype, "onNodeCreated", async function () {
         // Enable widget serialization
         this.serialize_widgets = true;

@@ -48,6 +48,7 @@ const getWidgetSerializedValue = vi.fn((node, name) => {
 vi.mock(UTILS_MODULE, () => ({
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
+  installTriggerWordConnectionSync: vi.fn(),
   mergeLoras,
   chainCallback: (proto, property, callback) => {
     proto[property] = callback;
