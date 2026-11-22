@@ -12,11 +12,10 @@ export const COMMAND_IDS = {
 
 // Default combos live beside the command ids so the registered default and the
 // displayed fallback (used when the effective binding cannot be read) cannot
-// drift apart. Each picker added later gets its own entry here.
+// drift apart. Commands without an entry have no default binding.
 export const DEFAULT_KEYBINDINGS = {
   [COMMAND_IDS.quickLoraPicker]: { key: "l", alt: true },
   [COMMAND_IDS.quickRecipePicker]: { key: "r", alt: true },
-  [COMMAND_IDS.quickWildcardPicker]: { key: "w", alt: true },
 };
 
 function formatKeyCombo(combo) {

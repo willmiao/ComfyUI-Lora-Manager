@@ -1423,8 +1423,7 @@ describe('AutoComplete widget interactions', () => {
     expect(autoComplete.dropdown.textContent).toContain('You have 6 wildcard collections');
     expect(autoComplete.dropdown.textContent).toContain('Activation applies globally to all workflows');
     const browseButton = autoComplete.dropdown.querySelector('[data-action="browse-activate-wildcards"]');
-    expect(browseButton.textContent).toContain('Browse & Activate');
-    expect(browseButton.textContent).toContain('Alt+W');
+    expect(browseButton.textContent).toBe('Browse & Activate');
     expect(autoComplete.dropdown.querySelector('[data-action="open-wildcards-manager"]').textContent).toBe('Open Manager');
 
     browseButton.click();

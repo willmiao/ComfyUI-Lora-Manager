@@ -190,9 +190,9 @@ resources.
 ## ComfyUI Global Wildcards panel
 
 Plugin mode adds a **Global Wildcards** floating panel. Open it from **Quick
-Actions → Global Wildcards** or the default `Alt+W` binding. The command id is
-`LoraManager.ToggleWildcardQuickPanel`; the binding can be changed or removed in
-ComfyUI's keybinding settings.
+Actions → Global Wildcards**. The command id is
+`LoraManager.ToggleWildcardQuickPanel`; it has no default binding, but one can
+be assigned in ComfyUI's keybinding settings.
 
 The panel provides:
 

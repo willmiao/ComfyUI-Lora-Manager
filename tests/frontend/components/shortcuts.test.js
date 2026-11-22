@@ -75,6 +75,14 @@ describe('command shortcut labels', () => {
     expect(getCommandShortcutLabel(COMMAND_IDS.quickRecipePicker)).toBe('Alt+R');
   });
 
+  it('leaves the wildcard picker unbound by default', async () => {
+    const { COMMAND_IDS, DEFAULT_KEYBINDINGS, getCommandShortcutLabel } = await loadShortcuts();
+
+    expect(COMMAND_IDS.quickWildcardPicker).toBe('LoraManager.ToggleWildcardQuickPanel');
+    expect(DEFAULT_KEYBINDINGS[COMMAND_IDS.quickWildcardPicker]).toBeUndefined();
+    expect(getCommandShortcutLabel(COMMAND_IDS.quickWildcardPicker)).toBe('');
+  });
+
   it('returns an empty label for a command without a default shortcut', async () => {
     const { getCommandShortcutLabel } = await loadShortcuts();
 

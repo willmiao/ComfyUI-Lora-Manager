@@ -84,7 +84,6 @@ describe('LoRA Manager Quick Actions menu', () => {
     expect([...menu.querySelectorAll('kbd')].map((badge) => badge.textContent)).toEqual([
       'Alt+L',
       'Alt+R',
-      'Alt+W',
     ]);
     expect(anchor.getAttribute('aria-expanded')).toBe('true');
 
