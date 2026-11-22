@@ -903,27 +903,15 @@
     line-height: 1;
 }
 
-.tab-badge--update {
-    animation: tab-badge-pulse 2.8s ease-in-out infinite;
-}
-
+/* Static on purpose: the badge already says UPDATE. The old pulse animated
+   box-shadow, which cannot run on the compositor, so it repainted the modal
+   every frame for as long as it was open (#1220). */
 .tab-btn--has-update:not(.active) {
     color: color-mix(in oklch, var(--text-color) 70%, var(--badge-update-bg) 30%);
 }
 
 .tab-btn--has-update.active {
     border-bottom-color: var(--badge-update-bg);
-}
-
-@keyframes tab-badge-pulse {
-    0%, 100% {
-        box-shadow: 0 3px 10px color-mix(in oklch, var(--badge-update-glow) 100%, transparent);
-        transform: translateY(0);
-    }
-    50% {
-        box-shadow: 0 5px 14px color-mix(in oklch, var(--badge-update-glow) 90%, transparent);
-        transform: translateY(-1px);
-    }
 }
 
 .tab-content {

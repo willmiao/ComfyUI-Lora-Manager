@@ -84,17 +84,14 @@ export class ModelDuplicatesManager {
         if (!this.showBadge && !this.inDuplicateMode) {
             badge.style.display = 'none';
             badge.textContent = '';
-            badge.classList.remove('pulse');
             return;
         }
         
         if (count > 0) {
             badge.style.display = 'inline-flex';
             badge.textContent = count;
-            badge.classList.add('pulse');
         } else {
             badge.textContent = '';
-            badge.classList.remove('pulse');
         }
     }
     
@@ -283,7 +280,6 @@ export class ModelDuplicatesManager {
             const oldBadge = document.getElementById('duplicatesBadge');
             if (oldBadge && oldBadge.textContent) {
                 newBadge.textContent = oldBadge.textContent;
-                newBadge.classList.add('pulse');
             }
         }
         

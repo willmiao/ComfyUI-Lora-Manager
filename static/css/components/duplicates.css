@@ -445,7 +445,10 @@
     font-size: 0.9em;
 }
 
-/* Badge Styles */
+/* Badge Styles
+   Static on purpose: the count is the notification. Pulsing it kept the
+   compositor producing a frame on every vsync while the action bar was on
+   screen, which costs tens of MB/s of frame traffic on a large grid (#1220). */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -467,23 +470,6 @@
 
 .badge:empty {
     display: none;
-}
-
-/* Make the pulse animation more subtle */
-.badge.pulse {
-    animation: badge-pulse 2s infinite; /* Slower animation */
-}
-
-@keyframes badge-pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1); /* Less expansion */
-    }
-    100% {
-        transform: scale(1);
-    }
 }
 
 /* Empty-state hint in the duplicates view */
