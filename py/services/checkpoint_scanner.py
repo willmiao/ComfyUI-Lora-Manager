@@ -48,7 +48,10 @@ class CheckpointScanner(ModelScanner):
             self._hash_calculation_tasks: dict[str, asyncio.Task[Optional[str]]] = {}
 
     async def _create_default_metadata(
-        self, file_path: str
+        self,
+        file_path: str,
+        *,
+        precomputed_sha256: Optional[str] = None,
     ) -> Optional[CheckpointMetadata]:
         """Create default metadata for checkpoint without calculating hash (lazy hash).
 
@@ -76,31 +79,37 @@ class CheckpointScanner(ModelScanner):
             # safetensors dtypes). "" = checked, no quantization detected.
             quantization = detect_quantization(real_path)
 
-            # Create metadata WITHOUT calculating hash. sub_type is
-            # location-derived: a manually imported Flux UNet living in a
-            # unet/diffusion_models root must not be born as a checkpoint, or
-            # every later sidecar-driven cache rebuild would file it under the
-            # wrong type until the next restart.
+            # Keep hashing lazy unless reconcile already calculated it while
+            # identifying a moved model. sub_type is location-derived: a
+            # manually imported Flux UNet living in a unet/diffusion_models
+            # root must not be born as a checkpoint, or every later
+            # sidecar-driven cache rebuild would file it under the wrong type
+            # until the next restart.
+            resolved_sha256 = (precomputed_sha256 or "").lower()
             metadata = CheckpointMetadata(
                 file_name=base_name,
                 model_name=base_name,
                 file_path=normalize_path(file_path),
                 size=os.path.getsize(real_path),
                 modified=datetime.now().timestamp(),
-                sha256="",  # Empty hash - will be calculated on-demand
+                sha256=resolved_sha256,
                 base_model="Unknown",
                 preview_url=normalize_path(preview_url),
                 tags=[],
                 modelDescription="",
                 sub_type=self.resolve_sub_type_for_path(file_path) or "checkpoint",
-                from_civitai=False,  # Mark as local model since no hash yet
-                hash_status="pending",  # Mark hash as pending
+                from_civitai=False,
+                hash_status="completed" if resolved_sha256 else "pending",
                 autov3=autov3 or "",
                 quantization=quantization or "",
             )
 
             # Save the created metadata
-            logger.info(f"Creating checkpoint metadata (hash pending) for {file_path}")
+            logger.info(
+                "Creating checkpoint metadata (hash %s) for %s",
+                "completed" if resolved_sha256 else "pending",
+                file_path,
+            )
             await MetadataManager.save_metadata(file_path, metadata)
 
             return metadata

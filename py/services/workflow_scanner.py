@@ -209,6 +209,7 @@ class WorkflowScanner(ModelScanner):
         *,
         include_remote: bool = False,
         checkpoint_name_hint: Optional[str] = None,
+        precomputed_sha256: Optional[str] = None,
     ) -> Optional[WorkflowMetadata]:
         """Create metadata by hashing the artifact and analyzing its workflow.
 
@@ -245,7 +246,7 @@ class WorkflowScanner(ModelScanner):
             if not preview_url and self._is_image_artifact(file_path):
                 # An image artifact doubles as its own preview.
                 preview_url = file_path
-            sha256 = await calculate_sha256(real_path)
+            sha256 = precomputed_sha256 or await calculate_sha256(real_path)
             if not sha256:
                 logger.warning(
                     f"Skipping metadata creation for empty workflow file: {file_path}"

@@ -87,6 +87,7 @@ class DummyScanner(ModelScanner):
         *,
         hash_index: ModelHashIndex | None = None,
         excluded_models: List[str] | None = None,
+        precomputed_sha256: str | None = None,
     ) -> Optional[Dict[str, Any]]:
         hash_index = hash_index or self._hash_index
         excluded_models = excluded_models if excluded_models is not None else self._excluded_models

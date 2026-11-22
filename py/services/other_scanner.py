@@ -60,7 +60,10 @@ class OtherScanner(ModelScanner):
             self._hash_calculation_tasks: dict[str, asyncio.Task[Optional[str]]] = {}
 
     async def _create_default_metadata(
-        self, file_path: str
+        self,
+        file_path: str,
+        *,
+        precomputed_sha256: Optional[str] = None,
     ) -> Optional[OtherModelMetadata]:
         """Create default metadata without calculating hash (lazy hash).
 
@@ -87,27 +90,33 @@ class OtherScanner(ModelScanner):
             # safetensors dtypes). "" = checked, no quantization detected.
             quantization = detect_quantization(real_path)
 
-            # Create metadata WITHOUT calculating hash
+            # Keep hashing lazy unless reconcile already calculated it while
+            # identifying a moved model.
+            resolved_sha256 = (precomputed_sha256 or "").lower()
             metadata = OtherModelMetadata(
                 file_name=base_name,
                 model_name=base_name,
                 file_path=normalize_path(file_path),
                 size=os.path.getsize(real_path),
                 modified=datetime.now().timestamp(),
-                sha256="",  # Empty hash - will be calculated on-demand
+                sha256=resolved_sha256,
                 base_model="Unknown",
                 preview_url=normalize_path(preview_url),
                 tags=[],
                 modelDescription="",
                 sub_type=self.resolve_sub_type_for_path(file_path) or "vae",
-                from_civitai=False,  # Mark as local model since no hash yet
-                hash_status="pending",  # Mark hash as pending
+                from_civitai=False,
+                hash_status="completed" if resolved_sha256 else "pending",
                 autov3=autov3 or "",
                 quantization=quantization or "",
             )
 
             # Save the created metadata
-            logger.info(f"Creating other-model metadata (hash pending) for {file_path}")
+            logger.info(
+                "Creating other-model metadata (hash %s) for %s",
+                "completed" if resolved_sha256 else "pending",
+                file_path,
+            )
             await MetadataManager.save_metadata(file_path, metadata)
 
             return metadata

@@ -244,7 +244,12 @@ class MetadataManager:
             return False
     
     @staticmethod
-    async def create_default_metadata(file_path: str, model_class: Type[BaseModelMetadata] = LoraMetadata) -> Optional[BaseModelMetadata]:
+    async def create_default_metadata(
+        file_path: str,
+        model_class: Type[BaseModelMetadata] = LoraMetadata,
+        *,
+        precomputed_sha256: Optional[str] = None,
+    ) -> Optional[BaseModelMetadata]:
         """
         Create basic metadata structure for a model file.
         This replaces the old get_file_info function with a more appropriately named method.
@@ -252,6 +257,7 @@ class MetadataManager:
         Args:
             file_path: Path to the model file
             model_class: Class to instantiate
+            precomputed_sha256: Hash already calculated by the caller
             
         Returns:
             BaseModelMetadata instance or None if file doesn't exist or lies
@@ -279,10 +285,13 @@ class MetadataManager:
             # Find preview image
             preview_url = find_preview_file(base_name, get_preview_dir(file_path))
             
-            # Calculate file hash
+            # Calculate file hash unless move reconciliation already did it.
             start_hash_time = time.perf_counter()
-            logger.debug(f"Calculating SHA256 hash for {real_path}...")
-            sha256 = await calculate_sha256(real_path)
+            if precomputed_sha256:
+                sha256 = precomputed_sha256.lower()
+            else:
+                logger.debug(f"Calculating SHA256 hash for {real_path}...")
+                sha256 = await calculate_sha256(real_path)
             if not sha256:
                 # An empty file has no model identity: writing a sidecar for it
                 # would persist the empty-string SHA256 placeholder and pull the
@@ -293,7 +302,10 @@ class MetadataManager:
                 )
                 return None
             hash_duration = time.perf_counter() - start_hash_time
-            logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
+            if precomputed_sha256:
+                logger.debug(f"Reusing SHA256 hash calculated during reconcile for {real_path}")
+            else:
+                logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
             
             # AutoV3 reads only the safetensors header, so it is cheap even for
             # large files. At creation time we always know the checked state:

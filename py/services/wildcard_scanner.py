@@ -262,6 +262,7 @@ class WildcardScanner(ModelScanner):
         *,
         include_remote: bool = False,
         checkpoint_name_hint: str | None = None,
+        precomputed_sha256: str | None = None,
     ) -> Optional[WildcardMetadata]:
         del include_remote, checkpoint_name_hint
         try:
@@ -272,7 +273,7 @@ class WildcardScanner(ModelScanner):
             preview_url = find_preview_file(
                 get_sidecar_base_name(file_path), get_preview_dir(file_path)
             )
-            sha256 = await calculate_sha256(real_path)
+            sha256 = precomputed_sha256 or await calculate_sha256(real_path)
             if not sha256:
                 return None
             metadata = WildcardMetadata(

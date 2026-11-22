@@ -832,6 +832,7 @@ class DummyScannerForWalk(ModelScanner):
         *,
         hash_index: Any = None,
         excluded_models: Optional[List[str]] = None,
+        precomputed_sha256: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         rel_path = os.path.relpath(file_path, root_path)
         name = os.path.splitext(os.path.basename(file_path))[0]
