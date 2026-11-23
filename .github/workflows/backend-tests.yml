@@ -102,10 +102,11 @@ jobs:
     # (every configured root counted twice and shadowed as unreachable) shipped
     # because the suite only ever ran on Ubuntu.
     #
-    # Informational for now: the flag comes off once the suite is Windows-clean.
-    name: Run pytest on Windows (informational)
+    # Informational since the job was introduced; blocking as of 2026-11-23,
+    # once the suite was Windows-clean. A Windows-only regression now fails the
+    # check instead of only turning the job red inside a green run.
+    name: Run pytest on Windows
     runs-on: windows-latest
-    continue-on-error: true
     timeout-minutes: 45
     steps:
       - name: Check out repository
