@@ -22,6 +22,7 @@ from ..utils.sidecar_paths import (
     get_preview_path,
     get_sidecar_base_name,
     get_sidecar_dir,
+    get_sidecar_root,
     is_centralized,
     resolve_centralized_dir_for_dir,
 )
@@ -2367,6 +2368,7 @@ class ModelScanner:
                 if size > 0:
                     missing_by_size.setdefault(size, []).append(entry)
             matched_missing_paths: Set[str] = set()
+            sidecar_cleanup_dirs: Set[str] = set()
             if new_files and missing_files and is_centralized():
                 directory_move_pairs = self._match_directory_move_pairs(
                     new_files,
@@ -2375,7 +2377,11 @@ class ModelScanner:
                 )
                 for entry, new_path in directory_move_pairs:
                     old_path = str(entry.get("file_path") or "")
-                    if await self._relocate_cached_sidecar(entry, new_path):
+                    if await self._relocate_cached_sidecar(
+                        entry,
+                        new_path,
+                        cleanup_dirs=sidecar_cleanup_dirs,
+                    ):
                         matched_missing_paths.add(old_path)
                         logger.info(
                             "Reconciled externally moved model %s -> %s",
@@ -2414,6 +2420,7 @@ class ModelScanner:
                                     path,
                                     candidates_by_size=missing_by_size,
                                     matched_paths=matched_missing_paths,
+                                    cleanup_dirs=sidecar_cleanup_dirs,
                                 )
                                 process_kwargs = (
                                     {"precomputed_sha256": precomputed_sha256}
@@ -2485,6 +2492,8 @@ class ModelScanner:
                                 elapsed_seconds=time.time() - start_time,
                             )
                             return
+
+            self._prune_relocated_sidecar_dirs(sidecar_cleanup_dirs)
 
             # Repair rows whose file_name drifted from the file on disk. Only
             # mismatching entries are re-read here, so a clean library never
@@ -3671,6 +3680,8 @@ class ModelScanner:
         self,
         entry: Mapping[str, Any],
         new_path: str,
+        *,
+        cleanup_dirs: Optional[Set[str]] = None,
     ) -> bool:
         old_path = str(entry.get("file_path") or "")
         source_metadata = self._find_cached_sidecar_path(entry)
@@ -3743,7 +3754,41 @@ class ModelScanner:
                 os.remove(os.path.abspath(source_asset))
             except OSError as exc:
                 logger.warning("Cannot remove old sidecar asset %s: %s", source_asset, exc)
+        if cleanup_dirs is not None:
+            cleanup_dirs.add(source_dir)
         return True
+
+    @staticmethod
+    def _prune_relocated_sidecar_dirs(source_dirs: Set[str]) -> None:
+        sidecar_root = get_sidecar_root()
+        if not sidecar_root or not source_dirs:
+            return
+
+        root = os.path.abspath(sidecar_root)
+        root_key = os.path.normcase(root)
+        candidates: Set[str] = set()
+        for source_dir in source_dirs:
+            current = os.path.abspath(source_dir)
+            while os.path.normcase(current) != root_key:
+                try:
+                    contained = os.path.normcase(
+                        os.path.commonpath([root, current])
+                    ) == root_key
+                except ValueError:
+                    contained = False
+                if not contained:
+                    break
+                candidates.add(current)
+                parent = os.path.dirname(current)
+                if parent == current:
+                    break
+                current = parent
+
+        for directory in sorted(candidates, key=len, reverse=True):
+            try:
+                os.rmdir(directory)
+            except OSError:
+                pass
 
     @staticmethod
     def _directory_move_parts(path: str) -> Tuple[str, str]:
@@ -3819,6 +3864,7 @@ class ModelScanner:
         *,
         candidates_by_size: Mapping[int, List[Dict[str, Any]]],
         matched_paths: Set[str],
+        cleanup_dirs: Optional[Set[str]] = None,
     ) -> Optional[str]:
         """Relocate a uniquely matching cached sidecar and return the file hash."""
         if not candidates_by_size or not is_centralized():
@@ -3852,7 +3898,11 @@ class ModelScanner:
             return normalized_sha
 
         old_path = str(matches[0].get("file_path") or "")
-        if await self._relocate_cached_sidecar(matches[0], file_path):
+        if await self._relocate_cached_sidecar(
+            matches[0],
+            file_path,
+            cleanup_dirs=cleanup_dirs,
+        ):
             matched_paths.add(old_path)
             logger.info(
                 "Reconciled externally moved model %s -> %s",

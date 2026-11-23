@@ -203,6 +203,37 @@ async def test_reconcile_same_size_unrelated_file_hashes_once_without_relinking(
 
 
 @pytest.mark.asyncio
+async def test_reconcile_prunes_empty_mirror_dirs_after_round_trip(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    root = tmp_path / "checkpoints"
+    scanner, model, _old_sidecar, _old_preview = await _prepare_library(
+        tmp_path, monkeypatch, root
+    )
+    target = root / "Test" / "Qwen" / "model.safetensors"
+    target.parent.mkdir(parents=True)
+    shutil.move(str(model), str(target))
+    hash_calls = _count_hashes(monkeypatch)
+
+    await scanner._reconcile_cache()
+
+    test_mirror = Path(get_metadata_path(_normalize(target))).parent.parent
+    assert test_mirror.is_dir()
+    assert test_mirror.name == "Test"
+    shutil.move(str(target), str(model))
+
+    await scanner._reconcile_cache()
+
+    assert hash_calls == []
+    assert not test_mirror.exists()
+    final_sidecar = Path(get_metadata_path(_normalize(model)))
+    payload = json.loads(final_sidecar.read_text(encoding="utf-8"))
+    assert payload["notes"] == "keep me"
+    assert final_sidecar.parent.is_dir()
+
+
+@pytest.mark.asyncio
 async def test_reconcile_directory_rename_preserves_pending_checkpoints_without_hashing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -235,6 +266,9 @@ async def test_reconcile_directory_rename_preserves_pending_checkpoints_without_
         sidecar.write_text(json.dumps(payload), encoding="utf-8")
         entries.append(scanner._build_cache_entry(payload, folder="Zimage"))
 
+    old_mirror = Path(
+        get_metadata_path(_normalize(old_directory / "one.safetensors"))
+    ).parent
     scanner._cache = ModelCache(
         raw_data=entries,
         folders=["Zimage"],
@@ -257,6 +291,7 @@ async def test_reconcile_directory_rename_preserves_pending_checkpoints_without_
 
     assert summary["added"] == 2
     assert summary["removed"] == 2
+    assert not old_mirror.exists()
     for name, notes in (("one", "keep one"), ("two", "keep two")):
         model = new_directory / f"{name}.safetensors"
         sidecar = Path(get_metadata_path(_normalize(model)))
