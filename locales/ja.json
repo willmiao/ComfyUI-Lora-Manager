@@ -247,7 +247,7 @@
             "embeddings": "Embedding",
             "other": "その他",
             "workflows": "ワークフロー",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "ワイルドカード",
             "statistics": "統計"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
             "enableWorkflows": "ワークフロー管理",
             "enableWorkflowsHelp": "オフにすると、ワークフローライブラリフォルダーはスキャンされず、ワークフローページは無効のままになり、CivitAIのWorkflowリソースをリンクしたりダウンロードしたりできなくなります。",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "ワイルドカードリソース管理",
+            "enableWildcardsHelp": "オフにすると、ワイルドカードライブラリフォルダーはスキャンされず、ワイルドカードページは無効のままになります。既存の手動ワイルドカードと有効化済みのリソースは引き続き動作します。",
+            "wildcardFolder": "ワイルドカードライブラリフォルダー",
+            "wildcardFolderHelp": "Civitai とローカルのワイルドカードリソースをスキャンする唯一のフォルダーです。プラグインモードとスタンドアロンモードのどちらでも LoRA Manager だけが管理します。",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "ワークフローライブラリフォルダー",
             "workflowFolderHelp": "ComfyUIのワークフローJSONファイルをスキャンする単一のフォルダーです。LoRA Managerのみが管理し（ComfyUIとは共有されません）、変更はすぐに反映されます。",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "ワイルドカード",
+        "loading": "ワイルドカードリソースを読み込み中...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "ワイルドカードをフィルタ"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "リソース名",
+            "wildcardKeys": "ワイルドカードキー"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "ワイルドカードが選択されていません",
+            "activationSection": "有効化",
+            "activateAll": "選択項目を有効化",
+            "deactivateAll": "選択項目を無効化",
+            "updating": "{count} 件のワイルドカードリソースを更新中...",
+            "activated": "{count} 件のワイルドカードリソースを有効化しました。",
+            "deactivated": "{count} 件のワイルドカードリソースを無効化しました。",
+            "partial": "{succeeded} 件のリソースを更新しました。{failed} 件が失敗しました。{message}",
+            "failed": "ワイルドカードの有効化状態の更新に失敗しました：{message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "ワイルドカードを削除",
+                "message": "選択した {count} 件のワイルドカードを削除してもよろしいですか？",
+                "countMessage": "ワイルドカードが完全に削除されます。"
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "スタンドアロンモードではライブラリと有効化状態を管理できます。ワイルドカードの自動補完と実行時の展開は ComfyUI プラグインモードでのみ利用できます。",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "ワイルドカードリソース管理は無効です",
+            "description": "Civitai のワイルドカードパックをダウンロードし、ローカルファイルをインポートし、その内容を確認して、ComfyUI で利用するワイルドカードキーを正確に選択できます。",
+            "enableButton": "ワイルドカード管理を有効化",
+            "hint": "リソース管理が無効な間も、手動ワイルドカードフォルダーに配置済みのファイルは引き続き動作します。",
+            "enableFailed": "ワイルドカード管理を有効化できませんでした：{message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "ワイルドカードライブラリフォルダーが設定されていません",
+            "description": "「設定 > ライブラリ」で、ダウンロードおよびインポートしたワイルドカードリソース用のフォルダーを選択してください。",
+            "openSettings": "設定を開く"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "Civitai から追加",
+            "civitaiPlaceholder": "Civitai のモデル URL またはモデル ID",
+            "download": "ダウンロード",
+            "localLabel": "ローカルファイルをインポート",
+            "import": "インポート"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "リソースライブラリ",
+            "summary": "{total} 件のリソース · {active} 件が有効 · {manual} 件の手動キー",
+            "searchPlaceholder": "リソースまたはワイルドカードキーを検索",
+            "all": "すべてのリソース",
+            "active": "有効",
+            "inactive": "無効",
+            "emptyTitle": "ワイルドカードリソースはまだありません",
+            "emptyDescription": "上で Civitai のリソースをダウンロードするか、ZIP、TXT、YAML、JSON ファイルをインポートしてください。",
+            "noMatches": "現在のフィルタに一致するリソースはありません"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "{count} 件のキー",
+            "values": "{count} 件の値"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "詳細",
+            "activate": "有効化",
+            "activateWithOptions": "有効化...",
+            "deactivate": "無効化",
+            "delete": "削除"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "ワイルドカードキー",
+            "filterKeys": "キーをフィルタ",
+            "expand": "展開",
+            "collapse": "折りたたむ",
+            "values": "値",
+            "valueCount": "{count} 件の値",
+            "selectKey": "キーを選択すると値がプレビューされます。",
+            "loading": "値を読み込み中...",
+            "noValues": "このキーには値がありません。",
+            "loadFailed": "値の読み込みに失敗しました。",
+            "noMatches": "このフィルタに一致するワイルドカードキーはありません。",
+            "empty": "このリソースには解析済みのワイルドカードキーがありません。",
+            "renderLimit": "{total} 件中 {shown} 件のキーを表示しています。フィルタを絞り込んでください。",
+            "copyKey": "ワイルドカード参照をコピー",
+            "copied": "ワイルドカード参照をコピーしました",
+            "unreferenceableKey": "参照できません：{reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "有効化設定",
+            "settingsDescription": "ComfyUI で使用するキーを設定します。ソースファイルは変更されません。",
+            "keyPrefix": "キーのプレフィックス（任意）",
+            "namespacePlaceholder": "例：characters/fantasy",
+            "keyPrefixHelp": "有効時にすべてのワイルドカードキーの先頭に追加されます。空欄のままにすると元のキーを保持します。",
+            "keyLabel": "ワイルドカードキー",
+            "aliasHelp": "ダウンロードしたファイルを変更せずに、ComfyUI で使用するキーを変更します。",
+            "referencePreview": "参照プレビュー",
+            "save": "設定を保存",
+            "saveActivate": "保存して有効化",
+            "failed": "有効化設定の更新に失敗しました。"
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "ワイルドカードリソースを読み込み中...",
+            "runtimeConflicts": "実行時のキー競合 {count} 件をスキップしました。有効化名を確認してください。",
+            "activated": "リソースを有効化しました。",
+            "settingsSaved": "有効化設定を保存しました。",
+            "deactivated": "リソースを無効化しました。",
+            "deleted": "リソースを削除しました。",
+            "deleteConfirm": "{name} を削除しますか？ダウンロードしたファイルと有効化情報が削除されます。",
+            "downloading": "リソースをダウンロードして解析中...",
+            "downloaded": "リソースをライブラリに追加しました。まだ有効ではありません。",
+            "importing": "ファイルをインポートして解析中...",
+            "imported": "ファイルをライブラリに追加しました。まだ有効ではありません。",
+            "shortWarnings": "短いキーの警告：{keys}",
+            "unreferenceableKeys": "一部のキー（{count} 件）は __key__ 構文で参照できません。"
         }
     },
     "workflows": {

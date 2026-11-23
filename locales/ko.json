@@ -247,7 +247,7 @@
             "embeddings": "Embedding",
             "other": "기타",
             "workflows": "워크플로",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "와일드카드",
             "statistics": "통계"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
             "enableWorkflows": "워크플로 관리",
             "enableWorkflowsHelp": "끄면 워크플로 라이브러리 폴더를 스캔하지 않으며, 워크플로 페이지가 비활성화된 상태로 유지되고 CivitAI의 Workflow 리소스를 연결하거나 다운로드할 수 없습니다.",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "와일드카드 리소스 관리",
+            "enableWildcardsHelp": "끄면 와일드카드 라이브러리 폴더를 스캔하지 않으며 와일드카드 페이지가 비활성화된 상태로 유지됩니다. 기존 수동 와일드카드와 활성화된 리소스는 계속 작동합니다.",
+            "wildcardFolder": "와일드카드 라이브러리 폴더",
+            "wildcardFolderHelp": "Civitai 및 로컬 와일드카드 리소스를 스캔하는 유일한 폴더입니다. 플러그인 모드와 독립 실행 모드 모두에서 LoRA Manager만 관리합니다.",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "워크플로 라이브러리 폴더",
             "workflowFolderHelp": "ComfyUI 워크플로 JSON 파일을 스캔하는 단일 폴더입니다. LoRA Manager에서만 관리하며(ComfyUI와 공유되지 않음), 변경 사항은 즉시 적용됩니다.",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "와일드카드",
+        "loading": "와일드카드 리소스를 불러오는 중...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "와일드카드 필터"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "리소스 이름",
+            "wildcardKeys": "와일드카드 키"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "선택된 와일드카드가 없습니다",
+            "activationSection": "활성화",
+            "activateAll": "선택 항목 활성화",
+            "deactivateAll": "선택 항목 비활성화",
+            "updating": "와일드카드 리소스 {count}개를 업데이트하는 중...",
+            "activated": "와일드카드 리소스 {count}개를 활성화했습니다.",
+            "deactivated": "와일드카드 리소스 {count}개를 비활성화했습니다.",
+            "partial": "리소스 {succeeded}개를 업데이트했습니다. {failed}개 실패. {message}",
+            "failed": "와일드카드 활성화 상태 업데이트 실패: {message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "와일드카드 삭제",
+                "message": "선택한 와일드카드 {count}개를 삭제하시겠습니까?",
+                "countMessage": "개의 와일드카드가 영구적으로 삭제됩니다."
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "독립 실행 모드에서는 라이브러리와 활성화 상태를 관리할 수 있습니다. 와일드카드 자동 완성과 런타임 확장은 ComfyUI 플러그인 모드에서만 사용할 수 있습니다.",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "와일드카드 리소스 관리가 비활성화되어 있습니다",
+            "description": "Civitai 와일드카드 팩을 다운로드하고, 로컬 파일을 가져오고, 내용을 확인한 뒤 ComfyUI에서 사용할 와일드카드 키를 정확히 선택할 수 있습니다.",
+            "enableButton": "와일드카드 관리 활성화",
+            "hint": "리소스 관리가 비활성화되어 있어도 수동 와일드카드 폴더에 이미 있는 파일은 계속 작동합니다.",
+            "enableFailed": "와일드카드 관리를 활성화하지 못했습니다: {message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "와일드카드 라이브러리 폴더가 설정되지 않았습니다",
+            "description": "설정 > 라이브러리에서 다운로드 및 가져온 와일드카드 리소스용 폴더를 선택하세요.",
+            "openSettings": "설정 열기"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "Civitai에서 추가",
+            "civitaiPlaceholder": "Civitai 모델 URL 또는 모델 ID",
+            "download": "다운로드",
+            "localLabel": "로컬 파일 가져오기",
+            "import": "가져오기"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "리소스 라이브러리",
+            "summary": "리소스 {total}개 · 활성 {active}개 · 수동 키 {manual}개",
+            "searchPlaceholder": "리소스 또는 와일드카드 키 검색",
+            "all": "모든 리소스",
+            "active": "활성",
+            "inactive": "비활성",
+            "emptyTitle": "아직 와일드카드 리소스가 없습니다",
+            "emptyDescription": "위에서 Civitai 리소스를 다운로드하거나 ZIP, TXT, YAML, JSON 파일을 가져오세요.",
+            "noMatches": "현재 필터와 일치하는 리소스가 없습니다"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "키 {count}개",
+            "values": "값 {count}개"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "세부 정보",
+            "activate": "활성화",
+            "activateWithOptions": "활성화...",
+            "deactivate": "비활성화",
+            "delete": "삭제"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "와일드카드 키",
+            "filterKeys": "키 필터",
+            "expand": "펼치기",
+            "collapse": "접기",
+            "values": "값",
+            "valueCount": "값 {count}개",
+            "selectKey": "키를 선택하면 값을 미리 볼 수 있습니다.",
+            "loading": "값을 불러오는 중...",
+            "noValues": "이 키에는 값이 없습니다.",
+            "loadFailed": "값을 불러오지 못했습니다.",
+            "noMatches": "이 필터와 일치하는 와일드카드 키가 없습니다.",
+            "empty": "이 리소스에 파싱된 와일드카드 키가 없습니다.",
+            "renderLimit": "전체 {total}개 중 {shown}개 키를 표시 중입니다. 필터를 좁혀 결과를 줄이세요.",
+            "copyKey": "와일드카드 참조 복사",
+            "copied": "와일드카드 참조를 복사했습니다",
+            "unreferenceableKey": "참조할 수 없습니다: {reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "활성화 설정",
+            "settingsDescription": "ComfyUI에서 사용할 키를 구성합니다. 원본 파일은 수정되지 않습니다.",
+            "keyPrefix": "키 접두사 (선택 사항)",
+            "namespacePlaceholder": "예: characters/fantasy",
+            "keyPrefixHelp": "활성화 시 모든 와일드카드 키 앞에 추가됩니다. 비워 두면 원래 키를 유지합니다.",
+            "keyLabel": "와일드카드 키",
+            "aliasHelp": "다운로드한 파일을 수정하지 않고 ComfyUI에서 사용하는 키를 변경합니다.",
+            "referencePreview": "참조 미리보기",
+            "save": "설정 저장",
+            "saveActivate": "저장 및 활성화",
+            "failed": "활성화 설정을 업데이트하지 못했습니다."
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "와일드카드 리소스를 불러오는 중...",
+            "runtimeConflicts": "런타임 키 충돌 {count}개를 건너뛰었습니다. 활성화 이름을 확인하세요.",
+            "activated": "리소스가 활성화되었습니다.",
+            "settingsSaved": "활성화 설정이 저장되었습니다.",
+            "deactivated": "리소스가 비활성화되었습니다.",
+            "deleted": "리소스가 삭제되었습니다.",
+            "deleteConfirm": "{name}을(를) 삭제하시겠습니까? 다운로드한 파일과 활성화 정보가 함께 삭제됩니다.",
+            "downloading": "리소스를 다운로드하고 분석하는 중...",
+            "downloaded": "리소스가 라이브러리에 추가되었습니다. 아직 활성화되지 않았습니다.",
+            "importing": "파일을 가져오고 분석하는 중...",
+            "imported": "파일이 라이브러리에 추가되었습니다. 아직 활성화되지 않았습니다.",
+            "shortWarnings": "짧은 키 경고: {keys}",
+            "unreferenceableKeys": "일부 키({count}개)는 __key__ 구문으로 참조할 수 없습니다."
         }
     },
     "workflows": {

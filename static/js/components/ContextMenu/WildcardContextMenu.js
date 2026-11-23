@@ -26,7 +26,7 @@ export class WildcardContextMenu extends BaseContextMenu {
             label.textContent = translate(
                 active ? 'wildcards.actions.deactivate' : 'wildcards.actions.activateWithOptions',
                 {},
-                active ? 'Deactivate' : 'Activate…',
+                active ? 'Deactivate' : 'Activate...',
             );
         }
     }

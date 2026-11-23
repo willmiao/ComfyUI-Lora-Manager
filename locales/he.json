@@ -247,7 +247,7 @@
             "embeddings": "Embeddings",
             "other": "אחרים",
             "workflows": "Workflows",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "ויילדקארדים",
             "statistics": "סטטיסטיקה"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
             "enableWorkflows": "ניהול workflow",
             "enableWorkflowsHelp": "כשהאפשרות כבויה, תיקיית ספריית ה-workflow אינה נסרקת, עמוד Workflows נשאר מושבת ולא ניתן לקשר או להוריד משאבי Workflow מ-CivitAI.",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "ניהול משאבי ויילדקארד",
+            "enableWildcardsHelp": "כשהאפשרות כבויה, תיקיית ספריית הויילדקארד אינה נסרקת ועמוד הויילדקארדים נשאר מושבת. ויילדקארדים ידניים קיימים ומשאבים מופעלים ימשיכו לעבוד.",
+            "wildcardFolder": "תיקיית ספריית ויילדקארד",
+            "wildcardFolderHelp": "התיקייה היחידה שנסרקת עבור משאבי ויילדקארד של Civitai ומשאבים מקומיים. מנוהלת רק על ידי LoRA Manager, גם במצב תוסף וגם במצב עצמאי.",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "תיקיית ספריית ה-workflow",
             "workflowFolderHelp": "התיקייה היחידה שנסרקת עבור קובצי JSON של workflow של ComfyUI. מנוהלת על ידי LoRA Manager בלבד (אינה משותפת עם ComfyUI); השינויים חלים מיד.",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "ויילדקארדים",
+        "loading": "טוען משאבי ויילדקארד...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "סינון ויילדקארדים"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "שם המשאב",
+            "wildcardKeys": "מפתחות ויילדקארד"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "לא נבחרו ויילדקארדים",
+            "activationSection": "הפעלה",
+            "activateAll": "הפעל את הנבחרים",
+            "deactivateAll": "השבת את הנבחרים",
+            "updating": "מעדכן {count} משאבי ויילדקארד...",
+            "activated": "הופעלו {count} משאבי ויילדקארד.",
+            "deactivated": "הושבתו {count} משאבי ויילדקארד.",
+            "partial": "עודכנו {succeeded} משאבים; {failed} נכשלו. {message}",
+            "failed": "עדכון הפעלת הויילדקארדים נכשל: {message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "מחיקת ויילדקארדים",
+                "message": "האם אתה בטוח שברצונך למחוק את {count} הויילדקארדים שנבחרו?",
+                "countMessage": "ויילדקארדים יימחקו לצמיתות."
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "במצב עצמאי ניתן לנהל את הספרייה ואת מצב ההפעלה. השלמה אוטומטית של ויילדקארדים והרחבה בזמן ריצה זמינות רק במצב תוסף ComfyUI.",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "ניהול משאבי הויילדקארד מושבת",
+            "description": "הורד חבילות ויילדקארד מ-Civitai, ייבא קבצים מקומיים, עיין בתוכן שלהם ובחר בדיוק אילו מפתחות ויילדקארד יהיו זמינים ל-ComfyUI.",
+            "enableButton": "הפעל ניהול ויילדקארדים",
+            "hint": "קבצים שכבר נמצאים בתיקיית הויילדקארד הידנית ימשיכו לעבוד גם כשניהול המשאבים מושבת.",
+            "enableFailed": "הפעלת ניהול הויילדקארדים נכשלה: {message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "לא הוגדרה תיקיית ספריית ויילדקארד",
+            "description": "בחר תיקייה למשאבי ויילדקארד שהורדו ויובאו בהגדרות > ספרייה.",
+            "openSettings": "פתח הגדרות"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "הוסף מ-Civitai",
+            "civitaiPlaceholder": "כתובת מודל Civitai או מזהה מודל",
+            "download": "הורד",
+            "localLabel": "ייבא קבצים מקומיים",
+            "import": "ייבא"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "ספריית משאבים",
+            "summary": "{total} משאבים · {active} פעילים · {manual} מפתחות ידניים",
+            "searchPlaceholder": "חפש משאבים או מפתחות ויילדקארד",
+            "all": "כל המשאבים",
+            "active": "פעילים",
+            "inactive": "לא פעילים",
+            "emptyTitle": "עדיין אין משאבי ויילדקארד",
+            "emptyDescription": "הורד משאב מ-Civitai או ייבא קבצי ZIP, TXT, YAML או JSON למעלה.",
+            "noMatches": "אין משאבים שתואמים את המסננים הנוכחיים"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "{count} מפתחות",
+            "values": "{count} ערכים"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "פרטים",
+            "activate": "הפעל",
+            "activateWithOptions": "הפעל...",
+            "deactivate": "השבת",
+            "delete": "מחק"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "מפתחות ויילדקארד",
+            "filterKeys": "סינון מפתחות",
+            "expand": "הרחב",
+            "collapse": "כווץ",
+            "values": "ערכים",
+            "valueCount": "{count} ערכים",
+            "selectKey": "בחר מפתח כדי להציג את הערכים שלו.",
+            "loading": "טוען ערכים...",
+            "noValues": "למפתח זה אין ערכים.",
+            "loadFailed": "טעינת הערכים נכשלה.",
+            "noMatches": "אין מפתחות ויילדקארד שתואמים את המסנן הזה.",
+            "empty": "אין מפתחות ויילדקארד מפוענחים במשאב הזה.",
+            "renderLimit": "מציג {shown} מתוך {total} מפתחות. חדד את המסנן כדי לצמצם את התוצאות.",
+            "copyKey": "העתק הפניה לוויילדקארד",
+            "copied": "ההפניה לוויילדקארד הועתקה",
+            "unreferenceableKey": "לא ניתן להפנות: {reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "הגדרות הפעלה",
+            "settingsDescription": "הגדר את המפתחות שבהם משתמש ComfyUI. קובצי המקור אינם משתנים.",
+            "keyPrefix": "קידומת מפתח (אופציונלי)",
+            "namespacePlaceholder": "לדוגמה characters/fantasy",
+            "keyPrefixHelp": "מתווספת לכל מפתח ויילדקארד כשהמשאב פעיל. השאר ריק כדי לשמור על המפתחות המקוריים.",
+            "keyLabel": "מפתח ויילדקארד",
+            "aliasHelp": "משנה את המפתח שבו משתמש ComfyUI מבלי לשנות את הקובץ שהורד.",
+            "referencePreview": "תצוגה מקדימה של ההפניה",
+            "save": "שמור הגדרות",
+            "saveActivate": "שמור והפעל",
+            "failed": "עדכון הגדרות ההפעלה נכשל."
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "טוען משאבי ויילדקארד...",
+            "runtimeConflicts": "דולגו {count} התנגשויות מפתחות בזמן ריצה; בדוק את שמות ההפעלה.",
+            "activated": "המשאב הופעל.",
+            "settingsSaved": "הגדרות ההפעלה נשמרו.",
+            "deactivated": "המשאב הושבת.",
+            "deleted": "המשאב נמחק.",
+            "deleteConfirm": "למחוק את {name}? פעולה זו תמחק את הקובץ שהורד ואת ההפעלה שלו.",
+            "downloading": "מוריד ומפענח את המשאב...",
+            "downloaded": "המשאב נוסף לספרייה. הוא עדיין אינו פעיל.",
+            "importing": "מייבא ומפענח קבצים...",
+            "imported": "הקבצים נוספו לספרייה. הם עדיין אינם פעילים.",
+            "shortWarnings": "אזהרות על מפתחות קצרים: {keys}",
+            "unreferenceableKeys": "חלק מהמפתחות ({count}) אינם ניתנים להפניה באמצעות התחביר __key__."
         }
     },
     "workflows": {

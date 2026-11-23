@@ -247,7 +247,7 @@
             "embeddings": "Embeddings",
             "other": "Andere",
             "workflows": "Workflows",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "Wildcards",
             "statistics": "Statistiken"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
             "enableWorkflows": "Workflow-Verwaltung",
             "enableWorkflowsHelp": "Wenn deaktiviert, wird der Workflow-Bibliotheksordner nicht gescannt, die Workflows-Seite bleibt deaktiviert und CivitAI-Workflow-Ressourcen können weder verknüpft noch heruntergeladen werden.",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "Wildcard-Ressourcenverwaltung",
+            "enableWildcardsHelp": "Wenn deaktiviert, wird der Wildcard-Bibliotheksordner nicht gescannt und die Wildcards-Seite bleibt deaktiviert. Vorhandene manuelle Wildcards und aktivierte Ressourcen funktionieren weiterhin.",
+            "wildcardFolder": "Wildcard-Bibliotheksordner",
+            "wildcardFolderHelp": "Der einzige Ordner, der nach Civitai- und lokalen Wildcard-Ressourcen gescannt wird. Wird sowohl im Plugin- als auch im Standalone-Modus ausschließlich von LoRA Manager verwaltet.",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "Workflow-Bibliotheksordner",
             "workflowFolderHelp": "Der einzelne Ordner, der nach ComfyUI-Workflow-JSON-Dateien gescannt wird. Wird nur von LoRA Manager verwaltet (nicht mit ComfyUI geteilt); Änderungen gelten sofort.",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "Wildcards",
+        "loading": "Wildcard-Ressourcen werden geladen...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "Wildcards filtern"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "Ressourcenname",
+            "wildcardKeys": "Wildcard-Schlüssel"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "Keine Wildcards ausgewählt",
+            "activationSection": "Aktivierung",
+            "activateAll": "Auswahl aktivieren",
+            "deactivateAll": "Auswahl deaktivieren",
+            "updating": "{count} Wildcard-Ressourcen werden aktualisiert...",
+            "activated": "{count} Wildcard-Ressourcen aktiviert.",
+            "deactivated": "{count} Wildcard-Ressourcen deaktiviert.",
+            "partial": "{succeeded} Ressourcen aktualisiert; {failed} fehlgeschlagen. {message}",
+            "failed": "Aktualisierung des Wildcard-Aktivierungsstatus fehlgeschlagen: {message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "Wildcards löschen",
+                "message": "Sind Sie sicher, dass Sie die ausgewählten {count} Wildcards löschen möchten?",
+                "countMessage": "Wildcards werden dauerhaft gelöscht."
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "Im Standalone-Modus lassen sich Bibliothek und Aktivierungsstatus verwalten. Wildcard-Autovervollständigung und Laufzeit-Expansion sind nur im ComfyUI-Plugin-Modus verfügbar.",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "Wildcard-Ressourcenverwaltung ist deaktiviert",
+            "description": "Laden Sie Civitai-Wildcard-Pakete herunter, importieren Sie lokale Dateien, prüfen Sie deren Inhalte und legen Sie genau fest, welche Wildcard-Schlüssel für ComfyUI verfügbar sind.",
+            "enableButton": "Wildcard-Verwaltung aktivieren",
+            "hint": "Dateien, die bereits im manuellen Wildcard-Ordner liegen, funktionieren weiterhin, auch wenn die Ressourcenverwaltung deaktiviert ist.",
+            "enableFailed": "Wildcard-Verwaltung konnte nicht aktiviert werden: {message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "Kein Wildcard-Bibliotheksordner konfiguriert",
+            "description": "Wählen Sie unter Einstellungen > Bibliothek einen Ordner für heruntergeladene und importierte Wildcard-Ressourcen.",
+            "openSettings": "Einstellungen öffnen"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "Von Civitai hinzufügen",
+            "civitaiPlaceholder": "Civitai-Modell-URL oder Modell-ID",
+            "download": "Herunterladen",
+            "localLabel": "Lokale Dateien importieren",
+            "import": "Importieren"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "Ressourcenbibliothek",
+            "summary": "{total} Ressourcen · {active} aktiv · {manual} manuelle Schlüssel",
+            "searchPlaceholder": "Ressourcen oder Wildcard-Schlüssel suchen",
+            "all": "Alle Ressourcen",
+            "active": "Aktiv",
+            "inactive": "Inaktiv",
+            "emptyTitle": "Noch keine Wildcard-Ressourcen",
+            "emptyDescription": "Laden Sie oben eine Civitai-Ressource herunter oder importieren Sie ZIP-, TXT-, YAML- oder JSON-Dateien.",
+            "noMatches": "Keine Ressourcen entsprechen den aktuellen Filtern"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "{count} Schlüssel",
+            "values": "{count} Werte"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "Details",
+            "activate": "Aktivieren",
+            "activateWithOptions": "Aktivieren...",
+            "deactivate": "Deaktivieren",
+            "delete": "Löschen"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "Wildcard-Schlüssel",
+            "filterKeys": "Schlüssel filtern",
+            "expand": "Ausklappen",
+            "collapse": "Einklappen",
+            "values": "Werte",
+            "valueCount": "{count} Werte",
+            "selectKey": "Wählen Sie einen Schlüssel, um seine Werte in der Vorschau anzuzeigen.",
+            "loading": "Werte werden geladen...",
+            "noValues": "Dieser Schlüssel hat keine Werte.",
+            "loadFailed": "Werte konnten nicht geladen werden.",
+            "noMatches": "Keine Wildcard-Schlüssel entsprechen diesem Filter.",
+            "empty": "Keine analysierten Wildcard-Schlüssel in dieser Ressource.",
+            "renderLimit": "{shown} von {total} Schlüsseln werden angezeigt. Verfeinern Sie den Filter, um die Ergebnisse einzugrenzen.",
+            "copyKey": "Wildcard-Referenz kopieren",
+            "copied": "Wildcard-Referenz kopiert",
+            "unreferenceableKey": "Referenzierung nicht möglich: {reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "Aktivierungseinstellungen",
+            "settingsDescription": "Legen Sie fest, welche Schlüssel ComfyUI verwendet. Quelldateien werden nicht verändert.",
+            "keyPrefix": "Schlüsselpräfix (optional)",
+            "namespacePlaceholder": "z. B. characters/fantasy",
+            "keyPrefixHelp": "Wird im aktiven Zustand jedem Wildcard-Schlüssel vorangestellt. Leer lassen, um die ursprünglichen Schlüssel beizubehalten.",
+            "keyLabel": "Wildcard-Schlüssel",
+            "aliasHelp": "Ändert den von ComfyUI verwendeten Schlüssel, ohne die heruntergeladene Datei zu verändern.",
+            "referencePreview": "Referenzvorschau",
+            "save": "Einstellungen speichern",
+            "saveActivate": "Speichern & aktivieren",
+            "failed": "Aktivierungseinstellungen konnten nicht aktualisiert werden."
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "Wildcard-Ressourcen werden geladen...",
+            "runtimeConflicts": "{count} Konflikte mit Laufzeitschlüsseln wurden übersprungen; prüfen Sie die Aktivierungsnamen.",
+            "activated": "Ressource aktiviert.",
+            "settingsSaved": "Aktivierungseinstellungen gespeichert.",
+            "deactivated": "Ressource deaktiviert.",
+            "deleted": "Ressource gelöscht.",
+            "deleteConfirm": "{name} löschen? Dadurch werden das heruntergeladene Artefakt und seine Aktivierung entfernt.",
+            "downloading": "Ressource wird heruntergeladen und analysiert...",
+            "downloaded": "Ressource zur Bibliothek hinzugefügt. Sie ist noch nicht aktiv.",
+            "importing": "Dateien werden importiert und analysiert...",
+            "imported": "Dateien zur Bibliothek hinzugefügt. Sie sind noch nicht aktiv.",
+            "shortWarnings": "Warnungen zu kurzen Schlüsseln: {keys}",
+            "unreferenceableKeys": "Einige Schlüssel ({count}) können nicht mit der __key__-Syntax referenziert werden."
         }
     },
     "workflows": {

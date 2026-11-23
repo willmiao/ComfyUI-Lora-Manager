@@ -247,7 +247,7 @@
             "embeddings": "Embeddings",
             "other": "Otros",
             "workflows": "Workflows",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "Comodines",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
             "enableWorkflows": "Gestión de workflows",
             "enableWorkflowsHelp": "Cuando está desactivado, la carpeta de la biblioteca de workflows no se escanea, la página Workflows permanece desactivada y los recursos Workflow de CivitAI no se pueden vincular ni descargar.",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "Gestión de recursos de comodines",
+            "enableWildcardsHelp": "Cuando está desactivado, no se escanea la carpeta de la biblioteca de comodines y la página Comodines permanece desactivada. Los comodines manuales existentes y los recursos activados siguen funcionando.",
+            "wildcardFolder": "Carpeta de biblioteca de comodines",
+            "wildcardFolderHelp": "La única carpeta que se escanea en busca de recursos comodín de Civitai y locales. La gestiona únicamente LoRA Manager, tanto en modo plugin como en modo independiente.",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "Carpeta de la biblioteca de workflows",
             "workflowFolderHelp": "La única carpeta que se escanea en busca de archivos JSON de workflow de ComfyUI. Gestionada solo por LoRA Manager (no se comparte con ComfyUI); los cambios se aplican de inmediato.",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "Comodines",
+        "loading": "Cargando recursos de comodines...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "Filtrar comodines"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "Nombre del recurso",
+            "wildcardKeys": "Claves de comodines"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "No hay comodines seleccionados",
+            "activationSection": "Activación",
+            "activateAll": "Activar seleccionados",
+            "deactivateAll": "Desactivar seleccionados",
+            "updating": "Actualizando {count} recursos de comodines...",
+            "activated": "Se activaron {count} recursos de comodines.",
+            "deactivated": "Se desactivaron {count} recursos de comodines.",
+            "partial": "Se actualizaron {succeeded} recursos; {failed} fallaron. {message}",
+            "failed": "Error al actualizar la activación de comodines: {message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "Eliminar comodines",
+                "message": "¿Seguro que quieres eliminar los {count} comodines seleccionados?",
+                "countMessage": "comodines se eliminarán permanentemente."
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "El modo independiente permite gestionar la biblioteca y el estado de activación. El autocompletado de comodines y la expansión en tiempo de ejecución solo están disponibles en el modo plugin de ComfyUI.",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "La gestión de recursos de comodines está desactivada",
+            "description": "Descarga paquetes de comodines de Civitai, importa archivos locales, revisa su contenido y elige exactamente qué claves de comodín están disponibles para ComfyUI.",
+            "enableButton": "Activar gestión de comodines",
+            "hint": "Los archivos que ya están en la carpeta manual de comodines siguen funcionando aunque la gestión de recursos esté desactivada.",
+            "enableFailed": "No se pudo activar la gestión de comodines: {message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "No hay carpeta de biblioteca de comodines configurada",
+            "description": "Elige una carpeta para los recursos de comodines descargados e importados en Configuración > Biblioteca.",
+            "openSettings": "Abrir configuración"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "Añadir desde Civitai",
+            "civitaiPlaceholder": "URL o ID del modelo de Civitai",
+            "download": "Descargar",
+            "localLabel": "Importar archivos locales",
+            "import": "Importar"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "Biblioteca de recursos",
+            "summary": "{total} recursos · {active} activos · {manual} claves manuales",
+            "searchPlaceholder": "Buscar recursos o claves de comodín",
+            "all": "Todos los recursos",
+            "active": "Activos",
+            "inactive": "Inactivos",
+            "emptyTitle": "Aún no hay recursos de comodines",
+            "emptyDescription": "Descarga arriba un recurso de Civitai o importa archivos ZIP, TXT, YAML o JSON.",
+            "noMatches": "Ningún recurso coincide con los filtros actuales"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "{count} claves",
+            "values": "{count} valores"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "Detalles",
+            "activate": "Activar",
+            "activateWithOptions": "Activar...",
+            "deactivate": "Desactivar",
+            "delete": "Eliminar"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "Claves de comodines",
+            "filterKeys": "Filtrar claves",
+            "expand": "Expandir",
+            "collapse": "Contraer",
+            "values": "Valores",
+            "valueCount": "{count} valores",
+            "selectKey": "Selecciona una clave para previsualizar sus valores.",
+            "loading": "Cargando valores...",
+            "noValues": "Esta clave no tiene valores.",
+            "loadFailed": "No se pudieron cargar los valores.",
+            "noMatches": "Ninguna clave de comodín coincide con este filtro.",
+            "empty": "No hay claves de comodín analizadas en este recurso.",
+            "renderLimit": "Mostrando {shown} de {total} claves. Ajusta el filtro para acotar los resultados.",
+            "copyKey": "Copiar referencia de comodín",
+            "copied": "Referencia de comodín copiada",
+            "unreferenceableKey": "No se puede referenciar: {reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "Ajustes de activación",
+            "settingsDescription": "Configura las claves que usa ComfyUI. Los archivos de origen no se modifican.",
+            "keyPrefix": "Prefijo de clave (opcional)",
+            "namespacePlaceholder": "p. ej. characters/fantasy",
+            "keyPrefixHelp": "Se añade a cada clave de comodín cuando está activa. Déjalo vacío para conservar las claves originales.",
+            "keyLabel": "Clave de comodín",
+            "aliasHelp": "Cambia la clave que usa ComfyUI sin modificar el archivo descargado.",
+            "referencePreview": "Vista previa de la referencia",
+            "save": "Guardar ajustes",
+            "saveActivate": "Guardar y activar",
+            "failed": "No se pudieron actualizar los ajustes de activación."
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "Cargando recursos de comodines...",
+            "runtimeConflicts": "Se omitieron {count} conflictos de claves en tiempo de ejecución; revisa los nombres de activación.",
+            "activated": "Recurso activado.",
+            "settingsSaved": "Ajustes de activación guardados.",
+            "deactivated": "Recurso desactivado.",
+            "deleted": "Recurso eliminado.",
+            "deleteConfirm": "¿Eliminar {name}? Se eliminará el artefacto descargado y su activación.",
+            "downloading": "Descargando y analizando el recurso...",
+            "downloaded": "Recurso añadido a la biblioteca. Todavía no está activo.",
+            "importing": "Importando y analizando archivos...",
+            "imported": "Archivos añadidos a la biblioteca. Todavía no están activos.",
+            "shortWarnings": "Avisos de claves cortas: {keys}",
+            "unreferenceableKeys": "Algunas claves ({count}) no se pueden referenciar con la sintaxis __key__."
         }
     },
     "workflows": {

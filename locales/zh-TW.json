@@ -247,7 +247,7 @@
             "embeddings": "Embedding",
             "other": "其他",
             "workflows": "工作流",
-            "wildcards": "[TODO: Translate] Wildcards",
+            "wildcards": "通配符",
             "statistics": "統計"
         },
         "search": {
@@ -675,11 +675,11 @@
             "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
             "enableWorkflows": "工作流管理",
             "enableWorkflowsHelp": "關閉後，不會掃描工作流庫資料夾，工作流頁面會保持停用，且無法連結或下載 CivitAI 的 Workflow 資源。",
-            "enableWildcards": "[TODO: Translate] Wildcard Resource Management",
-            "enableWildcardsHelp": "[TODO: Translate] Manage Civitai and local wildcard resources and choose which resources are active. Existing files in the manual wildcards folder remain available when this is off.",
-            "wildcardFolder": "[TODO: Translate] Wildcard Library Folder",
-            "wildcardFolderHelp": "[TODO: Translate] The single folder scanned for Civitai and local wildcard resources. Managed by LoRA Manager only in both plugin and standalone mode.",
-            "wildcardFolderPlaceholder": "[TODO: Translate] /path/to/wildcards-library",
+            "enableWildcards": "通配符資源管理",
+            "enableWildcardsHelp": "關閉後，不會掃描通配符庫資料夾，通配符頁面會保持停用。已有的手動通配符和已啟用的資源仍可正常使用。",
+            "wildcardFolder": "通配符庫資料夾",
+            "wildcardFolderHelp": "用於掃描 Civitai 和本機通配符資源的唯一資料夾。無論在插件模式還是獨立模式下，皆僅由 LoRA Manager 管理。",
+            "wildcardFolderPlaceholder": "/path/to/wildcards-library",
             "workflowFolder": "工作流庫資料夾",
             "workflowFolderHelp": "用於掃描 ComfyUI 工作流 JSON 檔案的單一資料夾。僅由 LoRA Manager 管理（不與 ComfyUI 共用）；變更立即生效。",
             "workflowFolderPlaceholder": "/path/to/workflows",
@@ -1539,120 +1539,120 @@
         }
     },
     "wildcards": {
-        "title": "[TODO: Translate] Wildcards",
-        "loading": "[TODO: Translate] Loading wildcard resources...",
+        "title": "通配符",
+        "loading": "正在載入通配符資源...",
         "filter": {
-            "title": "[TODO: Translate] Filter Wildcards"
+            "title": "篩選通配符"
         },
         "search": {
-            "resourceName": "[TODO: Translate] Resource Name",
-            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+            "resourceName": "資源名稱",
+            "wildcardKeys": "通配符鍵"
         },
         "bulk": {
-            "noSelection": "[TODO: Translate] No wildcards selected",
-            "activationSection": "[TODO: Translate] Activation",
-            "activateAll": "[TODO: Translate] Activate selected",
-            "deactivateAll": "[TODO: Translate] Deactivate selected",
-            "updating": "[TODO: Translate] Updating {count} wildcard resources...",
-            "activated": "[TODO: Translate] Activated {count} wildcard resources.",
-            "deactivated": "[TODO: Translate] Deactivated {count} wildcard resources.",
-            "partial": "[TODO: Translate] Updated {succeeded} resources; {failed} failed. {message}",
-            "failed": "[TODO: Translate] Wildcard activation update failed: {message}"
+            "noSelection": "未選取通配符",
+            "activationSection": "啟用",
+            "activateAll": "啟用選取的項目",
+            "deactivateAll": "停用選取的項目",
+            "updating": "正在更新 {count} 個通配符資源...",
+            "activated": "已啟用 {count} 個通配符資源。",
+            "deactivated": "已停用 {count} 個通配符資源。",
+            "partial": "已更新 {succeeded} 個資源；{failed} 個失敗。{message}",
+            "failed": "通配符啟用狀態更新失敗：{message}"
         },
         "modals": {
             "bulkDelete": {
-                "title": "[TODO: Translate] Delete Wildcards",
-                "message": "[TODO: Translate] Are you sure you want to delete {count} selected wildcards?",
-                "countMessage": "[TODO: Translate] wildcards will be permanently deleted."
+                "title": "刪除通配符",
+                "message": "您確定要刪除所選的 {count} 個通配符嗎？",
+                "countMessage": "通配符將被永久刪除。"
             }
         },
-        "standaloneNotice": "[TODO: Translate] Standalone mode can manage the library and activation state. Wildcard autocomplete and runtime expansion are available in ComfyUI plugin mode.",
+        "standaloneNotice": "獨立模式可以管理通配符庫與啟用狀態。通配符自動補全與執行時展開僅在 ComfyUI 插件模式下提供。",
         "disabled": {
-            "title": "[TODO: Translate] Wildcard resource management is disabled",
-            "description": "[TODO: Translate] Download Civitai wildcard packs, import local files, inspect their contents, and choose exactly which wildcard keys are available to ComfyUI.",
-            "enableButton": "[TODO: Translate] Enable Wildcard Management",
-            "hint": "[TODO: Translate] Files already placed in the manual wildcards folder keep working even while resource management is disabled.",
-            "enableFailed": "[TODO: Translate] Failed to enable wildcard management: {message}"
+            "title": "通配符資源管理已停用",
+            "description": "從 Civitai 下載通配符包、匯入本機檔案、檢視其內容，並精確選擇哪些通配符鍵可供 ComfyUI 使用。",
+            "enableButton": "啟用通配符管理",
+            "hint": "即使資源管理處於停用狀態，已放入手動通配符資料夾中的檔案仍可正常使用。",
+            "enableFailed": "啟用通配符管理失敗：{message}"
         },
         "noPaths": {
-            "title": "[TODO: Translate] No wildcard library folder configured",
-            "description": "[TODO: Translate] Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "未設定通配符庫資料夾",
+            "description": "請在「設定 > 模型庫」中為下載和匯入的通配符資源選擇資料夾。",
+            "openSettings": "開啟設定"
         },
         "add": {
-            "civitaiLabel": "[TODO: Translate] Add from Civitai",
-            "civitaiPlaceholder": "[TODO: Translate] Civitai model URL or model ID",
-            "download": "[TODO: Translate] Download",
-            "localLabel": "[TODO: Translate] Import local files",
-            "import": "[TODO: Translate] Import"
+            "civitaiLabel": "從 Civitai 新增",
+            "civitaiPlaceholder": "Civitai 模型 URL 或模型 ID",
+            "download": "下載",
+            "localLabel": "匯入本機檔案",
+            "import": "匯入"
         },
         "library": {
-            "title": "[TODO: Translate] Resource Library",
-            "summary": "[TODO: Translate] {total} resources · {active} active · {manual} manual keys",
-            "searchPlaceholder": "[TODO: Translate] Search resources or wildcard keys",
-            "all": "[TODO: Translate] All resources",
-            "active": "[TODO: Translate] Active",
-            "inactive": "[TODO: Translate] Inactive",
-            "emptyTitle": "[TODO: Translate] No wildcard resources yet",
-            "emptyDescription": "[TODO: Translate] Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-            "noMatches": "[TODO: Translate] No resources match the current filters"
+            "title": "資源庫",
+            "summary": "{total} 個資源 · {active} 個已啟用 · {manual} 個手動鍵",
+            "searchPlaceholder": "搜尋資源或通配符鍵",
+            "all": "全部資源",
+            "active": "已啟用",
+            "inactive": "未啟用",
+            "emptyTitle": "尚無通配符資源",
+            "emptyDescription": "請在上方下載 Civitai 資源，或匯入 ZIP、TXT、YAML 或 JSON 檔案。",
+            "noMatches": "沒有資源符合目前的篩選條件"
         },
         "card": {
-            "keys": "[TODO: Translate] {count} keys",
-            "values": "[TODO: Translate] {count} values"
+            "keys": "{count} 個鍵",
+            "values": "{count} 個值"
         },
         "actions": {
-            "details": "[TODO: Translate] Details",
-            "activate": "[TODO: Translate] Activate",
-            "activateWithOptions": "[TODO: Translate] Activate…",
-            "deactivate": "[TODO: Translate] Deactivate",
-            "delete": "[TODO: Translate] Delete"
+            "details": "詳細資訊",
+            "activate": "啟用",
+            "activateWithOptions": "啟用...",
+            "deactivate": "停用",
+            "delete": "刪除"
         },
         "details": {
-            "keys": "[TODO: Translate] Wildcard keys",
-            "filterKeys": "[TODO: Translate] Filter keys",
-            "expand": "[TODO: Translate] Expand",
-            "collapse": "[TODO: Translate] Collapse",
-            "values": "[TODO: Translate] Values",
-            "valueCount": "[TODO: Translate] {count} values",
-            "selectKey": "[TODO: Translate] Select a key to preview its values.",
-            "loading": "[TODO: Translate] Loading values...",
-            "noValues": "[TODO: Translate] This key has no values.",
-            "loadFailed": "[TODO: Translate] Failed to load values.",
-            "noMatches": "[TODO: Translate] No wildcard keys match this filter.",
-            "empty": "[TODO: Translate] No parsed wildcard keys in this resource.",
-            "renderLimit": "[TODO: Translate] Showing {shown} of {total} keys. Refine the filter to narrow the results.",
-            "copyKey": "[TODO: Translate] Copy wildcard reference",
-            "copied": "[TODO: Translate] Wildcard reference copied",
-            "unreferenceableKey": "[TODO: Translate] Cannot be referenced: {reason}"
+            "keys": "通配符鍵",
+            "filterKeys": "篩選鍵",
+            "expand": "展開",
+            "collapse": "收合",
+            "values": "值",
+            "valueCount": "{count} 個值",
+            "selectKey": "選擇一個鍵以預覽其值。",
+            "loading": "正在載入值...",
+            "noValues": "該鍵沒有值。",
+            "loadFailed": "載入值失敗。",
+            "noMatches": "沒有通配符鍵符合此篩選條件。",
+            "empty": "此資源中沒有解析出的通配符鍵。",
+            "renderLimit": "正在顯示 {shown}/{total} 個鍵。請細化篩選條件以縮小結果範圍。",
+            "copyKey": "複製通配符參照",
+            "copied": "已複製通配符參照",
+            "unreferenceableKey": "無法參照：{reason}"
         },
         "activation": {
-            "settingsTitle": "[TODO: Translate] Activation settings",
-            "settingsDescription": "[TODO: Translate] Configure the keys used by ComfyUI. Source files are not modified.",
-            "keyPrefix": "[TODO: Translate] Key prefix (optional)",
-            "namespacePlaceholder": "[TODO: Translate] e.g. characters/fantasy",
-            "keyPrefixHelp": "[TODO: Translate] Added to every wildcard key when active. Leave empty to keep the original keys.",
-            "keyLabel": "[TODO: Translate] Wildcard key",
-            "aliasHelp": "[TODO: Translate] This changes the key used by ComfyUI without modifying the downloaded file.",
-            "referencePreview": "[TODO: Translate] Reference preview",
-            "save": "[TODO: Translate] Save settings",
-            "saveActivate": "[TODO: Translate] Save & Activate",
-            "failed": "[TODO: Translate] Failed to update activation settings."
+            "settingsTitle": "啟用設定",
+            "settingsDescription": "設定 ComfyUI 使用的鍵。來源檔案不會被修改。",
+            "keyPrefix": "鍵前綴（選填）",
+            "namespacePlaceholder": "例如 characters/fantasy",
+            "keyPrefixHelp": "啟用時會加到每個通配符鍵前面。留空則保留原始鍵。",
+            "keyLabel": "通配符鍵",
+            "aliasHelp": "這會變更 ComfyUI 使用的鍵，但不會修改已下載的檔案。",
+            "referencePreview": "參照預覽",
+            "save": "儲存設定",
+            "saveActivate": "儲存並啟用",
+            "failed": "啟用設定更新失敗。"
         },
         "messages": {
-            "loading": "[TODO: Translate] Loading wildcard resources...",
-            "runtimeConflicts": "[TODO: Translate] {count} runtime key conflicts were skipped; check activation names.",
-            "activated": "[TODO: Translate] Resource activated.",
-            "settingsSaved": "[TODO: Translate] Activation settings saved.",
-            "deactivated": "[TODO: Translate] Resource deactivated.",
-            "deleted": "[TODO: Translate] Resource deleted.",
-            "deleteConfirm": "[TODO: Translate] Delete {name}? This removes the downloaded artifact and its activation.",
-            "downloading": "[TODO: Translate] Downloading and parsing resource...",
-            "downloaded": "[TODO: Translate] Resource added to the library. It is not active yet.",
-            "importing": "[TODO: Translate] Importing and parsing files...",
-            "imported": "[TODO: Translate] Files added to the library. They are not active yet.",
-            "shortWarnings": "[TODO: Translate] Short-key warnings: {keys}",
-            "unreferenceableKeys": "[TODO: Translate] Some keys ({count}) cannot be referenced with __key__ syntax."
+            "loading": "正在載入通配符資源...",
+            "runtimeConflicts": "已略過 {count} 個執行時鍵衝突，請檢查啟用名稱。",
+            "activated": "資源已啟用。",
+            "settingsSaved": "啟用設定已儲存。",
+            "deactivated": "資源已停用。",
+            "deleted": "資源已刪除。",
+            "deleteConfirm": "刪除 {name}？這會移除已下載的檔案及其啟用記錄。",
+            "downloading": "正在下載並解析資源...",
+            "downloaded": "資源已加入資源庫。尚未啟用。",
+            "importing": "正在匯入並解析檔案...",
+            "imported": "檔案已加入資源庫。尚未啟用。",
+            "shortWarnings": "短鍵提醒：{keys}",
+            "unreferenceableKeys": "部分鍵（{count} 個）無法使用 __key__ 語法參照。"
         }
     },
     "workflows": {

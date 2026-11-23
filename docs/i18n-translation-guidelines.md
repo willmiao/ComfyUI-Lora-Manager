@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2308 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2634 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -354,6 +354,21 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > source strings were fixed while translating: `loadingTitle` and `searchPlaceholder` used
 > U+2026 `…`, which violates R7, so `en.json` now uses ASCII `...` (the call-site fallbacks in
 > `AutoOrganizePreviewModal.js` moved with it). No `[TODO: Translate]` placeholder remains.
+
+> **Status (2026-11, wildcards feature):** the Wildcards page — resource library, Civitai download
+> and local-import panel, per-resource activation settings (namespace prefix + key aliases), bulk
+> activate/deactivate, the disabled and no-folder empty states, and the wildcard section on the
+> model card — added 93 keys: `header.navigation.wildcards`, the 5
+> `settings.folderSettings.*Wildcard*` entries and the whole `wildcards.*` namespace. They shipped
+> as `[TODO: Translate]`; all 93 are now translated in all 9 locales (renderings in §2,
+> "Wildcards feature"), so no placeholder remains. Two source fixes came with the pass:
+> `wildcards.actions.activateWithOptions` used U+2026 `…` in `en.json` and in the
+> `WildcardContextMenu.js` fallback (R7) — both are ASCII `...` now. Also note that the
+> `[TODO: Translate]` copy of `settings.folderSettings.enableWildcardsHelp` was **stale** (it still
+> described the toggle as "manage Civitai and local wildcard resources and choose which resources
+> are active" while `en.json` now says the folder is not scanned and the page stays disabled), so
+> the translations follow the current source: `sync_translation_keys.py` only inserts missing keys,
+> it never refreshes the English text of a placeholder that already exists.
 
 ---
 
@@ -1175,6 +1190,74 @@ word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהו
   `workflows.bulk.noSelection` ("No workflows selected"). The Recipes page mirrors this with
   `recipes.filter.title` ("Filter Recipes") and `recipes.bulk.noSelection`, following the §4
   Recipe noun per locale (配方 / 配方 / レシピ / 레시피 / Recipe / Rezept / receta / рецепт / מתכון).
+
+### Wildcards feature (library folder, activation, resource cards)
+
+Prompts reference a named value list through `__key__` syntax; those lists are *wildcards*, and
+`wildcard` is the domain noun across the page, the nav entry, the settings toggle and the toasts.
+It is not a model type or a brand, so R3 does not force Latin — but each locale fixes one
+rendering and keeps it everywhere (R5):
+
+| Term | Rendering |
+|---|---|
+| Wildcard(s) (noun, page title / nav) | zh-CN / zh-TW 通配符 · ja ワイルドカード · ko 와일드카드 · de Wildcard(s) · fr wildcard(s) · es comodín / comodines · ru вайлдкард(ы) · he ויילדקארד(ים) |
+| Wildcard resource(s) | zh-CN 通配符资源 · zh-TW 通配符資源 · ja ワイルドカードリソース · ko 와일드카드 리소스 · de Wildcard-Ressource(n) · fr ressource(s) wildcard · es recurso(s) de comodines · ru ресурс(ы) вайлдкардов · he משאב(י) ויילדקארד |
+| Wildcard key(s) / value(s) | zh-CN 通配符键 / 值 · zh-TW 通配符鍵 / 值 · ja ワイルドカードキー / 値 · ko 와일드카드 키 / 값 · de Wildcard-Schlüssel / Werte · fr clé(s) de wildcard / valeurs · es clave(s) de comodín / valores · ru ключ(и) вайлдкардов / значения · he מפתח(ות) ויילדקארד / ערכים |
+| Activate / Deactivate | zh-CN 启用 / 停用 · zh-TW 啟用 / 停用 · ja 有効化 / 無効化 · ko 활성화 / 비활성화 · de aktivieren / deaktivieren · fr activer / désactiver · es activar / desactivar · ru активировать / деактивировать · he הפעל / השבת |
+| Active / Inactive (filter chips) | zh-CN 已启用 / 未启用 · zh-TW 已啟用 / 未啟用 · ja 有効 / 無効 · ko 활성 / 비활성 · de Aktiv / Inaktiv · fr Actives / Inactives · es Activos / Inactivos · ru Активные / Неактивные · he פעילים / לא פעילים |
+| Resource library / Wildcard library folder | zh-CN 资源库 / 通配符库文件夹 · zh-TW 資源庫 / 通配符庫資料夾 · ja リソースライブラリ / ワイルドカードライブラリフォルダー · ko 리소스 라이브러리 / 와일드카드 라이브러리 폴더 · de Ressourcenbibliothek / Wildcard-Bibliotheksordner · fr Bibliothèque de ressources / Dossier de bibliothèque des wildcards · es Biblioteca de recursos / Carpeta de biblioteca de comodines · ru Библиотека ресурсов / Папка библиотеки вайлдкардов · he ספריית משאבים / תיקיית ספריית ויילדקארד |
+
+- Rendering rationale: Chinese translates it (通配符 is the established term), Japanese and Korean
+  keep the loanword in kana/hangul (ワイルドカード / 와일드카드), German and French keep the loanword
+  — German hyphen-compounds it like the existing `Wildcard-Muster` in
+  `settings.autoOrganizeExclusions.help` (`Wildcard-Ressourcenverwaltung`,
+  `Wildcard-Bibliotheksordner`, `Wildcard-Schlüssel`), French writes it lowercase (`wildcard`,
+  plural `wildcards`, used as a modifier in compounds: *ressources wildcard*, *clés des
+  wildcards*) — Spanish uses the native *comodín*, and Russian/Hebrew transliterate (вайлдкард /
+  ויילדקארד) because the noun has to decline and pluralize in running prose (ru compounds take the
+  genitive plural: *библиотека вайлдкардов*, *ключи вайлдкардов*).
+- Activation is a state of a *resource*: "Activate" turns that resource's keys on for ComfyUI,
+  "Deactivate" turns them off. The pair is its own verb set and does not reuse the generic
+  enable/disable copy where that would read as a settings switch (zh-CN 启用/停用 for the resource
+  rather than 启用/禁用; ja 有効化/無効化; ko 활성화/비활성화).
+- "key" is a named wildcard entry (`characters/fantasy`), never a keyboard key or a password;
+  "value(s)" is the list it resolves to. "prefix" renders as 键前缀 / 鍵前綴 / プレフィックス /
+  접두사 / Schlüsselpräfix / préfixe de clé / prefijo de clave / префикс ключа / קידומת מפתח.
+- Literal syntax stays verbatim: `__key__` (including the sentence in
+  `wildcards.messages.unreferenceableKeys`) is byte-identical in every locale, and
+  `wildcards.activation.namespacePlaceholder` keeps `characters/fantasy` — only the "e.g." part is
+  localized (例如 / 例如 / 例： / 예: / z. B. / ex. / p. ej. / напр. / לדוגמה).
+  `settings.folderSettings.wildcardFolderPlaceholder` is a path example and is byte-identical to
+  `en.json` (§6).
+- `wildcards.noPaths.description` points at **Settings → Library** and quotes that path the way
+  the locale already quotes it in `other.disabled.hint`: “设置 > 库”, 「設定 > 模型庫」,
+  「設定 > ライブラリ」, 설정 > 라이브러리, `Einstellungen > Bibliothek`,
+  `Paramètres > Bibliothèque`, `Configuración > Biblioteca`, «Настройки > Библиотека»,
+  הגדרות > ספרייה (plain, where the locale adds no quotes).
+- Mode sentences: "Standalone mode" reuses the existing renderings (`Standalone-Modus`,
+  `mode autonome`, `modo independiente`, `автономный режим`, `מצב עצמאי`, 独立模式 / 獨立模式,
+  スタンドアロンモード, 독립 실행 모드); "ComfyUI plugin mode" follows the plugin wording of
+  `settings.sidecarStorage.*` (Plugin-Modus / mode plugin / modo plugin / режим плагина /
+  מצב תוסף / 插件模式 / 插件模式 / プラグインモード / 플러그인 모드).
+- Failure strings carry `{message}` verbatim and follow the colon rule: full-width `：` in
+  zh-CN / zh-TW / ja, ASCII `: ` in ko, de, es, ru, he and ` : ` in fr.
+- Count fragments mirror the sibling modals: `wildcards.modals.bulkDelete.countMessage` is the
+  continuation after a number the template renders itself, exactly like
+  `modals.bulkDelete.countMessage` (通配符将被永久删除。 / 개의 와일드카드가 … /
+  "wildcards will be permanently deleted."). Bulk toasts pluralize on `{count}`
+  (`{count} Wildcard-Ressourcen aktiviert.`, `{count} ressources wildcard activées.`) and the
+  CJK/ru/he count words follow the existing toast practice (`와일드카드 리소스 {count}개`,
+  `Обновлено ресурсов: {count}`, `הופעלו {count} משאבי ויילדקארד`).
+- "manual wildcards" (files dropped into the manual wildcards folder, outside the managed library)
+  keeps each locale's word for manual (手动 / 手動 / 手動 / 수동 / manuell / manuel(s) /
+  manual(es) / ручной / ידני); the same word serves the "manual keys" counter in
+  `wildcards.library.summary`.
+- Not every key in the namespace is rendered today: `wildcards.library.*` and `wildcards.add.*`
+  (the earlier standalone resource-library panel) and a few `wildcards.messages.*` toasts have no
+  call site in `templates/` or `static/js/` — the page reuses the model-card grid. They are
+  translated anyway for key parity; re-check them against the UI if that panel returns.
+- `wildcards.actions.activateWithOptions` ends with ASCII `...` (the "opens a menu" marker), not
+  U+2026.
 
 ### Auto-organize preview feature (dry-run dialog)
 
