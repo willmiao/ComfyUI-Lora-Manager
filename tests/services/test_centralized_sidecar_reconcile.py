@@ -9,6 +9,7 @@ import pytest
 
 from py.config import config
 from py.services import model_scanner
+from py.services.checkpoint_scanner import CheckpointScanner
 from py.services.lora_scanner import LoraScanner
 from py.services.model_cache import ModelCache
 from py.services.model_scanner import ModelScanner
@@ -168,7 +169,7 @@ async def test_reconcile_renamed_flat_root_preserves_centralized_metadata(
     target = new_root / "model.safetensors"
     new_sidecar = Path(get_metadata_path(_normalize(target)))
     payload = json.loads(new_sidecar.read_text(encoding="utf-8"))
-    assert len(hash_calls) == 1
+    assert hash_calls == []
     assert new_sidecar != old_sidecar
     assert not old_sidecar.exists()
     assert payload["notes"] == "keep me"
@@ -199,6 +200,103 @@ async def test_reconcile_same_size_unrelated_file_hashes_once_without_relinking(
     assert json.loads(old_sidecar.read_text(encoding="utf-8"))["notes"] == "keep me"
     new_sidecar = Path(get_metadata_path(_normalize(unrelated)))
     assert json.loads(new_sidecar.read_text(encoding="utf-8"))["notes"] == ""
+
+
+@pytest.mark.asyncio
+async def test_reconcile_directory_rename_preserves_pending_checkpoints_without_hashing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    root = tmp_path / "checkpoints"
+    old_directory = root / "Zimage"
+    old_directory.mkdir(parents=True)
+    _configure_root(root, monkeypatch)
+    monkeypatch.setattr(config, "base_models_roots", [_normalize(root)], raising=False)
+    settings = get_settings_manager()
+    settings.set("sidecar_storage_mode", "centralized")
+    settings.set("sidecar_storage_path", str(tmp_path / "sidecars"))
+    reset_root_map_cache()
+
+    scanner = CheckpointScanner()
+    entries = []
+    for name, content, notes in (
+        ("one", b"first", "keep one"),
+        ("two", b"second", "keep two"),
+    ):
+        model = old_directory / f"{name}.safetensors"
+        model.write_bytes(content)
+        await scanner._process_model_file(_normalize(model), _normalize(root))
+        sidecar = Path(get_metadata_path(_normalize(model)))
+        payload = json.loads(sidecar.read_text(encoding="utf-8"))
+        assert payload["hash_status"] == "pending"
+        assert payload["sha256"] == ""
+        payload["notes"] = notes
+        payload["custom_field"] = notes
+        sidecar.write_text(json.dumps(payload), encoding="utf-8")
+        entries.append(scanner._build_cache_entry(payload, folder="Zimage"))
+
+    scanner._cache = ModelCache(
+        raw_data=entries,
+        folders=["Zimage"],
+        all_folders=["Zimage"],
+    )
+    scanner._persistent_cache = PersistentModelCache(
+        library_name="test",
+        db_path=str(tmp_path / "models.sqlite"),
+    )
+    new_directory = root / "Z-Image"
+    shutil.move(str(old_directory), str(new_directory))
+
+    async def fail_hash(_path):
+        raise AssertionError("directory reconciliation must not calculate hashes")
+
+    monkeypatch.setattr(model_scanner, "calculate_sha256", fail_hash)
+    monkeypatch.setattr(metadata_manager, "calculate_sha256", fail_hash)
+
+    summary = await scanner._reconcile_cache()
+
+    assert summary["added"] == 2
+    assert summary["removed"] == 2
+    for name, notes in (("one", "keep one"), ("two", "keep two")):
+        model = new_directory / f"{name}.safetensors"
+        sidecar = Path(get_metadata_path(_normalize(model)))
+        payload = json.loads(sidecar.read_text(encoding="utf-8"))
+        assert payload["notes"] == notes
+        assert payload["custom_field"] == notes
+        assert payload["hash_status"] == "pending"
+        assert payload["sha256"] == ""
+    assert {entry["notes"] for entry in scanner._cache.raw_data} == {
+        "keep one",
+        "keep two",
+    }
+
+
+@pytest.mark.asyncio
+async def test_directory_move_matching_rejects_ambiguous_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    root = tmp_path / "loras"
+    scanner, _model, _sidecar, _preview = await _prepare_library(
+        tmp_path, monkeypatch, root
+    )
+    new_file = tmp_path / "new" / "same.safetensors"
+    new_file.parent.mkdir()
+    new_file.write_bytes(b"1234567")
+    old_a = root / "old-a" / "same.safetensors"
+    old_b = root / "old-b" / "same.safetensors"
+    path_to_item = {
+        _normalize(old_a): {"file_path": _normalize(old_a), "size": 7},
+        _normalize(old_b): {"file_path": _normalize(old_b), "size": 7},
+    }
+
+    pairs = scanner._match_directory_move_pairs(
+        [_normalize(new_file)],
+        {_normalize(old_a), _normalize(old_b)},
+        path_to_item,
+    )
+
+    assert pairs == []
 
 
 @pytest.mark.asyncio
