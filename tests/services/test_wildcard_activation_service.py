@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -216,6 +217,28 @@ def test_legacy_activation_record_without_active_flag_is_active(activation_state
     loaded.deactivate(str(artifact))
     assert loaded.get_active_runtime()[0] == {}
     assert loaded.activation_for(str(artifact), include_inactive=True)["active"] is False
+
+
+def test_load_normalizes_stored_path_keys(activation_state):
+    service, _runtime, _manual, root = activation_state
+    artifact = root / "colors.txt"
+    artifact.write_text("red\n", encoding="utf-8")
+    service.activate(resource_for(artifact))
+
+    with open(service.activations_path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    record = next(iter(payload["resources"].values()))
+    # A spelling only normalization resolves: "<file>/../<file name>". Files
+    # written on another platform or edited by hand must still be found.
+    unnormalized_key = os.path.join(str(artifact), os.pardir, artifact.name)
+    payload["resources"] = {unnormalized_key: record}
+    with open(service.activations_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle)
+
+    loaded = WildcardActivationService(service.activations_path)
+    record = loaded.activation_for(str(artifact))
+    assert record is not None
+    assert record["active"] is True
 
 
 def test_rebind_path_preserves_activation_configuration_and_runtime(activation_state):

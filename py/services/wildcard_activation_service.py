@@ -119,7 +119,19 @@ class WildcardActivationService:
                 # Older files predate retained activation state; they were
                 # active by definition.
                 record.setdefault("active", True)
-                valid[str(key)] = record
+                # Records are keyed by normalized paths. Re-keying on load keeps
+                # lookups working when the file was written by hand, restored
+                # from another machine, or stored with a different separator or
+                # letter case on Windows.
+                key_text = str(key)
+                if not key_text.strip():
+                    continue
+                try:
+                    valid[_path_key(key_text)] = record
+                except (OSError, ValueError):
+                    logger.warning(
+                        "Ignoring wildcard activation with an invalid path key: %r", key
+                    )
             return valid
         except FileNotFoundError:
             return {}
