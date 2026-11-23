@@ -2367,6 +2367,21 @@ class ModelScanner:
                 if size > 0:
                     missing_by_size.setdefault(size, []).append(entry)
             matched_missing_paths: Set[str] = set()
+            if new_files and missing_files and is_centralized():
+                directory_move_pairs = self._match_directory_move_pairs(
+                    new_files,
+                    missing_files,
+                    path_to_item,
+                )
+                for entry, new_path in directory_move_pairs:
+                    old_path = str(entry.get("file_path") or "")
+                    if await self._relocate_cached_sidecar(entry, new_path):
+                        matched_missing_paths.add(old_path)
+                        logger.info(
+                            "Reconciled externally moved model %s -> %s",
+                            old_path,
+                            new_path,
+                        )
 
             # Process new files in batches
             total_added = 0
@@ -3729,6 +3744,74 @@ class ModelScanner:
             except OSError as exc:
                 logger.warning("Cannot remove old sidecar asset %s: %s", source_asset, exc)
         return True
+
+    @staticmethod
+    def _directory_move_parts(path: str) -> Tuple[str, str]:
+        directory, _separator, filename = path.replace("\\", "/").rpartition("/")
+        return os.path.normcase(directory), os.path.normcase(filename)
+
+    def _match_directory_move_pairs(
+        self,
+        new_files: Sequence[str],
+        missing_files: Set[str],
+        path_to_item: Mapping[str, Dict[str, Any]],
+    ) -> List[Tuple[Dict[str, Any], str]]:
+        """Match moved directories by identical filename/size sets, without hashing."""
+        old_signatures: Dict[str, Dict[str, int]] = {}
+        old_entries: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        old_names: Set[str] = set()
+        for path in sorted(missing_files):
+            directory, filename = self._directory_move_parts(path)
+            try:
+                size = int(path_to_item[path].get("size") or 0)
+            except (TypeError, ValueError):
+                size = 0
+            old_signatures.setdefault(directory, {})[filename] = size if size > 0 else -1
+            old_entries.setdefault(directory, {})[filename] = path_to_item[path]
+            old_names.add(filename)
+
+        new_signatures: Dict[str, Dict[str, int]] = {}
+        new_paths: Dict[str, Dict[str, str]] = {}
+        for path in new_files:
+            directory, filename = self._directory_move_parts(path)
+            new_paths.setdefault(directory, {})[filename] = path
+            if filename not in old_names:
+                size = -1
+            else:
+                try:
+                    size = os.path.getsize(os.path.realpath(path))
+                except OSError:
+                    size = -1
+            new_signatures.setdefault(directory, {})[filename] = size
+
+        candidates: Dict[str, List[str]] = {}
+        for new_directory, signature in new_signatures.items():
+            if any(size <= 0 for size in signature.values()):
+                continue
+            matches = [
+                old_directory
+                for old_directory, old_signature in old_signatures.items()
+                if old_directory != new_directory and old_signature == signature
+            ]
+            if matches:
+                candidates[new_directory] = matches
+
+        singular_matches = {
+            new_directory: matches[0]
+            for new_directory, matches in candidates.items()
+            if len(matches) == 1
+        }
+        old_directory_counts: Dict[str, int] = {}
+        for old_directory in singular_matches.values():
+            old_directory_counts[old_directory] = old_directory_counts.get(old_directory, 0) + 1
+
+        pairs: List[Tuple[Dict[str, Any], str]] = []
+        for new_directory, old_directory in singular_matches.items():
+            if old_directory_counts[old_directory] != 1:
+                continue
+            for filename, new_path in new_paths[new_directory].items():
+                pairs.append((old_entries[old_directory][filename], new_path))
+        return pairs
 
     async def _recover_moved_model_sidecar(
         self,
