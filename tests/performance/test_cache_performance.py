@@ -194,6 +194,21 @@ class TestFuzzyMatchLibraryScale:
 
         benchmark(search)
 
+    def test_filename_and_model_name_query(self, benchmark):
+        """Measure the default filename and model-name search fields together."""
+        library = self._build_library(self.LIBRARY_SIZE)
+        model_names = [name.replace("_", " ") for name in library]
+
+        def search():
+            return sum(
+                1
+                for filename, model_name in zip(library, model_names)
+                if fuzzy_match(filename, "anmei")
+                or fuzzy_match(model_name, "anmei")
+            )
+
+        benchmark(search)
+
 
 class TestRecipeFingerprintPerformance:
     """Performance benchmarks for recipe fingerprint calculation."""

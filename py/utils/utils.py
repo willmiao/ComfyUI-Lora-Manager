@@ -1,4 +1,3 @@
-from collections import Counter
 from difflib import SequenceMatcher
 import functools
 import logging
@@ -426,6 +425,7 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
 
     # Split pattern into words
     search_words = pattern.split()
+    text_parts = None
 
     # Check each word
     for word in search_words:
@@ -436,28 +436,38 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
         # If not found as substring, try fuzzy matching
         # Check if any part of the text matches this word
         word_len = len(word)
-        word_char_counts = list(Counter(word).items())
+        doubled_word_len = 2 * word_len
+        matcher = None
         found_match = False
-        for text_part in text.split():
+        if text_parts is None:
+            text_parts = text.split()
+        for text_part in text_parts:
             part_len = len(text_part)
             total_len = word_len + part_len
             min_len = part_len if part_len < word_len else word_len
+            required_matches = threshold * total_len
 
             # No pairing can beat 2*min_len/total_len, so a text part whose
             # length is far off the query word is discarded outright.
-            if 2 * min_len < threshold * total_len:
+            if 2 * min_len < required_matches:
                 continue
 
-            # Matching blocks can only use characters present in both strings,
-            # so the character-multiset intersection bounds the matched chars.
-            common = 0
-            for char, count in word_char_counts:
-                part_count = text_part.count(char)
-                common += count if count < part_count else part_count
-            if 2 * common < threshold * total_len:
+            # Each absent character rules out its occurrences in the query.
+            # Keep the bound doubled to compare directly with required_matches.
+            common = doubled_word_len
+            for char in word:
+                if char not in text_part:
+                    common -= 2
+                    if common < required_matches:
+                        break
+            if common < required_matches:
                 continue
 
-            ratio = SequenceMatcher(None, text_part, word).ratio()
+            if matcher is None:
+                matcher = SequenceMatcher(None, text_part, word)
+            else:
+                matcher.set_seq1(text_part)
+            ratio = matcher.ratio()
             if ratio >= threshold:
                 found_match = True
                 break
