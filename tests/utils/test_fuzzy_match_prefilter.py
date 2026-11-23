@@ -78,9 +78,14 @@ def test_matches_reference_near_threshold(pair, threshold):
 
 
 class _CountingSequenceMatcher(SequenceMatcher):
-    """SequenceMatcher that records how often ``ratio()`` is evaluated."""
+    """SequenceMatcher that records instances and ``ratio()`` evaluations."""
 
     calls = 0
+    instances = 0
+
+    def __init__(self, *args):
+        type(self).instances += 1
+        super().__init__(*args)
 
     def ratio(self) -> float:
         type(self).calls += 1
@@ -90,6 +95,7 @@ class _CountingSequenceMatcher(SequenceMatcher):
 @pytest.fixture
 def counting_matcher(monkeypatch):
     _CountingSequenceMatcher.calls = 0
+    _CountingSequenceMatcher.instances = 0
     monkeypatch.setattr(utils_module, "SequenceMatcher", _CountingSequenceMatcher)
     return _CountingSequenceMatcher
 
@@ -111,6 +117,12 @@ def test_near_match_still_consults_sequence_matcher(counting_matcher):
     assert counting_matcher.calls >= 1
 
 
+def test_matcher_reuses_query_index_across_text_parts(counting_matcher):
+    assert fuzzy_match("anmei anime", "animee") is True
+    assert counting_matcher.calls == 2
+    assert counting_matcher.instances == 1
+
+
 @pytest.mark.parametrize(
     ("text", "pattern", "expected"),
     [
@@ -125,6 +137,8 @@ def test_near_match_still_consults_sequence_matcher(counting_matcher):
         ("anime style", "anime styl", True),
         ("anime", "anime  style", False),
         ("anime_style_v2", "zzzqq", False),
+        ("aaabb", "aaacc", False),
+        ("a" * 9 + "b", "a" * 10 + "b", True),
         ("", "anime", False),
         ("anime", "", False),
     ],

@@ -1,4 +1,3 @@
-from collections import Counter
 from difflib import SequenceMatcher
 import functools
 import logging
