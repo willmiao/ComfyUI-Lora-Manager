@@ -1544,6 +1544,10 @@
         "filter": {
             "title": "[TODO: Translate] Filter Wildcards"
         },
+        "search": {
+            "resourceName": "[TODO: Translate] Resource Name",
+            "wildcardKeys": "[TODO: Translate] Wildcard Keys"
+        },
         "bulk": {
             "noSelection": "[TODO: Translate] No wildcards selected",
             "activationSection": "[TODO: Translate] Activation",

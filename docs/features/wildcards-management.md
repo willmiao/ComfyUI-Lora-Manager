@@ -151,7 +151,8 @@ The `/wildcards` page uses `WildcardScanner`, `WildcardModelService`, and
 
 - standard download and download-queue behavior;
 - one standard model card per downloaded artifact/version;
-- sorting, searching, pagination, and infinite scrolling;
+- sorting, substring searching by resource name, filename, and source/effective
+  wildcard keys, pagination, and infinite scrolling;
 - bulk mode, move, delete, favorite, and exclude operations;
 - folder sidebar, previews, versions, and update management;
 - the standard model modal and Civitai metadata.

@@ -308,6 +308,9 @@ export class SearchManager {
             if (options.triggerWords !== undefined) {
                 pageState.searchOptions.triggerWords = options.triggerWords;
             }
+            if (options.wildcardKeys !== undefined) {
+                pageState.searchOptions.wildcardKeys = options.wildcardKeys;
+            }
         }
       }
       

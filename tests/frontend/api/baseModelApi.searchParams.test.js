@@ -103,4 +103,28 @@ describe('BaseModelApiClient trigger-word search params', () => {
 
     expect(params.has('search_trigger_words')).toBe(false);
   });
+
+  it('sends wildcard-key scope without enabling fuzzy search', async () => {
+    const { BaseModelApiClient } = await import(BASE_MODEL_API_MODULE);
+    class TestClient extends BaseModelApiClient {}
+    const client = new TestClient('wildcards');
+    const params = client._buildQueryParams({}, makePageState({ wildcardKeys: true }));
+
+    expect(params.get('search_wildcard_keys')).toBe('true');
+    expect(params.has('fuzzy')).toBe(false);
+  });
+
+  it('keeps fuzzy search enabled only for LoRAs', async () => {
+    const client = await createClient();
+    const params = client._buildQueryParams({}, makePageState({}));
+
+    expect(params.get('fuzzy')).toBe('true');
+  });
+
+  it('omits wildcard-key scope on pages without the option', async () => {
+    const client = await createClient();
+    const params = client._buildQueryParams({}, makePageState({}));
+
+    expect(params.has('search_wildcard_keys')).toBe(false);
+  });
 });

@@ -1544,6 +1544,10 @@
     "filter": {
       "title": "Filter Wildcards"
     },
+    "search": {
+      "resourceName": "Resource Name",
+      "wildcardKeys": "Wildcard Keys"
+    },
     "bulk": {
       "noSelection": "No wildcards selected",
       "activationSection": "Activation",

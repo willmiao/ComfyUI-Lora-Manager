@@ -279,6 +279,12 @@
       <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
       <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       <div class="search-option-tag" data-option="triggerWords">{{ t('header.search.filters.triggerWords') }}</div>
+      {% elif request.path == '/wildcards' %}
+      <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
+      <div class="search-option-tag active" data-option="modelname">{{ t('wildcards.search.resourceName') }}</div>
+      <div class="search-option-tag active" data-option="wildcardKeys">{{ t('wildcards.search.wildcardKeys') }}</div>
+      <div class="search-option-tag" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       {% else %}
       <!-- Default options for the remaining model pages (e.g. workflows) -->
       <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>

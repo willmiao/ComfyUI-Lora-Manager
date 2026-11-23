@@ -100,6 +100,10 @@ function renderControlsDom(pageKey) {
   const triggerWordChip = pageKey === 'loras'
     ? '<div class="search-option-tag" data-option="triggerWords"></div>'
     : '';
+  const wildcardKeyChip = pageKey === 'wildcards'
+    ? '<div class="search-option-tag active" data-option="wildcardKeys"></div>'
+    : '';
+  const tagsActiveClass = pageKey === 'wildcards' ? '' : 'active';
   document.body.innerHTML = `
     <div class="header-search">
       <div class="search-container">
@@ -116,9 +120,10 @@ function renderControlsDom(pageKey) {
       <button id="closeSearchOptions"></button>
       <div class="search-option-tag active" data-option="filename"></div>
       <div class="search-option-tag active" data-option="modelname"></div>
-      <div class="search-option-tag active" data-option="tags"></div>
+      <div class="search-option-tag ${tagsActiveClass}" data-option="tags"></div>
       <div class="search-option-tag" data-option="creator"></div>
       ${triggerWordChip}
+      ${wildcardKeyChip}
     </div>
     <div id="filterPanel" class="filter-panel hidden">
       <input id="baseModelSearchInput" />
@@ -279,6 +284,42 @@ describe('SearchManager filtering scenarios', () => {
     await vi.runAllTimersAsync();
 
     expect(getCurrentPageState().searchOptions.triggerWords).toBeUndefined();
+  });
+
+  it('detects the wildcards page for header-managed search state', async () => {
+    window.history.pushState({}, '', '/wildcards');
+    const { HeaderManager } = await import('../../../static/js/components/Header.js');
+
+    expect(HeaderManager.prototype.detectCurrentPage.call({})).toBe('wildcards');
+    window.history.pushState({}, '', '/');
+  });
+
+  it('uses the recommended wildcard search scopes and toggles key search', async () => {
+    vi.useFakeTimers();
+
+    renderControlsDom('wildcards');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('wildcards');
+    const { getCurrentPageState } = stateModule;
+    const { SearchManager } = await import('../../../static/js/managers/SearchManager.js');
+
+    new SearchManager({ page: 'wildcards', searchDelay: 0 });
+
+    const input = document.getElementById('searchInput');
+    input.value = '__palette/colors__';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+
+    expect(getCurrentPageState().searchOptions.filename).toBe(true);
+    expect(getCurrentPageState().searchOptions.modelname).toBe(true);
+    expect(getCurrentPageState().searchOptions.wildcardKeys).toBe(true);
+    expect(getCurrentPageState().searchOptions.tags).toBe(false);
+    expect(getCurrentPageState().searchOptions.creator).toBe(false);
+    expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledWith(true, false);
+
+    const keyChip = document.querySelector('.search-option-tag[data-option="wildcardKeys"]');
+    keyChip.click();
+    expect(getCurrentPageState().searchOptions.wildcardKeys).toBe(false);
   });
 
   it.each([

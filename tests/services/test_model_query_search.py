@@ -225,6 +225,11 @@ class TestSearchStrategyFileNames:
         item = make_item(file_name="my_lora_v1")
         assert strategy.apply([item], f"my_lora_v1{extension}", self.OPTIONS) == [item]
 
+    @pytest.mark.parametrize("extension", [".zip", ".txt", ".yaml", ".yml", ".json"])
+    def test_wildcard_artifact_extensions_are_stripped(self, strategy, extension):
+        item = make_item(file_name="colors")
+        assert strategy.apply([item], f"colors{extension}", self.OPTIONS) == [item]
+
     def test_extension_case_is_ignored(self, strategy):
         item = make_item(file_name="my_lora_v1")
         assert strategy.apply([item], "my_lora_v1.SafeTensors", self.OPTIONS) == [item]
@@ -255,6 +260,40 @@ class TestSearchStrategyFileNames:
         assert strategy.apply([item], "  my_lora_v1.safetensors  ", self.OPTIONS) == [
             item
         ]
+
+
+class TestSearchStrategyWildcardKeys:
+    OPTIONS = {
+        "filename": False,
+        "modelname": False,
+        "tags": False,
+        "creator": False,
+        "wildcard_keys": True,
+    }
+
+    def test_matches_source_key_case_insensitively(self, strategy):
+        item = make_item(entries=[{"key": "Characters/Fantasy"}])
+        assert strategy.apply([item], "characters\\fantasy", self.OPTIONS) == [item]
+
+    def test_matches_effective_key_with_reference_delimiters(self, strategy):
+        item = make_item(
+            entries=[{"key": "warm", "effective_key": "palette/warm colors"}]
+        )
+        query = "__palette/warm colors__"
+        assert strategy.apply([item], query, self.OPTIONS) == [item]
+
+    def test_disabled_by_default(self, strategy):
+        item = make_item(entries=[{"key": "colors"}])
+        assert strategy.apply([item], "colors", {}) == []
+
+    def test_fuzzy_mode_stays_substring_only(self, strategy):
+        item = make_item(entries=[{"key": "palette/colors"}])
+        assert strategy.apply([item], "pallete", self.OPTIONS, fuzzy=True) == []
+        assert strategy.apply([item], "palette", self.OPTIONS, fuzzy=True) == [item]
+
+    def test_invalid_entries_are_ignored(self, strategy):
+        item = make_item(entries=[None, "colors", {}])
+        assert strategy.apply([item], "colors", self.OPTIONS) == []
 
 
 class TestFormatResponseAutov3:

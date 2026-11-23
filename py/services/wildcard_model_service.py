@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ..config import config
 from ..utils.models import WildcardMetadata
@@ -61,6 +61,20 @@ class WildcardModelService(BaseModelService):
             "value_count": model_data.get("value_count", 0),
         }
         return self.activation_service.decorate(result)
+
+    async def _apply_search_filters(
+        self,
+        data: List[Dict[str, Any]],
+        search: str,
+        fuzzy_search: bool,
+        search_options: dict[str, Any] | None,
+    ) -> List[Dict[str, Any]]:
+        """Apply substring search, including active wildcard key mappings."""
+
+        normalized_options = self.search_strategy.normalize_options(search_options)
+        if normalized_options.get("wildcard_keys"):
+            data = self.activation_service.add_effective_keys_for_search(data)
+        return self.search_strategy.apply(data, search, normalized_options, False)
 
     def find_duplicate_hashes(self) -> Dict[str, Any]:
         return self.scanner._hash_index.get_duplicate_hashes()

@@ -188,3 +188,23 @@ async def test_search_trigger_words_defaults_to_false(handler):
     assert response.status == 200
 
     assert service.last_call_kwargs["search_options"]["trigger_words"] is False
+
+
+@pytest.mark.asyncio
+async def test_search_wildcard_keys_param_is_parsed(handler):
+    h, service = handler
+
+    response = await make_request(h, "search=colors&search_wildcard_keys=true")
+
+    assert response.status == 200
+    assert service.last_call_kwargs["search_options"]["wildcard_keys"] is True
+
+
+@pytest.mark.asyncio
+async def test_search_wildcard_keys_defaults_to_false(handler):
+    h, service = handler
+
+    response = await make_request(h, "search=colors")
+
+    assert response.status == 200
+    assert service.last_call_kwargs["search_options"]["wildcard_keys"] is False

@@ -19,6 +19,7 @@ from typing import (
 from ..utils.constants import MODEL_FILE_EXTENSIONS, NSFW_LEVELS
 from ..utils.trigger_words import iter_trigger_words
 from ..utils.utils import fuzzy_match as default_fuzzy_match
+from .wildcard_parser import SUPPORTED_ARTIFACT_EXTENSIONS
 import time
 import logging
 
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_CIVITAI_MODEL_TYPE = "LORA"
+SEARCH_FILE_EXTENSIONS = MODEL_FILE_EXTENSIONS | set(SUPPORTED_ARTIFACT_EXTENSIONS)
 
 
 def _coerce_to_str(value: Any) -> Optional[str]:
@@ -426,19 +428,19 @@ class ModelFilterSet:
 
 
 def strip_model_file_extension(value: str) -> str:
-    """Drop a trailing model-file extension from a search term.
+    """Drop a trailing model or wildcard-artifact extension from a search term.
 
     Cached ``file_name`` values and relative-path search both store names
     without their extension, so a filename copied from a file manager
     (``"my_lora_v1.safetensors"``) would never match unless the query is
-    normalized the same way. Only recognized model extensions are stripped,
-    leaving names that merely contain a dot (``"v1.5"``) untouched.
+    normalized the same way. Only recognized extensions are stripped, leaving
+    names that merely contain a dot (``"v1.5"``) untouched.
     """
     if not isinstance(value, str) or not value:
         return value
 
     stem, extension = os.path.splitext(value)
-    if stem and extension.lower() in MODEL_FILE_EXTENSIONS:
+    if stem and extension.lower() in SEARCH_FILE_EXTENSIONS:
         return stem
     return value
 
@@ -453,6 +455,7 @@ class SearchStrategy:
         "recursive": True,
         "creator": False,
         "trigger_words": False,
+        "wildcard_keys": False,
     }
 
     def __init__(
@@ -480,14 +483,19 @@ class SearchStrategy:
 
         # Users often paste a filename straight from the file manager, complete
         # with its extension. Normalize once so every match branch (file name,
-        # title, tags, creator, trigger words) sees the same extension-free
-        # query the cache stores.
+        # title, tags, creator, trigger words, wildcard keys) sees the same
+        # extension-free query the cache stores.
         if isinstance(search_term, str):
             search_term = strip_model_file_extension(search_term.strip())
         if not search_term:
             return list(data)
 
         search_lower = search_term.lower()
+        wildcard_key_search = (
+            self._normalize_wildcard_key_search(search_term)
+            if options.get("wildcard_keys", False)
+            else ""
+        )
         results: List[Dict[str, Any]] = []
 
         for item in data:
@@ -524,6 +532,13 @@ class SearchStrategy:
                     results.append(item)
                     continue
 
+            if wildcard_key_search and any(
+                self._matches_wildcard_key(entry, wildcard_key_search)
+                for entry in item.get("entries", []) or []
+            ):
+                results.append(item)
+                continue
+
             # Trigger words are deliberately substring-only (never fuzzy): one
             # library entry can declare dozens of them, so fuzzy matching would
             # run the sequence matcher over every word of every entry and take
@@ -551,6 +566,30 @@ class SearchStrategy:
                 continue
 
         return results
+
+    @staticmethod
+    def _normalize_wildcard_key_search(search_term: str) -> str:
+        normalized = search_term.strip()
+        if (
+            len(normalized) > 4
+            and normalized.startswith("__")
+            and normalized.endswith("__")
+        ):
+            normalized = normalized[2:-2]
+        return normalized.replace("\\", "/").strip("/").lower()
+
+    @staticmethod
+    def _matches_wildcard_key(entry: Any, normalized_search: str) -> bool:
+        if not isinstance(entry, dict):
+            return False
+        for field in ("key", "effective_key"):
+            candidate = entry.get(field)
+            if not isinstance(candidate, str):
+                continue
+            normalized_candidate = candidate.replace("\\", "/").strip("/").lower()
+            if normalized_search in normalized_candidate:
+                return True
+        return False
 
     def _matches_hash(self, item: Dict[str, Any], hash_query: str) -> bool:
         """Exact-match the normalized query against the item's known hashes."""

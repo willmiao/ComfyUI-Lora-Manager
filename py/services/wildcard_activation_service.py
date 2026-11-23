@@ -192,6 +192,28 @@ class WildcardActivationService:
             entry["reference_problem"] = wildcard_reference_problem(effective_key)
         return result
 
+    def add_effective_keys_for_search(
+        self, resources: Iterable[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Return search copies with runtime keys, reading activation state once."""
+
+        activations = self._load()
+        results = []
+        for resource in resources:
+            record = activations.get(_path_key(resource.get("file_path", "")))
+            if not _is_active_record(record):
+                record = None
+            result = dict(resource)
+            result["entries"] = [
+                {
+                    **entry,
+                    "effective_key": self._effective_key(entry["key"], record),
+                }
+                for entry in resource.get("entries") or []
+            ]
+            results.append(result)
+        return results
+
     @staticmethod
     def _short_key_warnings(key_sets: list[set[str]]) -> list[str]:
         leaves: dict[str, set[str]] = {}

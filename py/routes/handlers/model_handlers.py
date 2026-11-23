@@ -406,6 +406,9 @@ class ModelListingHandler:
             "trigger_words": (
                 request.query.get("search_trigger_words", "false").lower() == "true"
             ),
+            "wildcard_keys": (
+                request.query.get("search_wildcard_keys", "false").lower() == "true"
+            ),
             "recursive": request.query.get("recursive", "true").lower() == "true",
         }
 
