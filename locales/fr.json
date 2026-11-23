@@ -1579,34 +1579,14 @@
             "description": "Choisissez un dossier pour les ressources wildcard téléchargées et importées dans Paramètres > Bibliothèque.",
             "openSettings": "Ouvrir les paramètres"
         },
-        "add": {
-            "civitaiLabel": "Ajouter depuis Civitai",
-            "civitaiPlaceholder": "URL ou ID du modèle Civitai",
-            "download": "Télécharger",
-            "localLabel": "Importer des fichiers locaux",
-            "import": "Importer"
-        },
-        "library": {
-            "title": "Bibliothèque de ressources",
-            "summary": "{total} ressources · {active} actives · {manual} clés manuelles",
-            "searchPlaceholder": "Rechercher des ressources ou des clés de wildcard",
-            "all": "Toutes les ressources",
-            "active": "Actives",
-            "inactive": "Inactives",
-            "emptyTitle": "Aucune ressource wildcard pour le moment",
-            "emptyDescription": "Téléchargez une ressource Civitai ou importez des fichiers ZIP, TXT, YAML ou JSON ci-dessus.",
-            "noMatches": "Aucune ressource ne correspond aux filtres actuels"
-        },
         "card": {
-            "keys": "{count} clés",
-            "values": "{count} valeurs"
+            "keys": "{count} clés"
         },
         "actions": {
             "details": "Détails",
             "activate": "Activer",
             "activateWithOptions": "Activer...",
-            "deactivate": "Désactiver",
-            "delete": "Supprimer"
+            "deactivate": "Désactiver"
         },
         "details": {
             "keys": "Clés des wildcards",
@@ -1640,18 +1620,9 @@
             "failed": "Échec de la mise à jour des paramètres d'activation."
         },
         "messages": {
-            "loading": "Chargement des ressources wildcard...",
-            "runtimeConflicts": "{count} conflits de clés à l'exécution ont été ignorés ; vérifiez les noms d'activation.",
             "activated": "Ressource activée.",
             "settingsSaved": "Paramètres d'activation enregistrés.",
             "deactivated": "Ressource désactivée.",
-            "deleted": "Ressource supprimée.",
-            "deleteConfirm": "Supprimer {name} ? Cela supprime l'artefact téléchargé et son activation.",
-            "downloading": "Téléchargement et analyse de la ressource...",
-            "downloaded": "Ressource ajoutée à la bibliothèque. Elle n'est pas encore active.",
-            "importing": "Importation et analyse des fichiers...",
-            "imported": "Fichiers ajoutés à la bibliothèque. Ils ne sont pas encore actifs.",
-            "shortWarnings": "Avertissements sur les clés courtes : {keys}",
             "unreferenceableKeys": "Certaines clés ({count}) ne peuvent pas être référencées avec la syntaxe __key__."
         }
     },

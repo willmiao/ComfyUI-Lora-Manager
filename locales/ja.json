@@ -1579,34 +1579,14 @@
             "description": "「設定 > ライブラリ」で、ダウンロードおよびインポートしたワイルドカードリソース用のフォルダーを選択してください。",
             "openSettings": "設定を開く"
         },
-        "add": {
-            "civitaiLabel": "Civitai から追加",
-            "civitaiPlaceholder": "Civitai のモデル URL またはモデル ID",
-            "download": "ダウンロード",
-            "localLabel": "ローカルファイルをインポート",
-            "import": "インポート"
-        },
-        "library": {
-            "title": "リソースライブラリ",
-            "summary": "{total} 件のリソース · {active} 件が有効 · {manual} 件の手動キー",
-            "searchPlaceholder": "リソースまたはワイルドカードキーを検索",
-            "all": "すべてのリソース",
-            "active": "有効",
-            "inactive": "無効",
-            "emptyTitle": "ワイルドカードリソースはまだありません",
-            "emptyDescription": "上で Civitai のリソースをダウンロードするか、ZIP、TXT、YAML、JSON ファイルをインポートしてください。",
-            "noMatches": "現在のフィルタに一致するリソースはありません"
-        },
         "card": {
-            "keys": "{count} 件のキー",
-            "values": "{count} 件の値"
+            "keys": "{count} 件のキー"
         },
         "actions": {
             "details": "詳細",
             "activate": "有効化",
             "activateWithOptions": "有効化...",
-            "deactivate": "無効化",
-            "delete": "削除"
+            "deactivate": "無効化"
         },
         "details": {
             "keys": "ワイルドカードキー",
@@ -1640,18 +1620,9 @@
             "failed": "有効化設定の更新に失敗しました。"
         },
         "messages": {
-            "loading": "ワイルドカードリソースを読み込み中...",
-            "runtimeConflicts": "実行時のキー競合 {count} 件をスキップしました。有効化名を確認してください。",
             "activated": "リソースを有効化しました。",
             "settingsSaved": "有効化設定を保存しました。",
             "deactivated": "リソースを無効化しました。",
-            "deleted": "リソースを削除しました。",
-            "deleteConfirm": "{name} を削除しますか？ダウンロードしたファイルと有効化情報が削除されます。",
-            "downloading": "リソースをダウンロードして解析中...",
-            "downloaded": "リソースをライブラリに追加しました。まだ有効ではありません。",
-            "importing": "ファイルをインポートして解析中...",
-            "imported": "ファイルをライブラリに追加しました。まだ有効ではありません。",
-            "shortWarnings": "短いキーの警告：{keys}",
             "unreferenceableKeys": "一部のキー（{count} 件）は __key__ 構文で参照できません。"
         }
     },

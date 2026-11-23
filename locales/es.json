@@ -1579,34 +1579,14 @@
             "description": "Elige una carpeta para los recursos de comodines descargados e importados en Configuración > Biblioteca.",
             "openSettings": "Abrir configuración"
         },
-        "add": {
-            "civitaiLabel": "Añadir desde Civitai",
-            "civitaiPlaceholder": "URL o ID del modelo de Civitai",
-            "download": "Descargar",
-            "localLabel": "Importar archivos locales",
-            "import": "Importar"
-        },
-        "library": {
-            "title": "Biblioteca de recursos",
-            "summary": "{total} recursos · {active} activos · {manual} claves manuales",
-            "searchPlaceholder": "Buscar recursos o claves de comodín",
-            "all": "Todos los recursos",
-            "active": "Activos",
-            "inactive": "Inactivos",
-            "emptyTitle": "Aún no hay recursos de comodines",
-            "emptyDescription": "Descarga arriba un recurso de Civitai o importa archivos ZIP, TXT, YAML o JSON.",
-            "noMatches": "Ningún recurso coincide con los filtros actuales"
-        },
         "card": {
-            "keys": "{count} claves",
-            "values": "{count} valores"
+            "keys": "{count} claves"
         },
         "actions": {
             "details": "Detalles",
             "activate": "Activar",
             "activateWithOptions": "Activar...",
-            "deactivate": "Desactivar",
-            "delete": "Eliminar"
+            "deactivate": "Desactivar"
         },
         "details": {
             "keys": "Claves de comodines",
@@ -1640,18 +1620,9 @@
             "failed": "No se pudieron actualizar los ajustes de activación."
         },
         "messages": {
-            "loading": "Cargando recursos de comodines...",
-            "runtimeConflicts": "Se omitieron {count} conflictos de claves en tiempo de ejecución; revisa los nombres de activación.",
             "activated": "Recurso activado.",
             "settingsSaved": "Ajustes de activación guardados.",
             "deactivated": "Recurso desactivado.",
-            "deleted": "Recurso eliminado.",
-            "deleteConfirm": "¿Eliminar {name}? Se eliminará el artefacto descargado y su activación.",
-            "downloading": "Descargando y analizando el recurso...",
-            "downloaded": "Recurso añadido a la biblioteca. Todavía no está activo.",
-            "importing": "Importando y analizando archivos...",
-            "imported": "Archivos añadidos a la biblioteca. Todavía no están activos.",
-            "shortWarnings": "Avisos de claves cortas: {keys}",
             "unreferenceableKeys": "Algunas claves ({count}) no se pueden referenciar con la sintaxis __key__."
         }
     },

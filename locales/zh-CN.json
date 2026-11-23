@@ -1579,34 +1579,14 @@
             "description": "请在“设置 > 库”中为下载和导入的通配符资源选择一个文件夹。",
             "openSettings": "打开设置"
         },
-        "add": {
-            "civitaiLabel": "从 Civitai 添加",
-            "civitaiPlaceholder": "Civitai 模型 URL 或模型 ID",
-            "download": "下载",
-            "localLabel": "导入本地文件",
-            "import": "导入"
-        },
-        "library": {
-            "title": "资源库",
-            "summary": "{total} 个资源 · {active} 个已启用 · {manual} 个手动键",
-            "searchPlaceholder": "搜索资源或通配符键",
-            "all": "全部资源",
-            "active": "已启用",
-            "inactive": "未启用",
-            "emptyTitle": "还没有通配符资源",
-            "emptyDescription": "请在上方下载 Civitai 资源，或导入 ZIP、TXT、YAML 或 JSON 文件。",
-            "noMatches": "没有资源符合当前筛选条件"
-        },
         "card": {
-            "keys": "{count} 个键",
-            "values": "{count} 个值"
+            "keys": "{count} 个键"
         },
         "actions": {
             "details": "详情",
             "activate": "启用",
             "activateWithOptions": "启用...",
-            "deactivate": "停用",
-            "delete": "删除"
+            "deactivate": "停用"
         },
         "details": {
             "keys": "通配符键",
@@ -1640,18 +1620,9 @@
             "failed": "启用设置更新失败。"
         },
         "messages": {
-            "loading": "正在加载通配符资源...",
-            "runtimeConflicts": "已跳过 {count} 个运行时键冲突，请检查启用名称。",
             "activated": "资源已启用。",
             "settingsSaved": "启用设置已保存。",
             "deactivated": "资源已停用。",
-            "deleted": "资源已删除。",
-            "deleteConfirm": "删除 {name}？这会移除已下载的文件及其启用记录。",
-            "downloading": "正在下载并解析资源...",
-            "downloaded": "资源已添加到库。尚未启用。",
-            "importing": "正在导入并解析文件...",
-            "imported": "文件已添加到库。尚未启用。",
-            "shortWarnings": "短键提醒：{keys}",
             "unreferenceableKeys": "部分键（{count} 个）无法使用 __key__ 语法引用。"
         }
     },

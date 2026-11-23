@@ -1579,34 +1579,14 @@
             "description": "Wählen Sie unter Einstellungen > Bibliothek einen Ordner für heruntergeladene und importierte Wildcard-Ressourcen.",
             "openSettings": "Einstellungen öffnen"
         },
-        "add": {
-            "civitaiLabel": "Von Civitai hinzufügen",
-            "civitaiPlaceholder": "Civitai-Modell-URL oder Modell-ID",
-            "download": "Herunterladen",
-            "localLabel": "Lokale Dateien importieren",
-            "import": "Importieren"
-        },
-        "library": {
-            "title": "Ressourcenbibliothek",
-            "summary": "{total} Ressourcen · {active} aktiv · {manual} manuelle Schlüssel",
-            "searchPlaceholder": "Ressourcen oder Wildcard-Schlüssel suchen",
-            "all": "Alle Ressourcen",
-            "active": "Aktiv",
-            "inactive": "Inaktiv",
-            "emptyTitle": "Noch keine Wildcard-Ressourcen",
-            "emptyDescription": "Laden Sie oben eine Civitai-Ressource herunter oder importieren Sie ZIP-, TXT-, YAML- oder JSON-Dateien.",
-            "noMatches": "Keine Ressourcen entsprechen den aktuellen Filtern"
-        },
         "card": {
-            "keys": "{count} Schlüssel",
-            "values": "{count} Werte"
+            "keys": "{count} Schlüssel"
         },
         "actions": {
             "details": "Details",
             "activate": "Aktivieren",
             "activateWithOptions": "Aktivieren...",
-            "deactivate": "Deaktivieren",
-            "delete": "Löschen"
+            "deactivate": "Deaktivieren"
         },
         "details": {
             "keys": "Wildcard-Schlüssel",
@@ -1640,18 +1620,9 @@
             "failed": "Aktivierungseinstellungen konnten nicht aktualisiert werden."
         },
         "messages": {
-            "loading": "Wildcard-Ressourcen werden geladen...",
-            "runtimeConflicts": "{count} Konflikte mit Laufzeitschlüsseln wurden übersprungen; prüfen Sie die Aktivierungsnamen.",
             "activated": "Ressource aktiviert.",
             "settingsSaved": "Aktivierungseinstellungen gespeichert.",
             "deactivated": "Ressource deaktiviert.",
-            "deleted": "Ressource gelöscht.",
-            "deleteConfirm": "{name} löschen? Dadurch werden das heruntergeladene Artefakt und seine Aktivierung entfernt.",
-            "downloading": "Ressource wird heruntergeladen und analysiert...",
-            "downloaded": "Ressource zur Bibliothek hinzugefügt. Sie ist noch nicht aktiv.",
-            "importing": "Dateien werden importiert und analysiert...",
-            "imported": "Dateien zur Bibliothek hinzugefügt. Sie sind noch nicht aktiv.",
-            "shortWarnings": "Warnungen zu kurzen Schlüsseln: {keys}",
             "unreferenceableKeys": "Einige Schlüssel ({count}) können nicht mit der __key__-Syntax referenziert werden."
         }
     },

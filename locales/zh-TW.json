@@ -1579,34 +1579,14 @@
             "description": "請在「設定 > 模型庫」中為下載和匯入的通配符資源選擇資料夾。",
             "openSettings": "開啟設定"
         },
-        "add": {
-            "civitaiLabel": "從 Civitai 新增",
-            "civitaiPlaceholder": "Civitai 模型 URL 或模型 ID",
-            "download": "下載",
-            "localLabel": "匯入本機檔案",
-            "import": "匯入"
-        },
-        "library": {
-            "title": "資源庫",
-            "summary": "{total} 個資源 · {active} 個已啟用 · {manual} 個手動鍵",
-            "searchPlaceholder": "搜尋資源或通配符鍵",
-            "all": "全部資源",
-            "active": "已啟用",
-            "inactive": "未啟用",
-            "emptyTitle": "尚無通配符資源",
-            "emptyDescription": "請在上方下載 Civitai 資源，或匯入 ZIP、TXT、YAML 或 JSON 檔案。",
-            "noMatches": "沒有資源符合目前的篩選條件"
-        },
         "card": {
-            "keys": "{count} 個鍵",
-            "values": "{count} 個值"
+            "keys": "{count} 個鍵"
         },
         "actions": {
             "details": "詳細資訊",
             "activate": "啟用",
             "activateWithOptions": "啟用...",
-            "deactivate": "停用",
-            "delete": "刪除"
+            "deactivate": "停用"
         },
         "details": {
             "keys": "通配符鍵",
@@ -1640,18 +1620,9 @@
             "failed": "啟用設定更新失敗。"
         },
         "messages": {
-            "loading": "正在載入通配符資源...",
-            "runtimeConflicts": "已略過 {count} 個執行時鍵衝突，請檢查啟用名稱。",
             "activated": "資源已啟用。",
             "settingsSaved": "啟用設定已儲存。",
             "deactivated": "資源已停用。",
-            "deleted": "資源已刪除。",
-            "deleteConfirm": "刪除 {name}？這會移除已下載的檔案及其啟用記錄。",
-            "downloading": "正在下載並解析資源...",
-            "downloaded": "資源已加入資源庫。尚未啟用。",
-            "importing": "正在匯入並解析檔案...",
-            "imported": "檔案已加入資源庫。尚未啟用。",
-            "shortWarnings": "短鍵提醒：{keys}",
             "unreferenceableKeys": "部分鍵（{count} 個）無法使用 __key__ 語法參照。"
         }
     },

@@ -1579,34 +1579,14 @@
             "description": "בחר תיקייה למשאבי ויילדקארד שהורדו ויובאו בהגדרות > ספרייה.",
             "openSettings": "פתח הגדרות"
         },
-        "add": {
-            "civitaiLabel": "הוסף מ-Civitai",
-            "civitaiPlaceholder": "כתובת מודל Civitai או מזהה מודל",
-            "download": "הורד",
-            "localLabel": "ייבא קבצים מקומיים",
-            "import": "ייבא"
-        },
-        "library": {
-            "title": "ספריית משאבים",
-            "summary": "{total} משאבים · {active} פעילים · {manual} מפתחות ידניים",
-            "searchPlaceholder": "חפש משאבים או מפתחות ויילדקארד",
-            "all": "כל המשאבים",
-            "active": "פעילים",
-            "inactive": "לא פעילים",
-            "emptyTitle": "עדיין אין משאבי ויילדקארד",
-            "emptyDescription": "הורד משאב מ-Civitai או ייבא קבצי ZIP, TXT, YAML או JSON למעלה.",
-            "noMatches": "אין משאבים שתואמים את המסננים הנוכחיים"
-        },
         "card": {
-            "keys": "{count} מפתחות",
-            "values": "{count} ערכים"
+            "keys": "{count} מפתחות"
         },
         "actions": {
             "details": "פרטים",
             "activate": "הפעל",
             "activateWithOptions": "הפעל...",
-            "deactivate": "השבת",
-            "delete": "מחק"
+            "deactivate": "השבת"
         },
         "details": {
             "keys": "מפתחות ויילדקארד",
@@ -1640,18 +1620,9 @@
             "failed": "עדכון הגדרות ההפעלה נכשל."
         },
         "messages": {
-            "loading": "טוען משאבי ויילדקארד...",
-            "runtimeConflicts": "דולגו {count} התנגשויות מפתחות בזמן ריצה; בדוק את שמות ההפעלה.",
             "activated": "המשאב הופעל.",
             "settingsSaved": "הגדרות ההפעלה נשמרו.",
             "deactivated": "המשאב הושבת.",
-            "deleted": "המשאב נמחק.",
-            "deleteConfirm": "למחוק את {name}? פעולה זו תמחק את הקובץ שהורד ואת ההפעלה שלו.",
-            "downloading": "מוריד ומפענח את המשאב...",
-            "downloaded": "המשאב נוסף לספרייה. הוא עדיין אינו פעיל.",
-            "importing": "מייבא ומפענח קבצים...",
-            "imported": "הקבצים נוספו לספרייה. הם עדיין אינם פעילים.",
-            "shortWarnings": "אזהרות על מפתחות קצרים: {keys}",
             "unreferenceableKeys": "חלק מהמפתחות ({count}) אינם ניתנים להפניה באמצעות התחביר __key__."
         }
     },

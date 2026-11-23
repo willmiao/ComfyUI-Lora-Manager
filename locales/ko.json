@@ -1579,34 +1579,14 @@
             "description": "설정 > 라이브러리에서 다운로드 및 가져온 와일드카드 리소스용 폴더를 선택하세요.",
             "openSettings": "설정 열기"
         },
-        "add": {
-            "civitaiLabel": "Civitai에서 추가",
-            "civitaiPlaceholder": "Civitai 모델 URL 또는 모델 ID",
-            "download": "다운로드",
-            "localLabel": "로컬 파일 가져오기",
-            "import": "가져오기"
-        },
-        "library": {
-            "title": "리소스 라이브러리",
-            "summary": "리소스 {total}개 · 활성 {active}개 · 수동 키 {manual}개",
-            "searchPlaceholder": "리소스 또는 와일드카드 키 검색",
-            "all": "모든 리소스",
-            "active": "활성",
-            "inactive": "비활성",
-            "emptyTitle": "아직 와일드카드 리소스가 없습니다",
-            "emptyDescription": "위에서 Civitai 리소스를 다운로드하거나 ZIP, TXT, YAML, JSON 파일을 가져오세요.",
-            "noMatches": "현재 필터와 일치하는 리소스가 없습니다"
-        },
         "card": {
-            "keys": "키 {count}개",
-            "values": "값 {count}개"
+            "keys": "키 {count}개"
         },
         "actions": {
             "details": "세부 정보",
             "activate": "활성화",
             "activateWithOptions": "활성화...",
-            "deactivate": "비활성화",
-            "delete": "삭제"
+            "deactivate": "비활성화"
         },
         "details": {
             "keys": "와일드카드 키",
@@ -1640,18 +1620,9 @@
             "failed": "활성화 설정을 업데이트하지 못했습니다."
         },
         "messages": {
-            "loading": "와일드카드 리소스를 불러오는 중...",
-            "runtimeConflicts": "런타임 키 충돌 {count}개를 건너뛰었습니다. 활성화 이름을 확인하세요.",
             "activated": "리소스가 활성화되었습니다.",
             "settingsSaved": "활성화 설정이 저장되었습니다.",
             "deactivated": "리소스가 비활성화되었습니다.",
-            "deleted": "리소스가 삭제되었습니다.",
-            "deleteConfirm": "{name}을(를) 삭제하시겠습니까? 다운로드한 파일과 활성화 정보가 함께 삭제됩니다.",
-            "downloading": "리소스를 다운로드하고 분석하는 중...",
-            "downloaded": "리소스가 라이브러리에 추가되었습니다. 아직 활성화되지 않았습니다.",
-            "importing": "파일을 가져오고 분석하는 중...",
-            "imported": "파일이 라이브러리에 추가되었습니다. 아직 활성화되지 않았습니다.",
-            "shortWarnings": "짧은 키 경고: {keys}",
             "unreferenceableKeys": "일부 키({count}개)는 __key__ 구문으로 참조할 수 없습니다."
         }
     },

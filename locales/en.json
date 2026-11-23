@@ -1579,34 +1579,14 @@
       "description": "Choose a folder for downloaded and imported wildcard resources in Settings > Library.",
       "openSettings": "Open Settings"
     },
-    "add": {
-      "civitaiLabel": "Add from Civitai",
-      "civitaiPlaceholder": "Civitai model URL or model ID",
-      "download": "Download",
-      "localLabel": "Import local files",
-      "import": "Import"
-    },
-    "library": {
-      "title": "Resource Library",
-      "summary": "{total} resources · {active} active · {manual} manual keys",
-      "searchPlaceholder": "Search resources or wildcard keys",
-      "all": "All resources",
-      "active": "Active",
-      "inactive": "Inactive",
-      "emptyTitle": "No wildcard resources yet",
-      "emptyDescription": "Download a Civitai resource or import ZIP, TXT, YAML, or JSON files above.",
-      "noMatches": "No resources match the current filters"
-    },
     "card": {
-      "keys": "{count} keys",
-      "values": "{count} values"
+      "keys": "{count} keys"
     },
     "actions": {
       "details": "Details",
       "activate": "Activate",
       "activateWithOptions": "Activate...",
-      "deactivate": "Deactivate",
-      "delete": "Delete"
+      "deactivate": "Deactivate"
     },
     "details": {
       "keys": "Wildcard keys",
@@ -1640,18 +1620,9 @@
       "failed": "Failed to update activation settings."
     },
     "messages": {
-      "loading": "Loading wildcard resources...",
-      "runtimeConflicts": "{count} runtime key conflicts were skipped; check activation names.",
       "activated": "Resource activated.",
       "settingsSaved": "Activation settings saved.",
       "deactivated": "Resource deactivated.",
-      "deleted": "Resource deleted.",
-      "deleteConfirm": "Delete {name}? This removes the downloaded artifact and its activation.",
-      "downloading": "Downloading and parsing resource...",
-      "downloaded": "Resource added to the library. It is not active yet.",
-      "importing": "Importing and parsing files...",
-      "imported": "Files added to the library. They are not active yet.",
-      "shortWarnings": "Short-key warnings: {keys}",
       "unreferenceableKeys": "Some keys ({count}) cannot be referenced with __key__ syntax."
     }
   },
