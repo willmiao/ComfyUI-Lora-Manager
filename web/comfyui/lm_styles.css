@@ -2291,36 +2291,40 @@ body.lm-lora-reordering * {
 .lm-quick-actions-menu {
   position: fixed;
   z-index: 10000;
-  min-width: 230px;
-  padding: 6px;
-  background: var(--lm-surface);
-  border: 1px solid var(--lm-border-soft);
+  display: flex;
+  flex-direction: column;
+  min-width: 208px;
+  max-height: calc(100vh - 16px);
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+  background: var(--background, var(--lm-surface));
+  border: 1px solid var(--border, var(--lm-border-soft));
   border-radius: 8px;
   box-shadow: var(--lm-shadow-lg);
-  color: var(--lm-fg);
+  color: var(--foreground, var(--lm-fg));
 }
 
 .lm-quick-actions-menu__item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
   width: 100%;
-  min-height: 34px;
-  padding: 6px 10px;
+  min-height: 32px;
+  padding: 4px 8px;
   background: transparent;
   border: 0;
-  border-radius: 5px;
+  border-radius: 4px;
   color: inherit;
   font: inherit;
-  font-size: 14px;
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 
 .lm-quick-actions-menu__item:hover,
 .lm-quick-actions-menu__item:focus-visible {
-  background: var(--lm-surface-hover);
+  background: var(--accent, var(--lm-surface-hover));
   outline: none;
 }
 
@@ -2330,21 +2334,21 @@ body.lm-lora-reordering * {
   justify-content: center;
   min-width: 20px;
   min-height: 18px;
-  padding: 0 6px;
-  background: var(--interface-menu-keybind-surface-default, var(--lm-surface-raised));
+  padding: 2px 6px;
+  background: var(--secondary, var(--interface-menu-keybind-surface-default, var(--lm-surface-raised)));
   border: 0;
   border-radius: 4px;
-  color: var(--lm-fg);
+  color: var(--muted-foreground, var(--lm-fg));
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   white-space: nowrap;
 }
 
 .lm-quick-actions-menu__divider {
   height: 1px;
-  margin: 5px 4px;
-  background: var(--lm-border-soft);
+  margin: 4px 0;
+  background: var(--border, var(--lm-border-soft));
 }
 
 /* ---- Wildcard quick panel ---- */

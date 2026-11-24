@@ -5,10 +5,73 @@ import { toggleQuickActionsMenu } from "./quick_actions_menu.js";
 
 const BUTTON_TOOLTIP = "Open LoRA Manager (Shift+Click opens in a new window)";
 const QUICK_ACTIONS_TOOLTIP = "LoRA Manager quick actions";
+const BUTTON_SELECTOR = `button[aria-label="${BUTTON_TOOLTIP}"]`;
+const QUICK_ACTIONS_SELECTOR = `button[aria-label="${QUICK_ACTIONS_TOOLTIP}"]`;
 const MAX_ATTACH_ATTEMPTS = 120;
 const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 
 const MIN_VERSION_FOR_ACTION_BAR = [1, 33, 9];
+
+const ACTIONBAR_STRIP_CLASSES = [
+    "bg-transparent",
+    "text-muted-foreground",
+    "h-6",
+    "h-7",
+    "rounded-sm",
+    "rounded-full",
+    "px-2",
+    "py-1",
+];
+
+const NATIVE_SECONDARY_BUTTON_CLASSES = [
+    "relative",
+    "inline-flex",
+    "cursor-pointer",
+    "touch-manipulation",
+    "appearance-none",
+    "items-center",
+    "justify-center",
+    "border-none",
+    "font-inter",
+    "text-xs",
+    "font-medium",
+    "whitespace-nowrap",
+    "transition-colors",
+    "focus-visible:ring-1",
+    "focus-visible:ring-ring",
+    "focus-visible:outline-none",
+    "disabled:pointer-events-none",
+    "disabled:opacity-50",
+    "bg-secondary",
+    "text-foreground",
+    "hover:bg-accent",
+    "group",
+    "h-8",
+    "rounded-lg",
+    "data-[state=open]:bg-accent",
+    "aria-expanded:bg-accent",
+];
+
+const applyNativeSecondaryButtonClasses = (button, extraClasses = []) => {
+    for (const cls of ACTIONBAR_STRIP_CLASSES) {
+        if (button.classList.contains(cls)) {
+            button.classList.remove(cls);
+        }
+    }
+    for (const cls of NATIVE_SECONDARY_BUTTON_CLASSES) {
+        if (!button.classList.contains(cls)) {
+            button.classList.add(cls);
+        }
+    }
+    for (const cls of extraClasses) {
+        if (!button.classList.contains(cls)) {
+            button.classList.add(cls);
+        }
+    }
+    if (button.getAttribute("data-variant") !== "secondary") {
+        button.setAttribute("data-variant", "secondary");
+    }
+};
 
 const openLoraManager = (event) => openLoraManagerHome(event.shiftKey);
 
@@ -181,56 +244,92 @@ const createExtensionObject = (useActionBar) => {
                 const style = document.createElement('style');
                 style.id = styleId;
                 style.textContent = `
-                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button {
-                        transition: all 0.2s ease;
-                        border: 1px solid transparent;
+                    .lm-top-menu-icon-wrap {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 16px;
+                        height: 16px;
+                        line-height: 1;
                     }
-                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button:hover {
-                        background-color: var(--primary-hover-bg) !important;
+                    .lm-top-menu-icon-wrap svg {
+                        display: block;
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 3px;
+                    }
+                    ${QUICK_ACTIONS_SELECTOR}.lm-quick-actions-button[aria-expanded="true"] .lm-quick-actions-chevron {
+                        transform: rotate(180deg);
                     }
                 `;
                 document.head.appendChild(style);
             };
+
+            if (!useActionBar) {
+                return;
+            }
+
             injectStyles();
 
-            const applyIconToButton = (button) => {
-                // Skip if the SVG icon is already in place
-                if (button.querySelector('svg')) return;
-                button.classList.add('lm-top-menu-button');
-                button.innerHTML = getLoraManagerIcon();
-                button.style.borderRadius = '4px';
-                button.style.padding = '6px';
-                button.style.backgroundColor = 'var(--primary-bg)';
-                const svg = button.querySelector('svg');
-                if (svg) {
-                    svg.style.width = '20px';
-                    svg.style.height = '20px';
+            const applyNativeMainButton = (button) => {
+                applyNativeSecondaryButtonClasses(button, ['lm-top-menu-button', 'px-2']);
+                if (button.style.borderRadius) button.style.borderRadius = '';
+                if (button.style.padding) button.style.padding = '';
+                if (button.style.backgroundColor) button.style.backgroundColor = '';
+
+                if (!button.querySelector('.lm-top-menu-icon-wrap svg')) {
+                    const iconWrap = document.createElement('span');
+                    iconWrap.className = 'lm-top-menu-icon-wrap relative flex size-4 shrink-0 items-center justify-center';
+                    iconWrap.setAttribute('aria-hidden', 'true');
+                    iconWrap.innerHTML = getLoraManagerIcon();
+                    button.replaceChildren(iconWrap);
                 }
+            };
+
+            const applyNativeQuickActionsButton = (button) => {
+                applyNativeSecondaryButtonClasses(button, ['lm-quick-actions-button', 'px-1.5']);
+                if (button.getAttribute('aria-haspopup') !== 'menu') {
+                    button.setAttribute('aria-haspopup', 'menu');
+                }
+                const chevron = button.querySelector('i');
+                if (chevron && !chevron.classList.contains('lm-quick-actions-chevron')) {
+                    chevron.className = 'lm-quick-actions-chevron icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150';
+                    chevron.setAttribute('aria-hidden', 'true');
+                }
+            };
+
+            const decorateActionBarButtons = () => {
+                const mainButtons = document.querySelectorAll(BUTTON_SELECTOR);
+                mainButtons.forEach(applyNativeMainButton);
+
+                const quickButtons = document.querySelectorAll(QUICK_ACTIONS_SELECTOR);
+                quickButtons.forEach(applyNativeQuickActionsButton);
+
+                return mainButtons.length > 0;
             };
 
             // Initial application — retry until the button is rendered by Vue
             const pollUntilFound = () => {
-                const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
-                if (buttons.length > 0) {
-                    buttons.forEach(applyIconToButton);
-                } else {
+                if (!decorateActionBarButtons()) {
                     requestAnimationFrame(pollUntilFound);
                 }
             };
             requestAnimationFrame(pollUntilFound);
 
-            // MutationObserver: keep the SVG icon in place after Vue re-renders
+            // MutationObserver: keep native button styling and SVG icon in place after Vue re-renders
             // (e.g. when the properties panel is toggled inside a subgraph)
             if (typeof MutationObserver !== 'undefined') {
-                const observer = new MutationObserver(() => {
-                    const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
-                    buttons.forEach(button => {
-                        // Only re-apply when Vue has reset innerHTML back to <i>
-                        if (button.querySelector('i')) {
-                            applyIconToButton(button);
-                        }
+                let decorateQueued = false;
+                const queueDecorate = () => {
+                    if (decorateQueued) return;
+                    decorateQueued = true;
+                    requestAnimationFrame(() => {
+                        decorateQueued = false;
+                        decorateActionBarButtons();
                     });
-                });
+                };
+
+                const observer = new MutationObserver(queueDecorate);
                 // Watch the action bar and a broad ancestor so we cover re-mounts
                 const watchNode = document.querySelector('[data-testid="action-bar-buttons"]')
                     || document.querySelector('.actionbar-container')
@@ -250,7 +349,7 @@ const createExtensionObject = (useActionBar) => {
                 onClick: openLoraManager
             },
             {
-                icon: "icon-[lucide--chevron-down] size-4",
+                icon: "icon-[lucide--chevron-down] size-3",
                 tooltip: QUICK_ACTIONS_TOOLTIP,
                 class: "lm-quick-actions-button",
                 onClick: (event) => toggleQuickActionsMenu(event.currentTarget)
