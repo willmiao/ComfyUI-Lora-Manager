@@ -12,67 +12,6 @@ const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 
 const MIN_VERSION_FOR_ACTION_BAR = [1, 33, 9];
 
-const ACTIONBAR_STRIP_CLASSES = [
-    "bg-transparent",
-    "text-muted-foreground",
-    "h-6",
-    "h-7",
-    "rounded-sm",
-    "rounded-full",
-    "px-2",
-    "py-1",
-];
-
-const NATIVE_SECONDARY_BUTTON_CLASSES = [
-    "relative",
-    "inline-flex",
-    "cursor-pointer",
-    "touch-manipulation",
-    "appearance-none",
-    "items-center",
-    "justify-center",
-    "border-none",
-    "font-inter",
-    "text-xs",
-    "font-medium",
-    "whitespace-nowrap",
-    "transition-colors",
-    "focus-visible:ring-1",
-    "focus-visible:ring-ring",
-    "focus-visible:outline-none",
-    "disabled:pointer-events-none",
-    "disabled:opacity-50",
-    "bg-secondary",
-    "text-foreground",
-    "hover:bg-accent",
-    "group",
-    "h-8",
-    "rounded-lg",
-    "data-[state=open]:bg-accent",
-    "aria-expanded:bg-accent",
-];
-
-const applyNativeSecondaryButtonClasses = (button, extraClasses = []) => {
-    for (const cls of ACTIONBAR_STRIP_CLASSES) {
-        if (button.classList.contains(cls)) {
-            button.classList.remove(cls);
-        }
-    }
-    for (const cls of NATIVE_SECONDARY_BUTTON_CLASSES) {
-        if (!button.classList.contains(cls)) {
-            button.classList.add(cls);
-        }
-    }
-    for (const cls of extraClasses) {
-        if (!button.classList.contains(cls)) {
-            button.classList.add(cls);
-        }
-    }
-    if (button.getAttribute("data-variant") !== "secondary") {
-        button.setAttribute("data-variant", "secondary");
-    }
-};
-
 const openLoraManager = (event) => openLoraManagerHome(event.shiftKey);
 
 const getComfyUIFrontendVersion = async () => {
@@ -248,15 +187,16 @@ const createExtensionObject = (useActionBar) => {
                         display: inline-flex;
                         align-items: center;
                         justify-content: center;
-                        width: 16px;
-                        height: 16px;
+                        width: 20px;
+                        height: 20px;
                         line-height: 1;
                     }
                     .lm-top-menu-icon-wrap svg {
                         display: block;
-                        width: 16px;
-                        height: 16px;
-                        border-radius: 3px;
+                        width: 20px;
+                        height: 20px;
+                        /* The brand artwork is a square tile; clipping its
+                           corners would round off the mark itself. */
                     }
                     ${QUICK_ACTIONS_SELECTOR}.lm-quick-actions-button[aria-expanded="true"] .lm-quick-actions-chevron {
                         transform: rotate(180deg);
@@ -272,22 +212,35 @@ const createExtensionObject = (useActionBar) => {
             injectStyles();
 
             const applyNativeMainButton = (button) => {
-                applyNativeSecondaryButtonClasses(button, ['lm-top-menu-button', 'px-2']);
+                // Keep ComfyUI's native action bar chrome and only swap in the
+                // brand icon: borrowing the app's private button utilities ties
+                // this to one frontend release.
+                button.classList.add('lm-top-menu-button');
                 if (button.style.borderRadius) button.style.borderRadius = '';
                 if (button.style.padding) button.style.padding = '';
                 if (button.style.backgroundColor) button.style.backgroundColor = '';
 
                 if (!button.querySelector('.lm-top-menu-icon-wrap svg')) {
                     const iconWrap = document.createElement('span');
-                    iconWrap.className = 'lm-top-menu-icon-wrap relative flex size-4 shrink-0 items-center justify-center';
+                    iconWrap.className = 'lm-top-menu-icon-wrap relative flex size-5 shrink-0 items-center justify-center';
                     iconWrap.setAttribute('aria-hidden', 'true');
                     iconWrap.innerHTML = getLoraManagerIcon();
+                    // The button's own utilities size bare <svg> children at 1rem
+                    // with a higher specificity than the stylesheet above; giving
+                    // the icon explicit dimensions keeps it at 20px.
+                    const icon = iconWrap.querySelector('svg');
+                    if (icon) {
+                        icon.setAttribute('width', '20');
+                        icon.setAttribute('height', '20');
+                    }
                     button.replaceChildren(iconWrap);
                 }
             };
 
             const applyNativeQuickActionsButton = (button) => {
-                applyNativeSecondaryButtonClasses(button, ['lm-quick-actions-button', 'px-1.5']);
+                // Same reasoning: the chevron only opens a menu, so it stays a
+                // native action bar button instead of becoming a filled chip.
+                button.classList.add('lm-quick-actions-button');
                 if (button.getAttribute('aria-haspopup') !== 'menu') {
                     button.setAttribute('aria-haspopup', 'menu');
                 }
