@@ -78,6 +78,28 @@ function cloneTag(tag) {
   };
 }
 
+function normalizeTriggerGroups(groups) {
+  if (!Array.isArray(groups)) {
+    return null;
+  }
+  return groups
+    .filter((group) => typeof group === "string")
+    .map((group) => group.trim())
+    .filter(Boolean);
+}
+
+function getStoredTriggerGroups(node) {
+  const value = node.triggerGroupsWidget?.value;
+  if (!value) {
+    return null;
+  }
+  try {
+    return normalizeTriggerGroups(JSON.parse(value));
+  } catch {
+    return null;
+  }
+}
+
 function collectHighlightTokens(wordsArray) {
   const tokens = new Set();
 
@@ -180,8 +202,8 @@ app.registerExtension({
 
   setup() {
     api.addEventListener("trigger_word_update", (event) => {
-      const { id, graph_id: graphId, message } = event.detail;
-      this.handleTriggerWordUpdate(id, graphId, message);
+      const { id, graph_id: graphId, message, groups } = event.detail;
+      this.handleTriggerWordUpdate(id, graphId, message, groups);
     });
   },
 
@@ -267,6 +289,12 @@ app.registerExtension({
       hiddenWidget.computeSize = () => [0, -4];
       node.originalMessageWidget = hiddenWidget;
 
+      const triggerGroupsWidget = node.addWidget("text", "trigger_groups", "");
+      triggerGroupsWidget.type = CONVERTED_TYPE;
+      triggerGroupsWidget.hidden = true;
+      triggerGroupsWidget.computeSize = () => [0, -4];
+      node.triggerGroupsWidget = triggerGroupsWidget;
+
       // Restore saved values by widget name rather than position: positional
       // lookups break (and corrupt unrelated widget values) whenever the
       // widget layout of a saved workflow drifts from the current one.
@@ -279,6 +307,12 @@ app.registerExtension({
         if (originalMessage) {
           hiddenWidget.value = originalMessage;
         }
+        const triggerGroups = getWidgetSerializedValue(node, "trigger_groups");
+        if (triggerGroups) {
+          triggerGroupsWidget.value = typeof triggerGroups === "string"
+            ? triggerGroups
+            : JSON.stringify(triggerGroups);
+        }
       }
 
       requestAnimationFrame(() => node.applyTriggerHighlightState?.());
@@ -290,7 +324,8 @@ app.registerExtension({
             node,
             node.originalMessageWidget.value,
             value,
-            Boolean(strengthAdjustmentWidget?.value)
+            Boolean(strengthAdjustmentWidget?.value),
+            getStoredTriggerGroups(node)
           );
         }
       };
@@ -343,7 +378,8 @@ app.registerExtension({
             node,
             node.originalMessageWidget?.value || "",
             groupModeWidget?.value ?? false,
-            allowStrengthAdjustment
+            allowStrengthAdjustment,
+            getStoredTriggerGroups(node)
           );
         };
       }
@@ -379,26 +415,30 @@ app.registerExtension({
     });
   },
 
-  handleTriggerWordUpdate(id, graphId, message) {
+  handleTriggerWordUpdate(id, graphId, message, groups) {
     const node = getNodeFromGraph(graphId, id);
     if (!node || node.comfyClass !== "TriggerWord Toggle (LoraManager)") {
       console.warn("Node not found or not a TriggerWordToggle:", id);
       return;
     }
 
+    const triggerGroups = normalizeTriggerGroups(groups);
     if (node.originalMessageWidget) {
       node.originalMessageWidget.value = message;
+    }
+    if (node.triggerGroupsWidget) {
+      node.triggerGroupsWidget.value = triggerGroups === null ? "" : JSON.stringify(triggerGroups);
     }
 
     if (node.tagWidget) {
       const groupMode = node.widgets[0] ? node.widgets[0].value : false;
       const allowStrengthAdjustment = Boolean(node.widgets[2]?.value);
       node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
-      this.updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment);
+      this.updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment, triggerGroups);
     }
   },
 
-  updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment = false) {
+  updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment = false, triggerGroups = null) {
     if (!node.tagWidget) {
       return;
     }
@@ -411,11 +451,14 @@ app.registerExtension({
 
     if (groupMode) {
       const existingGroupState = buildGroupState(existingTags, allowStrengthAdjustment);
-      const groups = message.trim()
-        ? (message.includes(",,") ? message.split(/,{2,}/) : [message])
-            .map((group) => group.trim())
-            .filter(Boolean)
-        : [];
+      const structuredGroups = normalizeTriggerGroups(triggerGroups);
+      const groups = structuredGroups !== null
+        ? structuredGroups
+        : message.trim()
+          ? (message.includes(",,") ? message.split(/,{2,}/) : [message])
+              .map((group) => group.trim())
+              .filter(Boolean)
+          : [];
 
       tagArray = groups.map((group) => {
         const existing = consumeQueuedState(existingGroupState, group);

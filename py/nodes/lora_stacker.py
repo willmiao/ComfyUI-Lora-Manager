@@ -70,8 +70,7 @@ class LoraStackerLM:
             # Add trigger words to collection
             all_trigger_words.extend(trigger_words)
         
-        # use ',, ' to separate trigger words for group mode
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
         
         # Format active_loras with support for both formats
         formatted_loras = []

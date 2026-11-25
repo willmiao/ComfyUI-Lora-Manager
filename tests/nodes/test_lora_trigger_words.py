@@ -3,7 +3,7 @@ import pytest
 from py.nodes.lora_trigger_words import LoraTriggerWordsLM
 
 
-def test_trigger_words_resolver_preserves_order_and_groups(monkeypatch):
+def test_trigger_words_resolver_preserves_order_with_prompt_ready_separators(monkeypatch):
     resolved_names = []
 
     def resolve(name):
@@ -22,7 +22,7 @@ def test_trigger_words_resolver_preserves_order_and_groups(monkeypatch):
     )
 
     assert result == (
-        "alpha one, alpha two,, alpha alternate,, beta trigger",
+        "alpha one, alpha two, alpha alternate, beta trigger",
     )
     assert resolved_names == ["folder/alpha", "beta"]
 

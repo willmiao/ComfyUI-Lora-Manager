@@ -246,7 +246,7 @@ class LoraLoaderLM:
             logger.info("Detected Nunchaku Qwen-Image model")
 
         model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
         return (model, clip, trigger_words_text, formatted_loras_text)
 
@@ -297,6 +297,6 @@ class LoraTextLoaderLM:
             logger.info("Detected Nunchaku Qwen-Image model")
 
         model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
         return (model, clip, trigger_words_text, formatted_loras_text)

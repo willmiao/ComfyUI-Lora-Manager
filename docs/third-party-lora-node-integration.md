@@ -151,7 +151,7 @@ Third-party loader.loaded_loras (STRING)
   -> TriggerWord Toggle (LoraManager).trigger_words
 ```
 
-The resolver's `trigger_words` output preserves LoRA and trigger-group order. It uses `",, "` between groups, matching LoRA Manager's built-in loaders. Unknown LoRAs and LoRAs without metadata contribute no trigger words.
+The resolver's `trigger_words` output preserves LoRA and trigger-group order and returns prompt-ready text using `", "` between all groups, matching LoRA Manager's built-in loaders. Unknown LoRAs and LoRAs without metadata contribute no trigger words. TriggerWord Toggle receives structured groups separately through frontend synchronization. It continues to accept legacy `",, "` group separators from third-party `STRING` inputs, but new nodes should emit ordinary single-comma prompt text.
 
 Frontend synchronization follows connections directly from an adapted node to a TriggerWord Toggle and connections passing through `LoRA Trigger Words (LoraManager)`, so the same graph supports both immediate canvas updates and execution-time values.
 

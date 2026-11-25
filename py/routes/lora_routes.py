@@ -411,10 +411,7 @@ class LoraRoutes(BaseModelRoutes):
                 _, trigger_words = get_lora_info(lora_name)
                 all_trigger_words.extend(trigger_words)
 
-            # Format the trigger words
-            trigger_words_text = (
-                ",, ".join(all_trigger_words) if all_trigger_words else ""
-            )
+            trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
 
             # Send update to all connected trigger word toggle nodes
             for entry in node_ids:
@@ -429,7 +426,11 @@ class LoraRoutes(BaseModelRoutes):
                 except (TypeError, ValueError):
                     parsed_node_id = node_identifier
 
-                payload = {"id": parsed_node_id, "message": trigger_words_text}
+                payload = {
+                    "id": parsed_node_id,
+                    "message": trigger_words_text,
+                    "groups": all_trigger_words,
+                }
 
                 if graph_identifier is not None:
                     payload["graph_id"] = str(graph_identifier)

@@ -84,7 +84,7 @@ def test_lora_loader_formats_widget_lora_names_with_colons(monkeypatch):
         },
     )
 
-    assert trigger_words == "demo:variant_trigger,, demo:single_trigger"
+    assert trigger_words == "demo:variant_trigger, demo:single_trigger"
     assert loaded_loras == "<lora:demo:variant:0.75:0.5> <lora:demo:single:0.3>"
 
 
@@ -113,7 +113,7 @@ def test_lora_loader_flux_model_uses_flux_helper(monkeypatch):
     )
 
     assert calls == [("stack_lora.safetensors", 0.4), ("/abs/widget_lora.safetensors", 0.8)]
-    assert trigger_words == "stack_lora_trigger,, widget_lora_trigger"
+    assert trigger_words == "stack_lora_trigger, widget_lora_trigger"
     assert loaded_loras == "<lora:stack_lora:0.4> <lora:widget_lora:0.8>"
 
 
@@ -149,7 +149,7 @@ def test_lora_loader_qwen_model_batches_loras(monkeypatch):
         ("/abs/stack_qwen.safetensors", 0.6),
         ("/abs/widget_qwen.safetensors", 0.9),
     ]
-    assert trigger_words == "stack_qwen_trigger,, widget_qwen_trigger"
+    assert trigger_words == "stack_qwen_trigger, widget_qwen_trigger"
     assert loaded_loras == "<lora:stack_qwen:0.6> <lora:widget_qwen:0.9>"
 
 
@@ -176,7 +176,7 @@ def test_lora_text_loader_qwen_batches_text_and_stack(monkeypatch):
     )
 
     assert batched_calls == [[("/abs/stack_qwen.safetensors", 0.6), ("/abs/text_qwen.safetensors", 1.2)]]
-    assert trigger_words == "stack_qwen_trigger,, text_qwen_trigger"
+    assert trigger_words == "stack_qwen_trigger, text_qwen_trigger"
     assert loaded_loras == "<lora:stack_qwen:0.6> <lora:text_qwen:1.2>"
 
 
@@ -211,7 +211,7 @@ def test_lora_text_loader_warns_on_duplicate_path_but_loads_both(monkeypatch, ca
         )
 
     assert load_calls == ["/abs/same.safetensors", "/abs/same.safetensors"]
-    assert trigger_words == "same_trigger,, same_trigger"
+    assert trigger_words == "same_trigger, same_trigger"
     assert loaded_loras == "<lora:same:1.0> <lora:same:1.0>"
     assert "appears 2 times" in caplog.text
     assert "/abs/same.safetensors" in caplog.text

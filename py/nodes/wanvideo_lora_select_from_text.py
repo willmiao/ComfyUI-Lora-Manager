@@ -115,7 +115,7 @@ class WanVideoLoraTextSelectLM:
             active_loras.append((lora_name_raw, model_strength, clip_strength))
             all_trigger_words.extend(trigger_words)
 
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
         
         formatted_loras = []
         for name, model_strength, clip_strength in active_loras:

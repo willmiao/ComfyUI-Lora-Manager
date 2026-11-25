@@ -45,4 +45,4 @@ class LoraTriggerWordsLM:
                     entry["name"],
                 )
 
-        return (",, ".join(all_trigger_words) if all_trigger_words else "",)
+        return (", ".join(all_trigger_words) if all_trigger_words else "",)

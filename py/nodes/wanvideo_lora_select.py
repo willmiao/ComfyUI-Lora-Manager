@@ -95,7 +95,7 @@ class WanVideoLoraSelectLM:
             all_trigger_words.extend(trigger_words)
         
         # Format trigger_words for output
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
         
         # Format active_loras for output
         formatted_loras = []

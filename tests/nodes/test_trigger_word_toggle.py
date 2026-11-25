@@ -254,6 +254,44 @@ def test_trigger_words_same_as_original_processes_toggle():
     assert filtered == "word1"
 
 
+def test_flat_execution_text_uses_serialized_group_state():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {
+            "text": "A, B",
+            "active": False,
+            "strength": None,
+            "highlighted": False,
+            "items": [
+                {"text": "A", "active": True, "highlighted": False},
+                {"text": "B", "active": True, "highlighted": False},
+            ],
+        },
+        {
+            "text": "C, D",
+            "active": True,
+            "strength": None,
+            "highlighted": False,
+            "items": [
+                {"text": "C", "active": True, "highlighted": False},
+                {"text": "D", "active": False, "highlighted": False},
+            ],
+        },
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=True,
+        default_active=True,
+        allow_strength_adjustment=False,
+        orinalMessage="A, B, C, D",
+        trigger_words="A, B, C, D",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "C"
+
+
 def test_trigger_words_override_empty_toggle_data():
     node = TriggerWordToggleLM()
 

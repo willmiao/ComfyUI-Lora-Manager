@@ -107,8 +107,7 @@ class CreateHookLoraLM:
             active_loras.append((lora_name, model_strength, clip_strength))
             all_trigger_words.extend(trigger_words)
 
-        # Format trigger words (group mode separator)
-        trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
+        trigger_words_text = ", ".join(all_trigger_words) if all_trigger_words else ""
 
         # Format active LoRAs summary
         formatted_loras = []

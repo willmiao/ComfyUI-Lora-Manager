@@ -115,6 +115,39 @@ describe("TriggerWord Toggle serialization", () => {
     expect(node.originalMessageWidget.value).toBe("foo, bar");
   });
 
+  it("keeps structured groups separate from prompt-ready text", async () => {
+    const node = createNode();
+    await extensionState.current.nodeCreated(node);
+
+    const { getNodeFromGraph } = await import(UTILS_MODULE);
+    getNodeFromGraph.mockReturnValue(node);
+    const groups = ["stylemix", "@P4100", "detail one, detail two"];
+
+    extensionState.current.handleTriggerWordUpdate(
+      7,
+      "graph",
+      "stylemix, @P4100, detail one, detail two",
+      groups
+    );
+
+    expect(node.originalMessageWidget.value).toBe("stylemix, @P4100, detail one, detail two");
+    expect(JSON.parse(node.triggerGroupsWidget.value)).toEqual(groups);
+    expect(node.tagWidget.value.map((tag) => tag.text)).toEqual(groups);
+    expect(node.tagWidget.value[2].items.map((item) => item.text)).toEqual([
+      "detail one",
+      "detail two",
+    ]);
+  });
+
+  it("still parses legacy double-comma group messages", async () => {
+    const node = createNode();
+    await extensionState.current.nodeCreated(node);
+
+    extensionState.current.updateTagsBasedOnMode(node, "A, B,, C, D", true);
+
+    expect(node.tagWidget.value.map((tag) => tag.text)).toEqual(["A, B", "C, D"]);
+  });
+
   it("strips transient highlighted state from serialized tag values", async () => {
     const node = createNode({
       widgetsValues: [true, true, false, [], ""],

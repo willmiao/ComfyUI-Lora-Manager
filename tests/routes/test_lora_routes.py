@@ -117,7 +117,10 @@ async def test_get_trigger_words_broadcasts(monkeypatch, routes):
     send_mock = MagicMock()
     PromptServer.instance = SimpleNamespace(send_sync=send_mock)
 
-    monkeypatch.setattr("py.routes.lora_routes.get_lora_info", lambda name: (f"path/{name}", [f"trigger-{name}"]))
+    monkeypatch.setattr(
+        "py.routes.lora_routes.get_lora_info",
+        lambda name: (f"path/{name}", [f"trigger-{name}", f"{name}-alternate"]),
+    )
 
     request = DummyRequest(json_data={"lora_names": ["one"], "node_ids": [{"node_id": "node", "graph_id": "graph-1"}]})
 
@@ -127,7 +130,12 @@ async def test_get_trigger_words_broadcasts(monkeypatch, routes):
     assert payload == {"success": True}
     send_mock.assert_called_once_with(
         "trigger_word_update",
-        {"id": "node", "graph_id": "graph-1", "message": "trigger-one"},
+        {
+            "id": "node",
+            "graph_id": "graph-1",
+            "message": "trigger-one, one-alternate",
+            "groups": ["trigger-one", "one-alternate"],
+        },
     )
 
 
