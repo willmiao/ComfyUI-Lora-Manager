@@ -5,6 +5,8 @@ import { toggleQuickActionsMenu } from "./quick_actions_menu.js";
 
 const BUTTON_TOOLTIP = "Open LoRA Manager (Shift+Click opens in a new window)";
 const QUICK_ACTIONS_TOOLTIP = "LoRA Manager quick actions";
+const BUTTON_SELECTOR = `button[aria-label="${BUTTON_TOOLTIP}"]`;
+const QUICK_ACTIONS_SELECTOR = `button[aria-label="${QUICK_ACTIONS_TOOLTIP}"]`;
 const MAX_ATTACH_ATTEMPTS = 120;
 const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 
@@ -181,56 +183,106 @@ const createExtensionObject = (useActionBar) => {
                 const style = document.createElement('style');
                 style.id = styleId;
                 style.textContent = `
-                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button {
-                        transition: all 0.2s ease;
-                        border: 1px solid transparent;
+                    .lm-top-menu-icon-wrap {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 20px;
+                        height: 20px;
+                        line-height: 1;
                     }
-                    button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"].lm-top-menu-button:hover {
-                        background-color: var(--primary-hover-bg) !important;
+                    .lm-top-menu-icon-wrap svg {
+                        display: block;
+                        width: 20px;
+                        height: 20px;
+                        /* The brand artwork is a square tile; clipping its
+                           corners would round off the mark itself. */
+                    }
+                    ${QUICK_ACTIONS_SELECTOR}.lm-quick-actions-button[aria-expanded="true"] .lm-quick-actions-chevron {
+                        transform: rotate(180deg);
                     }
                 `;
                 document.head.appendChild(style);
             };
+
+            if (!useActionBar) {
+                return;
+            }
+
             injectStyles();
 
-            const applyIconToButton = (button) => {
-                // Skip if the SVG icon is already in place
-                if (button.querySelector('svg')) return;
+            const applyNativeMainButton = (button) => {
+                // Keep ComfyUI's native action bar chrome and only swap in the
+                // brand icon: borrowing the app's private button utilities ties
+                // this to one frontend release.
                 button.classList.add('lm-top-menu-button');
-                button.innerHTML = getLoraManagerIcon();
-                button.style.borderRadius = '4px';
-                button.style.padding = '6px';
-                button.style.backgroundColor = 'var(--primary-bg)';
-                const svg = button.querySelector('svg');
-                if (svg) {
-                    svg.style.width = '20px';
-                    svg.style.height = '20px';
+                if (button.style.borderRadius) button.style.borderRadius = '';
+                if (button.style.padding) button.style.padding = '';
+                if (button.style.backgroundColor) button.style.backgroundColor = '';
+
+                if (!button.querySelector('.lm-top-menu-icon-wrap svg')) {
+                    const iconWrap = document.createElement('span');
+                    iconWrap.className = 'lm-top-menu-icon-wrap relative flex size-5 shrink-0 items-center justify-center';
+                    iconWrap.setAttribute('aria-hidden', 'true');
+                    iconWrap.innerHTML = getLoraManagerIcon();
+                    // The button's own utilities size bare <svg> children at 1rem
+                    // with a higher specificity than the stylesheet above; giving
+                    // the icon explicit dimensions keeps it at 20px.
+                    const icon = iconWrap.querySelector('svg');
+                    if (icon) {
+                        icon.setAttribute('width', '20');
+                        icon.setAttribute('height', '20');
+                    }
+                    button.replaceChildren(iconWrap);
                 }
+            };
+
+            const applyNativeQuickActionsButton = (button) => {
+                // Same reasoning: the chevron only opens a menu, so it stays a
+                // native action bar button instead of becoming a filled chip.
+                button.classList.add('lm-quick-actions-button');
+                if (button.getAttribute('aria-haspopup') !== 'menu') {
+                    button.setAttribute('aria-haspopup', 'menu');
+                }
+                const chevron = button.querySelector('i');
+                if (chevron && !chevron.classList.contains('lm-quick-actions-chevron')) {
+                    chevron.className = 'lm-quick-actions-chevron icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150';
+                    chevron.setAttribute('aria-hidden', 'true');
+                }
+            };
+
+            const decorateActionBarButtons = () => {
+                const mainButtons = document.querySelectorAll(BUTTON_SELECTOR);
+                mainButtons.forEach(applyNativeMainButton);
+
+                const quickButtons = document.querySelectorAll(QUICK_ACTIONS_SELECTOR);
+                quickButtons.forEach(applyNativeQuickActionsButton);
+
+                return mainButtons.length > 0;
             };
 
             // Initial application — retry until the button is rendered by Vue
             const pollUntilFound = () => {
-                const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
-                if (buttons.length > 0) {
-                    buttons.forEach(applyIconToButton);
-                } else {
+                if (!decorateActionBarButtons()) {
                     requestAnimationFrame(pollUntilFound);
                 }
             };
             requestAnimationFrame(pollUntilFound);
 
-            // MutationObserver: keep the SVG icon in place after Vue re-renders
+            // MutationObserver: keep native button styling and SVG icon in place after Vue re-renders
             // (e.g. when the properties panel is toggled inside a subgraph)
             if (typeof MutationObserver !== 'undefined') {
-                const observer = new MutationObserver(() => {
-                    const buttons = document.querySelectorAll('button[aria-label="Open LoRA Manager (Shift+Click opens in a new window)"]');
-                    buttons.forEach(button => {
-                        // Only re-apply when Vue has reset innerHTML back to <i>
-                        if (button.querySelector('i')) {
-                            applyIconToButton(button);
-                        }
+                let decorateQueued = false;
+                const queueDecorate = () => {
+                    if (decorateQueued) return;
+                    decorateQueued = true;
+                    requestAnimationFrame(() => {
+                        decorateQueued = false;
+                        decorateActionBarButtons();
                     });
-                });
+                };
+
+                const observer = new MutationObserver(queueDecorate);
                 // Watch the action bar and a broad ancestor so we cover re-mounts
                 const watchNode = document.querySelector('[data-testid="action-bar-buttons"]')
                     || document.querySelector('.actionbar-container')
@@ -250,7 +302,7 @@ const createExtensionObject = (useActionBar) => {
                 onClick: openLoraManager
             },
             {
-                icon: "icon-[lucide--chevron-down] size-4",
+                icon: "icon-[lucide--chevron-down] size-3",
                 tooltip: QUICK_ACTIONS_TOOLTIP,
                 class: "lm-quick-actions-button",
                 onClick: (event) => toggleQuickActionsMenu(event.currentTarget)
