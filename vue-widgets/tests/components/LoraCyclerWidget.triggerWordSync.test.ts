@@ -10,6 +10,8 @@ import { nextTick } from 'vue'
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
+import LoraCyclerSettingsView from '@/components/lora-cycler/LoraCyclerSettingsView.vue'
+import LoraListModal from '@/components/lora-cycler/LoraListModal.vue'
 import { createMockCyclerConfig } from '../fixtures/mockConfigs'
 import { mockFetch, resetFetchMock } from '../setup'
 
@@ -87,6 +89,58 @@ describe('LoraCyclerWidget trigger word sync', () => {
     api.dispatchEvent(new Event('execution_success'))
     await nextTick()
 
+    expect(syncTriggerWords).toHaveBeenCalledTimes(1)
+    expect(syncTriggerWords).toHaveBeenCalledWith(node)
+  })
+
+  it('refreshes downstream toggles after a manual Next LoRA pick', async () => {
+    const saved = createMockCyclerConfig({
+      total_count: 2,
+      current_index: 1,
+      current_lora_name: 'lora1.safetensors',
+      current_lora_filename: 'lora1.safetensors'
+    })
+    widget = { value: saved }
+    const node: any = { id: 1, widgets: [], getPoolConfig: () => null }
+    const syncTriggerWords = vi.fn()
+
+    wrapper = shallowMount(LoraCyclerWidget, {
+      props: { widget, node, api: createApi(), syncTriggerWords }
+    })
+    await flushPromises()
+
+    wrapper.findComponent(LoraListModal).vm.$emit('select', 2)
+    await flushPromises()
+    await nextTick()
+
+    expect(widget.value.current_index).toBe(2)
+    expect(widget.value.current_lora_filename).toBe('lora2.safetensors')
+    expect(syncTriggerWords).toHaveBeenCalledTimes(1)
+    expect(syncTriggerWords).toHaveBeenCalledWith(node)
+  })
+
+  it('refreshes downstream toggles after resetting the index', async () => {
+    const saved = createMockCyclerConfig({
+      total_count: 2,
+      current_index: 2,
+      current_lora_name: 'lora2.safetensors',
+      current_lora_filename: 'lora2.safetensors'
+    })
+    widget = { value: saved }
+    const node: any = { id: 1, widgets: [], getPoolConfig: () => null }
+    const syncTriggerWords = vi.fn()
+
+    wrapper = shallowMount(LoraCyclerWidget, {
+      props: { widget, node, api: createApi(), syncTriggerWords }
+    })
+    await flushPromises()
+
+    wrapper.findComponent(LoraCyclerSettingsView).vm.$emit('reset-index')
+    await flushPromises()
+    await nextTick()
+
+    expect(widget.value.current_index).toBe(1)
+    expect(widget.value.current_lora_filename).toBe('lora1.safetensors')
     expect(syncTriggerWords).toHaveBeenCalledTimes(1)
     expect(syncTriggerWords).toHaveBeenCalledWith(node)
   })

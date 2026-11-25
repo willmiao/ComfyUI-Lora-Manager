@@ -244,3 +244,149 @@ describe("syncTriggerWordsForChain", () => {
     expect(original.mock.calls[0].slice(0, 3)).toEqual([2, 1, false]);
   });
 });
+
+const STACKER_CLASS = "Lora Stacker (LoraManager)";
+
+/**
+ * Cycler(83) -> Stacker(90) -> Loader(56), with the TriggerWord Toggle wired
+ * to one of the two downstream `trigger_words` outputs. A stacker between the
+ * cycler and the loader is a valid layout: both downstream nodes emit the
+ * chain-wide words, so both have to be refreshed when the cycler moves.
+ *
+ * @param {"stacker"|"loader"} toggleSource which output feeds the toggle
+ */
+function createCyclerStackerGraph(toggleSource = "stacker") {
+  const twt = {
+    id: 55,
+    comfyClass: TWT_CLASS,
+    widgets: [],
+    inputs: [{ name: "trigger_words", type: "string", link: toggleSource === "stacker" ? 302 : 123 }],
+    outputs: [{ name: "filtered_trigger_words", links: [135] }],
+  };
+
+  const stacker = {
+    id: 90,
+    comfyClass: STACKER_CLASS,
+    widgets: [{ name: "loras", value: [] }],
+    inputs: [
+      { name: "text", type: "AUTOCOMPLETE_TEXT_LORAS", link: null },
+      { name: "loras", type: "LORAS", link: null },
+      { name: "lora_stack", type: "LORA_STACK", link: 300 },
+    ],
+    outputs: [
+      { name: "LORA_STACK", type: "LORA_STACK", links: [301] },
+      { name: "trigger_words", type: "STRING", links: toggleSource === "stacker" ? [302] : [] },
+      { name: "active_loras", type: "STRING", links: [] },
+    ],
+  };
+
+  const loader = {
+    id: 56,
+    comfyClass: LOADER_CLASS,
+    widgets: [{ name: "loras", value: [] }],
+    inputs: [{ name: "lora_stack", type: "LORA_STACK", link: 301 }],
+    outputs: [{ name: "trigger_words", links: toggleSource === "loader" ? [123] : [] }],
+  };
+
+  const cycler = {
+    id: 83,
+    comfyClass: CYCLER_CLASS,
+    widgets: [{ name: "cycler_config", value: { current_lora_filename: "", current_lora_name: "" } }],
+    inputs: [],
+    outputs: [{ name: "LORA_STACK", links: [300] }],
+  };
+
+  const graph = createGraph(
+    [twt, loader, stacker, cycler],
+    new Map([
+      [300, { id: 300, origin_id: 83, origin_slot: 0, target_id: 90, target_slot: 2 }],
+      [301, { id: 301, origin_id: 90, origin_slot: 0, target_id: 56, target_slot: 4 }],
+      [302, { id: 302, origin_id: 90, origin_slot: 1, target_id: 55, target_slot: 3 }],
+      [123, { id: 123, origin_id: 56, origin_slot: 2, target_id: 55, target_slot: 3 }],
+    ])
+  );
+
+  return { graph, twt, stacker, loader, cycler };
+}
+
+describe("updateDownstreamLoaders through an intermediate chain node", () => {
+  let updateDownstreamLoaders;
+  let syncTriggerWordsForChain;
+  let fetchMock;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+
+    ({ updateDownstreamLoaders, syncTriggerWordsForChain } = await import(UTILS_MODULE));
+
+    fetchMock = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("refreshes a toggle wired to the stacker's trigger_words output", async () => {
+    const { cycler } = createCyclerStackerGraph("stacker");
+    cycler.widgets[0].value = { current_lora_filename: "Picked" };
+
+    updateDownstreamLoaders(cycler);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      lora_names: ["Picked"],
+      node_ids: [{ node_id: 55, graph_id: "root" }],
+    });
+  });
+
+  it("includes the stacker's own LoRAs in that set", async () => {
+    const { cycler, stacker } = createCyclerStackerGraph("stacker");
+    cycler.widgets[0].value = { current_lora_filename: "Picked" };
+    stacker.widgets[0].value = [{ name: "Own", active: true }];
+
+    updateDownstreamLoaders(cycler);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lora_names).toEqual(["Own", "Picked"]);
+  });
+
+  it("still refreshes a toggle wired to the loader behind the stacker", async () => {
+    const { cycler } = createCyclerStackerGraph("loader");
+    cycler.widgets[0].value = { current_lora_filename: "Picked" };
+
+    updateDownstreamLoaders(cycler);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lora_names).toEqual(["Picked"]);
+  });
+
+  it("syncTriggerWordsForChain reaches the stacker's toggle from the cycler", async () => {
+    const { cycler } = createCyclerStackerGraph("stacker");
+    cycler.widgets[0].value = { current_lora_filename: "Picked" };
+
+    syncTriggerWordsForChain(cycler);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      lora_names: ["Picked"],
+      node_ids: [{ node_id: 55, graph_id: "root" }],
+    });
+  });
+
+  it("does not refresh toggles for a bypassed downstream stacker", async () => {
+    const { cycler, stacker } = createCyclerStackerGraph("stacker");
+    cycler.widgets[0].value = { current_lora_filename: "Picked" };
+    stacker.mode = 4;
+
+    updateDownstreamLoaders(cycler);
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).lora_names).toEqual([]);
+  });
+});

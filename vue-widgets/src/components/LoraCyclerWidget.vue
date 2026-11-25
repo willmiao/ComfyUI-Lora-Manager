@@ -195,6 +195,10 @@ const handleIndexUpdate = async (newIndex: number) => {
     const loraList = await state.fetchCyclerList(poolConfig)
     cachedLoraList.value = loraList
     updateDisplayFromLoraList(loraList, clampedIndex)
+    // The display now holds the LoRA the next run will use. Wait for the Vue
+    // flush that writes it back to the widget value, then refresh the
+    // downstream toggles so their word list matches that run.
+    nextTick(() => props.syncTriggerWords?.(props.node))
   } catch (error) {
     console.error('[LoraCyclerWidget] Error updating index:', error)
   }
@@ -258,6 +262,9 @@ const handleResetIndex = async () => {
     const loraList = await state.fetchCyclerList(poolConfig)
     cachedLoraList.value = loraList
     updateDisplayFromLoraList(loraList, 1)
+    // Same as a manual pick: the reset LoRA is what the next run will load,
+    // so the downstream toggles must describe it.
+    nextTick(() => props.syncTriggerWords?.(props.node))
   } catch (error) {
     console.error('[LoraCyclerWidget] Error resetting index:', error)
   }

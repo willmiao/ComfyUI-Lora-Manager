@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import {
-  getActiveLorasFromNode,
+  collectActiveLorasFromChain,
   updateConnectedTriggerWords,
   updateDownstreamLoaders,
   installTriggerWordConnectionSync,
@@ -76,18 +76,11 @@ app.registerExtension({
           isUpdating = true;
 
           try {
-            // Update this stacker's direct trigger toggles with its own active loras
-            // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
-            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
-            const activeLoraNames = new Set();
-            if (isNodeActive) {
-              value.forEach((lora) => {
-                if (lora.active) {
-                  activeLoraNames.add(lora.name);
-                }
-              });
-            }
-            updateConnectedTriggerWords(this, activeLoraNames);
+            // The stacker's runtime `trigger_words` covers its own entries plus
+            // the upstream LORA_STACK, so its direct toggles need the chain-wide
+            // set. Own-only names would drop the upstream pick (a Cycler's next
+            // LoRA) from the toggle on every edit.
+            updateConnectedTriggerWords(this, collectActiveLorasFromChain(this));
 
             // Find all Lora Loader nodes in the chain that might need updates
             updateDownstreamLoaders(this);
@@ -109,11 +102,9 @@ app.registerExtension({
             if (this.lorasWidget) {
               this.lorasWidget.value = mergedLoras;
             }
-            // Update this stacker's direct trigger toggles with its own active loras
-            // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
-            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
-            const activeLoraNames = isNodeActive ? getActiveLorasFromNode(this) : new Set();
-            updateConnectedTriggerWords(this, activeLoraNames);
+            // Same chain-wide set as the loras widget: the runtime output
+            // includes the upstream stack, not just this node's entries.
+            updateConnectedTriggerWords(this, collectActiveLorasFromChain(this));
             // Find all Lora Loader nodes in the chain that might need updates
             updateDownstreamLoaders(this);
           } finally {

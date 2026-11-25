@@ -2080,7 +2080,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-cycler-widget[data-v-790ea7da] {
+.lora-cycler-widget[data-v-bac959a0] {
   padding: 6px;
   /* Let the node surface show through; only inner controls are painted. */
   background: transparent;
@@ -14733,6 +14733,10 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
         const loraList = await state.fetchCyclerList(poolConfig);
         cachedLoraList.value = loraList;
         updateDisplayFromLoraList(loraList, clampedIndex);
+        nextTick(() => {
+          var _a2;
+          return (_a2 = props.syncTriggerWords) == null ? void 0 : _a2.call(props, props.node);
+        });
       } catch (error) {
         console.error("[LoraCyclerWidget] Error updating index:", error);
       }
@@ -14772,6 +14776,10 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
         const loraList = await state.fetchCyclerList(poolConfig);
         cachedLoraList.value = loraList;
         updateDisplayFromLoraList(loraList, 1);
+        nextTick(() => {
+          var _a2;
+          return (_a2 = props.syncTriggerWords) == null ? void 0 : _a2.call(props, props.node);
+        });
       } catch (error) {
         console.error("[LoraCyclerWidget] Error resetting index:", error);
       }
@@ -15016,7 +15024,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-790ea7da"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-bac959a0"]]);
 const _hoisted_1$2 = { class: "json-display-widget" };
 const _hoisted_2$2 = {
   class: "json-content",
@@ -16267,10 +16275,19 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
           const link = getLinkFromGraph(startNode.graph, linkId);
           if (link) {
             const targetNode = (_b = (_a2 = startNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
-            if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
-              const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
-              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
-            } else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
+            if (!targetNode) {
+              continue;
+            }
+            const isLoraLoader = targetNode.comfyClass === "Lora Loader (LoraManager)";
+            const isChainNode = isLoraChainNode(targetNode.comfyClass);
+            if (!isLoraLoader && !isChainNode) {
+              continue;
+            }
+            updateConnectedTriggerWords(
+              targetNode,
+              collectActiveLorasFromChain(targetNode)
+            );
+            if (isChainNode) {
               updateDownstreamLoaders(targetNode, visited);
             }
           }
