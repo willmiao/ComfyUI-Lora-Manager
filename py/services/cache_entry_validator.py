@@ -61,6 +61,7 @@ class CacheEntryValidator:
         'hash_status': ('completed', False),
         'autov3': (None, False),
         'quantization': (None, False),
+        'quantization_source': (None, False),
     }
 
     @classmethod
@@ -280,6 +281,15 @@ class CacheEntryValidator:
                 return None
             if not isinstance(value, str):
                 return f"Field 'quantization' should be string or None, got {type(value).__name__}"
+            return None
+
+        # quantization_source is a plain optional provenance tag
+        # ("content"/"civitai"/"manual"); only the type is constrained.
+        if field_name == 'quantization_source':
+            if value is None or value == "":
+                return None
+            if not isinstance(value, str):
+                return f"Field 'quantization_source' should be string or None, got {type(value).__name__}"
             return None
 
         # Special handling for numeric types

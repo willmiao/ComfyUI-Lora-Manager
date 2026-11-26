@@ -190,7 +190,9 @@
         },
         "footer": {
             "versionCount": "{count} Versionen",
-            "viewAllVersions": "Alle lokalen Versionen anzeigen"
+            "viewAllVersions": "Alle lokalen Versionen anzeigen",
+            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+            "quantResetAuto": "[TODO: Translate] Reset to Auto"
         }
     },
     "globalContextMenu": {
@@ -1142,6 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "CivitAI-Daten aktualisieren",
             "checkUpdates": "Updates prüfen",
+            "editPrecision": "[TODO: Translate] Edit Precision",
             "linkModel": "Modell verknüpfen",
             "linkCivitai": "Mit CivitAI neu verknüpfen",
             "linkModelSource": "Mit Modellquelle verknüpfen",
@@ -2274,6 +2277,7 @@
                 "editFileName": "Dateiname bearbeiten",
                 "editBaseModel": "Basismodell bearbeiten",
                 "editVersionName": "Versionsname bearbeiten",
+                "editPrecision": "[TODO: Translate] Edit precision",
                 "viewOnCivitai": "Auf CivitAI anzeigen",
                 "viewOnCivitaiText": "Auf CivitAI anzeigen",
                 "viewOnHuggingFace": "Auf Hugging Face ansehen",
@@ -2311,6 +2315,9 @@
                 "location": "Speicherort",
                 "baseModel": "Basismodell",
                 "size": "Größe",
+                "precision": "[TODO: Translate] Precision",
+                "precisionAuto": "[TODO: Translate] Auto",
+                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
                 "hashes": "Hashes",
                 "hashPending": "Noch nicht berechnet",
                 "hashCalculating": "Wird berechnet...",
@@ -3115,6 +3122,8 @@
             "nameUpdateFailed": "Fehler beim Aktualisieren des Modellnamens",
             "baseModelUpdated": "Basismodell erfolgreich aktualisiert",
             "baseModelUpdateFailed": "Fehler beim Aktualisieren des Basismodells",
+            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
+            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
             "baseModelNotSelected": "Bitte ein Basismodell auswählen",
             "bulkBaseModelUpdating": "Basismodell wird für {count} Modell(e) aktualisiert...",
             "bulkBaseModelUpdateSuccess": "Basismodell erfolgreich für {count} Modell(e) aktualisiert",

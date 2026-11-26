@@ -190,7 +190,9 @@
         },
         "footer": {
             "versionCount": "{count} versions",
-            "viewAllVersions": "Voir toutes les versions locales"
+            "viewAllVersions": "Voir toutes les versions locales",
+            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+            "quantResetAuto": "[TODO: Translate] Reset to Auto"
         }
     },
     "globalContextMenu": {
@@ -1142,6 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "Actualiser les données CivitAI",
             "checkUpdates": "Vérifier les mises à jour",
+            "editPrecision": "[TODO: Translate] Edit Precision",
             "linkModel": "Lier le modèle",
             "linkCivitai": "Relier à nouveau à CivitAI",
             "linkModelSource": "Lier à une source de modèle",
@@ -2274,6 +2277,7 @@
                 "editFileName": "Modifier le nom de fichier",
                 "editBaseModel": "Modifier le modèle de base",
                 "editVersionName": "Modifier le nom de la version",
+                "editPrecision": "[TODO: Translate] Edit precision",
                 "viewOnCivitai": "Voir sur CivitAI",
                 "viewOnCivitaiText": "Voir sur CivitAI",
                 "viewOnHuggingFace": "Voir sur Hugging Face",
@@ -2311,6 +2315,9 @@
                 "location": "Emplacement",
                 "baseModel": "Modèle de base",
                 "size": "Taille",
+                "precision": "[TODO: Translate] Precision",
+                "precisionAuto": "[TODO: Translate] Auto",
+                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
                 "hashes": "Hashes",
                 "hashPending": "Pas encore calculé",
                 "hashCalculating": "Calcul en cours...",
@@ -3115,6 +3122,8 @@
             "nameUpdateFailed": "Échec de la mise à jour du nom du modèle",
             "baseModelUpdated": "Modèle de base mis à jour avec succès",
             "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base",
+            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
+            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
             "baseModelNotSelected": "Veuillez sélectionner un modèle de base",
             "bulkBaseModelUpdating": "Mise à jour du modèle de base pour {count} modèle(s)...",
             "bulkBaseModelUpdateSuccess": "Modèle de base mis à jour avec succès pour {count} modèle(s)",

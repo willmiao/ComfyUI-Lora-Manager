@@ -86,6 +86,7 @@ class PersistentModelCache:
         "sha256",
         "autov3",
         "quantization",
+        "quantization_source",
         "base_model",
         "preview_url",
         "preview_nsfw_level",
@@ -301,6 +302,8 @@ class PersistentModelCache:
                 item["autov3"] = (row["autov3"] or "").lower()
             if row["quantization"] is not None:
                 item["quantization"] = row["quantization"] or ""
+            if row["quantization_source"] is not None:
+                item["quantization_source"] = row["quantization_source"] or None
             raw_data.append(item)
 
         hash_pairs = [(entry["sha256"].lower(), entry["file_path"]) for entry in hash_rows if entry["sha256"]]
@@ -694,6 +697,7 @@ class PersistentModelCache:
                             sha256 TEXT,
                             autov3 TEXT,
                             quantization TEXT,
+                            quantization_source TEXT,
                             base_model TEXT,
                             preview_url TEXT,
                             preview_nsfw_level INTEGER,
@@ -805,6 +809,7 @@ class PersistentModelCache:
             "source_version_id": "TEXT DEFAULT ''",
             "autov3": "TEXT",
             "quantization": "TEXT",
+            "quantization_source": "TEXT",
             # Workflow-specific analysis fields (JSON lists for the *_refs classes).
             "workflow_format": "TEXT DEFAULT ''",
             "node_count": "INTEGER DEFAULT 0",
@@ -882,6 +887,8 @@ class PersistentModelCache:
         else:
             quantization_column = quantization_value or ""
 
+        quantization_source = item.get("quantization_source") or None
+
         return (
             model_type,
             item.get("file_path"),
@@ -893,6 +900,7 @@ class PersistentModelCache:
             (item.get("sha256") or "").lower() or None,
             autov3_column,
             quantization_column,
+            quantization_source,
             item.get("base_model") or "",
             item.get("preview_url") or "",
             int(item.get("preview_nsfw_level") or 0),

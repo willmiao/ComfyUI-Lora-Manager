@@ -1026,9 +1026,16 @@ class ModelManagementHandler:
             from ...services.auto_tag_service import extract_auto_tags
             auto_tags = extract_auto_tags(updated_metadata)
 
-            return web.json_response(
-                {"success": True, "auto_tags": auto_tags}
-            )
+            response_payload: Dict[str, Any] = {"success": True, "auto_tags": auto_tags}
+            if "quantization" in metadata_updates:
+                # Let the client refresh the badge with the authoritative
+                # (normalized / recomputed) value instead of its own input.
+                response_payload["quantization"] = updated_metadata.get("quantization")
+                response_payload["quantization_source"] = updated_metadata.get(
+                    "quantization_source"
+                )
+
+            return web.json_response(response_payload)
         except Exception as exc:
             self._logger.error("Error saving metadata: %s", exc, exc_info=True)
             return web.Response(text=str(exc), status=500)

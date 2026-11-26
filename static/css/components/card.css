@@ -692,6 +692,22 @@
     color: oklch(80% 0.09 300);
     background: oklch(52% 0.12 300 / 0.25);
     border-color: oklch(58% 0.14 300 / 0.3);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.quant-badge:hover,
+.quant-badge:focus-visible {
+    border-color: oklch(70% 0.14 300 / 0.75);
+    background: oklch(52% 0.12 300 / 0.4);
+    outline: none;
+}
+
+/* Manually overridden precision: dashed border distinguishes it from
+   auto-detected values. */
+.quant-badge--manual {
+    border-style: dashed;
+    border-color: oklch(65% 0.14 300 / 0.55);
 }
 
 .medium-density .quant-badge {
@@ -701,6 +717,57 @@
 .compact-density .quant-badge {
     font-size: 0.75em;
     padding: 1px 4px;
+}
+
+.quantization-popover {
+    position: fixed;
+    z-index: var(--z-overlay);
+    box-sizing: border-box;
+    width: min(280px, calc(100vw - 16px));
+    padding: var(--space-3);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-base);
+    background: var(--bg-color);
+    box-shadow: var(--shadow-lg);
+    color: var(--text-color);
+}
+
+.quantization-popover-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.quantization-popover .quantization-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font: inherit;
+    text-transform: uppercase;
+}
+
+.quantization-popover .quantization-input:focus {
+    outline: 2px solid color-mix(in oklch, var(--lora-accent) 25%, transparent);
+    outline-offset: 1px;
+}
+
+.quantization-popover-hint {
+    margin-top: var(--space-2);
+    color: var(--text-secondary, var(--text-color));
+    font-size: 0.75rem;
+    opacity: 0.75;
+}
+
+.quantization-popover-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
 }
 
 /* Hide version-related elements when setting is disabled */

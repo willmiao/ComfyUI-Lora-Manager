@@ -190,7 +190,9 @@
         },
         "footer": {
             "versionCount": "{count} 个版本",
-            "viewAllVersions": "查看所有本地版本"
+            "viewAllVersions": "查看所有本地版本",
+            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+            "quantResetAuto": "[TODO: Translate] Reset to Auto"
         }
     },
     "globalContextMenu": {
@@ -1142,6 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "刷新 CivitAI 数据",
             "checkUpdates": "检查更新",
+            "editPrecision": "[TODO: Translate] Edit Precision",
             "linkModel": "链接模型",
             "linkCivitai": "链接到 CivitAI",
             "linkModelSource": "链接到模型来源",
@@ -2274,6 +2277,7 @@
                 "editFileName": "编辑文件名",
                 "editBaseModel": "编辑基础模型",
                 "editVersionName": "编辑版本名称",
+                "editPrecision": "[TODO: Translate] Edit precision",
                 "viewOnCivitai": "在 CivitAI 查看",
                 "viewOnCivitaiText": "在 CivitAI 查看",
                 "viewOnHuggingFace": "在 Hugging Face 查看",
@@ -2311,6 +2315,9 @@
                 "location": "位置",
                 "baseModel": "基础模型",
                 "size": "大小",
+                "precision": "[TODO: Translate] Precision",
+                "precisionAuto": "[TODO: Translate] Auto",
+                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
                 "hashes": "哈希值",
                 "hashPending": "尚未计算",
                 "hashCalculating": "正在计算...",
@@ -3115,6 +3122,8 @@
             "nameUpdateFailed": "模型名称更新失败",
             "baseModelUpdated": "基础模型更新成功",
             "baseModelUpdateFailed": "基础模型更新失败",
+            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
+            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
             "baseModelNotSelected": "请选择基础模型",
             "bulkBaseModelUpdating": "正在为 {count} 个模型更新基础模型...",
             "bulkBaseModelUpdateSuccess": "成功为 {count} 个模型更新基础模型",

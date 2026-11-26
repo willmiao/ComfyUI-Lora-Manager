@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { QUANTIZATION_EDITOR_MODULE } = vi.hoisted(() => ({
+  QUANTIZATION_EDITOR_MODULE: new URL('../../../static/js/components/shared/QuantizationEditor.js', import.meta.url).pathname,
+}));
+
+vi.mock(QUANTIZATION_EDITOR_MODULE, () => ({
+  openQuantizationEditor: vi.fn(),
+}));
+
 import { ModelContextMenuMixin } from '../../../static/js/components/ContextMenu/ModelContextMenuMixin.js';
+import { openQuantizationEditor } from '../../../static/js/components/shared/QuantizationEditor.js';
 
 describe('ModelContextMenuMixin.getModelTypePrefix', () => {
   it('maps every known model type to its API route prefix', () => {
@@ -146,5 +155,27 @@ describe('ModelContextMenuMixin._renderSupportedSources', () => {
     const html = document.getElementById('hfSupportedSources').innerHTML;
     expect(html).not.toContain('<img');
     expect(html).toContain('&lt;img');
+  });
+});
+
+
+describe('ModelContextMenuMixin precision editing', () => {
+  beforeEach(() => {
+    openQuantizationEditor.mockClear();
+  });
+
+  it('opens the shared precision editor for the right-clicked card', () => {
+    const card = {
+      dataset: { filepath: '/models/example.safetensors' },
+      querySelector: vi.fn(() => null),
+    };
+
+    const handled = ModelContextMenuMixin.handleCommonMenuActions.call(
+      { currentCard: card },
+      'edit-precision'
+    );
+
+    expect(handled).toBe(true);
+    expect(openQuantizationEditor).toHaveBeenCalledWith(card);
   });
 });

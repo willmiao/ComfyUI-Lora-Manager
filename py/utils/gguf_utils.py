@@ -88,6 +88,22 @@ _GGUF_FILE_TYPE_NAMES: Dict[int, str] = {
 _GGUF_FULL_PRECISION_NAMES = {"F32", "F16", "BF16"}
 
 
+def content_detected_quantization_names() -> frozenset:
+    """Names that can only originate from content detection.
+
+    Covers the quantized GGUF ``general.file_type`` names. "FP8" is
+    deliberately excluded even though safetensors detection reports it:
+    CivitAI's fp8 fallback produces the same string, so a legacy untagged
+    "FP8" is not provably content-derived and stays eligible for recomputation
+    (a genuinely fp8 file is re-detected and re-tagged as content).
+    """
+    return frozenset(
+        name
+        for name in _GGUF_FILE_TYPE_NAMES.values()
+        if name not in _GGUF_FULL_PRECISION_NAMES
+    )
+
+
 class _GgufParseError(Exception):
     """Internal control-flow exception for malformed GGUF headers."""
 

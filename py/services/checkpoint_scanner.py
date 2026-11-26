@@ -102,6 +102,7 @@ class CheckpointScanner(ModelScanner):
                 hash_status="completed" if resolved_sha256 else "pending",
                 autov3=autov3 or "",
                 quantization=quantization or "",
+                quantization_source="content" if quantization else None,
             )
 
             # Save the created metadata

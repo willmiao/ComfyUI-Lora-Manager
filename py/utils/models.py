@@ -50,17 +50,38 @@ def autov3_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: st
     return None
 
 
+#: CivitAI ``files[].metadata.fp`` values that describe a quantized weight
+#: format, mapped to the canonical badge name. Full-precision values
+#: ("fp16", "bf16", "fp32") are deliberately absent: they are not
+#: quantizations and never produce a badge.
+CIVITAI_FP_TO_QUANTIZATION: Dict[str, str] = {
+    "fp8": "FP8",
+    "nvfp4": "NVFP4",
+    "int8": "INT8",
+}
+
+#: Where the current quantization value came from:
+#: - "content": detected from the file header (authoritative, sticky)
+#: - "civitai": CivitAI ``files[].metadata.fp`` fallback (recomputed when the
+#:   link changes, so a relink to another precision corrects the badge)
+#: - "manual": user override (never touched by automatic flows)
+QUANTIZATION_SOURCE_CONTENT = "content"
+QUANTIZATION_SOURCE_CIVITAI = "civitai"
+QUANTIZATION_SOURCE_MANUAL = "manual"
+
+
 def quantization_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: str) -> Optional[str]:
     """Extract the quantization from Civitai metadata for the matching file.
 
     Fallback for when content-based detection found nothing: Civitai reports
-    the precision of each file under ``files[].metadata.fp`` ("fp8", "fp16",
-    ...). Only "fp8" is reported (as "FP8") — other precisions are not
+    the precision of each file under ``files[].metadata.fp`` ("fp8", "nvfp4",
+    "int8", "fp16", ...). Only quantized formats produce a value (see
+    :data:`CIVITAI_FP_TO_QUANTIZATION`); full-precision files are not
     quantizations. The value is only valid for the file whose
     ``hashes.SHA256`` equals the local model's sha256 (case-insensitive).
 
     Returns ``None`` when no Civitai data, no matching file, or the matching
-    file is not fp8.
+    file is not a quantized format.
     """
     if not civitai_data or not sha256:
         return None
@@ -74,10 +95,55 @@ def quantization_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha2
             file_metadata = file_info.get("metadata")
             if isinstance(file_metadata, dict):
                 fp = file_metadata.get("fp")
-                if isinstance(fp, str) and fp.lower() == "fp8":
-                    return "FP8"
+                if isinstance(fp, str):
+                    return CIVITAI_FP_TO_QUANTIZATION.get(fp.lower())
             return None
     return None
+
+
+def infer_quantization_source(
+    quantization: Optional[str], source: Optional[str]
+) -> Optional[str]:
+    """Best-effort source for values written before source tracking existed.
+
+    GGUF quantization names ("Q4_K_M", ...) can only come from content
+    detection — CivitAI never reports them — so they are treated as
+    content-derived. Anything else (notably "FP8") is conservatively treated
+    as a CivitAI fallback value, so a later relink to another precision can
+    correct a badge that was mislabeled by the uploader.
+    """
+    if source or not quantization:
+        return source
+    from .gguf_utils import content_detected_quantization_names
+
+    if quantization in content_detected_quantization_names():
+        return QUANTIZATION_SOURCE_CONTENT
+    return QUANTIZATION_SOURCE_CIVITAI
+
+
+def resolve_quantization(
+    file_path: Optional[str],
+    civitai_data: Optional[Dict[str, Any]],
+    sha256: str,
+) -> tuple[Optional[str], Optional[str]]:
+    """Resolve ``(quantization, source)`` for a model: content first, CivitAI fp fallback.
+
+    Content detection (GGUF ``general.file_type`` / safetensors tensor dtypes)
+    is authoritative. The CivitAI fp flag is only used when content detection
+    is inconclusive. ``(None, None)`` means neither yielded a value.
+    ``file_path`` may be ``None`` (e.g. metadata fetch before the download
+    finished); detection is skipped then.
+    """
+    if file_path:
+        from .gguf_utils import detect_quantization
+
+        detected = detect_quantization(file_path)
+        if detected:
+            return detected, QUANTIZATION_SOURCE_CONTENT
+    civitai_value = quantization_from_civitai_files(civitai_data, sha256)
+    if civitai_value:
+        return civitai_value, QUANTIZATION_SOURCE_CIVITAI
+    return None, None
 
 
 def strip_model_extension(file_name: str) -> str:
@@ -129,7 +195,8 @@ class BaseModelMetadata:
     last_checked_at: float = 0  # Last checked timestamp
     hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
     autov3: Optional[str] = None  # CivitAI AutoV3 hash (12-char lowercase hex); "" = checked but unavailable, None = not checked
-    quantization: Optional[str] = None  # Content-detected quantization ("Q4_K_M"/"FP8"/...); "" = checked but unavailable, None = not checked
+    quantization: Optional[str] = None  # Detected quantization ("Q4_K_M"/"FP8"/"NVFP4"/...); "" = checked but unavailable, None = not checked
+    quantization_source: Optional[str] = None  # Provenance of `quantization`: "content" / "civitai" / "manual"; None = legacy value, see infer_quantization_source
     _unknown_fields: Dict[str, Any] = field(
         default_factory=dict, repr=False, compare=False
     )  # Store unknown fields
@@ -211,6 +278,13 @@ class BaseModelMetadata:
         else:
             result.pop("quantization", None)
 
+        # quantization_source is a plain optional tag (no three-state
+        # contract): present only when known, absent otherwise.
+        if self.quantization_source is not None:
+            result["quantization_source"] = self.quantization_source
+        else:
+            result.pop("quantization_source", None)
+
         return result
 
     def update_civitai_info(self, civitai_data: Dict[str, Any]) -> None:
@@ -225,13 +299,14 @@ class BaseModelMetadata:
         autov3 = autov3_from_civitai_files(civitai_data, self.sha256)
         if autov3:
             self.autov3 = autov3
-        # Civitai fp8 is only a fallback: it may fill an unchecked or
+        # CivitAI's fp flag is only a fallback: it may fill an unchecked or
         # checked-unavailable quantization, but never overrides a value
         # detected from the file content itself.
         if not self.quantization:
             quantization = quantization_from_civitai_files(civitai_data, self.sha256)
             if quantization:
                 self.quantization = quantization
+                self.quantization_source = QUANTIZATION_SOURCE_CIVITAI
 
     def update_file_info(self, file_path: str, update_timestamps: bool = False) -> None:
         """

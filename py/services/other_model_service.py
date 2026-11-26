@@ -56,6 +56,7 @@ class OtherModelService(BaseModelService):
             "hash_status": model_data.get("hash_status", "completed"),
             "autov3": model_data.get("autov3"),
             "quantization": model_data.get("quantization"),
+            "quantization_source": model_data.get("quantization_source"),
             "file_path": file_path.replace(os.sep, "/"),
             "file_size": model_data.get("size", 0),
             "modified": model_data.get("modified", ""),

@@ -9,12 +9,18 @@ from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type, Union, cast
 
-from ..utils.models import BaseModelMetadata, autov3_from_civitai_files, quantization_from_civitai_files
+from ..utils.models import (
+    BaseModelMetadata,
+    autov3_from_civitai_files,
+    infer_quantization_source,
+    quantization_from_civitai_files,
+    resolve_quantization,
+    QUANTIZATION_SOURCE_CIVITAI,
+)
 from ..config import config
 from ..utils.constants import is_empty_placeholder_hash
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
 from ..utils.gc_utils import schedule_refreeze, schedule_refreeze_after_rebuild
-from ..utils.gguf_utils import detect_quantization
 from ..utils.metadata_manager import MetadataManager
 from ..utils.sidecar_paths import (
     get_metadata_path,
@@ -1150,6 +1156,12 @@ class ModelScanner:
         else:
             entry_quantization = get_value('quantization', None)
 
+        # Plain optional provenance tag ("content"/"civitai"/"manual"); no
+        # three-state contract. Absent on entries predating source tracking.
+        entry_quantization_source = get_value('quantization_source', None)
+        if not isinstance(entry_quantization_source, str) or not entry_quantization_source:
+            entry_quantization_source = None
+
         entry: Dict[str, Any] = {
             'file_path': normalized_path,
             # file_name is always stored WITHOUT extension (e.g. "OWSMianne_ANIMA_V1",
@@ -1165,6 +1177,7 @@ class ModelScanner:
             'sha256': (get_value('sha256', '') or '').lower(),
             'autov3': entry_autov3,
             'quantization': entry_quantization,
+            'quantization_source': entry_quantization_source,
             'base_model': get_value('base_model', '') or '',
             'preview_url': preview_url,
             'preview_nsfw_level': int(get_value('preview_nsfw_level', 0) or 0),
@@ -4116,36 +4129,62 @@ class ModelScanner:
 
         # Quantization resolution: content detection (GGUF file_type /
         # safetensors dtypes) is authoritative and only runs for models never
-        # checked before (quantization is None). The Civitai fp8 flag is only
-        # a fallback — it may upgrade a checked-unavailable state ('') to
-        # "FP8", but never overrides a content-detected value, and the header
-        # is never re-read for an already-checked model. Non-weight libraries
-        # (workflows) skip this entirely: the field stays unset instead of
-        # being marked "checked, none".
+        # checked before (quantization is None). The CivitAI fp flag is a
+        # fallback — it may upgrade a checked-unavailable state ('') to a
+        # value, and a value tagged as CivitAI-sourced is recomputed from the
+        # current sidecar data so a relink to another precision corrects a
+        # stale badge. Content-detected and user-set ("manual") values are
+        # authoritative and never recomputed. Non-weight libraries (workflows)
+        # skip this entirely: the field stays unset instead of being marked
+        # "checked, none".
         current_quantization = model_data.get('quantization')
-        if self.supports_quantization and current_quantization in (None, ''):
+        current_quantization_source = infer_quantization_source(
+            current_quantization, model_data.get('quantization_source')
+        )
+        recompute_quantization = self.supports_quantization and (
+            current_quantization in (None, '')
+            or current_quantization_source == QUANTIZATION_SOURCE_CIVITAI
+        )
+        if recompute_quantization:
             try:
-                quantization = None
-                if current_quantization is None:
-                    quantization = detect_quantization(os.path.realpath(file_path))
-                if not quantization:
-                    civitai_data = None
-                    if isinstance(metadata, BaseModelMetadata):
-                        civitai_data = metadata.civitai
-                    elif isinstance(metadata, dict):
-                        civitai_data = metadata.get("civitai")
+                civitai_data = None
+                if isinstance(metadata, BaseModelMetadata):
+                    civitai_data = metadata.civitai
+                elif isinstance(metadata, dict):
+                    civitai_data = metadata.get("civitai")
+                sha256_value = model_data.get("sha256") or ""
+                if current_quantization == '':
+                    # Checked-unavailable: only the CivitAI fp fallback may
+                    # upgrade it — the header is never re-read.
                     quantization = quantization_from_civitai_files(
-                        civitai_data, model_data.get("sha256") or ""
+                        civitai_data, sha256_value
+                    )
+                    quantization_source = (
+                        QUANTIZATION_SOURCE_CIVITAI if quantization else None
+                    )
+                else:
+                    # Unchecked (None) or CivitAI-sourced: full resolve.
+                    # Content detection re-confirms a genuine fp8 file and
+                    # upgrades its source to "content".
+                    quantization, quantization_source = resolve_quantization(
+                        os.path.realpath(file_path), civitai_data, sha256_value
                     )
                 quantization = quantization or ""
-                if quantization != current_quantization:
+                previous_source = model_data.get('quantization_source') or None
+                if (quantization, quantization_source) != (current_quantization, previous_source):
                     model_data['quantization'] = quantization
+                    model_data['quantization_source'] = quantization_source
                     if isinstance(metadata, BaseModelMetadata):
                         metadata.quantization = quantization
+                        metadata.quantization_source = quantization_source
                         await MetadataManager.save_metadata(file_path, metadata)
                     elif isinstance(metadata, dict):
                         # Dict payload: JSON null encodes the checked-unavailable state.
                         metadata['quantization'] = quantization or None
+                        if quantization_source:
+                            metadata['quantization_source'] = quantization_source
+                        else:
+                            metadata.pop('quantization_source', None)
                         await MetadataManager.save_metadata(file_path, metadata)
             except Exception as e:
                 logger.error(f"Failed to resolve quantization for {file_path}: {e}")
@@ -5133,7 +5172,13 @@ class ModelScanner:
             logger.warning("Failed to update AutoV3 for %s: %s", file_path, exc)
             return False
 
-    async def update_quantization_for_model(self, model_type: str, file_path: str, quantization: str) -> bool:
+    async def update_quantization_for_model(
+        self,
+        model_type: str,
+        file_path: str,
+        quantization: str,
+        source: Optional[str] = None,
+    ) -> bool:
         """Persist a quantization value for a single model (single write path used by the backfill service).
 
         Locates the in-memory cache entry by ``file_path`` and updates only its
@@ -5143,6 +5188,9 @@ class ModelScanner:
         left untouched, so the persistent delta only ever differs in
         quantization. Unlike autov3, quantization is not part of the hash
         index, so no index update is needed.
+
+        ``source`` records the provenance of the value ("content" / "civitai"
+        / "manual"); ``None`` clears the tag (e.g. when the value is empty).
 
         Returns:
             ``True`` when the entry was found and updated, ``False`` otherwise.
@@ -5169,6 +5217,7 @@ class ModelScanner:
             old_item = dict(entry)
 
             entry['quantization'] = quantization
+            entry['quantization_source'] = source
 
             persistent = getattr(self, '_persistent_cache', None)
             if persistent is not None:
@@ -5189,6 +5238,10 @@ class ModelScanner:
                 if not isinstance(payload, dict):
                     payload = {}
                 payload['quantization'] = entry['quantization'] or None
+                if source:
+                    payload['quantization_source'] = source
+                else:
+                    payload.pop('quantization_source', None)
                 await MetadataManager.save_metadata(metadata_path, payload)
 
             self.bump_cache_version()

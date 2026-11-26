@@ -14,7 +14,13 @@ from ..utils.constants import is_empty_placeholder_hash
 from ..utils.file_utils import calculate_sha256, find_preview_file, normalize_path
 from ..utils.metadata_manager import MetadataManager
 from ..utils.model_utils import determine_base_model
-from ..utils.models import autov3_from_civitai_files
+from ..utils.models import (
+    autov3_from_civitai_files,
+    infer_quantization_source,
+    resolve_quantization,
+    QUANTIZATION_SOURCE_CONTENT,
+    QUANTIZATION_SOURCE_MANUAL,
+)
 from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_sidecar_base_name
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import MetadataPersistError, RateLimitError
@@ -62,6 +68,28 @@ def _inapplicable_providers_for_sub_type(sub_type: Optional[str]) -> set:
 
 
 CREATOR_USERNAME_MAX_LENGTH = 64
+
+
+def _normalize_manual_quantization_update(
+    value: Any, *, file_path: str, metadata: Dict[str, Any]
+) -> tuple[Optional[str], Optional[str]]:
+    """Normalize a user-submitted quantization override.
+
+    A non-empty string becomes a manual override: trimmed, upper-cased, and
+    tagged ``"manual"`` so automatic flows (scans, relinks, refreshes) never
+    touch it. ``None`` or a blank string clears the override: the value is
+    recomputed from the file content and the linked CivitAI metadata, so the
+    badge immediately reflects detection again.
+    """
+    if isinstance(value, str):
+        value = value.strip()
+    if value:
+        return str(value).upper(), QUANTIZATION_SOURCE_MANUAL
+    return resolve_quantization(
+        file_path,
+        metadata.get("civitai"),
+        (metadata.get("sha256") or "").lower(),
+    )
 
 
 def normalize_creator_updates(updates: Dict[str, Any]) -> Dict[str, Any]:
@@ -312,6 +340,38 @@ class MetadataSyncService:
         )
         if civitai_autov3:
             local_metadata["autov3"] = civitai_autov3
+
+        # Quantization refresh: a value sourced from CivitAI's fp flag — or an
+        # untagged legacy value that is not provably content-detected — follows
+        # the linked version, so a relink to another precision corrects a stale
+        # badge (e.g. an uploader's fp8 mislabel on a bf16 file). Content
+        # detection is re-run as part of the resolve, so a genuinely quantized
+        # file is re-confirmed and its source upgraded to "content".
+        # Content-detected and user-set ("manual") values are authoritative
+        # and never recomputed here.
+        current_quantization = local_metadata.get("quantization")
+        current_source = infer_quantization_source(
+            current_quantization, local_metadata.get("quantization_source")
+        )
+        if current_source not in (
+            QUANTIZATION_SOURCE_CONTENT,
+            QUANTIZATION_SOURCE_MANUAL,
+        ):
+            new_quantization, new_source = resolve_quantization(
+                local_metadata.get("file_path"),
+                local_metadata.get("civitai"),
+                sha256_value,
+            )
+            if (new_quantization or "") != (current_quantization or "") or (
+                new_source != current_source
+            ):
+                # Sidecar convention: JSON null encodes checked-unavailable;
+                # the key stays absent only while never checked.
+                local_metadata["quantization"] = new_quantization or None
+                if new_source:
+                    local_metadata["quantization_source"] = new_source
+                else:
+                    local_metadata.pop("quantization_source", None)
 
         await self._preview_service.ensure_preview_for_metadata(
             metadata_path, local_metadata, civitai_metadata.get("images", [])
@@ -925,7 +985,19 @@ class MetadataSyncService:
         metadata = await metadata_loader(metadata_path)
 
         for key, value in updates.items():
-            if key == "tags" and isinstance(value, list):
+            if key == "quantization":
+                # Manual override (or its removal): normalize and tag the
+                # provenance so relinks/refreshes respect the user's choice.
+                value, source = _normalize_manual_quantization_update(
+                    value, file_path=file_path, metadata=metadata
+                )
+                # Sidecar convention: JSON null encodes checked-unavailable.
+                metadata["quantization"] = value
+                if source:
+                    metadata["quantization_source"] = source
+                else:
+                    metadata.pop("quantization_source", None)
+            elif key == "tags" and isinstance(value, list):
                 # Normalize tags: trim, lowercase, deduplicate
                 normalized = []
                 seen = set()

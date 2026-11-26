@@ -208,6 +208,32 @@ describe('Model metadata interactions keep file path in sync', () => {
     });
   });
 
+  it('does not add a standalone precision section to the model modal', async () => {
+    const fetchModelMetadataWithStatus = vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false });
+
+    getModelApiClient.mockReturnValue({
+      fetchModelMetadataWithStatus,
+      saveModelMetadata: vi.fn(),
+    });
+
+    const { showModelModal } = await import(MODAL_MODULE);
+
+    await showModelModal(
+      {
+        model_name: 'Qwen',
+        file_path: 'models/Qwen.safetensors',
+        file_name: 'Qwen.safetensors',
+        quantization: 'FP8',
+        quantization_source: 'manual',
+        civitai: {},
+      },
+      'loras',
+    );
+
+    expect(document.querySelector('.quantization-content')).toBeNull();
+    expect(document.querySelector('.quantization-popover')).toBeNull();
+  });
+
   it('shows recipes tab for checkpoint modals and loads linked recipes by hash', async () => {
     const fetchModelMetadataWithStatus = vi.fn().mockResolvedValue({ metadata: {}, partial: false, offline: false });
 

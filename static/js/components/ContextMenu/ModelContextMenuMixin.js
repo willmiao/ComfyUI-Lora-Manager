@@ -9,6 +9,7 @@ import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
 import { classifyModelRelinkUrl } from '../../utils/civitaiUtils.js';
 import { parseModelSourceUrl, getModelSourceInfo } from '../../utils/modelSourceHelpers.js';
 import { escapeHtml } from '../shared/utils.js';
+import { openQuantizationEditor } from '../shared/QuantizationEditor.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -584,6 +585,9 @@ export const ModelContextMenuMixin = {
                 return true;
             case 'set-nsfw':
                 this.showNSFWLevelSelector(null, null, this.currentCard);
+                return true;
+            case 'edit-precision':
+                openQuantizationEditor(this.currentCard);
                 return true;
             case 'check-updates':
                 this.checkUpdatesForCurrentModel();

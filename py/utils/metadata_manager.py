@@ -366,6 +366,7 @@ class MetadataManager:
             # Record the AutoV3 state explicitly ("" = checked, no value).
             metadata.autov3 = autov3 or ""
             metadata.quantization = quantization or ""
+            metadata.quantization_source = "content" if quantization else None
 
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)

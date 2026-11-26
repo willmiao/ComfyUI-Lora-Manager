@@ -190,7 +190,9 @@
         },
         "footer": {
             "versionCount": "{count}개 버전",
-            "viewAllVersions": "모든 로컬 버전 보기"
+            "viewAllVersions": "모든 로컬 버전 보기",
+            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+            "quantResetAuto": "[TODO: Translate] Reset to Auto"
         }
     },
     "globalContextMenu": {
@@ -1142,6 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "CivitAI 데이터 새로고침",
             "checkUpdates": "업데이트 확인",
+            "editPrecision": "[TODO: Translate] Edit Precision",
             "linkModel": "모델 연결",
             "linkCivitai": "CivitAI에 연결",
             "linkModelSource": "모델 소스에 연결",
@@ -2274,6 +2277,7 @@
                 "editFileName": "파일명 편집",
                 "editBaseModel": "베이스 모델 편집",
                 "editVersionName": "버전명 편집",
+                "editPrecision": "[TODO: Translate] Edit precision",
                 "viewOnCivitai": "CivitAI에서 보기",
                 "viewOnCivitaiText": "CivitAI에서 보기",
                 "viewOnHuggingFace": "Hugging Face에서 보기",
@@ -2311,6 +2315,9 @@
                 "location": "위치",
                 "baseModel": "베이스 모델",
                 "size": "크기",
+                "precision": "[TODO: Translate] Precision",
+                "precisionAuto": "[TODO: Translate] Auto",
+                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
                 "hashes": "해시",
                 "hashPending": "아직 계산되지 않음",
                 "hashCalculating": "계산 중...",
@@ -3115,6 +3122,8 @@
             "nameUpdateFailed": "모델 이름 업데이트에 실패했습니다",
             "baseModelUpdated": "베이스 모델이 성공적으로 업데이트되었습니다",
             "baseModelUpdateFailed": "베이스 모델 업데이트에 실패했습니다",
+            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
+            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
             "baseModelNotSelected": "베이스 모델을 선택해주세요",
             "bulkBaseModelUpdating": "{count}개의 모델에 베이스 모델을 업데이트 중...",
             "bulkBaseModelUpdateSuccess": "{count}개의 모델에 베이스 모델이 성공적으로 업데이트되었습니다",

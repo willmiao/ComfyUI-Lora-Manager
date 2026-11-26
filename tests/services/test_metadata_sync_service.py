@@ -1482,3 +1482,188 @@ async def test_update_model_metadata_preserves_manual_creator() -> None:
 
     assert result["civitai"]["creator"] == manual_creator
     assert result["model_name"] == "Remote Model"
+
+
+# ---------------------------------------------------------------------------
+# Quantization provenance: relink/refresh recompute and manual overrides
+# ---------------------------------------------------------------------------
+
+
+def _quantization_remote(fp: str, sha: str) -> Dict[str, Any]:
+    return {
+        "source": "api",
+        "files": [
+            {
+                "name": "model.safetensors",
+                "hashes": {"SHA256": sha.upper()},
+                "metadata": {"fp": fp},
+            }
+        ],
+        "images": ["img"],
+        "model": {"name": "Remote Model"},
+        "baseModel": "sdxl",
+    }
+
+
+def _quantization_local(tmp_path, fp: str, **overrides) -> Dict[str, Any]:
+    content = b"fake weights - content detection is inconclusive"
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_bytes(content)
+    import hashlib
+
+    sha = hashlib.sha256(content).hexdigest()
+    local = {
+        "file_path": str(model_file).replace("\\", "/"),
+        "sha256": sha,
+        "model_name": "Local",
+        "civitai": {
+            "files": [
+                {
+                    "name": "model.safetensors",
+                    "hashes": {"SHA256": sha.upper()},
+                    "metadata": {"fp": fp},
+                }
+            ]
+        },
+    }
+    local.update(overrides)
+    return local
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_relink_corrects_stale_fp8_badge(tmp_path) -> None:
+    """A legacy fp8 badge (inferred civitai-sourced) follows the relinked version."""
+    helpers = build_service()
+    local = _quantization_local(tmp_path, "fp8", quantization="FP8")
+    sha = local["sha256"]
+
+    result = await helpers.service.update_model_metadata(
+        str(tmp_path / "model.metadata.json"),
+        local,
+        _quantization_remote("nvfp4", sha),
+        helpers.default_provider,
+    )
+
+    assert result["quantization"] == "NVFP4"
+    assert result["quantization_source"] == "civitai"
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_clears_badge_when_relink_is_full_precision(tmp_path) -> None:
+    """Relinking an fp8-mislabeled file to its fp16 version drops the badge."""
+    helpers = build_service()
+    local = _quantization_local(
+        tmp_path, "fp8", quantization="FP8", quantization_source="civitai"
+    )
+    sha = local["sha256"]
+
+    result = await helpers.service.update_model_metadata(
+        str(tmp_path / "model.metadata.json"),
+        local,
+        _quantization_remote("fp16", sha),
+        helpers.default_provider,
+    )
+
+    assert result["quantization"] is None
+    assert "quantization_source" not in result
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_preserves_manual_quantization(tmp_path) -> None:
+    """A user override survives relinks and refreshes untouched."""
+    helpers = build_service()
+    local = _quantization_local(
+        tmp_path, "fp8", quantization="NVFP4", quantization_source="manual"
+    )
+    sha = local["sha256"]
+
+    result = await helpers.service.update_model_metadata(
+        str(tmp_path / "model.metadata.json"),
+        local,
+        _quantization_remote("fp8", sha),
+        helpers.default_provider,
+    )
+
+    assert result["quantization"] == "NVFP4"
+    assert result["quantization_source"] == "manual"
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_preserves_content_quantization(tmp_path) -> None:
+    """Content-detected values are authoritative and never recomputed."""
+    helpers = build_service()
+    local = _quantization_local(
+        tmp_path, "fp8", quantization="FP8", quantization_source="content"
+    )
+    sha = local["sha256"]
+
+    result = await helpers.service.update_model_metadata(
+        str(tmp_path / "model.metadata.json"),
+        local,
+        _quantization_remote("fp16", sha),
+        helpers.default_provider,
+    )
+
+    assert result["quantization"] == "FP8"
+    assert result["quantization_source"] == "content"
+
+
+@pytest.mark.asyncio
+async def test_save_metadata_updates_normalizes_manual_quantization(tmp_path) -> None:
+    helpers = build_service()
+    loader = AsyncMock(return_value={"model_name": "Local", "civitai": {}})
+    update_cache = AsyncMock()
+
+    result = await helpers.service.save_metadata_updates(
+        file_path=str(tmp_path / "model.safetensors"),
+        updates={"quantization": " nvfp4 "},
+        metadata_loader=loader,
+        update_cache=update_cache,
+    )
+
+    assert result["quantization"] == "NVFP4"
+    assert result["quantization_source"] == "manual"
+    helpers.metadata_manager.save_metadata.assert_awaited_once()
+    update_cache.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_save_metadata_updates_clear_recomputes_quantization(tmp_path) -> None:
+    """Clearing the override recomputes from content, then CivitAI fallback."""
+    helpers = build_service()
+    local = _quantization_local(tmp_path, "fp8")
+    file_path = local["file_path"]
+    loader = AsyncMock(return_value=local)
+    update_cache = AsyncMock()
+
+    result = await helpers.service.save_metadata_updates(
+        file_path=file_path,
+        updates={"quantization": None},
+        metadata_loader=loader,
+        update_cache=update_cache,
+    )
+
+    # Content detection is inconclusive for the fake file, so the CivitAI fp
+    # fallback from the linked version fills the badge again.
+    assert result["quantization"] == "FP8"
+    assert result["quantization_source"] == "civitai"
+
+
+@pytest.mark.asyncio
+async def test_save_metadata_updates_clear_without_fallback_marks_checked(tmp_path) -> None:
+    helpers = build_service()
+    content = b"fake weights - no quantization anywhere"
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_bytes(content)
+    loader = AsyncMock(return_value={"model_name": "Local", "civitai": {}})
+    update_cache = AsyncMock()
+
+    result = await helpers.service.save_metadata_updates(
+        file_path=str(model_file),
+        updates={"quantization": ""},
+        metadata_loader=loader,
+        update_cache=update_cache,
+    )
+
+    assert result["quantization"] is None
+    assert "quantization_source" not in result

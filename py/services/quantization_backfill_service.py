@@ -15,7 +15,12 @@ Three-state contract honored here:
 
 - ``NULL`` (sqlite) / absent (dict)  = not checked yet  → backfill computes it
 - ``''`` (sqlite/dict) / JSON null   = checked, no value available → never recompute
-- canonical name ("Q4_K_M", "FP8")   = value → never recompute
+- canonical name ("Q4_K_M", "FP8")   = value → never recompute here
+
+Every written value also carries a ``quantization_source`` tag ("content" for
+header detection, "civitai" for the CivitAI fp fallback); civitai-sourced
+values may still be recomputed later by scans and metadata relinks when the
+linked version changes, while "content" and "manual" values are sticky.
 """
 
 from __future__ import annotations
@@ -35,34 +40,30 @@ if TYPE_CHECKING:  # pragma: no cover - type-check only; runtime imports are loc
 logger = logging.getLogger(__name__)
 
 
-def _resolve_quantization(file_path: str) -> str:
-    """Resolve the quantization for a model file.
+def _resolve_quantization(file_path: str) -> tuple[str, Optional[str]]:
+    """Resolve ``(quantization, quantization_source)`` for a model file.
 
     Content detection (GGUF ``general.file_type`` / safetensors tensor
-    dtypes) is authoritative. The Civitai fp8 flag from the sidecar is only
+    dtypes) is authoritative. The CivitAI fp flag from the sidecar is only
     a fallback for files whose content detection is inconclusive. Returns
-    ``''`` when neither yields a value.
+    ``('', None)`` when neither yields a value.
     """
-    from ..utils.gguf_utils import detect_quantization  # local import avoids cycles
+    from ..utils.models import resolve_quantization  # local import avoids cycles
 
-    quantization = detect_quantization(file_path)
-    if quantization:
-        return quantization
+    civitai_data = None
+    sha256 = ""
     try:
         metadata_path = get_metadata_path(file_path)
         if os.path.exists(metadata_path):
             with open(metadata_path, "r", encoding="utf-8") as handle:
                 payload = json.load(handle)
             if isinstance(payload, dict):
-                from ..utils.models import quantization_from_civitai_files  # local import avoids cycles
-
+                civitai_data = payload.get("civitai")
                 sha256 = (payload.get("sha256") or "").lower()
-                civitai_quantization = quantization_from_civitai_files(payload.get("civitai"), sha256)
-                if civitai_quantization:
-                    return civitai_quantization
     except Exception:
         pass
-    return ""
+    quantization, source = resolve_quantization(file_path, civitai_data, sha256)
+    return quantization or "", source
 
 
 class QuantizationBackfillService:
@@ -128,8 +129,8 @@ class QuantizationBackfillService:
                 # to API requests while the backfill iterates a large library.
                 if not await loop.run_in_executor(None, os.path.exists, path):
                     continue
-                quantization = await loop.run_in_executor(None, _resolve_quantization, path)
-                if await scanner.update_quantization_for_model(model_type, path, quantization):
+                quantization, source = await loop.run_in_executor(None, _resolve_quantization, path)
+                if await scanner.update_quantization_for_model(model_type, path, quantization, source):
                     count += 1
 
             if paths:

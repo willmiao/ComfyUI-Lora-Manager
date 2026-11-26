@@ -190,7 +190,9 @@
         },
         "footer": {
             "versionCount": "{count} версий",
-            "viewAllVersions": "Показать все локальные версии"
+            "viewAllVersions": "Показать все локальные версии",
+            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+            "quantResetAuto": "[TODO: Translate] Reset to Auto"
         }
     },
     "globalContextMenu": {
@@ -1142,6 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "Обновить данные CivitAI",
             "checkUpdates": "Проверить обновления",
+            "editPrecision": "[TODO: Translate] Edit Precision",
             "linkModel": "Связать модель",
             "linkCivitai": "Пересвязать с CivitAI",
             "linkModelSource": "Связать с источником модели",
@@ -2274,6 +2277,7 @@
                 "editFileName": "Редактировать имя файла",
                 "editBaseModel": "Редактировать базовую модель",
                 "editVersionName": "Редактировать название версии",
+                "editPrecision": "[TODO: Translate] Edit precision",
                 "viewOnCivitai": "Посмотреть на CivitAI",
                 "viewOnCivitaiText": "Посмотреть на CivitAI",
                 "viewOnHuggingFace": "Открыть Hugging Face",
@@ -2311,6 +2315,9 @@
                 "location": "Расположение",
                 "baseModel": "Базовая модель",
                 "size": "Размер",
+                "precision": "[TODO: Translate] Precision",
+                "precisionAuto": "[TODO: Translate] Auto",
+                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
                 "hashes": "Хэши",
                 "hashPending": "Ещё не вычислен",
                 "hashCalculating": "Вычисление...",
@@ -3115,6 +3122,8 @@
             "nameUpdateFailed": "Не удалось обновить название модели",
             "baseModelUpdated": "Базовая модель успешно обновлена",
             "baseModelUpdateFailed": "Не удалось обновить базовую модель",
+            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
+            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
             "baseModelNotSelected": "Пожалуйста, выберите базовую модель",
             "bulkBaseModelUpdating": "Обновление базовой модели для {count} моделей...",
             "bulkBaseModelUpdateSuccess": "Базовая модель успешно обновлена для {count} моделей",

@@ -6,12 +6,16 @@ const {
   UI_HELPERS_MODULE,
   I18N_MODULE,
   API_FACTORY_MODULE,
+  QUANTIZATION_EDITOR_MODULE,
+  EVENT_MANAGER_MODULE,
 } = vi.hoisted(() => ({
   MODEL_CARD_MODULE: new URL('../../../static/js/components/shared/ModelCard.js', import.meta.url).pathname,
   STATE_MODULE: new URL('../../../static/js/state/index.js', import.meta.url).pathname,
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
   I18N_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
   API_FACTORY_MODULE: new URL('../../../static/js/api/modelApiFactory.js', import.meta.url).pathname,
+  QUANTIZATION_EDITOR_MODULE: new URL('../../../static/js/components/shared/QuantizationEditor.js', import.meta.url).pathname,
+  EVENT_MANAGER_MODULE: new URL('../../../static/js/utils/EventManager.js', import.meta.url).pathname,
 }));
 
 vi.mock(STATE_MODULE, () => ({
@@ -70,6 +74,10 @@ vi.mock(API_FACTORY_MODULE, () => ({
   getModelApiClient: vi.fn(() => ({})),
 }));
 
+vi.mock(QUANTIZATION_EDITOR_MODULE, () => ({
+  openQuantizationEditor: vi.fn(),
+}));
+
 function createCheckpointModel(overrides = {}) {
   return {
     sha256: 'abc123',
@@ -97,11 +105,18 @@ function createCheckpointModel(overrides = {}) {
 
 describe('ModelCard quantization badge', () => {
   let createModelCard;
+  let setupModelCardEventDelegation;
   let state;
+  let openQuantizationEditor;
+  let eventManager;
 
   beforeEach(async () => {
-    ({ createModelCard } = await import(MODEL_CARD_MODULE));
+    ({ createModelCard, setupModelCardEventDelegation } = await import(MODEL_CARD_MODULE));
     ({ state } = await import(STATE_MODULE));
+    ({ openQuantizationEditor } = await import(QUANTIZATION_EDITOR_MODULE));
+    ({ eventManager } = await import(EVENT_MANAGER_MODULE));
+    openQuantizationEditor.mockClear();
+    eventManager.removeHandler('click', 'modelCard-delegation');
     state.global.settings.group_by_model = false;
   });
 
@@ -110,7 +125,10 @@ describe('ModelCard quantization badge', () => {
 
     const badge = card.querySelector('.quant-badge');
     expect(badge).not.toBeNull();
+    expect(badge.tagName).toBe('BUTTON');
     expect(badge.textContent).toBe('Q4_K_M');
+    expect(card.dataset.quantization).toBe('Q4_K_M');
+    expect(card.dataset.quantization_source).toBe('');
 
     const unit = card.querySelector('.badge-version-unit');
     const versionName = unit.querySelector('.version-name');
@@ -150,5 +168,49 @@ describe('ModelCard quantization badge', () => {
     expect(card.querySelector('.quant-badge')).toBeNull();
     expect(card.querySelector('.version-count-link')).not.toBeNull();
     expect(card.querySelector('.version-name')).toBeNull();
+  });
+
+  it('marks a manually overridden quant badge', () => {
+    const card = createModelCard(
+      createCheckpointModel({ quantization: 'NVFP4', quantization_source: 'manual' }),
+      'checkpoints',
+    );
+
+    const badge = card.querySelector('.quant-badge');
+    expect(badge).not.toBeNull();
+    expect(badge.textContent).toBe('NVFP4');
+    expect(badge.classList.contains('quant-badge--manual')).toBe(true);
+    expect(badge.getAttribute('title')).toBeTruthy();
+  });
+
+  it.each([
+    ['civitai', 'civitai'],
+    ['content', 'content'],
+    ['no source', undefined],
+  ])('renders an auto badge without the manual marker when source is %s', (_label, source) => {
+    const card = createModelCard(
+      createCheckpointModel({ quantization: 'NVFP4', quantization_source: source }),
+      'checkpoints',
+    );
+
+    const badge = card.querySelector('.quant-badge');
+    expect(badge).not.toBeNull();
+    expect(badge.classList.contains('quant-badge--manual')).toBe(false);
+    expect(badge.getAttribute('title')).toBe('Edit precision');
+  });
+
+  it('opens the precision editor from the badge without opening the model modal', () => {
+    const card = createModelCard(createCheckpointModel({ quantization: 'FP8' }), 'checkpoints');
+    const grid = document.createElement('div');
+    grid.id = 'modelGrid';
+    grid.appendChild(card);
+    document.body.appendChild(grid);
+    setupModelCardEventDelegation('checkpoints');
+    const badge = card.querySelector('.quant-badge');
+
+    badge.click();
+
+    expect(openQuantizationEditor).toHaveBeenCalledWith(card, badge);
+    eventManager.removeHandler('click', 'modelCard-delegation');
   });
 });

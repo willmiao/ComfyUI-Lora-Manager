@@ -2,7 +2,7 @@ import { showToast, openCivitai, openHuggingFace, copyToClipboard, copyLoraSynta
 import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
-import { hasCivitaiSource } from './utils.js';
+import { escapeAttribute, escapeHtml, hasCivitaiSource } from './utils.js';
 import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
@@ -15,6 +15,7 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 import { attachCardPreviewCycler } from './CardPreviewCycler.js';
 import { syncWildcardCardState } from '../../utils/wildcardCardState.js';
+import { openQuantizationEditor } from './QuantizationEditor.js';
 
 // Helper function to get display name based on settings
 function getDisplayName(model) {
@@ -117,6 +118,14 @@ function handleModelCardEvent_internal(event, modelType) {
         event.stopPropagation();
         handleExampleImagesAccess(card, modelType);
         return true; // Stop propagation
+    }
+
+    const quantizationBadge = event.target.closest('.quant-badge');
+    if (quantizationBadge) {
+        event.preventDefault();
+        event.stopPropagation();
+        openQuantizationEditor(card, quantizationBadge);
+        return true;
     }
 
     if (event.target.closest('.version-count-link')) {
@@ -555,6 +564,8 @@ export function createModelCard(model, modelType) {
     card.dataset.usage_count = String(model.usage_count);
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
+    card.dataset.quantization = typeof model.quantization === 'string' ? model.quantization : '';
+    card.dataset.quantization_source = model.quantization_source || '';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
     card.dataset.exclude = model.exclude ? 'true' : 'false';
     const modelSourceInfo = getModelSourceInfo(model);
@@ -839,8 +850,13 @@ export function createModelCard(model, modelType) {
                                 return `<span class="${cls}"${titleAttr}>${label}</span>`;
                             }).join('') : '';
                             // Suppress the quant badge in grouped mode too (a group mixes quants)
+                            const quantIsManual = model.quantization_source === 'manual';
+                            const quantEditLabel = translate('modals.model.actions.editPrecision', {}, 'Edit precision');
+                            const quantTitle = quantIsManual
+                                ? translate('modelCard.footer.quantManual', {}, 'Manually set — relinks and rescans will not change it')
+                                : quantEditLabel;
                             const quantBadge = !showVersionCount && quantization
-                                ? `<span class="quant-badge">${quantization}</span>` : '';
+                                ? `<button type="button" class="quant-badge${quantIsManual ? ' quant-badge--manual' : ''}" title="${escapeAttribute(quantTitle)}" aria-label="${escapeAttribute(`${quantEditLabel}: ${quantization}`)}" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(quantization)}</button>` : '';
                             let versionHtml = '';
                             if (showVersionCount) {
                                 const countLabel = translate('modelCard.footer.versionCount', { count: versionCount }, `${versionCount} versions`);

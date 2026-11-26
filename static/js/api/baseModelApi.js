@@ -467,10 +467,20 @@ export class BaseModelApiClient {
             }
 
             const result = await response.json();
-            state.virtualScroller.updateSingleItem(filePath, {
+            const updateData = {
                 ...data,
                 auto_tags: result.auto_tags,
-            });
+            };
+            // The server normalizes a quantization override (upper-case +
+            // provenance tag) and recomputes it when the override is cleared;
+            // always prefer its authoritative values over what was sent.
+            if ('quantization' in result) {
+                updateData.quantization = result.quantization;
+            }
+            if ('quantization_source' in result) {
+                updateData.quantization_source = result.quantization_source;
+            }
+            state.virtualScroller.updateSingleItem(filePath, updateData);
             return result;
         } finally {
             state.loadingManager.hide();

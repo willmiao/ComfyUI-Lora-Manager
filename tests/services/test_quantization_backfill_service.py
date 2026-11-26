@@ -69,18 +69,22 @@ class RecordingScanner:
         self.model_type = model_type
         self._persistent_cache = persistent_cache
         self.entries: Dict[str, Dict[str, Any]] = {entry['file_path']: entry for entry in entries}
-        self.update_calls: List[tuple[str, str, str]] = []
+        self.update_calls: List[tuple[str, str, str, Any]] = []
 
-    async def update_quantization_for_model(self, model_type: str, file_path: str, quantization: str) -> bool:
-        self.update_calls.append((model_type, file_path, quantization))
+    async def update_quantization_for_model(
+        self, model_type: str, file_path: str, quantization: str, source: Any = None
+    ) -> bool:
+        self.update_calls.append((model_type, file_path, quantization, source))
         entry = self.entries.get(file_path)
         if entry is None:
             return False
         old_item = dict(entry)
         new_item = dict(entry)
         new_item['quantization'] = quantization
+        new_item['quantization_source'] = source
         self._persistent_cache.update_single_model(model_type, new_item, old_item)
         entry['quantization'] = quantization
+        entry['quantization_source'] = source
         return True
 
 
@@ -138,7 +142,7 @@ async def test_backfill_updates_models_and_self_terminates(tmp_path: Path, monke
 
     # Non-model files yield no detectable quantization, so both are marked ''.
     assert updated == 2
-    assert set(scanner.update_calls) == {('dummy', path_a, ''), ('dummy', path_b, '')}
+    assert set(scanner.update_calls) == {('dummy', path_a, '', None), ('dummy', path_b, '', None)}
 
     # Self-terminating: the driving query now finds no remaining rows.
     assert store.get_models_missing_quantization('dummy') == []
@@ -165,7 +169,7 @@ async def test_backfill_detects_gguf_quantization(tmp_path: Path, monkeypatch) -
     updated = await QuantizationBackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
-    assert scanner.update_calls == [('dummy', path, 'Q4_K_M')]
+    assert scanner.update_calls == [('dummy', path, 'Q4_K_M', 'content')]
 
     persisted = store.load_cache('dummy')
     assert persisted is not None
@@ -200,7 +204,7 @@ async def test_backfill_falls_back_to_civitai_fp8_from_sidecar(tmp_path: Path, m
     updated = await QuantizationBackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
-    assert scanner.update_calls == [('dummy', path, 'FP8')]
+    assert scanner.update_calls == [('dummy', path, 'FP8', 'civitai')]
 
     persisted = store.load_cache('dummy')
     assert persisted is not None
@@ -233,7 +237,7 @@ async def test_backfill_content_detection_beats_civitai_fp16(tmp_path: Path, mon
     updated = await QuantizationBackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
-    assert scanner.update_calls == [('dummy', path, 'Q8_0')]
+    assert scanner.update_calls == [('dummy', path, 'Q8_0', 'content')]
 
 
 async def test_backfill_skips_missing_files_without_marking(tmp_path: Path, monkeypatch) -> None:
@@ -254,7 +258,7 @@ async def test_backfill_skips_missing_files_without_marking(tmp_path: Path, monk
     updated = await QuantizationBackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
-    assert scanner.update_calls == [('dummy', existing, '')]
+    assert scanner.update_calls == [('dummy', existing, '', None)]
     # The missing row was not marked, so it still appears in the query.
     assert store.get_models_missing_quantization('dummy') == [missing]
 
@@ -297,7 +301,7 @@ async def test_backfill_never_raises_on_failure(tmp_path: Path, monkeypatch) -> 
     existing = _write_file(tmp_path, 'boom.txt')
 
     class RaisingScanner(RecordingScanner):
-        async def update_quantization_for_model(self, model_type: str, file_path: str, quantization: str) -> bool:
+        async def update_quantization_for_model(self, model_type: str, file_path: str, quantization: str, source: Any = None) -> bool:
             raise RuntimeError('boom')
 
     entries = [_entry(existing, 'hash-boom')]
