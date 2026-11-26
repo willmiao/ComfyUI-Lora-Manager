@@ -117,6 +117,28 @@ describe('ModelDuplicatesManager card selection', () => {
     expect(card.classList.contains('duplicate-selected')).toBe(false);
   });
 
+  it('keeps the clicked card and selects the other cards in its group', async () => {
+    const manager = await createManager();
+    const thirdPath = '/models/loras/third.safetensors';
+    manager.duplicateGroups = [{
+      hash: 'shared-hash',
+      models: [
+        createModel(carPath, 'shared-hash'),
+        createModel(copyPath, 'shared-hash'),
+        createModel(thirdPath, 'shared-hash'),
+      ],
+    }];
+    manager.renderDuplicateGroups();
+
+    const keeper = document.querySelector(`[data-file-path="${copyPath}"]`);
+    keeper.querySelector('.keep-item-btn').click();
+
+    expect(manager.selectedForDeletion.has(carPath)).toBe(true);
+    expect(manager.selectedForDeletion.has(copyPath)).toBe(false);
+    expect(manager.selectedForDeletion.has(thirdPath)).toBe(true);
+    expect(keeper.classList.contains('duplicate-selected')).toBe(false);
+  });
+
   it('selects all but the newest model in every group', async () => {
     const manager = await createManager();
     const first = createGroup('first-hash');
@@ -463,6 +485,40 @@ describe('ModelDuplicatesManager confirmDeleteDuplicates undo flows', () => {
     expect(resetAndReloadMock).toHaveBeenCalledWith(true);
     expect(showToastMock).toHaveBeenCalledTimes(1);
     expect(showToastMock).toHaveBeenCalledWith('toast.undo.restored', {}, 'success');
+  });
+
+  it('requires acknowledgement before deleting every item in a duplicate group', async () => {
+    const manager = await createManager();
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="duplicateDeleteModal">
+        <span id="duplicateDeleteCount"></span>
+        <div id="duplicateDeleteEmptyGroups" hidden>
+          <span id="duplicateDeleteEmptyGroupsText"></span>
+          <input type="checkbox" id="duplicateDeleteAllGroupsInput">
+        </div>
+        <button data-action="confirm-duplicate-delete"></button>
+      </div>
+    `);
+    manager.duplicateGroups = [createGroup()];
+    manager.selectedForDeletion.add(carPath);
+    manager.selectedForDeletion.add(copyPath);
+
+    await manager.deleteSelectedDuplicates();
+
+    const warning = document.getElementById('duplicateDeleteEmptyGroups');
+    const acknowledge = document.getElementById('duplicateDeleteAllGroupsInput');
+    const confirmButton = document.querySelector('[data-action="confirm-duplicate-delete"]');
+    expect(warning.hidden).toBe(false);
+    expect(confirmButton.disabled).toBe(true);
+    expect(document.getElementById('duplicateDeleteCount').textContent).toBe('2');
+
+    acknowledge.click();
+    expect(confirmButton.disabled).toBe(false);
+
+    manager.selectedForDeletion.delete(copyPath);
+    await manager.deleteSelectedDuplicates();
+    expect(warning.hidden).toBe(true);
+    expect(confirmButton.disabled).toBe(false);
   });
 
   it('keeps the legacy success toast when the response carries no batch field', async () => {

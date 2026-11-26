@@ -140,6 +140,26 @@ describe('DuplicatesManager card selection', () => {
     expect(card.classList.contains('duplicate-selected')).toBe(true);
   });
 
+  it('keeps the clicked recipe and selects the other recipes in its group', () => {
+    const manager = new DuplicatesManager({});
+    manager.duplicateGroups = [{
+      key: 'g-1',
+      recipes: [
+        { id: 'r1', modified: 1 },
+        { id: 'r2', modified: 2 },
+        { id: 'r3', modified: 3 },
+      ],
+    }];
+    manager.renderDuplicateGroups();
+
+    const keeper = document.querySelector('.selector-checkbox[data-recipe-id="r2"]').closest('.model-card');
+    keeper.querySelector('.keep-item-btn').click();
+
+    expect(manager.selectedForDeletion.has('r1')).toBe(true);
+    expect(manager.selectedForDeletion.has('r2')).toBe(false);
+    expect(manager.selectedForDeletion.has('r3')).toBe(true);
+  });
+
   it('keeps the latest recipe in every group before later groups are rendered', () => {
     const originalObserver = global.IntersectionObserver;
     global.IntersectionObserver = class {
@@ -172,6 +192,45 @@ describe('DuplicatesManager card selection', () => {
         delete global.IntersectionObserver;
       }
     }
+  });
+});
+
+describe('DuplicatesManager toolbar button', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setCurrentPageType('recipes');
+    setupDom();
+    state.virtualScroller = { enable: vi.fn(), disable: vi.fn() };
+  });
+
+  afterEach(() => {
+    state.virtualScroller = null;
+  });
+
+  it('shows Exit Duplicates while active and restores the original button on exit', async () => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <button id="findDuplicatesBtn" title="Find Duplicates">
+        <span>Duplicates</span><span id="duplicatesBadge" class="badge"></span>
+      </button>
+    `);
+    const manager = new DuplicatesManager({});
+    manager.duplicateGroups = [{
+      key: 'g-1',
+      recipes: [{ id: 'r1', modified: 1 }, { id: 'r2', modified: 2 }],
+    }];
+
+    manager.enterDuplicateMode();
+
+    const button = document.getElementById('findDuplicatesBtn');
+    expect(button.classList.contains('active')).toBe(true);
+    expect(button.textContent).toContain('duplicates.exitDuplicates');
+    expect(button.title).toBe('Exit Duplicates Mode');
+
+    await manager.exitDuplicateMode();
+
+    expect(button.classList.contains('active')).toBe(false);
+    expect(button.textContent.trim()).toBe('Duplicates');
+    expect(button.title).toBe('Find Duplicates');
   });
 });
 

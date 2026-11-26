@@ -1,3 +1,5 @@
+import { translate } from '../../utils/i18nHelpers.js';
+
 const DUPLICATE_GROUP_BATCH_SIZE = 25;
 const DUPLICATE_CARD_BATCH_SIZE = 12;
 const SCROLLABLE_CARD_COUNT = 6;
@@ -9,6 +11,8 @@ export class DuplicatesViewManager {
         this.selectedForDeletion = new Set();
         this._isDeleting = false;
         this._libraryNeedsRefresh = false;
+        this._duplicatesButtonContent = null;
+        this._duplicatesButtonTitle = null;
         this._renderedGroupCount = 0;
         this._groupGrid = null;
         this._renderGroup = null;
@@ -44,6 +48,31 @@ export class DuplicatesViewManager {
         }
     }
 
+    _setDuplicatesButtonActive(active) {
+        const button = document.getElementById('findDuplicatesBtn');
+        if (!button) return;
+
+        if (active) {
+            if (this._duplicatesButtonContent === null) {
+                this._duplicatesButtonContent = button.innerHTML;
+                this._duplicatesButtonTitle = button.title;
+            }
+            button.classList.add('active');
+            button.title = 'Exit Duplicates Mode';
+            button.innerHTML = `<i class="fas fa-times"></i> ${translate('duplicates.exitDuplicates')}`;
+            return;
+        }
+
+        button.classList.remove('active');
+        if (this._duplicatesButtonContent !== null) {
+            button.innerHTML = this._duplicatesButtonContent;
+            button.title = this._duplicatesButtonTitle;
+            this._duplicatesButtonContent = null;
+            this._duplicatesButtonTitle = null;
+        }
+        this.updateDuplicatesBadge?.(this.duplicateGroups.length);
+    }
+
     _setDeletingState(isDeleting) {
         const banner = document.getElementById('duplicatesBanner');
         if (isDeleting) {
@@ -66,6 +95,76 @@ export class DuplicatesViewManager {
             delete control.dataset.duplicatesDeleteDisabled;
         });
         this.updateSelectedCount();
+    }
+
+    _keepItemInGroup(group, itemId, selectableItemIds = null) {
+        if (this._isDeleting || !group) return;
+
+        const itemsKey = Array.isArray(group.models) ? 'models' : 'recipes';
+        const items = group[itemsKey] || [];
+        items.forEach(item => {
+            const currentId = itemsKey === 'models' ? item.file_path : item.id;
+            if (currentId === itemId || (selectableItemIds && !selectableItemIds.has(currentId))) {
+                this.selectedForDeletion.delete(currentId);
+            } else {
+                this.selectedForDeletion.add(currentId);
+            }
+        });
+
+        const groupKey = group.hash || group.key;
+        const groupDiv = Array.from(document.querySelectorAll('.duplicate-group')).find(
+            element => element.dataset.hash === groupKey || element.dataset.groupKey === groupKey
+        );
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
+        if (button) {
+            button.textContent = 'Select All';
+        }
+        this.updateSelectedCount();
+    }
+
+    _getGroupsEmptiedByDeletion() {
+        return this.duplicateGroups.filter(group => {
+            const items = group.models || group.recipes || [];
+            return items.length > 0 && items.every(item => {
+                const itemId = group.models ? item.file_path : item.id;
+                return this.selectedForDeletion.has(itemId);
+            });
+        });
+    }
+
+    _prepareDeleteConfirmation() {
+        const duplicateDeleteCount = document.getElementById('duplicateDeleteCount');
+        if (duplicateDeleteCount) {
+            duplicateDeleteCount.textContent = this.selectedForDeletion.size;
+        }
+
+        const emptyGroups = this._getGroupsEmptiedByDeletion();
+        const warning = document.getElementById('duplicateDeleteEmptyGroups');
+        const warningText = document.getElementById('duplicateDeleteEmptyGroupsText');
+        const acknowledgeInput = document.getElementById('duplicateDeleteAllGroupsInput');
+        const confirmButton = document.querySelector('#duplicateDeleteModal [data-action="confirm-duplicate-delete"]');
+
+        if (warning) {
+            warning.hidden = emptyGroups.length === 0;
+        }
+        if (warningText && emptyGroups.length > 0) {
+            warningText.textContent = translate('modals.deleteDuplicates.emptyGroupsWarning', {
+                count: emptyGroups.length,
+            });
+        }
+        if (acknowledgeInput) {
+            acknowledgeInput.checked = false;
+            acknowledgeInput.onchange = () => {
+                if (confirmButton) {
+                    confirmButton.disabled = !acknowledgeInput.checked;
+                }
+            };
+        }
+        if (confirmButton) {
+            confirmButton.disabled = emptyGroups.length > 0;
+            confirmButton.onclick = () => this.confirmDeleteDuplicates();
+        }
     }
 
     _removeSuccessfullyDeleted(itemIds) {

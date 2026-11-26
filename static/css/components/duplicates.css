@@ -261,6 +261,55 @@
     box-shadow: var(--shadow-md);
 }
 
+.duplicate-delete-empty-groups {
+    margin: 12px 0;
+    padding: 12px;
+    color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
+    background: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.08);
+    border: 1px solid oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.35);
+    border-radius: var(--border-radius-xs);
+}
+
+.duplicate-delete-empty-groups label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.duplicate-delete-empty-groups input {
+    flex: 0 0 auto;
+    margin-top: 3px;
+}
+
+.model-card.duplicate .keep-item-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.model-card.duplicate .keep-item-btn:hover {
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
+}
+
+.model-card.duplicate.latest .keep-item-btn,
+.model-card.duplicate.hash-mismatch .keep-item-btn {
+    top: 38px;
+}
+
+.model-card.duplicate.latest.hash-mismatch .keep-item-btn {
+    top: 66px;
+}
+
 .model-card .selector-checkbox {
     position: absolute;
     top: 10px;

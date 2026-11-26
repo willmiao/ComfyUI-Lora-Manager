@@ -260,6 +260,19 @@ describe('RecipeManager', () => {
     expect(saveRecipesLayoutMock).toHaveBeenCalledTimes(1);
   });
 
+  it('uses the duplicates toolbar action as an enter and exit toggle', async () => {
+    const manager = new RecipeManager();
+    duplicatesManagerInstance.inDuplicateMode = true;
+
+    await manager.findDuplicateRecipes();
+    expect(duplicatesManagerInstance.exitDuplicateMode).toHaveBeenCalledTimes(1);
+    expect(duplicatesManagerInstance.findDuplicates).not.toHaveBeenCalled();
+
+    duplicatesManagerInstance.inDuplicateMode = false;
+    await manager.findDuplicateRecipes();
+    expect(duplicatesManagerInstance.findDuplicates).toHaveBeenCalledTimes(1);
+  });
+
   it('skips loading when duplicates mode is active and refreshes otherwise', async () => {
     const manager = new RecipeManager();
 

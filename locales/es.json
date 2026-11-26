@@ -2085,7 +2085,9 @@
         "deleteDuplicates": {
             "title": "[TODO: Translate] Delete Selected Duplicates",
             "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
+            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
+            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
         },
         "clearCache": {
             "title": "Limpiar archivos de caché",
@@ -2714,10 +2716,12 @@
         "found": "Se encontraron {count} grupos de duplicados",
         "deleting": "[TODO: Translate] Deleting {count} selected items...",
         "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "keepThis": "[TODO: Translate] Keep this",
         "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "Mostrar notificación de duplicados",
         "deleteSelected": "Eliminar seleccionados",
         "exitMode": "Salir del modo",
+        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
         "help": {
             "identicalHashes": "Hashes idénticos significan archivos de modelo idénticos, incluso si tienen nombres o vistas previas diferentes.",
             "keepOne": "Mantén solo una versión (preferiblemente con mejores metadatos/vistas previas) y elimina de forma segura las otras."

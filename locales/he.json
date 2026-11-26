@@ -2085,7 +2085,9 @@
         "deleteDuplicates": {
             "title": "[TODO: Translate] Delete Selected Duplicates",
             "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
+            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
+            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
         },
         "clearCache": {
             "title": "נקה קבצי מטמון",
@@ -2714,10 +2716,12 @@
         "found": "נמצאו {count} קבוצות כפולות",
         "deleting": "[TODO: Translate] Deleting {count} selected items...",
         "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "keepThis": "[TODO: Translate] Keep this",
         "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "הצג התראת כפילויות",
         "deleteSelected": "מחק נבחרים",
         "exitMode": "צא ממצב",
+        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
         "help": {
             "identicalHashes": "hashes זהים פירושם קבצי מודל זהים, גם אם יש להם שמות או תצוגות מקדימות שונות.",
             "keepOne": "שמור רק גרסה אחת (רצוי עם מטא-נתונים/תצוגות מקדימות טובות יותר) ומחק בבטחה את האחרות."

@@ -229,14 +229,7 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         // Update selected count
         this.updateSelectedCount();
         
-        // Update Duplicates button to show active state
-        const duplicatesBtn = document.getElementById('findDuplicatesBtn');
-        if (duplicatesBtn) {
-            duplicatesBtn.classList.add('active');
-            duplicatesBtn.title = 'Exit Duplicates Mode';
-            // Change icon and text to indicate it's now an exit button
-            duplicatesBtn.innerHTML = '<i class="fas fa-times"></i> Exit Duplicates';
-        }
+        this._setDuplicatesButtonActive(true);
         
         // Disable all control buttons except the duplicates button
         this.disableControlButtons();
@@ -275,19 +268,7 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         state.virtualScroller?.calculateLayout?.();
         state.virtualScroller?.enable();
         
-        // Restore Duplicates button to its original state
-        const duplicatesBtn = document.getElementById('findDuplicatesBtn');
-        if (duplicatesBtn) {
-            const badgeText = duplicatesBtn.querySelector('#duplicatesBadge')?.textContent || '';
-            duplicatesBtn.classList.remove('active');
-            duplicatesBtn.title = 'Find duplicate models';
-            duplicatesBtn.innerHTML = 'Duplicates <span id="duplicatesBadge" class="badge"></span>';
-            
-            const newBadge = duplicatesBtn.querySelector('#duplicatesBadge');
-            if (newBadge && badgeText) {
-                newBadge.textContent = badgeText;
-            }
-        }
+        this._setDuplicatesButtonActive(false);
         
         // Re-enable all control buttons
         this.enableControlButtons();
@@ -581,6 +562,16 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         });
         
         card.appendChild(checkbox);
+
+        const keepButton = document.createElement('button');
+        keepButton.type = 'button';
+        keepButton.className = 'keep-item-btn';
+        keepButton.textContent = translate('duplicates.keepThis');
+        keepButton.addEventListener('click', event => {
+            event.stopPropagation();
+            this.keepModelInGroup(model.file_path, groupHash);
+        });
+        card.appendChild(keepButton);
         return card;
     }
     
@@ -662,6 +653,18 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         this.updateSelectedCount();
     }
     
+    keepModelInGroup(filePath, hash) {
+        const group = this.duplicateGroups.find(entry => entry.hash === hash);
+        if (!group) return;
+
+        const selectableIds = new Set(
+            group.models
+                .filter(model => !this.mismatchedFiles.has(model.file_path))
+                .map(model => model.file_path)
+        );
+        this._keepItemInGroup(group, filePath, selectableIds);
+    }
+
     selectLatestInGroup(hash, updateCount = true) {
         if (this._isDeleting) return;
 
@@ -708,17 +711,7 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         }
         
         try {
-            // Show the delete confirmation modal instead of a simple confirm
-            const duplicateDeleteCount = document.getElementById('duplicateDeleteCount');
-            if (duplicateDeleteCount) {
-              duplicateDeleteCount.textContent = this.selectedForDeletion.size;
-            }
-
-            const confirmButton = document.querySelector('#duplicateDeleteModal [data-action="confirm-duplicate-delete"]');
-            if (confirmButton) {
-                confirmButton.onclick = () => this.confirmDeleteDuplicates();
-            }
-            
+            this._prepareDeleteConfirmation();
             modalManager.showModal('duplicateDeleteModal');
         } catch (error) {
             console.error('Error preparing delete:', error);

@@ -2085,7 +2085,9 @@
     "deleteDuplicates": {
       "title": "Delete Selected Duplicates",
       "message": "Are you sure you want to delete the selected duplicates?",
-      "countMessage": "items will be deleted. An Undo action will be offered when recovery is available."
+      "countMessage": "items will be deleted. An Undo action will be offered when recovery is available.",
+      "emptyGroupsWarning": "This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
+      "emptyGroupsConfirm": "I understand that no copy will be kept in these groups."
     },
     "clearCache": {
       "title": "Clear Cache Files",
@@ -2714,10 +2716,12 @@
     "found": "Found {count} duplicate groups",
     "deleting": "Deleting {count} selected items...",
     "keepLatest": "Keep Latest Versions",
+    "keepThis": "Keep this",
     "noGroups": "No duplicate groups remain",
     "showNotification": "Show Duplicates Notification",
     "deleteSelected": "Delete Selected",
     "exitMode": "Exit Mode",
+    "exitDuplicates": "Exit Duplicates",
     "help": {
       "identicalHashes": "Identical hashes mean identical model files, even if they have different names or previews.",
       "keepOne": "Keep only one version (preferably with better metadata/previews) and safely delete the others."

@@ -32,6 +32,13 @@
         <div class="delete-model-info">
             <p><span id="duplicateDeleteCount">0</span> {{ t('modals.deleteDuplicates.countMessage') }}</p>
         </div>
+        <div id="duplicateDeleteEmptyGroups" class="duplicate-delete-empty-groups" role="alert" hidden>
+            <p id="duplicateDeleteEmptyGroupsText"></p>
+            <label for="duplicateDeleteAllGroupsInput">
+                <input type="checkbox" id="duplicateDeleteAllGroupsInput">
+                <span>{{ t('modals.deleteDuplicates.emptyGroupsConfirm') }}</span>
+            </label>
+        </div>
         <div class="modal-actions">
             <button class="cancel-btn" onclick="modalManager.closeModal('duplicateDeleteModal')">{{ t('common.actions.cancel') }}</button>
             <button class="delete-btn" data-action="confirm-duplicate-delete">{{ t('common.actions.delete') }}</button>

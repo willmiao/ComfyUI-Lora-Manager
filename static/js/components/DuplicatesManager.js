@@ -184,6 +184,7 @@ export class DuplicatesManager extends DuplicatesViewManager {
         
         // Update selected count
         this.updateSelectedCount();
+        this._setDuplicatesButtonActive(true);
     }
     
     async exitDuplicateMode({ refreshLibrary = false } = {}) {
@@ -195,6 +196,7 @@ export class DuplicatesManager extends DuplicatesViewManager {
         // Update state
         const pageState = getCurrentPageState();
         pageState.duplicatesMode = false;
+        this._setDuplicatesButtonActive(false);
         
         // Hide duplicates banner
         const banner = document.getElementById('duplicatesBanner');
@@ -309,6 +311,16 @@ export class DuplicatesManager extends DuplicatesViewManager {
             });
 
             card.appendChild(checkbox);
+
+            const keepButton = document.createElement('button');
+            keepButton.type = 'button';
+            keepButton.className = 'keep-item-btn';
+            keepButton.textContent = translate('duplicates.keepThis');
+            keepButton.addEventListener('click', event => {
+                event.stopPropagation();
+                this._keepItemInGroup(group, recipe.id);
+            });
+            card.appendChild(keepButton);
             return card;
         });
         groupDiv.appendChild(cardsDiv);
@@ -405,18 +417,7 @@ export class DuplicatesManager extends DuplicatesViewManager {
         }
         
         try {
-            // Show the delete confirmation modal instead of a simple confirm
-            const duplicateDeleteCount = document.getElementById('duplicateDeleteCount');
-            if (duplicateDeleteCount) {
-                duplicateDeleteCount.textContent = this.selectedForDeletion.size;
-            }
-            
-            const confirmButton = document.querySelector('#duplicateDeleteModal [data-action="confirm-duplicate-delete"]');
-            if (confirmButton) {
-                confirmButton.onclick = () => this.confirmDeleteDuplicates();
-            }
-
-            // Use the modal manager to show the confirmation modal
+            this._prepareDeleteConfirmation();
             modalManager.showModal('duplicateDeleteModal');
         } catch (error) {
             console.error('Error preparing delete:', error);

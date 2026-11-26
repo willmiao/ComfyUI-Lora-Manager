@@ -462,6 +462,10 @@ class RecipeManager {
 
     // Duplicate detection and management methods
     async findDuplicateRecipes() {
+        if (this.duplicatesManager.inDuplicateMode) {
+            await this.duplicatesManager.exitDuplicateMode();
+            return false;
+        }
         return await this.duplicatesManager.findDuplicates();
     }
 
