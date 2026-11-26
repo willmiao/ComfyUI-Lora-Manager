@@ -1400,8 +1400,6 @@
             "finding": "סורק למציאת מתכונים כפולים...",
             "found": "נמצאו {count} קבוצות כפולות",
             "noGroups": "לא נמצאו קבוצות כפולות לפי קריטריון ההתאמה הנוכחי",
-            "keepLatest": "שמור גרסאות אחרונות",
-            "deleteSelected": "מחק נבחרים",
             "includePromptLabel": "כלול פרומפט בהתאמה",
             "basis": {
                 "loraCombo": "התאמה לפי: שילוב LoRA",
@@ -2084,15 +2082,10 @@
             "title": "החרג מודל",
             "message": "האם אתה בטוח שברצונך להחריג מודל זה? מודלים מוחרגים לא יופיעו בחיפושים או ברשימות מודלים."
         },
-        "deleteDuplicateRecipes": {
-            "title": "מחק מתכונים כפולים",
-            "message": "האם אתה בטוח שברצונך למחוק את המתכונים הכפולים שנבחרו?",
-            "countMessage": "מתכונים יימחקו לצמיתות."
-        },
-        "deleteDuplicateModels": {
-            "title": "מחק מודלים כפולים",
-            "message": "האם אתה בטוח שברצונך למחוק את המודלים הכפולים שנבחרו?",
-            "countMessage": "מודלים יימחקו לצמיתות."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "נקה קבצי מטמון",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "נמצאו {count} קבוצות כפולות",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "הצג התראת כפילויות",
         "deleteSelected": "מחק נבחרים",
         "exitMode": "צא ממצב",

@@ -5,13 +5,12 @@ import { translate } from '../utils/i18nHelpers.js';
 import { RecipeCard } from './RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { recreateVirtualScroll } from '../utils/infiniteScroll.js';
+import { DuplicatesViewManager } from './shared/DuplicatesViewManager.js';
 
-export class DuplicatesManager {
+export class DuplicatesManager extends DuplicatesViewManager {
     constructor(recipeManager) {
+        super();
         this.recipeManager = recipeManager;
-        this.duplicateGroups = [];
-        this.inDuplicateMode = false;
-        this.selectedForDeletion = new Set();
         this._isFindingDuplicates = false;
         this._initPromptMatchToggle();
         this._initHelpTooltip();
@@ -87,7 +86,9 @@ export class DuplicatesManager {
         });
     }
 
-    async findDuplicates() {
+    async findDuplicates({ suppressEmptyToast = false } = {}) {
+        if (this._isDeleting) return false;
+
         // Guard against re-entry: the scan can take a while on large
         // libraries, and repeated clicks would pile up identical requests
         // on the backend.
@@ -119,7 +120,9 @@ export class DuplicatesManager {
             this.duplicateGroups = data.duplicate_groups || [];
 
             if (this.duplicateGroups.length === 0) {
-                showToast('toast.duplicates.noDuplicatesFound', { type: 'recipes' }, 'info');
+                if (!suppressEmptyToast) {
+                    showToast('toast.duplicates.noDuplicatesFound', { type: 'recipes' }, 'info');
+                }
                 // Keep (or enter) the duplicates view when the user is tuning
                 // the matching basis, so the prompt-matching toggle stays
                 // reachable; otherwise just toast and stay on the library grid.
@@ -183,7 +186,9 @@ export class DuplicatesManager {
         this.updateSelectedCount();
     }
     
-    async exitDuplicateMode() {
+    async exitDuplicateMode({ refreshLibrary = false } = {}) {
+        const shouldRefreshLibrary = refreshLibrary || this._libraryNeedsRefresh;
+        this._libraryNeedsRefresh = false;
         this.inDuplicateMode = false;
         this.selectedForDeletion.clear();
         
@@ -201,6 +206,7 @@ export class DuplicatesManager {
         document.body.classList.remove('duplicate-mode');
         
         // Clear the recipe grid first
+        this._stopProgressiveGroupRendering();
         const recipeGrid = document.getElementById('recipeGrid');
         if (recipeGrid) {
             recipeGrid.innerHTML = '';
@@ -210,10 +216,11 @@ export class DuplicatesManager {
         // while duplicates mode was active (enabling the old scroller first
         // would let its pending rAF render repopulate the grid after the
         // new scroller is created, leaving orphaned/overlapping cards).
-        if (state.pendingLayoutRecreate) {
+        if (state.pendingLayoutRecreate || shouldRefreshLibrary) {
             state.pendingLayoutRecreate = false;
             await recreateVirtualScroll('recipes');
         } else if (state.virtualScroller) {
+            state.virtualScroller.calculateLayout?.();
             state.virtualScroller.enable();
         }
     }
@@ -221,12 +228,10 @@ export class DuplicatesManager {
     renderDuplicateGroups() {
         const recipeGrid = document.getElementById('recipeGrid');
         if (!recipeGrid) return;
-        
-        // Clear existing content
+
+        this._stopProgressiveGroupRendering();
         recipeGrid.innerHTML = '';
 
-        // Empty-state view: keep the banner (and the matching-basis toggle)
-        // reachable when no groups match the current basis
         if (this.duplicateGroups.length === 0) {
             const emptyState = document.createElement('div');
             emptyState.className = 'duplicates-empty-state';
@@ -234,227 +239,166 @@ export class DuplicatesManager {
             recipeGrid.appendChild(emptyState);
             return;
         }
-        
-        // Render each duplicate group
-        this.duplicateGroups.forEach((group, groupIndex) => {
-            const groupKey = group.key;
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'duplicate-group';
-            groupDiv.dataset.groupKey = groupKey;
-            
-            // Create group header
-            const header = document.createElement('div');
-            header.className = 'duplicate-group-header';
-            header.innerHTML = `
-                <span>Duplicate Group #${groupIndex + 1} (${group.recipes.length} recipes)</span>
-                <span>
-                    <button class="btn-select-all" onclick="recipeManager.duplicatesManager.toggleSelectAllInGroup('${groupKey}')">
-                        Select All
-                    </button>
-                    <button class="btn-select-latest" onclick="recipeManager.duplicatesManager.selectLatestInGroup('${groupKey}')">
-                        Keep Latest
-                    </button>
-                </span>
-            `;
-            groupDiv.appendChild(header);
-            
-            // Create cards container
-            const cardsDiv = document.createElement('div');
-            cardsDiv.className = 'card-group-container';
-            
-            // Add scrollable class if there are many recipes in the group
-            if (group.recipes.length > 6) {
-                cardsDiv.classList.add('scrollable');
-                
-                // Add expand/collapse toggle button
-                const toggleBtn = document.createElement('button');
-                toggleBtn.className = 'group-toggle-btn';
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                toggleBtn.title = "Expand/Collapse";
-                toggleBtn.onclick = function() {
-                    cardsDiv.classList.toggle('scrollable');
-                    this.innerHTML = cardsDiv.classList.contains('scrollable') ? 
-                        '<i class="fas fa-chevron-down"></i>' : 
-                        '<i class="fas fa-chevron-up"></i>';
-                };
-                groupDiv.appendChild(toggleBtn);
-            }
-            
-            // Sort recipes by date (newest first)
-            const sortedRecipes = [...group.recipes].sort((a, b) => b.modified - a.modified);
-            
-            // Add all recipe cards in this group
-            sortedRecipes.forEach((recipe, index) => {
-                // Create recipe card
-                const recipeCard = new RecipeCard(recipe, (recipe) => {
-                    this.recipeManager.showRecipeDetails(recipe);
-                });
-                const card = recipeCard.element;
-                
-                // Add duplicate class
-                card.classList.add('duplicate');
-                
-                // Mark the latest one
-                if (index === 0) {
-                    card.classList.add('latest');
-                }
-                
-                // Add selection checkbox
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'selector-checkbox';
-                checkbox.dataset.recipeId = recipe.id;
-                checkbox.dataset.groupKey = groupKey;
-                
-                // Check if already selected
-                if (this.selectedForDeletion.has(recipe.id)) {
-                    checkbox.checked = true;
-                    card.classList.add('duplicate-selected');
-                }
-                
-                // Add change event to checkbox
-                checkbox.addEventListener('change', (e) => {
-                    e.stopPropagation();
-                    this.toggleCardSelection(recipe.id, card, checkbox);
-                });
-                
-                // Make the entire card clickable for selection
-                card.addEventListener('click', (e) => {
-                    // Don't toggle if clicking on the checkbox directly or card actions
-                    if (e.target === checkbox || e.target.closest('.card-actions')) {
-                        return;
-                    }
-                    
-                    // Toggle checkbox state
-                    checkbox.checked = !checkbox.checked;
-                    this.toggleCardSelection(recipe.id, card, checkbox);
-                });
-                
-                card.appendChild(checkbox);
-                cardsDiv.appendChild(card);
+
+        this._startProgressiveGroupRendering(
+            recipeGrid,
+            (group, groupIndex) => this._createDuplicateGroup(group, groupIndex)
+        );
+    }
+
+    _createDuplicateGroup(group, groupIndex) {
+        const groupKey = group.key;
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'duplicate-group';
+        groupDiv.dataset.groupKey = groupKey;
+
+        const allSelected = group.recipes.length > 0 && group.recipes.every(
+            recipe => this.selectedForDeletion.has(recipe.id)
+        );
+        const header = document.createElement('div');
+        header.className = 'duplicate-group-header';
+        header.innerHTML = `
+            <span>Duplicate Group #${groupIndex + 1} (${group.recipes.length} recipes)</span>
+            <span>
+                <button class="btn-select-all" onclick="recipeManager.duplicatesManager.toggleSelectAllInGroup('${groupKey}')">
+                    ${allSelected ? 'Deselect All' : 'Select All'}
+                </button>
+                <button class="btn-select-latest" onclick="recipeManager.duplicatesManager.selectLatestInGroup('${groupKey}')">
+                    Keep Latest
+                </button>
+            </span>
+        `;
+        groupDiv.appendChild(header);
+
+        const cardsDiv = document.createElement('div');
+        cardsDiv.className = 'card-group-container';
+        const sortedRecipes = [...group.recipes].sort((a, b) => b.modified - a.modified);
+        this._renderCardGroup(groupDiv, cardsDiv, sortedRecipes, (recipe, index) => {
+            const recipeCard = new RecipeCard(recipe, currentRecipe => {
+                this.recipeManager.showRecipeDetails(currentRecipe);
             });
-            
-            groupDiv.appendChild(cardsDiv);
-            recipeGrid.appendChild(groupDiv);
+            const card = recipeCard.element;
+            card.classList.add('duplicate');
+            if (index === 0) {
+                card.classList.add('latest');
+            }
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'selector-checkbox';
+            checkbox.dataset.recipeId = recipe.id;
+            checkbox.dataset.groupKey = groupKey;
+
+            if (this.selectedForDeletion.has(recipe.id)) {
+                checkbox.checked = true;
+                card.classList.add('duplicate-selected');
+            }
+
+            checkbox.addEventListener('change', event => {
+                event.stopPropagation();
+                this.toggleCardSelection(recipe.id, card, checkbox);
+            });
+
+            card.addEventListener('click', event => {
+                if (event.target === checkbox || event.target.closest('.card-actions')) {
+                    return;
+                }
+
+                checkbox.checked = !checkbox.checked;
+                this.toggleCardSelection(recipe.id, card, checkbox);
+            });
+
+            card.appendChild(checkbox);
+            return card;
         });
-    }
-    
-    // Helper method to toggle card selection state
-    toggleCardSelection(recipeId, card, checkbox) {
-        if (checkbox.checked) {
-            this.selectedForDeletion.add(recipeId);
-            card.classList.add('duplicate-selected');
-        } else {
-            this.selectedForDeletion.delete(recipeId);
-            card.classList.remove('duplicate-selected');
-        }
-        
-        this.updateSelectedCount();
-    }
-    
-    updateSelectedCount() {
-        const selectedCountEl = document.getElementById('duplicatesSelectedCount');
-        if (selectedCountEl) {
-            selectedCountEl.textContent = this.selectedForDeletion.size;
-        }
-        
-        // Update delete button state
-        const deleteBtn = document.querySelector('.btn-delete-selected');
-        if (deleteBtn) {
-            deleteBtn.disabled = this.selectedForDeletion.size === 0;
-            deleteBtn.classList.toggle('disabled', this.selectedForDeletion.size === 0);
-        }
+        groupDiv.appendChild(cardsDiv);
+        return groupDiv;
     }
     
     toggleSelectAllInGroup(groupKey) {
-        const checkboxes = document.querySelectorAll(`.selector-checkbox[data-group-key="${groupKey}"]`);
-        const allSelected = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        
-        // If all are selected, deselect all; otherwise select all
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = !allSelected;
-            const recipeId = checkbox.dataset.recipeId;
-            const card = checkbox.closest('.model-card');
-            
-            if (!allSelected) {
-                this.selectedForDeletion.add(recipeId);
-                card.classList.add('duplicate-selected');
+        if (this._isDeleting) return;
+
+        const group = this.duplicateGroups.find(entry => entry.key === groupKey);
+        if (!group) return;
+
+        const allSelected = group.recipes.length > 0 && group.recipes.every(
+            recipe => this.selectedForDeletion.has(recipe.id)
+        );
+        group.recipes.forEach(recipe => {
+            if (allSelected) {
+                this.selectedForDeletion.delete(recipe.id);
             } else {
-                this.selectedForDeletion.delete(recipeId);
-                card.classList.remove('duplicate-selected');
+                this.selectedForDeletion.add(recipe.id);
             }
         });
-        
-        // Update the button text
-        const button = document.querySelector(`.duplicate-group[data-group-key="${groupKey}"] .btn-select-all`);
+
+        const groupDiv = this._getRenderedGroup(groupKey);
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
         if (button) {
-            button.textContent = !allSelected ? "Deselect All" : "Select All";
+            button.textContent = !allSelected ? 'Deselect All' : 'Select All';
         }
-        
+
         this.updateSelectedCount();
+    }
+
+    _getRenderedGroup(groupKey) {
+        return Array.from(document.querySelectorAll('.duplicate-group')).find(
+            element => element.dataset.groupKey === groupKey
+        );
     }
     
     selectAllInGroup(groupKey) {
-        const checkboxes = document.querySelectorAll(`.selector-checkbox[data-group-key="${groupKey}"]`);
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-            this.selectedForDeletion.add(checkbox.dataset.recipeId);
-            checkbox.closest('.model-card').classList.add('duplicate-selected');
-        });
-        
-        // Update the button text
-        const button = document.querySelector(`.duplicate-group[data-group-key="${groupKey}"] .btn-select-all`);
+        if (this._isDeleting) return;
+
+        const group = this.duplicateGroups.find(entry => entry.key === groupKey);
+        if (!group) return;
+
+        group.recipes.forEach(recipe => this.selectedForDeletion.add(recipe.id));
+        const groupDiv = this._getRenderedGroup(groupKey);
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
         if (button) {
-            button.textContent = "Deselect All";
+            button.textContent = 'Deselect All';
         }
-        
+
         this.updateSelectedCount();
     }
     
-    selectLatestInGroup(groupKey) {
-        // Find all checkboxes in this group
-        const checkboxes = document.querySelectorAll(`.selector-checkbox[data-group-key="${groupKey}"]`);
-        
-        // Get all the recipes in this group
-        const group = this.duplicateGroups.find(g => g.key === groupKey);
-        if (!group) return;
-        
-        // Sort recipes by date (newest first)
+    selectLatestInGroup(groupKey, updateCount = true) {
+        if (this._isDeleting) return;
+
+        const group = this.duplicateGroups.find(entry => entry.key === groupKey);
+        if (!group || group.recipes.length === 0) return;
+
         const sortedRecipes = [...group.recipes].sort((a, b) => b.modified - a.modified);
-        
-        // Skip the first (latest) one and select the rest for deletion
-        for (let i = 1; i < sortedRecipes.length; i++) {
-            const recipeId = sortedRecipes[i].id;
-            const checkbox = document.querySelector(`.selector-checkbox[data-recipe-id="${recipeId}"]`);
-            
-            if (checkbox) {
-                checkbox.checked = true;
-                this.selectedForDeletion.add(recipeId);
-                checkbox.closest('.model-card').classList.add('duplicate-selected');
-            }
+        this.selectedForDeletion.delete(sortedRecipes[0].id);
+        sortedRecipes.slice(1).forEach(recipe => this.selectedForDeletion.add(recipe.id));
+
+        const groupDiv = this._getRenderedGroup(groupKey);
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
+        if (button) {
+            button.textContent = 'Select All';
         }
-        
-        // Make sure the latest one is not selected
-        const latestId = sortedRecipes[0].id;
-        const latestCheckbox = document.querySelector(`.selector-checkbox[data-recipe-id="${latestId}"]`);
-        
-        if (latestCheckbox) {
-            latestCheckbox.checked = false;
-            this.selectedForDeletion.delete(latestId);
-            latestCheckbox.closest('.model-card').classList.remove('duplicate-selected');
+
+        if (updateCount) {
+            this.updateSelectedCount();
         }
-        
-        this.updateSelectedCount();
     }
     
     selectLatestDuplicates() {
-        // For each duplicate group, select all but the latest recipe
+        if (this._isDeleting) return;
+
         this.duplicateGroups.forEach(group => {
-            this.selectLatestInGroup(group.key);
+            this.selectLatestInGroup(group.key, false);
         });
+        this.updateSelectedCount();
     }
     
     async deleteSelectedDuplicates() {
+        if (this._isDeleting) return false;
+
         if (this.selectedForDeletion.size === 0) {
             showToast('toast.duplicates.noItemsSelected', { type: 'recipes' }, 'info');
             return;
@@ -467,6 +411,11 @@ export class DuplicatesManager {
                 duplicateDeleteCount.textContent = this.selectedForDeletion.size;
             }
             
+            const confirmButton = document.querySelector('#duplicateDeleteModal [data-action="confirm-duplicate-delete"]');
+            if (confirmButton) {
+                confirmButton.onclick = () => this.confirmDeleteDuplicates();
+            }
+
             // Use the modal manager to show the confirmation modal
             modalManager.showModal('duplicateDeleteModal');
         } catch (error) {
@@ -475,14 +424,51 @@ export class DuplicatesManager {
         }
     }
     
+    _applySuccessfulDeletions(deletedIds) {
+        const deletedIdSet = new Set(deletedIds);
+        const deletedPaths = [];
+        this.duplicateGroups.forEach(group => {
+            group.recipes.forEach(recipe => {
+                if (deletedIdSet.has(recipe.id) && recipe.file_path) {
+                    deletedPaths.push(recipe.file_path);
+                }
+            });
+        });
+
+        this._libraryNeedsRefresh = true;
+        if (deletedPaths.length > 0) {
+            state.virtualScroller?.removeMultipleItemsByFilePath?.(deletedPaths);
+        }
+        this._removeSuccessfullyDeleted(deletedIds);
+
+        const countSpan = document.getElementById('duplicatesCount');
+        if (countSpan) {
+            countSpan.textContent = this.duplicateGroups.length === 0
+                ? translate('recipes.duplicates.noGroups')
+                : translate('recipes.duplicates.found', { count: this.duplicateGroups.length });
+        }
+        this.renderDuplicateGroups();
+        this.updateSelectedCount();
+    }
+
     // Add new method to execute deletion after confirmation
     async confirmDeleteDuplicates() {
+        if (this._isDeleting) return false;
+        if (this.selectedForDeletion.size === 0) {
+            modalManager.closeModal('duplicateDeleteModal');
+            return false;
+        }
+
+        const recipeIds = Array.from(this.selectedForDeletion);
+        this._isDeleting = true;
+        this._setDeletingState(true);
+        state.loadingManager?.showSimpleLoading(
+            translate('duplicates.deleting', { count: recipeIds.length })
+        );
+
         try {           
             // Close the modal
             modalManager.closeModal('duplicateDeleteModal');
-            
-            // Prepare recipe IDs for deletion
-            const recipeIds = Array.from(this.selectedForDeletion);
             
             // Call API to bulk delete
             const response = await fetch('/api/lm/recipes/bulk-delete', {
@@ -508,7 +494,14 @@ export class DuplicatesManager {
 
             if (data.batch_id || batchIds) {
                 // One undo action restores the whole selected group
-                const refreshFn = () => window.recipeManager.loadRecipes(true);
+                const refreshFn = async () => {
+                    if (this.inDuplicateMode) {
+                        this._libraryNeedsRefresh = true;
+                        await this.findDuplicates({ suppressEmptyToast: true });
+                    } else {
+                        await window.recipeManager.loadRecipes(true);
+                    }
+                };
                 const onAction = data.batch_id
                     ? () => handleUndoDelete(data.batch_id, refreshFn)
                     : async () => {
@@ -519,7 +512,7 @@ export class DuplicatesManager {
                                 return;
                             }
                         }
-                        refreshFn();
+                        await refreshFn();
                         showToast('toast.undo.restored', {}, 'success');
                     };
                 showActionToast('toast.undo.deletedBulk', { count: data.total_deleted }, 'success', {
@@ -530,14 +523,29 @@ export class DuplicatesManager {
                 showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: 'recipes' }, 'success');
             }
             
-            // Exit duplicate mode if deletions were successful
+            const failures = Array.isArray(data.failed) ? data.failed : [];
+            if (failures.length > 0) {
+                showToast('toast.duplicates.deletePartialFailed', {
+                    failed: failures.length,
+                    type: 'recipes',
+                    message: failures[0].reason || failures[0].error || '',
+                }, 'error');
+            }
+
             if (data.total_deleted > 0) {
-                this.exitDuplicateMode();
+                const deletedIds = Array.isArray(data.deleted)
+                    ? data.deleted
+                    : recipeIds.slice(0, data.total_deleted);
+                this._applySuccessfulDeletions(deletedIds);
             }
             
         } catch (error) {
             console.error('Error deleting recipes:', error);
             showToast('toast.duplicates.deleteFailed', { type: 'recipes', message: error.message }, 'error');
+        } finally {
+            this._isDeleting = false;
+            this._setDeletingState(false);
+            state.loadingManager?.hide();
         }
     }
 }

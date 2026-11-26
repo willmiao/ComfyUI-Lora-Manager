@@ -1400,8 +1400,6 @@
             "finding": "Recherche de Recipes en doublon...",
             "found": "Trouvé {count} groupes de doublons",
             "noGroups": "Aucun groupe de doublons trouvé avec le critère de correspondance actuel",
-            "keepLatest": "Garder les dernières versions",
-            "deleteSelected": "Supprimer la sélection",
             "includePromptLabel": "Inclure le prompt dans la correspondance",
             "basis": {
                 "loraCombo": "Correspondance : combinaison de LoRA",
@@ -2084,15 +2082,10 @@
             "title": "Exclure le modèle",
             "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
         },
-        "deleteDuplicateRecipes": {
-            "title": "Supprimer les Recipes en double",
-            "message": "Êtes-vous sûr de vouloir supprimer les Recipes en double sélectionnées ?",
-            "countMessage": "recipes seront définitivement supprimées."
-        },
-        "deleteDuplicateModels": {
-            "title": "Supprimer les modèles en double",
-            "message": "Êtes-vous sûr de vouloir supprimer les modèles en double sélectionnés ?",
-            "countMessage": "modèles seront définitivement supprimés."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "Vider les fichiers de cache",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "Trouvé {count} groupes de doublons",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "Afficher la notification de doublons",
         "deleteSelected": "Supprimer la sélection",
         "exitMode": "Quitter le mode",

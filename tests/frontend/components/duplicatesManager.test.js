@@ -23,6 +23,10 @@ vi.mock('../../../static/js/components/RecipeCard.js', () => ({
   RecipeCard: class {
     constructor() {
       this.element = document.createElement('div');
+      this.element.className = 'model-card';
+      const preview = document.createElement('div');
+      preview.className = 'card-preview';
+      this.element.appendChild(preview);
     }
   },
 }));
@@ -101,6 +105,73 @@ describe('DuplicatesManager exitDuplicateMode', () => {
     expect(document.body.classList.contains('duplicate-mode')).toBe(false);
     expect(document.getElementById('recipeGrid').innerHTML).toBe('');
     expect(document.getElementById('duplicatesBanner').style.display).toBe('none');
+  });
+});
+
+describe('DuplicatesManager card selection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setCurrentPageType('recipes');
+    setupDom();
+    state.virtualScroller = { enable: vi.fn(), disable: vi.fn() };
+  });
+
+  afterEach(() => {
+    state.virtualScroller = null;
+  });
+
+  it('toggles selection when the preview area is clicked', () => {
+    const manager = new DuplicatesManager({});
+    manager.duplicateGroups = [{
+      key: 'g-1',
+      recipes: [
+        { id: 'r1', modified: 1 },
+        { id: 'r2', modified: 2 },
+      ],
+    }];
+    manager.renderDuplicateGroups();
+
+    const checkbox = document.querySelector('.selector-checkbox[data-recipe-id="r1"]');
+    const card = checkbox.closest('.model-card');
+    card.querySelector('.card-preview').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(manager.selectedForDeletion.has('r1')).toBe(true);
+    expect(checkbox.checked).toBe(true);
+    expect(card.classList.contains('duplicate-selected')).toBe(true);
+  });
+
+  it('keeps the latest recipe in every group before later groups are rendered', () => {
+    const originalObserver = global.IntersectionObserver;
+    global.IntersectionObserver = class {
+      constructor() {}
+      observe() {}
+      disconnect() {}
+    };
+
+    try {
+      const manager = new DuplicatesManager({});
+      manager.duplicateGroups = Array.from({ length: 30 }, (_, index) => ({
+        key: `g-${index}`,
+        recipes: [
+          { id: `r-${index}-old`, modified: 1 },
+          { id: `r-${index}-new`, modified: 2 },
+        ],
+      }));
+      manager.renderDuplicateGroups();
+
+      expect(document.querySelectorAll('.duplicate-group')).toHaveLength(25);
+      manager.selectLatestDuplicates();
+
+      expect(manager.selectedForDeletion.size).toBe(30);
+      expect(manager.selectedForDeletion.has('r-29-old')).toBe(true);
+      expect(manager.selectedForDeletion.has('r-29-new')).toBe(false);
+    } finally {
+      if (originalObserver) {
+        global.IntersectionObserver = originalObserver;
+      } else {
+        delete global.IntersectionObserver;
+      }
+    }
   });
 });
 
@@ -229,6 +300,10 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
     state.pendingLayoutRecreate = false;
     state.virtualScroller = { enable: vi.fn(), disable: vi.fn() };
     handleUndoDeleteMock.mockResolvedValue(true);
+    state.loadingManager = {
+      showSimpleLoading: vi.fn(),
+      hide: vi.fn(),
+    };
     globalThis.modalManager = { showModal: vi.fn(), closeModal: vi.fn() };
     globalThis.recipeManager = { loadRecipes: vi.fn() };
   });
@@ -236,6 +311,7 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
   afterEach(() => {
     state.pendingLayoutRecreate = false;
     state.virtualScroller = null;
+    state.loadingManager = null;
     delete globalThis.modalManager;
     delete globalThis.recipeManager;
     delete globalThis.fetch;
@@ -253,7 +329,7 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
     return call[3];
   }
 
-  it('shows the undo action toast with the batch id and reloads recipes on undo', async () => {
+  it('shows the undo action toast and refreshes the current view on undo', async () => {
     mockBulkDelete({ success: true, total_deleted: 2, batch_id: 'recipe-batch-1' });
 
     const manager = new DuplicatesManager({});
@@ -279,16 +355,18 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
       expect.anything(),
       expect.anything()
     );
-    // exitDuplicateMode still runs for successful deletions
-    expect(manager.inDuplicateMode).toBe(false);
+    expect(manager.inDuplicateMode).toBe(true);
+    expect(recreateVirtualScrollMock).not.toHaveBeenCalled();
 
-    lastActionToastOptions().onAction();
+    await lastActionToastOptions().onAction();
 
     expect(handleUndoDeleteMock).toHaveBeenCalledTimes(1);
     expect(handleUndoDeleteMock).toHaveBeenCalledWith('recipe-batch-1', expect.any(Function));
-
     const refreshFn = handleUndoDeleteMock.mock.calls[0][1];
-    refreshFn();
+    await refreshFn();
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/lm/recipes/find-duplicates');
+    manager.inDuplicateMode = false;
+    await refreshFn();
     expect(globalThis.recipeManager.loadRecipes).toHaveBeenCalledWith(true);
   });
 
@@ -308,8 +386,8 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
     expect(handleUndoDeleteMock).toHaveBeenCalledTimes(2);
     expect(handleUndoDeleteMock.mock.calls[0]).toEqual(['rb-1', null, { showToast: false, refresh: false }]);
     expect(handleUndoDeleteMock.mock.calls[1]).toEqual(['rb-2', null, { showToast: false, refresh: false }]);
-    expect(globalThis.recipeManager.loadRecipes).toHaveBeenCalledTimes(1);
-    expect(globalThis.recipeManager.loadRecipes).toHaveBeenCalledWith(true);
+    expect(globalThis.fetch).toHaveBeenLastCalledWith('/api/lm/recipes/find-duplicates');
+    expect(globalThis.recipeManager.loadRecipes).not.toHaveBeenCalled();
     expect(showToastMock).toHaveBeenCalledTimes(1);
     expect(showToastMock).toHaveBeenCalledWith('toast.undo.restored', {}, 'success');
   });
@@ -329,5 +407,78 @@ describe('DuplicatesManager confirmDeleteDuplicates undo flows', () => {
       { count: 1, type: 'recipes' },
       'success'
     );
+  });
+
+  it('updates groups locally and retains visible failed recipes for retry', async () => {
+    mockBulkDelete({
+      success: true,
+      total_deleted: 1,
+      batch_id: 'recipe-batch-1',
+      deleted: ['r1'],
+      failed: [{ id: 'r2', reason: 'The file is in use' }],
+    });
+
+    const manager = new DuplicatesManager({});
+    manager.duplicateGroups = [{
+      key: 'g-1',
+      recipes: [
+        { id: 'r1', file_path: '/recipes/r1.png', modified: 1 },
+        { id: 'r2', file_path: '/recipes/r2.png', modified: 2 },
+        { id: 'r3', file_path: '/recipes/r3.png', modified: 3 },
+      ],
+    }];
+    const removeMultipleMock = vi.fn();
+    state.virtualScroller.removeMultipleItemsByFilePath = removeMultipleMock;
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add('r1');
+    manager.selectedForDeletion.add('r2');
+
+    await manager.confirmDeleteDuplicates();
+
+    expect(manager.duplicateGroups[0].recipes.map(recipe => recipe.id)).toEqual(['r2', 'r3']);
+    expect(Array.from(manager.selectedForDeletion)).toEqual(['r2']);
+    expect(removeMultipleMock).toHaveBeenCalledWith(['/recipes/r1.png']);
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.duplicates.deletePartialFailed',
+      { failed: 1, type: 'recipes', message: 'The file is in use' },
+      'error'
+    );
+    expect(manager.inDuplicateMode).toBe(true);
+    expect(recreateVirtualScrollMock).not.toHaveBeenCalled();
+  });
+
+  it('blocks duplicate submissions until deletion finishes and refreshes on exit', async () => {
+    let finishDelete;
+    globalThis.fetch = vi.fn(() => new Promise(resolve => {
+      finishDelete = () => resolve({
+        ok: true,
+        json: async () => ({ success: true, total_deleted: 1, batch_id: 'recipe-batch-1' }),
+      });
+    }));
+
+    const manager = new DuplicatesManager({});
+    manager.inDuplicateMode = true;
+    manager.selectedForDeletion.add('r1');
+
+    const firstRequest = manager.confirmDeleteDuplicates();
+    await Promise.resolve();
+
+    expect(manager._isDeleting).toBe(true);
+    expect(state.loadingManager.showSimpleLoading).toHaveBeenCalledWith(
+      'duplicates.deleting'
+    );
+    expect(translateMock).toHaveBeenCalledWith('duplicates.deleting', { count: 1 });
+    expect(await manager.confirmDeleteDuplicates()).toBe(false);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+    finishDelete();
+    await firstRequest;
+
+    expect(manager._isDeleting).toBe(false);
+    expect(recreateVirtualScrollMock).not.toHaveBeenCalled();
+    expect(state.loadingManager.hide).toHaveBeenCalled();
+
+    await manager.exitDuplicateMode();
+    expect(recreateVirtualScrollMock).toHaveBeenCalledWith('recipes');
   });
 });

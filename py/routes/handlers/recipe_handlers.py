@@ -781,6 +781,7 @@ class RecipeQueryHandler:
                             {
                                 "id": recipe.get("id"),
                                 "title": recipe.get("title"),
+                                "file_path": recipe.get("file_path"),
                                 "file_url": recipe.get("file_url")
                                 or self._format_recipe_file_url(
                                     recipe.get("file_path", "")

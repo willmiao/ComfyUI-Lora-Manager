@@ -1400,8 +1400,6 @@
       "finding": "Scanning for duplicate recipes...",
       "found": "Found {count} duplicate groups",
       "noGroups": "No duplicate groups found with the current matching basis",
-      "keepLatest": "Keep Latest Versions",
-      "deleteSelected": "Delete Selected",
       "includePromptLabel": "Include prompt in matching",
       "basis": {
         "loraCombo": "Matched by: LoRA combination",
@@ -2084,15 +2082,10 @@
       "title": "Exclude Model",
       "message": "Are you sure you want to exclude this model? Excluded models won't appear in searches or model lists."
     },
-    "deleteDuplicateRecipes": {
-      "title": "Delete Duplicate Recipes",
-      "message": "Are you sure you want to delete the selected duplicate recipes?",
-      "countMessage": "recipes will be permanently deleted."
-    },
-    "deleteDuplicateModels": {
-      "title": "Delete Duplicate Models",
-      "message": "Are you sure you want to delete the selected duplicate models?",
-      "countMessage": "models will be permanently deleted."
+    "deleteDuplicates": {
+      "title": "Delete Selected Duplicates",
+      "message": "Are you sure you want to delete the selected duplicates?",
+      "countMessage": "items will be deleted. An Undo action will be offered when recovery is available."
     },
     "clearCache": {
       "title": "Clear Cache Files",
@@ -2719,6 +2712,9 @@
   },
   "duplicates": {
     "found": "Found {count} duplicate groups",
+    "deleting": "Deleting {count} selected items...",
+    "keepLatest": "Keep Latest Versions",
+    "noGroups": "No duplicate groups remain",
     "showNotification": "Show Duplicates Notification",
     "deleteSelected": "Delete Selected",
     "exitMode": "Exit Mode",

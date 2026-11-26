@@ -1400,8 +1400,6 @@
             "finding": "重複レシピをスキャンしています...",
             "found": "{count} 個の重複グループが見つかりました",
             "noGroups": "現在の一致基準では重複グループが見つかりませんでした",
-            "keepLatest": "最新バージョンを保持",
-            "deleteSelected": "選択したものを削除",
             "includePromptLabel": "一致判定にプロンプトを含める",
             "basis": {
                 "loraCombo": "一致基準: LoRA の組み合わせ",
@@ -2084,15 +2082,10 @@
             "title": "モデルを除外",
             "message": "このモデルを除外してもよろしいですか？除外されたモデルは検索やモデルリストに表示されません。"
         },
-        "deleteDuplicateRecipes": {
-            "title": "重複レシピを削除",
-            "message": "選択した重複レシピを削除してもよろしいですか？",
-            "countMessage": "レシピが完全に削除されます。"
-        },
-        "deleteDuplicateModels": {
-            "title": "重複モデルを削除",
-            "message": "選択した重複モデルを削除してもよろしいですか？",
-            "countMessage": "モデルが完全に削除されます。"
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "キャッシュファイルをクリア",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "{count} 個の重複グループが見つかりました",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "重複通知を表示",
         "deleteSelected": "選択したものを削除",
         "exitMode": "モードを終了",

@@ -7,13 +7,12 @@ import { formatDate } from '../utils/formatters.js';
 import { getPreviewMediaExtension, isVideoPreviewUrl } from '../utils/mediaTypes.js';
 import { resetAndReload} from '../api/modelApiFactory.js';
 import { getShowDuplicatesNotification, setShowDuplicatesNotification } from '../utils/storageHelpers.js';
+import { DuplicatesViewManager } from './shared/DuplicatesViewManager.js';
 
-export class ModelDuplicatesManager {
+export class ModelDuplicatesManager extends DuplicatesViewManager {
     constructor(pageManager, modelType = 'loras') {
+        super();
         this.pageManager = pageManager;
-        this.duplicateGroups = [];
-        this.inDuplicateMode = false;
-        this.selectedForDeletion = new Set();
         this.modelType = modelType; // Use the provided modelType or default to 'loras'
 
         // Verification tracking
@@ -104,7 +103,9 @@ export class ModelDuplicatesManager {
         }
     }
     
-    async findDuplicates() {
+    async findDuplicates({ suppressEmptyToast = false } = {}) {
+        if (this._isDeleting) return false;
+
         try {
             const params = this._buildFilterQueryParams();
             const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
@@ -127,7 +128,9 @@ export class ModelDuplicatesManager {
             this.updateDuplicatesBadge(this.duplicateGroups.length);
 
             if (this.duplicateGroups.length === 0) {
-                showToast('toast.duplicates.noDuplicatesFound', { type: this.modelType }, 'info');
+                if (!suppressEmptyToast) {
+                    showToast('toast.duplicates.noDuplicatesFound', { type: this.modelType }, 'info');
+                }
                 // If already in duplicate mode, exit to clear the display
                 if (this.inDuplicateMode) {
                     this.exitDuplicateMode();
@@ -239,7 +242,9 @@ export class ModelDuplicatesManager {
         this.disableControlButtons();
     }
     
-    exitDuplicateMode() {
+    async exitDuplicateMode() {
+        const refreshLibrary = this._libraryNeedsRefresh;
+        this._libraryNeedsRefresh = false;
         this.inDuplicateMode = false;
         this.selectedForDeletion.clear();
         
@@ -260,33 +265,39 @@ export class ModelDuplicatesManager {
         document.body.classList.remove('duplicate-mode');
         
         // Clear the model grid first
+        this._stopProgressiveGroupRendering();
         const modelGrid = document.getElementById('modelGrid');
         if (modelGrid) {
             modelGrid.innerHTML = '';
         }
         
         // Re-enable virtual scrolling
-        state.virtualScroller.enable();
+        state.virtualScroller?.calculateLayout?.();
+        state.virtualScroller?.enable();
         
         // Restore Duplicates button to its original state
         const duplicatesBtn = document.getElementById('findDuplicatesBtn');
         if (duplicatesBtn) {
+            const badgeText = duplicatesBtn.querySelector('#duplicatesBadge')?.textContent || '';
             duplicatesBtn.classList.remove('active');
             duplicatesBtn.title = 'Find duplicate models';
             duplicatesBtn.innerHTML = 'Duplicates <span id="duplicatesBadge" class="badge"></span>';
             
-            // Restore badge
             const newBadge = duplicatesBtn.querySelector('#duplicatesBadge');
-            const oldBadge = document.getElementById('duplicatesBadge');
-            if (oldBadge && oldBadge.textContent) {
-                newBadge.textContent = oldBadge.textContent;
+            if (newBadge && badgeText) {
+                newBadge.textContent = badgeText;
             }
         }
         
         // Re-enable all control buttons
         this.enableControlButtons();
 
-        this.checkDuplicatesCount();
+        if (refreshLibrary) {
+            await resetAndReload(true);
+            this.updateDuplicatesBadge(this.duplicateGroups.length);
+        } else {
+            this.checkDuplicatesCount();
+        }
     }
     
     // Disable all control buttons except the duplicates button
@@ -318,89 +329,79 @@ export class ModelDuplicatesManager {
     renderDuplicateGroups() {
         const modelGrid = document.getElementById('modelGrid');
         if (!modelGrid) return;
-        
-        // Clear existing content
-        modelGrid.innerHTML = '';
-        
-        // Render each duplicate group
-        this.duplicateGroups.forEach((group, groupIndex) => {
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'duplicate-group';
-            groupDiv.dataset.hash = group.hash;
-            
-            // Create group header
-            const header = document.createElement('div');
-            header.className = 'duplicate-group-header';
-            
-            // Create verification status badge
-            const verificationBadge = document.createElement('span');
-            verificationBadge.className = 'verification-badge';
-            if (this.verifiedGroups.has(group.hash)) {
-                verificationBadge.classList.add('verified');
-                verificationBadge.innerHTML = '<i class="fas fa-check-circle"></i> Verified';
-            } else {
-                verificationBadge.classList.add('metadata');
-                verificationBadge.innerHTML = '<i class="fas fa-tag"></i> Metadata Hash';
-            }
-            
-            header.innerHTML = `
-                <span>Duplicate Group #${groupIndex + 1} (${group.models.length} models with same hash: ${group.hash})</span>
-                <span>
-                    <button class="btn-verify-hashes" data-hash="${group.hash}" title="Recalculate SHA256 hashes to verify if these are true duplicates">
-                        <i class="fas fa-fingerprint"></i> Verify Hashes
-                    </button>
-                    <button class="btn-select-all" onclick="modelDuplicatesManager.toggleSelectAllInGroup('${group.hash}')">
-                        Select All
-                    </button>
-                </span>
-            `;
-            
-            // Insert verification badge after the group title
-            const headerFirstSpan = header.querySelector('span:first-child');
-            headerFirstSpan.appendChild(verificationBadge);
-            
-            groupDiv.appendChild(header);
-            
-            // Create cards container
-            const cardsDiv = document.createElement('div');
-            cardsDiv.className = 'card-group-container';
-            
-            // Add scrollable class if there are many models in the group
-            if (group.models.length > 6) {
-                cardsDiv.classList.add('scrollable');
-                
-                // Add expand/collapse toggle button
-                const toggleBtn = document.createElement('button');
-                toggleBtn.className = 'group-toggle-btn';
-                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                toggleBtn.title = "Expand/Collapse";
-                toggleBtn.onclick = function() {
-                    cardsDiv.classList.toggle('scrollable');
-                    this.innerHTML = cardsDiv.classList.contains('scrollable') ? 
-                        '<i class="fas fa-chevron-down"></i>' : 
-                        '<i class="fas fa-chevron-up"></i>';
-                };
-                groupDiv.appendChild(toggleBtn);
-            }
-            
-            // Add all model cards in this group
-            group.models.forEach(model => {
-                const card = this.renderModelCard(model, group.hash);
-                cardsDiv.appendChild(card);
+
+        this._startProgressiveGroupRendering(
+            modelGrid,
+            (group, groupIndex) => this._createDuplicateGroup(group, groupIndex)
+        );
+        if (this.duplicateGroups.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'duplicates-empty-state';
+            emptyState.textContent = translate('duplicates.noGroups');
+            modelGrid.appendChild(emptyState);
+        }
+    }
+
+    _createDuplicateGroup(group, groupIndex) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'duplicate-group';
+        groupDiv.dataset.hash = group.hash;
+
+        const header = document.createElement('div');
+        header.className = 'duplicate-group-header';
+
+        const verificationBadge = document.createElement('span');
+        verificationBadge.className = 'verification-badge';
+        if (this.verifiedGroups.has(group.hash)) {
+            verificationBadge.classList.add('verified');
+            verificationBadge.innerHTML = '<i class="fas fa-check-circle"></i> Verified';
+        } else {
+            verificationBadge.classList.add('metadata');
+            verificationBadge.innerHTML = '<i class="fas fa-tag"></i> Metadata Hash';
+        }
+
+        const selectableModels = group.models.filter(model => !this.mismatchedFiles.has(model.file_path));
+        const allSelected = selectableModels.length > 0 && selectableModels.every(
+            model => this.selectedForDeletion.has(model.file_path)
+        );
+        header.innerHTML = `
+            <span>Duplicate Group #${groupIndex + 1} (${group.models.length} models with same hash: ${group.hash})</span>
+            <span>
+                <button class="btn-verify-hashes" data-hash="${group.hash}" title="Recalculate SHA256 hashes to verify if these are true duplicates">
+                    <i class="fas fa-fingerprint"></i> Verify Hashes
+                </button>
+                <button class="btn-select-all" onclick="modelDuplicatesManager.toggleSelectAllInGroup('${group.hash}')">
+                    ${allSelected ? 'Deselect All' : 'Select All'}
+                </button>
+                <button class="btn-select-latest" onclick="modelDuplicatesManager.selectLatestInGroup('${group.hash}')">
+                    Keep Latest
+                </button>
+            </span>
+        `;
+
+        const headerFirstSpan = header.querySelector('span:first-child');
+        headerFirstSpan.appendChild(verificationBadge);
+        groupDiv.appendChild(header);
+
+        const cardsDiv = document.createElement('div');
+        cardsDiv.className = 'card-group-container';
+        this._renderCardGroup(
+            groupDiv,
+            cardsDiv,
+            group.models,
+            model => this.renderModelCard(model, group.hash)
+        );
+        groupDiv.appendChild(cardsDiv);
+
+        const verifyButton = header.querySelector('.btn-verify-hashes');
+        if (verifyButton) {
+            verifyButton.addEventListener('click', event => {
+                event.stopPropagation();
+                this.handleVerifyHashes(group);
             });
-            
-            groupDiv.appendChild(cardsDiv);
-            modelGrid.appendChild(groupDiv);
-            
-            // Add event listener to the verify hashes button
-            const verifyButton = header.querySelector('.btn-verify-hashes');
-            if (verifyButton) {
-                verifyButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.handleVerifyHashes(group);
-                });
-            }
-        });
+        }
+
+        return groupDiv;
     }
 
     _getGroupFilePaths(group) {
@@ -468,10 +469,12 @@ export class ModelDuplicatesManager {
         if (isVideo) {
             // Create video element for video previews
             preview = document.createElement('video');
-            preview.loading = 'lazy';
-            preview.controls = true;
+            preview.controls = false;
             preview.muted = true;
             preview.loop = true;
+            preview.playsInline = true;
+            preview.preload = 'metadata';
+            preview.style.pointerEvents = 'none';
             
             const source = document.createElement('source');
             source.src = model.preview_url;
@@ -629,63 +632,76 @@ export class ModelDuplicatesManager {
         }
     }
     
-    // Helper method to toggle card selection state
-    toggleCardSelection(filePath, card, checkbox) {
-        if (checkbox.checked) {
-            this.selectedForDeletion.add(filePath);
-            card.classList.add('duplicate-selected');
-        } else {
-            this.selectedForDeletion.delete(filePath);
-            card.classList.remove('duplicate-selected');
+    toggleSelectAllInGroup(hash) {
+        if (this._isDeleting) return;
+
+        const group = this.duplicateGroups.find(entry => entry.hash === hash);
+        if (!group) return;
+
+        const selectableModels = group.models.filter(model => !this.mismatchedFiles.has(model.file_path));
+        const allSelected = selectableModels.length > 0 && selectableModels.every(
+            model => this.selectedForDeletion.has(model.file_path)
+        );
+        selectableModels.forEach(model => {
+            if (allSelected) {
+                this.selectedForDeletion.delete(model.file_path);
+            } else {
+                this.selectedForDeletion.add(model.file_path);
+            }
+        });
+
+        const groupDiv = Array.from(document.querySelectorAll('.duplicate-group')).find(
+            element => element.dataset.hash === hash
+        );
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
+        if (button) {
+            button.textContent = !allSelected ? 'Deselect All' : 'Select All';
         }
-        
+
         this.updateSelectedCount();
     }
     
-    updateSelectedCount() {
-        const selectedCountEl = document.getElementById('duplicatesSelectedCount');
-        if (selectedCountEl) {
-            selectedCountEl.textContent = this.selectedForDeletion.size;
+    selectLatestInGroup(hash, updateCount = true) {
+        if (this._isDeleting) return;
+
+        const group = this.duplicateGroups.find(entry => entry.hash === hash);
+        if (!group || group.models.length === 0) return;
+
+        const sortedModels = [...group.models].sort((a, b) => (b.modified || 0) - (a.modified || 0));
+        const keeper = sortedModels[0];
+        this.selectedForDeletion.delete(keeper.file_path);
+        group.models.forEach(model => {
+            if (model === keeper || this.mismatchedFiles.has(model.file_path)) return;
+            this.selectedForDeletion.add(model.file_path);
+        });
+
+        const groupDiv = Array.from(document.querySelectorAll('.duplicate-group')).find(
+            element => element.dataset.hash === hash
+        );
+        this._syncRenderedGroupSelection(groupDiv);
+        const button = groupDiv?.querySelector('.btn-select-all');
+        if (button) {
+            button.textContent = 'Select All';
         }
-        
-        // Update delete button state
-        const deleteBtn = document.querySelector('.btn-delete-selected');
-        if (deleteBtn) {
-            deleteBtn.disabled = this.selectedForDeletion.size === 0;
-            deleteBtn.classList.toggle('disabled', this.selectedForDeletion.size === 0);
+
+        if (updateCount) {
+            this.updateSelectedCount();
         }
     }
-    
-    toggleSelectAllInGroup(hash) {
-        const checkboxes = document.querySelectorAll(`.selector-checkbox[data-group-hash="${hash}"]`);
-        const selectableCheckboxes = Array.from(checkboxes).filter(checkbox => !checkbox.disabled);
-        const allSelected = selectableCheckboxes.length > 0 && selectableCheckboxes.every(checkbox => checkbox.checked);
-        
-        // If all are selected, deselect all; otherwise select all
-        selectableCheckboxes.forEach(checkbox => {
-            checkbox.checked = !allSelected;
-            const filePath = checkbox.dataset.filePath;
-            const card = checkbox.closest('.model-card');
-            
-            if (!allSelected) {
-                this.selectedForDeletion.add(filePath);
-                card.classList.add('duplicate-selected');
-            } else {
-                this.selectedForDeletion.delete(filePath);
-                card.classList.remove('duplicate-selected');
-            }
+
+    selectLatestDuplicates() {
+        if (this._isDeleting) return;
+
+        this.duplicateGroups.forEach(group => {
+            this.selectLatestInGroup(group.hash, false);
         });
-        
-        // Update the button text
-        const button = document.querySelector(`.duplicate-group[data-hash="${hash}"] .btn-select-all`);
-        if (button) {
-            button.textContent = !allSelected ? "Deselect All" : "Select All";
-        }
-        
         this.updateSelectedCount();
     }
     
     async deleteSelectedDuplicates() {
+        if (this._isDeleting) return false;
+
         if (this.selectedForDeletion.size === 0) {
             showToast('toast.duplicates.noItemsSelected', { type: this.modelType }, 'info');
             return;
@@ -693,27 +709,57 @@ export class ModelDuplicatesManager {
         
         try {
             // Show the delete confirmation modal instead of a simple confirm
-            const modelDuplicateDeleteCount = document.getElementById('modelDuplicateDeleteCount');
-            if (modelDuplicateDeleteCount) {
-              modelDuplicateDeleteCount.textContent = this.selectedForDeletion.size;
+            const duplicateDeleteCount = document.getElementById('duplicateDeleteCount');
+            if (duplicateDeleteCount) {
+              duplicateDeleteCount.textContent = this.selectedForDeletion.size;
+            }
+
+            const confirmButton = document.querySelector('#duplicateDeleteModal [data-action="confirm-duplicate-delete"]');
+            if (confirmButton) {
+                confirmButton.onclick = () => this.confirmDeleteDuplicates();
             }
             
-            // Use the modal manager to show the confirmation modal
-            modalManager.showModal('modelDuplicateDeleteModal');
+            modalManager.showModal('duplicateDeleteModal');
         } catch (error) {
             console.error('Error preparing delete:', error);
             showToast('toast.duplicates.deleteError', { message: error.message }, 'error');
         }
     }
     
+    _applySuccessfulDeletions(deletedPaths) {
+        this._libraryNeedsRefresh = true;
+        state.virtualScroller?.removeMultipleItemsByFilePath?.(deletedPaths);
+        this._removeSuccessfullyDeleted(deletedPaths);
+        this._pruneVerificationState();
+
+        const groupCount = this.duplicateGroups.length;
+        const countSpan = document.getElementById('duplicatesCount');
+        if (countSpan) {
+            countSpan.textContent = `Found ${groupCount} duplicate group${groupCount !== 1 ? 's' : ''}`;
+        }
+        this.updateDuplicatesBadge(groupCount);
+        this.renderDuplicateGroups();
+        this.updateSelectedCount();
+    }
+
     // Execute deletion after confirmation
     async confirmDeleteDuplicates() {
+        if (this._isDeleting) return false;
+        if (this.selectedForDeletion.size === 0) {
+            modalManager.closeModal('duplicateDeleteModal');
+            return false;
+        }
+
+        const filePaths = Array.from(this.selectedForDeletion);
+        this._isDeleting = true;
+        this._setDeletingState(true);
+        state.loadingManager?.showSimpleLoading(
+            translate('duplicates.deleting', { count: filePaths.length })
+        );
+
         try {           
             // Close the modal
-            modalManager.closeModal('modelDuplicateDeleteModal');
-            
-            // Prepare file paths for deletion
-            const filePaths = Array.from(this.selectedForDeletion);
+            modalManager.closeModal('duplicateDeleteModal');
             
             // Call API to bulk delete
             const response = await fetch(`/api/lm/${this.modelType}/bulk-delete`, {
@@ -742,7 +788,13 @@ export class ModelDuplicatesManager {
 
             if (data.batch_id || batchIds) {
                 // One undo action restores the whole selected group
-                const refreshFn = () => resetAndReload(true);
+                const refreshFn = async () => {
+                    await resetAndReload(true);
+                    this._libraryNeedsRefresh = false;
+                    if (this.inDuplicateMode) {
+                        await this.findDuplicates({ suppressEmptyToast: true });
+                    }
+                };
                 const onAction = data.batch_id
                     ? () => handleUndoDelete(data.batch_id, refreshFn)
                     : async () => {
@@ -753,7 +805,7 @@ export class ModelDuplicatesManager {
                                 return;
                             }
                         }
-                        refreshFn();
+                        await refreshFn();
                         showToast('toast.undo.restored', {}, 'success');
                     };
                 showActionToast('toast.undo.deletedBulk', { count: data.total_deleted }, 'success', {
@@ -781,43 +833,20 @@ export class ModelDuplicatesManager {
                 showToast('toast.duplicates.cacheUpdateFailed', {}, 'warning');
             }
             
-            // If models were successfully deleted
-            if (data.total_deleted > 0) {
-                await resetAndReload(true);
-                
-                // Check if there are still duplicates
-                try {
-                    const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
-                    const dupResponse = await fetch(endpoint);
-                    
-                    if (!dupResponse.ok) {
-                        throw new Error(`Failed to get duplicates: ${dupResponse.statusText}`);
-                    }
-                    
-                    const dupData = await dupResponse.json();
-                    const remainingDuplicatesCount = (dupData.duplicates || []).length;
-                    
-                    // Update badge count
-                    this.updateDuplicatesBadge(remainingDuplicatesCount);
-                    
-                    // If no more duplicates, exit duplicate mode
-                    if (remainingDuplicatesCount === 0) {
-                        this.exitDuplicateMode();
-                    } else {
-                        // If duplicates remain, refresh duplicate groups display
-                        this.duplicateGroups = dupData.duplicates || [];
-                        this.selectedForDeletion.clear();
-                        this.renderDuplicateGroups();
-                        this.updateSelectedCount();
-                    }
-                } catch (error) {
-                    console.error('Error checking remaining duplicates:', error);
-                }
+            const deletedPaths = results.length > 0
+                ? results.filter(entry => entry?.success && entry.file_path).map(entry => entry.file_path)
+                : (data.total_deleted > 0 ? filePaths : []);
+            if (deletedPaths.length > 0) {
+                this._applySuccessfulDeletions(deletedPaths);
             }
             
         } catch (error) {
             console.error('Error deleting models:', error);
             showToast('toast.duplicates.deleteFailed', { type: this.modelType, message: error.message }, 'error');
+        } finally {
+            this._isDeleting = false;
+            this._setDeletingState(false);
+            state.loadingManager?.hide();
         }
     }
     

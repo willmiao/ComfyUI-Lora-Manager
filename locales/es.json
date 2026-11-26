@@ -1400,8 +1400,6 @@
             "finding": "Buscando recetas duplicadas...",
             "found": "Se encontraron {count} grupos de duplicados",
             "noGroups": "No se encontraron grupos de duplicados con el criterio de coincidencia actual",
-            "keepLatest": "Mantener versiones más recientes",
-            "deleteSelected": "Eliminar seleccionados",
             "includePromptLabel": "Incluir prompt en la coincidencia",
             "basis": {
                 "loraCombo": "Coincidencia por: combinación de LoRA",
@@ -2084,15 +2082,10 @@
             "title": "Excluir modelo",
             "message": "¿Estás seguro de que quieres excluir este modelo? Los modelos excluidos no aparecerán en búsquedas o listas de modelos."
         },
-        "deleteDuplicateRecipes": {
-            "title": "Eliminar recetas duplicadas",
-            "message": "¿Estás seguro de que quieres eliminar las recetas duplicadas seleccionadas?",
-            "countMessage": "recetas serán eliminadas permanentemente."
-        },
-        "deleteDuplicateModels": {
-            "title": "Eliminar modelos duplicados",
-            "message": "¿Estás seguro de que quieres eliminar los modelos duplicados seleccionados?",
-            "countMessage": "modelos serán eliminados permanentemente."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "Limpiar archivos de caché",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "Se encontraron {count} grupos de duplicados",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "Mostrar notificación de duplicados",
         "deleteSelected": "Eliminar seleccionados",
         "exitMode": "Salir del modo",

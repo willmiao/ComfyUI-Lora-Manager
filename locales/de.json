@@ -1400,8 +1400,6 @@
             "finding": "Suche nach doppelten Rezepten...",
             "found": "{count} Duplikat-Gruppen gefunden",
             "noGroups": "Keine Duplikat-Gruppen mit dem aktuellen Abgleichskriterium gefunden",
-            "keepLatest": "Neueste Versionen behalten",
-            "deleteSelected": "Ausgewählte löschen",
             "includePromptLabel": "Prompt beim Abgleich berücksichtigen",
             "basis": {
                 "loraCombo": "Abgeglichen nach: LoRA-Kombination",
@@ -2084,15 +2082,10 @@
             "title": "Modell ausschließen",
             "message": "Sind Sie sicher, dass Sie dieses Modell ausschließen möchten? Ausgeschlossene Modelle erscheinen nicht in Suchergebnissen oder Modelllisten."
         },
-        "deleteDuplicateRecipes": {
-            "title": "Doppelte Rezepte löschen",
-            "message": "Sind Sie sicher, dass Sie die ausgewählten doppelten Rezepte löschen möchten?",
-            "countMessage": "Rezepte werden dauerhaft gelöscht."
-        },
-        "deleteDuplicateModels": {
-            "title": "Doppelte Modelle löschen",
-            "message": "Sind Sie sicher, dass Sie die ausgewählten doppelten Modelle löschen möchten?",
-            "countMessage": "Modelle werden dauerhaft gelöscht."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "Cache-Dateien löschen",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "{count} Duplikat-Gruppen gefunden",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "Duplikat-Benachrichtigung anzeigen",
         "deleteSelected": "Ausgewählte löschen",
         "exitMode": "Modus verlassen",

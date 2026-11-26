@@ -1,10 +1,23 @@
+{% set is_recipe_duplicates = page_id == 'recipes' %}
 <!-- Duplicates banner (hidden by default) -->
 <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
     <div class="banner-content">
       <i class="fas fa-exclamation-triangle"></i>
-      <span id="duplicatesCount">{{ t('duplicates.found', count=0) }}</span>
+      <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) if is_recipe_duplicates else t('duplicates.found', count=0) }}</span>
+      {% if is_recipe_duplicates %}
+      <span id="duplicatesBasis" class="duplicates-basis"></span>
+      {% endif %}
       <i class="fas fa-question-circle help-icon" id="duplicatesHelp" aria-label="{{ t('common.actions.help') }}"></i>
       <div class="banner-actions">
+        {% if is_recipe_duplicates %}
+        <div class="setting-contro" id="promptMatchControl">
+          <span>{{ t('recipes.duplicates.includePromptLabel') }}:</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="promptMatchInput">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        {% else %}
         <div class="setting-contro" id="badgeToggleControl">
           <span>{{ t('duplicates.showNotification') }}:</span>
           <label class="toggle-switch">
@@ -12,16 +25,24 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <button class="btn-delete-selected disabled" onclick="modelDuplicatesManager.deleteSelectedDuplicates()">
+        {% endif %}
+        <button class="btn-select-latest" onclick="{{ 'recipeManager.selectLatestDuplicates()' if is_recipe_duplicates else 'modelDuplicatesManager.selectLatestDuplicates()' }}">
+          {{ t('duplicates.keepLatest') }}
+        </button>
+        <button class="btn-delete-selected disabled" onclick="{{ 'recipeManager.deleteSelectedDuplicates()' if is_recipe_duplicates else 'modelDuplicatesManager.deleteSelectedDuplicates()' }}">
           {{ t('duplicates.deleteSelected') }} (<span id="duplicatesSelectedCount">0</span>)
         </button>
-        <button class="btn-exit-mode" onclick="modelDuplicatesManager.exitDuplicateMode()">
+        <button class="btn-exit-mode" onclick="{{ 'recipeManager.exitDuplicateMode()' if is_recipe_duplicates else 'modelDuplicatesManager.exitDuplicateMode()' }}">
           <i class="fas fa-times"></i> {{ t('duplicates.exitMode') }}
         </button>
       </div>
     </div>
     <div class="help-tooltip" id="duplicatesHelpTooltip">
+      {% if is_recipe_duplicates %}
+      <p id="duplicatesHelpText"></p>
+      {% else %}
       <p>{{ t('duplicates.help.identicalHashes') }}</p>
       <p>{{ t('duplicates.help.keepOne') }}</p>
+      {% endif %}
     </div>
 </div>

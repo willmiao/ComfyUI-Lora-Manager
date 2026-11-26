@@ -920,7 +920,7 @@ export class MasonryScroller {
      * @returns {boolean} - True if any items were removed
      */
     removeMultipleItemsByFilePath(filePaths) {
-        if (!Array.isArray(filePaths) || filePaths.length === 0 || this.disabled || this.items.length === 0) return false;
+        if (!Array.isArray(filePaths) || filePaths.length === 0 || this.items.length === 0) return false;
 
         // Build a set for fast lookup
         const pathsToRemove = new Set(filePaths);

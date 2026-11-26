@@ -5491,6 +5491,9 @@ class ModelScanner:
             
             # Get cache data
             cache = await self.get_cached_data()
+            models_by_path = {
+                model['file_path']: model for model in (cache.raw_data if cache else [])
+            }
             
             # Track deleted models to update cache once
             deleted_models = []
@@ -5514,12 +5517,7 @@ class ModelScanner:
 
                     # Snapshot the cache entry BEFORE the cache mutation that
                     # runs after the loop - the manifest needs it for undo.
-                    cached_entry = None
-                    if cache is not None:
-                        cached_entry = next(
-                            (item for item in cache.raw_data if item.get('file_path') == file_path),
-                            None,
-                        )
+                    cached_entry = models_by_path.get(file_path)
 
                     batch_id = await pending_delete_service.stage_model_delete(
                         scanner=self,
@@ -5653,8 +5651,13 @@ class ModelScanner:
             )
             
         try:
+            paths_to_remove = set(file_paths)
+
             # Get all models that need to be removed from cache
-            models_to_remove = [item for item in self._cache.raw_data if item['file_path'] in file_paths]
+            models_to_remove = [
+                item for item in self._cache.raw_data
+                if item['file_path'] in paths_to_remove
+            ]
             
             if not models_to_remove:
                 # The rows are already gone, but path-keyed index entries can
@@ -5697,12 +5700,16 @@ class ModelScanner:
 
             # Paths that were never in the cache can still leak into the
             # path-keyed indexes; clean those too.
-            stale_paths = [path for path in file_paths if path not in {m['file_path'] for m in models_to_remove}]
+            removed_paths = {model['file_path'] for model in models_to_remove}
+            stale_paths = [path for path in paths_to_remove if path not in removed_paths]
             if stale_paths:
                 self._purge_paths_from_hash_index(stale_paths)
             
             # Update cache data
-            self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in file_paths]
+            self._cache.raw_data = [
+                item for item in self._cache.raw_data
+                if item['file_path'] not in paths_to_remove
+            ]
 
             # Resort cache
             self._cache.rebuild_version_index()

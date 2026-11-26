@@ -1400,8 +1400,6 @@
             "finding": "正在掃描重複配方...",
             "found": "發現 {count} 組重複項",
             "noGroups": "按目前判重依據未找到重複組",
-            "keepLatest": "保留最新版本",
-            "deleteSelected": "刪除所選",
             "includePromptLabel": "將提示詞納入判重",
             "basis": {
                 "loraCombo": "判重依據：LoRA 組合",
@@ -2084,15 +2082,10 @@
             "title": "排除模型",
             "message": "您確定要排除此模型嗎？被排除的模型將不會出現在搜尋或模型列表中。"
         },
-        "deleteDuplicateRecipes": {
-            "title": "刪除重複配方",
-            "message": "您確定要刪除所選的重複配方嗎？",
-            "countMessage": "配方將被永久刪除。"
-        },
-        "deleteDuplicateModels": {
-            "title": "刪除重複模型",
-            "message": "您確定要刪除所選的重複模型嗎？",
-            "countMessage": "模型將被永久刪除。"
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "清除快取檔案",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "發現 {count} 組重複項",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "顯示重複項通知",
         "deleteSelected": "刪除所選",
         "exitMode": "離開模式",

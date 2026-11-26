@@ -1400,8 +1400,6 @@
             "finding": "Поиск дублирующихся рецептов...",
             "found": "Найдено {count} групп дубликатов",
             "noGroups": "Дубликатов с текущим критерием не найдено",
-            "keepLatest": "Оставить последние версии",
-            "deleteSelected": "Удалить выбранные",
             "includePromptLabel": "Учитывать промпт при поиске дубликатов",
             "basis": {
                 "loraCombo": "Критерий: комбинация LoRA",
@@ -2084,15 +2082,10 @@
             "title": "Исключить модель",
             "message": "Вы уверены, что хотите исключить эту модель? Исключенные модели не будут отображаться в поиске или списках моделей."
         },
-        "deleteDuplicateRecipes": {
-            "title": "Удалить дублирующиеся рецепты",
-            "message": "Вы уверены, что хотите удалить выбранные дублирующиеся рецепты?",
-            "countMessage": "рецептов будут удалены навсегда."
-        },
-        "deleteDuplicateModels": {
-            "title": "Удалить дублирующиеся модели",
-            "message": "Вы уверены, что хотите удалить выбранные дублирующиеся модели?",
-            "countMessage": "моделей будут удалены навсегда."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "Очистить файлы кэша",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "Найдено {count} групп дубликатов",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "Показать уведомление о дубликатах",
         "deleteSelected": "Удалить выбранные",
         "exitMode": "Выйти из режима",

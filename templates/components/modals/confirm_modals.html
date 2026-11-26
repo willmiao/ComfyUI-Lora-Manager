@@ -24,32 +24,17 @@
     </div>
 </div>
 
-<!-- Recipes Duplicate Delete Confirmation Modal -->
+<!-- Duplicates Delete Confirmation Modal -->
 <div id="duplicateDeleteModal" class="modal delete-modal">
     <div class="modal-content delete-modal-content">
-        <h2>{{ t('modals.deleteDuplicateRecipes.title') }}</h2>
-        <p class="delete-message">{{ t('modals.deleteDuplicateRecipes.message') }}</p>
+        <h2>{{ t('modals.deleteDuplicates.title') }}</h2>
+        <p class="delete-message">{{ t('modals.deleteDuplicates.message') }}</p>
         <div class="delete-model-info">
-            <p><span id="duplicateDeleteCount">0</span> {{ t('modals.deleteDuplicateRecipes.countMessage') }}</p>
+            <p><span id="duplicateDeleteCount">0</span> {{ t('modals.deleteDuplicates.countMessage') }}</p>
         </div>
         <div class="modal-actions">
             <button class="cancel-btn" onclick="modalManager.closeModal('duplicateDeleteModal')">{{ t('common.actions.cancel') }}</button>
-            <button class="delete-btn" onclick="recipeManager.confirmDeleteDuplicates()">{{ t('common.actions.delete') }}</button>
-        </div>
-    </div>
-</div>
-
-<!-- Models Duplicate Delete Confirmation Modal -->
-<div id="modelDuplicateDeleteModal" class="modal delete-modal">
-    <div class="modal-content delete-modal-content">
-        <h2>{{ t('modals.deleteDuplicateModels.title') }}</h2>
-        <p class="delete-message">{{ t('modals.deleteDuplicateModels.message') }}</p>
-        <div class="delete-model-info">
-            <p><span id="modelDuplicateDeleteCount">0</span> {{ t('modals.deleteDuplicateModels.countMessage') }}</p>
-        </div>
-        <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('modelDuplicateDeleteModal')">{{ t('common.actions.cancel') }}</button>
-            <button class="delete-btn" onclick="modelDuplicatesManager.confirmDeleteDuplicates()">{{ t('common.actions.delete') }}</button>
+            <button class="delete-btn" data-action="confirm-duplicate-delete">{{ t('common.actions.delete') }}</button>
         </div>
     </div>
 </div>

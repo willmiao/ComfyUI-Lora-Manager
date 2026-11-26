@@ -194,18 +194,6 @@ export class ModalManager {
                 }
             });
         }
-
-        // Add modelDuplicateDeleteModal registration
-        const modelDuplicateDeleteModal = document.getElementById('modelDuplicateDeleteModal');
-        if (modelDuplicateDeleteModal) {
-            this.registerModal('modelDuplicateDeleteModal', {
-                element: modelDuplicateDeleteModal,
-                onClose: () => {
-                    this.getModal('modelDuplicateDeleteModal').element.classList.remove('show');
-                    document.body.classList.remove('modal-open');
-                }
-            });
-        }
         
         // Add clearCacheModal registration
         const clearCacheModal = document.getElementById('clearCacheModal');
@@ -461,7 +449,6 @@ export class ModalManager {
           id === "deleteModal" ||
           id === "excludeModal" ||
           id === "duplicateDeleteModal" ||
-          id === "modelDuplicateDeleteModal" ||
           id === "clearCacheModal" ||
           id === "bulkDeleteModal" ||
           id === "checkUpdatesConfirmModal" ||

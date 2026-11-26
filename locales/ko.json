@@ -1400,8 +1400,6 @@
             "finding": "중복 레시피를 스캔하는 중...",
             "found": "{count}개의 중복 그룹 발견",
             "noGroups": "현재 일치 기준으로 중복 그룹을 찾을 수 없습니다",
-            "keepLatest": "최신 버전 유지",
-            "deleteSelected": "선택된 항목 삭제",
             "includePromptLabel": "일치 항목에 프롬프트 포함",
             "basis": {
                 "loraCombo": "일치 기준: LoRA 조합",
@@ -2084,15 +2082,10 @@
             "title": "모델 제외",
             "message": "이 모델을 제외하시겠습니까? 제외된 모델은 검색이나 모델 목록에 나타나지 않습니다."
         },
-        "deleteDuplicateRecipes": {
-            "title": "중복 레시피 삭제",
-            "message": "선택된 중복 레시피를 삭제하시겠습니까?",
-            "countMessage": "개의 레시피가 영구적으로 삭제됩니다."
-        },
-        "deleteDuplicateModels": {
-            "title": "중복 모델 삭제",
-            "message": "선택된 중복 모델을 삭제하시겠습니까?",
-            "countMessage": "개의 모델이 영구적으로 삭제됩니다."
+        "deleteDuplicates": {
+            "title": "[TODO: Translate] Delete Selected Duplicates",
+            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
+            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available."
         },
         "clearCache": {
             "title": "캐시 파일 지우기",
@@ -2719,6 +2712,9 @@
     },
     "duplicates": {
         "found": "{count}개의 중복 그룹 발견",
+        "deleting": "[TODO: Translate] Deleting {count} selected items...",
+        "keepLatest": "[TODO: Translate] Keep Latest Versions",
+        "noGroups": "[TODO: Translate] No duplicate groups remain",
         "showNotification": "중복 알림 표시",
         "deleteSelected": "선택된 항목 삭제",
         "exitMode": "모드 종료",

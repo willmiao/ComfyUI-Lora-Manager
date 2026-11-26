@@ -256,7 +256,8 @@
 }
 
 .model-card.duplicate-selected {
-    border: 2px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
+    outline: 2px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
+    outline-offset: -2px;
     box-shadow: var(--shadow-md);
 }
 
@@ -470,6 +471,11 @@
 
 .badge:empty {
     display: none;
+}
+
+.duplicates-group-sentinel {
+    height: 1px;
+    width: 100%;
 }
 
 /* Empty-state hint in the duplicates view */

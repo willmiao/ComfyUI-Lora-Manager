@@ -1461,24 +1461,22 @@ class ModelQueryHandler:
             duplicates = self._service.find_duplicate_hashes()
             result = []
             cache = await self._service.scanner.get_cached_data()
+            models_by_path = {
+                model["file_path"]: model for model in cache.raw_data
+            }
 
             for sha256, paths in duplicates.items():
                 # Collect all models in this group
                 all_models = []
                 for path in paths:
-                    model = next(
-                        (m for m in cache.raw_data if m["file_path"] == path), None
-                    )
+                    model = models_by_path.get(path)
                     if model:
                         all_models.append(model)
 
                 # Include primary if not already in paths
                 primary_path = self._service.get_path_by_hash(sha256)
                 if primary_path and primary_path not in paths:
-                    primary_model = next(
-                        (m for m in cache.raw_data if m["file_path"] == primary_path),
-                        None,
-                    )
+                    primary_model = models_by_path.get(primary_path)
                     if primary_model:
                         all_models.insert(0, primary_model)
 

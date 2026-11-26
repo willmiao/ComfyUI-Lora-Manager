@@ -85,6 +85,7 @@ class RecipeCard {
         }
 
         const isDuplicatesMode = getCurrentPageState().duplicatesMode;
+        card.draggable = !isDuplicatesMode;
         const autoplayOnHover = state?.global?.settings?.autoplay_on_hover === true;
         const isFavorite = this.recipe.favorite === true;
 
@@ -126,7 +127,7 @@ class RecipeCard {
             <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
                 ${isVideo ?
                 `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
-                `<img src="${previewUrl}" alt="${this.recipe.title}">`
+                `<img src="${previewUrl}" alt="${this.recipe.title}" loading="lazy" decoding="async">`
             }
                 ${!isDuplicatesMode ? `
                 <div class="card-header">
@@ -172,10 +173,17 @@ class RecipeCard {
 
         this.attachEventListeners(card, isDuplicatesMode, shouldBlur);
 
-        // Add video auto-play on hover functionality if needed
         const videoElement = card.querySelector('video');
         if (videoElement) {
-            configureModelCardVideo(videoElement, autoplayOnHover);
+            if (isDuplicatesMode) {
+                videoElement.removeAttribute('controls');
+                videoElement.removeAttribute('autoplay');
+                videoElement.removeAttribute('data-autoplay');
+                videoElement.preload = 'metadata';
+                videoElement.src = videoElement.dataset.src;
+            } else {
+                configureModelCardVideo(videoElement, autoplayOnHover);
+            }
         }
 
         return card;

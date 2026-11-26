@@ -99,8 +99,13 @@ describe('RecipeCard workflow badge', () => {
     translateMock.mockClear();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     document.body.innerHTML = '';
+    const stateModule = await import(STATE_MODULE);
+    stateModule.getCurrentPageState.mockReturnValue({});
+    stateModule.state.global.settings = {};
+    const modelCardModule = await import(MODEL_CARD_MODULE);
+    modelCardModule.configureModelCardVideo.mockClear();
   });
 
   it('renders the badge next to the base model label when the recipe embeds a workflow', async () => {
@@ -128,6 +133,45 @@ describe('RecipeCard workflow badge', () => {
       'recipes.workflow.hasWorkflow',
       {},
       'Contains a ComfyUI workflow'
+    );
+  });
+});
+
+describe('RecipeCard duplicates mode media behavior', () => {
+  beforeEach(async () => {
+    const stateModule = await import(STATE_MODULE);
+    const modelCardModule = await import(MODEL_CARD_MODULE);
+    stateModule.getCurrentPageState.mockReturnValue({});
+    stateModule.state.global.settings = {};
+    modelCardModule.configureModelCardVideo.mockClear();
+  });
+
+  it('disables dragging and video playback configuration', async () => {
+    const stateModule = await import(STATE_MODULE);
+    const modelCardModule = await import(MODEL_CARD_MODULE);
+    stateModule.getCurrentPageState.mockReturnValue({ duplicatesMode: true });
+    stateModule.state.global.settings = { autoplay_on_hover: true };
+
+    const recipeCard = await createCard({ file_url: '/preview.mp4' });
+    const video = recipeCard.element.querySelector('video');
+
+    expect(recipeCard.element.draggable).toBe(false);
+    expect(video.controls).toBe(false);
+    expect(video.hasAttribute('autoplay')).toBe(false);
+    expect(video.hasAttribute('data-autoplay')).toBe(false);
+    expect(video.preload).toBe('metadata');
+    expect(video.getAttribute('src')).toBe('/preview.mp4');
+    expect(modelCardModule.configureModelCardVideo).not.toHaveBeenCalled();
+  });
+
+  it('keeps the normal video configuration outside duplicates mode', async () => {
+    const modelCardModule = await import(MODEL_CARD_MODULE);
+    const recipeCard = await createCard({ file_url: '/preview.mp4' });
+
+    expect(recipeCard.element.draggable).toBe(true);
+    expect(modelCardModule.configureModelCardVideo).toHaveBeenCalledWith(
+      recipeCard.element.querySelector('video'),
+      false
     );
   });
 });
