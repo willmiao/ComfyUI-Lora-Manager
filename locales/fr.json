@@ -2083,11 +2083,11 @@
             "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "Supprimer les doublons sélectionnés",
+            "message": "Êtes-vous sûr de vouloir supprimer les doublons sélectionnés ?",
+            "countMessage": "éléments seront supprimés. Une action « Annuler » sera proposée lorsque la récupération est possible.",
+            "emptyGroupsWarning": "Cela supprimera chaque élément de {count} groupe(s) de doublons. Aucune copie ne sera conservée dans ces groupes.",
+            "emptyGroupsConfirm": "Je comprends qu’aucune copie ne sera conservée dans ces groupes."
         },
         "clearCache": {
             "title": "Vider les fichiers de cache",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "Trouvé {count} groupes de doublons",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "Suppression de {count} élément(s) sélectionné(s)...",
+        "keepLatest": "Garder les dernières versions",
+        "keepThis": "Garder cet élément",
+        "noGroups": "Plus aucun groupe de doublons",
         "showNotification": "Afficher la notification de doublons",
         "deleteSelected": "Supprimer la sélection",
         "exitMode": "Quitter le mode",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "Quitter les doublons",
         "help": {
             "identicalHashes": "Des hash identiques signifient des fichiers de modèle identiques, même s'ils ont des noms ou aperçus différents.",
             "keepOne": "Gardez seulement une version (de préférence avec de meilleures métadonnées/aperçus) et supprimez les autres en toute sécurité."

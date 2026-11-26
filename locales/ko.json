@@ -2083,11 +2083,11 @@
             "message": "이 모델을 제외하시겠습니까? 제외된 모델은 검색이나 모델 목록에 나타나지 않습니다."
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "선택한 중복 삭제",
+            "message": "선택한 중복 항목을 삭제하시겠습니까?",
+            "countMessage": "개의 항목이 삭제됩니다. 복구가 가능한 경우 '실행 취소' 작업이 제공됩니다.",
+            "emptyGroupsWarning": "{count}개의 중복 그룹에 있는 모든 항목이 삭제되며, 해당 그룹에는 복사본이 남지 않습니다.",
+            "emptyGroupsConfirm": "해당 그룹에 복사본이 남지 않는다는 것을 이해합니다."
         },
         "clearCache": {
             "title": "캐시 파일 지우기",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "{count}개의 중복 그룹 발견",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "선택한 {count}개 항목을 삭제 중...",
+        "keepLatest": "최신 버전 유지",
+        "keepThis": "이 항목 유지",
+        "noGroups": "남은 중복 그룹이 없습니다",
         "showNotification": "중복 알림 표시",
         "deleteSelected": "선택된 항목 삭제",
         "exitMode": "모드 종료",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "중복 종료",
         "help": {
             "identicalHashes": "동일한 해시는 이름이나 미리보기가 다르더라도 동일한 모델 파일을 의미합니다.",
             "keepOne": "하나의 버전만 유지하고 (더 나은 메타데이터/미리보기가 있는 것이 바람직) 나머지는 안전하게 삭제하세요."

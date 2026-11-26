@@ -2083,11 +2083,11 @@
             "message": "Вы уверены, что хотите исключить эту модель? Исключенные модели не будут отображаться в поиске или списках моделей."
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "Удалить выбранные дубликаты",
+            "message": "Вы уверены, что хотите удалить выбранные дубликаты?",
+            "countMessage": "элементов будут удалены. Если восстановление доступно, будет предложено действие «Отменить».",
+            "emptyGroupsWarning": "Будут удалены все элементы в {count} группе(ах) дубликатов. В этих группах не останется ни одной копии.",
+            "emptyGroupsConfirm": "Я понимаю, что в этих группах не останется ни одной копии."
         },
         "clearCache": {
             "title": "Очистить файлы кэша",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "Найдено {count} групп дубликатов",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "Удаление {count} выбранных элементов...",
+        "keepLatest": "Оставить последние версии",
+        "keepThis": "Оставить этот элемент",
+        "noGroups": "Групп дубликатов не осталось",
         "showNotification": "Показать уведомление о дубликатах",
         "deleteSelected": "Удалить выбранные",
         "exitMode": "Выйти из режима",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "Выйти из дубликатов",
         "help": {
             "identicalHashes": "Идентичные хеши означают идентичные файлы моделей, даже если у них разные названия или превью.",
             "keepOne": "Оставьте только одну версию (предпочтительно с лучшими метаданными/превью) и безопасно удалите остальные."

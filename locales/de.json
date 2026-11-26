@@ -2083,11 +2083,11 @@
             "message": "Sind Sie sicher, dass Sie dieses Modell ausschließen möchten? Ausgeschlossene Modelle erscheinen nicht in Suchergebnissen oder Modelllisten."
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "Ausgewählte Duplikate löschen",
+            "message": "Sind Sie sicher, dass Sie die ausgewählten Duplikate löschen möchten?",
+            "countMessage": "Elemente werden gelöscht. Wenn eine Wiederherstellung möglich ist, wird eine Aktion „Rückgängig“ angeboten.",
+            "emptyGroupsWarning": "Dadurch werden alle Elemente in {count} Duplikat-Gruppe(n) gelöscht. In diesen Gruppen bleibt keine Kopie erhalten.",
+            "emptyGroupsConfirm": "Ich verstehe, dass in diesen Gruppen keine Kopie erhalten bleibt."
         },
         "clearCache": {
             "title": "Cache-Dateien löschen",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "{count} Duplikat-Gruppen gefunden",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "Lösche {count} ausgewählte Element(e)...",
+        "keepLatest": "Neueste Versionen behalten",
+        "keepThis": "Dieses behalten",
+        "noGroups": "Keine Duplikat-Gruppen mehr vorhanden",
         "showNotification": "Duplikat-Benachrichtigung anzeigen",
         "deleteSelected": "Ausgewählte löschen",
         "exitMode": "Modus verlassen",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "Duplikate beenden",
         "help": {
             "identicalHashes": "Identische Hashes bedeuten identische Modelldateien, auch wenn sie unterschiedliche Namen oder Vorschauen haben.",
             "keepOne": "Behalten Sie nur eine Version (vorzugsweise mit besseren Metadaten/Vorschauen) und löschen Sie die anderen sicher."

@@ -2083,11 +2083,11 @@
             "message": "このモデルを除外してもよろしいですか？除外されたモデルは検索やモデルリストに表示されません。"
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "選択した重複を削除",
+            "message": "選択した重複を削除してもよろしいですか？",
+            "countMessage": "件の項目が削除されます。復元可能な場合は「元に戻す」操作が表示されます。",
+            "emptyGroupsWarning": "{count} 個の重複グループ内のすべての項目が削除されます。これらのグループにはコピーが残りません。",
+            "emptyGroupsConfirm": "これらのグループにはコピーが残らないことを理解しました。"
         },
         "clearCache": {
             "title": "キャッシュファイルをクリア",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "{count} 個の重複グループが見つかりました",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "選択した {count} 件の項目を削除中...",
+        "keepLatest": "最新バージョンを保持",
+        "keepThis": "これを保持",
+        "noGroups": "重複グループは残っていません",
         "showNotification": "重複通知を表示",
         "deleteSelected": "選択したものを削除",
         "exitMode": "モードを終了",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "重複を終了",
         "help": {
             "identicalHashes": "同一のハッシュは、名前やプレビューが異なっていても、同一のモデルファイルを意味します。",
             "keepOne": "1つのバージョンのみを保持し（より良いメタデータ/プレビューを持つものが望ましい）、他は安全に削除してください。"

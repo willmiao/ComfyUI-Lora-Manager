@@ -2083,11 +2083,11 @@
             "message": "האם אתה בטוח שברצונך להחריג מודל זה? מודלים מוחרגים לא יופיעו בחיפושים או ברשימות מודלים."
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "מחק כפילויות נבחרות",
+            "message": "האם אתה בטוח שברצונך למחוק את הכפילויות שנבחרו?",
+            "countMessage": "פריטים יימחקו. אם ניתן לשחזר, תוצע פעולת «בטל».",
+            "emptyGroupsWarning": "פעולה זו תמחק כל פריט ב-{count} קבוצות כפולות. לא יישמר עותק בקבוצות אלה.",
+            "emptyGroupsConfirm": "אני מבין שלא יישמר עותק בקבוצות אלה."
         },
         "clearCache": {
             "title": "נקה קבצי מטמון",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "נמצאו {count} קבוצות כפולות",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "מוחק {count} פריטים נבחרים...",
+        "keepLatest": "שמור גרסאות אחרונות",
+        "keepThis": "שמור פריט זה",
+        "noGroups": "לא נותרו קבוצות כפולות",
         "showNotification": "הצג התראת כפילויות",
         "deleteSelected": "מחק נבחרים",
         "exitMode": "צא ממצב",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "צא מכפילויות",
         "help": {
             "identicalHashes": "hashes זהים פירושם קבצי מודל זהים, גם אם יש להם שמות או תצוגות מקדימות שונות.",
             "keepOne": "שמור רק גרסה אחת (רצוי עם מטא-נתונים/תצוגות מקדימות טובות יותר) ומחק בבטחה את האחרות."

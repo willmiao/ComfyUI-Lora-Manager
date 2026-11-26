@@ -2083,11 +2083,11 @@
             "message": "你确定要排除此模型吗？被排除的模型不会出现在搜索或模型列表中。"
         },
         "deleteDuplicates": {
-            "title": "[TODO: Translate] Delete Selected Duplicates",
-            "message": "[TODO: Translate] Are you sure you want to delete the selected duplicates?",
-            "countMessage": "[TODO: Translate] items will be deleted. An Undo action will be offered when recovery is available.",
-            "emptyGroupsWarning": "[TODO: Translate] This will delete every item in {count} duplicate group(s). No copy will be kept in those groups.",
-            "emptyGroupsConfirm": "[TODO: Translate] I understand that no copy will be kept in these groups."
+            "title": "删除已选重复项",
+            "message": "你确定要删除选中的重复项吗？",
+            "countMessage": "个项目将被删除。如果可以恢复，将提供“撤销”操作。",
+            "emptyGroupsWarning": "这将删除 {count} 个重复组中的全部项目，这些组将不会保留任何副本。",
+            "emptyGroupsConfirm": "我明白这些组将不会保留任何副本。"
         },
         "clearCache": {
             "title": "清除缓存文件",
@@ -2714,14 +2714,14 @@
     },
     "duplicates": {
         "found": "发现 {count} 个重复组",
-        "deleting": "[TODO: Translate] Deleting {count} selected items...",
-        "keepLatest": "[TODO: Translate] Keep Latest Versions",
-        "keepThis": "[TODO: Translate] Keep this",
-        "noGroups": "[TODO: Translate] No duplicate groups remain",
+        "deleting": "正在删除 {count} 个已选项目...",
+        "keepLatest": "保留最新版本",
+        "keepThis": "保留此项",
+        "noGroups": "没有剩余的重复组",
         "showNotification": "显示重复项通知",
         "deleteSelected": "删除已选",
         "exitMode": "退出模式",
-        "exitDuplicates": "[TODO: Translate] Exit Duplicates",
+        "exitDuplicates": "退出重复项",
         "help": {
             "identicalHashes": "哈希相同表示模型文件完全一致，即使文件名或预览不同。",
             "keepOne": "只保留一个版本（建议保留元数据/预览更好的），安全删除其他版本。"
