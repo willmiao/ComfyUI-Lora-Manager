@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2609 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2620 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -380,6 +380,17 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > dialogs were replaced by the single `deleteDuplicates` one. All 9 locales are translated
 > (renderings in §2, "Duplicates manager (keeper controls and deletion safeguards)"), so no
 > `[TODO: Translate]` placeholder remains.
+
+> **Status (2026-11, precision override):** model precision (the quantization level a card
+> shows, e.g. FP8 / Q4_K_M) can now be set by hand and survives relinks and rescans: the footer
+> quant badge and the context menu's Edit Precision entry open one editor popover, whose Auto
+> path clears the manual value. That added 9 keys — `modelCard.footer.quantManual` /
+> `.quantResetAuto`, `loras.contextMenu.editPrecision`, `modals.model.actions.editPrecision`,
+> `modals.model.metadata.precision` / `.precisionAuto` / `.precisionManualHint`, and
+> `toast.models.precisionUpdated` / `.precisionUpdateFailed`. All 9 locales are translated
+> (renderings in §2, "Precision override feature"), so no `[TODO: Translate]` placeholder
+> remains; the older setting `settings.layoutSettings.showQuantizationOnCard` keeps its
+> Quantization wording in the source.
 
 ---
 
@@ -1354,6 +1365,36 @@ when the selection would empty whole groups. The copy reuses the existing duplic
   short — it is a toolbar label.
 - `duplicates.noGroups` is the models page's empty state once the last group is resolved; the
   recipes page keeps `recipes.duplicates.noGroups`, which describes the matching basis instead.
+
+### Precision override feature (weight precision / quantization level)
+
+Precision is stored as `quantization` (`FP8`, `NVFP4`, `INT8`, `Q4_K_M`, …) with a
+`quantization_source` of `auto` or `manual`. The card footer's quant badge and the context
+menu's **Edit Precision** entry open one editor popover (`QuantizationEditor.js`); a manual
+value is relink- and rescan-proof, and the badge's hover text says so (`quantManual`, identical
+to `precisionManualHint`). The editor's strings live under `modals.model.*` because that is
+where the popover was designed to hang, even though the visible entry points are the card and
+the context menu. The source keeps two nouns on purpose: the editor surface says **Precision**,
+while the older layout setting `settings.layoutSettings.showQuantizationOnCard` stays
+**Quantization** because it names the badge itself — do not merge them in `en.json`.
+
+| Term | zh-CN | zh-TW | ja | ko | fr | de | es | ru | he |
+|---|---|---|---|---|---|---|---|---|---|
+| Precision | 精度 | 精度 | 精度 | 정밀도 | Précision | Präzision | Precisión | Точность | דיוק |
+| Auto (automatic detection) | 自动 | 自動 | 自動 | 자동 | Auto | Auto | Auto | Авто | אוטומטי |
+| Reset to Auto (editor button) | 重置为自动 | 重設為自動 | 自動に戻す | 자동으로 재설정 | Réinitialiser sur Auto | Auf Auto zurücksetzen | Restablecer a Auto | Сбросить на «Авто» | החזר לאוטומטי |
+
+- `precisionAuto` is the input **placeholder** (the field holds the current value, and the hint
+  below it marks a manual one), so it reuses each locale's `header.theme.auto` rendering.
+- The manual hint reuses the locale's existing **relink** and **scan** verbs instead of
+  inventing per-feature ones: fr relier à nouveau / analyser, de erneutes Verknüpfen / Scannen,
+  es volver a vincular / escanear, ru пересвязывание / сканирование, he קישור מחדש / סריקה
+  חוזרת, ja 再リンク / 再スキャン, ko 다시 연결 / 다시 스캔, zh 重新关联 / 重新扫描 (zh-TW
+  重新連結 / 重新掃描).
+- Both `editPrecision` labels read the same in every locale: CJK has no capitalisation to carry
+  the source's Title/sentence-case split, and the Latin and Hebrew locales sentence-case this
+  action anyway.
+- The toasts follow the sibling `baseModelUpdated` / `baseModelUpdateFailed` shapes.
 
 ---
 

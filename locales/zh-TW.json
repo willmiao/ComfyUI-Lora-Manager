@@ -191,8 +191,8 @@
         "footer": {
             "versionCount": "{count} 個版本",
             "viewAllVersions": "檢視所有本地版本",
-            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
-            "quantResetAuto": "[TODO: Translate] Reset to Auto"
+            "quantManual": "手動設定 — 重新連結和重新掃描不會變更此值",
+            "quantResetAuto": "重設為自動"
         }
     },
     "globalContextMenu": {
@@ -1144,7 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "刷新 CivitAI 資料",
             "checkUpdates": "檢查更新",
-            "editPrecision": "[TODO: Translate] Edit Precision",
+            "editPrecision": "編輯精度",
             "linkModel": "連結模型",
             "linkCivitai": "連結到 CivitAI",
             "linkModelSource": "連結到模型來源",
@@ -2277,7 +2277,7 @@
                 "editFileName": "編輯檔案名稱",
                 "editBaseModel": "編輯基礎模型",
                 "editVersionName": "編輯版本名稱",
-                "editPrecision": "[TODO: Translate] Edit precision",
+                "editPrecision": "編輯精度",
                 "viewOnCivitai": "在 CivitAI 查看",
                 "viewOnCivitaiText": "在 CivitAI 查看",
                 "viewOnHuggingFace": "在 Hugging Face 查看",
@@ -2315,9 +2315,9 @@
                 "location": "位置",
                 "baseModel": "基礎模型",
                 "size": "大小",
-                "precision": "[TODO: Translate] Precision",
-                "precisionAuto": "[TODO: Translate] Auto",
-                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+                "precision": "精度",
+                "precisionAuto": "自動",
+                "precisionManualHint": "手動設定 — 重新連結和重新掃描不會變更此值",
                 "hashes": "雜湊值",
                 "hashPending": "尚未計算",
                 "hashCalculating": "計算中...",
@@ -3122,8 +3122,8 @@
             "nameUpdateFailed": "更新模型名稱失敗",
             "baseModelUpdated": "基礎模型已成功更新",
             "baseModelUpdateFailed": "更新基礎模型失敗",
-            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
-            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
+            "precisionUpdated": "精度已成功更新",
+            "precisionUpdateFailed": "更新精度失敗",
             "baseModelNotSelected": "請選擇基礎模型",
             "bulkBaseModelUpdating": "正在為 {count} 個模型更新基礎模型...",
             "bulkBaseModelUpdateSuccess": "已成功為 {count} 個模型更新基礎模型",

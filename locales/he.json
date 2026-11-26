@@ -191,8 +191,8 @@
         "footer": {
             "versionCount": "{count} גרסאות",
             "viewAllVersions": "הצג את כל הגרסאות המקומיות",
-            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
-            "quantResetAuto": "[TODO: Translate] Reset to Auto"
+            "quantManual": "הוגדר ידנית — קישור מחדש וסריקה חוזרת לא ישנו אותו",
+            "quantResetAuto": "החזר לאוטומטי"
         }
     },
     "globalContextMenu": {
@@ -1144,7 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "רענן נתוני CivitAI",
             "checkUpdates": "בדוק עדכונים",
-            "editPrecision": "[TODO: Translate] Edit Precision",
+            "editPrecision": "ערוך דיוק",
             "linkModel": "קישור מודל",
             "linkCivitai": "קשר מחדש ל-CivitAI",
             "linkModelSource": "קישור למקור מודל",
@@ -2277,7 +2277,7 @@
                 "editFileName": "ערוך שם קובץ",
                 "editBaseModel": "ערוך מודל בסיס",
                 "editVersionName": "ערוך שם גרסה",
-                "editPrecision": "[TODO: Translate] Edit precision",
+                "editPrecision": "ערוך דיוק",
                 "viewOnCivitai": "הצג ב-CivitAI",
                 "viewOnCivitaiText": "הצג ב-CivitAI",
                 "viewOnHuggingFace": "צפייה ב-Hugging Face",
@@ -2315,9 +2315,9 @@
                 "location": "מיקום",
                 "baseModel": "מודל בסיס",
                 "size": "גודל",
-                "precision": "[TODO: Translate] Precision",
-                "precisionAuto": "[TODO: Translate] Auto",
-                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+                "precision": "דיוק",
+                "precisionAuto": "אוטומטי",
+                "precisionManualHint": "הוגדר ידנית — קישור מחדש וסריקה חוזרת לא ישנו אותו",
                 "hashes": "hashes",
                 "hashPending": "טרם חושב",
                 "hashCalculating": "מחושב...",
@@ -3122,8 +3122,8 @@
             "nameUpdateFailed": "עדכון שם המודל נכשל",
             "baseModelUpdated": "מודל הבסיס עודכן בהצלחה",
             "baseModelUpdateFailed": "עדכון מודל הבסיס נכשל",
-            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
-            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
+            "precisionUpdated": "הדיוק עודכן בהצלחה",
+            "precisionUpdateFailed": "עדכון הדיוק נכשל",
             "baseModelNotSelected": "אנא בחר מודל בסיס",
             "bulkBaseModelUpdating": "מעדכן מודל בסיס עבור {count} מודל(ים)...",
             "bulkBaseModelUpdateSuccess": "עודכן בהצלחה מודל הבסיס עבור {count} מודל(ים)",

@@ -191,8 +191,8 @@
         "footer": {
             "versionCount": "{count} バージョン",
             "viewAllVersions": "ローカルの全バージョンを表示",
-            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
-            "quantResetAuto": "[TODO: Translate] Reset to Auto"
+            "quantManual": "手動設定 — 再リンクや再スキャンでは変更されません",
+            "quantResetAuto": "自動に戻す"
         }
     },
     "globalContextMenu": {
@@ -1144,7 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "CivitAIデータを更新",
             "checkUpdates": "更新確認",
-            "editPrecision": "[TODO: Translate] Edit Precision",
+            "editPrecision": "精度を編集",
             "linkModel": "モデルをリンク",
             "linkCivitai": "CivitAI にリンク",
             "linkModelSource": "モデルソースにリンク",
@@ -2277,7 +2277,7 @@
                 "editFileName": "ファイル名を編集",
                 "editBaseModel": "ベースモデルを編集",
                 "editVersionName": "バージョン名を編集",
-                "editPrecision": "[TODO: Translate] Edit precision",
+                "editPrecision": "精度を編集",
                 "viewOnCivitai": "CivitAIで表示",
                 "viewOnCivitaiText": "CivitAIで表示",
                 "viewOnHuggingFace": "Hugging Face で見る",
@@ -2315,9 +2315,9 @@
                 "location": "場所",
                 "baseModel": "ベースモデル",
                 "size": "サイズ",
-                "precision": "[TODO: Translate] Precision",
-                "precisionAuto": "[TODO: Translate] Auto",
-                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+                "precision": "精度",
+                "precisionAuto": "自動",
+                "precisionManualHint": "手動設定 — 再リンクや再スキャンでは変更されません",
                 "hashes": "ハッシュ",
                 "hashPending": "未計算",
                 "hashCalculating": "計算中...",
@@ -3122,8 +3122,8 @@
             "nameUpdateFailed": "モデル名の更新に失敗しました",
             "baseModelUpdated": "ベースモデルが正常に更新されました",
             "baseModelUpdateFailed": "ベースモデルの更新に失敗しました",
-            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
-            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
+            "precisionUpdated": "精度が正常に更新されました",
+            "precisionUpdateFailed": "精度の更新に失敗しました",
             "baseModelNotSelected": "ベースモデルを選択してください",
             "bulkBaseModelUpdating": "{count} モデルのベースモデルを更新中...",
             "bulkBaseModelUpdateSuccess": "{count} モデルのベースモデルが正常に更新されました",

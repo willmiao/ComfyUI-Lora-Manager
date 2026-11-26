@@ -191,8 +191,8 @@
         "footer": {
             "versionCount": "{count} versiones",
             "viewAllVersions": "Ver todas las versiones locales",
-            "quantManual": "[TODO: Translate] Manually set — relinks and rescans will not change it",
-            "quantResetAuto": "[TODO: Translate] Reset to Auto"
+            "quantManual": "Definido manualmente — volver a vincular o escanear de nuevo no lo cambiará",
+            "quantResetAuto": "Restablecer a Auto"
         }
     },
     "globalContextMenu": {
@@ -1144,7 +1144,7 @@
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de CivitAI",
             "checkUpdates": "Comprobar actualizaciones",
-            "editPrecision": "[TODO: Translate] Edit Precision",
+            "editPrecision": "Editar precisión",
             "linkModel": "Vincular modelo",
             "linkCivitai": "Re-vincular a CivitAI",
             "linkModelSource": "Vincular a una fuente de modelo",
@@ -2277,7 +2277,7 @@
                 "editFileName": "Editar nombre de archivo",
                 "editBaseModel": "Editar modelo base",
                 "editVersionName": "Editar nombre de versión",
-                "editPrecision": "[TODO: Translate] Edit precision",
+                "editPrecision": "Editar precisión",
                 "viewOnCivitai": "Ver en CivitAI",
                 "viewOnCivitaiText": "Ver en CivitAI",
                 "viewOnHuggingFace": "Ver en Hugging Face",
@@ -2315,9 +2315,9 @@
                 "location": "Ubicación",
                 "baseModel": "Modelo base",
                 "size": "Tamaño",
-                "precision": "[TODO: Translate] Precision",
-                "precisionAuto": "[TODO: Translate] Auto",
-                "precisionManualHint": "[TODO: Translate] Manually set — relinks and rescans will not change it",
+                "precision": "Precisión",
+                "precisionAuto": "Auto",
+                "precisionManualHint": "Definido manualmente — volver a vincular o escanear de nuevo no lo cambiará",
                 "hashes": "Hashes",
                 "hashPending": "Aún no calculado",
                 "hashCalculating": "Calculando...",
@@ -3122,8 +3122,8 @@
             "nameUpdateFailed": "Error al actualizar nombre del modelo",
             "baseModelUpdated": "Modelo base actualizado exitosamente",
             "baseModelUpdateFailed": "Error al actualizar modelo base",
-            "precisionUpdated": "[TODO: Translate] Precision updated successfully",
-            "precisionUpdateFailed": "[TODO: Translate] Failed to update precision",
+            "precisionUpdated": "Precisión actualizada exitosamente",
+            "precisionUpdateFailed": "Error al actualizar la precisión",
             "baseModelNotSelected": "Por favor selecciona un modelo base",
             "bulkBaseModelUpdating": "Actualizando modelo base para {count} modelo(s)...",
             "bulkBaseModelUpdateSuccess": "Modelo base actualizado exitosamente para {count} modelo(s)",
