@@ -238,7 +238,11 @@ class BulkMetadataRefreshUseCase:
                 # which may lack sha256. Restore from cache and persist the fix.
                 if not model.get("sha256"):
                     model["sha256"] = sha256
-                    model["hash_status"] = model.get("hash_status", hash_status)
+                    # A hash is present, so the status is "completed" by
+                    # definition. Trusting the stale value here used to write
+                    # "pending" back over a finished hash, which made the next
+                    # fetch queue the model for another full-file re-read.
+                    model["hash_status"] = "completed"
                     data_to_save = model.copy()
                     data_to_save.pop("folder", None)
                     await MetadataManager.save_metadata(file_path, data_to_save)

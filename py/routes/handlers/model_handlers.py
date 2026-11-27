@@ -621,7 +621,11 @@ class ModelManagementHandler:
             if not model_data.get("sha256"):
                 if sha256:
                     model_data["sha256"] = sha256
-                    model_data["hash_status"] = model_data.get("hash_status", hash_status)
+                    # A hash is present, so the status is "completed" by
+                    # definition. Trusting the stale value here used to write
+                    # "pending" back over a finished hash, which made the next
+                    # fetch re-read the whole multi-GB file.
+                    model_data["hash_status"] = "completed"
                     data_to_save = model_data.copy()
                     data_to_save.pop("folder", None)
                     await MetadataManager.save_metadata(file_path, data_to_save)

@@ -889,10 +889,45 @@ class MetadataSyncService:
                     sha256 = await calculate_sha256(file_path)
                     if sha256 and not is_empty_placeholder_hash(sha256):
                         payload["sha256"] = sha256.lower()
+                        payload["hash_status"] = "completed"
+                        await MetadataSyncService._persist_recovered_hash(
+                            file_path, payload
+                        )
             except OSError as exc:  # pragma: no cover - defensive
                 logger.debug("Unable to hash %s while relinking: %s", file_path, exc)
 
         return payload
+
+    @staticmethod
+    async def _persist_recovered_hash(
+        file_path: str, payload: Dict[str, Any]
+    ) -> None:
+        """Write a freshly calculated hash to the sidecar immediately.
+
+        Hashing a multi-GB checkpoint takes minutes, and the relink that
+        follows can still fail (model not published, provider rate limited).
+        Keeping the value only in the caller's payload would discard it and
+        re-read the whole file on the next attempt, so it is persisted as soon
+        as it exists. Only an already-readable sidecar is updated: a payload
+        without ``file_path`` cannot be written back as valid metadata
+        (issue #1162).
+        """
+
+        try:
+            persisted = await MetadataManager.load_metadata_payload(file_path)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("Unable to load sidecar for %s: %s", file_path, exc)
+            return
+
+        if not isinstance(persisted, dict) or not persisted.get("file_path"):
+            return
+
+        persisted["sha256"] = str(payload.get("sha256") or "")
+        persisted["hash_status"] = "completed"
+        try:
+            await MetadataManager.save_metadata(file_path, persisted)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("Unable to persist recovered hash for %s: %s", file_path, exc)
 
     async def _try_link_foreign_source(
         self,
