@@ -205,25 +205,7 @@ class MetadataManager:
             # own directory in alongside mode, which always does).
             os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
 
-            # Convert to dict if needed
-            if isinstance(metadata, BaseModelMetadata):
-                metadata_dict = metadata.to_dict()
-                # Preserve unknown fields if present
-                if hasattr(metadata, '_unknown_fields'):
-                    metadata_dict.update(metadata._unknown_fields)
-            else:
-                metadata_dict = metadata.copy()
-            
-            # Normalize paths
-            if 'file_path' in metadata_dict:
-                metadata_dict['file_path'] = normalize_path(metadata_dict['file_path'])
-            if 'preview_url' in metadata_dict:
-                metadata_dict['preview_url'] = normalize_path(metadata_dict['preview_url'])
-
-            # Local file facts are required schema fields; fill them when a
-            # payload rebuilt without them (e.g. self-heal) is being persisted.
-            if metadata_dict.get("file_path"):
-                MetadataManager._fill_local_file_facts(metadata_dict, metadata_dict["file_path"])
+            metadata_dict = MetadataManager._metadata_payload(metadata)
 
             # Write to temporary file first
             with open(temp_path, 'w', encoding='utf-8') as f:
@@ -243,6 +225,102 @@ class MetadataManager:
                     pass
             return False
     
+    @staticmethod
+    def _metadata_payload(metadata: Union[BaseModelMetadata, Dict[str, Any]]) -> Dict[str, Any]:
+        """Build the dict that gets written to disk for *metadata*.
+
+        Kept in one place so an exclusive create and a normal save cannot
+        disagree about path normalization or the required local file facts.
+        """
+
+        if isinstance(metadata, BaseModelMetadata):
+            metadata_dict = metadata.to_dict()
+            # Preserve unknown fields if present
+            if hasattr(metadata, '_unknown_fields'):
+                metadata_dict.update(metadata._unknown_fields)
+        else:
+            metadata_dict = metadata.copy()
+
+        # Normalize paths
+        if 'file_path' in metadata_dict:
+            metadata_dict['file_path'] = normalize_path(metadata_dict['file_path'])
+        if 'preview_url' in metadata_dict:
+            metadata_dict['preview_url'] = normalize_path(metadata_dict['preview_url'])
+
+        # Local file facts are required schema fields; fill them when a
+        # payload rebuilt without them (e.g. self-heal) is being persisted.
+        if metadata_dict.get("file_path"):
+            MetadataManager._fill_local_file_facts(metadata_dict, metadata_dict["file_path"])
+
+        return metadata_dict
+
+    @staticmethod
+    async def save_metadata_exclusive(
+        path: str, metadata: Union[BaseModelMetadata, Dict[str, Any]]
+    ) -> bool:
+        """Create a sidecar, refusing to replace one that already exists.
+
+        Creation paths decide "no sidecar exists" from a load that happened
+        earlier; by the time they write, another writer (a background scan, the
+        sidecar migration, a metadata fetch) may have put the real sidecar in
+        place. A plain :meth:`save_metadata` would then replace it with the
+        freshly generated stub, losing favourites, notes, tags and CivitAI
+        data. This helper links the temp file into place instead of renaming
+        it, so the existence check and the write are a single atomic step.
+
+        Returns ``True`` when the sidecar was created, ``False`` when one was
+        already there (or the write failed).
+        """
+
+        metadata_path = resolve_metadata_path(path)
+        directory = os.path.dirname(metadata_path) or "."
+        temp_path = f"{metadata_path}.{os.getpid()}.{os.urandom(4).hex()}.tmp"
+
+        try:
+            os.makedirs(directory, exist_ok=True)
+            metadata_dict = MetadataManager._metadata_payload(metadata)
+
+            with open(temp_path, 'x', encoding='utf-8') as f:
+                json.dump(metadata_dict, f, indent=2, ensure_ascii=False)
+
+            try:
+                os.link(temp_path, metadata_path)
+            except FileExistsError:
+                logger.warning(
+                    "Sidecar already exists, keeping it instead of overwriting: %s",
+                    metadata_path,
+                )
+                return False
+            except (AttributeError, OSError) as exc:
+                # Hard links are unavailable on some filesystems (FAT/exFAT
+                # shares, some Windows setups). Fall back to a check-then-replace,
+                # which is still far safer than an unconditional replace.
+                logger.debug(
+                    "Hard link unavailable for %s (%s); using replace",
+                    metadata_path,
+                    exc,
+                )
+                if os.path.exists(metadata_path):
+                    logger.warning(
+                        "Sidecar already exists, keeping it instead of overwriting: %s",
+                        metadata_path,
+                    )
+                    return False
+                os.replace(temp_path, metadata_path)
+                return True
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error creating metadata at {metadata_path}: {str(e)}")
+            return False
+
+        finally:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+
     @staticmethod
     async def create_default_metadata(
         file_path: str,
@@ -371,11 +449,26 @@ class MetadataManager:
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)
             
-            # Save the created metadata
+            # Save the created metadata. Another writer may have materialised
+            # the real sidecar since this path decided none existed, so the
+            # create is exclusive: an existing file always wins.
             logger.info(f"Creating new .metadata.json for {file_path} (Reason: No existing metadata found)")
-            await MetadataManager.save_metadata(file_path, metadata)
-            
-            return metadata
+            if await MetadataManager.save_metadata_exclusive(file_path, metadata):
+                return metadata
+
+            existing, _ = await MetadataManager.load_metadata(file_path, model_class)
+            if existing is not None:
+                logger.warning(
+                    "Kept the sidecar that appeared for %s while default metadata was being created",
+                    file_path,
+                )
+                return existing
+
+            logger.error(
+                "A sidecar for %s exists but cannot be read; leaving it untouched",
+                file_path,
+            )
+            return None
             
         except Exception as e:
             logger.error(f"Error creating default metadata for {file_path}: {e}")

@@ -112,15 +112,30 @@ class OtherScanner(ModelScanner):
                 quantization_source="content" if quantization else None,
             )
 
-            # Save the created metadata
+            # Save the created metadata. Another writer may have materialised
+            # the real sidecar since this path decided none existed, so the
+            # create is exclusive: an existing file always wins.
             logger.info(
                 "Creating other-model metadata (hash %s) for %s",
                 "completed" if resolved_sha256 else "pending",
                 file_path,
             )
-            await MetadataManager.save_metadata(file_path, metadata)
+            if await MetadataManager.save_metadata_exclusive(file_path, metadata):
+                return metadata
 
-            return metadata
+            existing, _ = await MetadataManager.load_metadata(file_path, self.model_class)
+            if existing is not None:
+                logger.warning(
+                    "Kept the sidecar that appeared for %s while default metadata was being created",
+                    file_path,
+                )
+                return existing
+
+            logger.error(
+                "A sidecar for %s exists but cannot be read; leaving it untouched",
+                file_path,
+            )
+            return None
 
         except Exception as e:
             logger.error(

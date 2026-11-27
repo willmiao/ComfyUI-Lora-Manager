@@ -176,7 +176,7 @@ class SidecarMigrationUseCase:
         disappear from the application. Moves every file keeping the
         root-relative structure, rewrites the ``preview_url`` prefix inside
         moved sidecars, reconciles scanner caches, and prunes the emptied old
-        tree. Keep-newer conflict resolution matches :meth:`_transfer`.
+        tree. Conflict resolution matches :meth:`_transfer`.
         """
 
         if not force and get_storage_mode() != STORAGE_MODE_CENTRALIZED:
@@ -667,24 +667,84 @@ class SidecarMigrationUseCase:
             ) from exc
         raise exc
 
+    #: Weights used to compare two sidecars during a conflict. A real sidecar
+    #: carries CivitAI data, a hash and a preview; a regenerated skeleton
+    #: carries none of them yet is always *newer*, so mtime alone would let the
+    #: skeleton replace the real thing.
+    _RICHNESS_WEIGHTS = (("civitai", 8), ("sha256", 4), ("preview_url", 2))
+
+    @classmethod
+    def _metadata_richness(cls, path: str) -> Optional[int]:
+        """Score a sidecar by how much real metadata it carries.
+
+        Returns ``None`` for anything that is not a readable metadata sidecar,
+        which makes the caller fall back to the plain mtime rule.
+        """
+
+        if not path.endswith(METADATA_SUFFIX):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, ValueError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+
+        score = 0
+        for key, weight in cls._RICHNESS_WEIGHTS:
+            value = payload.get(key)
+            if isinstance(value, (dict, list, str)) and value:
+                score += weight
+        for key in ("tags", "notes", "modelDescription"):
+            if payload.get(key):
+                score += 1
+        return score
+
+    def _conflict_prefers_source(self, src: str, dst: str) -> bool:
+        """Decide which side of a conflicting pair survives.
+
+        Metadata conflicts are decided by how much real metadata each side
+        carries: a regenerated skeleton (no CivitAI data, no hash, no preview)
+        must never replace a real sidecar just because it is newer — that is how
+        favourites, notes, tags and CivitAI data were lost. Everything else,
+        and metadata of equal richness, keeps the historical mtime rule.
+        """
+
+        src_score = self._metadata_richness(src)
+        dst_score = self._metadata_richness(dst)
+        if src_score is not None and dst_score is not None and src_score != dst_score:
+            self._logger.info(
+                "Sidecar migration: conflict at %s; %s side carries richer "
+                "metadata (%d vs %d), keeping it",
+                dst,
+                "source" if src_score > dst_score else "destination",
+                max(src_score, dst_score),
+                min(src_score, dst_score),
+            )
+            return src_score > dst_score
+        return os.path.getmtime(src) > os.path.getmtime(dst)
+
     def _transfer(self, src: str, dst: str, result: Dict[str, Any]) -> bool:
-        """Move ``src`` to ``dst`` with keep-newer conflict resolution.
+        """Move ``src`` to ``dst``, resolving conflicts in favour of the better file.
 
         Returns True when the file was actually moved to the destination. On a
-        conflict the newer file wins: a newer source replaces the destination;
-        a newer (or equal) destination is kept and the source is deleted.
+        conflict a richer metadata sidecar wins over a poorer (usually newer)
+        one; otherwise the newer file wins, so a newer source replaces the
+        destination and a newer (or equal) destination is kept while the source
+        is deleted.
         """
 
         if os.path.exists(dst):
             result["conflicts"] += 1
-            if os.path.getmtime(src) > os.path.getmtime(dst):
+            if self._conflict_prefers_source(src, dst):
                 self._logger.info(
-                    "Sidecar migration: conflict at %s; source is newer, replacing", dst
+                    "Sidecar migration: conflict at %s; source wins, replacing", dst
                 )
                 os.remove(dst)
             else:
                 self._logger.info(
-                    "Sidecar migration: conflict at %s; destination is newer, keeping it",
+                    "Sidecar migration: conflict at %s; destination wins, keeping it",
                     dst,
                 )
                 os.remove(src)
