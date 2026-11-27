@@ -914,14 +914,18 @@ class MetadataSyncService:
         """
 
         try:
-            persisted = await MetadataManager.load_metadata_payload(file_path)
+            existing, should_skip = await MetadataManager.load_metadata(file_path)
         except Exception as exc:  # pragma: no cover - defensive
             logger.debug("Unable to load sidecar for %s: %s", file_path, exc)
             return
 
-        if not isinstance(persisted, dict) or not persisted.get("file_path"):
+        if existing is None or should_skip:
             return
 
+        persisted = existing.to_dict()
+        unknown_fields = getattr(existing, "_unknown_fields", None)
+        if isinstance(unknown_fields, dict):
+            persisted.update(unknown_fields)
         persisted["sha256"] = str(payload.get("sha256") or "")
         persisted["hash_status"] = "completed"
         try:

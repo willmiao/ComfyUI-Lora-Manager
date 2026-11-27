@@ -293,20 +293,32 @@ class MetadataManager:
                 return False
             except (AttributeError, OSError) as exc:
                 # Hard links are unavailable on some filesystems (FAT/exFAT
-                # shares, some Windows setups). Fall back to a check-then-replace,
-                # which is still far safer than an unconditional replace.
+                # shares, some Windows setups). Exclusive target creation keeps
+                # the no-overwrite guarantee without a check-then-replace race.
                 logger.debug(
-                    "Hard link unavailable for %s (%s); using replace",
+                    "Hard link unavailable for %s (%s); using exclusive create",
                     metadata_path,
                     exc,
                 )
-                if os.path.exists(metadata_path):
+                try:
+                    fallback_file = open(metadata_path, 'x', encoding='utf-8')
+                except FileExistsError:
                     logger.warning(
                         "Sidecar already exists, keeping it instead of overwriting: %s",
                         metadata_path,
                     )
                     return False
-                os.replace(temp_path, metadata_path)
+                try:
+                    with fallback_file:
+                        json.dump(metadata_dict, fallback_file, indent=2, ensure_ascii=False)
+                except Exception:
+                    # This path created the target, so a partial fallback write
+                    # must not be mistaken for an existing valid sidecar later.
+                    try:
+                        os.remove(metadata_path)
+                    except OSError:
+                        pass
+                    raise
                 return True
 
             return True

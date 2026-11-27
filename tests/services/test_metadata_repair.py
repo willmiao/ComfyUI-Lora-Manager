@@ -133,3 +133,21 @@ async def test_relink_persists_the_hash_it_computed(tmp_path: Path):
     )
     assert stored["sha256"] == payload["sha256"]
     assert stored["hash_status"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_relink_does_not_create_a_partial_sidecar_when_none_exists(
+    tmp_path: Path,
+):
+    """A missing sidecar is recreated only by the complete relink update."""
+
+    model = _write_model(tmp_path / "model.safetensors", b"x" * 64)
+    sidecar = Path(resolve_metadata_path(str(model)))
+
+    payload = await MetadataSyncService._rebuild_relink_payload(
+        _normalize(model), {}
+    )
+
+    assert payload["sha256"]
+    assert payload["hash_status"] == "completed"
+    assert not sidecar.exists()

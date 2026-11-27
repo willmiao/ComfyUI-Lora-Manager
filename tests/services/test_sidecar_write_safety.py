@@ -8,6 +8,7 @@ letting a freshly regenerated stub win a conflict just because it is newer.
 
 from __future__ import annotations
 
+import builtins
 import json
 import os
 from pathlib import Path
@@ -96,6 +97,60 @@ async def test_exclusive_save_keeps_an_existing_sidecar(tmp_path: Path):
     assert stored["civitai"] == {"id": 7}
     assert stored["notes"] == "keep me"
     assert stored["sha256"] == "a" * 64, "the existing hash must survive"
+
+
+@pytest.mark.asyncio
+async def test_exclusive_save_fallback_creates_a_missing_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    model = _write_model(tmp_path / "model.safetensors")
+
+    def unavailable_link(*args, **kwargs):
+        raise OSError("hard links unavailable")
+
+    monkeypatch.setattr(os, "link", unavailable_link)
+
+    created = await MetadataManager.save_metadata_exclusive(
+        str(model), _flat_sidecar_payload(model)
+    )
+
+    assert created is True
+    sidecar = Path(resolve_metadata_path(str(model)))
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["file_name"] == "model"
+
+
+@pytest.mark.asyncio
+async def test_exclusive_save_fallback_keeps_a_concurrent_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """The fallback must not reintroduce a check-then-replace race."""
+
+    model = _write_model(tmp_path / "model.safetensors")
+    sidecar = Path(resolve_metadata_path(str(model)))
+    real_open = builtins.open
+
+    def unavailable_link(*args, **kwargs):
+        raise OSError("hard links unavailable")
+
+    def racing_open(file, mode="r", *args, **kwargs):
+        if os.fspath(file) == str(sidecar) and mode == "x":
+            # Another writer wins immediately before the operating system's
+            # exclusive create. The old replace fallback overwrote this file.
+            with real_open(sidecar, "w", encoding="utf-8") as handle:
+                json.dump({"notes": "concurrent winner"}, handle)
+        return real_open(file, mode, *args, **kwargs)
+
+    monkeypatch.setattr(os, "link", unavailable_link)
+    monkeypatch.setattr(builtins, "open", racing_open)
+
+    created = await MetadataManager.save_metadata_exclusive(
+        str(model), _flat_sidecar_payload(model, notes="generated stub")
+    )
+
+    assert created is False
+    assert json.loads(sidecar.read_text(encoding="utf-8")) == {
+        "notes": "concurrent winner"
+    }
 
 
 @pytest.mark.asyncio
