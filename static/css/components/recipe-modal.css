@@ -1550,6 +1550,51 @@
     margin-top: 6px;
 }
 
+/* Convenience actions on in-library entries: send and copy, in that order,
+   matching the prompt/params header buttons. They live at the trailing end of
+   the meta row rather than in .recipe-lora-actions so that "has an action
+   row" keeps meaning "this entry needs fixing". Icon-only to keep a list of
+   many LoRAs calm; labels are exposed through the tooltip and aria-label. */
+.recipe-lora-quick-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex: 0 0 auto;
+}
+
+/* When the undo-reconnect marker is also present, only the action pair
+   claims the trailing edge (two auto margins would split the free space). */
+.recipe-lora-info.has-quick-actions .lora-undo-reconnect {
+    margin-left: 0;
+}
+
+.recipe-lora-quick-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: var(--border-radius-xs);
+    background: none;
+    color: var(--text-color);
+    opacity: 0.55;
+    cursor: pointer;
+    font-size: 0.95em;
+    line-height: 1;
+    transition: var(--transition-base);
+}
+
+.recipe-lora-quick-action:hover,
+.recipe-lora-quick-action:focus-visible {
+    opacity: 1;
+    color: var(--lora-accent);
+    background: var(--lora-surface);
+    outline: none;
+}
+
 /* External-link affordance, mirroring .version-civitai-link in the
    versions tab: leaving the app is always an explicit, signposted action. */
 .recipe-civitai-link {

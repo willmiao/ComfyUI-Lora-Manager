@@ -1270,6 +1270,47 @@ async def test_get_recipe_syntax(monkeypatch, tmp_path: Path) -> None:
         assert response_404.status == 404
 
 
+async def test_get_recipe_syntax_single_index(monkeypatch, tmp_path: Path) -> None:
+    """?index=N copies one entry; bad indexes map to 400, not 500."""
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_id = "test-recipe-id"
+        harness.scanner.recipes[recipe_id] = {
+            "id": recipe_id,
+            "title": "Syntax Test",
+            "loras": [{"name": "lora1", "weight": 0.5}],
+        }
+
+        async def fake_get_recipe_lora_syntax_token(rid, index):
+            if rid != recipe_id:
+                raise RecipeNotFoundError(f"Recipe {rid} not found")
+            if index == 7:
+                raise IndexError("LoRA index out of range")
+            if index == 8:
+                raise ValueError("No syntax available for this LoRA")
+            return "<lora:lora1:0.5>"
+
+        harness.scanner.get_recipe_lora_syntax_token = (  # pyright: ignore[reportAttributeAccessIssue]
+            fake_get_recipe_lora_syntax_token
+        )
+
+        response = await harness.client.get(
+            f"/api/lm/recipe/{recipe_id}/syntax?index=0"
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload == {"success": True, "syntax": "<lora:lora1:0.5>"}
+
+        for query in ("index=abc", "index=7", "index=8"):
+            bad = await harness.client.get(
+                f"/api/lm/recipe/{recipe_id}/syntax?{query}"
+            )
+            assert bad.status == 400
+
+        missing = await harness.client.get("/api/lm/recipe/non-existent/syntax?index=0")
+        assert missing.status == 404
+
+
 async def test_batch_import_start_success(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         response = await harness.client.post(

@@ -1092,6 +1092,53 @@ async def test_get_recipe_syntax_tokens_skips_unobtainable_loras(tmp_path: Path,
 
 
 @pytest.mark.asyncio
+async def test_get_recipe_lora_syntax_token_resolves_single_entry(tmp_path: Path, recipe_scanner):
+    """A per-entry copy uses the same resolver and skips unobtainable entries."""
+
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "syntax-single-1"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Syntax single",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "usable_lora", "strength": 0.8, "hash": ""},
+            {"file_name": "deleted_lora", "strength": 1.0, "hash": "", "isDeleted": True},
+            {"file_name": "second_lora", "folder": "style", "strength": 1.2, "hash": ""},
+        ],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    assert (
+        await scanner.get_recipe_lora_syntax_token(recipe_id, 0)
+        == "<lora:usable_lora:0.8>"
+    )
+    assert (
+        await scanner.get_recipe_lora_syntax_token(recipe_id, 2)
+        == "<lora:style/second_lora:1.2>"
+    )
+
+    # Deleted entries resolve to nothing; they are skipped by the whole-recipe
+    # copy and must be rejected by the single-entry copy too.
+    with pytest.raises(ValueError):
+        await scanner.get_recipe_lora_syntax_token(recipe_id, 1)
+
+    for bad_index in (-1, 3):
+        with pytest.raises(IndexError):
+            await scanner.get_recipe_lora_syntax_token(recipe_id, bad_index)
+
+    with pytest.raises(recipe_scanner_module.RecipeNotFoundError):
+        await scanner.get_recipe_lora_syntax_token("missing-recipe", 0)
+
+
+@pytest.mark.asyncio
 async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_scanner):
     scanner, _ = recipe_scanner
     recipes_dir = Path(config.loras_roots[0]) / "recipes"

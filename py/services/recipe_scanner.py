@@ -4568,71 +4568,108 @@ class RecipeScanner:
 
         return matching_recipes
 
-    async def get_recipe_syntax_tokens(self, recipe_id: str) -> List[str]:
-        """Build LoRA syntax tokens for a recipe."""
+    async def _load_recipe_for_syntax(
+        self, recipe_id: str
+    ) -> Tuple[Dict[str, Any], Any]:
+        """Load a recipe plus the LoRA cache shared by the syntax builders."""
 
         cache = await self.get_cached_data()
         recipe = await cache.get_recipe(recipe_id)
         if recipe is None:
             raise RecipeNotFoundError("Recipe not found")
 
+        lora_cache = None
+        if self._lora_scanner is not None:
+            lora_cache = await self._lora_scanner.get_cached_data()
+        return recipe, lora_cache
+
+    def _build_lora_syntax_token(
+        self, lora: Dict[str, Any], lora_cache: Any
+    ) -> Optional[str]:
+        """Resolve one recipe LoRA entry into ``<lora:name:weight>`` syntax.
+
+        The local file is looked up by hash (preferred) or CivitAI version id,
+        mirroring the resolution the rest of the recipe UI uses. Returns
+        ``None`` for entries that cannot point at a local file (deleted from
+        the source, or an unresolvable hash), which the whole-recipe copy skips.
+        """
+
+        file_name = None
+        folder = ""
+        hash_value = (lora.get("hash") or "").lower()
+        if (
+            hash_value
+            and self._lora_scanner is not None
+            and hasattr(self._lora_scanner, "_hash_index")
+        ):
+            file_path = self._lora_scanner._hash_index.get_path(hash_value)
+            if file_path:
+                file_name = os.path.splitext(os.path.basename(file_path))[0]
+                if lora_cache is not None:
+                    for cached_lora in getattr(lora_cache, "raw_data", []):
+                        if cached_lora.get("file_path") == file_path:
+                            folder = cached_lora.get("folder", "")
+                            break
+
+        if not file_name and lora.get("modelVersionId") and lora_cache is not None:
+            for cached_lora in getattr(lora_cache, "raw_data", []):
+                civitai_info = cached_lora.get("civitai")
+                if civitai_info and civitai_info.get("id") == lora.get(
+                    "modelVersionId"
+                ):
+                    cached_path = cached_lora.get("path") or cached_lora.get(
+                        "file_path"
+                    )
+                    if cached_path:
+                        file_name = os.path.splitext(os.path.basename(cached_path))[0]
+                        folder = cached_lora.get("folder", "")
+                    break
+
+        if not file_name:
+            # LoRAs deleted from the source or with an unresolvable hash
+            # cannot be downloaded; skip them instead of emitting a token
+            # pointing at a file that does not exist locally.
+            if lora.get("isDeleted", False) or lora.get("hashInvalid", False):
+                return None
+            file_name = lora.get("file_name", "unknown-lora")
+            folder = lora.get("folder", "")
+
+        lora_name = f"{folder}/{file_name}" if folder else file_name
+        strength = lora.get("strength", 1.0)
+        return f"<lora:{lora_name}:{strength}>"
+
+    async def get_recipe_syntax_tokens(self, recipe_id: str) -> List[str]:
+        """Build LoRA syntax tokens for a recipe."""
+
+        recipe, lora_cache = await self._load_recipe_for_syntax(recipe_id)
         loras = recipe.get("loras", [])
         if not loras:
             return []
 
-        lora_cache = None
-        if self._lora_scanner is not None:
-            lora_cache = await self._lora_scanner.get_cached_data()
-
         syntax_parts: List[str] = []
         for lora in loras:
-            file_name = None
-            folder = ""
-            hash_value = (lora.get("hash") or "").lower()
-            if (
-                hash_value
-                and self._lora_scanner is not None
-                and hasattr(self._lora_scanner, "_hash_index")
-            ):
-                file_path = self._lora_scanner._hash_index.get_path(hash_value)
-                if file_path:
-                    file_name = os.path.splitext(os.path.basename(file_path))[0]
-                    if lora_cache is not None:
-                        for cached_lora in getattr(lora_cache, "raw_data", []):
-                            if cached_lora.get("file_path") == file_path:
-                                folder = cached_lora.get("folder", "")
-                                break
-
-            if not file_name and lora.get("modelVersionId") and lora_cache is not None:
-                for cached_lora in getattr(lora_cache, "raw_data", []):
-                    civitai_info = cached_lora.get("civitai")
-                    if civitai_info and civitai_info.get("id") == lora.get(
-                        "modelVersionId"
-                    ):
-                        cached_path = cached_lora.get("path") or cached_lora.get(
-                            "file_path"
-                        )
-                        if cached_path:
-                            file_name = os.path.splitext(os.path.basename(cached_path))[
-                                0
-                            ]
-                            folder = cached_lora.get("folder", "")
-                        break
-
-            if not file_name:
-                # LoRAs deleted from the source or with an unresolvable hash
-                # cannot be downloaded; skip them instead of emitting a token
-                # pointing at a file that does not exist locally.
-                if lora.get("isDeleted", False) or lora.get("hashInvalid", False):
-                    continue
-                file_name = lora.get("file_name", "unknown-lora")
-                folder = lora.get("folder", "")
-
-            lora_name = f"{folder}/{file_name}" if folder else file_name
-            strength = lora.get("strength", 1.0)
-            syntax_parts.append(f"<lora:{lora_name}:{strength}>")
+            token = self._build_lora_syntax_token(lora, lora_cache)
+            if token is not None:
+                syntax_parts.append(token)
 
         return syntax_parts
+
+    async def get_recipe_lora_syntax_token(self, recipe_id: str, index: int) -> str:
+        """Build the syntax token for a single recipe LoRA entry.
+
+        Shares :meth:`_build_lora_syntax_token` with the whole-recipe copy, so
+        a per-item copy can never disagree with the "copy all" result.
+        """
+
+        recipe, lora_cache = await self._load_recipe_for_syntax(recipe_id)
+        loras = recipe.get("loras", [])
+        if not isinstance(index, int) or index < 0 or index >= len(loras):
+            raise IndexError("LoRA index out of range")
+
+        token = self._build_lora_syntax_token(loras[index], lora_cache)
+        if token is None:
+            raise ValueError("No syntax available for this LoRA")
+        return token
 
     async def build_lora_hash_index(self) -> Dict[str, List[Dict[str, Any]]]:
         """Build a one-shot lowercase-LoRA-hash → recipes index.

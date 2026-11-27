@@ -828,6 +828,30 @@ class RecipeQueryHandler:
                 raise RuntimeError("Recipe scanner unavailable")
 
             recipe_id = request.match_info["recipe_id"]
+
+            # A single-entry copy (used by the per-row send/copy actions on
+            # in-library LoRAs) carries the entry's position in the recipe's
+            # loras array. Tokens are resolved by the scanner, never split out
+            # of the whole-recipe string: LoRA file names may contain spaces.
+            index_param = request.query.get("index")
+            if index_param is not None:
+                try:
+                    index = int(index_param)
+                except (TypeError, ValueError):
+                    return web.json_response(
+                        {"error": "Invalid LoRA index"}, status=400
+                    )
+                try:
+                    syntax = await recipe_scanner.get_recipe_lora_syntax_token(
+                        recipe_id, index
+                    )
+                except RecipeNotFoundError:
+                    return web.json_response({"error": "Recipe not found"}, status=404)
+                except (IndexError, ValueError) as exc:
+                    return web.json_response({"error": str(exc)}, status=400)
+
+                return web.json_response({"success": True, "syntax": syntax})
+
             try:
                 syntax_parts = await recipe_scanner.get_recipe_syntax_tokens(recipe_id)
             except RecipeNotFoundError:

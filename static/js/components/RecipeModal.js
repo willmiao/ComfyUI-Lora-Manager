@@ -1151,6 +1151,28 @@ class RecipeModal {
 
                 const actionsRow = this.renderLoraItemActions(loraIndex, { existsLocally, needsReconnect });
 
+                // Per-item send/copy for entries that resolve to a local file,
+                // mirroring the prompt and params header buttons (send first,
+                // then copy). The remediation row above stays reserved for
+                // entries that need fixing, so its presence keeps meaning
+                // "something is wrong" instead of "normal actions".
+                let quickActions = '';
+                if (existsLocally) {
+                    const sendLoraTooltip = translate('recipes.resources.sendLoraTooltip', {}, 'Send this LoRA to ComfyUI');
+                    const copyLoraTooltip = translate('recipes.resources.copyLoraSyntaxTooltip', {}, 'Copy this LoRA syntax');
+                    quickActions = `
+                        <div class="recipe-lora-quick-actions">
+                            <button type="button" class="recipe-lora-quick-action lora-send" data-lora-index="${loraIndex}"
+                                title="${escapeHtml(sendLoraTooltip)}" aria-label="${escapeHtml(sendLoraTooltip)}">
+                                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="recipe-lora-quick-action lora-copy" data-lora-index="${loraIndex}"
+                                title="${escapeHtml(copyLoraTooltip)}" aria-label="${escapeHtml(copyLoraTooltip)}">
+                                <i class="fas fa-copy" aria-hidden="true"></i>
+                            </button>
+                        </div>`;
+                }
+
                 // The Civitai link belongs to the model name (it answers
                 // "what is this"), so it sits inline in the title — the same
                 // pattern the versions tab uses — never in the action row.
@@ -1213,11 +1235,12 @@ class RecipeModal {
                                 </div>
                                 <div class="badge-container">${statusBadge}</div>
                             </div>
-                            <div class="recipe-lora-info">
+                            <div class="recipe-lora-info${existsLocally ? ' has-quick-actions' : ''}">
                                 ${lora.modelVersionName ? `<div class="recipe-lora-version">${lora.modelVersionName}</div>` : ''}
                                 <div class="recipe-lora-weight">Weight: ${lora.strength || 1.0}</div>
                                 ${lora.baseModel ? `<div class="base-model">${lora.baseModel}</div>` : ''}
                                 ${undoReconnectIcon}
+                                ${quickActions}
                             </div>
                             ${actionsRow}
                         </div>
@@ -1914,6 +1937,57 @@ class RecipeModal {
         } catch (error) {
             console.error('Error fetching recipe syntax:', error);
             showToast('toast.recipes.copyFailed', { message: error.message }, 'error');
+        }
+    }
+
+    /**
+     * Fetch the syntax token of a single recipe LoRA.
+     *
+     * The backend resolves the local file (hash first, CivitAI version id as
+     * fallback) with the same builder the whole-recipe copy uses, so the two
+     * copies can never disagree.
+     */
+    async fetchLoraSyntax(loraIndex) {
+        if (!this.recipeId) {
+            showToast('toast.recipes.noRecipeId', {}, 'error');
+            return null;
+        }
+
+        const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax?index=${loraIndex}`);
+        if (!response.ok) {
+            throw new Error(`Failed to get LoRA syntax: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (!data.success || !data.syntax) {
+            throw new Error(data.error || 'No syntax returned from server');
+        }
+        return data.syntax;
+    }
+
+    async copyLoraSyntax(loraIndex) {
+        try {
+            const syntax = await this.fetchLoraSyntax(loraIndex);
+            if (!syntax) {
+                return;
+            }
+            await copyToClipboard(syntax, translate('uiHelpers.lora.syntaxCopied', {}, 'LoRA syntax copied to clipboard'));
+        } catch (error) {
+            console.error('Error copying LoRA syntax:', error);
+            showToast('toast.recipes.copyLoraFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async sendLoraSyntaxToWorkflow(loraIndex) {
+        try {
+            const syntax = await this.fetchLoraSyntax(loraIndex);
+            if (!syntax) {
+                return;
+            }
+            await sendLoraToWorkflow(syntax, false, 'lora');
+        } catch (error) {
+            console.error('Error sending LoRA to workflow:', error);
+            showToast('toast.recipes.sendLoraFailed', { message: error.message }, 'error');
         }
     }
 
@@ -3027,6 +3101,31 @@ class RecipeModal {
                 this.restoreLora(button.dataset.loraIndex);
             });
         });
+
+        // Per-item convenience actions on in-library entries. stopPropagation
+        // keeps the row's own click/keydown (navigate to the library) from
+        // firing as well; setupLoraItemsClickable guards the same targets.
+        lorasListElement.querySelectorAll('.lora-copy').forEach(button => {
+            if (button.dataset.wired === 'true') {
+                return;
+            }
+            button.dataset.wired = 'true';
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.copyLoraSyntax(parseInt(button.dataset.loraIndex, 10));
+            });
+        });
+
+        lorasListElement.querySelectorAll('.lora-send').forEach(button => {
+            if (button.dataset.wired === 'true') {
+                return;
+            }
+            button.dataset.wired = 'true';
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.sendLoraSyntaxToWorkflow(parseInt(button.dataset.loraIndex, 10));
+            });
+        });
     }
 
     /**
@@ -3311,15 +3410,19 @@ class RecipeModal {
             const loraIndex = parseInt(item.dataset.loraIndex);
 
             item.addEventListener('click', (e) => {
-                // The inline Civitai link inside the title keeps its own
-                // navigation; don't let it trigger the row navigation.
-                if (e.target.closest('.recipe-civitai-link')) {
+                // Inline links and the per-item action buttons keep their own
+                // behavior; don't let their click trigger the row navigation.
+                if (e.target.closest('button, a')) {
                     return;
                 }
                 this.navigateToLorasPage(loraIndex);
             });
             item.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                    // A focused inner control handles its own activation.
+                    if (e.target.closest('button, a')) {
+                        return;
+                    }
                     e.preventDefault();
                     this.navigateToLorasPage(loraIndex);
                 }
