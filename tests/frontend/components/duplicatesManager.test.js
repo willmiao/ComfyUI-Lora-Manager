@@ -153,7 +153,9 @@ describe('DuplicatesManager card selection', () => {
     manager.renderDuplicateGroups();
 
     const keeper = document.querySelector('.selector-checkbox[data-recipe-id="r2"]').closest('.model-card');
-    keeper.querySelector('.keep-item-btn').click();
+    const keepButton = keeper.querySelector('.keep-item-btn');
+    expect(keepButton.title).toBe('duplicates.keepThisTooltip');
+    keepButton.click();
 
     expect(manager.selectedForDeletion.has('r1')).toBe(true);
     expect(manager.selectedForDeletion.has('r2')).toBe(false);

@@ -2729,6 +2729,7 @@
         "deleting": "Suppression de {count} élément(s) sélectionné(s)...",
         "keepLatest": "Garder les dernières versions",
         "keepThis": "Garder cet élément",
+        "keepThisTooltip": "Garder cet élément et sélectionner les autres doublons de son groupe pour suppression. Aucun élément n’est supprimé avant votre confirmation.",
         "noGroups": "Plus aucun groupe de doublons",
         "showNotification": "Afficher la notification de doublons",
         "deleteSelected": "Supprimer la sélection",

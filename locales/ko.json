@@ -2729,6 +2729,7 @@
         "deleting": "선택한 {count}개 항목을 삭제 중...",
         "keepLatest": "최신 버전 유지",
         "keepThis": "이 항목 유지",
+        "keepThisTooltip": "이 항목을 유지하고 같은 그룹의 다른 중복 항목을 삭제 대상으로 선택합니다. 확인하기 전까지는 어떤 항목도 삭제되지 않습니다.",
         "noGroups": "남은 중복 그룹이 없습니다",
         "showNotification": "중복 알림 표시",
         "deleteSelected": "선택된 항목 삭제",

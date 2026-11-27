@@ -2729,6 +2729,7 @@
         "deleting": "Lösche {count} ausgewählte Element(e)...",
         "keepLatest": "Neueste Versionen behalten",
         "keepThis": "Dieses behalten",
+        "keepThisTooltip": "Dieses Element behalten und die anderen Duplikate in seiner Gruppe zum Löschen auswählen. Es werden keine Elemente gelöscht, bis Sie dies bestätigen.",
         "noGroups": "Keine Duplikat-Gruppen mehr vorhanden",
         "showNotification": "Duplikat-Benachrichtigung anzeigen",
         "deleteSelected": "Ausgewählte löschen",

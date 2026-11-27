@@ -2729,6 +2729,7 @@
         "deleting": "正在刪除 {count} 個已選項目...",
         "keepLatest": "保留最新版本",
         "keepThis": "保留此項",
+        "keepThisTooltip": "保留此項，並選取同組中的其他重複項以供刪除。確認前不會刪除任何項目。",
         "noGroups": "沒有剩餘的重複項",
         "showNotification": "顯示重複項通知",
         "deleteSelected": "刪除所選",

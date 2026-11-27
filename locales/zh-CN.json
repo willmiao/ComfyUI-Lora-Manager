@@ -2729,6 +2729,7 @@
         "deleting": "正在删除 {count} 个已选项目...",
         "keepLatest": "保留最新版本",
         "keepThis": "保留此项",
+        "keepThisTooltip": "保留此项，并选择同组中的其他重复项以供删除。确认前不会删除任何项目。",
         "noGroups": "没有剩余的重复组",
         "showNotification": "显示重复项通知",
         "deleteSelected": "删除已选",

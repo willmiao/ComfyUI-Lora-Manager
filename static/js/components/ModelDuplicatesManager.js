@@ -567,6 +567,7 @@ export class ModelDuplicatesManager extends DuplicatesViewManager {
         keepButton.type = 'button';
         keepButton.className = 'keep-item-btn';
         keepButton.textContent = translate('duplicates.keepThis');
+        keepButton.title = translate('duplicates.keepThisTooltip');
         keepButton.addEventListener('click', event => {
             event.stopPropagation();
             this.keepModelInGroup(model.file_path, groupHash);

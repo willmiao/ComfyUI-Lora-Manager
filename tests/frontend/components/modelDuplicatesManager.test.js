@@ -131,7 +131,9 @@ describe('ModelDuplicatesManager card selection', () => {
     manager.renderDuplicateGroups();
 
     const keeper = document.querySelector(`[data-file-path="${copyPath}"]`);
-    keeper.querySelector('.keep-item-btn').click();
+    const keepButton = keeper.querySelector('.keep-item-btn');
+    expect(keepButton.title).toBe('duplicates.keepThisTooltip');
+    keepButton.click();
 
     expect(manager.selectedForDeletion.has(carPath)).toBe(true);
     expect(manager.selectedForDeletion.has(copyPath)).toBe(false);

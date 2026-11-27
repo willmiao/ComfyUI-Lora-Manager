@@ -2729,6 +2729,7 @@
     "deleting": "Deleting {count} selected items...",
     "keepLatest": "Keep Latest Versions",
     "keepThis": "Keep this",
+    "keepThisTooltip": "Keep this item and select the other duplicates in its group for deletion. No items are deleted until you confirm.",
     "noGroups": "No duplicate groups remain",
     "showNotification": "Show Duplicates Notification",
     "deleteSelected": "Delete Selected",

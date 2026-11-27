@@ -2729,6 +2729,7 @@
         "deleting": "選択した {count} 件の項目を削除中...",
         "keepLatest": "最新バージョンを保持",
         "keepThis": "これを保持",
+        "keepThisTooltip": "この項目を保持し、同じグループ内の他の重複項目を削除対象として選択します。確認するまで項目は削除されません。",
         "noGroups": "重複グループは残っていません",
         "showNotification": "重複通知を表示",
         "deleteSelected": "選択したものを削除",
