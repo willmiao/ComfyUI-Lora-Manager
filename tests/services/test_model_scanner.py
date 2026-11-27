@@ -3860,6 +3860,7 @@ async def test_add_model_to_cache_slims_civitai_payload(tmp_path: Path, monkeypa
         "id": 123,
         "modelId": 456,
         "name": "v1",
+        "publishedAt": "2024-01-02T03:04:05Z",
         "creator": {"username": "alice", "image": "avatar.png"},
         "trainedWords": ["trigger"],
         "model": {
@@ -3888,6 +3889,7 @@ async def test_add_model_to_cache_slims_civitai_payload(tmp_path: Path, monkeypa
         "id": 123,
         "modelId": 456,
         "name": "v1",
+        "publishedAt": "2024-01-02T03:04:05Z",
         "creator": {"username": "alice", "image": "avatar.png"},
         "trainedWords": ["trigger"],
         "model": {"type": "LORA"},
@@ -3929,3 +3931,73 @@ async def test_update_single_model_cache_schedules_refreeze(tmp_path: Path, monk
 
     assert result
     assert "dummy cache update" in scheduled
+
+
+async def test_published_at_backfill_is_lazy_and_persisted_once(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("LORA_MANAGER_DISABLE_PERSISTENT_CACHE", "0")
+    scanner = DummyScanner(tmp_path)
+    store = PersistentModelCache(db_path=str(tmp_path / "cache.sqlite"))
+    scanner._persistent_cache = store
+
+    missing_path = (tmp_path / "missing.txt").as_posix()
+    existing_path = (tmp_path / "existing.txt").as_posix()
+    for file_path, published_at in (
+        (missing_path, "2024-01-02T03:04:05Z"),
+        (existing_path, "2025-01-01T00:00:00Z"),
+    ):
+        metadata_path = Path(get_metadata_path(file_path))
+        metadata_path.write_text(
+            json.dumps({"civitai": {"publishedAt": published_at}}),
+            encoding="utf-8",
+        )
+
+    scanner._cache = ModelCache(
+        raw_data=[
+            {
+                "file_path": missing_path,
+                "file_name": "missing",
+                "model_name": "Missing",
+                "folder": "",
+                "sha256": "hash-missing",
+                "tags": [],
+                "civitai": {"id": 1},
+            },
+            {
+                "file_path": existing_path,
+                "file_name": "existing",
+                "model_name": "Existing",
+                "folder": "",
+                "sha256": "hash-existing",
+                "tags": [],
+                "civitai": {"id": 2, "publishedAt": "2023-01-01T00:00:00Z"},
+            },
+        ],
+        folders=[],
+    )
+
+    async def no_history_sync(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(scanner, "_sync_download_history", no_history_sync)
+
+    updated = await scanner.ensure_published_at_backfill()
+
+    assert updated == 1
+    assert scanner._cache.raw_data[0]["civitai"]["publishedAt"] == "2024-01-02T03:04:05Z"
+    assert scanner._cache.raw_data[1]["civitai"]["publishedAt"] == "2023-01-01T00:00:00Z"
+    persisted = store.load_cache("dummy")
+    assert persisted is not None
+    persisted_dates = {
+        item["file_path"]: item["civitai"]["publishedAt"]
+        for item in persisted.raw_data
+    }
+    assert persisted_dates == {
+        missing_path: "2024-01-02T03:04:05Z",
+        existing_path: "2023-01-01T00:00:00Z",
+    }
+
+    def unexpected_read(_paths):
+        raise AssertionError("backfill should only read sidecars once per process")
+
+    monkeypatch.setattr(scanner, "_read_published_at_values", unexpected_read)
+    assert await scanner.ensure_published_at_backfill() == 0

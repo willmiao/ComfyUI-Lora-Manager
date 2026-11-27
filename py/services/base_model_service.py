@@ -23,6 +23,7 @@ from .model_query import (
 )
 from .settings_manager import get_settings_manager
 from .model_sources import source_group_key
+from .model_cache import sort_by_published_at
 from ..utils.civitai_utils import build_civitai_model_page_url, decode_license_flags
 from ..utils.root_paths import normalize_root_identity
 from ..utils.sidecar_paths import is_centralized
@@ -97,6 +98,10 @@ class BaseModelService(ABC):
         overall_start = time.perf_counter()
 
         sort_params = self.cache_repository.parse_sort(sort_by)
+        if sort_params.key == "published":
+            backfill = getattr(self.scanner, "ensure_published_at_backfill", None)
+            if callable(backfill):
+                await backfill()
         t0 = time.perf_counter()
         if sort_params.key == "usage":
             sorted_data = await self._fetch_with_usage_sort(sort_params)
@@ -246,6 +251,17 @@ class BaseModelService(ABC):
                 for items in sorted_groups:
                     sorted_data.extend(items)
                 sorted_data.extend(ungrouped_standalone)
+
+        if (
+            sort_params.key == "published"
+            and kwargs.get("group_by_model")
+            and civitai_model_id is None
+        ):
+            sorted_data = sort_by_published_at(
+                sorted_data,
+                sort_params.order,
+                lambda item: (item.get("model_name") or item.get("file_name") or ""),
+            )
 
         t1 = time.perf_counter()
         if hash_filters:
@@ -429,6 +445,12 @@ class BaseModelService(ABC):
                 float(item.get("modified", 0.0) or 0.0),
                 (item.get("model_name") or item.get("file_name") or "").lower(),
                 item.get("file_path", "").lower(),
+            )
+        elif key_name == "published":
+            return sort_by_published_at(
+                data,
+                sort_params.order,
+                lambda item: (item.get("model_name") or item.get("file_name") or ""),
             )
         elif key_name == "random":
             # Seeded random shuffle: same seed -> same order (stable pagination)

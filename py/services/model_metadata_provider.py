@@ -350,6 +350,8 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                 }
                 # Update with any additional data
                 version_entry.update(version_data)
+                if row["published_at"] and not version_entry.get("publishedAt"):
+                    version_entry["publishedAt"] = row["published_at"]
                 model_versions.append(version_entry)
                 
             return {
@@ -424,7 +426,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
     async def _get_version_with_model_data(self, db, model_id, version_id) -> Optional[Dict[str, Any]]:
         """Helper to build version data with model information"""
         # Get version details
-        version_query = "SELECT name, base_model, data FROM model_versions WHERE id = ? AND model_id = ?"
+        version_query = "SELECT name, base_model, data, published_at FROM model_versions WHERE id = ? AND model_id = ?"
         cursor = await db.execute(version_query, (version_id, model_id))
         version_row = await cursor.fetchone()
         
@@ -465,6 +467,8 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             
             # Add any additional fields from version data
             result.update(version_data)
+            if version_row["published_at"] and not result.get("publishedAt"):
+                result["publishedAt"] = version_row["published_at"]
             
             # Attach files associated with this version from model_files table
             files_query = """

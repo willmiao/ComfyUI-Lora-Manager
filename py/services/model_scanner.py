@@ -916,6 +916,8 @@ class ModelScanner:
         self._deferred_persist_pending = False
         self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
         self._quantization_backfill_scheduled = False  # One-time quantization backfill trigger per process
+        self._published_at_backfill_done = False
+        self._published_at_backfill_lock = asyncio.Lock()
         # Summary of the last incremental reconcile (see last_reconcile_summary)
         self._last_reconcile_summary: Optional[Dict[str, Any]] = None
         # Guard against concurrent all-folders backfill walks (cold fallback
@@ -998,6 +1000,7 @@ class ModelScanner:
         self._excluded_models = []
         self._is_initializing = False
         self._init_error = None
+        self._published_at_backfill_done = False
         self._name_display_mode = self._resolve_name_display_mode()
         self.bump_cache_version()
 
@@ -1051,7 +1054,7 @@ class ModelScanner:
             return None
 
         slim: Dict[str, Any] = {}
-        for key in ('id', 'modelId', 'name'):
+        for key in ('id', 'modelId', 'name', 'publishedAt'):
             value = civitai.get(key)
             if value not in (None, '', []):
                 slim[key] = value
@@ -1697,6 +1700,81 @@ class ModelScanner:
             if path not in bucket:
                 bucket.append(path)
         return snapshot
+
+    @staticmethod
+    def _read_published_at_values(file_paths: Sequence[str]) -> Dict[str, str]:
+        values: Dict[str, str] = {}
+        for file_path in file_paths:
+            try:
+                metadata_path = get_metadata_path(file_path)
+                with open(metadata_path, "r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                civitai = payload.get("civitai") if isinstance(payload, dict) else None
+                published_at = civitai.get("publishedAt") if isinstance(civitai, dict) else None
+                if isinstance(published_at, str) and published_at.strip():
+                    values[file_path] = published_at
+            except (OSError, json.JSONDecodeError, TypeError):
+                continue
+        return values
+
+    async def ensure_published_at_backfill(self) -> int:
+        """Backfill publication dates from local sidecars on first published sort."""
+        if self._published_at_backfill_done:
+            return 0
+
+        async with self._published_at_backfill_lock:
+            if self._published_at_backfill_done:
+                return 0
+
+            cache = await self.get_cached_data()
+            pending_paths = []
+            for item in cache.raw_data:
+                civitai = item.get("civitai")
+                published_at = civitai.get("publishedAt") if isinstance(civitai, dict) else None
+                if isinstance(published_at, str) and published_at.strip():
+                    continue
+                file_path = item.get("file_path")
+                if file_path:
+                    pending_paths.append(file_path)
+
+            loop = asyncio.get_running_loop()
+            published_values = await loop.run_in_executor(
+                None,
+                self._read_published_at_values,
+                pending_paths,
+            )
+
+            updated = 0
+            if published_values:
+                for item in cache.raw_data:
+                    file_path = item.get("file_path")
+                    published_at = published_values.get(file_path)
+                    if not published_at:
+                        continue
+                    civitai = item.get("civitai")
+                    if not isinstance(civitai, dict):
+                        civitai = {}
+                        item["civitai"] = civitai
+                    existing = civitai.get("publishedAt")
+                    if isinstance(existing, str) and existing.strip():
+                        continue
+                    civitai["publishedAt"] = published_at
+                    updated += 1
+
+                if updated:
+                    await cache.resort()
+                    await self._persist_current_cache()
+                    self.bump_cache_version()
+
+            self._published_at_backfill_done = True
+            if pending_paths:
+                logger.info(
+                    "Published-at backfill: updated %d/%d models for %s",
+                    updated,
+                    len(pending_paths),
+                    self.model_type,
+                )
+            return updated
 
     async def _persist_current_cache(self, *, force: bool = False) -> None:
         if self._cache is None or not getattr(self, '_persistent_cache', None):

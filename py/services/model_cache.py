@@ -4,9 +4,11 @@ import logging
 import random
 
 logger = logging.getLogger(__name__)
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from natsort import natsorted
+
+from ..utils.paid_access import parse_civitai_timestamp
 
 # Supported sort modes: (sort_key, order)
 # order: 'asc' for ascending, 'desc' for descending
@@ -15,6 +17,8 @@ SUPPORTED_SORT_MODES = [
     ('name', 'desc'),
     ('date', 'asc'),
     ('date', 'desc'),
+    ('published', 'asc'),
+    ('published', 'desc'),
     ('size', 'asc'),
     ('size', 'desc'),
     ('usage', 'asc'),
@@ -25,6 +29,37 @@ SUPPORTED_SORT_MODES = [
 # Is this in use?
 
 DISPLAY_NAME_MODES = {"model_name", "file_name"}
+
+
+def sort_by_published_at(
+    data: List[Dict[str, Any]],
+    order: str,
+    display_name: Callable[[Dict[str, Any]], str],
+) -> List[Dict[str, Any]]:
+    reverse = order == "desc"
+    dated = []
+    undated = []
+    for item in data:
+        civitai = item.get("civitai")
+        published_at = civitai.get("publishedAt") if isinstance(civitai, dict) else None
+        parsed = parse_civitai_timestamp(published_at)
+        if parsed is None:
+            undated.append(item)
+        else:
+            dated.append((parsed, item))
+
+    def tie_key(item: Dict[str, Any]) -> Tuple[str, str]:
+        return (
+            display_name(item).lower(),
+            str(item.get("file_path") or "").lower(),
+        )
+
+    dated.sort(
+        key=lambda entry: (entry[0], *tie_key(entry[1])),
+        reverse=reverse,
+    )
+    undated.sort(key=tie_key, reverse=reverse)
+    return [item for _, item in dated] + undated
 
 
 @dataclass
@@ -318,6 +353,8 @@ class ModelCache:
                 ),
                 reverse=reverse
             )
+        elif sort_key == 'published':
+            result = sort_by_published_at(data, order, self._get_display_name)
         elif sort_key == 'size':
             # Sort by file size, fallback to name and path for stability
             result = sorted(

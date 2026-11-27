@@ -12,6 +12,7 @@ from py.services.model_query import (
     SortParams,
 )
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
+from py.services.model_cache import ModelCache
 from py.utils.models import BaseModelMetadata
 
 
@@ -26,6 +27,21 @@ class StubSettings:
 class DummyService(BaseModelService):
     async def format_response(self, model_data):
         return model_data
+
+
+class StubCacheScanner:
+    def __init__(self, items):
+        self.cache = ModelCache(raw_data=list(items), folders=[])
+        self.backfill_calls = 0
+        self.backfill_done = False
+
+    async def get_cached_data(self):
+        return self.cache
+
+    async def ensure_published_at_backfill(self):
+        if not self.backfill_done:
+            self.backfill_calls += 1
+            self.backfill_done = True
 
 
 class StubRepository(ModelCacheRepository):
@@ -1826,3 +1842,100 @@ async def test_get_folder_tree_include_empty_uses_live_enumeration():
 
     assert default_tree == {"a": {"b": {}}}
     assert include_empty_tree == {"a": {"b": {}}, "empty": {}}
+
+
+@pytest.mark.asyncio
+async def test_published_sort_triggers_one_backfill_before_full_pagination():
+    items = [
+        {
+            "model_name": name,
+            "file_name": name,
+            "file_path": f"/models/{name}.safetensors",
+            "folder": "root",
+            "civitai": {"publishedAt": published_at} if published_at else {},
+        }
+        for name, published_at in [
+            ("Oldest", "2023-01-01T00:00:00Z"),
+            ("Newest", "2025-01-01T00:00:00Z"),
+            ("Middle", "2024-01-01T00:00:00Z"),
+            ("Missing", None),
+            ("Invalid", "bad-date"),
+        ]
+    ]
+    scanner = StubCacheScanner(items)
+    service = DummyService(
+        model_type="stub",
+        scanner=scanner,
+        metadata_class=BaseModelMetadata,
+        cache_repository=ModelCacheRepository(scanner),
+        filter_set=PassThroughFilterSet(),
+        search_strategy=NoSearchStrategy(),
+        settings_provider=StubSettings({}),
+    )
+
+    await service.get_paginated_data(page=1, page_size=10, sort_by="name:asc")
+    assert scanner.backfill_calls == 0
+
+    names = []
+    for page in (1, 2, 3):
+        response = await service.get_paginated_data(
+            page=page,
+            page_size=2,
+            sort_by="published:desc",
+        )
+        names.extend(item["model_name"] for item in response["items"])
+
+    assert names == ["Newest", "Middle", "Oldest", "Missing", "Invalid"]
+    assert scanner.backfill_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_grouped_published_sort_uses_the_visible_representative():
+    items = [
+        {
+            "model_name": "Model A",
+            "file_name": "a-v1",
+            "file_path": "/models/a-v1.safetensors",
+            "folder": "root",
+            "civitai": {"modelId": 1, "id": 100, "publishedAt": "2020-01-01T00:00:00Z"},
+        },
+        {
+            "model_name": "Model B",
+            "file_name": "b-v1",
+            "file_path": "/models/b-v1.safetensors",
+            "folder": "root",
+            "civitai": {"modelId": 2, "id": 100, "publishedAt": "2021-01-01T00:00:00Z"},
+        },
+        {
+            "model_name": "Model A",
+            "file_name": "a-v2",
+            "file_path": "/models/a-v2.safetensors",
+            "folder": "root",
+            "civitai": {"modelId": 1, "id": 200},
+        },
+        {
+            "model_name": "Model B",
+            "file_name": "b-v2",
+            "file_path": "/models/b-v2.safetensors",
+            "folder": "root",
+            "civitai": {"modelId": 2, "id": 200, "publishedAt": "2022-01-01T00:00:00Z"},
+        },
+    ]
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=StubRepository(items),
+        settings_provider=StubSettings({"version_grouping": "any"}),
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="published:desc",
+        group_by_model=True,
+    )
+
+    assert [item["civitai"]["modelId"] for item in response["items"]] == [2, 1]
+    assert response["items"][0]["file_name"] == "b-v2"
+    assert response["items"][1]["file_name"] == "a-v2"

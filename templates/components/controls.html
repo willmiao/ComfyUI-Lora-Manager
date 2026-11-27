@@ -32,6 +32,10 @@
                         <option value="date:asc">{{ t('loras.controls.sort.dateAsc') }}</option>
                     </optgroup>
                     {% if page_id != 'recipes' %}
+                    <optgroup label="{{ t('loras.controls.sort.published') }}">
+                        <option value="published:desc">{{ t('loras.controls.sort.publishedDesc') }}</option>
+                        <option value="published:asc">{{ t('loras.controls.sort.publishedAsc') }}</option>
+                    </optgroup>
                     <optgroup label="{{ t('loras.controls.sort.size') }}">
                         <option value="size:desc">{{ t('loras.controls.sort.sizeDesc') }}</option>
                         <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>

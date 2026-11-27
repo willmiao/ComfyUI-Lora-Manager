@@ -136,6 +136,7 @@ The `civitai` object stores the complete Civitai/CivArchive API response. Lora M
 | `nsfwLevel` | integer | NSFW level (bitmask: 1=PG, 2=PG13, 4=R, 8=X, 16=XXX, 32=Blocked) |
 | `baseModel` | string | Base model (e.g., `"SDXL 1.0"`, `"Flux.1 D"`, `"Illustrious"`, `"Pony"`) |
 | `trainedWords` | array[string] | **Trigger words** for the model |
+| `publishedAt` | string (ISO 8601) | Version publication timestamp, used for "Date Published" sorting |
 | `type` | string | Model type (`"LoRA"`, `"Checkpoint"`, `"TextualInversion"`) |
 | `earlyAccessEndsAt` | string\|null | Early access end date (used for update notifications) |
 | `description` | string | Version description (HTML) |
@@ -151,7 +152,6 @@ The `civitai` object stores the complete Civitai/CivArchive API response. Lora M
 | `createdAt` | string (ISO 8601) | Creation timestamp |
 | `updatedAt` | string (ISO 8601) | Last update timestamp |
 | `status` | string | Version status (e.g., `"Published"`, `"Draft"`) |
-| `publishedAt` | string (ISO 8601) | Publication timestamp |
 | `baseModelType` | string | Base model type (e.g., `"Standard"`, `"Inpaint"`, `"Refiner"`) |
 | `earlyAccessConfig` | object | Early access configuration |
 | `uploadType` | string | Upload type (`"Created"`, `"FineTuned"`, etc.) |

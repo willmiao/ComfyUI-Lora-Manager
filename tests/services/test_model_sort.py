@@ -95,3 +95,47 @@ class TestRandomShuffle:
         assert [item["model_name"] for item in first] == [
             item["model_name"] for item in second
         ]
+
+
+class TestPublishedSort:
+    @staticmethod
+    def _make_cache():
+        entries = [
+            ("new", "2024-02-01T00:00:00Z", 2),
+            ("old", "2024-01-01T08:00:00+08:00", 1),
+            ("missing", None, 3),
+            ("invalid", "not-a-date", 4),
+        ]
+        return ModelCache(
+            raw_data=[
+                {
+                    "file_path": f"/models/{name}.safetensors",
+                    "file_name": name,
+                    "model_name": name,
+                    "folder": "",
+                    "civitai": {
+                        "id": version_id,
+                        "modelId": 10,
+                        **({"publishedAt": published_at} if published_at is not None else {}),
+                    },
+                }
+                for name, published_at, version_id in entries
+            ],
+            folders=[],
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("order", "expected"),
+        [
+            ("asc", ["old", "new", "invalid", "missing"]),
+            ("desc", ["new", "old", "missing", "invalid"]),
+        ],
+    )
+    async def test_published_sort_keeps_missing_and_invalid_dates_last(self, order, expected):
+        cache = self._make_cache()
+        await asyncio.sleep(0)
+
+        result = await cache.get_sorted_data("published", order)
+
+        assert [item["model_name"] for item in result] == expected

@@ -1,3 +1,5 @@
+import json
+import sqlite3
 from unittest.mock import AsyncMock
 
 import pytest
@@ -283,3 +285,40 @@ async def test_sqlite_provider_ignores_the_empty_hash_placeholder(tmp_path):
     assert error == "Model not found"
     # The guard runs before the connection is opened.
     assert not db_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_sqlite_provider_returns_version_publication_date(tmp_path):
+    from py.services.model_metadata_provider import SQLiteModelMetadataProvider
+
+    db_path = tmp_path / "civitai.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.executescript(
+            """
+            CREATE TABLE models (id INTEGER, name TEXT, type TEXT, data TEXT, username TEXT);
+            CREATE TABLE model_versions (
+                id INTEGER, model_id INTEGER, name TEXT, base_model TEXT,
+                data TEXT, position INTEGER, published_at TEXT
+            );
+            CREATE TABLE model_files (id INTEGER, version_id INTEGER, type TEXT, data TEXT);
+            """
+        )
+        conn.execute(
+            "INSERT INTO models VALUES (?, ?, ?, ?, ?)",
+            (10, "Model", "LORA", json.dumps({"tags": []}), "creator"),
+        )
+        conn.execute(
+            "INSERT INTO model_versions VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (20, 10, "v1", "SDXL", "{}", 1, "2024-01-02T03:04:05Z"),
+        )
+
+    provider = SQLiteModelMetadataProvider(str(db_path))
+    result, error = await provider.get_model_version_info("20")
+
+    assert error is None
+    assert result is not None
+    assert result["publishedAt"] == "2024-01-02T03:04:05Z"
+
+    versions = await provider.get_model_versions("10")
+    assert versions is not None
+    assert versions["modelVersions"][0]["publishedAt"] == "2024-01-02T03:04:05Z"

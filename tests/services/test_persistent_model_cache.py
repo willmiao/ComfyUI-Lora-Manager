@@ -1,3 +1,4 @@
+import sqlite3
 from pathlib import Path
 from typing import Any, Dict
 
@@ -41,6 +42,7 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
                 'id': 1,
                 'modelId': 2,
                 'name': 'verA',
+                'publishedAt': '2024-01-02T03:04:05Z',
                 'trainedWords': ['word1'],
                 'creator': {
                     'username': 'artist42',
@@ -91,6 +93,7 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
     first = items[file_a]
     assert first['favorite'] is True
     assert first['civitai']['id'] == 1
+    assert first['civitai']['publishedAt'] == '2024-01-02T03:04:05Z'
     assert first['civitai']['trainedWords'] == ['word1']
     assert first['tags'] == ['alpha', 'beta']
     assert first['metadata_source'] == 'civitai_api'
@@ -597,3 +600,20 @@ def test_roots_with_cached_entries_without_candidates(tmp_path: Path, monkeypatc
 
     assert store.roots_with_cached_entries("lora", []) == set()
     assert store.roots_with_cached_entries("lora", ["", "   "]) == set()
+
+
+def test_persistent_cache_adds_published_at_to_legacy_schema(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'legacy-cache.sqlite'
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            'CREATE TABLE models ('
+            'model_type TEXT NOT NULL, file_path TEXT NOT NULL, '
+            'PRIMARY KEY (model_type, file_path))'
+        )
+
+    PersistentModelCache(db_path=str(db_path))
+
+    with sqlite3.connect(db_path) as conn:
+        columns = {row[1] for row in conn.execute('PRAGMA table_info(models)')}
+    assert 'civitai_published_at' in columns
