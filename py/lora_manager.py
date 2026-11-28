@@ -242,14 +242,14 @@ class LoraManager:
             # Startup sweep: purge pending-delete batches that expired during a
             # previous run. Non-blocking (fire-and-forget); purge_expired only
             # removes already-expired batches, so a staged undo that survived a
-            # restart stays restorable. scan_roots=True runs the reconciliation
-            # pass first so leftover batches (the in-process registry is empty
-            # after a restart) are re-discovered on disk. Covers both plugin
-            # and standalone modes (StandaloneLoraManager reuses this
-            # classmethod).
+            # restart stays restorable. The persistent index normally avoids a
+            # model-tree walk; startup falls back to full reconciliation only
+            # once after upgrading, or when that index is missing/corrupt.
+            # Covers both plugin and standalone modes (StandaloneLoraManager
+            # reuses this classmethod).
             pending_delete_service = await get_pending_delete_service()
             asyncio.create_task(
-                pending_delete_service.purge_expired(scan_roots=True),
+                pending_delete_service.purge_expired(startup=True),
                 name="pending_delete_startup_sweep",
             )
 

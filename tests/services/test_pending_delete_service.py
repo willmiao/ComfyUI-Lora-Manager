@@ -1712,6 +1712,163 @@ async def test_reg_g2_reconciliation_walk_runs_in_worker_thread(
     assert all(thread_id != loop_thread for thread_id in walk_threads)
 
 
+async def test_startup_empty_reconciled_index_skips_root_walk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    (root / "nested").mkdir(parents=True)
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+
+    # The first startup is the legacy migration and may walk the roots.
+    await service.purge_expired(startup=True)
+    _reset_pending_delete_service()
+    fresh = await PendingDeleteService.get_instance()
+
+    def _unexpected_walk(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("reconciled startup must not walk model roots")
+
+    monkeypatch.setattr(os, "walk", _unexpected_walk)
+    assert await fresh.purge_expired(startup=True) == 0
+
+
+async def test_startup_invalid_index_batches_force_reconciliation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+    Path(service._pending_delete_index_path()).write_text(
+        json.dumps({"version": 1, "reconciled": True, "batches": []}),
+        encoding="utf-8",
+    )
+    real_walk = os.walk
+    walked_roots: List[str] = []
+
+    def _recording_walk(path: str, *args: Any, **kwargs: Any) -> Any:
+        walked_roots.append(path)
+        return real_walk(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "walk", _recording_walk)
+    await service.purge_expired(startup=True)
+
+    assert walked_roots == [str(root)]
+
+
+async def test_startup_purges_indexed_expired_batch_without_root_walk(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+    await service.purge_expired(startup=True)
+    batch_id = await _stage_simple(service, root, "model")
+    batch_dir = root / PENDING_DELETE_DIR_NAME / batch_id
+    manifest_path = batch_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expires_at"] = int(time.time()) - 10
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    _reset_pending_delete_service()
+    fresh = await PendingDeleteService.get_instance()
+
+    def _unexpected_walk(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("indexed batch must not trigger a model-root walk")
+
+    monkeypatch.setattr(os, "walk", _unexpected_walk)
+    await fresh.purge_expired(startup=True)
+
+    assert not batch_dir.exists()
+    index = json.loads(
+        Path(fresh._pending_delete_index_path()).read_text(encoding="utf-8")
+    )
+    assert index == {"version": 1, "reconciled": True, "batches": {}}
+
+
+async def test_startup_recovers_indexed_crash_leftover_without_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+    await service.purge_expired(startup=True)
+    batch_id = await _stage_simple(service, root, "model")
+    batch_dir = root / PENDING_DELETE_DIR_NAME / batch_id
+    (batch_dir / "manifest.json").unlink()
+
+    # Simulate a crash after moving the model but before writing its manifest.
+    _reset_pending_delete_service()
+    fresh = await PendingDeleteService.get_instance()
+
+    def _unexpected_walk(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("indexed crash leftover must not need a root walk")
+
+    monkeypatch.setattr(os, "walk", _unexpected_walk)
+    await fresh.purge_expired(startup=True)
+
+    orphaned = batch_dir.with_name(f"{batch_id}.orphaned")
+    assert (orphaned / "model.safetensors").read_bytes() == b"model-data"
+    assert not batch_dir.exists()
+
+
+async def test_stage_persists_index_before_moving_model_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    original_rename = service._rename_artifacts_into_batch
+
+    def _assert_indexed_then_rename(
+        batch_dir: str,
+        artifacts: Sequence[str],
+        staged_pairs: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        index = json.loads(
+            Path(service._pending_delete_index_path()).read_text(encoding="utf-8")
+        )
+        assert index["batches"][os.path.basename(batch_dir)] == batch_dir
+        assert all(os.path.exists(path) for path in artifacts)
+        return original_rename(batch_dir, artifacts, staged_pairs)
+
+    monkeypatch.setattr(
+        service, "_rename_artifacts_into_batch", _assert_indexed_then_rename
+    )
+    batch_id = await _stage_simple(service, root, "model")
+    assert batch_id in service._known_batch_dirs
+
+
+async def test_stage_index_failure_leaves_model_at_original_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+
+    def _fail_index_write() -> None:
+        raise OSError("index unavailable")
+
+    monkeypatch.setattr(service, "_write_persistent_index", _fail_index_write)
+    model = root / "model.safetensors"
+    model.write_bytes(b"model-data")
+
+    result = await service.stage_model_delete(
+        scanner=ScannerForStage([root]),
+        target_dir=str(root),
+        file_name="model",
+        main_extension=".safetensors",
+        original_file_path=str(model),
+        cached_entry=None,
+    )
+
+    assert result is None
+    assert model.read_bytes() == b"model-data"
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+
 # (h) _find_batch_dir with cleared registry locates + registers (restart sim)
 async def test_reg_h_find_batch_dir_restart_simulation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -1764,8 +1921,8 @@ async def test_reg_i_purge_iteration_uses_snapshot(
         assert not (root / PENDING_DELETE_DIR_NAME / batch_id).exists()
 
 
-# (j) STARTUP SWEEP PIN: the startup sweep task passes scan_roots=True
-async def test_reg_j_startup_sweep_passes_scan_roots_true(
+# (j) STARTUP SWEEP PIN: startup uses the persistent-index-aware sweep
+async def test_reg_j_startup_sweep_uses_persistent_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from py import lora_manager
@@ -1773,8 +1930,8 @@ async def test_reg_j_startup_sweep_passes_scan_roots_true(
     sweep_calls: List[Dict[str, Any]] = []
 
     class _SpySweepService:
-        async def purge_expired(self, scan_roots: bool = False) -> int:
-            sweep_calls.append({"scan_roots": scan_roots})
+        async def purge_expired(self, startup: bool = False) -> int:
+            sweep_calls.append({"startup": startup})
             return 0
 
     async def _fake_get_service() -> _SpySweepService:
@@ -1857,9 +2014,9 @@ async def test_reg_j_startup_sweep_passes_scan_roots_true(
             # spy's purge_expired so it records its invocation arguments.
             await sweep_coro
 
-    # The startup sweep must invoke purge_expired with scan_roots=True (the
-    # reconciliation flag) - forgetting it would break restart cleanup.
-    assert sweep_calls == [{"scan_roots": True}]
+    # Startup must opt into persistent-index restoration; the full root walk
+    # remains available through purge_expired(scan_roots=True).
+    assert sweep_calls == [{"startup": True}]
 
 
 # ---------------------------------------------------------------------------

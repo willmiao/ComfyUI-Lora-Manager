@@ -298,8 +298,8 @@ async def test_initialize_services_defers_scanners_during_first_run(
     purge_calls: list[bool] = []
 
     class _FakePendingDeleteService:
-        async def purge_expired(self, *, scan_roots: bool = False) -> None:
-            purge_calls.append(scan_roots)
+        async def purge_expired(self, *, startup: bool = False) -> None:
+            purge_calls.append(startup)
 
     async def _fake_pending_delete_service():
         return _FakePendingDeleteService()

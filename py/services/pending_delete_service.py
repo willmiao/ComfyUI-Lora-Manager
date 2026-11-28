@@ -51,6 +51,8 @@ PENDING_DELETE_TTL_SECONDS = 20
 PENDING_DELETE_DIR_NAME = ".lm-pending-delete"
 # Manifest file name inside every batch directory.
 MANIFEST_FILE_NAME = "manifest.json"
+PENDING_DELETE_INDEX_FILE_NAME = "pending-delete-index.json"
+PENDING_DELETE_INDEX_VERSION = 1
 # Suffix appended when quarantining malformed/manifest-less batch dirs. The
 # quarantine is terminal: never re-renamed, never re-quarantined, never
 # deleted by the sweep.
@@ -122,9 +124,13 @@ class PendingDeleteService:
         # every scanner is registered.
         self._known_roots: List[str] = []
         # MODEL batches only; recipe batches live in the fixed settings-dir
-        # parent. Registry access is short critical sections; the lock-free
-        # reconciliation scan registers concurrently.
+        # parent. Registry and persistent-index updates are serialized because
+        # the lock-free reconciliation scan registers concurrently. The index
+        # lets startup restore exact batch paths without walking model roots.
         self._known_batch_dirs: Dict[str, str] = {}
+        self._indexed_batch_dirs: Dict[str, str] = {}
+        self._index_loaded = False
+        self._index_reconciled = False
         self._registry_lock = asyncio.Lock()
 
     # ------------------------------------------------------------------
@@ -154,6 +160,7 @@ class PendingDeleteService:
         await self._opportunistic_purge()
 
         async with self._ops_lock:
+            batch_id = ""
             batch_dir: Optional[str] = None
             staged_pairs: List[Dict[str, Any]] = []
             try:
@@ -180,6 +187,10 @@ class PendingDeleteService:
                     os.path.abspath(target_dir), PENDING_DELETE_DIR_NAME, batch_id
                 )
                 os.makedirs(batch_dir, exist_ok=True)
+                # Persist the exact location before the first rename. A crash
+                # between the rename and manifest write must still leave a
+                # discoverable batch for the next startup sweep.
+                await self._remember_batch(batch_id, batch_dir)
 
                 staged_pairs = self._rename_artifacts_into_batch(
                     batch_dir, artifacts, staged_pairs
@@ -205,7 +216,6 @@ class PendingDeleteService:
                 )
                 self._write_manifest_atomic(batch_dir, manifest)
                 self._remember_root(root)
-                await self._remember_batch(batch_id, batch_dir)
                 # Arm the per-batch purge timer. Safe inside the lock: task
                 # creation does not await, and purge_batch re-reads the
                 # manifest's expires_at at fire time, so stale timers no-op.
@@ -225,6 +235,7 @@ class PendingDeleteService:
                     self._rollback_model_staging(batch_dir, staged_pairs)
                     self._remove_empty_dir(batch_dir)
                     self._remove_empty_staging_parent(batch_dir)
+                    await self._forget_batch(batch_id)
                 return None
             except Exception as exc:  # defensive - never block the delete flow
                 logger.warning(
@@ -489,23 +500,31 @@ class PendingDeleteService:
             logger.info("Restored pending-delete batch %s", batch_id)
             return self._undo_result(manifest)
 
-    async def purge_expired(self, scan_roots: bool = False) -> int:
+    async def purge_expired(
+        self, scan_roots: bool = False, startup: bool = False
+    ) -> int:
         """Purge every expired batch.
 
         Default (registry-only): iterates a SNAPSHOT of the in-process MODEL
         batch registry plus a shallow check of the fixed recipe staging
-        parent - cheap, no tree walk per delete. With ``scan_roots=True``
-        (startup sweep only) a reconciliation pass re-discovers every batch
-        on disk under the model roots and registers it FIRST, so crash
-        leftovers and externally created batches are covered too.
+        parent - cheap, no tree walk per delete. With ``scan_roots=True`` an
+        explicit reconciliation pass re-discovers every batch on disk under
+        the model roots. Startup instead restores the persistent batch index
+        and only falls back to that full walk when no completed reconciliation
+        has been recorded (notably on the first run after upgrading).
 
         Lock-free by design: delegates each batch to :meth:`purge_batch`,
         which acquires the ops lock. Never call this while holding the ops
         lock.
         """
         purged = 0
-        if scan_roots:
+        if startup:
+            if await self._restore_persistent_batches():
+                await self._reconcile_scan_roots()
+                await self._mark_index_reconciled()
+        elif scan_roots:
             await self._reconcile_scan_roots()
+            await self._mark_index_reconciled()
         # MODEL batches: snapshot so purge_batch can remove entries
         # mid-iteration without a dict-changed-size error.
         batch_ids: List[str] = [
@@ -530,8 +549,6 @@ class PendingDeleteService:
     async def _reconcile_scan_roots(self) -> None:
         """Register every pending-delete batch found under the model roots.
 
-        Runs at startup (``purge_expired(scan_roots=True)``) to re-discover
-        batches left over from a previous process or created externally.
         Registers ALL non-orphaned batch dirs regardless of manifest validity:
         malformed/manifest-less dirs must reach ``_purge_batch_dir`` so it can
         QUARANTINE them (preserving the pre-registry sweep semantics). The
@@ -543,17 +560,28 @@ class PendingDeleteService:
         registration awaits run on the loop.
         """
         roots = await self._get_all_model_roots()
+        started_at = time.monotonic()
         loop = asyncio.get_event_loop()
-        staging_parents = await loop.run_in_executor(
+        staging_parents, directories_visited = await loop.run_in_executor(
             None,  # Use default thread pool
             self._collect_staging_parents,  # Run the tree walk off the loop
             roots,
         )
         for staging_parent in staging_parents:
             await self._register_batch_candidates(staging_parent)
+        logger.info(
+            "Pending-delete reconciliation scanned %d directories under %d "
+            "roots in %.1fs; found %d staging directories",
+            directories_visited,
+            len(roots),
+            time.monotonic() - started_at,
+            len(staging_parents),
+        )
 
-    def _collect_staging_parents(self, roots: Sequence[str]) -> List[str]:
-        """Walk every model root and return its staging-parent dirs.
+    def _collect_staging_parents(
+        self, roots: Sequence[str]
+    ) -> Tuple[List[str], int]:
+        """Walk every model root and return staging dirs and directories seen.
 
         Pure synchronous filesystem discovery with no awaits: walks with
         ``followlinks=True, topdown=True``, prunes symlink cycles via a
@@ -566,6 +594,7 @@ class PendingDeleteService:
         from .model_scanner import _is_excluded_dir
 
         staging_parents: List[str] = []
+        directories_visited = 0
         for root in roots:
             if not os.path.isdir(root):
                 continue
@@ -573,6 +602,7 @@ class PendingDeleteService:
             for dirpath, dirnames, _files in os.walk(
                 root, followlinks=True, topdown=True
             ):
+                directories_visited += 1
                 real_dir = os.path.realpath(dirpath)
                 if real_dir in visited:
                     # Symlink cycle: prune descent and move on.
@@ -594,7 +624,7 @@ class PendingDeleteService:
                     else:
                         next_dirs.append(name)
                 dirnames[:] = next_dirs
-        return staging_parents
+        return staging_parents, directories_visited
 
     async def _register_batch_candidates(self, staging_parent: str) -> None:
         """Register every non-orphaned batch subdir of a staging parent."""
@@ -602,7 +632,13 @@ class PendingDeleteService:
             if name.endswith(ORPHANED_SUFFIX):
                 # Quarantine is terminal - never re-register.
                 continue
-            await self._remember_batch(name, os.path.join(staging_parent, name))
+            try:
+                await self._remember_batch(name, os.path.join(staging_parent, name))
+            except OSError as exc:
+                # Keep the in-memory registration and retry the complete index
+                # write after reconciliation. Failure there leaves the on-disk
+                # state unreconciled, forcing another safe scan next startup.
+                logger.warning("Failed to index pending-delete batch %s: %s", name, exc)
 
     async def purge_batch(self, batch_id: str) -> None:
         """Purge one batch. Silent no-op for missing/undone/not-yet-expired.
@@ -635,19 +671,159 @@ class PendingDeleteService:
         if root and root not in self._known_roots:
             self._known_roots.append(root)
 
-    async def _remember_batch(self, batch_id: str, batch_dir: str) -> None:
-        """Register a MODEL batch in the in-process registry (idempotent).
+    def _pending_delete_index_path(self) -> str:
+        return os.path.join(
+            settings_paths.get_settings_dir(create=True),
+            PENDING_DELETE_INDEX_FILE_NAME,
+        )
 
-        Short critical section (dict mutation only, no I/O while holding the
-        lock) so the lock-free reconciliation scan can register concurrently.
+    def _read_persistent_index(self) -> Tuple[bool, Dict[str, str]]:
+        index_path = self._pending_delete_index_path()
+        try:
+            with open(index_path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except FileNotFoundError:
+            return False, {}
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning(
+                "Could not read pending-delete index at %s: %s; "
+                "startup will reconcile model roots",
+                index_path,
+                exc,
+            )
+            return False, {}
+        if not isinstance(payload, dict):
+            logger.warning("Invalid pending-delete index at %s", index_path)
+            return False, {}
+        raw_batches = payload.get("batches")
+        batches: Dict[str, str] = {}
+        valid_batches = isinstance(raw_batches, dict)
+        if isinstance(raw_batches, dict):
+            for batch_id, batch_dir in raw_batches.items():
+                if (
+                    isinstance(batch_id, str)
+                    and batch_id
+                    and isinstance(batch_dir, str)
+                    and os.path.isabs(batch_dir)
+                    and os.path.basename(batch_dir) == batch_id
+                    and os.path.basename(os.path.dirname(batch_dir))
+                    == PENDING_DELETE_DIR_NAME
+                ):
+                    batches[batch_id] = batch_dir
+                else:
+                    valid_batches = False
+        reconciled = (
+            valid_batches
+            and payload.get("version") == PENDING_DELETE_INDEX_VERSION
+            and payload.get("reconciled") is True
+        )
+        return reconciled, batches
+
+    def _ensure_index_loaded(self) -> None:
+        if self._index_loaded:
+            return
+        self._index_reconciled, self._indexed_batch_dirs = (
+            self._read_persistent_index()
+        )
+        self._index_loaded = True
+
+    def _write_persistent_index(self) -> None:
+        index_path = self._pending_delete_index_path()
+        index_dir = os.path.dirname(index_path)
+        payload = {
+            "version": PENDING_DELETE_INDEX_VERSION,
+            "reconciled": self._index_reconciled,
+            "batches": self._indexed_batch_dirs,
+        }
+        fd, temp_path = tempfile.mkstemp(
+            dir=index_dir, prefix=".pending-delete-index-", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2, ensure_ascii=False)
+            os.replace(temp_path, index_path)
+        except BaseException:
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+            raise
+
+    async def _restore_persistent_batches(self) -> bool:
+        """Restore indexed model batches; return whether a full scan is needed."""
+        async with self._registry_lock:
+            self._ensure_index_loaded()
+            existing: Dict[str, str] = {}
+            for batch_id, batch_dir in self._indexed_batch_dirs.items():
+                if os.path.isdir(batch_dir):
+                    existing[batch_id] = batch_dir
+                else:
+                    logger.debug(
+                        "Dropping stale pending-delete index entry %s: %s",
+                        batch_id,
+                        batch_dir,
+                    )
+            if existing != self._indexed_batch_dirs:
+                self._indexed_batch_dirs = existing
+                try:
+                    self._write_persistent_index()
+                except OSError as exc:
+                    logger.warning("Failed to prune pending-delete index: %s", exc)
+            self._known_batch_dirs.update(existing)
+            needs_full_scan = not self._index_reconciled
+            logger.info(
+                "Pending-delete startup restored %d indexed batches%s",
+                len(existing),
+                "; full root reconciliation required" if needs_full_scan else "",
+            )
+            return needs_full_scan
+
+    async def _mark_index_reconciled(self) -> None:
+        async with self._registry_lock:
+            self._ensure_index_loaded()
+            self._index_reconciled = True
+            try:
+                self._write_persistent_index()
+            except OSError as exc:
+                self._index_reconciled = False
+                logger.warning(
+                    "Failed to mark pending-delete index reconciled: %s; "
+                    "the next startup will retry the full scan",
+                    exc,
+                )
+
+    async def _remember_batch(self, batch_id: str, batch_dir: str) -> None:
+        """Register and persist a MODEL batch (idempotent).
+
+        Stage calls this before moving files, so persistence failures abort
+        staging while all artifacts are still at their original paths.
         """
         async with self._registry_lock:
+            self._ensure_index_loaded()
             self._known_batch_dirs[batch_id] = batch_dir
+            if self._indexed_batch_dirs.get(batch_id) == batch_dir:
+                return
+            self._indexed_batch_dirs[batch_id] = batch_dir
+            self._write_persistent_index()
 
     async def _forget_batch(self, batch_id: str) -> None:
-        """Remove a MODEL batch from the in-process registry (idempotent)."""
+        """Forget a MODEL batch and prune its persistent index entry."""
         async with self._registry_lock:
+            self._ensure_index_loaded()
             self._known_batch_dirs.pop(batch_id, None)
+            if batch_id not in self._indexed_batch_dirs:
+                return
+            self._indexed_batch_dirs.pop(batch_id, None)
+            try:
+                self._write_persistent_index()
+            except OSError as exc:
+                # A stale on-disk entry is safe: startup checks existence before
+                # registering it, and never falls back to a tree walk for it.
+                logger.warning(
+                    "Failed to prune pending-delete batch %s from index: %s",
+                    batch_id,
+                    exc,
+                )
 
     async def _registered_batch_dirs(self) -> List[Tuple[str, str]]:
         """Return a SNAPSHOT of (batch_id, batch_dir) registry pairs.
