@@ -82,6 +82,11 @@ async def test_register_rate_limit_arms_cooldown_and_waits(monkeypatch):
         rate_limit_min_interval_seconds=0.0,
         rate_limit_max_wait_seconds=5.0,
     )
+    # Sample the clock before the window is armed: Windows rounds
+    # ``time.monotonic()`` to the ~15.6ms timer tick, so a start sampled after
+    # arming can be a whole tick late and report a shorter wait even though the
+    # gate held. Sampling first makes the bound exact.
+    start = time.monotonic()
     coordinator.register_rate_limit("example.com", retry_after=0.15)
     assert coordinator.in_cooldown("example.com")
     remaining = coordinator.remaining_seconds("example.com")
@@ -89,10 +94,9 @@ async def test_register_rate_limit_arms_cooldown_and_waits(monkeypatch):
     # float noise (Windows reports 0.15000000000000568 for a 0.15s window).
     assert 0.1 < remaining <= 0.15 + 1e-6
 
-    start = time.monotonic()
     await coordinator.wait_for_slot("example.com")
     elapsed = time.monotonic() - start
-    assert elapsed >= 0.14  # 0.15s cooldown, 10ms of clock slack
+    assert elapsed >= 0.15 - 1e-6  # armed after `start`: no clock slack needed
     assert not coordinator.in_cooldown("example.com")
 
 
@@ -103,15 +107,18 @@ async def test_concurrent_waiters_share_one_cooldown_window(monkeypatch):
         rate_limit_min_interval_seconds=0.0,
         rate_limit_max_wait_seconds=5.0,
     )
+    # Sample the clock before arming, as in the cooldown test above: on Windows
+    # a start sampled after the arm can be one timer tick late.
+    start = time.monotonic()
     coordinator.register_rate_limit("example.com", retry_after=0.2)
 
-    start = time.monotonic()
     await asyncio.gather(
         *(coordinator.wait_for_slot("example.com") for _ in range(4))
     )
     elapsed = time.monotonic() - start
-    # 4 independent windows would take ~0.8s; a shared window is ~0.2s.
-    assert 0.19 <= elapsed < 0.5
+    # 4 independent windows would take ~0.8s; a shared window is ~0.2s. The
+    # window is armed after `start`, so the wait cannot come up short.
+    assert 0.2 - 1e-6 <= elapsed < 0.5
 
 
 async def test_backoff_grows_on_consecutive_429_and_resets_on_success(
